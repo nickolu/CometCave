@@ -37,9 +37,10 @@ const RingTossGame = () => {
   const POLE_WIDTH = 40;  // Same as cone base center width
   const POLE_HEIGHT = 120;
   
-  const drawRing = (g: Graphics, color: number) => {
+  const drawRing = (g: Graphics, color: number, fillColor: number) => {
     g.clear();
     g.lineStyle(8, color);
+    g.beginFill(fillColor);
     g.drawCircle(0, 0, RING_RADIUS);
     g.endFill();
   };
@@ -158,51 +159,60 @@ const RingTossGame = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <Navigation />
-      <h1 className="text-3xl font-bold mb-4">Ring Toss Game</h1>
-      <div className="mb-4 text-xl">
-        Score: {score}
-        {showScore && <span className="ml-2 text-green-500 animate-bounce">+1!</span>}
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-indigo-900 text-white py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <Navigation />
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+            Ring Toss
+          </h1>
+          <div className="text-2xl text-blue-300 mb-4">
+            Score: {score}
+            {showScore && <span className="ml-2 text-green-500 animate-bounce">+1!</span>}
+          </div>
+        </div>
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 shadow-2xl">
+          <div
+            className="rounded-lg cursor-pointer overflow-hidden w-full h-full flex items-center justify-center"
+            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+              const bounds = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - bounds.left;
+              const y = e.clientY - bounds.top;
+              throwRing({ global: { x, y } });
+            }}
+          >
+            <Application
+              width={600}
+              height={500}
+              backgroundColor={0x1a1b2e}
+            >
+              <pixiContainer>
+                <pixiContainer sortableChildren={true}>
+                  <pixiGraphics
+                    draw={drawCone}
+                    x={targetPosition.x}
+                    y={targetPosition.y}
+                    zIndex={1}
+                  />
+                  {rings.map(ring => (
+                    <pixiGraphics
+                      key={ring.id}
+                      draw={(g: Graphics) => drawRing(g, ring.color, 0x1a1b2e)}
+                      x={ring.x}
+                      y={ring.y}
+                      rotation={ring.rotation}
+                      zIndex={0}
+                    />
+                  ))}
+                </pixiContainer>
+              </pixiContainer>
+            </Application>
+          </div>
+          <p className="mt-4 text-center text-blue-300/80 text-lg">
+            Click anywhere to throw the ring!
+          </p>
+        </div>
       </div>
-      <div
-        className="border-2 border-gray-300 rounded-lg cursor-pointer"
-        onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-          const bounds = e.currentTarget.getBoundingClientRect();
-          const x = e.clientX - bounds.left;
-          const y = e.clientY - bounds.top;
-          throwRing({ global: { x, y } });
-        }}
-      >
-        <Application
-          width={600}
-          height={500}
-          backgroundColor={0xffffff}
-        >
-        <pixiContainer>
-
-          <pixiContainer sortableChildren={true}>
-            <pixiGraphics
-              draw={drawCone}
-              x={targetPosition.x}
-              y={targetPosition.y}
-              zIndex={1}
-            />
-            {rings.map(ring => (
-              <pixiGraphics
-                key={ring.id}
-                draw={(g: Graphics) => drawRing(g, ring.color)}
-                x={ring.x}
-                y={ring.y}
-                rotation={ring.rotation}
-                zIndex={0}
-              />
-            ))}
-          </pixiContainer>
-        </pixiContainer>
-        </Application>
-      </div>
-      <p className="mt-4 text-gray-600">Click anywhere to throw the ring!</p>
     </div>
   );
 };
