@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Application, extend } from '@pixi/react';
 import { Graphics, Container } from 'pixi.js';
+import Navigation from '../components/navigation';
 
 type Ring = {
   id: number;
@@ -158,6 +159,7 @@ const RingTossGame = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <Navigation />
       <h1 className="text-3xl font-bold mb-4">Ring Toss Game</h1>
       <div className="mb-4 text-xl">
         Score: {score}
