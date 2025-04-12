@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function Navigation() {
+export function Navigation() {
   return (
     <nav className="flex justify-center">
       <ul className="flex justify-center gap-4">
