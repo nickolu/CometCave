@@ -4,10 +4,38 @@ import { NextResponse } from 'next/server';
 import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory';
 import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/config';
 import { Message } from '@/app/chat-room-of-infinity/services/ai/types';
+import { Character } from '@/app/chat-room-of-infinity/types';
+
+interface ConversationManagerRequest {
+  chatMessages: {
+    id: string;
+    character: {
+      id: string;
+      name: string;
+    };
+    message: string;
+    timestamp: number;
+  }[];
+  characters: Character[];
+  charactersRespondToEachOther?: boolean;
+}
 
 export async function POST(request: Request) {
   try {
-    const { chatMessages, characters } = await request.json();
+    const { chatMessages, characters, charactersRespondToEachOther } = await request.json() as ConversationManagerRequest;
+
+    // Check if the last message is from a character and if characters shouldn't respond to each other
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    const isLastMessageFromCharacter = lastMessage && lastMessage.character.id !== 'user';
+
+    // Skip character responses if the last message was from a character and we don't want characters to respond to each other
+    if (isLastMessageFromCharacter && !charactersRespondToEachOther) {
+      console.log('Last message was from a character and charactersRespondToEachOther is disabled. Skipping character responses.');
+      return new Response(JSON.stringify({ respondingCharacters: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!chatMessages || !Array.isArray(chatMessages) || chatMessages.length === 0) {
       return NextResponse.json(

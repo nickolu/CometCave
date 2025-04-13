@@ -2,8 +2,16 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { ChatState, Character, UserListState, UserSelectorState, CustomCharacterFormState, HumanUser } from './types';
+import { Character, UserListState, UserSelectorState, CustomCharacterFormState, HumanUser, ChatMessage } from './types';
 import SAMPLE_CHARACTERS from './sampleCharacters.json';
+
+interface ChatState {
+  messages: ChatMessage[];
+  characters: Character[];
+  typingCharacters: Character[];
+  isTyping: boolean;
+  charactersRespondToEachOther: boolean;
+}
 
 export interface Store {
   // User List State
@@ -22,6 +30,7 @@ export interface Store {
   addTypingCharacter: (character: Character) => void;
   removeTypingCharacter: (characterId: string) => void;
   resetChat: () => void;
+  toggleCharactersRespondToEachOther: () => void;
   
   // User Selector State
   userSelector: UserSelectorState;
@@ -32,6 +41,14 @@ export interface Store {
   toggleCustomCharacterForm: () => void;
   updateCustomCharacterForm: (updates: Partial<CustomCharacterFormState>) => void;
   saveCustomCharacter: () => void;
+}
+
+interface ChatState {
+  messages: ChatMessage[];
+  characters: Character[];
+  typingCharacters: Character[];
+  isTyping: boolean;
+  charactersRespondToEachOther: boolean;
 }
 
 export const useStore = create<Store>()(
@@ -66,13 +83,15 @@ export const useStore = create<Store>()(
       })),
       chat: {
         messages: [],
-        isTyping: false,
+        characters: [],
         typingCharacters: [],
+        isTyping: false,
+        charactersRespondToEachOther: false
       },
       sendMessage: (message: string) => set((state) => ({
         chat: {
           ...state.chat,
-          messages: [...state.chat.messages, {
+          messages: [...(state.chat.messages || []), {
             id: Math.random().toString(36).substring(7),
             character: {
               id: 'user',
@@ -88,7 +107,7 @@ export const useStore = create<Store>()(
       addCharacterMessage: (character: Character, message: string) => set((state) => ({
         chat: {
           ...state.chat,
-          messages: [...state.chat.messages, {
+          messages: [...(state.chat.messages || []), {
             id: Math.random().toString(36).substring(7),
             character,
             message,
@@ -122,8 +141,16 @@ export const useStore = create<Store>()(
       resetChat: () => set(() => ({
         chat: {
           messages: [],
+          characters: [],
+          typingCharacters: [],
           isTyping: false,
-          typingCharacters: []
+          charactersRespondToEachOther: false
+        }
+      })),
+      toggleCharactersRespondToEachOther: () => set((state) => ({
+        chat: {
+          ...state.chat,
+          charactersRespondToEachOther: !state.chat.charactersRespondToEachOther
         }
       })),
       userSelector: {
@@ -167,15 +194,14 @@ export const useStore = create<Store>()(
       }),
     }),
     {
-      name: 'chat-room-store',
+      name: 'chat-room-of-infinity-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        userList: { 
-          characters: state.userList.characters,
-          humanUser: state.userList.humanUser,
-          isCollapsed: state.userList.isCollapsed
-        },
-        chat: { messages: state.chat.messages }
+        userList: state.userList,
+        userSelector: state.userSelector,
+        chat: {
+          charactersRespondToEachOther: state.chat.charactersRespondToEachOther
+        }
       }),
     }
   )

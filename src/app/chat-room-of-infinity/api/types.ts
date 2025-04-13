@@ -1,5 +1,6 @@
 export interface SafetyResponse {
   safe: boolean;
+  isSafe?: boolean; // For backward compatibility
   reason: string;
 }
 

@@ -17,8 +17,12 @@ export function useCharacterResponse() {
 
 export function useConversationManager() {
   return useMutation({
-    mutationFn: ({ chatMessages, characters }: { chatMessages: ChatMessage[]; characters: Character[] }) =>
-      agentApi.conversationManager.getRespondingCharacters(chatMessages, characters),
+    mutationFn: ({ chatMessages, characters, charactersRespondToEachOther }: { 
+      chatMessages: ChatMessage[]; 
+      characters: Character[]; 
+      charactersRespondToEachOther?: boolean 
+    }) =>
+      agentApi.conversationManager.getRespondingCharacters(chatMessages, characters, charactersRespondToEachOther),
   });
 }
 

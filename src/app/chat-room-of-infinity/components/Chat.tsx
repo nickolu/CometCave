@@ -1,9 +1,10 @@
 'use client';
 
-import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem, Alert } from '@mui/material';
+import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem, Alert, Switch, FormControlLabel } from '@mui/material';
 import { Send, KeyboardArrowDown, MoreVert, DeleteOutline } from '@mui/icons-material';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '../store';
+import { Character } from '../types';
 import Message from './ChatMessage';
 import { ChatMessage } from '../types';
 import { useSafetyCheck, useConversationManager, useCharacterResponse } from '../api/hooks';
@@ -15,10 +16,24 @@ export default function Chat() {
   const { messages, typingCharacters } = useStore((state) => state.chat);
   const sendMessage = useStore((state) => state.sendMessage);
   const addCharacterMessage = useStore((state) => state.addCharacterMessage);
+  const addTypingCharacter = useStore((state) => state.addTypingCharacter);
   const removeTypingCharacter = useStore((state) => state.removeTypingCharacter);
-  const setTypingCharacters = useStore((state) => state.setTypingCharacters);
   const resetChat = useStore((state) => state.resetChat);
+  const toggleCharactersRespondToEachOther = useStore((state) => state.toggleCharactersRespondToEachOther);
+  const charactersRespondToEachOther = useStore((state) => state.chat.charactersRespondToEachOther);
   const characters = useStore((state) => state.userList.characters);
+  
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingResponse, setIsProcessingResponse] = useState(false);
+  const lastMessageIdRef = useRef<string | null>(null);
+  const activeResponsesRef = useRef<{[key: string]: boolean}>({});
+  const responseQueueRef = useRef<Array<{character: Character, message: string}>>([]);
+  const isProcessingQueueRef = useRef<boolean>(false);
+  const safetyCheck = useSafetyCheck();
+  const conversationManager = useConversationManager();
+  const characterResponse = useCharacterResponse();
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -46,41 +61,230 @@ export default function Chat() {
     setShowScrollButton(!isNearBottom);
   };
 
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const safetyCheck = useSafetyCheck();
-  const conversationManager = useConversationManager();
-  const characterResponse = useCharacterResponse();
+  // Handle getting responses from characters
+  const handleGetCharacterResponses = useCallback(async (messageText: string, messageId?: string) => {
+    // If we're already processing a response, don't start another one
+    if (isProcessingResponse) {
+      console.log('Already processing a response, skipping');
+      return;
+    }
+    
+    // If this is the same message we just processed, don't process it again
+    if (messageId && messageId === lastMessageIdRef.current) {
+      console.log('Already processed this message, skipping');
+      return;
+    }
+    
+    // Set processing flag
+    setIsProcessingResponse(true);
+    if (messageId) {
+      lastMessageIdRef.current = messageId;
+    }
+    
+    // Cancel any ongoing responses
+    activeResponsesRef.current = {};
+    
+    try {
+      console.log('📨 Getting character responses for:', messageText);
+      console.log('Available characters:', characters);
+      
+      // Get all chat messages for context
+      const chatMessages = [...(messages || []), {
+        id: 'temp',
+        character: {
+          id: 'user',
+          name: 'You',
+          description: 'Current user',
+        },
+        message: messageText,
+        timestamp: Date.now(),
+      }];
+      
+      // Make sure we have characters to work with
+      if (!characters || characters.length === 0) {
+        console.log('No characters available to respond!');
+        setIsProcessingResponse(false);
+        return;
+      }
+
+      // Get characters who should respond
+      const result = await conversationManager.mutateAsync({ 
+        chatMessages, 
+        characters,
+        charactersRespondToEachOther
+      });
+      
+      console.log('🎭 Characters who will respond:', result.respondingCharacters);
+      
+      // For each responding character, get their response
+      if (!result.respondingCharacters || result.respondingCharacters.length === 0) {
+        console.log('No characters selected to respond!');
+        setIsProcessingResponse(false);
+        return;
+      }
+      
+      // Instead of processing all responses in parallel, add them to a queue
+      // This ensures we process one character response at a time
+      result.respondingCharacters.forEach(character => {
+        // Add each character to the response queue
+        responseQueueRef.current.push({
+          character,
+          message: messageText
+        });
+      });
+      
+      // Process the queue if not already processing
+      if (!isProcessingQueueRef.current) {
+        processResponseQueue(chatMessages);
+      }
+      
+    } catch (error) {
+      console.error('Error in conversation flow:', error);
+      
+      // Clear all typing indicators
+      if (typingCharacters) {
+        typingCharacters.forEach(char => removeTypingCharacter(char.id));
+      }
+    } finally {
+      // Always reset processing flag after a delay to prevent immediate re-triggering
+      setTimeout(() => {
+        setIsProcessingResponse(false);
+      }, 1000);
+    }
+  }, [messages, characters, conversationManager, characterResponse, addCharacterMessage, removeTypingCharacter, addTypingCharacter, typingCharacters, charactersRespondToEachOther, isProcessingResponse]);
+  
+  // Process character responses one at a time from the queue
+  const processResponseQueue = useCallback(async (chatMessages: any[]) => {
+    // Set processing flag
+    isProcessingQueueRef.current = true;
+    
+    try {
+      // Process responses one at a time until the queue is empty
+      while (responseQueueRef.current.length > 0) {
+        // Get the next character from the queue
+        const { character } = responseQueueRef.current.shift()!;
+        
+        // Generate a unique response ID
+        const responseId = `${character.id}-${Date.now()}`;
+        activeResponsesRef.current[responseId] = true;
+        
+        try {
+          // Add typing indicator
+          addTypingCharacter(character);
+          
+          // Wait a moment before showing the response (simulates typing)
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Check if this response was cancelled
+          if (responseId in activeResponsesRef.current && !activeResponsesRef.current[responseId]) {
+            console.log(`Response from ${character.name} was cancelled`);
+            removeTypingCharacter(character.id);
+            continue;
+          }
+          
+          console.log(`💬 Requesting response from ${character.name}...`);
+          
+          try {
+            // Get the character's response
+            const characterResult = await characterResponse.mutateAsync({
+              character,
+              chatMessages
+            });
+            
+            // Check if this response was cancelled
+            if (responseId in activeResponsesRef.current && !activeResponsesRef.current[responseId]) {
+              console.log(`Response from ${character.name} was cancelled after API call`);
+              removeTypingCharacter(character.id);
+              continue;
+            }
+            
+            console.log(`🗣️ ${character.name} responds:`, characterResult.response);
+            
+            // Add the character's message to the chat
+            addCharacterMessage(character, characterResult.response);
+            
+            // Wait a moment before processing the next response
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (responseError) {
+            console.error(`Error getting response from ${character.name}:`, responseError);
+            
+            // Only add fallback if response wasn't cancelled
+            if (!(responseId in activeResponsesRef.current) || activeResponsesRef.current[responseId]) {
+              // Add a fallback message
+              const fallbackResponses = [
+                `I'm not sure what to say about that.`,
+                `That's interesting. Tell me more.`,
+                `I'm thinking about how to respond to that.`,
+                `I'd like to hear more about your perspective.`
+              ];
+              const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+              addCharacterMessage(character, fallbackResponse);
+            }
+          } finally {
+            // Always remove typing indicator
+            removeTypingCharacter(character.id);
+            // Clean up this response tracking
+            delete activeResponsesRef.current[responseId];
+          }
+        } catch (error) {
+          console.error(`Error processing response for ${character.name}:`, error);
+          removeTypingCharacter(character.id);
+          delete activeResponsesRef.current[responseId];
+        }
+      }
+    } finally {
+      // Reset processing flag when queue is empty
+      isProcessingQueueRef.current = false;
+    }
+  }, [characterResponse, addCharacterMessage, addTypingCharacter, removeTypingCharacter]);
+
 
   const handleSend = async () => {
-    if (input.trim()) {
-      setIsSubmitting(true);
-      try {
-        const result = await safetyCheck.mutateAsync(input.trim());
+    const messageText = input.trim();
+    if (messageText === '') return;
+    
+    setIsSubmitting(true);
+    console.log('Attempting to send message:', messageText);
+    
+    try {
+      const result = await safetyCheck.mutateAsync(messageText);
+      console.log('Safety check result:', result);
 
-        if (result.safe) {
-          const messageText = input.trim();
-          sendMessage(messageText);
-          setInput('');
-          scrollToBottom();
-          
-          // After sending a message, get characters that should respond
-          handleGetCharacterResponses(messageText);
-        } else {
-          setError(result.reason);
-          // Vibrate the input field
-          const inputEl = document.getElementById('chat-input');
-          inputEl?.classList.add('shake');
-          setTimeout(() => inputEl?.classList.remove('shake'), 500);
-        }
-      } catch {
-        setError('Failed to check message safety');
-      } finally {
-        setIsSubmitting(false);
+      // Check if the message is safe (support both safe and isSafe properties)
+      if (result.safe || result.isSafe) {
+        console.log('Message is safe, sending...');
+        sendMessage(messageText);
+        console.log('Message added successfully');
+        setInput('');
+        scrollToBottom();
+        
+        // After sending a message, get characters that should respond
+        // We don't need to pass an ID here since this is a new user message
+        await handleGetCharacterResponses(messageText);
+      } else {
+        console.log('Message deemed unsafe:', result.reason);
+        setError(result.reason);
+        // Vibrate the input field
+        const inputEl = document.getElementById('chat-input');
+        inputEl?.classList.add('shake');
+        setTimeout(() => inputEl?.classList.remove('shake'), 500);
       }
+    } catch (error) {
+      console.error('Error in handleSend:', error);
+      setError('Failed to check message safety');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -100,105 +304,43 @@ export default function Chat() {
       });
     }
   }, [characters]);
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  // Handle getting responses from characters
-  const handleGetCharacterResponses = async (messageText: string) => {
-    try {
-      console.log('📨 Getting character responses for:', messageText);
-      console.log('Available characters:', characters);
-      
-      // Get all chat messages for context
-      const chatMessages = [...messages, {
-        id: 'temp',
-        character: {
-          id: 'user',
-          name: 'You',
-          description: 'Current user',
-        },
-        message: messageText,
-        timestamp: Date.now(),
-      }];
-      
-      // Make sure we have characters to work with
-      if (!characters || characters.length === 0) {
-        console.log('No characters available to respond!');
-        return;
-      }
-
-      // Get characters who should respond
-      const result = await conversationManager.mutateAsync({ 
-        chatMessages, 
-        characters 
-      });
-      
-      console.log('🎭 Characters who will respond:', result.respondingCharacters);
-      
-      // Add a slight delay for realism
-      setTimeout(() => {
-        console.log(result.respondingCharacters)
-        // Set all responding characters as typing
-        if (result.respondingCharacters && result.respondingCharacters.length > 0) {
-          setTypingCharacters(result.respondingCharacters);
-        } else {
-          setTypingCharacters([]);
-        }
-        
-        // For each responding character, get their response
-        if (!result.respondingCharacters || result.respondingCharacters.length === 0) {
-          console.log('No characters selected to respond!');
-          return;
-        }
-        
-        result.respondingCharacters.forEach(async (character, index) => {
-          try {
-            setTimeout(async () => {
-              console.log(`💬 Requesting response from ${character.name}...`);  
-              try {
-                const characterResult = await characterResponse.mutateAsync({ 
-                  character, 
-                  chatMessages 
-                });
-                
-                console.log(`🗣️ ${character.name} responds:`, characterResult.response);
-                addCharacterMessage(character, characterResult.response);
-              } catch (responseError) {
-                console.error(`Error getting response from ${character.name}:`, responseError)                // Add a fallback message
-                const fallbackResponses = [
-                  `I'm not sure what to say about that.`,
-                  `That's interesting. Tell me more.`,
-                  `I'm thinking about how to respond to that.`,
-                  `I'd like to hear more about your perspective.`
-                ];
-                const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-                addCharacterMessage(character, fallbackResponse);
-              }
-              
-              removeTypingCharacter(character.id);
-            }, 0);
-          } catch (error) {
-            console.error(`Error getting response from ${character.name}:`, error);
-          }
-        });
-        
-        // If no characters are responding, make sure typing indicator is off
-        if (result.respondingCharacters.length === 0) {
-          setTypingCharacters([]);
-        }
-      }, 0);
-      
-    } catch (error) {
-      console.error('Error in conversation flow:', error);
-      setTypingCharacters([]);
-    }
-  };
   
+  // Listen for new messages and trigger character responses if needed
+  useEffect(() => {
+    // Skip if no messages or only one message (initial load)
+    if (!messages || messages.length <= 1) return;
+    
+    // Get the most recent message
+    const lastMessage = messages[messages.length - 1];
+    
+    // Only trigger character responses if:
+    // 1. The last message is from a user, OR
+    // 2. The last message is from a character AND charactersRespondToEachOther is enabled
+    if (lastMessage) {
+      if (lastMessage.character.id === 'user' || 
+          (lastMessage.character.id !== 'user' && charactersRespondToEachOther)) {
+        console.log('Message detected, triggering character responses:', lastMessage);
+        
+        // For user messages, clear the queue and cancel any ongoing responses
+        if (lastMessage.character.id === 'user') {
+          // Clear the response queue
+          responseQueueRef.current = [];
+          
+          // Cancel any ongoing responses
+          activeResponsesRef.current = {};
+          
+          // Clear all typing indicators
+          if (typingCharacters) {
+            typingCharacters.forEach(char => removeTypingCharacter(char.id));
+          }
+        }
+        
+        // Pass the message ID to prevent duplicate processing
+        handleGetCharacterResponses(lastMessage.message, lastMessage.id);
+      }
+    }
+  }, [messages, charactersRespondToEachOther, handleGetCharacterResponses, typingCharacters, removeTypingCharacter]);
+
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, position: 'relative', top: '12px'}}>
@@ -214,8 +356,36 @@ export default function Chat() {
             <DeleteOutline sx={{ mr: 1 }} />
             Reset Chat
           </MenuItem>
+          <MenuItem>
+            <FormControlLabel 
+              control={
+                <Switch 
+                  checked={charactersRespondToEachOther} 
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    toggleCharactersRespondToEachOther();
+                  }} 
+                />
+              }
+              label="Characters respond to each other"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </MenuItem>
         </Menu>
       </Box>
+      {charactersRespondToEachOther && (
+        <Box sx={{ 
+          backgroundColor: 'rgba(25, 118, 210, 0.08)', 
+          p: 0.5, 
+          display: 'flex', 
+          justifyContent: 'center',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
+        }}>
+          <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'primary.main' }}>
+            Characters will respond to each other
+          </Typography>
+        </Box>
+      )}
       <Box 
         ref={messageContainerRef}
         onScroll={handleScroll}
@@ -229,9 +399,9 @@ export default function Chat() {
         }}
       >
         <div ref={messagesEndRef} />
-        {[...messages].reverse().map((message: ChatMessage) => (
+        {messages && Array.isArray(messages) ? [...messages].reverse().map((message: ChatMessage) => (
           <Message key={message.id} message={message} />
-        ))}
+        )) : null}
 
       </Box>
       
@@ -255,36 +425,30 @@ export default function Chat() {
           onClick={scrollToBottom}
           sx={{
             position: 'absolute',
-            right: 16,
-            bottom: 80,
+            bottom: 100,
+            right: 20,
             backgroundColor: 'background.paper',
-            boxShadow: 2,
-            zIndex: 1,
+            boxShadow: 3,
             '&:hover': {
-              backgroundColor: 'action.hover'
+              backgroundColor: 'background.paper',
             }
           }}
         >
           <KeyboardArrowDown />
         </IconButton>
       </Fade>
+
       {error && (
         <Alert 
           severity="error" 
           onClose={() => setError(null)}
           sx={{ 
             position: 'absolute', 
-            bottom: '100%', 
+            top: 10, 
             left: '50%', 
             transform: 'translateX(-50%)',
-            width: '90%',
-            maxWidth: '600px',
-            mb: 1,
-            boxShadow: 2,
-            '& .MuiAlert-message': {
-              display: 'flex',
-              alignItems: 'center'
-            }
+            zIndex: 1000,
+            maxWidth: '80%'
           }}
         >
           {error}
@@ -295,22 +459,16 @@ export default function Chat() {
           <TextField
             id="chat-input"
             fullWidth
-            size="small"
-            autoComplete="off"
+            multiline
+            maxRows={4}
             value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              if (error) setError(null);
-            }}
-            onKeyDown={handleKeyPress}
-            placeholder="Type your message..."
-            error={!!error}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Type a message..."
             disabled={isSubmitting}
             sx={{
-              bgcolor: 'background.paper',
               '&.shake': {
                 animation: 'shake 0.5s',
-                animationIterationCount: '1'
               },
               '@keyframes shake': {
                 '0%, 100%': { marginLeft: '0' },

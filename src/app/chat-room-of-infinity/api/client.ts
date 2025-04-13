@@ -35,8 +35,8 @@ export const agentApi = {
       post<CharacterResponse>('/character', { character, chatMessages }),
   },
   conversationManager: {
-    getRespondingCharacters: (chatMessages: ChatMessage[], characters: Character[]) =>
-      post<ConversationManagerResponse>('/conversationManager', { chatMessages, characters }),
+    getRespondingCharacters: (chatMessages: ChatMessage[], characters: Character[], charactersRespondToEachOther?: boolean) =>
+      post<ConversationManagerResponse>('/conversationManager', { chatMessages, characters, charactersRespondToEachOther }),
   },
   characterGenerator: {
     generateCharacters: (previousCharacters: Character[], criteria: string) =>
