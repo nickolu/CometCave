@@ -89,7 +89,7 @@ export default function UserSelector({ selectedCharacters }: { selectedCharacter
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers sx={{ maxHeight: '80vh', overflow: 'hidden' }}>
+      <DialogContent dividers sx={{ maxHeight: '80vh' }}>
         <List sx={{ 
           maxHeight: '30vh',
           overflowY: 'scroll',
