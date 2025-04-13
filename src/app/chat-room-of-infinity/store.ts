@@ -16,6 +16,7 @@ export interface Store {
   // Chat State
   chat: ChatState;
   sendMessage: (message: string) => void;
+  addCharacterMessage: (character: Character, message: string) => void;
   setIsTyping: (isTyping: boolean) => void;
   resetChat: () => void;
   
@@ -78,7 +79,18 @@ export const useStore = create<Store>()(
             message,
             timestamp: Date.now(),
           }],
-          isTyping: false,
+          isTyping: true,
+        }
+      })),
+      addCharacterMessage: (character: Character, message: string) => set((state) => ({
+        chat: {
+          ...state.chat,
+          messages: [...state.chat.messages, {
+            id: Math.random().toString(36).substring(7),
+            character,
+            message,
+            timestamp: Date.now(),
+          }],
         }
       })),
       setIsTyping: (isTyping: boolean) => set((state) => ({

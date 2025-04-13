@@ -8,7 +8,7 @@ export interface CharacterResponse {
 }
 
 export interface ConversationManagerResponse {
-  respondingCharacter: Character;
+  respondingCharacters: Character[];
 }
 
 export interface CharacterGeneratorResponse {

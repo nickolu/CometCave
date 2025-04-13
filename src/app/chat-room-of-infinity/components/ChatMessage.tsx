@@ -24,7 +24,7 @@ export default function ChatMessage({ message }: Props) {
       <Box
         sx={{
           maxWidth: '70%',
-          backgroundColor: isSelf ? 'primary.main' : 'grey.100',
+          backgroundColor: isSelf ? 'primary.main' : 'secondary.main',
           color: isSelf ? 'white' : 'text.primary',
           borderRadius: 2,
           p: 2,

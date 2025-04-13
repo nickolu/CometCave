@@ -70,7 +70,7 @@ type Character = {
   id: string;
 };
 
-[ ] GET /v1/agent/conversationManager { chatMessages: ChatMessage[], characters: Character[] } => { respondingCharacter: Character }
+[ ] GET /v1/agent/conversationManager { chatMessages: ChatMessage[], characters: Character[] } => { respondingCharacters: Character[] }
 
 [ ] GET /v1/agent/character { character: Character, chatMessages: ChatMessage[] } => { response: string }
 

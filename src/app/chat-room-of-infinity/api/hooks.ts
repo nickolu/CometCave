@@ -18,7 +18,7 @@ export function useCharacterResponse() {
 export function useConversationManager() {
   return useMutation({
     mutationFn: ({ chatMessages, characters }: { chatMessages: ChatMessage[]; characters: Character[] }) =>
-      agentApi.conversationManager.getRespondingCharacter(chatMessages, characters),
+      agentApi.conversationManager.getRespondingCharacters(chatMessages, characters),
   });
 }
 

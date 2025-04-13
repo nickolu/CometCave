@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import Message from './ChatMessage';
 import { ChatMessage } from '../types';
-import { useSafetyCheck } from '../api/hooks';
+import { useSafetyCheck, useConversationManager, useCharacterResponse } from '../api/hooks';
 
 export default function Chat() {
   const [input, setInput] = useState('');
@@ -14,7 +14,10 @@ export default function Chat() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const { messages, isTyping } = useStore((state) => state.chat);
   const sendMessage = useStore((state) => state.sendMessage);
+  const addCharacterMessage = useStore((state) => state.addCharacterMessage);
+  const setIsTyping = useStore((state) => state.setIsTyping);
   const resetChat = useStore((state) => state.resetChat);
+  const characters = useStore((state) => state.userSelector.availableCharacters);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +48,8 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const safetyCheck = useSafetyCheck();
+  const conversationManager = useConversationManager();
+  const characterResponse = useCharacterResponse();
 
   const handleSend = async () => {
     if (input.trim()) {
@@ -53,9 +58,13 @@ export default function Chat() {
         const result = await safetyCheck.mutateAsync(input.trim());
 
         if (result.safe) {
-          sendMessage(input.trim());
+          const messageText = input.trim();
+          sendMessage(messageText);
           setInput('');
           scrollToBottom();
+          
+          // After sending a message, get characters that should respond
+          handleGetCharacterResponses(messageText);
         } else {
           setError(result.reason);
           // Vibrate the input field
@@ -82,6 +91,71 @@ export default function Chat() {
     }
   };
 
+  // Handle getting responses from characters
+  const handleGetCharacterResponses = async (messageText: string) => {
+    try {
+      console.log('📨 Getting character responses for:', messageText);
+      
+      // Get all chat messages for context
+      const chatMessages = [...messages, {
+        id: 'temp',
+        character: {
+          id: 'user',
+          name: 'You',
+          description: 'Current user',
+        },
+        message: messageText,
+        timestamp: Date.now(),
+      }];
+      
+      // Get characters who should respond
+      const result = await conversationManager.mutateAsync({ 
+        chatMessages, 
+        characters 
+      });
+      
+      console.log('🎭 Characters who will respond:', result.respondingCharacters);
+      
+      // Add a slight delay for realism
+      setTimeout(() => {
+        // For each responding character, get their response
+        result.respondingCharacters.forEach(async (character, index) => {
+          try {
+            // Add a staggered delay for each character response
+            setTimeout(async () => {
+              // Get the character's response
+              const characterResult = await characterResponse.mutateAsync({ 
+                character, 
+                chatMessages 
+              });
+              
+              console.log(`🗣️ ${character.name} responds:`, characterResult.response);
+              
+              // Add the character's message to the chat
+              addCharacterMessage(character, characterResult.response);
+              
+              // If this is the last character, stop typing indicator
+              if (index === result.respondingCharacters.length - 1) {
+                setIsTyping(false);
+              }
+            }, index * 2000); // Stagger responses by 2 seconds each
+          } catch (error) {
+            console.error(`Error getting response from ${character.name}:`, error);
+          }
+        });
+        
+        // If no characters are responding, stop typing indicator
+        if (result.respondingCharacters.length === 0) {
+          setIsTyping(false);
+        }
+      }, 1000); // Wait 1 second before characters start responding
+      
+    } catch (error) {
+      console.error('Error in conversation flow:', error);
+      setIsTyping(false);
+    }
+  };
+  
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, position: 'relative', top: '12px'}}>
