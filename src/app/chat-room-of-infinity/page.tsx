@@ -1,12 +1,24 @@
-
 'use client';
 
 import { Box } from '@mui/material';
+import dynamic from 'next/dynamic';
 import { GamePageTemplate } from "../components/page-templates/GamePageTemplate";
-import UserList from './components/UserList';
-import Chat from './components/Chat';
-import UserSelector from './components/UserSelector';
-import CustomCharacterForm from './components/CustomCharacterForm';
+
+const UserList = dynamic(() => import('./components/UserList'), {
+  ssr: false,
+});
+
+const Chat = dynamic(() => import('./components/Chat'), {
+  ssr: false,
+});
+
+const UserSelector = dynamic(() => import('./components/UserSelector'), {
+  ssr: false,
+}); 
+
+const CustomCharacterForm = dynamic(() => import('./components/CustomCharacterForm'), {
+  ssr: false,
+});
 
 export default function ChatRoomOfInfinity() {
   return (
