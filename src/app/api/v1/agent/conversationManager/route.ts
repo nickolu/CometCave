@@ -23,10 +23,25 @@ interface ConversationManagerRequest {
 export async function POST(request: Request) {
   try {
     const { chatMessages, characters, charactersRespondToEachOther } = await request.json() as ConversationManagerRequest;
+    
+    console.log('=====================================================');
+    console.log('Conversation Manager received request with:');
+    console.log(`- ${chatMessages.length} messages`);
+    console.log(`- ${characters.length} characters`);
+    console.log(`- charactersRespondToEachOther: ${charactersRespondToEachOther}`);
+    console.log('Last message:', chatMessages[chatMessages.length - 1]);
 
     // Check if the last message is from a character and if characters shouldn't respond to each other
     const lastMessage = chatMessages[chatMessages.length - 1];
     const isLastMessageFromCharacter = lastMessage && lastMessage.character.id !== 'user';
+    
+    // Get the last 3 messages to check for recent responders
+    const recentMessages = chatMessages.slice(-3);
+    const recentResponderIds = recentMessages
+      .filter(msg => msg.character.id !== 'user')
+      .map(msg => msg.character.id);
+    
+    console.log('Recent responder IDs:', recentResponderIds);
 
     // Skip character responses if the last message was from a character and we don't want characters to respond to each other
     if (isLastMessageFromCharacter && !charactersRespondToEachOther) {
@@ -67,38 +82,57 @@ export async function POST(request: Request) {
         const aiService = AIServiceFactory.create('openai', config);
         
         try {
-          // Use AI to select which characters should respond
-          respondingCharacters = await aiService.selectRespondingCharacters(characters, aiMessages);
+          // Filter out characters who have recently responded
+          const eligibleCharacters = characters.filter(char => !recentResponderIds.includes(char.id));
+          
+          // If no eligible characters (all have recently responded), use all characters
+          const charactersToConsider = eligibleCharacters.length > 0 ? eligibleCharacters : characters;
+          
+          console.log('Characters eligible to respond:', charactersToConsider.map(c => c.name));
+          
+          // Use AI to select which characters should respond from eligible characters
+          respondingCharacters = await aiService.selectRespondingCharacters(charactersToConsider, aiMessages);
           
           // Verify we got valid characters back
           if (!respondingCharacters || !Array.isArray(respondingCharacters) || respondingCharacters.length === 0) {
             console.log('No characters selected by AI, falling back to random selection');
-            // Fall back to random selection
-            const numberOfResponders = Math.floor(Math.random() * 3) + 1;
-            const shuffledCharacters = [...characters].sort(() => 0.5 - Math.random());
-            respondingCharacters = shuffledCharacters.slice(0, Math.min(numberOfResponders, characters.length));
+            // Fall back to random selection - only select ONE character
+            const shuffledCharacters = [...charactersToConsider].sort(() => 0.5 - Math.random());
+            respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
           } else {
             console.log('AI selected responding characters:', respondingCharacters.map(c => c.name));
+            // Only take the first character from AI selection
+            respondingCharacters = respondingCharacters.slice(0, 1);
+            console.log('Limited to one character:', respondingCharacters.map(c => c.name));
           }
         } catch (aiError) {
           console.error('Error in AI character selection:', aiError);
-          // Fall back to random selection
-          const numberOfResponders = Math.floor(Math.random() * 3) + 1;
-          const shuffledCharacters = [...characters].sort(() => 0.5 - Math.random());
-          respondingCharacters = shuffledCharacters.slice(0, Math.min(numberOfResponders, characters.length));
+          // Filter out characters who have recently responded
+          const eligibleCharacters = characters.filter(char => !recentResponderIds.includes(char.id));
+          
+          // If no eligible characters (all have recently responded), use all characters
+          const charactersToConsider = eligibleCharacters.length > 0 ? eligibleCharacters : characters;
+          
+          // Fall back to random selection - only select ONE character
+          const shuffledCharacters = [...charactersToConsider].sort(() => 0.5 - Math.random());
+          respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
         }
       } catch (error) {
         console.error('Error selecting responding characters with AI:', error);
-        // Fall back to random selection
-        const numberOfResponders = Math.floor(Math.random() * 3) + 1;
+        // Fall back to random selection - only select ONE character
         const shuffledCharacters = [...characters].sort(() => 0.5 - Math.random());
-        respondingCharacters = shuffledCharacters.slice(0, Math.min(numberOfResponders, characters.length));
+        respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
       }
     } else {
-      // If no API key, use random selection
-      const numberOfResponders = Math.floor(Math.random() * 3) + 1;
-      const shuffledCharacters = [...characters].sort(() => 0.5 - Math.random());
-      respondingCharacters = shuffledCharacters.slice(0, Math.min(numberOfResponders, characters.length));
+      // Filter out characters who have recently responded
+      const eligibleCharacters = characters.filter(char => !recentResponderIds.includes(char.id));
+      
+      // If no eligible characters (all have recently responded), use all characters
+      const charactersToConsider = eligibleCharacters.length > 0 ? eligibleCharacters : characters;
+      
+      // If no API key, use random selection - only select ONE character
+      const shuffledCharacters = [...charactersToConsider].sort(() => 0.5 - Math.random());
+      respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
     }
 
     return NextResponse.json({
