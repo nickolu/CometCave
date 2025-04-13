@@ -1,11 +1,12 @@
 'use client';
 
-import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem } from '@mui/material';
+import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem, Alert, Snackbar } from '@mui/material';
 import { Send, KeyboardArrowDown, MoreVert, DeleteOutline } from '@mui/icons-material';
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import Message from './ChatMessage';
 import { ChatMessage } from '../types';
+import { useSafetyCheck } from '../api/hooks';
 
 export default function Chat() {
   const [input, setInput] = useState('');
@@ -41,11 +42,24 @@ export default function Chat() {
     setShowScrollButton(!isNearBottom);
   };
 
-  const handleSend = () => {
+  const [error, setError] = useState<string | null>(null);
+  const safetyCheck = useSafetyCheck();
+
+  const handleSend = async () => {
     if (input.trim()) {
-      sendMessage(input.trim());
-      setInput('');
-      scrollToBottom();
+      try {
+        const result = await safetyCheck.mutateAsync(input.trim());
+
+        if (result.safe) {
+          sendMessage(input.trim());
+          setInput('');
+          scrollToBottom();
+        } else {
+          setError(result.reason);
+        }
+      } catch {
+        setError('Failed to check message safety');
+      }
     }
   };
 
@@ -133,6 +147,16 @@ export default function Chat() {
           </IconButton>
         </Box>
       </Box>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

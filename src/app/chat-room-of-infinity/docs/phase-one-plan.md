@@ -57,7 +57,6 @@ Chat Room of Infinity is a chat room where users can add fictional characters to
 [x] Custom Character Form State - form to create a custom character
 
 
-
 ### API
 
 type ChatMessage = {
@@ -77,5 +76,5 @@ type Character = {
 
 [ ] GET /v1/agent/characterGenerator { previousCharacters: Character[], criteria: string } => { newCharacters: Character[] }
 
-[ ] GET /v1/agent/safety { message: string } => { safe: boolean, reason: string }
+[x] GET /v1/agent/safety { message: string } => { safe: boolean, reason: string }
 
