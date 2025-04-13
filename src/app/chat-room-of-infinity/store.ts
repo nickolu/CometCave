@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { ChatState, Character, UserListState, UserSelectorState, CustomCharacterFormState, HumanUser } from './types';
+import SAMPLE_CHARACTERS from './sampleCharacters.json';
 
 export interface Store {
   // User List State
@@ -94,7 +95,7 @@ export const useStore = create<Store>()(
 
       userSelector: {
         isOpen: false,
-        availableCharacters: [], // To be populated with character suggestions
+        availableCharacters: SAMPLE_CHARACTERS as Character[], // To be populated with character suggestions
       },
       toggleUserSelector: () => set((state) => ({
         userSelector: { ...state.userSelector, isOpen: !state.userSelector.isOpen }
@@ -119,7 +120,6 @@ export const useStore = create<Store>()(
           id: Math.random().toString(36).substring(7),
           name: state.customCharacterForm.name,
           description: state.customCharacterForm.description,
-          status: 'online',
         };
         return {
           customCharacterForm: {

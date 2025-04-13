@@ -30,18 +30,13 @@ export default function CharacterUserItem({ character }: Props) {
           primary={character.name}
           secondary={character.description}
         />
-        <Tooltip title={character.status}>
+        <Tooltip title="Online">
           <Box
             sx={{
               width: 10,
               height: 10,
               borderRadius: '50%',
-              backgroundColor: {
-                online: green[500],
-                away: orange[500],
-                busy: red[500],
-                offline: grey[500]
-              }[character.status],
+              backgroundColor: green[500],
             }}
           />
         </Tooltip>

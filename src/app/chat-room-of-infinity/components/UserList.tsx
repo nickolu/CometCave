@@ -86,7 +86,7 @@ export default function UserList() {
         <Box sx={sx.drawerContent(isCollapsed)}>
           <Box sx={sx.drawerHeader}>
             <Typography variant="h6">Characters</Typography>
-          <Box>
+            <Box>
               <Tooltip title={isSelectorOpen ? "Close character selector" : "Add new character"}>
                 <IconButton 
                   onClick={toggleUserSelector}
@@ -96,10 +96,9 @@ export default function UserList() {
                   {isSelectorOpen ? <Close /> : <PersonAdd />}
                 </IconButton>
               </Tooltip>
-              
             </Box>
           </Box>
-          <UserSelector />
+          <UserSelector selectedCharacters={characters} />
           <List sx={sx.list}>
             <HumanUserItem />
             {characters.length > 0 && (

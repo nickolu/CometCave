@@ -21,8 +21,8 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { useStore } from '../store';
 import { Character } from '../types';
 
-export default function UserSelector() {
-  const { isOpen, availableCharacters } = useStore((state) => state.userSelector);
+export default function UserSelector({ selectedCharacters }: { selectedCharacters: Character[] }) {
+  const { isOpen, availableCharacters}  = useStore((state) => state.userSelector);
   const { name, description } = useStore((state) => state.customCharacterForm);
   const { 
     toggleUserSelector, 
@@ -34,9 +34,12 @@ export default function UserSelector() {
   const [generationPrompt, setGenerationPrompt] = useState('');
   const [showGenerateForm, setShowGenerateForm] = useState(false);
 
+  const filteredAvailableCharacters = availableCharacters.filter((c: Character) => !selectedCharacters.some((c2: Character) => c2.id === c.id));
 
   const handleCharacterSelect = (characterId: string) => {
-    const character = availableCharacters.find((c: Character) => c.id === characterId);
+    const character = filteredAvailableCharacters.find((c: Character) => c.id === characterId);
+    console.log('Selected character:', character);
+    console.log(characterId);
     if (character) {
       addCharacter(character);
       toggleUserSelector();
@@ -51,6 +54,7 @@ export default function UserSelector() {
   const handleCustomSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     saveCustomCharacter();
+    toggleUserSelector();
   };
 
   const handleCustomCancel = () => {
@@ -85,15 +89,15 @@ export default function UserSelector() {
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent dividers>
+      <DialogContent dividers sx={{ maxHeight: '80vh', overflow: 'hidden' }}>
         <List sx={{ 
-          maxHeight: '50vh',
-          overflow: 'auto',
+          maxHeight: '30vh',
+          overflowY: 'scroll',
           bgcolor: 'background.paper',
           borderRadius: 1,
           mb: 2
         }}>
-          {availableCharacters.map((character: Character) => (
+          {filteredAvailableCharacters.map((character: Character) => (
             <ListItem
               key={character.id}
               sx={{
