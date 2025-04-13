@@ -62,7 +62,7 @@ export default function Chat() {
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, position: 'relative', top: '12px'}}>
         <IconButton onClick={handleMenuOpen} size="small">
           <MoreVert />
         </IconButton>

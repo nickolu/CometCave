@@ -21,7 +21,7 @@ const sx = {
   }),
   drawerToggle: (isCollapsed: boolean) => ({ 
     position: 'absolute', 
-    top: '20px', 
+    top: '36px', 
     transform: 'translateY(-50%) rotate(-90deg)',
     right: isCollapsed ? '10px' : '-46px', 
     transition: 'right 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, transform 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',

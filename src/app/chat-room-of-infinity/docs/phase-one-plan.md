@@ -43,11 +43,11 @@ Chat Room of Infinity is a chat room where users can add fictional characters to
 
 [x] Chat Room of Infinity Page - main page for the game
 
-[ ] User Profile Form Dialog - form to edit user profile (opens when clicking human user avatar)
-  [ ] Name - name of the user
-  [ ] Status - status of the user
-  [ ] Description - description of the user
-  [ ] Save Button - button to save the user profile
+[x] User Profile Form Dialog - form to edit user profile (opens when clicking human user avatar)
+  [x] Name - name of the user
+  [x] Status - status of the user
+  [x] Description - description of the user
+  [x] Save Button - button to save the user profile
 
 ### Application State
 

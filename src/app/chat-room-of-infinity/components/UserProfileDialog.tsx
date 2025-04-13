@@ -28,6 +28,7 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
   const [formData, setFormData] = useState<HumanUser>({
     name: humanUser.name,
     status: humanUser.status,
+    description: humanUser.description || '',
   });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -35,6 +36,7 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
     updateHumanUser({
       name: formData.name,
       status: formData.status,
+      description: formData.description,
     });
     onClose();
   };
@@ -86,6 +88,15 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
               <MenuItem value="offline">Offline</MenuItem>
             </Select>
           </FormControl>
+          <TextField
+            margin="dense"
+            label="Description"
+            fullWidth
+            multiline
+            rows={3}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
