@@ -26,9 +26,10 @@ export type UserListState = {
   humanUser: HumanUser;
 };
 
-export type ChatState = {
+export interface ChatState {
   messages: ChatMessage[];
   isTyping: boolean;
+  typingCharacters: Character[];
 };
 
 export type UserSelectorState = {

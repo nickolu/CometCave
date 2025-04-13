@@ -12,10 +12,11 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const { messages, isTyping } = useStore((state) => state.chat);
+  const { messages, typingCharacters } = useStore((state) => state.chat);
   const sendMessage = useStore((state) => state.sendMessage);
   const addCharacterMessage = useStore((state) => state.addCharacterMessage);
-  const setIsTyping = useStore((state) => state.setIsTyping);
+  const removeTypingCharacter = useStore((state) => state.removeTypingCharacter);
+  const setTypingCharacters = useStore((state) => state.setTypingCharacters);
   const resetChat = useStore((state) => state.resetChat);
   const characters = useStore((state) => state.userList.characters);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -84,6 +85,22 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
+  // Add some sample characters if none exist
+  useEffect(() => {
+    if (!characters || characters.length === 0) {
+      console.log('No characters found, adding sample characters');
+      // Import sample characters
+      import('../sampleCharacters.json').then(sampleChars => {
+        // Add first 3 sample characters
+        const samplesToAdd = sampleChars.default.slice(0, 3);
+        samplesToAdd.forEach(char => {
+          useStore.getState().addCharacter(char);
+        });
+        console.log('Added sample characters:', samplesToAdd);
+      });
+    }
+  }, [characters]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -95,6 +112,7 @@ export default function Chat() {
   const handleGetCharacterResponses = async (messageText: string) => {
     try {
       console.log('📨 Getting character responses for:', messageText);
+      console.log('Available characters:', characters);
       
       // Get all chat messages for context
       const chatMessages = [...messages, {
@@ -108,6 +126,12 @@ export default function Chat() {
         timestamp: Date.now(),
       }];
       
+      // Make sure we have characters to work with
+      if (!characters || characters.length === 0) {
+        console.log('No characters available to respond!');
+        return;
+      }
+
       // Get characters who should respond
       const result = await conversationManager.mutateAsync({ 
         chatMessages, 
@@ -118,41 +142,60 @@ export default function Chat() {
       
       // Add a slight delay for realism
       setTimeout(() => {
+        console.log(result.respondingCharacters)
+        // Set all responding characters as typing
+        if (result.respondingCharacters && result.respondingCharacters.length > 0) {
+          setTypingCharacters(result.respondingCharacters);
+        } else {
+          setTypingCharacters([]);
+        }
+        
         // For each responding character, get their response
+        if (!result.respondingCharacters || result.respondingCharacters.length === 0) {
+          console.log('No characters selected to respond!');
+          return;
+        }
+        
         result.respondingCharacters.forEach(async (character, index) => {
           try {
-            // Add a staggered delay for each character response
             setTimeout(async () => {
-              // Get the character's response
-              const characterResult = await characterResponse.mutateAsync({ 
-                character, 
-                chatMessages 
-              });
-              
-              console.log(`🗣️ ${character.name} responds:`, characterResult.response);
-              
-              // Add the character's message to the chat
-              addCharacterMessage(character, characterResult.response);
-              
-              // If this is the last character, stop typing indicator
-              if (index === result.respondingCharacters.length - 1) {
-                setIsTyping(false);
+              console.log(`💬 Requesting response from ${character.name}...`);  
+              try {
+                const characterResult = await characterResponse.mutateAsync({ 
+                  character, 
+                  chatMessages 
+                });
+                
+                console.log(`🗣️ ${character.name} responds:`, characterResult.response);
+                addCharacterMessage(character, characterResult.response);
+              } catch (responseError) {
+                console.error(`Error getting response from ${character.name}:`, responseError)                // Add a fallback message
+                const fallbackResponses = [
+                  `I'm not sure what to say about that.`,
+                  `That's interesting. Tell me more.`,
+                  `I'm thinking about how to respond to that.`,
+                  `I'd like to hear more about your perspective.`
+                ];
+                const fallbackResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+                addCharacterMessage(character, fallbackResponse);
               }
-            }, index * 2000); // Stagger responses by 2 seconds each
+              
+              removeTypingCharacter(character.id);
+            }, 0);
           } catch (error) {
             console.error(`Error getting response from ${character.name}:`, error);
           }
         });
         
-        // If no characters are responding, stop typing indicator
+        // If no characters are responding, make sure typing indicator is off
         if (result.respondingCharacters.length === 0) {
-          setIsTyping(false);
+          setTypingCharacters([]);
         }
-      }, 1000); // Wait 1 second before characters start responding
+      }, 0);
       
     } catch (error) {
       console.error('Error in conversation flow:', error);
-      setIsTyping(false);
+      setTypingCharacters([]);
     }
   };
   
@@ -189,12 +232,24 @@ export default function Chat() {
         {[...messages].reverse().map((message: ChatMessage) => (
           <Message key={message.id} message={message} />
         ))}
-        {isTyping && (
-          <Typography variant="body2" sx={{ fontStyle: 'italic', mt: 1 }}>
-            Someone is typing...
-          </Typography>
-        )}
+
       </Box>
+      
+      {typingCharacters && typingCharacters.length > 0 && (
+        <Box p={2}>    
+          <Typography variant="body2" sx={{ fontStyle: 'italic', mt: 1 }}>
+            {typingCharacters && typingCharacters.length === 1 
+              ? `${typingCharacters[0]?.name || 'Someone'} is typing...` 
+              : typingCharacters && typingCharacters.length === 2 
+                ? `${typingCharacters[0]?.name || 'Someone'} and ${typingCharacters[1]?.name || 'someone else'} are typing...` 
+                : typingCharacters && typingCharacters.length > 2
+                  ? `${typingCharacters.map(c => c?.name || 'Someone').slice(0, -1).join(', ')} and ${typingCharacters[typingCharacters.length - 1]?.name || 'someone else'} are typing...`
+                  : 'Someone is typing...'
+            }
+          </Typography> 
+        </Box>
+      )}
+      
       <Fade in={showScrollButton}>
         <IconButton
           onClick={scrollToBottom}

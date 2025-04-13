@@ -81,4 +81,129 @@ Respond in a concise manner (1-3 sentences) as your character would, while adher
 
     return response.choices[0].message.content || '';
   }
+
+  async selectRespondingCharacters(characters: Character[], chatMessages: Message[]): Promise<Character[]> {
+    if (!characters || characters.length === 0) {
+      return [];
+    }
+
+    // Define the function for character selection with JSON schema
+    const functions = [
+      {
+        name: "select_responding_characters",
+        description: "Select which characters should respond to the latest message in the conversation",
+        parameters: {
+          type: "object",
+          properties: {
+            character_ids: {
+              type: "array",
+              description: "IDs of characters who should respond to the message",
+              items: {
+                type: "string"
+              }
+            },
+            reasoning: {
+              type: "string",
+              description: "Brief explanation of why these characters were selected"
+            }
+          },
+          required: ["character_ids"]
+        }
+      }
+    ];
+
+    // Prepare the system prompt
+    const systemPrompt = {
+      role: 'system' as const,
+      content: `You are a conversation manager for a group chat. Your job is to determine which characters should respond to the most recent message based on their personalities and the conversation context.
+
+You will receive a list of available characters with their descriptions and the conversation history. Select 0-3 characters, defaulting to 1, that are most likely to have something meaningful to contribute to the conversation based on:
+
+1. Their personality and background
+2. Their potential interest in the topic being discussed
+3. Their relationship to the current conversation flow
+4. The need for diverse perspectives`
+    };
+
+    // Prepare the user prompt with character information and chat history
+    const userPrompt = {
+      role: 'user' as const,
+      content: `Available characters:\n${characters.map(char => 
+        `ID: ${char.id}\nName: ${char.name}\nDescription: ${char.description}\n`
+      ).join('\n')}\n\nConversation history:\n${chatMessages.map(msg => 
+        `${msg.content}`
+      ).join('\n')}\n\nWhich characters should respond to the latest message?`
+    };
+
+    try {
+      // Call OpenAI API with function calling
+      const response = await this.client.chat.completions.create({
+        model: this.config.model,
+        messages: [systemPrompt, userPrompt],
+        temperature: 0.3, // Lower temperature for more consistent results
+        tools: [{ type: "function", function: functions[0] }],
+        tool_choice: { type: "function", function: { name: "select_responding_characters" } }
+      });
+
+      // Extract the function call response
+      const toolCalls = response.choices[0].message.tool_calls;
+      console.log('Raw API response:', toolCalls);
+      
+      if (!toolCalls || toolCalls.length === 0) {
+        console.log('No tool calls found in response, using random selection');
+        const numToSelect = Math.floor(Math.random() * 3) + 1;
+        const shuffled = [...characters].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, Math.min(numToSelect, characters.length));
+      }
+      
+      // Get the function call arguments
+      const functionCall = toolCalls[0];
+      let selectedIds: string[] = [];
+      
+      try {
+        // Parse the function arguments
+        const args = JSON.parse(functionCall.function.arguments);
+        console.log('Function call arguments:', args);
+        
+        // Extract character IDs from the response
+        if (args.character_ids && Array.isArray(args.character_ids)) {
+          selectedIds = args.character_ids;
+          
+          // Log the reasoning if provided
+          if (args.reasoning) {
+            console.log('Selection reasoning:', args.reasoning);
+          }
+        } else {
+          console.log('No character_ids found in function call, using random selection');
+          const numToSelect = Math.floor(Math.random() * 3) + 1;
+          const shuffled = [...characters].sort(() => 0.5 - Math.random());
+          return shuffled.slice(0, Math.min(numToSelect, characters.length));
+        }
+      } catch (error) {
+        console.error('Error parsing character selection response:', error);
+        // Fall back to random selection
+        const numToSelect = Math.floor(Math.random() * 3) + 1;
+        const shuffled = [...characters].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, Math.min(numToSelect, characters.length));
+      }
+
+      // Find the characters with the selected IDs
+      const selectedCharacters = characters.filter(char => selectedIds.includes(char.id));
+      
+      // If no characters were selected or something went wrong, fall back to random selection
+      if (selectedCharacters.length === 0) {
+        const numToSelect = Math.floor(Math.random() * 3) + 1;
+        const shuffled = [...characters].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, Math.min(numToSelect, characters.length));
+      }
+      
+      return selectedCharacters;
+    } catch (error) {
+      console.error('Error selecting responding characters:', error);
+      // Fall back to random selection
+      const numToSelect = Math.floor(Math.random() * 3) + 1;
+      const shuffled = [...characters].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, Math.min(numToSelect, characters.length));
+    }
+  }
 }

@@ -21,4 +21,5 @@ export interface AIService {
   checkMessageSafety(message: string): Promise<SafetyCheckResponse>;
   generateResponse(messages: Message[]): Promise<string>;
   generateCharacterResponse(character: Character, messages: Message[]): Promise<string>;
+  selectRespondingCharacters(characters: Character[], chatMessages: Message[]): Promise<Character[]>;
 }

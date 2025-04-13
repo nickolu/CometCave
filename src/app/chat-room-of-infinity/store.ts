@@ -18,6 +18,9 @@ export interface Store {
   sendMessage: (message: string) => void;
   addCharacterMessage: (character: Character, message: string) => void;
   setIsTyping: (isTyping: boolean) => void;
+  setTypingCharacters: (typingCharacters: Character[]) => void;
+  addTypingCharacter: (character: Character) => void;
+  removeTypingCharacter: (characterId: string) => void;
   resetChat: () => void;
   
   // User Selector State
@@ -64,6 +67,7 @@ export const useStore = create<Store>()(
       chat: {
         messages: [],
         isTyping: false,
+        typingCharacters: [],
       },
       sendMessage: (message: string) => set((state) => ({
         chat: {
@@ -79,7 +83,6 @@ export const useStore = create<Store>()(
             message,
             timestamp: Date.now(),
           }],
-          isTyping: true,
         }
       })),
       addCharacterMessage: (character: Character, message: string) => set((state) => ({
@@ -96,10 +99,31 @@ export const useStore = create<Store>()(
       setIsTyping: (isTyping: boolean) => set((state) => ({
         chat: { ...state.chat, isTyping }
       })),
+      setTypingCharacters: (typingCharacters: Character[]) => set((state) => ({
+        chat: { ...state.chat, typingCharacters, isTyping: typingCharacters.length > 0 }
+      })),
+      addTypingCharacter: (character: Character) => set((state) => ({
+        chat: { 
+          ...state.chat, 
+          typingCharacters: [...(state.chat.typingCharacters || []).filter(c => c.id !== character.id), character],
+          isTyping: true
+        }
+      })),
+      removeTypingCharacter: (characterId: string) => set((state) => {
+        const filteredCharacters = (state.chat.typingCharacters || []).filter(c => c.id !== characterId);
+        return {
+          chat: { 
+            ...state.chat, 
+            typingCharacters: filteredCharacters,
+            isTyping: filteredCharacters.length > 0
+          }
+        };
+      }),
       resetChat: () => set(() => ({
         chat: {
           messages: [],
-          isTyping: false
+          isTyping: false,
+          typingCharacters: []
         }
       })),
       userSelector: {
