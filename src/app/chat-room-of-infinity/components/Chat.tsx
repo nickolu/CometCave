@@ -1,23 +1,57 @@
 'use client';
 
-import { Box, TextField, IconButton, Typography } from '@mui/material';
-import { Send } from '@mui/icons-material';
-import { useState } from 'react';
+import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem } from '@mui/material';
+import { Send, KeyboardArrowDown, MoreVert, DeleteOutline } from '@mui/icons-material';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import Message from './ChatMessage';
 import { ChatMessage } from '../types';
 
 export default function Chat() {
   const [input, setInput] = useState('');
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const { messages, isTyping } = useStore((state) => state.chat);
   const sendMessage = useStore((state) => state.sendMessage);
+  const resetChat = useStore((state) => state.resetChat);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  const handleReset = () => {
+    resetChat();
+    handleMenuClose();
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleScroll = () => {
+    if (!messageContainerRef.current) return;
+    const { scrollHeight, scrollTop, clientHeight } = messageContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollButton(!isNearBottom);
+  };
 
   const handleSend = () => {
     if (input.trim()) {
       sendMessage(input.trim());
       setInput('');
+      scrollToBottom();
     }
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -27,8 +61,35 @@ export default function Chat() {
   };
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100vh' }}>
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column-reverse' }}>
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, }}>
+        <IconButton onClick={handleMenuOpen} size="small">
+          <MoreVert />
+        </IconButton>
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleReset}>
+            <DeleteOutline sx={{ mr: 1 }} />
+            Reset Chat
+          </MenuItem>
+        </Menu>
+      </Box>
+      <Box 
+        ref={messageContainerRef}
+        onScroll={handleScroll}
+        sx={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          p: 2, 
+          display: 'flex', 
+          flexDirection: 'column-reverse',
+          position: 'relative'
+        }}
+      >
+        <div ref={messagesEndRef} />
         {[...messages].reverse().map((message: ChatMessage) => (
           <Message key={message.id} message={message} />
         ))}
@@ -38,6 +99,24 @@ export default function Chat() {
           </Typography>
         )}
       </Box>
+      <Fade in={showScrollButton}>
+        <IconButton
+          onClick={scrollToBottom}
+          sx={{
+            position: 'absolute',
+            right: 16,
+            bottom: 80,
+            backgroundColor: 'background.paper',
+            boxShadow: 2,
+            zIndex: 1,
+            '&:hover': {
+              backgroundColor: 'action.hover'
+            }
+          }}
+        >
+          <KeyboardArrowDown />
+        </IconButton>
+      </Fade>
       <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField

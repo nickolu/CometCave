@@ -23,7 +23,7 @@ const CustomCharacterForm = dynamic(() => import('./components/CustomCharacterFo
 export default function ChatRoomOfInfinity() {
   return (
     <GamePageTemplate title="Chat Room of Infinity">
-      <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)' }}>
+      <Box sx={{ display: 'flex', height: 'calc(100vh - 140px)' }}>
         <UserList />
         <Chat />
         <UserSelector />

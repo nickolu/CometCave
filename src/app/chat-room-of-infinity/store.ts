@@ -15,6 +15,7 @@ export interface Store {
   chat: ChatState;
   sendMessage: (message: string) => void;
   setIsTyping: (isTyping: boolean) => void;
+  resetChat: () => void;
   
   // User Selector State
   userSelector: UserSelectorState;
@@ -70,6 +71,13 @@ export const useStore = create<Store>()(
       })),
       setIsTyping: (isTyping: boolean) => set((state) => ({
         chat: { ...state.chat, isTyping }
+      })),
+
+      resetChat: () => set(() => ({
+        chat: {
+          messages: [],
+          isTyping: false
+        }
       })),
 
       userSelector: {
