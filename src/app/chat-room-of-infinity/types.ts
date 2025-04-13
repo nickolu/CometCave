@@ -3,6 +3,7 @@ export type CharacterStatus = 'online' | 'away' | 'busy' | 'offline';
 export type HumanUser = {
   name: string;
   status: CharacterStatus;
+  description?: string;
   avatar?: string;
 };
 

@@ -2,7 +2,7 @@
 
 import { ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import { green, orange, red, grey } from '@mui/material/colors';
+import { green} from '@mui/material/colors';
 import { Character } from '../types';
 import { useStore } from '../store';
 import { UserListItem } from './atoms/UserListItem';
@@ -29,6 +29,7 @@ export default function CharacterUserItem({ character }: Props) {
         <ListItemText
           primary={character.name}
           secondary={character.description}
+          sx={{ maxWidth: '140px', '& p': { fontSize: '0.750rem' } }}
         />
         <Tooltip title="Online">
           <Box

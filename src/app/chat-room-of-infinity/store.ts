@@ -37,8 +37,9 @@ export const useStore = create<Store>()(
         isCollapsed: false,
         characters: [],
         humanUser: {
-          name: 'You',
-          status: 'online'
+          name: 'User',
+          status: 'online' as const,
+          description: 'A friendly user',
         },
       },
       toggleUserList: () => set((state) => ({
@@ -53,14 +54,12 @@ export const useStore = create<Store>()(
           characters: state.userList.characters.filter((c) => c.id !== characterId)
         }
       })),
-
       updateHumanUser: (updates: Partial<HumanUser>) => set((state) => ({
         userList: {
           ...state.userList,
-          humanUser: { ...state.userList.humanUser, ...updates }
-        }
+          humanUser: { ...state.userList.humanUser, ...updates },
+        },
       })),
-
       chat: {
         messages: [],
         isTyping: false,
@@ -85,14 +84,12 @@ export const useStore = create<Store>()(
       setIsTyping: (isTyping: boolean) => set((state) => ({
         chat: { ...state.chat, isTyping }
       })),
-
       resetChat: () => set(() => ({
         chat: {
           messages: [],
           isTyping: false
         }
       })),
-
       userSelector: {
         isOpen: false,
         availableCharacters: SAMPLE_CHARACTERS as Character[], // To be populated with character suggestions
@@ -100,7 +97,6 @@ export const useStore = create<Store>()(
       toggleUserSelector: () => set((state) => ({
         userSelector: { ...state.userSelector, isOpen: !state.userSelector.isOpen }
       })),
-
       customCharacterForm: {
         isOpen: false,
         name: '',

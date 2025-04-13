@@ -10,11 +10,9 @@ import { Character } from '../types';
 
 const sx = {
   container: {
-    padding: 0,
     position: 'relative',
   },
   drawer: (isCollapsed: boolean) => ({
-    padding: 1,
     borderRight: 1,
     borderColor: 'divider',
     width: isCollapsed ? 50 : 300,
@@ -30,7 +28,7 @@ const sx = {
     zIndex: 1 
   }),
   drawerContent: (isCollapsed: boolean) => ({ 
-    padding: 2,
+    padding: 1,
     position: 'relative',
     left: isCollapsed ? '-300px' : 0,
     transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
@@ -40,7 +38,7 @@ const sx = {
     height: 'calc(100vh - 200px)',
   }),
   drawerHeader: { 
-    p: 2, 
+    p: 1, 
     display: 'flex', 
     alignItems: 'center', 
     justifyContent: 'space-between' 
@@ -85,7 +83,7 @@ export default function UserList() {
       <Box sx={sx.drawer(isCollapsed)}>
         <Box sx={sx.drawerContent(isCollapsed)}>
           <Box sx={sx.drawerHeader}>
-            <Typography variant="h6">Characters</Typography>
+            <Typography variant="h6">Users</Typography>
             <Box>
               <Tooltip title={isSelectorOpen ? "Close character selector" : "Add new character"}>
                 <IconButton 
