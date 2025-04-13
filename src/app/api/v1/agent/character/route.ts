@@ -5,6 +5,34 @@ import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factor
 import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/config';
 import { Message } from '@/app/chat-room-of-infinity/services/ai/types';
 
+// Helper function to clean character responses
+function cleanCharacterResponse(response: string, characterName: string): string {
+  // Remove the character's own name if it starts the response
+  // Handle patterns like "Character:" or "Character -" or just "Character"
+  const patterns = [
+    new RegExp(`^${characterName}\s*:\s*`, 'i'),  // "Character: "
+    new RegExp(`^${characterName}\s*-\s*`, 'i'),   // "Character - "
+    new RegExp(`^${characterName}\s+says:\s*`, 'i'), // "Character says: "
+    new RegExp(`^${characterName}\s+said:\s*`, 'i'), // "Character said: "
+    new RegExp(`^As\s+${characterName}[,:]\s*`, 'i'), // "As Character, "
+    new RegExp(`^I,\s+${characterName}[,:]\s*`, 'i'), // "I, Character: "
+  ];
+  
+  let cleanedResponse = response;
+  
+  // Try each pattern
+  for (const pattern of patterns) {
+    if (pattern.test(cleanedResponse)) {
+      cleanedResponse = cleanedResponse.replace(pattern, '');
+      // Capitalize first letter if it's now lowercase
+      cleanedResponse = cleanedResponse.charAt(0).toUpperCase() + cleanedResponse.slice(1);
+      break; // Stop after first match
+    }
+  }
+  
+  return cleanedResponse;
+}
+
 export async function POST(request: Request) {
   try {
     const { character, chatMessages } = await request.json();
@@ -39,7 +67,11 @@ export async function POST(request: Request) {
         const aiService = AIServiceFactory.create('openai', config);
         
         // Generate character response using OpenAI
-        response = await aiService.generateCharacterResponse(character, aiMessages);
+        const rawResponse = await aiService.generateCharacterResponse(character, aiMessages);
+        
+        // Post-process to remove any character name prefixes
+        // Check for common patterns like "Character Name:" or "Character Name -"
+        response = cleanCharacterResponse(rawResponse, character.name);
       } catch (error) {
         console.error('Error generating character response with OpenAI:', error);
         // Fall back to random responses if OpenAI fails
