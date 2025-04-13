@@ -1,5 +1,11 @@
 export type CharacterStatus = 'online' | 'away' | 'busy' | 'offline';
 
+export type HumanUser = {
+  name: string;
+  status: CharacterStatus;
+  avatar?: string;
+};
+
 export type Character = {
   id: string;
   name: string;
@@ -17,6 +23,7 @@ export type ChatMessage = {
 export type UserListState = {
   isCollapsed: boolean;
   characters: Character[];
+  humanUser: HumanUser;
 };
 
 export type ChatState = {

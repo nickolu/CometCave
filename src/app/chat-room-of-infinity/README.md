@@ -6,10 +6,10 @@ Chat Room of Infinity is a chat room where users can add fictional characters to
 ### Components to Build
  
 [x] User List - list of users currently in the chat room
-  [ ] Human User Item - represent the current user in the chat, no option to remove
-    [ ] Avatar - avatar of the user
-    [ ] Name - name of the user - can click to edit
-    [ ] Status - status of the user - click to open dropdown to select
+  [x] Human User Item - represent the current user in the chat, no option to remove
+    [x] Avatar - avatar of the user
+    [x] Name - name of the user - can click to edit
+    [x] Status - status of the user - click to open dropdown to select
 
   [x] User List Item - individual user in the chat room
     [x] Avatar - avatar of the user
@@ -19,7 +19,7 @@ Chat Room of Infinity is a chat room where users can add fictional characters to
   [x] User List Add Character Button - opens User Selector
   [x] Collapse User List Button - toggles the user list collapse state
 
-[ ] Chat - chat window
+[x] Chat - chat window
   [x] Self Message - individual message sent by the current user
   [x] Other Message - individual message sent by another user
   [x] Input - input field for chat

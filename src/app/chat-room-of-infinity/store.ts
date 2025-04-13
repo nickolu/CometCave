@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { ChatState, Character, UserListState, UserSelectorState, CustomCharacterFormState } from './types';
+import { ChatState, Character, UserListState, UserSelectorState, CustomCharacterFormState, HumanUser } from './types';
 
 export interface Store {
   // User List State
@@ -10,6 +10,7 @@ export interface Store {
   toggleUserList: () => void;
   addCharacter: (character: Character) => void;
   removeCharacter: (characterId: string) => void;
+  updateHumanUser: (updates: Partial<HumanUser>) => void;
   
   // Chat State
   chat: ChatState;
@@ -34,6 +35,10 @@ export const useStore = create<Store>()(
       userList: {
         isCollapsed: false,
         characters: [],
+        humanUser: {
+          name: 'You',
+          status: 'online'
+        },
       },
       toggleUserList: () => set((state) => ({
         userList: { ...state.userList, isCollapsed: !state.userList.isCollapsed }
@@ -45,6 +50,13 @@ export const useStore = create<Store>()(
         userList: {
           ...state.userList,
           characters: state.userList.characters.filter((c) => c.id !== characterId)
+        }
+      })),
+
+      updateHumanUser: (updates: Partial<HumanUser>) => set((state) => ({
+        userList: {
+          ...state.userList,
+          humanUser: { ...state.userList.humanUser, ...updates }
         }
       })),
 
@@ -126,8 +138,12 @@ export const useStore = create<Store>()(
       name: 'chat-room-store',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        userList: state.userList,
-        chat: state.chat,
+        userList: { 
+          characters: state.userList.characters,
+          humanUser: state.userList.humanUser,
+          isCollapsed: state.userList.isCollapsed
+        },
+        chat: { messages: state.chat.messages }
       }),
     }
   )

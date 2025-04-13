@@ -4,6 +4,7 @@ import { Box, List, IconButton, Typography } from '@mui/material';
 import { ExpandLess, ExpandMore, PersonAdd } from '@mui/icons-material';
 import { useStore } from '../store';
 import UserListItem from './UserListItem';
+import HumanUserItem from './HumanUserItem';
 import { Character } from '../types';
 
 export default function UserList() {
@@ -25,6 +26,14 @@ export default function UserList() {
       </Box>
       {!isCollapsed && (
         <List>
+          <HumanUserItem />
+          {characters.length > 0 && (
+            <Box sx={{ mt: 2, mb: 1 }}>
+              <Typography variant="overline" sx={{ px: 2 }}>
+                Characters
+              </Typography>
+            </Box>
+          )}
           {characters.map((character: Character) => (
             <UserListItem key={character.id} character={character} />
           ))}
