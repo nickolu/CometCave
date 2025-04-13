@@ -3,10 +3,72 @@
 import { Box, List, IconButton, Typography, Tooltip } from '@mui/material';
 import { ExpandLess, ExpandMore, PersonAdd, Close } from '@mui/icons-material';
 import { useStore } from '../store';
-import UserListItem from './UserListItem';
+import CharacterUserItem from './CharacterUserItem';
 import HumanUserItem from './HumanUserItem';
 import UserSelector from './UserSelector';
 import { Character } from '../types';
+
+const sx = {
+  container: {
+    padding: 0,
+    position: 'relative',
+  },
+  drawer: (isCollapsed: boolean) => ({
+    padding: 1,
+    borderRight: 1,
+    borderColor: 'divider',
+    width: isCollapsed ? 50 : 300,
+    opacity: isCollapsed ? 0 : 1,
+    transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, opacity 325ms cubic-bezier(0.4, 0, 0.6, 1) 0ms'
+  }),
+  drawerToggle: (isCollapsed: boolean) => ({ 
+    position: 'absolute', 
+    top: '20px', 
+    transform: 'translateY(-50%) rotate(-90deg)',
+    right: isCollapsed ? '10px' : '-46px', 
+    transition: 'right 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, transform 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+    zIndex: 1 
+  }),
+  drawerContent: (isCollapsed: boolean) => ({ 
+    padding: 2,
+    position: 'relative',
+    left: isCollapsed ? '-300px' : 0,
+    transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+    minWidth: 300, 
+    display: 'flex', 
+    flexDirection: 'column', 
+    height: 'calc(100vh - 200px)',
+  }),
+  drawerHeader: { 
+    p: 2, 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'space-between' 
+  },
+  iconButton: (isSelectorOpen: boolean) => ({
+    bgcolor: isSelectorOpen ? 'action.selected' : 'transparent',
+    '&:hover': {
+      bgcolor: isSelectorOpen ? 'action.selected' : 'action.hover'
+    }
+  }),
+  list: { 
+    display: 'flex',
+    flexDirection: 'column',
+    flexGrow: 1, 
+    gap: 1,
+    overflowY: 'auto',
+    '&::-webkit-scrollbar': {
+      width: '8px',
+    },
+    '&::-webkit-scrollbar-track': {
+      background: 'transparent',
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: 'action.hover',
+      borderRadius: '4px',
+    },
+  }
+};
 
 export default function UserList() {
   const { userList, toggleUserList, toggleUserSelector } = useStore();
@@ -14,46 +76,31 @@ export default function UserList() {
   const { isOpen: isSelectorOpen } = useStore((state) => state.userSelector);
 
   return (
-    <Box sx={{ width: 250, borderRight: 1, borderColor: 'divider' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h6">Characters</Typography>
-        <Box>
-          <Tooltip title={isSelectorOpen ? "Close character selector" : "Add new character"}>
-            <IconButton 
-              onClick={toggleUserSelector}
-              color={isSelectorOpen ? "primary" : "default"}
-              sx={{
-                bgcolor: isSelectorOpen ? 'action.selected' : 'transparent',
-                '&:hover': {
-                  bgcolor: isSelectorOpen ? 'action.selected' : 'action.hover'
-                }
-              }}
-            >
-              {isSelectorOpen ? <Close /> : <PersonAdd />}
-            </IconButton>
-          </Tooltip>
-          <IconButton onClick={toggleUserList}>
-            {isCollapsed ? <ExpandMore /> : <ExpandLess />}
-          </IconButton>
-        </Box>
+    <Box sx={sx.container}>
+      <Box sx={sx.drawerToggle(isCollapsed)}>
+        <IconButton onClick={toggleUserList}>
+          {isCollapsed ? <ExpandMore /> : <ExpandLess />}
+        </IconButton>
       </Box>
-      {!isCollapsed && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+      <Box sx={sx.drawer(isCollapsed)}>
+        <Box sx={sx.drawerContent(isCollapsed)}>
+          <Box sx={sx.drawerHeader}>
+            <Typography variant="h6">Characters</Typography>
+          <Box>
+              <Tooltip title={isSelectorOpen ? "Close character selector" : "Add new character"}>
+                <IconButton 
+                  onClick={toggleUserSelector}
+                  color={isSelectorOpen ? "primary" : "default"}
+                  sx={sx.iconButton(isSelectorOpen)}
+                >
+                  {isSelectorOpen ? <Close /> : <PersonAdd />}
+                </IconButton>
+              </Tooltip>
+              
+            </Box>
+          </Box>
           <UserSelector />
-          <List sx={{ 
-            flexGrow: 1, 
-            overflowY: 'auto',
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: 'transparent',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: 'action.hover',
-              borderRadius: '4px',
-            },
-          }}>
+          <List sx={sx.list}>
             <HumanUserItem />
             {characters.length > 0 && (
               <Box sx={{ mt: 2, mb: 1 }}>
@@ -63,11 +110,11 @@ export default function UserList() {
               </Box>
             )}
             {characters.map((character: Character) => (
-              <UserListItem key={character.id} character={character} />
+              <CharacterUserItem key={character.id} character={character} />
             ))}
           </List>
         </Box>
-      )}
+      </Box>
     </Box>
   );
 }

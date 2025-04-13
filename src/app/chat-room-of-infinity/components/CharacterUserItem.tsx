@@ -1,20 +1,21 @@
 'use client';
 
-import { ListItem, ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material';
+import { ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { green, orange, red, grey } from '@mui/material/colors';
 import { Character } from '../types';
 import { useStore } from '../store';
+import { UserListItem } from './atoms/UserListItem';
 
 interface Props {
   character: Character;
 }
 
-export default function UserListItem({ character }: Props) {
+export default function CharacterUserItem({ character }: Props) {
   const removeCharacter = useStore((state) => state.removeCharacter);
 
   return (
-    <ListItem
+    <UserListItem
       secondaryAction={
         <IconButton edge="end" onClick={() => removeCharacter(character.id)}>
           <Close />
@@ -45,6 +46,6 @@ export default function UserListItem({ character }: Props) {
           />
         </Tooltip>
       </Box>
-    </ListItem>
+    </UserListItem>
   );
 }

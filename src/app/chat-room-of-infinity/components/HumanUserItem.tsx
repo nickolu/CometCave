@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { 
-  ListItem, 
   ListItemText, 
   ListItemAvatar, 
   Avatar, 
@@ -13,6 +12,7 @@ import {
 } from '@mui/material';
 import { useStore } from '../store';
 import { CharacterStatus } from '../types';
+import { UserListItem } from './atoms/UserListItem';
 
 export default function HumanUserItem() {
   const [statusAnchor, setStatusAnchor] = useState<null | HTMLElement>(null);
@@ -56,7 +56,7 @@ export default function HumanUserItem() {
 
   return (
     <>
-      <ListItem>
+      <UserListItem>
         <ListItemAvatar>
           <Avatar>{humanUser.name?.charAt(0) || '?'}</Avatar>
         </ListItemAvatar>
@@ -118,8 +118,7 @@ export default function HumanUserItem() {
             }}
           />
         </Box>
-      </ListItem>
-
+      </UserListItem>
       <Menu
         anchorEl={statusAnchor}
         open={Boolean(statusAnchor)}
@@ -130,8 +129,6 @@ export default function HumanUserItem() {
         <MenuItem onClick={() => handleStatusSelect('busy')}>Busy</MenuItem>
         <MenuItem onClick={() => handleStatusSelect('offline')}>Offline</MenuItem>
       </Menu>
-
-
     </>
   );
 }
