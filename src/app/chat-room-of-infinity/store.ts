@@ -55,11 +55,17 @@ export const useStore = create<Store>()(
         chat: {
           ...state.chat,
           messages: [...state.chat.messages, {
-            id: Math.random().toString(),
-            character: { id: 'user', name: 'You', description: 'Current user' },
+            id: Math.random().toString(36).substring(7),
+            character: {
+              id: 'user',
+              name: 'You',
+              description: 'Current user',
+              status: 'online'
+            },
             message,
             timestamp: Date.now(),
-          }]
+          }],
+          isTyping: false,
         }
       })),
       setIsTyping: (isTyping: boolean) => set((state) => ({
@@ -89,10 +95,11 @@ export const useStore = create<Store>()(
         customCharacterForm: { ...state.customCharacterForm, ...updates }
       })),
       saveCustomCharacter: () => set((state) => {
-        const newCharacter: Character = {
-          id: Math.random().toString(),
+        const character: Character = {
+          id: Math.random().toString(36).substring(7),
           name: state.customCharacterForm.name,
           description: state.customCharacterForm.description,
+          status: 'online',
         };
         return {
           customCharacterForm: {
@@ -102,7 +109,7 @@ export const useStore = create<Store>()(
           },
           userList: {
             ...state.userList,
-            characters: [...state.userList.characters, newCharacter]
+            characters: [...state.userList.characters, character]
           }
         };
       }),

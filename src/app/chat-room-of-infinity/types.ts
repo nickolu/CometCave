@@ -1,7 +1,10 @@
+export type CharacterStatus = 'online' | 'away' | 'busy' | 'offline';
+
 export type Character = {
   id: string;
   name: string;
   description: string;
+  status: CharacterStatus;
 };
 
 export type ChatMessage = {

@@ -27,9 +27,9 @@ export default function Chat() {
   };
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '80%' }}>
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-        {messages.map((message: ChatMessage) => (
+    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100vh' }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column-reverse' }}>
+        {[...messages].reverse().map((message: ChatMessage) => (
           <Message key={message.id} message={message} />
         ))}
         {isTyping && (
