@@ -19,6 +19,7 @@
     "@tanstack/react-query": "^5.73.3",
     "@types/pixi.js": "^4.8.9",
     "next": "15.3.0",
+    "openai": "^4.93.0",
     "pixi.js": "^8.9.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
