@@ -1,43 +1,48 @@
 # Chat Room of Infinity
 Chat Room of Infinity is a chat room where users can add fictional characters to chat with and simulate a conversation.
 
-## Plan
+## Phase 1Plan
 
 ### Components to Build
  
 [ ] User List - list of users currently in the chat room
-  [ ] User List Item - individual user in the chat room
-    [ ] Avatar - avatar of the user
-    [ ] Name - name of the user
+  [x] User List Item - individual user in the chat room
+    [x] Avatar - avatar of the user
+    [x] Name - name of the user
     [ ] Status - status of the user
-    [ ] Kick User Button
-  [ ] User List Add Character Button - opens User Selector
+    [/] Kick User Button
+  [x] User List Add Character Button - opens User Selector
   [ ] Collapse User List Button - toggles the user list collapse state
 
 [ ] Chat - chat window
-  [ ] Self Message - individual message sent by the current user
-  [ ] Other Message - individual message sent by another user
-  [ ] Input - input field for chat
-  [ ] Send Button - button to send chat message
-  [ ] User Is Typing Message - indicator that another user is typing
+  [x] Self Message - individual message sent by the current user
+  [x] Other Message - individual message sent by another user
+  [x] Input - input field for chat
+  [x] Send Button - button to send chat message
+  [x] User Is Typing Message - indicator that another user is typing
+  [ ] Scroll to Bottom Button - button to scroll to bottom of chat
+  [ ] Reset Chat Button - button to reset the chat
 
 [ ] User Selector - character selection (hidden by default)
-  [ ] Character List - list of characters to choose from
-  [ ] Custom Character Button - opens Custom Character Form
+  [x] Character List - list of characters to choose from
+  [x] Custom Character Button - opens Custom Character Form
+  [ ] Generate More Characters Form - inline form to generate more characters
+    [ ] Generate More Characters Input (optional)
+    [ ] Generate More Characters Button
 
-[ ] Custom Character Form - form to create a custom character
-  [ ] Name - name of the character
-  [ ] Description - description of the character
-  [ ] Save Button - button to save the character
+[x] Custom Character Form - form to create a custom character
+  [x] Name - name of the character
+  [x] Description - description of the character
+  [x] Save Button - button to save the character
 
-[ ] Chat Room of Infinity Page - main page for the game
+[x] Chat Room of Infinity Page - main page for the game
 
 ### Application State
 
-[ ] User List State - list of users currently in the chat room
-[ ] Chat State - list of messages in the chat
-[ ] User Selector State - list of characters to choose from
-[ ] Custom Character Form State - form to create a custom character
+[x] User List State - list of users currently in the chat room
+[x] Chat State - list of messages in the chat
+[x] User Selector State - list of characters to choose from
+[x] Custom Character Form State - form to create a custom character
 
 ### Agentic Workflow
 
