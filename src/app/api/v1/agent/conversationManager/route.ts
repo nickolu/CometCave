@@ -25,6 +25,9 @@ export async function POST(request: Request) {
     const { chatMessages, characters, charactersRespondToEachOther } = await request.json() as ConversationManagerRequest;
     
     console.log('=====================================================');
+    console.log('FULL CONVERSATION MANAGER REQUEST:', { chatMessages, characters, charactersRespondToEachOther });
+    
+    console.log('=====================================================');
     console.log('Conversation Manager received request with:');
     console.log(`- ${chatMessages.length} messages`);
     console.log(`- ${characters.length} characters`);
@@ -35,6 +38,21 @@ export async function POST(request: Request) {
     const lastMessage = chatMessages[chatMessages.length - 1];
     const isLastMessageFromCharacter = lastMessage && lastMessage.character.id !== 'user';
     
+    // Count consecutive character messages at the end of the conversation
+    let consecutiveCharacterMessages = 0;
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      if (chatMessages[i].character.id !== 'user') {
+        consecutiveCharacterMessages++;
+      } else {
+        // Found a user message, stop counting
+        break;
+      }
+    }
+    
+    console.log(`Consecutive character messages: ${consecutiveCharacterMessages}`);
+    
+
+    
     // Get the last 3 messages to check for recent responders
     const recentMessages = chatMessages.slice(-3);
     const recentResponderIds = recentMessages
@@ -43,6 +61,29 @@ export async function POST(request: Request) {
     
     console.log('Recent responder IDs:', recentResponderIds);
 
+    // Calculate number of consecutive character messages at the end of the conversation
+    let consecutiveCharacterResponses = 0;
+    for (let i = chatMessages.length - 1; i >= 0; i--) {
+      const msg = chatMessages[i];
+      if (msg.character.id === 'user') {
+        // Found a user message, stop counting
+        break;
+      }
+      consecutiveCharacterResponses++;
+    }
+    
+    console.log(`Number of consecutive character responses: ${consecutiveCharacterResponses}`);
+    
+    // STRICT ENFORCEMENT: Hard limit - never allow more than one character response in a row
+    // regardless of charactersRespondToEachOther setting
+    if (consecutiveCharacterResponses >= 1) {
+      console.log('HARD LIMIT: At least one character has already responded without user input. No more responses allowed until user speaks.');
+      return new Response(JSON.stringify({ respondingCharacters: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    
     // Skip character responses if the last message was from a character and we don't want characters to respond to each other
     if (isLastMessageFromCharacter && !charactersRespondToEachOther) {
       console.log('Last message was from a character and charactersRespondToEachOther is disabled. Skipping character responses.');

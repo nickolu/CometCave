@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, List, IconButton, Typography, Tooltip } from '@mui/material';
+import { Box, List, IconButton, Typography, Tooltip, Button } from '@mui/material';
 import { ExpandLess, ExpandMore, PersonAdd, Close } from '@mui/icons-material';
 import { useStore } from '../store';
 import CharacterUserItem from './CharacterUserItem';
@@ -69,7 +69,7 @@ const sx = {
 };
 
 export default function UserList() {
-  const { userList, toggleUserList, toggleUserSelector } = useStore();
+  const { userList, toggleUserList, toggleUserSelector, clearCharacters } = useStore();
   const { isCollapsed, characters } = userList;
   const { isOpen: isSelectorOpen } = useStore((state) => state.userSelector);
 
@@ -96,7 +96,7 @@ export default function UserList() {
               </Tooltip>
             </Box>
           </Box>
-          <UserSelector selectedCharacters={characters} />
+          <UserSelector />
           <List sx={sx.list}>
             <HumanUserItem />
             {characters.length > 0 && (
@@ -109,6 +109,19 @@ export default function UserList() {
             {characters.map((character: Character) => (
               <CharacterUserItem key={character.id} character={character} />
             ))}
+            {characters.length > 0 && (
+              <Box sx={{ p: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  fullWidth
+                  onClick={clearCharacters}
+                >
+                  Clear All Characters
+                </Button>
+              </Box>
+            )}
           </List>
         </Box>
       </Box>

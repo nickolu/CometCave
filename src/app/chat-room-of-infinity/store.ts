@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Character, UserListState, UserSelectorState, CustomCharacterFormState, HumanUser, ChatMessage } from './types';
 import SAMPLE_CHARACTERS from './sampleCharacters.json';
 
+
 interface ChatState {
   messages: ChatMessage[];
   characters: Character[];
@@ -19,6 +20,7 @@ export interface Store {
   toggleUserList: () => void;
   addCharacter: (character: Character) => void;
   removeCharacter: (characterId: string) => void;
+  clearCharacters: () => void;
   updateHumanUser: (updates: Partial<HumanUser>) => void;
   
   // Chat State
@@ -35,6 +37,8 @@ export interface Store {
   // User Selector State
   userSelector: UserSelectorState;
   toggleUserSelector: () => void;
+  loadSampleCharacters: () => void;
+  addAvailableCharacter: (character: Character) => void;
   
   // Custom Character Form State
   customCharacterForm: CustomCharacterFormState;
@@ -56,7 +60,7 @@ export const useStore = create<Store>()(
     (set) => ({
       userList: {
         isCollapsed: false,
-        characters: [],
+        characters: [], // Initialize with empty array
         humanUser: {
           name: 'User',
           status: 'online' as const,
@@ -67,12 +71,32 @@ export const useStore = create<Store>()(
         userList: { ...state.userList, isCollapsed: !state.userList.isCollapsed }
       })),
       addCharacter: (character: Character) => set((state) => ({
-        userList: { ...state.userList, characters: [...state.userList.characters, character] }
+        userList: { ...state.userList, characters: [...state.userList.characters, character] },
+        chat: { ...state.chat, characters: [...state.userList.characters, character] }
       })),
-      removeCharacter: (characterId: string) => set((state) => ({
+      removeCharacter: (characterId: string) => set((state) => {
+        const updatedCharacters = state.userList.characters.filter((c) => c.id !== characterId);
+        return {
+          userList: {
+            ...state.userList,
+            characters: updatedCharacters
+          },
+          chat: {
+            ...state.chat,
+            characters: updatedCharacters
+          }
+        };
+      }),
+      clearCharacters: () => set((state) => ({
         userList: {
           ...state.userList,
-          characters: state.userList.characters.filter((c) => c.id !== characterId)
+          characters: []
+        },
+        chat: {
+          ...state.chat,
+          characters: [],
+          messages: [],
+          typingCharacters: []
         }
       })),
       updateHumanUser: (updates: Partial<HumanUser>) => set((state) => ({
@@ -138,7 +162,11 @@ export const useStore = create<Store>()(
           }
         };
       }),
-      resetChat: () => set(() => ({
+      resetChat: () => set((state) => ({
+        userList: {
+          ...state.userList,
+          characters: []
+        },
         chat: {
           messages: [],
           characters: [],
@@ -155,8 +183,20 @@ export const useStore = create<Store>()(
       })),
       userSelector: {
         isOpen: false,
-        availableCharacters: SAMPLE_CHARACTERS as Character[], // To be populated with character suggestions
+        availableCharacters: [], // Will be populated with sample characters when needed
       },
+      loadSampleCharacters: () => set((state) => ({
+        userSelector: {
+          ...state.userSelector,
+          availableCharacters: SAMPLE_CHARACTERS as Character[]
+        }
+      })),
+      addAvailableCharacter: (character: Character) => set((state) => ({
+        userSelector: {
+          ...state.userSelector,
+          availableCharacters: [...state.userSelector.availableCharacters, character]
+        }
+      })),
       toggleUserSelector: () => set((state) => ({
         userSelector: { ...state.userSelector, isOpen: !state.userSelector.isOpen }
       })),
@@ -197,8 +237,6 @@ export const useStore = create<Store>()(
       name: 'chat-room-of-infinity-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        userList: state.userList,
-        userSelector: state.userSelector,
         chat: {
           charactersRespondToEachOther: state.chat.charactersRespondToEachOther
         }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import {
   List,
   ListItem,
@@ -21,20 +21,32 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { useStore } from '../store';
 import { Character } from '../types';
 
-export default function UserSelector({ selectedCharacters }: { selectedCharacters: Character[] }) {
-  const { isOpen, availableCharacters}  = useStore((state) => state.userSelector);
+export default function UserSelector() {
+  const { isOpen, availableCharacters }  = useStore((state) => state.userSelector);
+  const { characters: selectedCharacters } = useStore((state) => state.userList);
   const { name, description } = useStore((state) => state.customCharacterForm);
   const { 
     toggleUserSelector, 
     addCharacter,
     updateCustomCharacterForm,
-    saveCustomCharacter
+    saveCustomCharacter,
+    loadSampleCharacters
   } = useStore();
   
   const [generationPrompt, setGenerationPrompt] = useState('');
   const [showGenerateForm, setShowGenerateForm] = useState(false);
 
-  const filteredAvailableCharacters = availableCharacters.filter((c: Character) => !selectedCharacters.some((c2: Character) => c2.id === c.id));
+  // Load sample characters when the component mounts
+  useEffect(() => {
+    if (availableCharacters.length === 0) {
+      loadSampleCharacters();
+    }
+  }, [availableCharacters.length, loadSampleCharacters]);
+
+  // Filter out characters that are already in the user list
+  const filteredAvailableCharacters = availableCharacters.filter(
+    (c: Character) => !selectedCharacters.some((selected: Character) => selected.id === c.id)
+  );
 
   const handleCharacterSelect = (characterId: string) => {
     const character = filteredAvailableCharacters.find((c: Character) => c.id === characterId);

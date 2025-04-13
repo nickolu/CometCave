@@ -9,6 +9,13 @@ import Message from './ChatMessage';
 import { ChatMessage } from '../types';
 import { useSafetyCheck, useConversationManager, useCharacterResponse } from '../api/hooks';
 
+// Constants for timing values (in milliseconds)
+const CHARACTER_RESPONSE_INTERVAL_MS = 2000; // ms between character responses
+const USER_TYPING_TIMEOUT_MS = 0;       // ms before clearing typing indicator
+const TYPING_SIMULATION_DELAY_MS = 0;    // ms to simulate character typing
+const INTER_RESPONSE_DELAY_MS = 500;        // ms between character responses
+const PROCESSING_RESET_DELAY_MS = 500;     // ms delay before processing another response
+
 export default function Chat() {
   const [input, setInput] = useState('');
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -32,6 +39,7 @@ export default function Chat() {
   const responseQueueRef = useRef<Array<{character: Character, message: string}>>([]);
   const isProcessingQueueRef = useRef<boolean>(false);
   const userTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const characterResponseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const safetyCheck = useSafetyCheck();
   const conversationManager = useConversationManager();
   const characterResponse = useCharacterResponse();
@@ -50,6 +58,12 @@ export default function Chat() {
   const handleReset = () => {
     resetChat();
     handleMenuClose();
+    
+    // Clear any existing character response timer
+    if (characterResponseTimerRef.current) {
+      clearInterval(characterResponseTimerRef.current);
+      characterResponseTimerRef.current = null;
+    }
   };
 
   const scrollToBottom = () => {
@@ -94,8 +108,9 @@ export default function Chat() {
           addTypingCharacter(character);
           
           // Wait a moment before showing the response (simulates typing)
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, TYPING_SIMULATION_DELAY_MS));
           
+          // Check if user started typing or this response was cancelled
           // Check if user started typing or this response was cancelled
           if (isUserTyping || (responseId in activeResponsesRef.current && !activeResponsesRef.current[responseId])) {
             console.log(`Response from ${character.name} was cancelled`);
@@ -131,8 +146,10 @@ export default function Chat() {
             // Add the character's message to the chat
             addCharacterMessage(character, characterResult.response);
             
+
+            
             // Wait a moment before processing the next response
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, INTER_RESPONSE_DELAY_MS));
           } catch (responseError) {
             console.error(`Error getting response from ${character.name}:`, responseError);
             
@@ -164,7 +181,7 @@ export default function Chat() {
       // Reset processing flag when queue is empty
       isProcessingQueueRef.current = false;
     }
-  }, [characterResponse, addCharacterMessage, addTypingCharacter, removeTypingCharacter, isUserTyping]);
+  }, [isUserTyping, removeTypingCharacter, addCharacterMessage, addTypingCharacter, characterResponse]);
 
   // Handle getting responses from characters
   const handleGetCharacterResponses = useCallback(async (messageText: string, messageId?: string) => {
@@ -218,6 +235,8 @@ export default function Chat() {
         return;
       }
 
+
+      
       // Get characters who should respond
       const result = await conversationManager.mutateAsync({ 
         chatMessages, 
@@ -226,6 +245,8 @@ export default function Chat() {
       });
       
       console.log('🎭 Characters who will respond:', result.respondingCharacters);
+      
+
       
       // For each responding character, get their response
       if (!result.respondingCharacters || result.respondingCharacters.length === 0) {
@@ -263,16 +284,69 @@ export default function Chat() {
       // Always reset processing flag after a delay to prevent immediate re-triggering
       setTimeout(() => {
         setIsProcessingResponse(false);
-      }, 1000);
+      }, PROCESSING_RESET_DELAY_MS);
     }
-  }, [messages, characters, conversationManager, characterResponse, addCharacterMessage, removeTypingCharacter, addTypingCharacter, typingCharacters, charactersRespondToEachOther, isProcessingResponse, processResponseQueue]);
+  }, [messages, characters, conversationManager, removeTypingCharacter, typingCharacters, charactersRespondToEachOther, isProcessingResponse, processResponseQueue]);
   
 
 
 
+  // Trigger character responses on a timer when characters respond to each other is enabled
+  const triggerTimedCharacterResponses = useCallback(() => {
+    console.log('⏱️ Timer triggered for character responses');
+    
+    // Skip if user is typing
+    if (isUserTyping) {
+      console.log('User is typing, skipping timed character responses');
+      return;
+    }
+    
+    // Skip if we're already processing responses
+    if (isProcessingResponse || isProcessingQueueRef.current) {
+      console.log('Already processing responses, skipping timed character responses');
+      return;
+    }
+    
+    // Skip if there are no messages
+    if (!messages || messages.length === 0) {
+      console.log('No messages to respond to, skipping timed character responses');
+      return;
+    }
+    
+    // Get the last message in the chat
+    const lastMessage = messages[messages.length - 1];
+    
+    // Trigger a response to the last message
+    console.log('Triggering response to:', lastMessage.message);
+    handleGetCharacterResponses(lastMessage.message, lastMessage.id);
+  }, [messages, isUserTyping, isProcessingResponse, handleGetCharacterResponses]);
+
+  // Set up or clear the character response timer based on the charactersRespondToEachOther setting
+  useEffect(() => {
+    // Clear any existing timer
+    if (characterResponseTimerRef.current) {
+      clearInterval(characterResponseTimerRef.current);
+      characterResponseTimerRef.current = null;
+    }
+    
+    // If characters should respond to each other, set up a timer
+    if (charactersRespondToEachOther) {
+      console.log('Setting up timer for character responses (every 10 seconds)');
+      characterResponseTimerRef.current = setInterval(triggerTimedCharacterResponses, CHARACTER_RESPONSE_INTERVAL_MS);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (characterResponseTimerRef.current) {
+        clearInterval(characterResponseTimerRef.current);
+      }
+    };
+  }, [charactersRespondToEachOther, triggerTimedCharacterResponses]);
+
   // Handle user typing - interrupts character responses
   const handleUserTyping = useCallback(() => {
     // Set user typing state
+    console.log('User started typing');
     setIsUserTyping(true);
     
     // Clear any existing timeout
@@ -291,15 +365,24 @@ export default function Chat() {
       typingCharacters.forEach(char => removeTypingCharacter(char.id));
     }
     
-    // Set a timeout to reset the typing state after 1.5 seconds of inactivity
+    // Reset the character response timer if characters should respond to each other
+    if (charactersRespondToEachOther && characterResponseTimerRef.current) {
+      console.log('Resetting character response timer due to user typing');
+      clearInterval(characterResponseTimerRef.current);
+      characterResponseTimerRef.current = setInterval(triggerTimedCharacterResponses, CHARACTER_RESPONSE_INTERVAL_MS);
+    }
+    
+    // Set a timeout to reset the typing state after period of inactivity
     userTypingTimeoutRef.current = setTimeout(() => {
       setIsUserTyping(false);
-    }, 1500);
-  }, [typingCharacters, removeTypingCharacter]);
+    }, USER_TYPING_TIMEOUT_MS);
+  }, [typingCharacters, removeTypingCharacter, charactersRespondToEachOther, triggerTimedCharacterResponses]);
   
   const handleSend = async () => {
     const messageText = input.trim();
     if (messageText === '') return;
+    
+
     
     // Clear typing state and timeout
     setIsUserTyping(false);
@@ -354,57 +437,42 @@ export default function Chat() {
     scrollToBottom();
   }, [messages]);
 
-  // Add some sample characters if none exist
-  useEffect(() => {
-    if (!characters || characters.length === 0) {
-      console.log('No characters found, adding sample characters');
-      // Import sample characters
-      import('../sampleCharacters.json').then(sampleChars => {
-        // Add first 3 sample characters
-        const samplesToAdd = sampleChars.default.slice(0, 3);
-        samplesToAdd.forEach(char => {
-          useStore.getState().addCharacter(char);
-        });
-        console.log('Added sample characters:', samplesToAdd);
-      });
-    }
-  }, [characters]);
+  // No longer automatically adding sample characters
   
   // Listen for new messages and trigger character responses if needed
   useEffect(() => {
-    // Skip if no messages or only one message (initial load)
-    if (!messages || messages.length <= 1) return;
+    // Skip if we're already processing a response
+    if (isProcessingResponse) return;
     
-    // Get the most recent message
+    // Only proceed if we have messages
+    if (!messages || messages.length === 0) return;
+    
     const lastMessage = messages[messages.length - 1];
+    const isLastMessageFromUser = lastMessage.character.id === 'user';
     
-    // Only trigger character responses if:
-    // 1. The last message is from a user, OR
-    // 2. The last message is from a character AND charactersRespondToEachOther is enabled
-    if (lastMessage) {
-      if (lastMessage.character.id === 'user' || 
-          (lastMessage.character.id !== 'user' && charactersRespondToEachOther)) {
-        console.log('Message detected, triggering character responses:', lastMessage);
+    // Only trigger immediate responses for user messages
+    if (isLastMessageFromUser) {
+      console.log('Detected new user message, triggering immediate character response');
+      
+      // If we're in the middle of processing responses, cancel them
+      if (isProcessingQueueRef.current) {
+        console.log('Canceling previous responses to handle new message');
+        // Clear the response queue
+        responseQueueRef.current = [];
         
-        // For user messages, clear the queue and cancel any ongoing responses
-        if (lastMessage.character.id === 'user') {
-          // Clear the response queue
-          responseQueueRef.current = [];
-          
-          // Cancel any ongoing responses
-          activeResponsesRef.current = {};
-          
-          // Clear all typing indicators
-          if (typingCharacters) {
-            typingCharacters.forEach(char => removeTypingCharacter(char.id));
-          }
+        // Cancel any ongoing responses
+        activeResponsesRef.current = {};
+        
+        // Clear all typing indicators
+        if (typingCharacters) {
+          typingCharacters.forEach(char => removeTypingCharacter(char.id));
         }
-        
-        // Pass the message ID to prevent duplicate processing
-        handleGetCharacterResponses(lastMessage.message, lastMessage.id);
       }
+      
+      // Pass the message ID to prevent duplicate processing
+      handleGetCharacterResponses(lastMessage.message, lastMessage.id);
     }
-  }, [messages, charactersRespondToEachOther, handleGetCharacterResponses, typingCharacters, removeTypingCharacter]);
+  }, [messages, isProcessingResponse, handleGetCharacterResponses, typingCharacters, removeTypingCharacter]);
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
@@ -471,9 +539,10 @@ export default function Chat() {
       </Box>
       
       {/* Show typing indicators for characters or user */}
-      {(typingCharacters && typingCharacters.length > 0) || isUserTyping ? (
-        <Box p={2}>    
-          <Typography variant="body2" sx={{ fontStyle: 'italic', mt: 1 }}>
+      {/* Show typing indicators with improved visibility */}
+      {((typingCharacters && typingCharacters.length > 0) || isUserTyping) ? (
+        <Box p={1} sx={{ backgroundColor: 'rgba(0, 0, 0, 0.03)', borderTop: '1px solid rgba(0, 0, 0, 0.09)' }}>    
+          <Typography variant="body2" sx={{ fontStyle: 'italic', pl: 1 }}>
             {isUserTyping ? (
               'You are typing...'
             ) : typingCharacters && typingCharacters.length === 1 ? (
@@ -534,7 +603,18 @@ export default function Chat() {
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
-              handleUserTyping();
+              
+              // Only trigger typing if there's actual content
+              if (e.target.value.trim().length > 0) {
+                handleUserTyping();
+              } else {
+                // If the input is empty, clear the typing indicator
+                setIsUserTyping(false);
+                if (userTypingTimeoutRef.current) {
+                  clearTimeout(userTypingTimeoutRef.current);
+                  userTypingTimeoutRef.current = null;
+                }
+              }
             }}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
