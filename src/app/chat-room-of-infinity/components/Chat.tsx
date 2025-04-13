@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem, Alert, Snackbar } from '@mui/material';
+import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem, Alert } from '@mui/material';
 import { Send, KeyboardArrowDown, MoreVert, DeleteOutline } from '@mui/icons-material';
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
@@ -43,10 +43,12 @@ export default function Chat() {
   };
 
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const safetyCheck = useSafetyCheck();
 
   const handleSend = async () => {
     if (input.trim()) {
+      setIsSubmitting(true);
       try {
         const result = await safetyCheck.mutateAsync(input.trim());
 
@@ -56,9 +58,15 @@ export default function Chat() {
           scrollToBottom();
         } else {
           setError(result.reason);
+          // Vibrate the input field
+          const inputEl = document.getElementById('chat-input');
+          inputEl?.classList.add('shake');
+          setTimeout(() => inputEl?.classList.remove('shake'), 500);
         }
       } catch {
         setError('Failed to check message safety');
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -131,32 +139,67 @@ export default function Chat() {
           <KeyboardArrowDown />
         </IconButton>
       </Fade>
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+      {error && (
+        <Alert 
+          severity="error" 
+          onClose={() => setError(null)}
+          sx={{ 
+            position: 'absolute', 
+            bottom: '100%', 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            width: '90%',
+            maxWidth: '600px',
+            mb: 1,
+            boxShadow: 2,
+            '& .MuiAlert-message': {
+              display: 'flex',
+              alignItems: 'center'
+            }
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', position: 'relative' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
+            id="chat-input"
             fullWidth
-            multiline
-            maxRows={4}
+            size="small"
+            autoComplete="off"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type a message..."
+            onChange={(e) => {
+              setInput(e.target.value);
+              if (error) setError(null);
+            }}
+            onKeyDown={handleKeyPress}
+            placeholder="Type your message..."
+            error={!!error}
+            disabled={isSubmitting}
+            sx={{
+              bgcolor: 'background.paper',
+              '&.shake': {
+                animation: 'shake 0.5s',
+                animationIterationCount: '1'
+              },
+              '@keyframes shake': {
+                '0%, 100%': { marginLeft: '0' },
+                '10%, 30%, 50%, 70%, 90%': { marginLeft: '-5px' },
+                '20%, 40%, 60%, 80%': { marginLeft: '5px' }
+              }
+            }}
           />
-          <IconButton onClick={handleSend} color="primary">
+          <IconButton 
+            onClick={handleSend} 
+            color="primary" 
+            disabled={isSubmitting}
+          >
             <Send />
           </IconButton>
         </Box>
       </Box>
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={() => setError(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
-          {error}
-        </Alert>
-      </Snackbar>
+
     </Box>
   );
 }
