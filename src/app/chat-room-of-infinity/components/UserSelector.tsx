@@ -1,8 +1,7 @@
 'use client';
 
+import { useState, FormEvent } from 'react';
 import {
-  Dialog,
-  DialogTitle,
   List,
   ListItem,
   ListItemText,
@@ -10,13 +9,31 @@ import {
   Avatar,
   Button,
   Box,
+  TextField,
+  Typography,
+  Collapse,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { useStore } from '../store';
 import { Character } from '../types';
 
 export default function UserSelector() {
   const { isOpen, availableCharacters } = useStore((state) => state.userSelector);
-  const { toggleUserSelector, toggleCustomCharacterForm, addCharacter } = useStore();
+  const { name, description } = useStore((state) => state.customCharacterForm);
+  const { 
+    toggleUserSelector, 
+    addCharacter,
+    updateCustomCharacterForm,
+    saveCustomCharacter
+  } = useStore();
+  
+  const [generationPrompt, setGenerationPrompt] = useState('');
+  const [showGenerateForm, setShowGenerateForm] = useState(false);
+
 
   const handleCharacterSelect = (characterId: string) => {
     const character = availableCharacters.find((c: Character) => c.id === characterId);
@@ -26,38 +43,160 @@ export default function UserSelector() {
     }
   };
 
+  const handleGenerateMore = () => {
+    // TODO: Implement character generation
+    console.log('Generating with prompt:', generationPrompt);
+  };
+
+  const handleCustomSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    saveCustomCharacter();
+  };
+
+  const handleCustomCancel = () => {
+    updateCustomCharacterForm({ name: '', description: '' });
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onClose={toggleUserSelector}>
-      <DialogTitle>Select a Character</DialogTitle>
-      <List sx={{ minWidth: 300 }}>
-        {availableCharacters.map((character: Character) => (
-          <ListItem
-            key={character.id}
-            button
-            onClick={() => handleCharacterSelect(character.id)}
-          >
-            <ListItemAvatar>
-              <Avatar>{character.name[0]}</Avatar>
-            </ListItemAvatar>
-            <ListItemText
-              primary={character.name}
-              secondary={character.description}
-            />
-          </ListItem>
-        ))}
-      </List>
-      <Box sx={{ p: 2 }}>
-        <Button
-          fullWidth
-          variant="contained"
-          onClick={() => {
-            toggleUserSelector();
-            toggleCustomCharacterForm();
+    <Dialog 
+      open={isOpen} 
+      onClose={toggleUserSelector}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          maxHeight: '80vh'
+        }
+      }}
+    >
+      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        Select Character
+        <IconButton
+          onClick={toggleUserSelector}
+          sx={{
+            color: 'text.secondary',
+            '&:hover': {
+              color: 'text.primary'
+            }
           }}
         >
-          Create Custom Character
-        </Button>
-      </Box>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <List sx={{ 
+          maxHeight: '50vh',
+          overflow: 'auto',
+          bgcolor: 'background.paper',
+          borderRadius: 1,
+          mb: 2
+        }}>
+          {availableCharacters.map((character: Character) => (
+            <ListItem
+              key={character.id}
+              sx={{
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: 'action.hover'
+                }
+              }}
+              onClick={() => handleCharacterSelect(character.id)}
+            >
+              <ListItemAvatar>
+                <Avatar>{character.name[0]}</Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={character.name}
+                secondary={character.description}
+              />
+            </ListItem>
+          ))}
+        </List>
+
+        <Box sx={{ mt: 2 }}>
+          <Collapse in={showGenerateForm}>
+            <Box sx={{ bgcolor: 'background.paper', borderRadius: 1, p: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Generate More
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  placeholder="Optional prompt for character generation"
+                  value={generationPrompt}
+                  onChange={(e) => setGenerationPrompt(e.target.value)}
+                  sx={{
+                    bgcolor: 'background.default',
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused': {
+                        bgcolor: 'background.paper'
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    handleGenerateMore();
+                    setShowGenerateForm(false);
+                  }}
+                >
+                  Generate
+                </Button>
+              </Box>
+            </Box>
+          </Collapse>
+          {!showGenerateForm && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setShowGenerateForm(true)}
+            >
+              Generate More Characters
+            </Button>
+          )}
+        </Box>
+
+        <Box sx={{ mt: 2, bgcolor: 'background.paper', borderRadius: 1, p: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Add Custom Character
+          </Typography>
+          <form onSubmit={handleCustomSubmit}>
+            <TextField
+              autoFocus
+              size="small"
+              label="Name"
+              fullWidth
+              value={name}
+              onChange={(e) => updateCustomCharacterForm({ name: e.target.value })}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              size="small"
+              label="Description"
+              fullWidth
+              multiline
+              rows={3}
+              value={description}
+              onChange={(e) => updateCustomCharacterForm({ description: e.target.value })}
+              required
+              sx={{ mb: 2 }}
+            />
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button onClick={handleCustomCancel}>
+                Clear
+              </Button>
+              <Button type="submit" variant="contained">
+                Add
+              </Button>
+            </Box>
+          </form>
+        </Box>
+      </DialogContent>
     </Dialog>
   );
 }
