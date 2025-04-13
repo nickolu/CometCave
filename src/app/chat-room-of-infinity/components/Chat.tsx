@@ -17,7 +17,7 @@ export default function Chat() {
   const addCharacterMessage = useStore((state) => state.addCharacterMessage);
   const setIsTyping = useStore((state) => state.setIsTyping);
   const resetChat = useStore((state) => state.resetChat);
-  const characters = useStore((state) => state.userSelector.availableCharacters);
+  const characters = useStore((state) => state.userList.characters);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
