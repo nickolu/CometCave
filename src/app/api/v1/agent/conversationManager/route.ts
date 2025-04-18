@@ -137,14 +137,13 @@ export async function POST(request: Request) {
           // Verify we got valid characters back
           if (!respondingCharacters || !Array.isArray(respondingCharacters) || respondingCharacters.length === 0) {
             console.log('No characters selected by AI, falling back to random selection');
-            // Fall back to random selection - only select ONE character
+            // Fall back to random selection - allow all eligible characters
             const shuffledCharacters = [...charactersToConsider].sort(() => 0.5 - Math.random());
-            respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
+            respondingCharacters = shuffledCharacters;
           } else {
             console.log('AI selected responding characters:', respondingCharacters.map(c => c.name));
-            // Only take the first character from AI selection
-            respondingCharacters = respondingCharacters.slice(0, 1);
-            console.log('Limited to one character:', respondingCharacters.map(c => c.name));
+            // Use all AI-selected characters (no limit)
+            console.log('Multiple characters allowed to respond:', respondingCharacters.map(c => c.name));
           }
         } catch (aiError) {
           console.error('Error in AI character selection:', aiError);
@@ -154,15 +153,15 @@ export async function POST(request: Request) {
           // If no eligible characters (all have recently responded), use all characters
           const charactersToConsider = eligibleCharacters.length > 0 ? eligibleCharacters : characters;
           
-          // Fall back to random selection - only select ONE character
+          // Fall back to random selection - allow all eligible characters
           const shuffledCharacters = [...charactersToConsider].sort(() => 0.5 - Math.random());
-          respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
+          respondingCharacters = shuffledCharacters;
         }
       } catch (error) {
         console.error('Error selecting responding characters with AI:', error);
-        // Fall back to random selection - only select ONE character
+        // Fall back to random selection - allow all eligible characters
         const shuffledCharacters = [...characters].sort(() => 0.5 - Math.random());
-        respondingCharacters = shuffledCharacters.slice(0, 1); // Only take the first character
+        respondingCharacters = shuffledCharacters;
       }
     } else {
       // Filter out characters who have recently responded

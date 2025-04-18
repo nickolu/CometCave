@@ -3,7 +3,6 @@ import { Character, ChatMessage } from '../types';
 import { useStore } from '../store';
 import { useConversationManager, useCharacterResponse } from '../api/hooks';
 
-// Constants for timing (should be imported from a constants file if reused)
 const INTER_RESPONSE_DELAY_MS = 500;
 const TYPING_SIMULATION_DELAY_MS = 0;
 const PROCESSING_RESET_DELAY_MS = 500;
