@@ -112,22 +112,25 @@ export const useStore = create<Store>()(
         isTyping: false,
         charactersRespondToEachOther: false
       },
-      sendMessage: (message: string) => set((state) => ({
-        chat: {
-          ...state.chat,
-          messages: [...(state.chat.messages || []), {
-            id: Math.random().toString(36).substring(7),
-            character: {
-              id: 'user',
-              name: 'You',
-              description: 'Current user',
-              status: 'online'
-            },
-            message,
-            timestamp: Date.now(),
-          }],
-        }
-      })),
+      sendMessage: (message: string) => {
+        if (!message || message.trim() === '') return;
+        set((state) => ({
+          chat: {
+            ...state.chat,
+            messages: [...(state.chat.messages || []), {
+              id: Math.random().toString(36).substring(7),
+              character: {
+                id: 'user',
+                name: 'You',
+                description: 'Current user',
+                status: 'online'
+              },
+              message,
+              timestamp: Date.now(),
+            }],
+          }
+        }));
+      },
       addCharacterMessage: (character: Character, message: string) => set((state) => ({
         chat: {
           ...state.chat,
