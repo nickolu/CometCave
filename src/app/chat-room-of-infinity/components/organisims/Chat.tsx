@@ -74,21 +74,27 @@ export default function Chat() {
       clearInterval(characterResponseTimerRef.current);
       characterResponseTimerRef.current = null;
     }
-    if (charactersRespondToEachOther) {
-      characterResponseTimerRef.current = setInterval(() => {
-        if (messages && messages.length > 0) {
-          const lastMessage = messages[messages.length - 1];
-          handleGetCharacterResponses(lastMessage.message, lastMessage.id);
-        }
-      }, CHARACTER_RESPONSE_INTERVAL_MS);
+    let debounceTimeout: NodeJS.Timeout | null = null;
+    if (charactersRespondToEachOther && !isUserTyping) {
+      debounceTimeout = setTimeout(() => {
+        characterResponseTimerRef.current = setInterval(() => {
+          if (messages && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            handleGetCharacterResponses(lastMessage.message, lastMessage.id);
+          }
+        }, CHARACTER_RESPONSE_INTERVAL_MS);
+      }, 1500); // 1.5s debounce after user stops typing
     }
     return () => {
       if (characterResponseTimerRef.current) {
         clearInterval(characterResponseTimerRef.current);
         characterResponseTimerRef.current = null;
       }
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
     };
-  }, [charactersRespondToEachOther, messages, handleGetCharacterResponses]);
+  }, [charactersRespondToEachOther, messages, handleGetCharacterResponses, isUserTyping]);
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>

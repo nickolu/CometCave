@@ -2,6 +2,8 @@ import { useState, useRef, useCallback } from 'react';
 import { useStore } from '../store';
 import { useSafetyCheck } from '../api/hooks';
 
+const USER_TYPING_TIMEOUT_MS = 1000;
+
 export function useChatInput({ onMessageSent, scrollToBottom, handleGetCharacterResponses }: {
   onMessageSent: (message: string) => void;
   scrollToBottom: () => void;
@@ -22,7 +24,7 @@ export function useChatInput({ onMessageSent, scrollToBottom, handleGetCharacter
     }
     userTypingTimeoutRef.current = setTimeout(() => {
       setIsUserTyping(false);
-    }, 0); // USER_TYPING_TIMEOUT_MS
+    }, USER_TYPING_TIMEOUT_MS);
   }, []);
 
   const handleSend = useCallback(async () => {
