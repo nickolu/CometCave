@@ -18,8 +18,8 @@ import {
   IconButton
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { useStore } from '../store';
-import { Character } from '../types';
+import { useStore } from '../../store';
+import { Character } from '../../types';
 
 export default function UserSelector() {
   const { isOpen, availableCharacters }  = useStore((state) => state.userSelector);

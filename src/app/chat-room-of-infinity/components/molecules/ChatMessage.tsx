@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography, Avatar } from '@mui/material';
-import { ChatMessage as ChatMessageType } from '../types';
+import { ChatMessage as ChatMessageType } from '../../types';
 
 interface Props {
   message: ChatMessageType;

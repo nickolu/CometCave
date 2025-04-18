@@ -8,7 +8,7 @@ import {
   TextField,
   Button,
 } from '@mui/material';
-import { useStore } from '../store';
+import { useStore } from '../../store';
 import { FormEvent, ChangeEvent } from 'react';
 
 export default function CustomCharacterForm() {

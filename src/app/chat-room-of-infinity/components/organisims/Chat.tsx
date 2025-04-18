@@ -3,14 +3,14 @@
 import { Box, TextField, IconButton, Typography, Fade, Menu, MenuItem, Alert, Switch, FormControlLabel } from '@mui/material';
 import { Send, KeyboardArrowDown, MoreVert, DeleteOutline } from '@mui/icons-material';
 import { useRef, useEffect } from 'react';
-import { useChatInput } from '../hooks/useChatInput';
-import { useCharacterResponses } from '../hooks/useCharacterResponses';
-import { useChatScroll } from '../hooks/useChatScroll';
-import { useChatMenu } from '../hooks/useChatMenu';
-import { useChatSafety } from '../hooks/useChatSafety';
-import { useStore } from '../store';
-import Message from './ChatMessage';
-import { ChatMessage } from '../types';
+import { useChatInput } from '../../hooks/useChatInput';
+import { useCharacterResponses } from '../../hooks/useCharacterResponses';
+import { useChatScroll } from '../../hooks/useChatScroll';
+import { useChatMenu } from '../../hooks/useChatMenu';
+import { useChatSafety } from '../../hooks/useChatSafety';
+import { useStore } from '../../store';
+import Message from '../molecules/ChatMessage';
+import { ChatMessage } from '../../types';
 
 // Constants for timing values (in milliseconds)
 const CHARACTER_RESPONSE_INTERVAL_MS = 2000; // ms between character responses

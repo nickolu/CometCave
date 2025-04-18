@@ -3,9 +3,9 @@
 import { ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { green} from '@mui/material/colors';
-import { Character } from '../types';
-import { useStore } from '../store';
-import { UserListItem } from './atoms/UserListItem';
+import { Character } from '../../types';
+import { useStore } from '../../store';
+import { UserListItem } from '../atoms/UserListItem';
 
 interface Props {
   character: Character;

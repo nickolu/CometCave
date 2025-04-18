@@ -13,8 +13,8 @@ import {
   IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { CharacterStatus, HumanUser } from '../types';
-import { useStore } from '../store';
+import { CharacterStatus, HumanUser } from '../../types';
+import { useStore } from '../../store';
 
 interface UserProfileDialogProps {
   open: boolean;

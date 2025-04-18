@@ -5,11 +5,11 @@ import dynamic from 'next/dynamic';
 import { GamePageTemplate } from "../components/page-templates/GamePageTemplate";
 import { QueryProvider } from './providers/QueryProvider';
 
-const UserList = dynamic(() => import('./components/UserList'), {
+const UserList = dynamic(() => import('./components/organisims/UserList'), {
   ssr: false,
 });
 
-const Chat = dynamic(() => import('./components/Chat'), {
+const Chat = dynamic(() => import('./components/organisims/Chat'), {
   ssr: false,
 });
 

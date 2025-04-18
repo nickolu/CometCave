@@ -2,11 +2,11 @@
 
 import { Box, List, IconButton, Typography, Tooltip, Button } from '@mui/material';
 import { ExpandLess, ExpandMore, PersonAdd, Close } from '@mui/icons-material';
-import { useStore } from '../store';
-import CharacterUserItem from './CharacterUserItem';
-import HumanUserItem from './HumanUserItem';
-import UserSelector from './UserSelector';
-import { Character } from '../types';
+import { useStore } from '../../store';
+import CharacterUserItem from '../molecules/CharacterUserItem';
+import HumanUserItem from '../molecules/HumanUserItem';
+import UserSelector from '../molecules/UserSelector';
+import { Character } from '../../types';
 
 const sx = {
   container: {
