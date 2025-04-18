@@ -7,8 +7,7 @@ const INTER_RESPONSE_DELAY_MS = 500;
 const TYPING_SIMULATION_DELAY_MS = 0;
 const PROCESSING_RESET_DELAY_MS = 500;
 
-// Maximum allowed consecutive character responses before requiring user input
-const MAX_CONSECUTIVE_CHARACTER_RESPONSES = 4;
+
 
 export function useCharacterResponses() {
   const [isProcessingResponse, setIsProcessingResponse] = useState(false);
@@ -16,13 +15,13 @@ export function useCharacterResponses() {
   const activeResponsesRef = useRef<{[key: string]: boolean}>({});
   const responseQueueRef = useRef<Array<{character: Character, message: string}>>([]);
   const isProcessingQueueRef = useRef<boolean>(false);
-  const { messages, consecutiveCharacterResponses } = useStore((state) => state.chat);
+  const { messages, remainingCharacterMessages } = useStore((state) => state.chat);
   const addCharacterMessage = useStore((state) => state.addCharacterMessage);
   const addTypingCharacter = useStore((state) => state.addTypingCharacter);
   const removeTypingCharacter = useStore((state) => state.removeTypingCharacter);
   const characters = useStore((state) => state.userList.characters);
   const charactersRespondToEachOther = useStore((state) => state.chat.charactersRespondToEachOther);
-  const setConsecutiveCharacterResponses = useStore((state) => state.setConsecutiveCharacterResponses);
+  
   const conversationManager = useConversationManager();
   const characterResponse = useCharacterResponse();
 
@@ -36,8 +35,7 @@ export function useCharacterResponses() {
         const stillActive = characters.some(c => c.id === character.id);
         if (!stillActive) continue;
         // Limit consecutive character responses
-        if (consecutiveCharacterResponses >= MAX_CONSECUTIVE_CHARACTER_RESPONSES) {
-          setConsecutiveCharacterResponses(MAX_CONSECUTIVE_CHARACTER_RESPONSES);
+        if ((remainingCharacterMessages || 0) <= 0) {
           break;
         }
         const responseId = `${character.id}-${Date.now()}`;
@@ -73,7 +71,7 @@ export function useCharacterResponses() {
     } finally {
       isProcessingQueueRef.current = false;
     }
-  }, [addTypingCharacter, removeTypingCharacter, addCharacterMessage, characterResponse, characters, consecutiveCharacterResponses, setConsecutiveCharacterResponses]);
+  }, [addTypingCharacter, removeTypingCharacter, addCharacterMessage, characterResponse, characters, remainingCharacterMessages]);
 
   // Main handler for getting character responses
   const handleGetCharacterResponses = useCallback(async (messageText: string, messageId?: string) => {

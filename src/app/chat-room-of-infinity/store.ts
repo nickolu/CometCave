@@ -11,12 +11,12 @@ interface ChatState {
   typingCharacters: Character[];
   isTyping: boolean;
   charactersRespondToEachOther: boolean;
-  consecutiveCharacterResponses: number; // Track consecutive character responses
+  remainingCharacterMessages: number;
 }
 
 export interface Store {
-  setConsecutiveCharacterResponses: (count: number) => void;
-  incrementConsecutiveCharacterResponses: () => void;
+  incrementRemainingCharacterMessages: (count: number) => void;
+  incrementConsecutiveCharacterResponses: (count: number) => void;
   // User List State
   userList: UserListState;
   toggleUserList: () => void;
@@ -56,16 +56,22 @@ interface ChatState {
   typingCharacters: Character[];
   isTyping: boolean;
   charactersRespondToEachOther: boolean;
+  remainingCharacterMessages: number;
+  consecutiveCharacterResponses: number;
 }
 
 export const useStore = create<Store>()(
   persist(
     (set) => ({
-      setConsecutiveCharacterResponses: (count: number) => set((state) => ({
-        chat: { ...state.chat, consecutiveCharacterResponses: count }
+      incrementRemainingCharacterMessages: (count: number) => set((state) => ({
+        chat: { ...state.chat, remainingCharacterMessages: state.chat.remainingCharacterMessages + count }
       })),
-      incrementConsecutiveCharacterResponses: () => set((state) => ({
-        chat: { ...state.chat, consecutiveCharacterResponses: (state.chat.consecutiveCharacterResponses || 0) + 1 }
+
+      incrementConsecutiveCharacterResponses: (count: number) => set((state) => ({
+        chat: {
+          ...state.chat,
+          consecutiveCharacterResponses: (state.chat.consecutiveCharacterResponses || 0) + count,
+        }
       })),
 
       userList: {
@@ -106,7 +112,8 @@ export const useStore = create<Store>()(
           ...state.chat,
           characters: [],
           messages: [],
-          typingCharacters: []
+          typingCharacters: [],
+          remainingCharacterMessages: 4,
         }
       })),
       updateHumanUser: (updates: Partial<HumanUser>) => set((state) => ({
@@ -121,6 +128,7 @@ export const useStore = create<Store>()(
         typingCharacters: [],
         isTyping: false,
         charactersRespondToEachOther: false,
+        remainingCharacterMessages: 4,
         consecutiveCharacterResponses: 0,
       },
       sendMessage: (message: string) => {
@@ -142,7 +150,7 @@ export const useStore = create<Store>()(
                 timestamp: Date.now(),
               }
             ],
-            consecutiveCharacterResponses: 0, // Reset counter on user message
+            remainingCharacterMessages: 4, // Reset counter on user message
           }
         }));
       },
@@ -158,9 +166,10 @@ export const useStore = create<Store>()(
               timestamp: Date.now(),
             }
           ],
-          consecutiveCharacterResponses: (state.chat.consecutiveCharacterResponses || 0) + 1, // Increment counter
+          remainingCharacterMessages: Math.max((state.chat.remainingCharacterMessages || 1) - 1, 0),
         }
       })),
+
       setIsTyping: (isTyping: boolean) => set((state) => ({
         chat: { ...state.chat, isTyping }
       })),
@@ -195,17 +204,11 @@ export const useStore = create<Store>()(
           typingCharacters: [],
           isTyping: false,
           charactersRespondToEachOther: false,
+          remainingCharacterMessages: 4,
           consecutiveCharacterResponses: 0,
         }
       })),
       toggleCharactersRespondToEachOther: () => set((state) => ({
-      setConsecutiveCharacterResponses: (count: number) => set((state) => ({
-        chat: { ...state.chat, consecutiveCharacterResponses: count }
-      })),
-      incrementConsecutiveCharacterResponses: () => set((state) => ({
-        chat: { ...state.chat, consecutiveCharacterResponses: (state.chat.consecutiveCharacterResponses || 0) + 1 }
-      })),
-
         chat: {
           ...state.chat,
           charactersRespondToEachOther: !state.chat.charactersRespondToEachOther

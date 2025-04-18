@@ -59,8 +59,8 @@ export default function Chat() {
   });
 
   // Zustand store
-  const { messages, typingCharacters, consecutiveCharacterResponses } = useStore((state) => state.chat);
-  const setConsecutiveCharacterResponses = useStore((state) => state.setConsecutiveCharacterResponses);
+  const { messages, typingCharacters, remainingCharacterMessages } = useStore((state) => state.chat);
+  const incrementRemainingCharacterMessages = useStore((state) => state.incrementRemainingCharacterMessages);
   const toggleCharactersRespondToEachOther = useStore((state) => state.toggleCharactersRespondToEachOther);
   const charactersRespondToEachOther = useStore((state) => state.chat.charactersRespondToEachOther);
 
@@ -69,41 +69,42 @@ export default function Chat() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Timer for characters responding to each other
+  // Chain character responses only when appropriate
   useEffect(() => {
-    if (characterResponseTimerRef.current) {
-      clearInterval(characterResponseTimerRef.current);
-      characterResponseTimerRef.current = null;
-    }
-    let debounceTimeout: NodeJS.Timeout | null = null;
-    if (charactersRespondToEachOther && !isUserTyping) {
-      debounceTimeout = setTimeout(() => {
-        characterResponseTimerRef.current = setInterval(() => {
-          if (messages && messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            handleGetCharacterResponses(lastMessage.message, lastMessage.id);
-          }
-        }, CHARACTER_RESPONSE_INTERVAL_MS);
-      }, 1500); // 1.5s debounce after user stops typing
-    }
-    return () => {
-      if (characterResponseTimerRef.current) {
-        clearInterval(characterResponseTimerRef.current);
-        characterResponseTimerRef.current = null;
-      }
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
-      }
-    };
-  }, [charactersRespondToEachOther, messages, handleGetCharacterResponses, isUserTyping]);
+    if (!charactersRespondToEachOther) return;
+    if (isUserTyping) return;
+    if (!messages || messages.length === 0) return;
+    if (remainingCharacterMessages <= 0) return;
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage.character || lastMessage.character.id === 'user') return;
+    const timeout = setTimeout(() => {
+      handleGetCharacterResponses(
+        lastMessage.message,
+        `${lastMessage.id}-auto-${Date.now()}`
+      );
+    }, CHARACTER_RESPONSE_INTERVAL_MS);
+    return () => clearTimeout(timeout);
+  }, [charactersRespondToEachOther, isUserTyping, messages, remainingCharacterMessages, handleGetCharacterResponses]);
+
 
   // Handler to override the limit and allow another round
   const handleOverrideLimit = () => {
-    setConsecutiveCharacterResponses(0);
+    incrementRemainingCharacterMessages(4);
+    setTimeout(() => {
+      if (messages && messages.length > 0) {
+        const lastCharacterMessage = [...messages].reverse().find(msg => msg.character && msg.character.id !== 'user');
+        if (lastCharacterMessage) {
+          // Pass a unique messageId to force character response
+          handleGetCharacterResponses(
+            lastCharacterMessage.message,
+            `${lastCharacterMessage.id}-resume-${Date.now()}`
+          );
+        }
+      }
+    }, 50);
   };
 
-  // Character response limit constant (should match logic in useCharacterResponses)
-  const CHARACTER_RESPONSE_LIMIT = 4;
+
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
@@ -190,7 +191,8 @@ export default function Chat() {
         </Box>
       ) : null}
        {/* Show message if character response limit is reached */}
-       {consecutiveCharacterResponses >= CHARACTER_RESPONSE_LIMIT && (
+       {/* Only show after the last character message is rendered, not before */}
+      {remainingCharacterMessages === 0 && messages && Array.isArray(messages) && messages.length > 0 && messages[messages.length - 1]?.character?.id !== 'user' && (
         <Box sx={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
           py: 1, px: 2, mb: 1, background: 'rgba(0,0,0,0.03)', borderRadius: 2, border: '1px solid #eee',
