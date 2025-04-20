@@ -59,8 +59,7 @@ export default function Chat() {
   });
 
   // Zustand store
-  const { messages, typingCharacters, remainingCharacterMessages } = useStore((state) => state.chat);
-  const incrementRemainingCharacterMessages = useStore((state) => state.incrementRemainingCharacterMessages);
+  const { messages, typingCharacters } = useStore((state) => state.chat);
   const toggleCharactersRespondToEachOther = useStore((state) => state.toggleCharactersRespondToEachOther);
   const charactersRespondToEachOther = useStore((state) => state.chat.charactersRespondToEachOther);
 
@@ -74,7 +73,6 @@ export default function Chat() {
     if (!charactersRespondToEachOther) return;
     if (isUserTyping) return;
     if (!messages || messages.length === 0) return;
-    if (remainingCharacterMessages <= 0) return;
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage.character || lastMessage.character.id === 'user') return;
     const timeout = setTimeout(() => {
@@ -84,31 +82,11 @@ export default function Chat() {
       );
     }, CHARACTER_RESPONSE_INTERVAL_MS);
     return () => clearTimeout(timeout);
-  }, [charactersRespondToEachOther, isUserTyping, messages, remainingCharacterMessages, handleGetCharacterResponses]);
-
-
-  // Handler to override the limit and allow another round
-  const handleOverrideLimit = () => {
-    incrementRemainingCharacterMessages(4);
-    setTimeout(() => {
-      if (messages && messages.length > 0) {
-        const lastCharacterMessage = [...messages].reverse().find(msg => msg.character && msg.character.id !== 'user');
-        if (lastCharacterMessage) {
-          // Pass a unique messageId to force character response
-          handleGetCharacterResponses(
-            lastCharacterMessage.message,
-            `${lastCharacterMessage.id}-resume-${Date.now()}`
-          );
-        }
-      }
-    }, 50);
-  };
-
+  }, [charactersRespondToEachOther, isUserTyping, messages, handleGetCharacterResponses]);
 
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-     
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, position: 'relative', top: '12px'}}>
         <IconButton onClick={handleMenuOpen} size="small">
           <MoreVert />
@@ -190,36 +168,7 @@ export default function Chat() {
           </Typography> 
         </Box>
       ) : null}
-       {/* Show message if character response limit is reached */}
-       {/* Only show after the last character message is rendered, not before */}
-      {remainingCharacterMessages === 0 && messages && Array.isArray(messages) && messages.length > 0 && messages[messages.length - 1]?.character?.id !== 'user' && (
-        <Box sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%',
-          py: 1, px: 2, mb: 1, background: 'rgba(0,0,0,0.03)', borderRadius: 2, border: '1px solid #eee',
-          fontSize: '0.92rem', color: 'text.secondary', position: 'relative'
-        }}>
-          <Typography variant="body2" sx={{ fontSize: '0.97rem', color: 'text.secondary', mr: 1 }}>
-            The characters are waiting for you to respond.
-          </Typography>
-          <button
-            onClick={handleOverrideLimit}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#1976d2',
-              cursor: 'pointer',
-              fontSize: '0.97rem',
-              textDecoration: 'underline',
-              padding: 0,
-              margin: 0,
-              marginLeft: 8,
-              fontWeight: 500,
-            }}
-          >
-            (Let them keep chatting)
-          </button>
-        </Box>
-      )}
+      
       <Fade in={showScrollButton}>
         <IconButton
           onClick={scrollToBottom}

@@ -136,37 +136,31 @@ export const useStore = create<Store>()(
         set((state) => ({
           chat: {
             ...state.chat,
-            messages: [
-              ...((state.chat.messages || []).filter(msg => msg.id !== 'temp')),
-              {
-                id: Math.random().toString(36).substring(7),
-                character: {
-                  id: 'user',
-                  name: 'You',
-                  description: 'Current user',
-                  status: 'online'
-                },
-                message,
-                timestamp: Date.now(),
-              }
-            ],
-            remainingCharacterMessages: 4, // Reset counter on user message
+            messages: [...(state.chat.messages || []), {
+              id: Math.random().toString(36).substring(7),
+              character: {
+                id: 'user',
+                name: 'You',
+                description: 'Current user',
+                status: 'online'
+              },
+              message,
+              timestamp: Date.now(),
+            }],
+            consecutiveCharacterResponses: 0, // Reset counter on user message
           }
         }));
       },
       addCharacterMessage: (character: Character, message: string) => set((state) => ({
         chat: {
           ...state.chat,
-          messages: [
-            ...((state.chat.messages || []).filter(msg => msg.id !== 'temp')),
-            {
-              id: Math.random().toString(36).substring(7),
-              character,
-              message,
-              timestamp: Date.now(),
-            }
-          ],
-          remainingCharacterMessages: Math.max((state.chat.remainingCharacterMessages || 1) - 1, 0),
+          messages: [...(state.chat.messages || []), {
+            id: Math.random().toString(36).substring(7),
+            character,
+            message,
+            timestamp: Date.now(),
+          }],
+          consecutiveCharacterResponses: (state.chat.consecutiveCharacterResponses || 0) + 1, // Increment counter
         }
       })),
 

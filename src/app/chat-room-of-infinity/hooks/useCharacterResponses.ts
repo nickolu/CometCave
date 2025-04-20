@@ -7,8 +7,6 @@ const INTER_RESPONSE_DELAY_MS = 500;
 const TYPING_SIMULATION_DELAY_MS = 0;
 const PROCESSING_RESET_DELAY_MS = 500;
 
-
-
 export function useCharacterResponses() {
   const [isProcessingResponse, setIsProcessingResponse] = useState(false);
   const lastMessageIdRef = useRef<string | null>(null);
