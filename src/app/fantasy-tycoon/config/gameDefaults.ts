@@ -1,0 +1,16 @@
+export const DEFAULT_PLAYER_ID = 'player-1';
+export const DEFAULT_CHARACTER_NAME = 'Adventurer';
+export const DEFAULT_CHARACTER_RACE = 'Human';
+export const DEFAULT_CHARACTER_CLASS = 'Warrior';
+export const DEFAULT_CHARACTER_LEVEL = 1;
+export const DEFAULT_CHARACTER_LOCATION_ID = 'starting-village';
+export const DEFAULT_CHARACTER_GOLD = 10;
+export const DEFAULT_CHARACTER_REPUTATION = 0;
+export const DEFAULT_CHARACTER_DISTANCE = 0;
+export const DEFAULT_CHARACTER_STATUS = 'active';
+export const DEFAULT_ABILITY_NAME = 'Basic Attack';
+export const DEFAULT_ABILITY_DESCRIPTION = 'A simple attack with your weapon';
+export const DEFAULT_ABILITY_POWER = 1;
+export const DEFAULT_ABILITY_COOLDOWN = 0;
+export const DEFAULT_STAT_MIN = 5;
+export const DEFAULT_STAT_MAX = 10;

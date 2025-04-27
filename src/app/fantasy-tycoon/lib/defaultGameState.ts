@@ -1,7 +1,7 @@
 "use client";
 import { GameState } from '../models/types';
 
-const DEFAULT_PLAYER_ID = 'player-1';
+import { DEFAULT_PLAYER_ID } from '../config/gameDefaults';
 
 export const defaultGameState: GameState = {
   player: {
