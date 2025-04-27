@@ -25,6 +25,9 @@ type ResolveDecisionResponse = {
 };
 
 import { applyEffects, calculateEffectiveProbability } from '@/app/fantasy-tycoon/lib/eventResolution';
+import { addItem } from '@/app/fantasy-tycoon/lib/inventory';
+import { Item } from '@/app/fantasy-tycoon/models/item';
+import { RewardItem } from '@/app/fantasy-tycoon/models/story';
 
 
 export async function POST(req: NextRequest) {
@@ -42,6 +45,7 @@ export async function POST(req: NextRequest) {
     let resultDescription = option.resultDescription;
     let appliedEffects = option.effects;
     let updatedCharacter = character;
+    let rewardItems: RewardItem[] = [];
     if (
       option.baseProbability !== undefined ||
       option.successEffects !== undefined ||
@@ -55,29 +59,86 @@ export async function POST(req: NextRequest) {
         updatedCharacter = applyEffects(character, option.successEffects);
         resultDescription = option.successDescription ?? option.resultDescription;
         appliedEffects = option.successEffects;
+        if (option.successEffects?.rewardItems) {
+          rewardItems = option.successEffects.rewardItems;
+        }
       } else {
         updatedCharacter = applyEffects(character, option.failureEffects);
         resultDescription = option.failureDescription ?? option.resultDescription;
         appliedEffects = option.failureEffects;
+        if (option.failureEffects?.rewardItems) {
+          rewardItems = option.failureEffects.rewardItems;
+        }
       }
     } else {
       // Fallback to legacy logic
       updatedCharacter = applyEffects(character, option.effects);
       resultDescription = option.resultDescription;
       appliedEffects = option.effects;
+      if (option.effects?.rewardItems) {
+        rewardItems = option.effects.rewardItems;
+      }
     }
 
-    return NextResponse.json<ResolveDecisionResponse>({
+    // Inventory integration: add reward items to inventory
+    let updatedInventory: Item[] = [];
+    if (rewardItems.length > 0) {
+      // Load current inventory from localStorage (if present)
+      let gameState: import('@/app/fantasy-tycoon/lib/storage').GameState | undefined = undefined;
+      try {
+        if (typeof window !== 'undefined') {
+          const raw = localStorage.getItem('fantasy-tycoon-save');
+          if (raw) {
+            gameState = JSON.parse(raw);
+          }
+        }
+      } catch {}
+      if (!gameState) {
+        gameState = {
+          player: { id: 'player-1', settings: {} },
+          character: null,
+          locations: [],
+          storyEvents: [],
+          decisionPoint: null,
+          genericMessage: null,
+          inventory: [],
+        };
+      }
+      rewardItems.forEach(reward => {
+        // You'd want to look up item name, icon, etc. by id in a real app
+        const item: Item = {
+          id: reward.id,
+          name: reward.id, // Placeholder, should resolve from item DB
+          description: '',
+          icon: '',
+          quantity: reward.qty,
+        };
+        gameState = addItem(gameState!, item);
+      });
+      updatedInventory = gameState.inventory;
+      // Persist updated inventory
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fantasy-tycoon-save', JSON.stringify(gameState));
+        }
+      } catch {}
+    }
+
+    // Build response
+    const response: ResolveDecisionResponse & { rewardItems?: RewardItem[], newInventory?: Item[] } = {
       updatedCharacter,
       resultDescription,
       appliedEffects,
-      selectedOptionId: option.id,
+      selectedOptionId: optionId,
       selectedOptionText: option.text,
       outcomeDescription: resultDescription,
-      resourceDelta: appliedEffects || {},
-    });
+      resourceDelta: appliedEffects,
+      rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
+      newInventory: updatedInventory.length > 0 ? updatedInventory : undefined,
+    };
+
+    return NextResponse.json(response);
   } catch (err) {
     return NextResponse.json({ error: 'Invalid request', details: (err as Error).message }, { status: 400 });
   }
 }
-

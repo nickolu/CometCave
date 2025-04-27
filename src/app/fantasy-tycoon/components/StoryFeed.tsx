@@ -22,6 +22,15 @@ export default function StoryFeed({ events }: { events: FantasyStoryEvent[] }) {
               ].filter(Boolean).join(', ')}
             </div>
           )}
+          {((e.resourceDelta && e.resourceDelta.rewardItems && e.resourceDelta.rewardItems.length > 0) || (e.rewardItems && e.rewardItems.length > 0)) && (
+            <div className="text-xs mt-0.5 text-green-700">
+              {((e.resourceDelta?.rewardItems || []).concat(e.rewardItems || [])).map((item, idx) => (
+                <span key={item.id + idx}>
+                  You received {item.qty} <span className="font-mono">{item.id}</span>{' '}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>

@@ -11,6 +11,7 @@ export interface LLMEventOption {
     goldDelta?: number;
     reputationDelta?: number;
     statusChange?: string;
+    rewardItems?: { id: string; qty: number }[];
   };
 }
 
@@ -29,6 +30,10 @@ const eventOptionSchema = z.object({
     goldDelta: z.number().optional(),
     reputationDelta: z.number().optional(),
     statusChange: z.string().optional(),
+    rewardItems: z.array(z.object({
+      id: z.string(),
+      qty: z.number().int().min(1)
+    })).optional(),
   }),
 });
 
@@ -59,14 +64,25 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
           goldDelta: { type: 'number' },
           reputationDelta: { type: 'number' },
           statusChange: { type: 'string' },
+          rewardItems: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                qty: { type: 'number', minimum: 1 }
+              },
+              required: ['id', 'qty']
+            },
+            description: 'Array of item rewards (id and qty)'
+          },
         },
-        required: ['description'],
-        additionalProperties: false,
       },
     },
     required: ['id', 'text', 'probability', 'outcome'],
-    additionalProperties: false,
+    additionalProperties: false
   };
+
   const eventSchemaForOpenAI = {
     type: 'object',
     properties: {

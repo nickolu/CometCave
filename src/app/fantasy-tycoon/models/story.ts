@@ -15,8 +15,15 @@ export interface FantasyStoryEvent {
     reputation?: number;
     distance?: number;
     statusChange?: string;
+    rewardItems?: RewardItem[];
   };
+  rewardItems?: RewardItem[];
 
+}
+
+export interface RewardItem {
+  id: string;
+  qty: number;
 }
 
 export interface FantasyDecisionOption {
@@ -35,6 +42,7 @@ export interface FantasyDecisionOption {
     reputation?: number;
     distance?: number;
     statusChange?: string;
+    rewardItems?: RewardItem[];
   };
   // Effects and description on failure
   failureDescription?: string;
@@ -43,6 +51,7 @@ export interface FantasyDecisionOption {
     reputation?: number;
     distance?: number;
     statusChange?: string;
+    rewardItems?: RewardItem[];
   };
   // For backward compatibility
   resultDescription?: string;
@@ -51,7 +60,10 @@ export interface FantasyDecisionOption {
     reputation?: number;
     distance?: number;
     statusChange?: string;
+    rewardItems?: RewardItem[];
   };
+  // Direct reward (for simple events)
+  rewardItems?: RewardItem[];
 }
 
 export interface FantasyDecisionPoint {
