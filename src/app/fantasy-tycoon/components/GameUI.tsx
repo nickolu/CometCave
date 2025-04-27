@@ -109,7 +109,7 @@ export default function GameUI() {
         </div>
       )}
     </div>
-    <InventoryPanel isOpen={inventoryOpen} onClose={toggleInventory} />
+    <InventoryPanel isOpen={inventoryOpen} onClose={toggleInventory} inventory={gameState?.inventory ?? []} />
     </>
   );
 }

@@ -1,67 +1,44 @@
 "use client";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Item } from "../models/item";
-import { useGameState } from "../hooks/useGameState";
-import { removeItem, updateQuantity } from "../lib/inventory";
-import Image from "next/image";
 
 interface InventoryPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  inventory: Item[];
 }
 
-export default function InventoryPanel({ isOpen, onClose }: InventoryPanelProps) {
-  const { gameState, save } = useGameState();
-  const [items, setItems] = useState<Item[]>([]);
+export default function InventoryPanel({ isOpen, onClose, inventory }: InventoryPanelProps) {
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (gameState?.inventory) {
-      setItems(gameState.inventory);
-    }
-  }, [gameState]);
-
+  // The following handlers should be lifted up to the parent if they need to update state
+  // For now, they are left as stubs
   const handleUse = useCallback((item: Item) => {
-    setError(null);
-    try {
-      if (!gameState) return;
-      if (item.quantity > 1) {
-        const updated = updateQuantity(gameState, item.id, item.quantity - 1);
-        save(updated);
-      } else {
-        const updated = removeItem(gameState, item.id);
-        save(updated);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
-    }
-  }, [gameState, save]);
+    setError("Item use not implemented in this component.");
+  }, []);
 
   const handleDiscard = useCallback((item: Item) => {
-    setError(null);
-    try {
-      if (!gameState) return;
-      const updated = removeItem(gameState, item.id);
-      save(updated);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
-    }
-  }, [gameState, save]);
+    setError("Item discard not implemented in this component.");
+  }, []);
+
+  const items = inventory ?? [];
 
   // Keyboard shortcut: I to toggle
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "i") {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener("keydown", handler);
-    }
-    return () => {
-      window.removeEventListener("keydown", handler);
-    };
-  }, [isOpen, onClose]);
+  // (Keep this effect if you want the panel to close with 'i')
+  // If you want to remove it, uncomment below
+  // useEffect(() => {
+  //   const handler = (e: KeyboardEvent) => {
+  //     if (e.key.toLowerCase() === "i") {
+  //       onClose();
+  //     }
+  //   };
+  //   if (isOpen) {
+  //     window.addEventListener("keydown", handler);
+  //   }
+  //   return () => {
+  //     window.removeEventListener("keydown", handler);
+  //   };
+  // }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -83,7 +60,6 @@ export default function InventoryPanel({ isOpen, onClose }: InventoryPanelProps)
           <ul className="space-y-2">
             {items.map((item) => (
               <li key={item.id} className="flex items-center space-x-2 bg-white/10 rounded p-2 transition-all duration-200 hover:scale-[1.03] hover:bg-white/20">
-                <Image src={item.icon} alt={item.name} width={32} height={32} className="rounded" />
                 <div className="flex-1">
                   <div className="font-bold text-white">{item.name}</div>
                   <div className="text-xs text-gray-300">{item.description}</div>

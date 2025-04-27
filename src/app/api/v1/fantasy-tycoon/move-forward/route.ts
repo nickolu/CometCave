@@ -3,7 +3,6 @@ import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 import {
   FantasyStoryEvent,
   FantasyDecisionPoint,
-  FantasyDecisionOption,
 } from '@/app/fantasy-tycoon/models/story';
 import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator';
 
@@ -190,6 +189,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MoveForwardRe
             gold: opt.outcome.goldDelta ?? 0,
             reputation: opt.outcome.reputationDelta ?? 0,
             statusChange: opt.outcome.statusChange,
+            rewardItems: opt.outcome.rewardItems ?? [],
           },
           resultDescription: opt.outcome.description,
         })),
@@ -239,6 +239,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<MoveForwardRe
             gold: opt.outcome.goldDelta ?? 0,
             reputation: opt.outcome.reputationDelta ?? 0,
             statusChange: opt.outcome.statusChange,
+            rewardItems: opt.outcome.rewardItems ?? [],
           },
           resultDescription: opt.outcome.description,
         })),

@@ -25,9 +25,10 @@ type ResolveDecisionResponse = {
 };
 
 import { applyEffects, calculateEffectiveProbability } from '@/app/fantasy-tycoon/lib/eventResolution';
-import { addItem } from '@/app/fantasy-tycoon/lib/inventory';
-import { Item } from '@/app/fantasy-tycoon/models/item';
+
 import { RewardItem } from '@/app/fantasy-tycoon/models/story';
+import extractRewardItemsFromText from '@/app/fantasy-tycoon/lib/extractRewardItemsFromText';
+
 
 
 export async function POST(req: NextRequest) {
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
     let appliedEffects = option.effects;
     let updatedCharacter = character;
     let rewardItems: RewardItem[] = [];
+    let extractedRewardItems: RewardItem[] = [];
     if (
       option.baseProbability !== undefined ||
       option.successEffects !== undefined ||
@@ -70,6 +72,14 @@ export async function POST(req: NextRequest) {
           rewardItems = option.failureEffects.rewardItems;
         }
       }
+      // LLM/Heuristic extraction from outcome text
+      if (resultDescription) {
+        extractedRewardItems = await extractRewardItemsFromText(resultDescription);
+        if (extractedRewardItems.length > 0) {
+          // Merge with any rewardItems already present
+          rewardItems = [...rewardItems, ...extractedRewardItems];
+        }
+      }
     } else {
       // Fallback to legacy logic
       updatedCharacter = applyEffects(character, option.effects);
@@ -78,54 +88,25 @@ export async function POST(req: NextRequest) {
       if (option.effects?.rewardItems) {
         rewardItems = option.effects.rewardItems;
       }
+      // LLM/Heuristic extraction from outcome text
+      if (resultDescription) {
+        extractedRewardItems = await extractRewardItemsFromText(resultDescription);
+        if (extractedRewardItems.length > 0) {
+          rewardItems = [...rewardItems, ...extractedRewardItems];
+        }
+      }
     }
 
-    // Inventory integration: add reward items to inventory
-    let updatedInventory: Item[] = [];
-    if (rewardItems.length > 0) {
-      // Load current inventory from localStorage (if present)
-      let gameState: import('@/app/fantasy-tycoon/lib/storage').GameState | undefined = undefined;
-      try {
-        if (typeof window !== 'undefined') {
-          const raw = localStorage.getItem('fantasy-tycoon-save');
-          if (raw) {
-            gameState = JSON.parse(raw);
-          }
-        }
-      } catch {}
-      if (!gameState) {
-        gameState = {
-          player: { id: 'player-1', settings: {} },
-          character: null,
-          locations: [],
-          storyEvents: [],
-          decisionPoint: null,
-          genericMessage: null,
-          inventory: [],
-        };
-      }
-      rewardItems.forEach(reward => {
-        // You'd want to look up item name, icon, etc. by id in a real app
-        const item: Item = {
-          id: reward.id,
-          name: reward.id, // Placeholder, should resolve from item DB
-          description: '',
-          icon: '',
-          quantity: reward.qty,
-        };
-        gameState = addItem(gameState!, item);
-      });
-      updatedInventory = gameState.inventory;
-      // Persist updated inventory
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('fantasy-tycoon-save', JSON.stringify(gameState));
-        }
-      } catch {}
+    // Collect reward items from all possible sources
+    // 1. Root-level rewardItems on the option
+    if (option.rewardItems) {
+      rewardItems = [...rewardItems, ...option.rewardItems];
     }
+    // 2. Already merged in effects, successEffects, failureEffects, and LLM extraction above
 
     // Build response
-    const response: ResolveDecisionResponse & { rewardItems?: RewardItem[], newInventory?: Item[] } = {
+    // Extend response type to include rewardItems for client inventory patching
+    const response: ResolveDecisionResponse & { rewardItems?: RewardItem[] } = {
       updatedCharacter,
       resultDescription,
       appliedEffects,
@@ -134,7 +115,6 @@ export async function POST(req: NextRequest) {
       outcomeDescription: resultDescription,
       resourceDelta: appliedEffects,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
-      newInventory: updatedInventory.length > 0 ? updatedInventory : undefined,
     };
 
     return NextResponse.json(response);
