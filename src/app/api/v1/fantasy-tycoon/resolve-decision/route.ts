@@ -30,6 +30,7 @@ export function applyDecisionEffects(
 }
 
 export async function POST(req: NextRequest) {
+  console.log('Resolving decision...');
   try {
     const body = await req.json() as ResolveDecisionRequest;
     const { character, decisionPoint, optionId } = body;

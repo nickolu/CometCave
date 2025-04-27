@@ -23,10 +23,34 @@ export function rollEvent(character: FantasyCharacter): {
   goldDelta: number;
   reputationDelta: number;
 } {
-  // 0: nothing, 1: gold, 2: reputation, 3: decision
-  const roll = Math.floor(Math.random() * 4);
+  // Weighted event roll table: adjust weights as needed
+  const eventWeights = [
+    { type: 0, weight: 60 }, // nothing
+    { type: 1, weight: 10 },  // gold
+    { type: 2, weight: 10 },  // reputation
+    { type: 3, weight: 10 },  // decision
+  ];
+  const totalWeight = eventWeights.reduce((sum, entry) => sum + entry.weight, 0);
+  const rand = Math.random() * totalWeight;
+  let acc = 0;
+  let roll = 0;
+  for (let i = 0; i < eventWeights.length; i++) {
+    acc += eventWeights[i].weight;
+    if (rand < acc) {
+      roll = eventWeights[i].type;
+      break;
+    }
+  }
   const now = new Date().toISOString();
+  console.log(`Roll: ${roll}`);
   switch (roll) {
+    case 0:
+      return {
+        event: null,
+        decisionPoint: null,
+        goldDelta: 0,
+        reputationDelta: 0,
+      };
     case 1:
       return {
         event: {
@@ -93,6 +117,7 @@ export function rollEvent(character: FantasyCharacter): {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<MoveForwardResponse>> {
+  console.log('Moving forward...');
   const body = await req.json();
   const { character }: MoveForwardRequest = body;
   let updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE };

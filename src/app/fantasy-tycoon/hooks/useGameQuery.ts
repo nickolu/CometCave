@@ -19,70 +19,40 @@ export function useGameQuery() {
   });
 }
 
+export interface MoveForwardResponse {
+  character: import('../models/character').FantasyCharacter;
+  event?: import('../models/story').FantasyStoryEvent | null;
+  decisionPoint?: import('../models/story').FantasyDecisionPoint | null;
+}
+
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      // Get current game state
       const currentState = queryClient.getQueryData<GameState>(['fantasy-tycoon', 'game-state']) || defaultGameState;
-      
-      // Update the game state (simulate moving forward)
-      const eventId = `event-${Date.now()}`;
+      if (!currentState.character) throw new Error('No character found');
+      const res = await fetch('/api/v1/fantasy-tycoon/move-forward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ character: currentState.character })
+      });
+      if (!res.ok) throw new Error('Failed to move forward');
+      const data: MoveForwardResponse = await res.json();
       const updatedState: GameState = {
         ...currentState,
-        character: currentState.character ? {
-          ...currentState.character,
-          distance: (currentState.character.distance || 0) + 1,
-          gold: (currentState.character.gold || 0) + Math.floor(Math.random() * 5),
-          reputation: (currentState.character.reputation || 0) + (Math.random() > 0.7 ? 1 : 0)
-        } : null,
+        character: data.character,
         storyEvents: [
           ...currentState.storyEvents,
-          {
-            id: eventId,
-            type: 'travel',
-            description: generateRandomEvent(currentState.character?.name || 'Adventurer'),
-            characterId: currentState.character?.id || 'unknown',
-            locationId: currentState.character?.locationId || 'wilderness',
-            timestamp: new Date().toISOString()
-          }
+          ...(data.event ? [data.event] : [])
         ]
       };
-      
-      // Save to local storage
       saveGame(updatedState);
-      
       return updatedState;
     },
     onSuccess: (updatedState) => {
-      // Immediately update the cache with the new state
       queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
-      
-      // Invalidate the query to trigger a refetch if needed
       queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });
-    },
+    }
   });
 }
 
-// Helper function to generate random events
-function generateRandomEvent(characterName: string): string {
-  const events = [
-    `${characterName} found a small treasure chest with some gold.`,
-    `${characterName} helped a local farmer and earned some reputation.`,
-    `${characterName} traveled through a dense forest.`,
-    `${characterName} crossed a river using a rickety bridge.`,
-    `${characterName} rested at a small village and heard rumors of adventure.`,
-    `${characterName} defeated a small group of bandits.`,
-    `${characterName} discovered an ancient ruin.`,
-    `${characterName} met a traveling merchant and traded goods.`,
-    `${characterName} helped a lost child find their way home.`,
-    `${characterName} climbed a tall mountain and enjoyed the view.`
-  ];
-  
-  // Use a deterministic seed for SSR to prevent hydration mismatch
-  const index = typeof window !== 'undefined' 
-    ? Math.floor(Math.random() * events.length)
-    : 0; // Use first event during SSR
-  
-  return events[index];
-}

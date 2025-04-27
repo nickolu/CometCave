@@ -12,8 +12,6 @@ export default function GameUI() {
   const { data: gameState, isLoading: loadingState } = useGameQuery();
   const moveForwardMutation = useMoveForwardMutation();
 
-  const loading = loadingState || moveForwardMutation.isPending;
-
   // Use useEffect to ensure client-side only code
   useEffect(() => {
     // Initialize the game on the client side if needed
@@ -22,7 +20,6 @@ export default function GameUI() {
     }
   }, [gameState, loadingState]);
 
-  if (loading) return <div className="p-4 text-center">Loading...</div>;
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
   const { character, storyEvents } = gameState;
