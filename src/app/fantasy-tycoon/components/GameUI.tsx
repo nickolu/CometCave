@@ -3,12 +3,25 @@ import { useGameQuery, useMoveForwardMutation } from "../hooks/useGameQuery";
 import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
 import StoryFeed from "../components/StoryFeed";
 import CharacterCreation from "../components/CharacterCreation";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
+import InventoryPanel from "./InventoryPanel";
 import { useQueryClient } from '@tanstack/react-query';
 import { saveGame } from "../lib/storage";
 import { FantasyCharacter } from "../models/character";
 
 export default function GameUI() {
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const toggleInventory = useCallback(() => setInventoryOpen(v => !v), []);
+  // Keyboard shortcut: I to toggle inventory
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "i") {
+        setInventoryOpen(v => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const queryClient = useQueryClient();
   const { data: gameState, isLoading: loadingState } = useGameQuery();
   const moveForwardMutation = useMoveForwardMutation();
@@ -38,8 +51,16 @@ export default function GameUI() {
   }
 
   return (
+    <>
     <div className="max-w-md mx-auto p-4 space-y-4">
       <div className="flex justify-between items-center gap-2">
+        <button
+          className="bg-gray-700 text-white px-3 py-2 rounded mr-2"
+          onClick={toggleInventory}
+          aria-label="Open inventory (I)"
+        >
+          Inventory (I)
+        </button>
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
           onClick={() => moveForwardMutation.mutate()}
@@ -87,6 +108,8 @@ export default function GameUI() {
         </div>
       )}
     </div>
+    <InventoryPanel isOpen={inventoryOpen} onClose={toggleInventory} />
+    </>
   );
 }
 
