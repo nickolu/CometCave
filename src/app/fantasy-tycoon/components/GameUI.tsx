@@ -45,7 +45,7 @@ export default function GameUI() {
           onClick={() => moveForwardMutation.mutate()}
           disabled={moveForwardMutation.isPending || resolveDecisionMutation.isPending}
         >
-          {moveForwardMutation.isPending ? "Moving..." : "Move Forward"}
+          {moveForwardMutation.isPending ? "Travelling..." : "Continue Travelling"}
         </button>
         <div className="flex gap-4 text-sm">
           <span>Distance: <b>{character.distance}</b> km</span>
@@ -80,13 +80,12 @@ export default function GameUI() {
           )}
         </div>
       )}
-      {/* Handle generic message for roll = 0 */}
+      <StoryFeed events={storyEvents} />
       {gameState.genericMessage && (
         <div className="border rounded p-3 bg-gray-100 text-gray-700 text-sm">
           {gameState.genericMessage}
         </div>
       )}
-      <StoryFeed events={storyEvents} />
     </div>
   );
 }
