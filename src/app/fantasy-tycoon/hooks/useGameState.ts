@@ -1,26 +1,16 @@
 "use client";
-import { useCallback, useState } from 'react';
+import { useGameStore } from './useGameStore';
 import { GameState } from '../models/types';
-import { saveGame, loadGame, clearGame } from '../lib/storage';
 
 export function useGameState() {
-  const [gameState, setGameState] = useState<GameState | null>(() => loadGame());
+  const gameState = useGameStore((s) => s.gameState);
+  const setGameState = useGameStore((s) => s.setGameState);
+  const clearGameState = useGameStore((s) => s.clearGameState);
 
-  const save = useCallback((state: GameState) => {
-    saveGame(state);
-    setGameState(state);
-  }, []);
-
-  const load = useCallback(() => {
-    const state = loadGame();
-    setGameState(state);
-    return state;
-  }, []);
-
-  const clear = useCallback(() => {
-    clearGame();
-    setGameState(null);
-  }, []);
+  const save = (state: GameState) => setGameState(state);
+  const load = () => gameState;
+  const clear = () => clearGameState();
 
   return { gameState, save, load, clear };
 }
+

@@ -6,10 +6,11 @@ import CharacterCreation from "../components/CharacterCreation";
 import { useEffect, useState, useCallback } from "react";
 import InventoryPanel from "./InventoryPanel";
 import { useQueryClient } from '@tanstack/react-query';
-import { saveGame } from "../lib/storage";
 import { FantasyCharacter } from "../models/character";
+import { useGameState } from "../hooks/useGameState";
 
 export default function GameUI() {
+  const { save } = useGameState();
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const toggleInventory = useCallback(() => setInventoryOpen(v => !v), []);
   // Keyboard shortcut: I to toggle inventory
@@ -41,7 +42,7 @@ export default function GameUI() {
 
   const handleCharacterCreated = (newCharacter: FantasyCharacter) => {
     const updatedState = { ...gameState, character: newCharacter };
-    saveGame(updatedState);
+    save(updatedState);
     queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
   };
 

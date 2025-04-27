@@ -1,21 +1,18 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GameState } from '../models/types';
-import { loadGame, saveGame } from '../lib/storage';
+import { useGameState } from './useGameState';
 import { defaultGameState } from '../lib/defaultGameState';
 import { addItem } from '../lib/inventory';
 import { getItemDisplayData } from '../lib/itemDisplay';
 
 export function useGameQuery() {
+  const { gameState } = useGameState();
   return useQuery<GameState>({
     queryKey: ['fantasy-tycoon', 'game-state'],
     queryFn: async () => {
-      // Only attempt to load from localStorage on the client side
-      if (typeof window !== 'undefined') {
-        const savedGame = loadGame();
-        if (savedGame) return savedGame;
-      }
-      return defaultGameState;
+      // Use useGameState for persisted state
+      return gameState || defaultGameState;
     },
     initialData: defaultGameState,
     staleTime: 1000 * 60,
@@ -31,6 +28,7 @@ export interface MoveForwardResponse {
 
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
+  const { save } = useGameState();
   return useMutation({
     mutationFn: async () => {
       console.log('[MoveForwardMutation] mutationFn called');
@@ -97,7 +95,7 @@ export function useMoveForwardMutation() {
       };
 
       console.log('[MoveForwardMutation] Final updated state:', updatedState);
-      saveGame(updatedState);
+      save(updatedState);
       return updatedState;
     },
     onSuccess: (updatedState) => {

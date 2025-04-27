@@ -3,9 +3,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FantasyCharacter } from '../models/character';
 import { FantasyDecisionPoint } from '../models/story';
 import { GameState } from '../models/types';
-import { saveGame } from '../lib/storage';
 import { addItem } from '../lib/inventory';
 import { getItemDisplayData } from '../lib/itemDisplay';
+import { useGameState } from './useGameState';
 
 export interface ResolveDecisionResponse {
   updatedCharacter: FantasyCharacter;
@@ -24,6 +24,7 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
+  const { save } = useGameState();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ decisionPoint, optionId }: { decisionPoint: FantasyDecisionPoint; optionId: string }) => {
@@ -109,7 +110,7 @@ export function useResolveDecisionMutation() {
         ],
       };
       console.log('[ResolveDecisionMutation] Final updated state:', updatedState);
-      saveGame(updatedState);
+      save(updatedState);
       return { ...data, updatedState };
     },
     onSuccess: ({ updatedState }) => {
