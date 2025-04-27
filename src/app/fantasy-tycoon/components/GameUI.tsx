@@ -25,10 +25,6 @@ export default function GameUI() {
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
   const { character, storyEvents } = gameState;
-  const lastEvent = storyEvents && storyEvents.length > 0 ? storyEvents[storyEvents.length - 1] : null;
-  // Find if there is an active decision point in the last event
-  const decisionPoint = gameState.decisionPoint;
-  const genericMessage = gameState.genericMessage;
 
   const handleCharacterCreated = (newCharacter: FantasyCharacter) => {
     const updatedState = { ...gameState, character: newCharacter };
@@ -59,19 +55,22 @@ export default function GameUI() {
       </div>
       {/* Sprint 4: Decision/Event UI */}
       {gameState.decisionPoint && !gameState.decisionPoint.resolved && (
-        <div className="border rounded p-4 bg-yellow-50">
+        <div className="border rounded p-4">
           <div className="font-semibold mb-2">{gameState.decisionPoint.prompt}</div>
           <div className="space-y-2">
-            {gameState.decisionPoint.options.map(option => (
-              <button
+            {gameState.decisionPoint.options.map(option => 
+             {
+              if (!option) return null;
+              if (!gameState.decisionPoint) return null;
+              return <button
                 key={option.id}
-                className="block w-full text-left border px-3 py-2 rounded hover:bg-yellow-100 focus:bg-yellow-200 disabled:opacity-60"
+                className="block w-full text-left border px-3 py-2 rounded disabled:opacity-60"
                 disabled={resolveDecisionMutation.isPending}
-                onClick={() => resolveDecisionMutation.mutate({ decisionPoint: gameState.decisionPoint, optionId: option.id })}
+                onClick={() => resolveDecisionMutation.mutate({ decisionPoint: gameState.decisionPoint!, optionId: option.id })}
               >
                 {option.text}
-              </button>
-            ))}
+              </button>}
+            )}
           </div>
           {resolveDecisionMutation.isPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
           {resolveDecisionMutation.data && (

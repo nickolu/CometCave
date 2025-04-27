@@ -13,8 +13,8 @@ export interface GameState {
   character: FantasyCharacter | null;
   locations: FantasyLocation[];
   storyEvents: FantasyStoryEvent[];
-  decisionPoint?: FantasyDecisionPoint | null;
-  genericMessage?: string | null;
+  decisionPoint: FantasyDecisionPoint | null;
+  genericMessage: string | null;
 }
 
 const STORAGE_KEY = 'fantasy-tycoon-save';
