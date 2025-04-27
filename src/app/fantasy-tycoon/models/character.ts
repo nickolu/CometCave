@@ -19,6 +19,9 @@ export interface FantasyCharacter {
   reputation: number;
   distance: number;
   status: 'active' | 'retired' | 'dead';
+  strength: number;
+  intelligence: number;
+  luck: number;
 }
 
 export interface FantasyNPC {

@@ -39,7 +39,10 @@ export function useCharacterCreation() {
       gold: prev.gold || 10,
       reputation: prev.reputation || 0,
       distance: prev.distance || 0,
-      status: prev.status || 'active'
+      status: prev.status || 'active',
+      strength: prev.strength ?? Math.floor(Math.random() * 6) + 5, // 5-10
+      intelligence: prev.intelligence ?? Math.floor(Math.random() * 6) + 5,
+      luck: prev.luck ?? Math.floor(Math.random() * 6) + 5
     }));
     
     setIsComplete(true);

@@ -15,6 +15,9 @@ const mockCharacter: FantasyCharacter = {
   reputation: 10,
   distance: 5,
   status: 'active',
+  strength: 7,
+  intelligence: 8,
+  luck: 6,
 };
 
 describe('rollEvent', () => {

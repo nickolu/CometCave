@@ -3,7 +3,9 @@ import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 import {
   FantasyStoryEvent,
   FantasyDecisionPoint,
+  FantasyDecisionOption,
 } from '@/app/fantasy-tycoon/models/story';
+import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator';
 
 interface MoveForwardRequest {
   character: FantasyCharacter;
@@ -17,6 +19,7 @@ interface MoveForwardResponse {
 
 const BASE_DISTANCE = 1;
 
+// Legacy rollEvent; kept for non-decision events
 export function rollEvent(character: FantasyCharacter): {
   event: FantasyStoryEvent | null;
   decisionPoint: FantasyDecisionPoint | null;
@@ -29,7 +32,7 @@ export function rollEvent(character: FantasyCharacter): {
     { type: 1, weight: 10 },  // gold
     { type: 2, weight: 10 },  // reputation
     { type: 3, weight: 10 },  // decision
-  ];
+  ]; // Ensure all FantasyCharacter objects have strength, intelligence, and luck
   const totalWeight = eventWeights.reduce((sum, entry) => sum + entry.weight, 0);
   const rand = Math.random() * totalWeight;
   let acc = 0;
@@ -122,7 +125,96 @@ export async function POST(req: NextRequest): Promise<NextResponse<MoveForwardRe
   const { character }: MoveForwardRequest = body;
   let updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE };
 
-  const { event, decisionPoint, goldDelta, reputationDelta } = rollEvent(updatedCharacter);
+  // Roll for event type
+  const eventWeights = [
+    { type: 0, weight: 60 }, // nothing
+    { type: 1, weight: 10 },  // gold
+    { type: 2, weight: 10 },  // reputation
+    { type: 3, weight: 10 },  // decision (LLM)
+  ];
+  const totalWeight = eventWeights.reduce((sum, entry) => sum + entry.weight, 0);
+  const rand = Math.random() * totalWeight;
+  let acc = 0;
+  let roll = 0;
+  for (let i = 0; i < eventWeights.length; i++) {
+    acc += eventWeights[i].weight;
+    if (rand < acc) {
+      roll = eventWeights[i].type;
+      break;
+    }
+  }
+
+  let event: FantasyStoryEvent | null = null;
+  let decisionPoint: FantasyDecisionPoint | null = null;
+  let goldDelta = 0;
+  let reputationDelta = 0;
+
+  if (roll === 0) {
+    // Nothing happens
+    event = null;
+    decisionPoint = null;
+  } else if (roll === 1) {
+    event = {
+      id: `event-gold-${Date.now()}`,
+      type: 'gain_gold',
+      description: 'You found 10 gold on the road.',
+      characterId: character.id,
+      locationId: character.locationId,
+      timestamp: new Date().toISOString(),
+    };
+    goldDelta = 10;
+  } else if (roll === 2) {
+    event = {
+      id: `event-rep-${Date.now()}`,
+      type: 'gain_reputation',
+      description: 'You helped a traveler and gained reputation.',
+      characterId: character.id,
+      locationId: character.locationId,
+      timestamp: new Date().toISOString(),
+    };
+    reputationDelta = 5;
+  } else if (roll === 3) {
+    // LLM-driven event
+    try {
+      // You may want to add more story context here
+      const context = '';
+      const llmEvents = await generateLLMEvents(character, context);
+      const llmEvent = llmEvents[0];
+      event = {
+        id: llmEvent.id,
+        type: 'decision_point',
+        description: llmEvent.description,
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      };
+      decisionPoint = {
+        id: `decision-${llmEvent.id}`,
+        eventId: llmEvent.id,
+        prompt: llmEvent.description,
+        options: llmEvent.options.map(opt => ({
+          id: opt.id,
+          text: opt.text,
+          effects: {
+            gold: opt.outcome.goldDelta ?? 0,
+            reputation: opt.outcome.reputationDelta ?? 0,
+            statusChange: opt.outcome.statusChange,
+          },
+          resultDescription: opt.outcome.description,
+        })),
+        resolved: false,
+      };
+    } catch (err) {
+      console.error('LLM event generation failed', err);
+      // Fallback to legacy
+      const legacy = rollEvent(character);
+      event = legacy.event;
+      decisionPoint = legacy.decisionPoint;
+      goldDelta = legacy.goldDelta;
+      reputationDelta = legacy.reputationDelta;
+    }
+  }
+
   if (goldDelta) updatedCharacter = { ...updatedCharacter, gold: updatedCharacter.gold + goldDelta };
   if (reputationDelta) updatedCharacter = { ...updatedCharacter, reputation: updatedCharacter.reputation + reputationDelta };
 
