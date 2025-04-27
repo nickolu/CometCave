@@ -15,6 +15,7 @@ interface MoveForwardResponse {
   character: FantasyCharacter;
   event?: FantasyStoryEvent | null;
   decisionPoint?: FantasyDecisionPoint | null;
+  genericMessage?: string | null;
 }
 
 const BASE_DISTANCE = 1;
@@ -149,20 +150,59 @@ export async function POST(req: NextRequest): Promise<NextResponse<MoveForwardRe
   let goldDelta = 0;
   let reputationDelta = 0;
 
+  const genericMessages = [
+    'The road is quiet. You travel onward.',
+    'A gentle breeze rustles the trees. Nothing of note happens.',
+    'You take a moment to rest and reflect.',
+    'You hear distant laughter, but nothing comes of it.',
+    'The journey continues uneventfully.'
+  ];
+
+  let genericMessage: string | null = null;
+
   if (roll === 0) {
-    // Nothing happens
+    // Return a random generic message
     event = null;
     decisionPoint = null;
+    genericMessage = genericMessages[Math.floor(Math.random() * genericMessages.length)];
   } else if (roll === 1) {
-    event = {
-      id: `event-gold-${Date.now()}`,
-      type: 'gain_gold',
-      description: 'You found 10 gold on the road.',
-      characterId: character.id,
-      locationId: character.locationId,
-      timestamp: new Date().toISOString(),
-    };
-    goldDelta = 10;
+    // LLM-driven event (was previously roll === 3)
+    try {
+      const context = '';
+      const llmEvents = await generateLLMEvents(character, context);
+      const llmEvent = llmEvents[0];
+      event = {
+        id: llmEvent.id,
+        type: 'decision_point',
+        description: llmEvent.description,
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      };
+      decisionPoint = {
+        id: `decision-${llmEvent.id}`,
+        eventId: llmEvent.id,
+        prompt: llmEvent.description,
+        options: llmEvent.options.map(opt => ({
+          id: opt.id,
+          text: opt.text,
+          effects: {
+            gold: opt.outcome.goldDelta ?? 0,
+            reputation: opt.outcome.reputationDelta ?? 0,
+            statusChange: opt.outcome.statusChange,
+          },
+          resultDescription: opt.outcome.description,
+        })),
+        resolved: false,
+      };
+    } catch (err) {
+      console.error('LLM event generation failed', err);
+      // Fallback to a generic message
+      event = null;
+      decisionPoint = null;
+      genericMessage = genericMessages[Math.floor(Math.random() * genericMessages.length)];
+    }
+  } else if (roll === 2) {
   } else if (roll === 2) {
     event = {
       id: `event-rep-${Date.now()}`,
@@ -222,5 +262,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<MoveForwardRe
     character: updatedCharacter,
     event,
     decisionPoint,
+    genericMessage,
   });
 }
