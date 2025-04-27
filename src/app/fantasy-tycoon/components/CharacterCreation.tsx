@@ -1,3 +1,4 @@
+"use client";
 import { useCharacterCreation } from '../hooks/useCharacterCreation';
 import { useCallback } from 'react';
 

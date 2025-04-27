@@ -1,3 +1,4 @@
+"use client";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GameState, loadGame, saveGame } from '../lib/storage';
 import { defaultGameState } from '../lib/defaultGameState';
@@ -6,10 +7,14 @@ export function useGameQuery() {
   return useQuery<GameState>({
     queryKey: ['fantasy-tycoon', 'game-state'],
     queryFn: async () => {
-      // Use local storage instead of API endpoint
-      const savedGame = loadGame();
-      return savedGame || defaultGameState;
+      // Only attempt to load from localStorage on the client side
+      if (typeof window !== 'undefined') {
+        const savedGame = loadGame();
+        if (savedGame) return savedGame;
+      }
+      return defaultGameState;
     },
+    initialData: defaultGameState,
     staleTime: 1000 * 60,
   });
 }
@@ -22,6 +27,7 @@ export function useMoveForwardMutation() {
       const currentState = queryClient.getQueryData<GameState>(['fantasy-tycoon', 'game-state']) || defaultGameState;
       
       // Update the game state (simulate moving forward)
+      const eventId = `event-${Date.now()}`;
       const updatedState: GameState = {
         ...currentState,
         character: currentState.character ? {
@@ -33,7 +39,7 @@ export function useMoveForwardMutation() {
         storyEvents: [
           ...currentState.storyEvents,
           {
-            id: `event-${Date.now()}`,
+            id: eventId,
             type: 'travel',
             description: generateRandomEvent(currentState.character?.name || 'Adventurer'),
             characterId: currentState.character?.id || 'unknown',
@@ -46,10 +52,14 @@ export function useMoveForwardMutation() {
       // Save to local storage
       saveGame(updatedState);
       
-      return { state: updatedState };
+      return updatedState;
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['fantasy-tycoon', 'game-state'], data.state);
+    onSuccess: (updatedState) => {
+      // Immediately update the cache with the new state
+      queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
+      
+      // Invalidate the query to trigger a refetch if needed
+      queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });
     },
   });
 }
@@ -69,5 +79,10 @@ function generateRandomEvent(characterName: string): string {
     `${characterName} climbed a tall mountain and enjoyed the view.`
   ];
   
-  return events[Math.floor(Math.random() * events.length)];
+  // Use a deterministic seed for SSR to prevent hydration mismatch
+  const index = typeof window !== 'undefined' 
+    ? Math.floor(Math.random() * events.length)
+    : 0; // Use first event during SSR
+  
+  return events[index];
 }

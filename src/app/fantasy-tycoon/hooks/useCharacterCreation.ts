@@ -1,7 +1,10 @@
-import { useState } from 'react';
+"use client";
+import { useState, useId } from 'react';
 import { FantasyCharacter, FantasyAbility } from '../models/character';
 
 export function useCharacterCreation() {
+  // useId generates a stable ID that's consistent between server and client
+  const idPrefix = useId();
   const [character, setCharacter] = useState<Partial<FantasyCharacter>>({});
   const [isComplete, setIsComplete] = useState(false);
 
@@ -10,9 +13,13 @@ export function useCharacterCreation() {
   };
 
   const completeCreation = () => {
+    // Use stable IDs for server-side rendering consistency
+    const abilityId = `${idPrefix}-ability`;
+    const charId = `${idPrefix}-char`;
+    
     // Ensure all required fields are set with defaults if not provided
     const defaultAbility: FantasyAbility = {
-      id: `ability-${Date.now()}`,
+      id: abilityId,
       name: 'Basic Attack',
       description: 'A simple attack with your weapon',
       power: 1,
@@ -21,7 +28,7 @@ export function useCharacterCreation() {
     
     setCharacter(prev => ({
       ...prev,
-      id: prev.id || `char-${Date.now()}`,
+      id: prev.id || charId,
       playerId: prev.playerId || 'player-1',
       name: prev.name || 'Adventurer',
       race: prev.race || 'Human',

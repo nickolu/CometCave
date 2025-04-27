@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useState } from 'react';
 import { GameState, saveGame, loadGame, clearGame } from '../lib/storage';
 

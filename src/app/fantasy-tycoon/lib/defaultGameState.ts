@@ -1,3 +1,4 @@
+"use client";
 import { GameState } from '../lib/storage';
 
 const DEFAULT_PLAYER_ID = 'player-1';

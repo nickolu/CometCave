@@ -2,37 +2,31 @@
 import { useGameQuery, useMoveForwardMutation } from "../hooks/useGameQuery";
 import StoryFeed from "../components/StoryFeed";
 import CharacterCreation from "../components/CharacterCreation";
-import { useState, useEffect } from "react";
-import { saveGame, GameState } from "../lib/storage";
+import { useEffect } from "react";
+import { saveGame } from "../lib/storage";
 import { FantasyCharacter } from "../models/character";
 
 export default function GameUI() {
-  const { data: initialGameState, isLoading: loadingState } = useGameQuery();
+  const { data: gameState, isLoading: loadingState } = useGameQuery();
   const moveForwardMutation = useMoveForwardMutation();
-  const [gameState, setGameState] = useState<GameState | undefined>(initialGameState);
-
-  // Update local state when the query data changes
-  useEffect(() => {
-    if (initialGameState) {
-      setGameState(initialGameState);
-    }
-  }, [initialGameState]);
 
   const loading = loadingState || moveForwardMutation.isPending;
 
+  // Use useEffect to ensure client-side only code
+  useEffect(() => {
+    // Initialize the game on the client side if needed
+    if (typeof window !== 'undefined' && gameState && !loadingState) {
+      // This ensures any client-side only initialization happens after hydration
+    }
+  }, [gameState, loadingState]);
+
   if (loading) return <div className="p-4 text-center">Loading...</div>;
-  if (!gameState) return <div className="p-4 text-center">Creating new game...</div>;
+  if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
   const { character, storyEvents } = gameState;
 
   const handleCharacterCreated = (newCharacter: FantasyCharacter) => {
-    if (!gameState) return;
-    
-    const updatedState: GameState = {
-      ...gameState,
-      character: newCharacter
-    };
-    setGameState(updatedState);
+    const updatedState = { ...gameState, character: newCharacter };
     saveGame(updatedState);
   };
 
