@@ -12,7 +12,7 @@ describe('LLM Event Generator', () => {
     let events;
     try {
       events = await generateLLMEvents(character, context);
-    } catch (e) {
+    } catch {
       // Should fallback to default event
       events = [
         { id: 'default', description: 'A simple event.', options: [
