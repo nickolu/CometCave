@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { rollEvent } from './route';
+import { rollEvent } from './services/moveForwardService';
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 
 const mockCharacter: FantasyCharacter = {
