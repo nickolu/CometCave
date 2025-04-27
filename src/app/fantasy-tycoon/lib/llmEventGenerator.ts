@@ -42,40 +42,102 @@ const eventsArraySchema = z.array(eventSchema).length(3);
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-function buildPrompt(character: FantasyCharacter, context: string) {
-  return `You are an event generator for a fantasy adventure game. Given the character and story context, generate 3 distinct event objects. Each event should have:
-  - id: unique string
-  - description: a short narrative of the event
-  - options: 2-4 choices, each with:
-      - id: unique string
-      - text: option text
-      - probability: likelihood (0-1) of success
-      - outcome: description and possible goldDelta, reputationDelta, statusChange
 
-Respond ONLY with a JSON array of 3 events in this schema. No extra text.
-
-Character:
-${JSON.stringify(character, null, 2)}
-
-Context:
-${context}`;
-}
 
 export async function generateLLMEvents(character: FantasyCharacter, context: string): Promise<LLMGeneratedEvent[]> {
-  const prompt = buildPrompt(character, context);
+  // Function calling schema for event generation
+  const eventOptionSchemaForOpenAI = {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      text: { type: 'string' },
+      probability: { type: 'number', minimum: 0, maximum: 1 },
+      outcome: {
+        type: 'object',
+        properties: {
+          description: { type: 'string' },
+          goldDelta: { type: 'number' },
+          reputationDelta: { type: 'number' },
+          statusChange: { type: 'string' },
+        },
+        required: ['description'],
+        additionalProperties: false,
+      },
+    },
+    required: ['id', 'text', 'probability', 'outcome'],
+    additionalProperties: false,
+  };
+  const eventSchemaForOpenAI = {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      description: { type: 'string' },
+      options: {
+        type: 'array',
+        items: eventOptionSchemaForOpenAI,
+        minItems: 2,
+        maxItems: 4,
+      },
+    },
+    required: ['id', 'description', 'options'],
+    additionalProperties: false,
+  };
+  const eventsArraySchemaForOpenAI = {
+    type: 'array',
+    items: eventSchemaForOpenAI,
+    minItems: 3,
+    maxItems: 3,
+  };
   try {
     const response = await openai.chat.completions.create({
-  model: "gpt-4o",
-  messages: [{ role: "user", content: prompt }],
-  temperature: 0.7,
-  max_tokens: 1200,
-  response_format: { type: "json_object" },
-});
-const raw = response.choices[0]?.message?.content?.trim();
-if (!raw) throw new Error("No content from LLM");
-const parsed = JSON.parse(raw);
-const events = eventsArraySchema.parse(parsed);
-return events;
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: `Generate 3 fantasy adventure event objects for the following character and context. Each event must match the following JSON schema and be part of a JSON array. Do not return any extra text.\n\nCharacter:\n${JSON.stringify(character, null, 2)}\n\nContext:\n${context}`,
+        },
+      ],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'generate_events',
+            description: 'Generate 3 fantasy adventure event objects as an array.',
+            parameters: {
+              type: 'object',
+              properties: {
+                events: eventsArraySchemaForOpenAI,
+              },
+              required: ['events'],
+            },
+          },
+        },
+      ],
+      tool_choice: { type: 'function', function: { name: 'generate_events' } },
+      temperature: 0.7,
+      max_tokens: 1200,
+    });
+    // Parse tool calls response
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    if (toolCall && toolCall.function?.name === 'generate_events') {
+      const toolArgs = JSON.parse(toolCall.function.arguments);
+      const events = eventsArraySchema.parse(toolArgs.events);
+      return events;
+    }
+    // fallback to legacy parsing if tool call missing
+    const raw = response.choices[0]?.message?.content?.trim();
+    if (!raw) throw new Error('No content from LLM');
+    const parsed = JSON.parse(raw);
+    let events;
+    if (Array.isArray(parsed)) {
+      events = eventsArraySchema.parse(parsed);
+    } else if (parsed && Array.isArray(parsed.events)) {
+      events = eventsArraySchema.parse(parsed.events);
+    } else {
+      throw new Error('LLM response is not an array or object with events array');
+    }
+    return events;
+
   } catch (err) {
     console.error("LLM event generation failed", err);
     // Fallback: return a simple default event
