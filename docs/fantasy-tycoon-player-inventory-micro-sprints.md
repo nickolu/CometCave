@@ -49,7 +49,7 @@ Break the work into four micro-sprints (~1 week each) with clear deliverables an
 **Goal:** Hook item rewards into the event resolution flow.
 
 **Tasks:**
-- Extend event schema to optionally return `rewardItems: { id: string; qty: number }[]`.
+- Extend event schema to optionally return `rewardItems: Item[]`.
 - Update `llmEventGenerator`/`eventResolution` to parse and emit item rewards.
 - In `resolve-decision/route.ts`, after resolving an event:
   - Dispatch `addItem` for each reward.

@@ -3,5 +3,4 @@ export interface Item {
   name: string;
   description: string;
   quantity: number;
-  // All fields strictly typed; no implicit any or this
 }

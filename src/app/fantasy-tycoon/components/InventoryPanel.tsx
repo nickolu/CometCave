@@ -39,19 +39,19 @@ export default function InventoryPanel({ isOpen, onClose, inventory }: Inventory
         >
           ×
         </button>
-        <h2 className="text-xl font-bold mb-4">Inventory</h2>
+        <h2 className="text-xl font-bold mb-4 text-black">Inventory</h2>
         {error && <div className="text-red-500 mb-2">{error}</div>}
         {items.length === 0 ? (
-          <div className="text-gray-500">Your inventory is empty.</div>
+          <div className="text-black">Your inventory is empty.</div>
         ) : (
           <List
             items={items}
             className="space-y-2"
             renderItem={(item) => (
-              <div className="flex items-center space-x-2 bg-white/10 rounded p-2 transition-all duration-200 hover:scale-[1.03] hover:bg-white/20">
+              <div className="flex items-center space-x-2 rounded p-2 transition-all duration-200 hover:scale-[1.03]">
                 <div className="flex-1">
-                  <div className="font-bold text-white">{item.name}</div>
-                  <div className="text-xs text-gray-300">{item.description}</div>
+                  <div className="font-bold text-black">{item.name}</div>
+                  <div className="text-xs text-black">{item.description}</div>
                 </div>
                 <span className="font-mono px-2">x{item.quantity}</span>
                 <Button

@@ -1,10 +1,9 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GameState } from '../models/types';
+import { GameState, Item } from '../models/types';
 import { useGameState } from './useGameState';
 import { defaultGameState } from '../lib/defaultGameState';
 import { addItem } from '../lib/inventory';
-import { getItemDisplayData } from '../lib/itemDisplay';
 
 export function useGameQuery() {
   const { gameState } = useGameState();
@@ -25,6 +24,7 @@ export interface MoveForwardResponse {
   decisionPoint?: import('../models/story').FantasyDecisionPoint | null;
   genericMessage?: string | null;
 }
+
 
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
@@ -49,10 +49,11 @@ export function useMoveForwardMutation() {
       let newInventory = currentState.inventory;
       console.log('[MoveForwardMutation] Initial inventory:', newInventory);
       // Patch: Add rewardItems from event.resourceDelta and event.rewardItems if present
-      const rewardItems: { id: string; qty: number }[] = [];
+      const rewardItems: Item[] = [];
       if (data.event) {
         console.log('[MoveForwardMutation] data.event present:', data.event);
         if (data.event.resourceDelta && Array.isArray(data.event.resourceDelta.rewardItems)) {
+          console.log('[MoveForwardMutation] resourceDelta rewardItems:', data.event.resourceDelta.rewardItems)
           rewardItems.push(...data.event.resourceDelta.rewardItems);
         }
         if (Array.isArray(data.event.rewardItems)) {
@@ -64,12 +65,12 @@ export function useMoveForwardMutation() {
         console.log('[MoveForwardMutation] No reward items extracted.');
       }
       for (const reward of rewardItems) {
-        const display = getItemDisplayData(reward.id);
-        console.log('[MoveForwardMutation] Display data for', reward.id, display);
-        const item = {
+        console.log('[MoveForwardMutation] Display data for', reward.id, reward);
+        const item: Item = {
           id: reward.id,
-          ...display,
-          quantity: reward.qty,
+          name: reward.name ?? '',
+          description: reward.description ?? '',
+          quantity: reward.quantity,
         };
         const beforeInventory = newInventory;
         newInventory = addItem({ ...currentState, inventory: newInventory }, item).inventory;

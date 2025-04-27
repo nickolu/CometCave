@@ -26,8 +26,8 @@ type ResolveDecisionResponse = {
 
 import { applyEffects, calculateEffectiveProbability } from '@/app/fantasy-tycoon/lib/eventResolution';
 
-import { RewardItem } from '@/app/fantasy-tycoon/models/story';
 import extractRewardItemsFromText from '@/app/fantasy-tycoon/lib/extractRewardItemsFromText';
+import { Item } from '@/app/fantasy-tycoon/models/item';
 
 
 
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     let resultDescription = option.resultDescription;
     let appliedEffects = option.effects;
     let updatedCharacter = character;
-    let rewardItems: RewardItem[] = [];
-    let extractedRewardItems: RewardItem[] = [];
+    let rewardItems: Item[] = [];
+    let extractedRewardItems: Item[] = [];
     if (
       option.baseProbability !== undefined ||
       option.successEffects !== undefined ||
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
     // Build response
     // Extend response type to include rewardItems for client inventory patching
-    const response: ResolveDecisionResponse & { rewardItems?: RewardItem[] } = {
+    const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
       updatedCharacter,
       resultDescription,
       appliedEffects,

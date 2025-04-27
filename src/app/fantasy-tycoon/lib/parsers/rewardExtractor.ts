@@ -1,15 +1,11 @@
+import { Item } from '../../models/item';
 import { extractRewardItemsWithRegex, fallbackExtractSimple } from './textParser';
-
-export interface RewardItem {
-  id: string;
-  qty: number;
-}
 
 /**
  * Extracts reward items from a text string using OpenAI API if available, otherwise falls back to regex mock.
  * Requires process.env.OPENAI_API_KEY to be set for LLM extraction.
  */
-export default async function extractRewardItemsFromText(text: string): Promise<RewardItem[]> {
+export default async function extractRewardItemsFromText(text: string): Promise<Item[]> {
   if (process.env.NODE_ENV !== 'production') {
     console.log('[rewardExtractor] input:', text);
   }
@@ -18,7 +14,7 @@ export default async function extractRewardItemsFromText(text: string): Promise<
     return extractRewardItemsWithRegex(text);
   }
 
-  const prompt = `Extract any items the player receives from the following text. Respond ONLY with a JSON object of the form { "items": [{ "id": string, "qty": number }] }. If there are no items, respond with { "items": [] } and nothing else.\n\nText: """${text}"""`;
+  const prompt = `Extract any items the player receives from the following text. Respond ONLY with a JSON object of the form { "items": [{ "id": string, "qty": number, "name": string, "description": string }] }. Each item must have a unique id (snake_case), a quantity, a fantasy-appropriate name, and a vivid description. If there are no items, respond with { "items": [] } and nothing else.\n\nText: """${text}"""`;
 
   if (process.env.NODE_ENV !== 'production') {
     console.log('[rewardExtractor] prompt:', prompt);
@@ -40,19 +36,30 @@ export default async function extractRewardItemsFromText(text: string): Promise<
       }),
     });
     const data = await response.json();
+    console.log('[rewardExtractor] response:', data.choices?.[0]?.message?.content);
     const content = data.choices?.[0]?.message?.content?.trim();
     if (!content) return [];
     try {
       const parsed = JSON.parse(content);
-      if (parsed && Array.isArray(parsed.items) && parsed.items.every((i: RewardItem) => typeof i.id === 'string' && typeof i.qty === 'number')) {
+      if (parsed && Array.isArray(parsed.items)) {
+        parsed.items.forEach((item: Item) => {
+          if (!item.name || !item.description) {
+            console.warn('[rewardExtractor] Missing name/description for item:', item);
+          }
+        });
         return parsed.items;
       }
     } catch {
       // fallback: try to extract array if model hallucinated
       const match = content.match(/\[[\s\S]*\]/);
       if (match) {
-        const items: RewardItem[] = JSON.parse(match[0]);
-        if (Array.isArray(items) && items.every(i => typeof i.id === 'string' && typeof i.qty === 'number')) {
+        const items: Item[] = JSON.parse(match[0]);
+        if (Array.isArray(items)) {
+          items.forEach((item: Item) => {
+            if (!item.name || !item.description) {
+              console.warn('[rewardExtractor] Missing name/description for item:', item);
+            }
+          });
           return items;
         }
       }
@@ -60,6 +67,12 @@ export default async function extractRewardItemsFromText(text: string): Promise<
     return [];
   } catch {
     // Fallback to simpler regex on error
-    return fallbackExtractSimple(text);
+    // fallback: just return what we get, with logging
+    const items = fallbackExtractSimple(text);
+    items.forEach((item) => {
+      console.warn('[rewardExtractor] Missing name/description for item (regex fallback):', item);
+    });
+    return items;
+
   }
 }

@@ -2,12 +2,6 @@
 // All interfaces used by both client and server should be defined here
 
 export type { Item } from '../models/item';
-
-export interface RewardItem {
-  id: string;
-  qty: number;
-}
-
 export interface GameState {
   player: {
     id: string;

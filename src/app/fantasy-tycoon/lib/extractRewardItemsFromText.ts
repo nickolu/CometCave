@@ -2,5 +2,4 @@
 // Updated to use OpenAI's gpt-4o model and enforce JSON structure for reliability
 
 export { default } from './parsers/rewardExtractor';
-export type { RewardItem } from './parsers/rewardExtractor';
 

@@ -2,9 +2,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FantasyCharacter } from '../models/character';
 import { FantasyDecisionPoint } from '../models/story';
-import { GameState } from '../models/types';
+import { GameState, Item } from '../models/types';
 import { addItem } from '../lib/inventory';
-import { getItemDisplayData } from '../lib/itemDisplay';
 import { useGameState } from './useGameState';
 
 export interface ResolveDecisionResponse {
@@ -20,7 +19,7 @@ export interface ResolveDecisionResponse {
     distance?: number;
     statusChange?: string;
   };
-  rewardItems?: { id: string; qty: number }[];
+  rewardItems?: Item[];
 }
 
 export function useResolveDecisionMutation() {
@@ -57,12 +56,12 @@ export function useResolveDecisionMutation() {
         console.log('[ResolveDecisionMutation] No reward items extracted.');
       }
       for (const reward of data.rewardItems) {
-          const display = getItemDisplayData(reward.id);
-          console.log('[ResolveDecisionMutation] Display data for', reward.id, display);
+          console.log('[ResolveDecisionMutation] Display data for', reward.id, reward);
           const item = {
             id: reward.id,
-            ...display,
-            quantity: reward.qty,
+            name: reward.name,
+            description: reward.description,
+            quantity: 1,
           };
           const beforeInventory = newInventory;
           newInventory = addItem({ ...currentState, inventory: newInventory }, item).inventory;

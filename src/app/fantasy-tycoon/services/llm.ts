@@ -14,7 +14,9 @@ const eventOptionSchema = z.object({
     statusChange: z.string().optional(),
     rewardItems: z.array(z.object({
       id: z.string(),
-      qty: z.number().int().min(1)
+      quantity: z.number().int().min(1),
+      name: z.string().optional(),
+      description: z.string().optional(),
     })).optional(),
   }),
 });

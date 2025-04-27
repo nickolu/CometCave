@@ -1,6 +1,7 @@
 import { OpenAI } from "openai";
 import { z } from "zod";
 import { FantasyCharacter } from "../models/character";
+import { Item } from "../models/item";
 
 export interface LLMEventOption {
   id: string;
@@ -11,7 +12,7 @@ export interface LLMEventOption {
     goldDelta?: number;
     reputationDelta?: number;
     statusChange?: string;
-    rewardItems?: { id: string; qty: number }[];
+    rewardItems?: Item[];
   };
 }
 
@@ -32,7 +33,9 @@ const eventOptionSchema = z.object({
     statusChange: z.string().optional(),
     rewardItems: z.array(z.object({
       id: z.string(),
-      qty: z.number().int().min(1)
+      quantity: z.number().int().min(1),
+      name: z.string().optional(),
+      description: z.string().optional(),
     })).optional(),
   }),
 });
@@ -70,11 +73,13 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
               type: 'object',
               properties: {
                 id: { type: 'string' },
-                qty: { type: 'number', minimum: 1 }
+                quantity: { type: 'number', minimum: 1 },
+                name: { type: 'string' },
+                description: { type: 'string' }
               },
-              required: ['id', 'qty']
+              required: ['id', 'quantity', 'name', 'description']
             },
-            description: 'Array of item rewards (id and qty)'
+            description: 'Array of item rewards (id, qty, name, description)'
           },
         },
       },
@@ -135,6 +140,9 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
     });
     // Parse tool calls response
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    console.log('toolCall', toolCall);
+    console.log('toolArgs', toolCall?.function?.arguments);
+    console.log('events', toolCall?.function?.arguments && JSON.parse(toolCall?.function?.arguments));
     if (toolCall && toolCall.function?.name === 'generate_events') {
       const toolArgs = JSON.parse(toolCall.function.arguments);
       const events = eventsArraySchema.parse(toolArgs.events);
