@@ -2,20 +2,42 @@
 import { useGameQuery, useMoveForwardMutation } from "../hooks/useGameQuery";
 import StoryFeed from "../components/StoryFeed";
 import CharacterCreation from "../components/CharacterCreation";
+import { useState, useEffect } from "react";
+import { saveGame, GameState } from "../lib/storage";
+import { FantasyCharacter } from "../models/character";
 
 export default function GameUI() {
-  const { data: gameState, isLoading: loadingState } = useGameQuery();
+  const { data: initialGameState, isLoading: loadingState } = useGameQuery();
   const moveForwardMutation = useMoveForwardMutation();
+  const [gameState, setGameState] = useState<GameState | undefined>(initialGameState);
+
+  // Update local state when the query data changes
+  useEffect(() => {
+    if (initialGameState) {
+      setGameState(initialGameState);
+    }
+  }, [initialGameState]);
 
   const loading = loadingState || moveForwardMutation.isPending;
 
   if (loading) return <div className="p-4 text-center">Loading...</div>;
-  if (!gameState) return <div className="p-4 text-center">No game found.</div>;
+  if (!gameState) return <div className="p-4 text-center">Creating new game...</div>;
 
   const { character, storyEvents } = gameState;
 
+  const handleCharacterCreated = (newCharacter: FantasyCharacter) => {
+    if (!gameState) return;
+    
+    const updatedState: GameState = {
+      ...gameState,
+      character: newCharacter
+    };
+    setGameState(updatedState);
+    saveGame(updatedState);
+  };
+
   if (!character) {
-    return <CharacterCreation onComplete={() => window.location.reload()} />;
+    return <CharacterCreation onComplete={handleCharacterCreated} />;
   }
 
   return (

@@ -1,18 +1,21 @@
 import { useCharacterCreation } from '../hooks/useCharacterCreation';
+import { useCallback } from 'react';
 
-export default function CharacterCreation({ onComplete }: { onComplete: () => void }) {
+import { FantasyCharacter } from '../models/character';
+
+export default function CharacterCreation({ onComplete }: { onComplete: (character: FantasyCharacter) => void }) {
   const { character, updateCharacter, completeCreation } = useCharacterCreation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     completeCreation();
-    onComplete();
-  };
+    onComplete(character as FantasyCharacter);
+  }, [completeCreation, onComplete, character]);
 
   return (
     <form className="space-y-4 p-4" onSubmit={handleSubmit}>
       <input
-        className="w-full p-2 border rounded"
+        className="w-full p-2 border rounded text-black"
         placeholder="Name"
         value={character.name || ''}
         onChange={e => updateCharacter({ name: e.target.value })}
