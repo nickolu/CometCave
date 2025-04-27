@@ -122,7 +122,17 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
     if (toolCall && toolCall.function?.name === 'generate_events') {
       const toolArgs = JSON.parse(toolCall.function.arguments);
       const events = eventsArraySchema.parse(toolArgs.events);
-      return events;
+      // Ensure unique event ids
+      const seenIds = new Set<string>();
+      const uniqueEvents = events.map((event) => {
+        let newId = event.id;
+        if (seenIds.has(event.id)) {
+          newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        }
+        seenIds.add(newId);
+        return { ...event, id: newId };
+      });
+      return uniqueEvents;
     }
     // fallback to legacy parsing if tool call missing
     const raw = response.choices[0]?.message?.content?.trim();
@@ -136,7 +146,17 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
     } else {
       throw new Error('LLM response is not an array or object with events array');
     }
-    return events;
+    // Ensure unique event ids
+    const seenIds = new Set<string>();
+    const uniqueEvents = events.map((event) => {
+      let newId = event.id;
+      if (seenIds.has(event.id)) {
+        newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      }
+      seenIds.add(newId);
+      return { ...event, id: newId };
+    });
+    return uniqueEvents;
 
   } catch (err) {
     console.error("LLM event generation failed", err);
