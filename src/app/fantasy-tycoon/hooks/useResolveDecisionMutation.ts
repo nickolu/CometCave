@@ -2,7 +2,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FantasyCharacter } from '../models/character';
 import { FantasyDecisionPoint } from '../models/story';
-import { GameState, saveGame } from '../lib/storage';
+import { GameState } from '../models/types';
+import { saveGame } from '../lib/storage';
 import { addItem } from '../lib/inventory';
 import { getItemDisplayData } from '../lib/itemDisplay';
 

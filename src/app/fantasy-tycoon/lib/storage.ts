@@ -1,24 +1,7 @@
 "use client";
-import { FantasyCharacter } from '../models/character';
-import { FantasyLocation } from '../models/location';
-import { FantasyStoryEvent } from '../models/story';
+import { GameState } from '../models/types';
 
-import { FantasyDecisionPoint } from '../models/story';
 
-import { Item } from '../models/item';
-
-export interface GameState {
-  player: {
-    id: string;
-    settings: Record<string, unknown>;
-  };
-  character: FantasyCharacter | null;
-  locations: FantasyLocation[];
-  storyEvents: FantasyStoryEvent[];
-  decisionPoint: FantasyDecisionPoint | null;
-  genericMessage: string | null;
-  inventory: Item[];
-}
 
 const STORAGE_KEY = 'fantasy-tycoon-save';
 

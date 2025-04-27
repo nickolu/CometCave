@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GameState, loadGame, saveGame } from '../lib/storage';
+import { GameState } from '../models/types';
+import { loadGame, saveGame } from '../lib/storage';
 import { defaultGameState } from '../lib/defaultGameState';
 import { addItem } from '../lib/inventory';
 import { getItemDisplayData } from '../lib/itemDisplay';

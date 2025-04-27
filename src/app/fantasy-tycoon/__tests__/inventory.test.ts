@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addItem, removeItem, updateQuantity } from '../lib/inventory';
-import { GameState } from '../lib/storage';
+import { GameState } from '../models/types';
 import { Item } from '../models/item';
 
 describe('Inventory actions', () => {

@@ -1,5 +1,5 @@
 "use client";
-import { GameState } from '../lib/storage';
+import { GameState } from '../models/types';
 
 const DEFAULT_PLAYER_ID = 'player-1';
 

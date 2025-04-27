@@ -1,5 +1,4 @@
-import { GameState } from './storage';
-import { Item } from '../models/item';
+import { GameState, Item } from '../models/types';
 
 export function addItem(state: GameState, item: Item): GameState {
   if (!item || typeof item.id !== 'string' || typeof item.quantity !== 'number') {
