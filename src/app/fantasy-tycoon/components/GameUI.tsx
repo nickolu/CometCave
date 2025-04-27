@@ -3,10 +3,12 @@ import { useGameQuery, useMoveForwardMutation } from "../hooks/useGameQuery";
 import StoryFeed from "../components/StoryFeed";
 import CharacterCreation from "../components/CharacterCreation";
 import { useEffect } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import { saveGame } from "../lib/storage";
 import { FantasyCharacter } from "../models/character";
 
 export default function GameUI() {
+  const queryClient = useQueryClient();
   const { data: gameState, isLoading: loadingState } = useGameQuery();
   const moveForwardMutation = useMoveForwardMutation();
 
@@ -28,7 +30,9 @@ export default function GameUI() {
   const handleCharacterCreated = (newCharacter: FantasyCharacter) => {
     const updatedState = { ...gameState, character: newCharacter };
     saveGame(updatedState);
+    queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
   };
+
 
   if (!character) {
     return <CharacterCreation onComplete={handleCharacterCreated} />;
