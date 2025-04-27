@@ -23,6 +23,7 @@ export interface MoveForwardResponse {
   character: import('../models/character').FantasyCharacter;
   event?: import('../models/story').FantasyStoryEvent | null;
   decisionPoint?: import('../models/story').FantasyDecisionPoint | null;
+  genericMessage?: string | null;
 }
 
 export function useMoveForwardMutation() {
@@ -44,7 +45,9 @@ export function useMoveForwardMutation() {
         storyEvents: [
           ...currentState.storyEvents,
           ...(data.event ? [data.event] : [])
-        ]
+        ],
+        decisionPoint: data.decisionPoint ?? null,
+        genericMessage: data.genericMessage ?? null,
       };
       saveGame(updatedState);
       return updatedState;

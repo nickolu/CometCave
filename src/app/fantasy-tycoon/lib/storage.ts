@@ -3,6 +3,8 @@ import { FantasyCharacter } from '../models/character';
 import { FantasyLocation } from '../models/location';
 import { FantasyStoryEvent } from '../models/story';
 
+import { FantasyDecisionPoint } from '../models/story';
+
 export interface GameState {
   player: {
     id: string;
@@ -11,6 +13,8 @@ export interface GameState {
   character: FantasyCharacter | null;
   locations: FantasyLocation[];
   storyEvents: FantasyStoryEvent[];
+  decisionPoint?: FantasyDecisionPoint | null;
+  genericMessage?: string | null;
 }
 
 const STORAGE_KEY = 'fantasy-tycoon-save';

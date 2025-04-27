@@ -11,4 +11,6 @@ export const defaultGameState: GameState = {
   character: null, // Character must be created by user
   locations: [],
   storyEvents: [],
+  decisionPoint: null,
+  genericMessage: null,
 };
