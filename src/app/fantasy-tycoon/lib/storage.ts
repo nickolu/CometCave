@@ -5,6 +5,8 @@ import { FantasyStoryEvent } from '../models/story';
 
 import { FantasyDecisionPoint } from '../models/story';
 
+import { Item } from '../models/item';
+
 export interface GameState {
   player: {
     id: string;
@@ -15,6 +17,7 @@ export interface GameState {
   storyEvents: FantasyStoryEvent[];
   decisionPoint: FantasyDecisionPoint | null;
   genericMessage: string | null;
+  inventory: Item[];
 }
 
 const STORAGE_KEY = 'fantasy-tycoon-save';

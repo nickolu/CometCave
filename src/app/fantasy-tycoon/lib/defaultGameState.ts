@@ -13,4 +13,5 @@ export const defaultGameState: GameState = {
   storyEvents: [],
   decisionPoint: null,
   genericMessage: null,
+  inventory: [],
 };
