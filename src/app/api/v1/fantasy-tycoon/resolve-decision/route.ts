@@ -13,6 +13,9 @@ type ResolveDecisionResponse = {
   updatedCharacter: FantasyCharacter;
   resultDescription?: string;
   appliedEffects?: FantasyDecisionOption['effects'];
+  selectedOptionId?: string;
+  selectedOptionText?: string;
+  outcomeDescription?: string;
 };
 
 import { applyEffects, calculateEffectiveProbability } from '@/app/fantasy-tycoon/lib/eventResolution';
@@ -62,6 +65,9 @@ export async function POST(req: NextRequest) {
       updatedCharacter,
       resultDescription,
       appliedEffects,
+      selectedOptionId: option.id,
+      selectedOptionText: option.text,
+      outcomeDescription: resultDescription,
     });
   } catch (err) {
     return NextResponse.json({ error: 'Invalid request', details: (err as Error).message }, { status: 400 });

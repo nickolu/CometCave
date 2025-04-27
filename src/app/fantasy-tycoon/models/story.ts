@@ -6,6 +6,10 @@ export interface FantasyStoryEvent {
   locationId: string;
   questId?: string;
   timestamp: string;
+  // For decision events
+  selectedOptionId?: string;
+  selectedOptionText?: string;
+  outcomeDescription?: string;
 }
 
 export interface FantasyDecisionOption {

@@ -34,16 +34,28 @@ export function useResolveDecisionMutation() {
         genericMessage: null,
         storyEvents: [
           ...currentState.storyEvents,
-          ...(data.resultDescription
+          ...(data.selectedOptionId && data.selectedOptionText && data.outcomeDescription
             ? [{
                 id: `result-${Date.now()}`,
                 type: 'decision_result',
-                description: data.resultDescription,
+                description: `You chose: "${data.selectedOptionText}" → ${data.outcomeDescription}`,
                 characterId: data.updatedCharacter.id,
                 locationId: data.updatedCharacter.locationId,
                 timestamp: new Date().toISOString(),
+                selectedOptionId: data.selectedOptionId,
+                selectedOptionText: data.selectedOptionText,
+                outcomeDescription: data.outcomeDescription,
               }]
-            : []),
+            : data.resultDescription
+              ? [{
+                  id: `result-${Date.now()}`,
+                  type: 'decision_result',
+                  description: data.resultDescription,
+                  characterId: data.updatedCharacter.id,
+                  locationId: data.updatedCharacter.locationId,
+                  timestamp: new Date().toISOString(),
+                }]
+              : []),
         ],
       };
       saveGame(updatedState);
