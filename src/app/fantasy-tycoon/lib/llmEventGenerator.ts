@@ -79,13 +79,14 @@ return events;
   } catch (err) {
     console.error("LLM event generation failed", err);
     // Fallback: return a simple default event
+    const uniqueSuffix = `fallback-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     return [
       {
-        id: "default-1",
+        id: `default-1-${uniqueSuffix}`,
         description: "You encounter a fork in the road.",
         options: [
           {
-            id: "left",
+            id: `left-1-${uniqueSuffix}`,
             text: "Take the left path",
             probability: 0.5,
             outcome: {
@@ -94,7 +95,7 @@ return events;
             },
           },
           {
-            id: "right",
+            id: `right-1-${uniqueSuffix}`,
             text: "Take the right path",
             probability: 0.5,
             outcome: {
@@ -105,11 +106,11 @@ return events;
         ],
       },
       {
-        id: "default-2",
+        id: `default-2-${uniqueSuffix}`,
         description: "A merchant offers you a mysterious potion.",
         options: [
           {
-            id: "accept",
+            id: `accept-2-${uniqueSuffix}`,
             text: "Buy the potion",
             probability: 0.7,
             outcome: {
@@ -118,7 +119,7 @@ return events;
             },
           },
           {
-            id: "decline",
+            id: `decline-2-${uniqueSuffix}`,
             text: "Refuse the offer",
             probability: 0.3,
             outcome: {
@@ -128,11 +129,11 @@ return events;
         ],
       },
       {
-        id: "default-3",
+        id: `default-3-${uniqueSuffix}`,
         description: "You find a wounded animal on the road.",
         options: [
           {
-            id: "help",
+            id: `help-3-${uniqueSuffix}`,
             text: "Help the animal",
             probability: 0.8,
             outcome: {
@@ -141,7 +142,7 @@ return events;
             },
           },
           {
-            id: "ignore",
+            id: `ignore-3-${uniqueSuffix}`,
             text: "Ignore it",
             probability: 0.2,
             outcome: {
