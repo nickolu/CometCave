@@ -1,6 +1,8 @@
 "use client";
 import { useState, useCallback } from "react";
 import { Item } from "../models/item";
+import Button from "../../components/ui/Button";
+import List from "../../components/ui/List";
 
 interface InventoryPanelProps {
   isOpen: boolean;
@@ -42,31 +44,35 @@ export default function InventoryPanel({ isOpen, onClose, inventory }: Inventory
         {items.length === 0 ? (
           <div className="text-gray-500">Your inventory is empty.</div>
         ) : (
-          <ul className="space-y-2">
-            {items.map((item) => (
-              <li key={item.id} className="flex items-center space-x-2 bg-white/10 rounded p-2 transition-all duration-200 hover:scale-[1.03] hover:bg-white/20">
+          <List
+            items={items}
+            className="space-y-2"
+            renderItem={(item) => (
+              <div className="flex items-center space-x-2 bg-white/10 rounded p-2 transition-all duration-200 hover:scale-[1.03] hover:bg-white/20">
                 <div className="flex-1">
                   <div className="font-bold text-white">{item.name}</div>
                   <div className="text-xs text-gray-300">{item.description}</div>
                 </div>
                 <span className="font-mono px-2">x{item.quantity}</span>
-                <button
-                  className="bg-green-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-green-600 transition-colors duration-150"
+                <Button
+                  variant="primary"
+                  className="text-xs mr-1 px-2 py-1"
                   onClick={() => handleUse(item)}
                   title="Use one of this item"
                 >
                   Use
-                </button>
-                <button
-                  className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition-colors duration-150"
+                </Button>
+                <Button
+                  variant="danger"
+                  className="text-xs px-2 py-1"
                   onClick={() => handleDiscard(item)}
                   title="Discard all of this item"
                 >
                   Discard
-                </button>
-              </li>
-            ))}
-          </ul>
+                </Button>
+              </div>
+            )}
+          />
         )}
       </div>
     </div>

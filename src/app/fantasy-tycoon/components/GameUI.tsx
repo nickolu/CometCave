@@ -8,6 +8,8 @@ import InventoryPanel from "./InventoryPanel";
 import { useQueryClient } from '@tanstack/react-query';
 import { FantasyCharacter } from "../models/character";
 import { useGameState } from "../hooks/useGameState";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
 
 export default function GameUI() {
   const { save } = useGameState();
@@ -54,21 +56,22 @@ export default function GameUI() {
   return (
     <>
     <div className="max-w-md mx-auto p-4 space-y-4">
-      <button
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-full"
+      <Button
+        className="w-full"
         onClick={() => moveForwardMutation.mutate()}
         disabled={moveForwardMutation.isPending || resolveDecisionMutation.isPending}
       >
         {moveForwardMutation.isPending ? "Travelling..." : "Continue Travelling"}
-      </button>
+      </Button>
       <div className="flex justify-between items-center gap-2">
-        <button
-          className="bg-gray-700 text-white px-3 py-2 rounded mr-2"
+        <Button
+          variant="secondary"
+          className="mr-2"
           onClick={toggleInventory}
           aria-label="Open inventory (I)"
         >
           Inventory (I)
-        </button>
+        </Button>
        
         <div className="flex gap-4 text-sm">
           <span>Distance: <b>{character.distance}</b> km</span>
@@ -78,21 +81,21 @@ export default function GameUI() {
       </div>
       {/* Sprint 4: Decision/Event UI */}
       {gameState.decisionPoint && !gameState.decisionPoint.resolved && (
-        <div className="border rounded p-4">
+        <Card>
           <div className="font-semibold mb-2">{gameState.decisionPoint.prompt}</div>
           <div className="space-y-2">
             {gameState.decisionPoint.options.map(option => 
              {
               if (!option) return null;
               if (!gameState.decisionPoint) return null;
-              return <button
+              return <Button
                 key={option.id}
                 className="block w-full text-left border px-3 py-2 rounded disabled:opacity-60"
                 disabled={resolveDecisionMutation.isPending}
                 onClick={() => resolveDecisionMutation.mutate({ decisionPoint: gameState.decisionPoint!, optionId: option.id })}
               >
                 {option.text}
-              </button>}
+              </Button>}
             )}
           </div>
           {resolveDecisionMutation.isPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
@@ -101,13 +104,13 @@ export default function GameUI() {
               {resolveDecisionMutation.data.resultDescription || "Decision resolved!"}
             </div>
           )}
-        </div>
+        </Card>
       )}
       <StoryFeed events={storyEvents} />
       {gameState.genericMessage && (
-        <div className="border rounded p-3 bg-gray-100 text-gray-700 text-sm">
+        <Card className="bg-gray-100 text-gray-700 text-sm">
           {gameState.genericMessage}
-        </div>
+        </Card>
       )}
     </div>
     <InventoryPanel isOpen={inventoryOpen} onClose={toggleInventory} inventory={gameState?.inventory ?? []} />
