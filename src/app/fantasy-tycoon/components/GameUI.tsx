@@ -1,6 +1,7 @@
 "use client";
 import { useGameQuery, useMoveForwardMutation } from "../hooks/useGameQuery";
 import StoryFeed from "../components/StoryFeed";
+import CharacterCreation from "../components/CharacterCreation";
 
 export default function GameUI() {
   const { data: gameState, isLoading: loadingState } = useGameQuery();
@@ -14,7 +15,7 @@ export default function GameUI() {
   const { character, storyEvents } = gameState;
 
   if (!character) {
-    return <div className="p-4 text-center">No character found. Start a new game or load a save.</div>;
+    return <CharacterCreation onComplete={() => window.location.reload()} />;
   }
 
   return (

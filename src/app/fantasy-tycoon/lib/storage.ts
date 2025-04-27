@@ -3,7 +3,11 @@ import { FantasyLocation } from '../models/location';
 import { FantasyStoryEvent } from '../models/story';
 
 export interface GameState {
-  character: FantasyCharacter;
+  player: {
+    id: string;
+    settings: Record<string, unknown>;
+  };
+  character: FantasyCharacter | null;
   locations: FantasyLocation[];
   storyEvents: FantasyStoryEvent[];
 }
