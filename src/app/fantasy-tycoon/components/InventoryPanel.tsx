@@ -13,6 +13,7 @@ interface InventoryPanelProps {
 export default function InventoryPanel({ isOpen, onClose }: InventoryPanelProps) {
   const { gameState, save } = useGameState();
   const [items, setItems] = useState<Item[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (gameState?.inventory) {
@@ -21,21 +22,30 @@ export default function InventoryPanel({ isOpen, onClose }: InventoryPanelProps)
   }, [gameState]);
 
   const handleUse = useCallback((item: Item) => {
-    // Example: decrease quantity by 1
-    if (!gameState) return;
-    if (item.quantity > 1) {
-      const updated = updateQuantity(gameState, item.id, item.quantity - 1);
-      save(updated);
-    } else {
-      const updated = removeItem(gameState, item.id);
-      save(updated);
+    setError(null);
+    try {
+      if (!gameState) return;
+      if (item.quantity > 1) {
+        const updated = updateQuantity(gameState, item.id, item.quantity - 1);
+        save(updated);
+      } else {
+        const updated = removeItem(gameState, item.id);
+        save(updated);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
     }
   }, [gameState, save]);
 
   const handleDiscard = useCallback((item: Item) => {
-    if (!gameState) return;
-    const updated = removeItem(gameState, item.id);
-    save(updated);
+    setError(null);
+    try {
+      if (!gameState) return;
+      const updated = removeItem(gameState, item.id);
+      save(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
+    }
   }, [gameState, save]);
 
   // Keyboard shortcut: I to toggle
@@ -66,29 +76,30 @@ export default function InventoryPanel({ isOpen, onClose }: InventoryPanelProps)
           ×
         </button>
         <h2 className="text-xl font-bold mb-4">Inventory</h2>
+        {error && <div className="text-red-500 mb-2">{error}</div>}
         {items.length === 0 ? (
           <div className="text-gray-500">Your inventory is empty.</div>
         ) : (
-          <ul className="space-y-3 max-h-80 overflow-y-auto">
-            {items.map(item => (
-              <li key={item.id} className="flex items-center gap-3 border-b pb-2 last:border-b-0">
-                <span className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded">
-                  <Image src={item.icon} alt={item.name} width={24} height={24} className="w-6 h-6 object-contain" />
-                </span>
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <li key={item.id} className="flex items-center space-x-2 bg-white/10 rounded p-2 transition-all duration-200 hover:scale-[1.03] hover:bg-white/20">
+                <Image src={item.icon} alt={item.name} width={32} height={32} className="rounded" />
                 <div className="flex-1">
-                  <div className="font-semibold">{item.name}</div>
-                  <div className="text-xs text-gray-500">{item.description}</div>
+                  <div className="font-bold text-white">{item.name}</div>
+                  <div className="text-xs text-gray-300">{item.description}</div>
                 </div>
                 <span className="font-mono px-2">x{item.quantity}</span>
                 <button
-                  className="bg-green-500 text-white px-2 py-1 rounded text-xs mr-1"
+                  className="bg-green-500 text-white px-2 py-1 rounded text-xs mr-1 hover:bg-green-600 transition-colors duration-150"
                   onClick={() => handleUse(item)}
+                  title="Use one of this item"
                 >
                   Use
                 </button>
                 <button
-                  className="bg-red-500 text-white px-2 py-1 rounded text-xs"
+                  className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition-colors duration-150"
                   onClick={() => handleDiscard(item)}
+                  title="Discard all of this item"
                 >
                   Discard
                 </button>

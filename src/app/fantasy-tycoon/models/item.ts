@@ -4,4 +4,5 @@ export interface Item {
   description: string;
   icon: string;
   quantity: number;
+  // All fields strictly typed; no implicit any or this
 }

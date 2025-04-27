@@ -2,10 +2,13 @@ import { GameState } from './storage';
 import { Item } from '../models/item';
 
 export function addItem(state: GameState, item: Item): GameState {
-  const existing = state.inventory.find(i => i.id === item.id);
+  if (!item || typeof item.id !== 'string' || typeof item.quantity !== 'number') {
+    throw new Error('Invalid item');
+  }
+  const existing = state.inventory.find((i: Item) => i.id === item.id);
   let newInventory: Item[];
   if (existing) {
-    newInventory = state.inventory.map(i =>
+    newInventory = state.inventory.map((i: Item) =>
       i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
     );
   } else {
@@ -15,16 +18,19 @@ export function addItem(state: GameState, item: Item): GameState {
 }
 
 export function removeItem(state: GameState, itemId: string): GameState {
-  const newInventory = state.inventory.filter(i => i.id !== itemId);
+  if (typeof itemId !== 'string') throw new Error('Invalid itemId');
+  const newInventory = state.inventory.filter((i: Item) => i.id !== itemId);
   return { ...state, inventory: newInventory };
 }
 
 export function updateQuantity(state: GameState, itemId: string, quantity: number): GameState {
+  if (typeof itemId !== 'string') throw new Error('Invalid itemId');
   let newInventory: Item[];
   if (quantity <= 0) {
-    newInventory = state.inventory.filter(i => i.id !== itemId);
+    // Remove item if quantity is zero or negative
+    newInventory = state.inventory.filter((i: Item) => i.id !== itemId);
   } else {
-    newInventory = state.inventory.map(i =>
+    newInventory = state.inventory.map((i: Item) =>
       i.id === itemId ? { ...i, quantity } : i
     );
   }

@@ -53,6 +53,13 @@ export default function GameUI() {
   return (
     <>
     <div className="max-w-md mx-auto p-4 space-y-4">
+      <button
+        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 w-full"
+        onClick={() => moveForwardMutation.mutate()}
+        disabled={moveForwardMutation.isPending || resolveDecisionMutation.isPending}
+      >
+        {moveForwardMutation.isPending ? "Travelling..." : "Continue Travelling"}
+      </button>
       <div className="flex justify-between items-center gap-2">
         <button
           className="bg-gray-700 text-white px-3 py-2 rounded mr-2"
@@ -61,13 +68,7 @@ export default function GameUI() {
         >
           Inventory (I)
         </button>
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-          onClick={() => moveForwardMutation.mutate()}
-          disabled={moveForwardMutation.isPending || resolveDecisionMutation.isPending}
-        >
-          {moveForwardMutation.isPending ? "Travelling..." : "Continue Travelling"}
-        </button>
+       
         <div className="flex gap-4 text-sm">
           <span>Distance: <b>{character.distance}</b> km</span>
           <span>Gold: <b>{character.gold}</b></span>

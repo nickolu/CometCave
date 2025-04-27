@@ -38,4 +38,17 @@ Unit tests are in `__tests__/` for:
 
 ---
 
+## Inventory & Rewards
+
+The Fantasy Tycoon game features a persistent inventory system and item rewards from events:
+
+- **Inventory**: Each player has an inventory of `Item` objects (`id`, `name`, `description`, `icon`, `quantity`).
+- **Store Actions**: Use `addItem`, `removeItem`, and `updateQuantity` to manage inventory.
+- **Persistence**: Inventory is saved to localStorage and restored on reload.
+- **UI**: The `InventoryPanel` shows all items, lets you use or discard them, and updates in real time.
+- **Event Rewards**: Events can grant items as rewards, which are added to inventory and shown in the StoryFeed.
+- **Edge Cases**: Adding an item you already have merges quantities. Setting quantity to 0 or less removes the item.
+
+See `lib/inventory.ts` and `components/InventoryPanel.tsx` for implementation details.
+
 For details, see code comments and the docs folder.
