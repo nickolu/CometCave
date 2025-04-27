@@ -1,6 +1,7 @@
 import { applyDecisionEffects } from './route';
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 import { FantasyDecisionOption } from '@/app/fantasy-tycoon/models/story';
+import { describe, it, expect } from 'vitest';
 
 describe('applyDecisionEffects', () => {
   const baseCharacter: FantasyCharacter = {
