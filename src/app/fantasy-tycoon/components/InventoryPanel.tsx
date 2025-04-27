@@ -14,31 +14,16 @@ export default function InventoryPanel({ isOpen, onClose, inventory }: Inventory
   // The following handlers should be lifted up to the parent if they need to update state
   // For now, they are left as stubs
   const handleUse = useCallback((item: Item) => {
+    console.log("Item use not implemented in this component.", item);
     setError("Item use not implemented in this component.");
   }, []);
 
   const handleDiscard = useCallback((item: Item) => {
+    console.log("Item discard not implemented in this component.", item);
     setError("Item discard not implemented in this component.");
   }, []);
 
   const items = inventory ?? [];
-
-  // Keyboard shortcut: I to toggle
-  // (Keep this effect if you want the panel to close with 'i')
-  // If you want to remove it, uncomment below
-  // useEffect(() => {
-  //   const handler = (e: KeyboardEvent) => {
-  //     if (e.key.toLowerCase() === "i") {
-  //       onClose();
-  //     }
-  //   };
-  //   if (isOpen) {
-  //     window.addEventListener("keydown", handler);
-  //   }
-  //   return () => {
-  //     window.removeEventListener("keydown", handler);
-  //   };
-  // }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

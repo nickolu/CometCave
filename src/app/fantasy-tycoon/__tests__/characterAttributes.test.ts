@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { FantasyCharacter } from '../models/character';
 
 describe('Character Attribute Management', () => {

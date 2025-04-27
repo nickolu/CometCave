@@ -9,7 +9,6 @@ describe('Inventory actions', () => {
     id: 'sword-1',
     name: 'Sword',
     description: 'A sharp blade.',
-    icon: 'sword.png',
     quantity: 1,
   };
 
