@@ -8,6 +8,15 @@ export interface ResolveDecisionResponse {
   updatedCharacter: FantasyCharacter;
   resultDescription?: string;
   appliedEffects?: Record<string, unknown>;
+  selectedOptionId?: string;
+  selectedOptionText?: string;
+  outcomeDescription?: string;
+  resourceDelta?: {
+    gold?: number;
+    reputation?: number;
+    distance?: number;
+    statusChange?: string;
+  };
 }
 
 export function useResolveDecisionMutation() {
@@ -45,6 +54,7 @@ export function useResolveDecisionMutation() {
                 selectedOptionId: data.selectedOptionId,
                 selectedOptionText: data.selectedOptionText,
                 outcomeDescription: data.outcomeDescription,
+                resourceDelta: data.resourceDelta,
               }]
             : data.resultDescription
               ? [{

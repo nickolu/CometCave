@@ -10,6 +10,13 @@ export interface FantasyStoryEvent {
   selectedOptionId?: string;
   selectedOptionText?: string;
   outcomeDescription?: string;
+  resourceDelta?: {
+    gold?: number;
+    reputation?: number;
+    distance?: number;
+    statusChange?: string;
+  };
+
 }
 
 export interface FantasyDecisionOption {
