@@ -11,6 +11,29 @@ export interface FantasyStoryEvent {
 export interface FantasyDecisionOption {
   id: string;
   text: string;
+  // Probability of success (0-1)
+  baseProbability?: number;
+  // Which character attributes affect this option (e.g., ['strength', 'luck'])
+  relevantAttributes?: Array<'strength' | 'intelligence' | 'luck'>;
+  // How much each attribute modifies probability per point (optional, default 0.01)
+  attributeModifiers?: Partial<Record<'strength' | 'intelligence' | 'luck', number>>;
+  // Effects and description on success
+  successDescription?: string;
+  successEffects?: {
+    gold?: number;
+    reputation?: number;
+    distance?: number;
+    statusChange?: string;
+  };
+  // Effects and description on failure
+  failureDescription?: string;
+  failureEffects?: {
+    gold?: number;
+    reputation?: number;
+    distance?: number;
+    statusChange?: string;
+  };
+  // For backward compatibility
   resultDescription?: string;
   effects?: {
     gold?: number;
