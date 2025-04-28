@@ -1,17 +1,28 @@
 "use client";
+import React from 'react';
 import { useCharacterCreation } from '../hooks/useCharacterCreation';
+import { useGameStore } from '../hooks/useGameStore';
 import { useCallback } from 'react';
 
 import { FantasyCharacter } from '../models/types';
 
-export default function CharacterCreation({ onComplete }: { onComplete: (character: FantasyCharacter) => void }) {
+export default function CharacterCreation({ onComplete }: { onComplete?: (character: FantasyCharacter) => void }) {
   const { character, updateCharacter, completeCreation } = useCharacterCreation();
+const addCharacter = useGameStore((s) => s.addCharacter);
+const selectCharacter = useGameStore((s) => s.selectCharacter);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     completeCreation();
-    onComplete(character as FantasyCharacter);
-  }, [completeCreation, onComplete, character]);
+    // Wait for character to be fully populated after completeCreation
+    setTimeout(() => {
+      if (character && character.id) {
+        addCharacter(character as FantasyCharacter);
+        selectCharacter((character as FantasyCharacter).id);
+        onComplete?.(character as FantasyCharacter);
+      }
+    }, 0);
+  }, [completeCreation, addCharacter, selectCharacter, character, onComplete]);
 
   return (
     <form className="space-y-4 p-4" onSubmit={handleSubmit}>

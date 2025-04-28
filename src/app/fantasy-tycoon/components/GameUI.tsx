@@ -10,6 +10,7 @@ import { FantasyCharacter } from "../models/character";
 import { useGameState } from "../hooks/useGameState";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import CharacterList from "./CharacterList";
 
 export default function GameUI() {
   const { save } = useGameState();
@@ -42,15 +43,16 @@ export default function GameUI() {
 
   const { character, storyEvents } = gameState;
 
-  const handleCharacterCreated = (newCharacter: FantasyCharacter) => {
-    const updatedState = { ...gameState, character: newCharacter };
+  const handleCharacterSelect = (character: FantasyCharacter) => {
+    const updatedState = { ...gameState, character };
     save(updatedState);
     queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
   };
 
 
   if (!character) {
-    return <CharacterCreation onComplete={handleCharacterCreated} />;
+    
+    return <CharacterList onSelect={handleCharacterSelect} />;
   }
 
   return (
@@ -79,7 +81,6 @@ export default function GameUI() {
           <span>Rep: <b>{character.reputation}</b></span>
         </div>
       </div>
-      {/* Sprint 4: Decision/Event UI */}
       {gameState.decisionPoint && !gameState.decisionPoint.resolved && (
         <Card>
           <div className="font-semibold mb-2">{gameState.decisionPoint.prompt}</div>

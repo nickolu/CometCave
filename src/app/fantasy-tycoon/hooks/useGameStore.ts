@@ -5,7 +5,7 @@ import { GameState } from '../models/types';
 import { FantasyCharacter } from '../models/character';
 import { defaultGameState } from '../lib/defaultGameState';
 
-interface GameStore {
+export interface GameStore {
   gameState: GameState | null;
   setGameState: (state: GameState) => void;
   clearGameState: () => void;
