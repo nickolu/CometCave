@@ -1,7 +1,7 @@
 "use client";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { FantasyCharacter } from '../models/character';
-import { FantasyDecisionPoint } from '../models/story';
+import { FantasyCharacter } from '../models/types';
+import { FantasyDecisionPoint } from '../models/types';
 import { GameState, Item } from '../models/types';
 import { addItem } from '../lib/inventory';
 import { useGameState } from './useGameState';

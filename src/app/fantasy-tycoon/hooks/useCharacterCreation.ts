@@ -1,6 +1,6 @@
 "use client";
 import { useState, useId } from 'react';
-import { FantasyCharacter, FantasyAbility } from '../models/character';
+import { FantasyCharacter, FantasyAbility } from '../models/types';
 import {
   DEFAULT_PLAYER_ID,
   DEFAULT_CHARACTER_NAME,

@@ -1,6 +1,6 @@
 "use client";
 
-import { FantasyStoryEvent } from "../models/story";
+import { FantasyStoryEvent } from "../models/types";
 
 export default function StoryFeed({ events }: { events: FantasyStoryEvent[] }) {
   if (!events?.length) return (
@@ -26,7 +26,7 @@ export default function StoryFeed({ events }: { events: FantasyStoryEvent[] }) {
             <div className="text-xs mt-0.5 text-green-700">
               {((e.resourceDelta?.rewardItems || []).concat(e.rewardItems || [])).map((item, idx) => (
                 <span key={item.id + idx}>
-                  You received {item.qty} <span className="font-mono">{item.id}</span>{' '}
+                  You received {item.quantity} <span className="font-mono">{item.id}</span>{' '}
                 </span>
               ))}
             </div>

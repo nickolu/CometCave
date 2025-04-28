@@ -2,7 +2,7 @@
 import { useCharacterCreation } from '../hooks/useCharacterCreation';
 import { useCallback } from 'react';
 
-import { FantasyCharacter } from '../models/character';
+import { FantasyCharacter } from '../models/types';
 
 export default function CharacterCreation({ onComplete }: { onComplete: (character: FantasyCharacter) => void }) {
   const { character, updateCharacter, completeCreation } = useCharacterCreation();

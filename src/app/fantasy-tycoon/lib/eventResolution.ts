@@ -24,15 +24,22 @@ export function calculateEffectiveProbability(
   option: FantasyDecisionOption,
   character: FantasyCharacter
 ): number {
-  const base = option.baseProbability ?? 1;
-  if (!option.relevantAttributes || option.relevantAttributes.length === 0) {
+  const typedOption = option as {
+    baseProbability?: number;
+    relevantAttributes?: string[];
+    attributeModifiers?: Record<string, number>;
+  };
+  const base = typedOption.baseProbability ?? 1;
+
+  if (!typedOption.relevantAttributes || typedOption.relevantAttributes.length === 0) {
     return Math.max(0, Math.min(1, base));
   }
+
   let modifier = 0;
-  for (const attr of option.relevantAttributes) {
-    const value = character[attr] ?? 0;
-    const attrMod = option.attributeModifiers?.[attr] ?? 0.01;
+  for (const attr of typedOption.relevantAttributes) {
+    const value = Number(character[attr as keyof typeof character] ?? 0);
+    const attrMod = Number(typedOption.attributeModifiers?.[attr] ?? 0.01);
     modifier += value * attrMod;
   }
-  return Math.max(0, Math.min(1, base + modifier));
+  return Math.max(0, Math.min(1, Number(base) + modifier));
 }

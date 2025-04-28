@@ -1,34 +1,41 @@
-export interface FantasyAbility {
-  id: string;
-  name: string;
-  description: string;
-  power: number;
-  cooldown: number;
-}
+import { z } from "zod";
 
-export interface FantasyCharacter {
-  id: string;
-  playerId: string;
-  name: string;
-  race: string;
-  class: string;
-  level: number;
-  abilities: FantasyAbility[];
-  locationId: string;
-  gold: number;
-  reputation: number;
-  distance: number;
-  status: 'active' | 'retired' | 'dead';
-  strength: number;
-  intelligence: number;
-  luck: number;
-}
+/** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
-export interface FantasyNPC {
-  id: string;
-  name: string;
-  role: string;
-  description: string;
-  locationId: string;
-  disposition: number; // -100 (hostile) to 100 (friendly)
-}
+export const FantasyAbilitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  power: z.number(),
+  cooldown: z.number(),
+});
+export type FantasyAbility = z.infer<typeof FantasyAbilitySchema>;
+
+export const FantasyCharacterSchema = z.object({
+  id: z.string(),
+  playerId: z.string(),
+  name: z.string(),
+  race: z.string(),
+  class: z.string(),
+  level: z.number(),
+  abilities: z.array(FantasyAbilitySchema),
+  locationId: z.string(),
+  gold: z.number(),
+  reputation: z.number(),
+  distance: z.number(),
+  status: z.enum(["active", "retired", "dead"]),
+  strength: z.number(),
+  intelligence: z.number(),
+  luck: z.number(),
+});
+export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>;
+
+export const FantasyNPCSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: z.string(),
+  description: z.string(),
+  locationId: z.string(),
+  disposition: z.number(), // -100 (hostile) to 100 (friendly)
+});
+export type FantasyNPC = z.infer<typeof FantasyNPCSchema>;

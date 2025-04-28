@@ -1,72 +1,62 @@
-import { Item } from "./item";
+import { z } from "zod";
+import { ItemSchema } from "./item";
 
-export interface FantasyStoryEvent {
-  id: string;
-  type: string;
-  description: string;
-  characterId: string;
-  locationId: string;
-  questId?: string;
-  timestamp: string;
-  // For decision events
-  selectedOptionId?: string;
-  selectedOptionText?: string;
-  outcomeDescription?: string;
-  resourceDelta?: {
-    gold?: number;
-    reputation?: number;
-    distance?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
-  rewardItems?: Item[];
-}
+/** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
-export interface FantasyDecisionOption {
-  id: string;
-  text: string;
-  // Probability of success (0-1)
-  baseProbability?: number;
-  // Which character attributes affect this option (e.g., ['strength', 'luck'])
-  relevantAttributes?: Array<'strength' | 'intelligence' | 'luck'>;
-  // How much each attribute modifies probability per point (optional, default 0.01)
-  attributeModifiers?: Partial<Record<'strength' | 'intelligence' | 'luck', number>>;
-  // Effects and description on success
-  successDescription?: string;
-  successEffects?: {
-    gold?: number;
-    reputation?: number;
-    distance?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
-  // Effects and description on failure
-  failureDescription?: string;
-  failureEffects?: {
-    gold?: number;
-    reputation?: number;
-    distance?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
-  // For backward compatibility
-  resultDescription?: string;
-  effects?: {
-    gold?: number;
-    reputation?: number;
-    distance?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
-  // Direct reward (for simple events)
-  rewardItems?: Item[];
-}
+const ResourceDeltaSchema = z.object({
+  gold: z.number().optional(),
+  reputation: z.number().optional(),
+  distance: z.number().optional(),
+  statusChange: z.string().optional(),
+  rewardItems: z.array(ItemSchema).optional(),
+});
 
-export interface FantasyDecisionPoint {
-  id: string;
-  eventId: string;
-  prompt: string;
-  options: FantasyDecisionOption[];
-  resolved: boolean;
-  chosenOptionId?: string;
-}
+export const FantasyStoryEventSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  description: z.string(),
+  characterId: z.string(),
+  locationId: z.string(),
+  questId: z.string().optional(),
+  timestamp: z.string(),
+  selectedOptionId: z.string().optional(),
+  selectedOptionText: z.string().optional(),
+  outcomeDescription: z.string().optional(),
+  resourceDelta: ResourceDeltaSchema.optional(),
+  rewardItems: z.array(ItemSchema).optional(),
+});
+export type FantasyStoryEvent = z.infer<typeof FantasyStoryEventSchema>;
+
+const EffectsSchema = z.object({
+  gold: z.number().optional(),
+  reputation: z.number().optional(),
+  distance: z.number().optional(),
+  statusChange: z.string().optional(),
+  rewardItems: z.array(ItemSchema).optional(),
+});
+
+export const FantasyDecisionOptionSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  baseProbability: z.number().optional(),
+  relevantAttributes: z.array(z.enum(["strength", "intelligence", "luck"])).optional(),
+  attributeModifiers: z.record(z.enum(["strength", "intelligence", "luck"]), z.number()).optional(),
+  successDescription: z.string().optional(),
+  successEffects: EffectsSchema.optional(),
+  failureDescription: z.string().optional(),
+  failureEffects: EffectsSchema.optional(),
+  resultDescription: z.string().optional(),
+  effects: EffectsSchema.optional(),
+  rewardItems: z.array(ItemSchema).optional(),
+});
+export type FantasyDecisionOption = z.infer<typeof FantasyDecisionOptionSchema>;
+
+export const FantasyDecisionPointSchema = z.object({
+  id: z.string(),
+  eventId: z.string(),
+  prompt: z.string(),
+  options: z.array(FantasyDecisionOptionSchema),
+  resolved: z.boolean(),
+  chosenOptionId: z.string().optional(),
+});
+export type FantasyDecisionPoint = z.infer<typeof FantasyDecisionPointSchema>;

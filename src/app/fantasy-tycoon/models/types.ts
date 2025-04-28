@@ -1,8 +1,18 @@
-// Shared types for Fantasy Tycoon
-// All interfaces used by both client and server should be defined here
+// Central re-export for all Fantasy Tycoon models and schemas (Zod-first, single source of truth)
 
-export type { Item } from '../models/item';
-export interface GameState {
+import { FantasyCharacter } from "./character";
+import { Item } from "./item";
+import { FantasyLocation } from "./location";
+import { FantasyDecisionPoint, FantasyStoryEvent } from "./story";
+
+export type { Item, ItemSchema } from "./item";
+export type { FantasyAbility, FantasyAbilitySchema, FantasyCharacter, FantasyCharacterSchema, FantasyNPC, FantasyNPCSchema } from "./character";
+export type { FantasyLocation, FantasyLocationSchema, FantasyLocationChoice, FantasyLocationChoiceSchema } from "./location";
+export type { FantasyPlayer, FantasyPlayerSchema } from "./player";
+export type { FantasyQuest, FantasyQuestSchema } from "./quest";
+export type { FantasyStoryEvent, FantasyStoryEventSchema, FantasyDecisionOption, FantasyDecisionOptionSchema, FantasyDecisionPoint, FantasyDecisionPointSchema } from "./story";
+
+type GameState = {
   player: {
     id: string;
     settings: Record<string, unknown>;
@@ -12,11 +22,6 @@ export interface GameState {
   storyEvents: FantasyStoryEvent[];
   decisionPoint: FantasyDecisionPoint | null;
   genericMessage: string | null;
-  inventory: import('../models/item').Item[];
-}
-
-// Forward declarations for types imported from other files
-export type FantasyCharacter = import('../models/character').FantasyCharacter;
-export type FantasyLocation = import('../models/location').FantasyLocation;
-export type FantasyStoryEvent = import('../models/story').FantasyStoryEvent;
-export type FantasyDecisionPoint = import('../models/story').FantasyDecisionPoint;
+  inventory: Item[];
+};
+export type { GameState };

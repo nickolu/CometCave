@@ -58,22 +58,36 @@ export async function POST(req: NextRequest) {
       const roll = Math.random();
       outcome = roll < prob ? 'success' : 'failure';
       if (outcome === 'success') {
-        updatedCharacter = applyEffects(character, option.successEffects);
+        const effects = option.successEffects as {
+          gold?: number;
+          reputation?: number;
+          distance?: number;
+          statusChange?: string;
+          rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+        } | undefined;
+        updatedCharacter = applyEffects(character, effects);
         resultDescription = option.successDescription ?? option.resultDescription;
         appliedEffects = option.successEffects;
-        if (option.successEffects?.rewardItems) {
-          rewardItems = option.successEffects.rewardItems;
+        if (effects?.rewardItems) {
+          rewardItems = effects.rewardItems;
         }
       } else {
-        updatedCharacter = applyEffects(character, option.failureEffects);
+        const effects = option.failureEffects as {
+          gold?: number;
+          reputation?: number;
+          distance?: number;
+          statusChange?: string;
+          rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+        } | undefined;
+        updatedCharacter = applyEffects(character, effects);
         resultDescription = option.failureDescription ?? option.resultDescription;
         appliedEffects = option.failureEffects;
-        if (option.failureEffects?.rewardItems) {
-          rewardItems = option.failureEffects.rewardItems;
+        if (effects?.rewardItems) {
+          rewardItems = effects.rewardItems;
         }
       }
       // LLM/Heuristic extraction from outcome text
-      if (resultDescription) {
+      if (resultDescription && typeof resultDescription === 'string') {
         extractedRewardItems = await extractRewardItemsFromText(resultDescription);
         if (extractedRewardItems.length > 0) {
           // Merge with any rewardItems already present
@@ -82,14 +96,21 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Fallback to legacy logic
-      updatedCharacter = applyEffects(character, option.effects);
+      const effects = option.effects as {
+        gold?: number;
+        reputation?: number;
+        distance?: number;
+        statusChange?: string;
+        rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+      } | undefined;
+      updatedCharacter = applyEffects(character, effects);
       resultDescription = option.resultDescription;
       appliedEffects = option.effects;
-      if (option.effects?.rewardItems) {
-        rewardItems = option.effects.rewardItems;
+      if (effects?.rewardItems) {
+        rewardItems = effects.rewardItems;
       }
       // LLM/Heuristic extraction from outcome text
-      if (resultDescription) {
+      if (resultDescription && typeof resultDescription === 'string') {
         extractedRewardItems = await extractRewardItemsFromText(resultDescription);
         if (extractedRewardItems.length > 0) {
           rewardItems = [...rewardItems, ...extractedRewardItems];
@@ -99,8 +120,13 @@ export async function POST(req: NextRequest) {
 
     // Collect reward items from all possible sources
     // 1. Root-level rewardItems on the option
-    if (option.rewardItems) {
-      rewardItems = [...rewardItems, ...option.rewardItems];
+    const typedOption = option as {
+      rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+      text?: string;
+      resultDescription?: string;
+    };
+    if (typedOption.rewardItems && Array.isArray(typedOption.rewardItems)) {
+      rewardItems = [...rewardItems, ...typedOption.rewardItems];
     }
     // 2. Already merged in effects, successEffects, failureEffects, and LLM extraction above
 
@@ -108,12 +134,12 @@ export async function POST(req: NextRequest) {
     // Extend response type to include rewardItems for client inventory patching
     const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
       updatedCharacter,
-      resultDescription,
+      resultDescription: resultDescription as string | undefined,
       appliedEffects,
       selectedOptionId: optionId,
-      selectedOptionText: option.text,
-      outcomeDescription: resultDescription,
-      resourceDelta: appliedEffects,
+      selectedOptionText: typedOption.text,
+      outcomeDescription: resultDescription as string | undefined,
+      resourceDelta: appliedEffects as { gold?: number; reputation?: number; distance?: number; statusChange?: string } | undefined,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
     };
 

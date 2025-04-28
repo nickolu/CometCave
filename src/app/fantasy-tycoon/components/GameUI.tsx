@@ -84,7 +84,7 @@ export default function GameUI() {
         <Card>
           <div className="font-semibold mb-2">{gameState.decisionPoint.prompt}</div>
           <div className="space-y-2">
-            {gameState.decisionPoint.options.map(option => 
+            {gameState.decisionPoint.options.map((option: { id: string; text: string }) => 
              {
               if (!option) return null;
               if (!gameState.decisionPoint) return null;

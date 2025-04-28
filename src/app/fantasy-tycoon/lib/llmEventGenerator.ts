@@ -3,6 +3,15 @@ import { z } from "zod";
 import { FantasyCharacter } from "../models/character";
 import { Item } from "../models/item";
 
+// Process reward items to ensure they have required name and description
+const processFallbackRewardItems = (items?: { id: string; name?: string; description?: string; quantity: number }[]): Item[] | undefined =>
+  items?.map(item => ({
+    id: item.id,
+    quantity: item.quantity,
+    name: item.name || 'Unknown Item',
+    description: item.description || 'No description available',
+  })) || [];
+
 export interface LLMEventOption {
   id: string;
   text: string;
@@ -33,9 +42,9 @@ const eventOptionSchema = z.object({
     statusChange: z.string().optional(),
     rewardItems: z.array(z.object({
       id: z.string(),
-      quantity: z.number().int().min(1),
-      name: z.string().optional(),
-      description: z.string().optional(),
+      name: z.string(),
+      description: z.string(),
+      quantity: z.number(),
     })).optional(),
   }),
 });
@@ -49,8 +58,6 @@ const eventSchema = z.object({
 const eventsArraySchema = z.array(eventSchema).length(3);
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-
 
 export async function generateLLMEvents(character: FantasyCharacter, context: string): Promise<LLMGeneratedEvent[]> {
   // Function calling schema for event generation
@@ -148,13 +155,23 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
       const events = eventsArraySchema.parse(toolArgs.events);
       // Ensure unique event ids
       const seenIds = new Set<string>();
-      const uniqueEvents = events.map((event) => {
+      const uniqueEvents: LLMGeneratedEvent[] = events.map((event) => {
         let newId = event.id;
         if (seenIds.has(event.id)) {
           newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         }
         seenIds.add(newId);
-        return { ...event, id: newId };
+        
+        // Ensure reward items have required name and description
+        const processedOptions: LLMEventOption[] = event.options.map(option => ({
+          ...option,
+          outcome: {
+            ...option.outcome,
+            rewardItems: processFallbackRewardItems(option.outcome.rewardItems),
+          },
+        }));
+
+        return { ...event, id: newId, options: processedOptions };
       });
       return uniqueEvents;
     }
@@ -186,6 +203,8 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
     console.error("LLM event generation failed", err);
     // Fallback: return a simple default event
     const uniqueSuffix = `fallback-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+
     return [
       {
         id: `default-1-${uniqueSuffix}`,
@@ -198,6 +217,9 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
             outcome: {
               description: "You find a pouch of gold.",
               goldDelta: 10,
+              rewardItems: processFallbackRewardItems([
+                { id: 'gold-pouch', quantity: 1, name: 'Gold Pouch', description: 'A small leather pouch filled with gold coins' }
+              ])
             },
           },
           {
@@ -222,6 +244,9 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
             outcome: {
               description: "The potion boosts your reputation!",
               reputationDelta: 5,
+              rewardItems: processFallbackRewardItems([
+                { id: 'mysterious-potion', quantity: 1, name: 'Mysterious Potion', description: 'A swirling potion with unknown effects' }
+              ])
             },
           },
           {

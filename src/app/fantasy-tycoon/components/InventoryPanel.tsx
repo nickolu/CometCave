@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
-import { Item } from "../models/item";
+import { Item } from "../models/types";
 import Button from "../../components/ui/Button";
 import List from "../../components/ui/List";
 

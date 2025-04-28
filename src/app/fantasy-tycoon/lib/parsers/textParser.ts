@@ -1,6 +1,6 @@
 // Regex/text utilities for reward extraction
 
-import { Item } from "../../models/item";
+import { Item } from "../../models/types";
 
 export function extractRewardItemsWithRegex(text: string): Item[] {
   console.log('[extractRewardItemsWithRegex] input:', text);
