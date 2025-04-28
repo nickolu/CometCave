@@ -17,7 +17,8 @@ type GameState = {
     id: string;
     settings: Record<string, unknown>;
   };
-  character: FantasyCharacter | null;
+  character: FantasyCharacter | null; // currently selected character
+  characters: FantasyCharacter[]; // roster of all characters
   locations: FantasyLocation[];
   storyEvents: FantasyStoryEvent[];
   decisionPoint: FantasyDecisionPoint | null;

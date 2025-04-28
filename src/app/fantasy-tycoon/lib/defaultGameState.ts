@@ -9,6 +9,7 @@ export const defaultGameState: GameState = {
     settings: {},
   },
   character: null, // Character must be created by user
+  characters: [], // roster starts empty
   locations: [],
   storyEvents: [],
   decisionPoint: null,
