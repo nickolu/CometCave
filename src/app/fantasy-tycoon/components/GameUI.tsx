@@ -13,9 +13,12 @@ import InventoryPanel from "./InventoryPanel";
 import StoryFeed from "./StoryFeed";
 import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
 import Link from 'next/link';
+import { flipCoin } from "@/app/utils";
+import { getGenericTravelMessage } from "../lib/getGenericTravelMessage";
 
 export default function GameUI() {
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  
   
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -27,7 +30,7 @@ export default function GameUI() {
     return () => window.removeEventListener("keydown", handler);
   }, [setInventoryOpen]);
 
-  const { gameState } = useGameStore();
+  const { gameState, setGenericMessage, incrementDistance } = useGameStore();
   
   const {mutate: moveForwardMutation, isPending: moveForwardPending} = useMoveForwardMutation();
   const {mutate: resolveDecisionMutation, isPending: resolveDecisionPending} = useResolveDecisionMutation();
@@ -46,12 +49,25 @@ export default function GameUI() {
     </div>
   }
 
+  const handleMoveForward = () => {
+    const shouldDoNothing = flipCoin(0.05, 0.95);
+    if (shouldDoNothing) {
+      console.log('not calling LLM');
+      const genericMessage = getGenericTravelMessage();
+      setGenericMessage(genericMessage);
+      incrementDistance();
+    } else {
+      console.log('calling LLM');
+      moveForwardMutation();
+    }
+  };
+
   return (
     <>
     <div className="max-w-md mx-auto p-4 space-y-4">
       <Button
         className="w-full"
-        onClick={() => moveForwardMutation()}
+        onClick={handleMoveForward}
         disabled={moveForwardPending || resolveDecisionPending}
       >
         {moveForwardPending ? "Travelling..." : "Continue Travelling"}

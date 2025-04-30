@@ -31,6 +31,8 @@ export interface GameStore {
   addCharacter: (c: Partial<FantasyCharacter>) => void;
   deleteCharacter: (id: string) => void;
   selectCharacter: (id: string) => void;
+  setGenericMessage: (message: string) => void;
+  incrementDistance: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -74,6 +76,33 @@ export const useGameStore = create<GameStore>()(
             gameState: {
               ...state.gameState,
               character: matchingCharacter,
+            },
+          }
+          return updatedState;
+        }));
+      },
+      setGenericMessage: (message: string) => {
+        set(
+          produce((state: GameStore) => {
+          const updatedState = {
+            gameState: {
+              ...state.gameState,
+              genericMessage: message,
+            },
+          }
+          return updatedState;
+        }));
+      },
+      incrementDistance: () => {
+        set(
+          produce((state: GameStore) => {
+          const updatedState = {
+            gameState: {
+              ...state.gameState,
+              character: {
+                ...state.gameState?.character,
+                distance: (state.gameState?.character?.distance || 0) + 1,
+              },
             },
           }
           return updatedState;

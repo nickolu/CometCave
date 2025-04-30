@@ -7,192 +7,57 @@ import { Item } from '@/app/fantasy-tycoon/models/item';
 
 const BASE_DISTANCE = 1;
 
-export function rollEvent(character: FantasyCharacter): {
-  event: FantasyStoryEvent | null;
-  decisionPoint: FantasyDecisionPoint | null;
-  goldDelta: number;
-  reputationDelta: number;
-} {
-  const eventWeights = [
-    { type: 0, weight: 60 },
-    { type: 1, weight: 10 },
-    { type: 2, weight: 10 },
-    { type: 3, weight: 10 },
-  ];
-  const totalWeight = eventWeights.reduce((sum, entry) => sum + entry.weight, 0);
-  const rand = Math.random() * totalWeight;
-  let acc = 0;
-  let roll = 0;
-  for (let i = 0; i < eventWeights.length; i++) {
-    acc += eventWeights[i].weight;
-    if (rand < acc) {
-      roll = eventWeights[i].type;
-      break;
-    }
-  }
-  const now = new Date().toISOString();
-  switch (roll) {
-    case 0:
-      return {
-        event: null,
-        decisionPoint: null,
-        goldDelta: 0,
-        reputationDelta: 0,
-      };
-    case 1:
-      return {
-        event: {
-          id: `event-gold-${now}`,
-          type: 'gain_gold',
-          description: 'You found 10 gold on the road.',
-          characterId: character.id,
-          locationId: character.locationId,
-          timestamp: now,
-        },
-        decisionPoint: null,
-        goldDelta: 10,
-        reputationDelta: 0,
-      };
-    case 2:
-      return {
-        event: {
-          id: `event-rep-${now}`,
-          type: 'gain_reputation',
-          description: 'You helped a traveler and gained reputation.',
-          characterId: character.id,
-          locationId: character.locationId,
-          timestamp: now,
-        },
-        decisionPoint: null,
-        goldDelta: 0,
-        reputationDelta: 5,
-      };
-    case 3:
-      const decisionPoint: FantasyDecisionPoint = {
-        id: `decision-${now}`,
-        eventId: `event-decision-${now}`,
-        prompt: 'A fork in the road! Which path do you take?',
-        options: [
-          {
-            id: 'left',
-            text: 'Take the left path',
-            effects: { gold: 0, reputation: 2 },
-          },
-          {
-            id: 'right',
-            text: 'Take the right path',
-            effects: { gold: 5, reputation: 0 },
-          },
-        ],
-        resolved: false,
-      };
-      return {
-        event: {
-          id: decisionPoint.eventId,
-          type: 'decision_point',
-          description: 'You encountered a fork in the road.',
-          characterId: character.id,
-          locationId: character.locationId,
-          timestamp: now,
-        },
-        decisionPoint,
-        goldDelta: 0,
-        reputationDelta: 0,
-      };
-    default:
-      return { event: null, decisionPoint: null, goldDelta: 0, reputationDelta: 0 };
-  }
-}
-
 export async function moveForwardService(character: FantasyCharacter): Promise<MoveForwardResponse> {
-  let updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE };
-  const eventWeights = [
-    { type: 0, weight: 95 },
-    { type: 1, weight: 5 },
-  ];
-  const totalWeight = eventWeights.reduce((sum, entry) => sum + entry.weight, 0);
-  const rand = Math.random() * totalWeight;
-  let acc = 0;
-  let roll = 0;
-  for (let i = 0; i < eventWeights.length; i++) {
-    acc += eventWeights[i].weight;
-    if (rand < acc) {
-      roll = eventWeights[i].type;
-      break;
-    }
-  }
+  const updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE };
 
   let event: FantasyStoryEvent | null = null;
   let decisionPoint: FantasyDecisionPoint | null = null;
-  const goldDelta = 0;
-  const reputationDelta = 0;
-  const genericMessages = [
-    'The road is quiet. You travel onward.',
-    'A gentle breeze rustles the trees. Nothing of note happens.',
-    'You take a moment to rest and reflect.',
-    'You hear distant laughter, but nothing comes of it.',
-    'The journey continues uneventfully.',
-  ];
-  let genericMessage: string | null = null;
 
-  if (roll === 0) {
+  try {
+    const context = '';
+    const llmEvents = await generateLLMEvents(character, context);
+    const llmEvent = llmEvents[0];
+    event = {
+      id: llmEvent.id,
+      type: 'decision_point',
+      description: llmEvent.description,
+      characterId: character.id,
+      locationId: character.locationId,
+      timestamp: new Date().toISOString(),
+    };
+    decisionPoint = {
+      id: `decision-${llmEvent.id}`,
+      eventId: llmEvent.id,
+      prompt: llmEvent.description,
+      options: await Promise.all(llmEvent.options.map(async opt => {
+        let extractedRewardItems: Item[] = [];
+        if (opt.outcome.description) {
+          extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
+        }
+        return {
+          id: opt.id,
+          text: opt.text,
+          effects: {
+            gold: opt.outcome.goldDelta ?? 0,
+            reputation: opt.outcome.reputationDelta ?? 0,
+            statusChange: opt.outcome.statusChange,
+            rewardItems: extractedRewardItems.length > 0 ? extractedRewardItems : (opt.outcome.rewardItems ?? []),
+          },
+          resultDescription: opt.outcome.description,
+          rewardItems: extractedRewardItems.length > 0 ? extractedRewardItems : (opt.outcome.rewardItems ?? []),
+        };
+      })),
+      resolved: false,
+    };
+  } catch (err) {
+    console.error('LLM event generation failed', err);
     event = null;
     decisionPoint = null;
-    genericMessage = genericMessages[Math.floor(Math.random() * genericMessages.length)];
-  } else  {
-    try {
-      const context = '';
-      const llmEvents = await generateLLMEvents(character, context);
-      const llmEvent = llmEvents[0];
-      event = {
-        id: llmEvent.id,
-        type: 'decision_point',
-        description: llmEvent.description,
-        characterId: character.id,
-        locationId: character.locationId,
-        timestamp: new Date().toISOString(),
-      };
-      decisionPoint = {
-        id: `decision-${llmEvent.id}`,
-        eventId: llmEvent.id,
-        prompt: llmEvent.description,
-        options: await Promise.all(llmEvent.options.map(async opt => {
-          // Try to extract reward items from the result description
-          let extractedRewardItems: Item[] = [];
-          if (opt.outcome.description) {
-            extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
-          }
-          return {
-            id: opt.id,
-            text: opt.text,
-            effects: {
-              gold: opt.outcome.goldDelta ?? 0,
-              reputation: opt.outcome.reputationDelta ?? 0,
-              statusChange: opt.outcome.statusChange,
-              // Prefer extracted items if present, else use LLM's rewardItems
-              rewardItems: extractedRewardItems.length > 0 ? extractedRewardItems : (opt.outcome.rewardItems ?? []),
-            },
-            resultDescription: opt.outcome.description,
-            rewardItems: extractedRewardItems.length > 0 ? extractedRewardItems : (opt.outcome.rewardItems ?? []),
-          };
-        })),
-        resolved: false,
-      };
-    } catch (err) {
-      console.error('LLM event generation failed', err);
-      event = null;
-      decisionPoint = null;
-      genericMessage = genericMessages[Math.floor(Math.random() * genericMessages.length)];
-    }
   }
-
-  if (goldDelta) updatedCharacter = { ...updatedCharacter, gold: updatedCharacter.gold + goldDelta };
-  if (reputationDelta) updatedCharacter = { ...updatedCharacter, reputation: updatedCharacter.reputation + reputationDelta };
 
   return {
     character: updatedCharacter,
     event,
     decisionPoint,
-    genericMessage,
   };
 }
