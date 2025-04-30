@@ -28,7 +28,7 @@ export default function CharacterCreation({ onComplete }: { onComplete?: (charac
         required
       />
       <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
-        Start Adventure
+        Add Character
       </button>
     </form>
   );

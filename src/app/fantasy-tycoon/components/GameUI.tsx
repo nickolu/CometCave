@@ -1,25 +1,21 @@
 "use client";
 
-import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from "react";
 
 import Card from "@/app/components/ui/Card";
 import Button from "@/app/components/ui/Button";
 
-import { FantasyCharacter } from "../models/character";
 import { useGameStore } from "../hooks/useGameStore";
 
 import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
 
 import InventoryPanel from "./InventoryPanel";  
-import CharacterList from "./CharacterList";
 import StoryFeed from "./StoryFeed";
 import { useMoveForwardMutation } from '../hooks/useGameQuery';
+import Link from 'next/link';
 
 export default function GameUI() {
-  const { setGameState } = useGameStore();
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  
   
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -31,29 +27,23 @@ export default function GameUI() {
     return () => window.removeEventListener("keydown", handler);
   }, [setInventoryOpen]);
 
-  const queryClient = useQueryClient();
   const { gameState } = useGameStore();
   
   const {mutate: moveForwardMutation, isPending: moveForwardPending} = useMoveForwardMutation();
   const {mutate: resolveDecisionMutation, isPending: resolveDecisionPending} = useResolveDecisionMutation();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && gameState) {
-    }
+    if (typeof window !== 'undefined' && gameState) {}
   }, [gameState]);
 
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
   const { character, storyEvents } = gameState;
 
-  const handleCharacterSelect = (character: FantasyCharacter) => {
-    const updatedState = { ...gameState, character };
-    setGameState(updatedState);
-    queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
-  };
-
   if (!character) {
-    return <CharacterList onSelect={handleCharacterSelect} />;
+    return <div>
+      please select a <Link href="/fantasy-tycoon/characters">character</Link>
+    </div>
   }
 
   return (
@@ -112,7 +102,6 @@ export default function GameUI() {
       )}
     </div>
     <InventoryPanel isOpen={inventoryOpen} onClose={() => setInventoryOpen(false)} inventory={gameState?.inventory ?? []} />
-    <CharacterList onSelect={handleCharacterSelect} />
     </>
   );
 }

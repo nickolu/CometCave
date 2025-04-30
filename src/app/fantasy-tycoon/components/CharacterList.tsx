@@ -80,7 +80,7 @@ export default function CharacterList({ onSelect }: { onSelect: (character: Fant
             >
               ×
             </button>
-            <CharacterCreation />
+            <CharacterCreation onComplete={handleCloseCreation} />
           </div>
         </div>
       )}
