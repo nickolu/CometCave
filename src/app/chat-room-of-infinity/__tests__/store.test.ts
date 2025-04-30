@@ -38,7 +38,13 @@ describe('Store Actions & State', () => {
     useStore.setState({
       chat: {
         charactersRespondToEachOther: true,
-      } as any,
+        messages: [],
+        characters: [],
+        typingCharacters: [],
+        isTyping: false,
+        remainingCharacterMessages: 4,
+        consecutiveCharacterResponses: 0,
+      },
     });
     expect(useStore.getState().chat.charactersRespondToEachOther).toBe(true);
     // Other properties should be undefined or default
@@ -53,7 +59,10 @@ describe('Store Actions & State', () => {
         characters: [],
         typingCharacters: [],
         isTyping: false,
-      } as any,
+        charactersRespondToEachOther: false,
+        remainingCharacterMessages: 4,
+        consecutiveCharacterResponses: 0,
+      },
     });
     // Should fallback to false
     expect(useStore.getState().chat.charactersRespondToEachOther ?? false).toBe(false);
