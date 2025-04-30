@@ -11,7 +11,7 @@ import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation"
 
 import InventoryPanel from "./InventoryPanel";  
 import StoryFeed from "./StoryFeed";
-import { useMoveForwardMutation } from '../hooks/useGameQuery';
+import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
 import Link from 'next/link';
 
 export default function GameUI() {

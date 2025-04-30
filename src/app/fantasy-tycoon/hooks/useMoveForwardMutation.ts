@@ -1,7 +1,6 @@
 "use client";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { GameState, Item } from '../models/types';
-import { defaultGameState } from '../lib/defaultGameState';
 import { addItem } from '../lib/inventory';
 import { useGameStore } from './useGameStore';
 
@@ -15,17 +14,18 @@ export interface MoveForwardResponse {
 
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
-  const { setGameState } = useGameStore();
+  const { setGameState, gameState } = useGameStore();
   
   return useMutation({
     mutationFn: async () => {
-      const currentState = queryClient.getQueryData<GameState>(['fantasy-tycoon', 'game-state']) || defaultGameState;
-      if (!currentState.character) throw new Error('No character found');
+      
+      const currentCharacter = gameState?.character;
+      if (!currentCharacter) throw new Error('No character found');
       
       const res = await fetch('/api/v1/fantasy-tycoon/move-forward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ character: currentState.character })
+        body: JSON.stringify({ character: currentCharacter })
       });
       
       if (!res.ok) {
@@ -33,7 +33,7 @@ export function useMoveForwardMutation() {
       }
       
       const data: MoveForwardResponse = await res.json();
-      let newInventory = currentState.inventory;
+      let newInventory = gameState.inventory;
       
       const rewardItems: Item[] = [];
       if (data.event) {
@@ -52,14 +52,14 @@ export function useMoveForwardMutation() {
           description: reward.description ?? '',
           quantity: reward.quantity,
         };
-        newInventory = addItem({ ...currentState, inventory: newInventory }, item).inventory;
+        newInventory = addItem({ ...gameState, inventory: newInventory }, item).inventory;
       }
       
       const updatedState: GameState = {
-        ...currentState,
+        ...gameState,
         character: data.character,
         storyEvents: [
-          ...currentState.storyEvents,
+          ...gameState.storyEvents,
           ...(data.event ? [data.event] : [])
         ],
         decisionPoint: data.decisionPoint ?? null,
