@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Graphics, Container } from 'pixi.js';
 import { extend } from '@pixi/react';
 
@@ -36,15 +36,15 @@ function useRingTossGame() {
     const POLE_WIDTH = 40;  // Same as cone base center width
     const POLE_HEIGHT = 120;
     
-    const drawRing = (g: Graphics, color: number, fillColor: number) => {
+    const drawRing = useCallback((g: Graphics, color: number, fillColor: number) => {
       g.clear();
       g.lineStyle(8, color);
       g.beginFill(fillColor);
       g.drawCircle(0, 0, RING_RADIUS);
       g.endFill();
-    };
+    }, [RING_RADIUS]);
   
-    const drawCone = (g: Graphics) => {
+    const drawCone = useCallback((g: Graphics) => {
       g.clear();
       
       // Draw pole
@@ -74,7 +74,7 @@ function useRingTossGame() {
         g.drawRect(-width/2, y, width, STRIPE_HEIGHT);
         g.endFill();
       });
-    };
+    }, [scoredColors, POLE_WIDTH, POLE_HEIGHT, CONE_HEIGHT, CONE_BASE_WIDTH, STRIPE_HEIGHT]);
   
     const getActiveRing = () => rings.find(r => r.isActive);
   

@@ -1,3 +1,5 @@
+'use client';
+
 import { Navigation } from "@/app/components/navigation";
 
 const GamePageTemplate = ({ title, children }: { title: string; children: React.ReactNode }) => {
