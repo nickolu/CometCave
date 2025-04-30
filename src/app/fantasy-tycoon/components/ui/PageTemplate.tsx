@@ -6,7 +6,7 @@ export const PageTemplate = ({ children, pageId }: { children: React.ReactNode; 
         <div className="mb-4">
             <Navigation pageId={pageId} />
         </div>
-        <div>
+        <div className="pt-4">
             {children}
         </div>
     </div>
