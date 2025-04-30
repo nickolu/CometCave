@@ -8,12 +8,13 @@ import Button from "@/app/components/ui/Button";
 
 import { FantasyCharacter } from "../models/character";
 import { useGameStore } from "../hooks/useGameStore";
-import { useMoveForwardMutation } from "../hooks/useMoveForwardMutation";
+
 import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
 
 import InventoryPanel from "./InventoryPanel";  
 import CharacterList from "./CharacterList";
 import StoryFeed from "./StoryFeed";
+import { useMoveForwardMutation } from '../hooks/useGameQuery';
 
 export default function GameUI() {
   const { setGameState } = useGameStore();
