@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 import Card from "@/app/components/ui/Card";
 import Button from "@/app/components/ui/Button";
@@ -18,17 +18,17 @@ import StoryFeed from "./StoryFeed";
 export default function GameUI() {
   const { setGameState } = useGameStore();
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  const toggleInventory = useCallback(() => setInventoryOpen(v => !v), [setInventoryOpen]);
+  
   
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "i") {
-        toggleInventory();
+        setInventoryOpen(v => !v);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggleInventory]);
+  }, [setInventoryOpen]);
 
   const queryClient = useQueryClient();
   const { gameState } = useGameStore();
@@ -70,7 +70,7 @@ export default function GameUI() {
         <Button
           variant="secondary"
           className="mr-2"
-          onClick={toggleInventory}
+          onClick={() => setInventoryOpen(v => !v)}
           aria-label="Open inventory (I)"
         >
           Inventory (I)
@@ -110,7 +110,7 @@ export default function GameUI() {
         </Card>
       )}
     </div>
-    <InventoryPanel isOpen={inventoryOpen} onClose={toggleInventory} inventory={gameState?.inventory ?? []} />
+    <InventoryPanel isOpen={inventoryOpen} onClose={() => setInventoryOpen(false)} inventory={gameState?.inventory ?? []} />
     <CharacterList onSelect={handleCharacterSelect} />
     </>
   );

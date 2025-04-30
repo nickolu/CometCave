@@ -6,22 +6,17 @@ import { useCallback } from 'react';
 
 import { FantasyCharacter } from '../models/types';
 
-export default function CharacterCreation({ onComplete }: { onComplete?: (character: FantasyCharacter) => void }) {
+export default function CharacterCreation({ onComplete }: { onComplete?: (character: Partial<FantasyCharacter>) => void }) {
   const { character, updateCharacter, completeCreation } = useCharacterCreation();
-  const { addCharacter, selectCharacter } = useGameStore();
+  const { addCharacter } = useGameStore();
 
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     completeCreation();
-    // Wait for character to be fully populated after completeCreation
-    setTimeout(() => {
-      if (character && character.id) {
-        addCharacter(character as FantasyCharacter);
-        selectCharacter(character.id);
-        onComplete?.(character as FantasyCharacter);
-      }
-    }, 0);
-  }, [completeCreation, addCharacter, selectCharacter, character, onComplete]);
+
+    addCharacter(character);
+    onComplete?.(character);
+  }, [completeCreation, addCharacter, character, onComplete]);
 
   return (
     <form className="space-y-4 p-4" onSubmit={handleSubmit}>

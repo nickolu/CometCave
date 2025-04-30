@@ -6,11 +6,29 @@ import { GameState } from '../models/types';
 import { FantasyCharacter } from '../models/character';
 import { defaultGameState } from '../lib/defaultGameState';
 
+
+const defaultCharacter: FantasyCharacter = {
+  id: '',
+  playerId: '',
+  name: '',
+  race: '',
+  class: '',
+  level: 1,
+  abilities: [],
+  locationId: '',
+  gold: 0,
+  reputation: 0,
+  distance: 0,
+  status: 'active',
+  strength: 0,
+  intelligence: 0,
+  luck: 0,
+};
 export interface GameStore {
   gameState: GameState | null;
   setGameState: (state: GameState) => void;
   clearGameState: () => void;
-  addCharacter: (c: FantasyCharacter) => void;
+  addCharacter: (c: Partial<FantasyCharacter>) => void;
   deleteCharacter: (id: string) => void;
   selectCharacter: (id: string) => void;
 }
@@ -27,7 +45,7 @@ export const useGameStore = create<GameStore>()(
             if (!state.gameState) return;
             const characters = state.gameState.characters || [];
             if (characters.length >= 5) return;
-            state.gameState.characters = [...characters, c];
+            state.gameState.characters = [...characters, {...defaultCharacter, ...c}];
           })
         );
       },
