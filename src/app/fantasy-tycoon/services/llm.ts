@@ -15,8 +15,8 @@ const eventOptionSchema = z.object({
     rewardItems: z.array(z.object({
       id: z.string(),
       quantity: z.number().int().min(1),
-      name: z.string().optional(),
-      description: z.string().optional(),
+      name: z.string(),
+      description: z.string(),
     })).optional(),
   }),
 });
@@ -51,7 +51,7 @@ export function parseResponse(raw: string): LLMGeneratedEvent[] {
   } else {
     throw new Error("LLM response is not an array or object with events array");
   }
-  // Ensure unique event ids
+
   const seenIds = new Set<string>();
   const uniqueEvents = events.map((event) => {
     let newId = event.id;
@@ -61,5 +61,6 @@ export function parseResponse(raw: string): LLMGeneratedEvent[] {
     seenIds.add(newId);
     return { ...event, id: newId };
   });
+
   return uniqueEvents;
 }

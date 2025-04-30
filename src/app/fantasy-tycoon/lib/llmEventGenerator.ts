@@ -12,17 +12,19 @@ const processFallbackRewardItems = (items?: { id: string; name?: string; descrip
     description: item.description || 'No description available',
   })) || [];
 
-export interface LLMEventOption {
-  id: string;
-  text: string;
-  probability: number; // 0-1
-  outcome: {
+  type Outcome = {
     description: string;
     goldDelta?: number;
     reputationDelta?: number;
     statusChange?: string;
     rewardItems?: Item[];
   };
+
+export interface LLMEventOption {
+  id: string;
+  text: string;
+  probability: number; // 0-1
+  outcome: Outcome;
 }
 
 export interface LLMGeneratedEvent {
