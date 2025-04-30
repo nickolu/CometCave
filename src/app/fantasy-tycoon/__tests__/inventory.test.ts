@@ -16,6 +16,7 @@ describe('Inventory actions', () => {
     baseState = {
       player: { id: 'p1', settings: {} },
       character: null,
+      characters: [],
       locations: [],
       storyEvents: [],
       decisionPoint: null,

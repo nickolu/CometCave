@@ -7,8 +7,6 @@ describe('Character Response Logic', () => {
     id: 'char-1',
     name: 'Alice',
     description: 'Test character',
-    avatar: '',
-    color: '',
   };
 
   beforeEach(() => {
@@ -35,7 +33,7 @@ describe('Character Response Logic', () => {
     useStore.setState({
       chat: {
         ...useStore.getState().chat,
-        messages: undefined,
+        messages: [],
       },
     });
     act(() => {
