@@ -147,9 +147,6 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
     });
     // Parse tool calls response
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-    console.log('toolCall', toolCall);
-    console.log('toolArgs', toolCall?.function?.arguments);
-    console.log('events', toolCall?.function?.arguments && JSON.parse(toolCall?.function?.arguments));
     if (toolCall && toolCall.function?.name === 'generate_events') {
       const toolArgs = JSON.parse(toolCall.function.arguments);
       const events = eventsArraySchema.parse(toolArgs.events);

@@ -159,10 +159,8 @@ export async function moveForwardService(character: FantasyCharacter): Promise<M
         options: await Promise.all(llmEvent.options.map(async opt => {
           // Try to extract reward items from the result description
           let extractedRewardItems: Item[] = [];
-          console.log('opt.outcome.description', opt.outcome.description);
           if (opt.outcome.description) {
             extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
-            console.log('extractedRewardItems', extractedRewardItems);
           }
           return {
             id: opt.id,

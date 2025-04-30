@@ -22,7 +22,6 @@ export const useGameStore = create<GameStore>()(
       setGameState: (state: GameState) => set({ gameState: state }),
       clearGameState: () => set({ gameState: defaultGameState }),
       addCharacter: (c) => {
-        console.log('[useGameStore] addCharacter called', c);
         set(
           produce((state: GameStore) => {
             if (!state.gameState) return;
@@ -51,7 +50,6 @@ export const useGameStore = create<GameStore>()(
       selectCharacter: (id) => {
         set(
           produce((state: GameStore) => {
-          console.log('[useGameStore] selectCharacter called', state)
           const matchingCharacter = state.gameState?.characters?.find((char: FantasyCharacter) => char.id === id);
           if (!matchingCharacter) return {};
           const updatedState = {
@@ -60,7 +58,6 @@ export const useGameStore = create<GameStore>()(
               character: matchingCharacter,
             },
           }
-          console.log('[useGameStore] selectCharacter updatedState', JSON.stringify(updatedState))
           return updatedState;
         }));
       },

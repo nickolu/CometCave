@@ -6,19 +6,12 @@ import { extractRewardItemsWithRegex, fallbackExtractSimple } from './textParser
  * Requires process.env.OPENAI_API_KEY to be set for LLM extraction.
  */
 export default async function extractRewardItemsFromText(text: string): Promise<Item[]> {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[rewardExtractor] input:', text);
-  }
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return extractRewardItemsWithRegex(text);
   }
 
   const prompt = `Extract any items the player receives from the following text. Respond ONLY with a JSON object of the form { "items": [{ "id": string, "qty": number, "name": string, "description": string }] }. Each item must have a unique id (snake_case), a quantity, a fantasy-appropriate name, and a vivid description. If there are no items, respond with { "items": [] } and nothing else.\n\nText: """${text}"""`;
-
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[rewardExtractor] prompt:', prompt);
-  }
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -36,7 +29,6 @@ export default async function extractRewardItemsFromText(text: string): Promise<
       }),
     });
     const data = await response.json();
-    console.log('[rewardExtractor] response:', data.choices?.[0]?.message?.content);
     const content = data.choices?.[0]?.message?.content?.trim();
     if (!content) return [];
     try {
