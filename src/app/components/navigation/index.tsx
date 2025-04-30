@@ -1,11 +1,47 @@
-import Link from "next/link";
+'use client';
 
-export function Navigation() {  return (
-    <nav className="flex justify-center">
-      <ul className="flex justify-center gap-4">
-        <li><Link href="/">Home</Link></li>
-        <li><Link href="/ring-toss">Ring Toss</Link></li>
-      </ul>
-    </nav>
+import { AppBar, Toolbar, Button, Box } from '@mui/material';
+import Link from 'next/link';
+
+const sx = {
+  appBar: {
+    backgroundColor: 'transparent', 
+    padding: 0, 
+    borderBottom: 1,
+    borderColor: 'divider',
+  }
+}
+export function Navigation() {
+  return (
+    <AppBar position="static" color="transparent" elevation={0} sx={sx.appBar}>
+      <Toolbar sx={{ justifyContent: 'center', padding: 0, m: 0}}>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', width: '100%' }}>
+          <Button
+            component={Link}
+            href="/"
+            color="primary"
+            variant="text"
+          >
+            Home
+          </Button>
+          <Button
+            component={Link}
+            href="/ring-toss"
+            color="primary"
+            variant="text"
+          >
+            Ring Toss
+          </Button>
+          <Button
+            component={Link}
+            href="/chat-room-of-infinity"
+            color="primary"
+            variant="text"
+          >
+            Chat Room of Infinity
+          </Button>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

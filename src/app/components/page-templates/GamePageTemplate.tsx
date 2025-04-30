@@ -1,21 +1,42 @@
 'use client';
 
+import { Box, Container, Typography } from '@mui/material';
 import { Navigation } from "@/app/components/navigation";
 
 const GamePageTemplate = ({ title, children }: { title: string; children: React.ReactNode }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-indigo-900 text-white py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-            <Navigation />
-            <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                {title}
-            </h1>
-            {children}
-        </div>
-    </div>
+    <Box
+      sx={{
+        background: 'linear-gradient(180deg, rgb(17, 24, 39) 0%, rgb(49, 46, 129) 100%)',
+        height: '100vh'
+      }}
+    >
+      <Navigation />
+      <Container
+        sx={{
+          pt: 4,
+        }}
+        
+        width="100%"
+        maxWidth="100%"
+      >
+        <Typography
+          variant="h1"
+          sx={{
+            mb: 4,
+            background: 'linear-gradient(90deg, #42a5f5 0%, #ab47bc 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            fontWeight: 'bold'
+          }}
+        >
+          {title}
+        </Typography>
+        {children}
+      </Container>
+    </Box>
   );
 };
 
 export { GamePageTemplate };
-
-    

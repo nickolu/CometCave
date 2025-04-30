@@ -1,3 +1,12 @@
+export type CharacterStatus = 'online' | 'away' | 'busy' | 'offline';
+
+export type HumanUser = {
+  name: string;
+  status: CharacterStatus;
+  description?: string;
+  avatar?: string;
+};
+
 export type Character = {
   id: string;
   name: string;
@@ -14,11 +23,13 @@ export type ChatMessage = {
 export type UserListState = {
   isCollapsed: boolean;
   characters: Character[];
+  humanUser: HumanUser;
 };
 
-export type ChatState = {
+export interface ChatState {
   messages: ChatMessage[];
   isTyping: boolean;
+  typingCharacters: Character[];
 };
 
 export type UserSelectorState = {
