@@ -7,7 +7,6 @@ import CharacterCreation from "./CharacterCreation";
 import type { GameStore } from "../hooks/useGameStore";
 const EMPTY_ARRAY: FantasyCharacter[] = [];
 const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY;
-
 const selectSelectedCharacter = (s: GameStore) => s.gameState?.character;
 const selectSelectCharacter = (s: GameStore) => s.selectCharacter;
 const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter;

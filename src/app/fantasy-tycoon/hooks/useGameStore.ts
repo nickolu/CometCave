@@ -1,5 +1,6 @@
 "use client";
 import { create } from 'zustand';
+import { produce } from 'immer';
 import { persist } from 'zustand/middleware';
 import { GameState } from '../models/types';
 import { FantasyCharacter } from '../models/character';
@@ -17,26 +18,25 @@ export interface GameStore {
 export const useGameStore = create<GameStore>()(
   persist(
     (set) => ({
-      gameState: null,
+      gameState: defaultGameState,
       setGameState: (state: GameState) => set({ gameState: state }),
-      clearGameState: () => set({ gameState: null }),
+      clearGameState: () => set({ gameState: defaultGameState }),
       addCharacter: (c) => {
-        set((state) => {
-          if (!state.gameState) return {};
-          const characters = state.gameState.characters || [];
-          if (characters.length >= 5) return {};
-          return {
-            gameState: {
-              ...state.gameState,
-              characters: [...characters, c],
-            },
-          };
-        });
+        console.log('[useGameStore] addCharacter called', c);
+        set(
+          produce((state: GameStore) => {
+            if (!state.gameState) return;
+            const characters = state.gameState.characters || [];
+            if (characters.length >= 5) return;
+            state.gameState.characters = [...characters, c];
+          })
+        );
       },
       deleteCharacter: (id) => {
-        set((state) => {
+        set(
+          produce((state) => {
           if (!state.gameState) return {};
-          const characters = (state.gameState.characters || []).filter((char) => char.id !== id);
+          const characters = (state.gameState.characters || []).filter((char: FantasyCharacter) => char.id !== id);
           // If deleting the selected character, also clear selection
           const selected = state.gameState.character && state.gameState.character.id === id ? null : state.gameState.character;
           return {
@@ -46,32 +46,27 @@ export const useGameStore = create<GameStore>()(
               character: selected,
             },
           };
-        });
+        }));
       },
       selectCharacter: (id) => {
-        set((state) => {
-          if (!state.gameState) return {};
-          const found = (state.gameState.characters || []).find((char) => char.id === id) || null;
-          return {
+        set(
+          produce((state: GameStore) => {
+          console.log('[useGameStore] selectCharacter called', state)
+          const matchingCharacter = state.gameState?.characters?.find((char: FantasyCharacter) => char.id === id);
+          if (!matchingCharacter) return {};
+          const updatedState = {
             gameState: {
               ...state.gameState,
-              character: found,
+              character: matchingCharacter,
             },
-          };
-        });
+          }
+          console.log('[useGameStore] selectCharacter updatedState', JSON.stringify(updatedState))
+          return updatedState;
+        }));
       },
     }),
     {
-      name: 'fantasy-tycoon-save', // localStorage key
-      partialize: (state) => {
-        // Only persist character and characters
-        if (!state.gameState) return { gameState: null };
-        const { character, characters } = state.gameState;
-        return { gameState: { character, characters } };
-      },
-      onRehydrateStorage: () => () => {
-        // Optionally, add migration or logging here
-      },
+      name: 'fantasy-tycoon-storage', // localStorage key
     }
   )
 );

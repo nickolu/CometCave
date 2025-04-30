@@ -1,43 +1,45 @@
 "use client";
-import { useGameQuery, useMoveForwardMutation } from "../hooks/useGameQuery";
-import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
-import StoryFeed from "../components/StoryFeed";
-import CharacterCreation from "../components/CharacterCreation";
-import { useEffect, useState, useCallback } from "react";
-import InventoryPanel from "./InventoryPanel";
+
 import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, useCallback } from "react";
+
+import Card from "@/app/components/ui/Card";
+import Button from "@/app/components/ui/Button";
+
 import { FantasyCharacter } from "../models/character";
-import { useGameState } from "../hooks/useGameState";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
+import { useGameStore } from "../hooks/useGameStore";
+import { useMoveForwardMutation } from "../hooks/useMoveForwardMutation";
+import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
+
+import InventoryPanel from "./InventoryPanel";  
 import CharacterList from "./CharacterList";
+import StoryFeed from "./StoryFeed";
 
 export default function GameUI() {
-  const { save } = useGameState();
+  const { setGameState } = useGameStore();
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  const toggleInventory = useCallback(() => setInventoryOpen(v => !v), []);
-  // Keyboard shortcut: I to toggle inventory
+  const toggleInventory = useCallback(() => setInventoryOpen(v => !v), [setInventoryOpen]);
+  
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "i") {
-        setInventoryOpen(v => !v);
+        toggleInventory();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
-  const queryClient = useQueryClient();
-  const { data: gameState, isLoading: loadingState } = useGameQuery();
-  const moveForwardMutation = useMoveForwardMutation();
-  const resolveDecisionMutation = useResolveDecisionMutation();
+  }, [toggleInventory]);
 
-  // Use useEffect to ensure client-side only code
+  const queryClient = useQueryClient();
+  const { gameState } = useGameStore();
+  
+  const {mutate: moveForwardMutation, isPending: moveForwardPending} = useMoveForwardMutation();
+  const {mutate: resolveDecisionMutation, isPending: resolveDecisionPending} = useResolveDecisionMutation();
+
   useEffect(() => {
-    // Initialize the game on the client side if needed
-    if (typeof window !== 'undefined' && gameState && !loadingState) {
-      // This ensures any client-side only initialization happens after hydration
+    if (typeof window !== 'undefined' && gameState) {
     }
-  }, [gameState, loadingState]);
+  }, [gameState]);
 
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
@@ -45,13 +47,11 @@ export default function GameUI() {
 
   const handleCharacterSelect = (character: FantasyCharacter) => {
     const updatedState = { ...gameState, character };
-    save(updatedState);
+    setGameState(updatedState);
     queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
   };
 
-
   if (!character) {
-    
     return <CharacterList onSelect={handleCharacterSelect} />;
   }
 
@@ -60,11 +60,12 @@ export default function GameUI() {
     <div className="max-w-md mx-auto p-4 space-y-4">
       <Button
         className="w-full"
-        onClick={() => moveForwardMutation.mutate()}
-        disabled={moveForwardMutation.isPending || resolveDecisionMutation.isPending}
+        onClick={() => moveForwardMutation()}
+        disabled={moveForwardPending || resolveDecisionPending}
       >
-        {moveForwardMutation.isPending ? "Travelling..." : "Continue Travelling"}
+        {moveForwardPending ? "Travelling..." : "Continue Travelling"}
       </Button>
+      {resolveDecisionPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
       <div className="flex justify-between items-center gap-2">
         <Button
           variant="secondary"
@@ -92,19 +93,14 @@ export default function GameUI() {
               return <Button
                 key={option.id}
                 className="block w-full text-left border px-3 py-2 rounded disabled:opacity-60"
-                disabled={resolveDecisionMutation.isPending}
-                onClick={() => resolveDecisionMutation.mutate({ decisionPoint: gameState.decisionPoint!, optionId: option.id })}
+                disabled={resolveDecisionPending}
+                onClick={() => resolveDecisionMutation({ decisionPoint: gameState.decisionPoint!, optionId: option.id })}
               >
                 {option.text}
               </Button>}
             )}
           </div>
-          {resolveDecisionMutation.isPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
-          {resolveDecisionMutation.data && (
-            <div className="mt-3 text-green-700 text-sm">
-              {resolveDecisionMutation.data.resultDescription || "Decision resolved!"}
-            </div>
-          )}
+          {resolveDecisionPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
         </Card>
       )}
       <StoryFeed events={storyEvents} />
@@ -115,6 +111,7 @@ export default function GameUI() {
       )}
     </div>
     <InventoryPanel isOpen={inventoryOpen} onClose={toggleInventory} inventory={gameState?.inventory ?? []} />
+    <CharacterList onSelect={handleCharacterSelect} />
     </>
   );
 }

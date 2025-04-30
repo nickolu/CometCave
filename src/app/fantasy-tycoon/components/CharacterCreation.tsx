@@ -8,8 +8,7 @@ import { FantasyCharacter } from '../models/types';
 
 export default function CharacterCreation({ onComplete }: { onComplete?: (character: FantasyCharacter) => void }) {
   const { character, updateCharacter, completeCreation } = useCharacterCreation();
-const addCharacter = useGameStore((s) => s.addCharacter);
-const selectCharacter = useGameStore((s) => s.selectCharacter);
+  const { addCharacter, selectCharacter } = useGameStore();
 
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,7 +17,7 @@ const selectCharacter = useGameStore((s) => s.selectCharacter);
     setTimeout(() => {
       if (character && character.id) {
         addCharacter(character as FantasyCharacter);
-        selectCharacter((character as FantasyCharacter).id);
+        selectCharacter(character.id);
         onComplete?.(character as FantasyCharacter);
       }
     }, 0);

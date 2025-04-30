@@ -4,7 +4,7 @@ import { FantasyCharacter } from '../models/types';
 import { FantasyDecisionPoint } from '../models/types';
 import { GameState, Item } from '../models/types';
 import { addItem } from '../lib/inventory';
-import { useGameState } from './useGameState';
+import { useGameStore } from './useGameStore';
 
 export interface ResolveDecisionResponse {
   updatedCharacter: FantasyCharacter;
@@ -23,14 +23,13 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
-  const { save } = useGameState();
+  const { setGameState } = useGameStore();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ decisionPoint, optionId }: { decisionPoint: FantasyDecisionPoint; optionId: string }) => {
-      console.log('[ResolveDecisionMutation] mutationFn called', { decisionPoint, optionId });
       const currentState = queryClient.getQueryData<GameState>(['fantasy-tycoon', 'game-state']);
       if (!currentState?.character) throw new Error('No character found');
-      console.log('[ResolveDecisionMutation] Fetching /api/v1/fantasy-tycoon/resolve-decision', currentState.character, { decisionPoint, optionId });
+      
       const res = await fetch('/api/v1/fantasy-tycoon/resolve-decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,41 +39,30 @@ export function useResolveDecisionMutation() {
           optionId,
         }),
       });
+
       if (!res.ok) {
-        console.log('[ResolveDecisionMutation] Fetch failed', res.status, res.statusText);
         throw new Error('Failed to resolve decision');
       }
       const data: ResolveDecisionResponse = await res.json();
-      console.log('[ResolveDecisionMutation] Response data:', data);
-      // Patch: Add rewardItems to inventory if present
+      
       let newInventory = currentState.inventory;
-      console.log('[ResolveDecisionMutation] Initial inventory:', newInventory);
+      
       if (data.rewardItems && Array.isArray(data.rewardItems)) {
-        console.log('[ResolveDecisionMutation] data.rewardItems present:', data.rewardItems);
-        console.log('[ResolveDecisionMutation] rewardItems extracted:', data.rewardItems);
         if (data.rewardItems.length === 0) {
-        console.log('[ResolveDecisionMutation] No reward items extracted.');
       }
-      for (const reward of data.rewardItems) {
-          console.log('[ResolveDecisionMutation] Display data for', reward.id, reward);
+
+      for (
+        const reward of data.rewardItems) {
           const item = {
             id: reward.id,
             name: reward.name,
             description: reward.description,
             quantity: 1,
           };
-          const beforeInventory = newInventory;
           newInventory = addItem({ ...currentState, inventory: newInventory }, item).inventory;
-          console.log('[ResolveDecisionMutation] Added item to inventory:', item, '\nBefore:', beforeInventory, '\nAfter:', newInventory);
         }
       }
-      console.log('[ResolveDecisionMutation] About to save updated state', {
-        inventory: newInventory,
-        character: data.updatedCharacter,
-        decisionPoint: null,
-        genericMessage: null,
-        storyEventsLength: (currentState.storyEvents?.length ?? 0) + 1
-      });
+      
       const updatedState: GameState = {
         ...currentState,
         character: data.updatedCharacter,
@@ -108,13 +96,13 @@ export function useResolveDecisionMutation() {
               : []),
         ],
       };
-      console.log('[ResolveDecisionMutation] Final updated state:', updatedState);
-      save(updatedState);
+      
       return { ...data, updatedState };
     },
     onSuccess: ({ updatedState }) => {
       queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
       queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });
+      setGameState(updatedState);
     },
   });
 }
