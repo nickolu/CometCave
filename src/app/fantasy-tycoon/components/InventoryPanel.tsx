@@ -1,8 +1,8 @@
 "use client";
 import { useState, useCallback } from "react";
 import { Item } from "../models/types";
-import Button from "../../components/ui/Button";
-import List from "../../components/ui/List";
+import { Button } from "@/app/components/ui/button"
+import { List } from "@/app/components/ui/list"
 
 interface InventoryPanelProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface InventoryPanelProps {
   inventory: Item[];
 }
 
-export default function InventoryPanel({ isOpen, onClose, inventory }: InventoryPanelProps) {
+export function InventoryPanel({ isOpen, onClose, inventory }: InventoryPanelProps) {
   const [error, setError] = useState<string | null>(null);
 
   // The following handlers should be lifted up to the parent if they need to update state
@@ -55,7 +55,7 @@ export default function InventoryPanel({ isOpen, onClose, inventory }: Inventory
                 </div>
                 <span className="font-mono px-2">x{item.quantity}</span>
                 <Button
-                  variant="primary"
+                  variant="default"
                   className="text-xs mr-1 px-2 py-1"
                   onClick={() => handleUse(item)}
                   title="Use one of this item"
@@ -63,7 +63,7 @@ export default function InventoryPanel({ isOpen, onClose, inventory }: Inventory
                   Use
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="destructive"
                   className="text-xs px-2 py-1"
                   onClick={() => handleDiscard(item)}
                   title="Discard all of this item"

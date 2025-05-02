@@ -1,50 +1,78 @@
-'use client';
-
-import { GamePageTemplate } from './components/page-templates/GamePageTemplate';
+import type React from "react"
+import Link from "next/link"
+import { MoonIcon } from "./components/moon-icon"
+import { PlanetIcon } from "./components/planet-icon"
+import { StarIcon } from "./components/star-icon"
+import { ROUTE_CONSTANTS } from "./route-constants"
 
 export default function Home() {
   return (
-    <GamePageTemplate title="CometCave">
-      <div className="text-center mb-16">
-        <p className="text-xl text-gray-300 italic">
-          Like a comet... in a cave!
-        </p>
+    <div className="flex flex-col gap-12 py-12">
+      <div className="text-center max-w-3xl mx-auto">
+        <h1 className="text-7xl font-bold text-cream-white mb-6">WELCOME</h1>
+        <p className="text-slate-400 text-xl">Like a comet... in a cave!</p>
+
+        <div className="flex gap-4 justify-center mt-8">
+          <Link
+            href="/ring-toss"
+            className="bg-space-purple text-cream-white px-8 py-3 rounded-full text-lg font-medium hover:bg-space-purple/90 transition-all"
+          >
+            PLAY
+          </Link>
+          <Link
+            href="#games"
+            className="border border-slate-600 text-cream-white px-8 py-3 rounded-full text-lg font-medium hover:border-slate-400 transition-all"
+          >
+            MORE GAMES
+          </Link>
+        </div>
       </div>
-        
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 shadow-2xl">
-        <h2 className="text-3xl font-semibold mb-6 text-center text-blue-300">
-          Games
-        </h2>
-        <ul className="space-y-4">
-          <li className="transition-all hover:translate-x-2">
-            <a 
-              href="/ring-toss"
-              className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-            >
-              <h3 className="text-xl font-medium text-blue-300 mb-2">Ring Toss</h3>
-              <p className="text-gray-300">Test your aim in this classic carnival game!</p>
-            </a>
-          </li>
-          <li className="transition-all hover:translate-x-2">
-            <a 
-              href="/chat-room-of-infinity"
-              className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-            >
-              <h3 className="text-xl font-medium text-blue-300 mb-2">Chat Room of Infinity</h3>
-              <p className="text-gray-300">Chat with fictional characters in a chat room!</p>
-            </a>
-          </li>
-          <li className="transition-all hover:translate-x-2">
-            <a 
-              href="/fantasy-tycoon"
-              className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-            >
-              <h3 className="text-xl font-medium text-blue-300 mb-2">Fantasy Tycoon</h3>
-              <p className="text-gray-300">Play as a fantasy character and explore the world!</p>
-            </a>
-          </li>
-        </ul>
+
+      <div id="games" className="max-w-4xl mx-auto w-full mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <GameCard
+          title="Ring Toss"
+          icon={<MoonIcon />}
+          href={ROUTE_CONSTANTS.RING_TOSS}
+          description="Test your aim in this classic carnival game!"
+        />
+
+        <GameCard
+          title="Chat Room"
+          icon={<PlanetIcon />}
+          href={ROUTE_CONSTANTS.CHAT_ROOM}
+          description="Chat with fictional characters in a chat room!"
+        />
+
+        <GameCard
+          title="Fantasy Tycoon"
+          icon={<StarIcon />}
+          href={ROUTE_CONSTANTS.FANTASY_TYCOON}
+          description="Play as a fantasy character and explore the world!"
+        />
       </div>
-    </GamePageTemplate>
-  );
+    </div>
+  )
+}
+
+function GameCard({
+  title,
+  icon,
+  href,
+  description,
+}: {
+  title: string
+  icon: React.ReactNode
+  href: string
+  description: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="bg-space-dark rounded-2xl p-6 flex flex-col items-center hover:bg-space-dark/80 transition-colors border border-space-dark hover:border-space-purple/30 group"
+    >
+      <div className="w-24 h-24 mb-4 transform group-hover:scale-105 transition-transform">{icon}</div>
+      <h3 className="text-xl font-bold text-cream-white text-center">{title}</h3>
+      <p className="text-slate-400 text-sm text-center mt-2">{description}</p>
+    </Link>
+  )
 }
