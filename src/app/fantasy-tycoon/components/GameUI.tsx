@@ -64,6 +64,7 @@ export default function GameUI() {
   return (
     <>
     <div className="max-w-md mx-auto p-4 space-y-4">
+    
       <Button
         className="w-full"
         onClick={handleMoveForward}
@@ -72,7 +73,7 @@ export default function GameUI() {
         {moveForwardPending ? "Travelling..." : "Continue Travelling"}
       </Button>
       {resolveDecisionPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
-      <div className="flex justify-between items-center gap-2">
+      <div className="flex items-center gap-2">
         <Button
           variant="secondary"
           className="mr-2"
@@ -81,12 +82,7 @@ export default function GameUI() {
         >
           Inventory (I)
         </Button>
-       
-        <div className="flex gap-4 text-sm">
-          <span>Distance: <b>{character.distance}</b> km</span>
-          <span>Gold: <b>{character.gold}</b></span>
-          <span>Rep: <b>{character.reputation}</b></span>
-        </div>
+        
       </div>
       {gameState.decisionPoint && !gameState.decisionPoint.resolved && (
         <Card>
