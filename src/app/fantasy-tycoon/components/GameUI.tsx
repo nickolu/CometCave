@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Card } from "@/app/components/ui/caard";
-import { Button } from "@/app/components/ui/button";
+import { Button } from "@/app/components/ui/buutton";
 
 
 import { useGameStore } from "../hooks/useGameStore";

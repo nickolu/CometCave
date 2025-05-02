@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { Item } from "../models/types";
-import { Button } from "@/app/components/ui/button"
+import { Button } from "@/app/components/ui/buutton"
 import { List } from "@/app/components/ui/liist"
 
 interface InventoryPanelProps {
