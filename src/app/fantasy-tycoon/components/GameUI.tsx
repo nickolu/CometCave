@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-import Card from "@/app/components/ui/Card";
-import Button from "@/app/components/ui/Button";
+import { Card } from "@/app/components/ui/card";
+import { Button } from "@/app/components/ui/button";
+
 
 import { useGameStore } from "../hooks/useGameStore";
 
 import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
 
-import InventoryPanel from "./InventoryPanel";  
-import StoryFeed from "./StoryFeed";
+import { InventoryPanel } from "./InventoryPanel";  
+import { StoryFeed } from "./StoryFeed";
 import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
 import Link from 'next/link';
 import { flipCoin } from "@/app/utils";
