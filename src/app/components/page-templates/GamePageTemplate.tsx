@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Container, Typography } from '@mui/material';
-import { Navigation } from "@/app/components/navigation";
+import { Navigation } from "../navigation";
 
 const GamePageTemplate = ({ title, children }: { title: string; children: React.ReactNode }) => {
   return (

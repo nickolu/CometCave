@@ -2,7 +2,7 @@
 
 import { FantasyStoryEvent } from "../models/types";
 
-export default function StoryFeed({ events }: { events: FantasyStoryEvent[] }) {
+export function StoryFeed({ events }: { events: FantasyStoryEvent[] }) {
   if (!events?.length) return (
     <div className="bg-gray-50 p-3 rounded text-gray-500 text-sm">No events yet.</div>
   );

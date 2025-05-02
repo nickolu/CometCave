@@ -2,14 +2,13 @@
 
 import { Application } from '@pixi/react';
 import { Graphics } from 'pixi.js';
-import { GamePageTemplate } from '../components/page-templates/GamePageTemplate';
 import { useRingTossGame } from './useRingTossGame';
 
 const RingTossGame = () => {
   const { score, showScore, drawCone, drawRing, rings, targetPosition, handleApplicationClick } = useRingTossGame();
 
   return (
-    <GamePageTemplate title="Ring Toss">
+    <>
       <div className="text-2xl text-blue-300 mb-4">
         Score: {score}
         {showScore && <span className="ml-2 text-green-500 animate-bounce">+1!</span>}
@@ -50,7 +49,7 @@ const RingTossGame = () => {
             Click anywhere to throw the ring!
           </p>
         </div>
-    </GamePageTemplate> 
+    </> 
   );
 };
 
