@@ -11,7 +11,7 @@ const selectSelectedCharacter = (s: GameStore) => s.gameState?.character;
 const selectSelectCharacter = (s: GameStore) => s.selectCharacter;
 const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter;
 
-export default function CharacterList({ onSelect }: { onSelect: (character: FantasyCharacter) => void }) {
+export default function CharacterList() {
   const characters = useGameStore(selectCharacters);
   const selected = useGameStore(selectSelectedCharacter);
   const selectCharacter = useGameStore(selectSelectCharacter);
@@ -19,7 +19,6 @@ export default function CharacterList({ onSelect }: { onSelect: (character: Fant
   const [showCreation, setShowCreation] = useState(false);
 
   const handleSelect = (character: FantasyCharacter) => {
-    onSelect(character);
     selectCharacter(character.id);
   };
 

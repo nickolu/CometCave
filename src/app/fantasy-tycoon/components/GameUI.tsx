@@ -13,14 +13,12 @@ import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation"
 import { InventoryPanel } from "./InventoryPanel";  
 import { StoryFeed } from "./StoryFeed";
 import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
-import Link from 'next/link';
 import { flipCoin } from "@/app/utils";
 import { getGenericTravelMessage } from "../lib/getGenericTravelMessage";
 
 export default function GameUI() {
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  
-  
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "i") {
@@ -46,7 +44,7 @@ export default function GameUI() {
 
   if (!character) {
     return <div>
-      please select a <Link href="/fantasy-tycoon/characters">character</Link>
+      please select a character
     </div>
   }
 
