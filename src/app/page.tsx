@@ -1,6 +1,5 @@
 import type React from "react"
 import Link from "next/link"
-import { RocketIcon } from "./components/rocket-icon"
 import { MoonIcon } from "./components/moon-icon"
 import { PlanetIcon } from "./components/planet-icon"
 import { StarIcon } from "./components/star-icon"
@@ -26,12 +25,6 @@ export default function Home() {
           >
             MORE GAMES
           </Link>
-        </div>
-      </div>
-
-      <div className="relative">
-        <div className="absolute right-0 top-0 -translate-y-1/2 w-48 h-48 md:w-64 md:h-64">
-          <RocketIcon />
         </div>
       </div>
 
