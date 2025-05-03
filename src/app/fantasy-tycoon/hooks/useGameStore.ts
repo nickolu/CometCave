@@ -24,6 +24,7 @@ const defaultCharacter: FantasyCharacter = {
   intelligence: 0,
   luck: 0,
 };
+
 export interface GameStore {
   gameState: GameState | null;
   setGameState: (state: GameState) => void;
@@ -55,14 +56,16 @@ export const useGameStore = create<GameStore>()(
         set(
           produce((state) => {
           if (!state.gameState) return {};
-          const characters = (state.gameState.characters || []).filter((char: FantasyCharacter) => char.id !== id);
-          // If deleting the selected character, also clear selection
-          const selected = state.gameState.character && state.gameState.character.id === id ? null : state.gameState.character;
+          const characters = state.gameState.characters || [];
+          const selectedCharacterId = state.gameState.selectedCharacterId ?? '';
+          const updatedCharacters = characters.filter((char: FantasyCharacter) => char.id !== id);
+          const updatedSelectedCharacterId = selectedCharacterId === id ? null : selectedCharacterId;
+          
           return {
             gameState: {
               ...state.gameState,
-              characters,
-              character: selected,
+              characters: updatedCharacters,
+              selectedCharacterId: updatedSelectedCharacterId,
             },
           };
         }));
@@ -75,7 +78,7 @@ export const useGameStore = create<GameStore>()(
           const updatedState = {
             gameState: {
               ...state.gameState,
-              character: matchingCharacter,
+              selectedCharacterId: id,
             },
           }
           return updatedState;
@@ -96,17 +99,17 @@ export const useGameStore = create<GameStore>()(
       incrementDistance: () => {
         set(
           produce((state: GameStore) => {
-          const updatedState = {
-            gameState: {
-              ...state.gameState,
-              character: {
-                ...state.gameState?.character,
-                distance: (state.gameState?.character?.distance || 0) + 1,
-              },
-            },
-          }
-          return updatedState;
-        }));
+            console.log('incrementing distance');
+            const selectedCharacterId = state.gameState?.selectedCharacterId;
+            if (!state.gameState?.characters) return;
+            for (const char of state.gameState.characters) {
+              if (char.id === selectedCharacterId) {
+                char.distance = (char.distance || 0) + 1;
+                break;
+              }
+            }
+          })
+        );
       },
     }),
     {

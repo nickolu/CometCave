@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useGameStore } from "../hooks/useGameStore";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/app/components/ui/tooltip";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { FantasyCharacter } from "../models/character";
 
 type IconType = 'gold' | 'reputation' | 'distance' | 'level' | 'strength' | 'intelligence' | 'luck';
 
@@ -45,7 +46,7 @@ const EXTRA_STATS: IconType[] = ["strength", "intelligence", "luck"];
 
 export function HudBar() {
   const { gameState } = useGameStore();
-  const character = gameState?.character;
+  const character = gameState?.characters?.find((char: FantasyCharacter) => char.id === gameState?.selectedCharacterId);
 
   const stats = useMemo(() => ({
     gold: character?.gold ?? 0,

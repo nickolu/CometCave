@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 
 import { Card } from "@/app/components/ui/caard";
-import { Button } from "@/app/components/ui/buutton";
-
+import { Button } from "@/app/components/ui/button";
 
 import { useGameStore } from "../hooks/useGameStore";
-
+  
 import { useResolveDecisionMutation } from "../hooks/useResolveDecisionMutation";
 
 import { InventoryPanel } from "./InventoryPanel";  
@@ -40,9 +39,9 @@ export default function GameUI() {
 
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
-  const { character, storyEvents } = gameState;
+  const { selectedCharacterId, storyEvents } = gameState;
 
-  if (!character) {
+  if (!selectedCharacterId) {
     return <div>
       please select a character
     </div>

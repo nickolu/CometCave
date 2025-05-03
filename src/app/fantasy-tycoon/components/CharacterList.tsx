@@ -9,13 +9,13 @@ import AddCharacterCard from "./AddCharacterCard";
 import type { GameStore } from "../hooks/useGameStore";
 const EMPTY_ARRAY: FantasyCharacter[] = [];
 const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY;
-const selectSelectedCharacter = (s: GameStore) => s.gameState?.character;
+const selectSelectedCharacterId = (s: GameStore) => s.gameState?.selectedCharacterId;
 const selectSelectCharacter = (s: GameStore) => s.selectCharacter;
 const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter;
 
 export default function CharacterList() {
   const characters = useGameStore(selectCharacters);
-  const selected = useGameStore(selectSelectedCharacter);
+  const selectedCharacterId = useGameStore(selectSelectedCharacterId);
   const selectCharacter = useGameStore(selectSelectCharacter);
   const deleteCharacter = useGameStore(selectDeleteCharacter);
   const [showCreation, setShowCreation] = useState(false);
@@ -45,7 +45,7 @@ export default function CharacterList() {
           <CharacterCard
             key={char.id}
             character={char}
-            selected={selected?.id === char.id}
+            selected={selectedCharacterId === char.id}
             onSelect={handleSelect}
             onDelete={handleDelete}
           />
