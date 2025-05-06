@@ -13,7 +13,7 @@ export interface MoveForwardResponse {
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
   const { getSelectedCharacter } = useGameStore();
-  const { addItem, commit, setDecisionPoint } = useGameStateBuilder();
+  const { addItem, commit, setDecisionPoint, setGenericMessage } = useGameStateBuilder();
 
   return useMutation({
     mutationFn: async () => {
@@ -43,6 +43,7 @@ export function useMoveForwardMutation() {
         addItem(item);
       }
       if (data.decisionPoint) {
+        setGenericMessage(null);
         setDecisionPoint(data.decisionPoint);
       }
       commit();

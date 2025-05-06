@@ -175,11 +175,16 @@ export function useGameStateBuilder() {
     gameStateClone.decisionPoint = decisionPoint;
   };
 
+  const setGenericMessage = (message: string | null) => {
+    gameStateClone.genericMessage = message;
+  };
+
   return {
     gameState: gameStateClone,
     commit,
     addItem,
     addStoryEvent,
     setDecisionPoint,
+    setGenericMessage,
   };
 }
