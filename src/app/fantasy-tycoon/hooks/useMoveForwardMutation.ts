@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useGameStore } from './useGameStore';
+import { useGameStateBuilder, useGameStore } from './useGameStore';
 import { FantasyCharacter, FantasyDecisionPoint, FantasyStoryEvent, Item } from '../models/types';
 
 export interface MoveForwardResponse {
@@ -12,7 +12,8 @@ export interface MoveForwardResponse {
 
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
-  const { getSelectedCharacter, addItem, setDecisionPoint } = useGameStore();
+  const { getSelectedCharacter } = useGameStore();
+  const { addItem, commit, setDecisionPoint } = useGameStateBuilder();
 
   return useMutation({
     mutationFn: async () => {
@@ -44,6 +45,7 @@ export function useMoveForwardMutation() {
       if (data.decisionPoint) {
         setDecisionPoint(data.decisionPoint);
       }
+      commit();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });

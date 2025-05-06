@@ -171,10 +171,15 @@ export function useGameStateBuilder() {
     gameStateClone.storyEvents.push(event);
   };
 
+  const setDecisionPoint = (decisionPoint: FantasyDecisionPoint | null) => {
+    gameStateClone.decisionPoint = decisionPoint;
+  };
+
   return {
     gameState: gameStateClone,
     commit,
     addItem,
     addStoryEvent,
+    setDecisionPoint,
   };
 }
