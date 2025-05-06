@@ -1,8 +1,8 @@
-"use client";
-import { useState, useCallback } from "react";
-import { Item } from "../models/types";
-import { Button } from "@/app/components/ui/buutton"
-import { List } from "@/app/components/ui/liist"
+'use client';
+import { useState, useCallback } from 'react';
+import { Item } from '../models/types';
+import { Button } from '@/app/components/ui/buutton';
+import { List } from '@/app/components/ui/liist';
 
 interface InventoryPanelProps {
   isOpen: boolean;
@@ -16,13 +16,13 @@ export function InventoryPanel({ isOpen, onClose, inventory }: InventoryPanelPro
   // The following handlers should be lifted up to the parent if they need to update state
   // For now, they are left as stubs
   const handleUse = useCallback((item: Item) => {
-    console.log("Item use not implemented in this component.", item);
-    setError("Item use not implemented in this component.");
+    console.log('Item use not implemented in this component.', item);
+    setError('Item use not implemented in this component.');
   }, []);
 
   const handleDiscard = useCallback((item: Item) => {
-    console.log("Item discard not implemented in this component.", item);
-    setError("Item discard not implemented in this component.");
+    console.log('Item discard not implemented in this component.', item);
+    setError('Item discard not implemented in this component.');
   }, []);
 
   const items = inventory ?? [];
@@ -47,7 +47,7 @@ export function InventoryPanel({ isOpen, onClose, inventory }: InventoryPanelPro
           <List
             items={items}
             className="space-y-2"
-            renderItem={(item) => (
+            renderItem={item => (
               <div className="flex items-center space-x-2 rounded p-2 transition-all duration-200 hover:scale-[1.03]">
                 <div className="flex-1">
                   <div className="font-bold text-black">{item.name}</div>

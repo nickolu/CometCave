@@ -10,10 +10,10 @@ type initialView = "game" | "characters";
 export default function FantasyTycoonPage() {
   const { gameState } = useGameStore();
 
-let initialView: initialView = "game";
+  let initialView: initialView = "characters";
 
-  if (gameState?.character) {
-    initialView = "characters";
+  if (gameState?.selectedCharacterId) {
+    initialView = "game";
   }
 
   return <PageTemplate pageId={initialView}>

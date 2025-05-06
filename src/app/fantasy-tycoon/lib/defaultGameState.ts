@@ -8,11 +8,10 @@ export const defaultGameState: GameState = {
     id: DEFAULT_PLAYER_ID,
     settings: {},
   },
-  character: null, // Character must be created by user
-  characters: [], // roster starts empty
+  selectedCharacterId: null,
+  characters: [],
   locations: [],
   storyEvents: [],
   decisionPoint: null,
   genericMessage: null,
-  inventory: [],
 };

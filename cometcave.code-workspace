@@ -1,0 +1,30 @@
+{
+  "folders": [
+    {
+      "path": ".",
+    },
+  ],
+  "settings": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "prettier.requireConfig": false,
+    "workbench.colorCustomizations": {
+      "activityBar.background": "#0d47a1",
+      "activityBar.foreground": "#ffffff",
+      "activityBarBadge.background": "#42a5f5",
+      "activityBarBadge.foreground": "#ffffff",
+      "sideBar.background": "#0a2541",
+      "sideBar.foreground": "#e3f2fd",
+      "titleBar.activeBackground": "#1565c0",
+      "titleBar.activeForeground": "#e3f2fd",
+      "titleBar.inactiveBackground": "#90caf9",
+      "titleBar.inactiveForeground": "#e3f2fd",
+      "statusBar.background": "#1976d2",
+      "statusBar.foreground": "#ffffff",
+      "statusBar.noFolderBackground": "#42a5f5",
+      "statusBar.debuggingBackground": "#0d47a1",
+    },
+  },
+}

@@ -1,30 +1,28 @@
-"use client";
+'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Item } from '../models/types';
-import { addItem } from '../lib/inventory';
 import { useGameStore } from './useGameStore';
+import { FantasyCharacter, FantasyDecisionPoint, FantasyStoryEvent, Item } from '../models/types';
 
 export interface MoveForwardResponse {
-  character: import('../models/character').FantasyCharacter;
-  event?: import('../models/story').FantasyStoryEvent | null;
-  decisionPoint?: import('../models/story').FantasyDecisionPoint | null;
+  character: FantasyCharacter;
+  event?: FantasyStoryEvent | null;
+  decisionPoint?: FantasyDecisionPoint | null;
   genericMessage?: string | null;
 }
 
-
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient();
-  const { setGameState, gameState } = useGameStore();
-  
+  const { getSelectedCharacter, addItem, setDecisionPoint } = useGameStore();
+
   return useMutation({
     mutationFn: async () => {
-      const currentCharacter = gameState?.character;
+      const currentCharacter = getSelectedCharacter();
       if (!currentCharacter) throw new Error('No character found');
 
       const res = await fetch('/api/v1/fantasy-tycoon/move-forward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ character: currentCharacter })
+        body: JSON.stringify({ character: currentCharacter }),
       });
 
       if (!res.ok) {
@@ -32,18 +30,8 @@ export function useMoveForwardMutation() {
       }
 
       const data: MoveForwardResponse = await res.json();
-      let newInventory = gameState.inventory;
 
-      const rewardItems: Item[] = [];
-      if (data.event) {
-        if (data.event.resourceDelta && Array.isArray(data.event.resourceDelta.rewardItems)) {
-          rewardItems.push(...data.event.resourceDelta.rewardItems);
-        }
-        if (Array.isArray(data.event.rewardItems)) {
-          rewardItems.push(...data.event.rewardItems);
-        }
-      }
-
+      const rewardItems: Item[] = data.event?.resourceDelta?.rewardItems ?? [];
       for (const reward of rewardItems) {
         const item: Item = {
           id: reward.id,
@@ -51,28 +39,14 @@ export function useMoveForwardMutation() {
           description: reward.description ?? '',
           quantity: reward.quantity,
         };
-        newInventory = addItem({ ...gameState, inventory: newInventory }, item).inventory;
+        addItem(item);
       }
-
-      const updatedState = {
-          ...gameState,
-          character: data.character,
-          storyEvents: [
-            ...gameState.storyEvents,
-            ...(data.event ? [data.event] : [])
-          ],
-          decisionPoint: data.decisionPoint ?? null,
-          genericMessage: data.genericMessage ?? null,
-          inventory: newInventory,
-      };
-
-      setGameState(updatedState);
-      return updatedState;
+      if (data.decisionPoint) {
+        setDecisionPoint(data.decisionPoint);
+      }
     },
-    onSuccess: (updatedState) => {
-      queryClient.setQueryData(['fantasy-tycoon', 'game-state'], updatedState);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });
-    }
+    },
   });
 }
-
