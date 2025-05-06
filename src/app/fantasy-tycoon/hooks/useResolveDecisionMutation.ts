@@ -22,7 +22,6 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
-  console.log('[useResolveDecisionMutation]');
   const { getSelectedCharacter } = useGameStore();
   const { addItem, addStoryEvent, commit } = useGameStateBuilder();
   const queryClient = useQueryClient();
@@ -36,9 +35,7 @@ export function useResolveDecisionMutation() {
       optionId: string;
       onSuccess?: () => void;
     }) => {
-      console.log('[useResolveDecisionMutation] mutationFn');
       const character = getSelectedCharacter();
-      console.log('[useResolveDecisionMutation] character', character);
       if (!character) throw new Error('No character found');
 
       const res = await fetch('/api/v1/fantasy-tycoon/resolve-decision', {
@@ -58,8 +55,6 @@ export function useResolveDecisionMutation() {
 
       const rewardItems = data.rewardItems ?? [];
 
-      console.log('[useResolveDecisionMutation] rewardItems', rewardItems);
-
       for (const reward of rewardItems) {
         const item = {
           id: reward.id,
@@ -67,7 +62,6 @@ export function useResolveDecisionMutation() {
           description: reward.description,
           quantity: 1,
         };
-        console.log('[useResolveDecisionMutation] adding item', item);
         addItem(item);
       }
 
@@ -84,13 +78,11 @@ export function useResolveDecisionMutation() {
         resourceDelta: data.resourceDelta,
       };
 
-      console.log('[useResolveDecisionMutation] onSuccess', onSuccess);
       addStoryEvent(newStoryEvent);
       commit();
       onSuccess?.();
     },
     onSuccess: () => {
-      console.log('[useResolveDecisionMutation] onSuccess');
       queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });
     },
   });

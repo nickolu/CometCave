@@ -14,9 +14,17 @@ import { StoryFeed } from './StoryFeed';
 import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
 import { flipCoin } from '@/app/utils';
 import { getGenericTravelMessage } from '../lib/getGenericTravelMessage';
+import { CircularProgress } from '@mui/material';
+
+function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
+  if (isLoading) return 'Travelling...';
+  if (distance === 0) return 'Start Your Adventure';
+  return 'Continue Travelling';
+}
 
 export default function GameUI() {
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [isInEventState, setIsInEventState] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -60,20 +68,50 @@ export default function GameUI() {
       setGenericMessage(genericMessage);
       incrementDistance();
     } else {
+      setIsInEventState(true);
       moveForwardMutation();
     }
   };
 
+  const handleResolveDecision = (optionId: string) => {
+    setIsInEventState(false);
+    resolveDecisionMutation({
+      decisionPoint: gameState.decisionPoint!,
+      optionId: optionId,
+      onSuccess: () => {
+        setDecisionPoint(null);
+      },
+    });
+  };
+
   return (
     <>
-      <div className="max-w-md mx-auto p-4 space-y-4">
-        <Button
-          className="w-full"
-          onClick={handleMoveForward}
-          disabled={moveForwardPending || resolveDecisionPending}
-        >
-          {moveForwardPending ? 'Travelling...' : 'Continue Travelling'}
-        </Button>
+      <div
+        className={
+          isInEventState
+            ? 'max-w-md mx-auto p-4 space-y-4 border border-green-200'
+            : 'max-w-md mx-auto p-4 space-y-4'
+        }
+      >
+        {isInEventState ? (
+          <>
+            <h3 className="text-center flex justify-center">
+              <span>Event {moveForwardPending ? 'Loading...' : 'In Progress'}</span>
+              {moveForwardPending && <CircularProgress size={2} />}
+            </h3>
+          </>
+        ) : (
+          <Button
+            className="w-full hover:bg-blue-950 hover:shadow-md transition-all duration-300 active:translate-y-1/8 active:ring-1 active:ring-blue-850"
+            onClick={handleMoveForward}
+            disabled={moveForwardPending || resolveDecisionPending}
+          >
+            {getTravelButtonMessage({
+              isLoading: moveForwardPending,
+              distance: getSelectedCharacter()?.distance ?? 0,
+            })}
+          </Button>
+        )}
         {resolveDecisionPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
         <div className="flex items-center gap-2">
           <Button
@@ -98,13 +136,7 @@ export default function GameUI() {
                     className="block w-full text-left border px-3 py-2 rounded disabled:opacity-60"
                     disabled={resolveDecisionPending}
                     onClick={() => {
-                      resolveDecisionMutation({
-                        decisionPoint: gameState.decisionPoint!,
-                        optionId: option.id,
-                        onSuccess: () => {
-                          setDecisionPoint(null);
-                        },
-                      });
+                      handleResolveDecision(option.id);
                     }}
                   >
                     {option.text}
@@ -117,7 +149,7 @@ export default function GameUI() {
             )}
           </Card>
         )}
-        <StoryFeed events={storyEvents} />
+        <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
         {gameState.genericMessage && (
           <Card className="bg-gray-100 text-gray-700 text-sm">{gameState.genericMessage}</Card>
         )}
