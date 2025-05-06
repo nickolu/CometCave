@@ -15,6 +15,7 @@ import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
 import { flipCoin } from '@/app/utils';
 import { getGenericTravelMessage } from '../lib/getGenericTravelMessage';
 import { CircularProgress } from '@mui/material';
+import { LoaderCircle } from 'lucide-react';
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
   if (isLoading) return 'Travelling...';
@@ -97,7 +98,11 @@ export default function GameUI() {
           <>
             <h3 className="text-center flex justify-center">
               <span>Event {moveForwardPending ? 'Loading...' : 'In Progress'}</span>
-              {moveForwardPending && <CircularProgress size={2} />}
+              {moveForwardPending && (
+                <div className="ml-2 text-xs text-gray-500 animate-spin">
+                  <LoaderCircle />
+                </div>
+              )}
             </h3>
           </>
         ) : (
