@@ -9,7 +9,7 @@ export const Navigation = ({ pageId }: { pageId: string }) => {
       <Link href="/fantasy-tycoon/characters" className={className("characters")}>
         Characters
       </Link>
-      <Link href="/fantasy-tycoon" className={className("game")}>
+      <Link href="/fantasy-tycoon/game" className={className("game")}>
         Game
       </Link>
     </div>

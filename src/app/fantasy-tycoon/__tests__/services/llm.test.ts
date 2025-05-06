@@ -19,6 +19,7 @@ describe('LLM Service', () => {
     strength: 10,
     intelligence: 10,
     luck: 10,
+    inventory: [],
   };
   const context = 'Aelwyn is traveling through the enchanted forest.';
 

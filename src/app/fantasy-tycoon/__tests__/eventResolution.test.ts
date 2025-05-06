@@ -19,7 +19,8 @@ describe('Decision Resolution', () => {
     status: 'active',
     strength: 2,
     intelligence: 3,
-    luck: 1
+    luck: 1,
+    inventory: [],
   };
 
   it('applies simple effects', () => {

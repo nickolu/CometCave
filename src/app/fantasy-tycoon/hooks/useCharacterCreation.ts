@@ -1,5 +1,5 @@
-"use client";
-import { useState, useId } from 'react';
+'use client';
+import { useState } from 'react';
 import { FantasyCharacter, FantasyAbility } from '../models/types';
 import {
   DEFAULT_CHARACTER_NAME,
@@ -11,8 +11,7 @@ import {
 import { useGameStore } from '../hooks/useGameStore';
 
 export function useCharacterCreation() {
-  const idPrefix = useId();
-  const {addCharacter} = useGameStore();
+  const { addCharacter } = useGameStore();
   const [character, setCharacter] = useState<Partial<FantasyCharacter>>({});
   const [isComplete, setIsComplete] = useState(false);
 
@@ -21,26 +20,24 @@ export function useCharacterCreation() {
   };
 
   const completeCreation = () => {
-    const abilityId = `${idPrefix}-ability`;
-    const charId = `${idPrefix}-char`;
-    
+    const charId = crypto.randomUUID();
+    const abilityId = crypto.randomUUID();
+
     const defaultAbility: FantasyAbility = {
       id: abilityId,
       name: DEFAULT_ABILITY_NAME,
       description: DEFAULT_ABILITY_DESCRIPTION,
       power: DEFAULT_ABILITY_POWER,
-      cooldown: DEFAULT_ABILITY_COOLDOWN  
+      cooldown: DEFAULT_ABILITY_COOLDOWN,
     };
 
     const updatedCharacter = {
       ...character,
       id: charId,
       name: character.name || DEFAULT_CHARACTER_NAME,
-      abilities: [defaultAbility],  
+      abilities: [defaultAbility],
     };
-    
-    
-    console.log("completeCreation", updatedCharacter);
+
     addCharacter(updatedCharacter);
     setIsComplete(true);
   };
