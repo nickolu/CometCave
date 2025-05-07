@@ -1,6 +1,7 @@
 'use client';
 
 import { FantasyStoryEvent } from '../models/types';
+import { useEffect, useRef, useState } from 'react';
 
 export function StoryFeed({
   events,
@@ -9,21 +10,67 @@ export function StoryFeed({
   events: FantasyStoryEvent[];
   filterCharacterId?: string;
 }) {
+  const feedRef = useRef<HTMLDivElement>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+
   const filteredEvents = events.filter(
     e => !filterCharacterId || e.characterId === filterCharacterId
   );
+
+  const newestEvent = filteredEvents.length > 0 ? filteredEvents[filteredEvents.length - 1] : null;
+  const newestEventId = newestEvent ? newestEvent.id : null;
+
+  useEffect(() => {
+    if (newestEventId && feedRef.current) {
+      const animationFrameId = requestAnimationFrame(() => {
+        if (feedRef.current) {
+          console.log(
+            // DEBUG: Log scroll dimensions
+            '[StoryFeed useEffect] Scroll Check - scrollHeight:',
+            feedRef.current.scrollHeight,
+            'clientHeight:',
+            feedRef.current.clientHeight,
+            'scrollTop:',
+            feedRef.current.scrollTop
+          );
+          // Scroll to the visual top (end of scrollable content due to flex-col-reverse)
+          feedRef.current.scrollTo({ top: 0, behavior: 'auto' });
+        }
+      });
+
+      setHighlightedEventId(newestEventId);
+      const highlightTimer = setTimeout(() => {
+        setHighlightedEventId(null);
+      }, 2000);
+
+      return () => {
+        cancelAnimationFrame(animationFrameId);
+        clearTimeout(highlightTimer);
+      };
+    } else {
+    }
+  }, [newestEventId]);
 
   if (!filteredEvents?.length)
     return <div className="bg-gray-50 p-3 rounded text-gray-500 text-sm">No events yet.</div>;
 
   return (
-    <div className="border rounded max-h-[calc(100vh-479px)] rounded-lg overflow-y-auto flex flex-col-reverse p-2 space-y-2 space-y-reverse">
-      {filteredEvents.map(e => (
+    <div
+      ref={feedRef}
+      className="border rounded max-h-[calc(100vh-479px)] rounded-lg overflow-y-auto flex p-2 space-y-2 flex-col"
+    >
+      {filteredEvents.reverse().map(e => (
         <div
           key={`${e.id}-${e.timestamp}`}
-          className="border-b pb-1 mb-1 first:border-none last:mb-0"
+          className={`border-b pb-1 mb-1 first:border-none last:mb-0 transition-colors duration-300 ease-in-out ${
+            highlightedEventId === e.id ? 'bg-blue-800 rounded-md p-1' : ''
+          }`}
         >
-          <span className="text-xs text-gray-500 text-align-right">
+          <span
+            className={`text-xs text-align-right ${
+              highlightedEventId === e.id ? 'text-gray-200' : 'text-gray-100'
+            }`}
+          >
             {new Date(e.timestamp).toISOString().replace('T', ' ').slice(0, 16)}
           </span>
           <div className="text-sm">{e.description}</div>
@@ -36,7 +83,16 @@ export function StoryFeed({
               {(e.resourceDelta?.rewardItems || []).concat(e.rewardItems || []).map((item, idx) => (
                 <span key={item.id + idx}>
                   You received {item.quantity > 1 ? `${item.quantity} ` : ''}
-                  <span className="text-yellow-600 text-sm">{item.name}</span>,{' '}
+                  <span
+                    className={`text-sm ${
+                      highlightedEventId === e.id
+                        ? 'text-yellow-800 font-semibold'
+                        : 'text-yellow-600'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                  ,{' '}
                   {e.resourceDelta &&
                     (e.resourceDelta.gold !== undefined ||
                       e.resourceDelta.reputation !== undefined ||
@@ -68,6 +124,27 @@ export function StoryFeed({
           )}
         </div>
       ))}
+      <button
+        onClick={() => {
+          if (feedRef.current) {
+            console.log(
+              // DEBUG: Log scroll dimensions
+              '[StoryFeed Button] Scroll Check - scrollHeight:',
+              feedRef.current.scrollHeight,
+              'clientHeight:',
+              feedRef.current.clientHeight,
+              'scrollTop:',
+              feedRef.current.scrollTop
+            );
+            // Scroll to the visual top (end of scrollable content due to flex-col-reverse)
+            feedRef.current.scrollTo({ top: 0, behavior: 'auto' });
+          } else {
+            console.log('[StoryFeed Button] feedRef.current is null');
+          }
+        }}
+      >
+        Scroll to top
+      </button>
     </div>
   );
 }
