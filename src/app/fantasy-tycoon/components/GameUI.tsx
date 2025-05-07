@@ -25,7 +25,6 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure';
   return 'Continue Travelling';
 }
-
 export default function GameUI() {
   const {
     gameState,
@@ -64,6 +63,7 @@ export default function GameUI() {
   };
 
   const handleResolveDecision = (optionId: string) => {
+    console.log('handleResolveDecision', optionId);
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
@@ -74,62 +74,76 @@ export default function GameUI() {
   };
 
   return (
-    <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
-      {/* Left column: Game UI */}
-      <div className={'space-y-4 rounded-lg'}>
-        {gameState.decisionPoint ? (
-          <h4 className="font-semibold w-full text-center border text-transform: uppercase">
-            Event
-          </h4>
-        ) : (
-          <Button
-            className="w-full hover:bg-blue-950 hover:shadow-md transition-all duration-300 active:translate-y-1/8 active:ring-1 active:ring-blue-850"
-            onClick={handleMoveForward}
-            disabled={moveForwardPending || resolveDecisionPending}
-          >
-            {getTravelButtonMessage({
-              isLoading: moveForwardPending,
-              distance: getSelectedCharacter()?.distance ?? 0,
-            })}
-          </Button>
-        )}
-        {resolveDecisionPending && <div className="text-xs text-gray-500 mt-2">Resolving...</div>}
-        {gameState.decisionPoint && !gameState.decisionPoint.resolved && (
-          <div>
-            <div className="font-semibold mb-6">{gameState.decisionPoint.prompt}</div>
-            <div className="space-y-2 mt-2">
-              {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
-                if (!option) return null;
-                if (!gameState.decisionPoint) return null;
-                return (
-                  <Button
-                    key={option.id}
-                    className="block w-full text-left border px-3 py-2 mt-2 rounded disabled:opacity-60"
-                    disabled={resolveDecisionPending}
-                    onClick={() => {
-                      handleResolveDecision(option.id);
-                    }}
-                  >
-                    {option.text}
-                  </Button>
-                );
-              })}
-            </div>
+    <div className="flex min-h-screen flex-col">
+      <div className="relative z-10 mx-auto w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+          <div className={'p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4'}>
+            {gameState.decisionPoint ? (
+              <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
+                Event
+              </h4>
+            ) : (
+              <Button
+                className="w-full bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white hover:shadow-md transition-all duration-300 active:translate-y-1/8 active:ring-1 active:ring-[#515375]"
+                style={{ userSelect: 'none' }}
+                onClick={handleMoveForward}
+                disabled={moveForwardPending || resolveDecisionPending}
+              >
+                {getTravelButtonMessage({
+                  isLoading: moveForwardPending,
+                  distance: getSelectedCharacter()?.distance ?? 0,
+                })}
+              </Button>
+            )}
             {resolveDecisionPending && (
               <div className="text-xs text-gray-500 mt-2">Resolving...</div>
             )}
+            {gameState.decisionPoint && !gameState.decisionPoint.resolved && (
+              <div>
+                <div className="font-semibold mb-6">{gameState.decisionPoint.prompt}</div>
+                <div className="space-y-2 mt-2">
+                  {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
+                    if (!option) return null;
+                    if (!gameState.decisionPoint) return null;
+                    return (
+                      <Button
+                        key={option.id}
+                        className="block w-full text-left border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
+                        style={{ userSelect: 'none' }}
+                        disabled={resolveDecisionPending}
+                        onClick={() => {
+                          console.log('handleResolveDecision', option.id);
+                          handleResolveDecision(option.id);
+                        }}
+                      >
+                        {option.text}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {resolveDecisionPending && (
+                  <div className="text-xs text-gray-500 mt-2">Resolving...</div>
+                )}
+              </div>
+            )}
+            {gameState.genericMessage && !gameState.decisionPoint && (
+              <div className="text-sm">{gameState.genericMessage}</div>
+            )}
+            {!gameState.decisionPoint && (
+              <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
+            )}
           </div>
-        )}
-        {gameState.genericMessage && !gameState.decisionPoint && (
-          <div className="text-sm">{gameState.genericMessage}</div>
-        )}
-        {!gameState.decisionPoint && (
-          <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
-        )}
+          {/* Right column: Inventory Panel */}
+          <div className="p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
+            <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
+              Inventory
+            </h4>
+            <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
+          </div>
+        </div>
+        {/* Two-column grid END */}
       </div>
-      <div className="p-4 rounded-lg bg-white h-fit md:sticky md:top-8">
-        <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
-      </div>
+      {/* Main content wrapper END */}
     </div>
   );
 }

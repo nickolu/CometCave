@@ -22,6 +22,7 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
+  console.log('useResolveDecisionMutation');
   const { getSelectedCharacter } = useGameStore();
   const { addItem, addStoryEvent, commit } = useGameStateBuilder();
   const queryClient = useQueryClient();
@@ -64,6 +65,7 @@ export function useResolveDecisionMutation() {
         };
         addItem(item);
       }
+      console.log('data', data);
 
       const newStoryEvent = {
         id: `result-${Date.now()}`,
