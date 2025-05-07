@@ -27,6 +27,12 @@ export const FantasyCharacterSchema = z.object({
   strength: z.number(),
   intelligence: z.number(),
   luck: z.number(),
+  inventory: z.array(z.object({
+    id: z.string(),
+    quantity: z.number().int().min(1),
+    name: z.string(),
+    description: z.string(),
+  })),
 });
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>;
 

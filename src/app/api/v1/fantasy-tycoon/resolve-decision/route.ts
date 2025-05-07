@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 import { FantasyDecisionPoint, FantasyDecisionOption } from '@/app/fantasy-tycoon/models/story';
+import {
+  applyEffects,
+  calculateEffectiveProbability,
+} from '@/app/fantasy-tycoon/lib/eventResolution';
 
-// Simulate applying the effects of a decision option to a character
+import { Item } from '@/app/fantasy-tycoon/models/item';
+
 type ResolveDecisionRequest = {
   character: FantasyCharacter;
   decisionPoint: FantasyDecisionPoint;
@@ -24,16 +29,9 @@ type ResolveDecisionResponse = {
   };
 };
 
-import { applyEffects, calculateEffectiveProbability } from '@/app/fantasy-tycoon/lib/eventResolution';
-
-import extractRewardItemsFromText from '@/app/fantasy-tycoon/lib/extractRewardItemsFromText';
-import { Item } from '@/app/fantasy-tycoon/models/item';
-
-
-
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as ResolveDecisionRequest;
+    const body = (await req.json()) as ResolveDecisionRequest;
     const { character, decisionPoint, optionId } = body;
     const option = decisionPoint.options.find(o => o.id === optionId);
     if (!option) {
@@ -46,7 +44,7 @@ export async function POST(req: NextRequest) {
     let appliedEffects = option.effects;
     let updatedCharacter = character;
     let rewardItems: Item[] = [];
-    let extractedRewardItems: Item[] = [];
+
     if (
       option.baseProbability !== undefined ||
       option.successEffects !== undefined ||
@@ -57,13 +55,15 @@ export async function POST(req: NextRequest) {
       const roll = Math.random();
       outcome = roll < prob ? 'success' : 'failure';
       if (outcome === 'success') {
-        const effects = option.successEffects as {
-          gold?: number;
-          reputation?: number;
-          distance?: number;
-          statusChange?: string;
-          rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-        } | undefined;
+        const effects = option.successEffects as
+          | {
+              gold?: number;
+              reputation?: number;
+              distance?: number;
+              statusChange?: string;
+              rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+            }
+          | undefined;
         updatedCharacter = applyEffects(character, effects);
         resultDescription = option.successDescription ?? option.resultDescription;
         appliedEffects = option.successEffects;
@@ -71,13 +71,15 @@ export async function POST(req: NextRequest) {
           rewardItems = effects.rewardItems;
         }
       } else {
-        const effects = option.failureEffects as {
-          gold?: number;
-          reputation?: number;
-          distance?: number;
-          statusChange?: string;
-          rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-        } | undefined;
+        const effects = option.failureEffects as
+          | {
+              gold?: number;
+              reputation?: number;
+              distance?: number;
+              statusChange?: string;
+              rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+            }
+          | undefined;
         updatedCharacter = applyEffects(character, effects);
         resultDescription = option.failureDescription ?? option.resultDescription;
         appliedEffects = option.failureEffects;
@@ -85,35 +87,22 @@ export async function POST(req: NextRequest) {
           rewardItems = effects.rewardItems;
         }
       }
-      // LLM/Heuristic extraction from outcome text
-      if (resultDescription && typeof resultDescription === 'string') {
-        extractedRewardItems = await extractRewardItemsFromText(resultDescription);
-        if (extractedRewardItems.length > 0) {
-          // Merge with any rewardItems already present
-          rewardItems = [...rewardItems, ...extractedRewardItems];
-        }
-      }
     } else {
       // Fallback to legacy logic
-      const effects = option.effects as {
-        gold?: number;
-        reputation?: number;
-        distance?: number;
-        statusChange?: string;
-        rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-      } | undefined;
+      const effects = option.effects as
+        | {
+            gold?: number;
+            reputation?: number;
+            distance?: number;
+            statusChange?: string;
+            rewardItems?: { id: string; name: string; description: string; quantity: number }[];
+          }
+        | undefined;
       updatedCharacter = applyEffects(character, effects);
       resultDescription = option.resultDescription;
       appliedEffects = option.effects;
       if (effects?.rewardItems) {
         rewardItems = effects.rewardItems;
-      }
-      // LLM/Heuristic extraction from outcome text
-      if (resultDescription && typeof resultDescription === 'string') {
-        extractedRewardItems = await extractRewardItemsFromText(resultDescription);
-        if (extractedRewardItems.length > 0) {
-          rewardItems = [...rewardItems, ...extractedRewardItems];
-        }
       }
     }
 
@@ -138,12 +127,17 @@ export async function POST(req: NextRequest) {
       selectedOptionId: optionId,
       selectedOptionText: typedOption.text,
       outcomeDescription: resultDescription as string | undefined,
-      resourceDelta: appliedEffects as { gold?: number; reputation?: number; distance?: number; statusChange?: string } | undefined,
+      resourceDelta: appliedEffects as
+        | { gold?: number; reputation?: number; distance?: number; statusChange?: string }
+        | undefined,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
     };
 
     return NextResponse.json(response);
   } catch (err) {
-    return NextResponse.json({ error: 'Invalid request', details: (err as Error).message }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid request', details: (err as Error).message },
+      { status: 400 }
+    );
   }
 }

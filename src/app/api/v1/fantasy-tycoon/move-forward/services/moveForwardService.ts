@@ -7,7 +7,9 @@ import { Item } from '@/app/fantasy-tycoon/models/item';
 
 const BASE_DISTANCE = 1;
 
-export async function moveForwardService(character: FantasyCharacter): Promise<MoveForwardResponse> {
+export async function moveForwardService(
+  character: FantasyCharacter
+): Promise<MoveForwardResponse> {
   const updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE };
 
   let event: FantasyStoryEvent | null = null;
@@ -29,28 +31,36 @@ export async function moveForwardService(character: FantasyCharacter): Promise<M
       id: `decision-${llmEvent.id}`,
       eventId: llmEvent.id,
       prompt: llmEvent.description,
-      options: await Promise.all(llmEvent.options.map(async opt => {
-        let extractedRewardItems: Item[] = [];
-        if (opt.outcome.description) {
-          extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
-        }
-        return {
-          id: opt.id,
-          text: opt.text,
-          effects: {
-            gold: opt.outcome.goldDelta ?? 0,
-            reputation: opt.outcome.reputationDelta ?? 0,
-            statusChange: opt.outcome.statusChange,
-            rewardItems: extractedRewardItems.length > 0 ? extractedRewardItems : (opt.outcome.rewardItems ?? []),
-          },
-          resultDescription: opt.outcome.description,
-          rewardItems: extractedRewardItems.length > 0 ? extractedRewardItems : (opt.outcome.rewardItems ?? []),
-        };
-      })),
+      options: await Promise.all(
+        llmEvent.options.map(async opt => {
+          let extractedRewardItems: Item[] = [];
+          if (opt.outcome.description) {
+            extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
+          }
+          return {
+            id: opt.id,
+            text: opt.text,
+            effects: {
+              gold: opt.outcome.goldDelta ?? 0,
+              reputation: opt.outcome.reputationDelta ?? 0,
+              statusChange: opt.outcome.statusChange,
+              rewardItems:
+                extractedRewardItems.length > 0
+                  ? extractedRewardItems
+                  : (opt.outcome.rewardItems ?? []),
+            },
+            resultDescription: opt.outcome.description,
+            rewardItems:
+              extractedRewardItems.length > 0
+                ? extractedRewardItems
+                : (opt.outcome.rewardItems ?? []),
+          };
+        })
+      ),
       resolved: false,
     };
   } catch (err) {
-    console.error('LLM event generation failed', err);
+    console.error('moveForwardService failed', err);
     event = null;
     decisionPoint = null;
   }

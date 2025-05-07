@@ -1,25 +1,27 @@
-"use client";
-import React, { useState } from "react";
-import { useGameStore } from "../hooks/useGameStore";
-import { FantasyCharacter } from "../models/types";
-import CharacterCreation from "./CharacterCreation";
+'use client';
+import React, { useState } from 'react';
+import { useGameStore } from '../hooks/useGameStore';
+import { FantasyCharacter } from '../models/types';
+import CharacterCreation from './CharacterCreation';
+import CharacterCard from './CharacterCard';
+import AddCharacterCard from './AddCharacterCard';
 
-import type { GameStore } from "../hooks/useGameStore";
+import type { GameStore } from '../hooks/useGameStore';
 const EMPTY_ARRAY: FantasyCharacter[] = [];
 const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY;
-const selectSelectedCharacter = (s: GameStore) => s.gameState?.character;
+const selectSelectedCharacterId = (s: GameStore) => s.gameState?.selectedCharacterId;
 const selectSelectCharacter = (s: GameStore) => s.selectCharacter;
 const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter;
 
-export default function CharacterList({ onSelect }: { onSelect: (character: FantasyCharacter) => void }) {
+export default function CharacterList() {
   const characters = useGameStore(selectCharacters);
-  const selected = useGameStore(selectSelectedCharacter);
+  const selectedCharacterId = useGameStore(selectSelectedCharacterId);
   const selectCharacter = useGameStore(selectSelectCharacter);
   const deleteCharacter = useGameStore(selectDeleteCharacter);
   const [showCreation, setShowCreation] = useState(false);
 
   const handleSelect = (character: FantasyCharacter) => {
-    onSelect(character);
+    console.log('handleSelect', character.id);
     selectCharacter(character.id);
   };
 
@@ -35,50 +37,33 @@ export default function CharacterList({ onSelect }: { onSelect: (character: Fant
   const handleCloseCreation = () => {
     setShowCreation(false);
   };
+  console.log('characters', characters);
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-4 p-4 bg-gray-800 rounded shadow">
-      <h2 className="text-lg font-bold mb-2 text-white">Your Characters</h2>
-      <div className="flex flex-col gap-2">
+    <div className="w-full mx-auto p-6 p-4 bg-[#161723] border border-[#3a3c56] rounded-lg mt-6">
+      <h2 className="text-2xl font-semibold mb-6 text-slate-200">Your Characters</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {characters.map((char: FantasyCharacter) => (
-          <div
+          <CharacterCard
             key={char.id}
-            className={`flex items-center justify-between px-4 py-2 rounded border transition-colors focus:outline-none ${selected?.id === char.id ? "bg-green-700 border-green-400 text-white" : "bg-gray-900 border-gray-700 text-gray-200 hover:bg-gray-700"}`}
-          >
-            <button type="button" onClick={() => handleSelect(char)} className="text-white font-medium truncate">{char.name}</button>
-            <span className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">Lv.{char.level} {char.race} {char.class}</span>
-              <button
-                type="button"
-                onClick={(e) => handleDelete(e, char.id)}
-                className="ml-2 text-red-400 hover:text-red-600 focus:outline-none text-lg px-2"
-                aria-label={`Delete ${char.name}`}
-              >
-                ×
-              </button>
-            </span>
-          </div>
+            character={char}
+            selected={selectedCharacterId === char.id}
+            onSelect={handleSelect}
+            onDelete={handleDelete}
+          />
         ))}
-        {characters.length < 5 && (
-          <button
-            type="button"
-            onClick={handleNewCharacter}
-            className="flex items-center justify-center px-4 py-2 rounded border border-blue-400 bg-blue-700 text-white hover:bg-blue-800 transition-colors"
-          >
-            + New Character
-          </button>
-        )}
+        {characters.length < 5 && <AddCharacterCard onClick={handleNewCharacter} />}
       </div>
       {showCreation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-gray-900 rounded-lg p-6 shadow-lg w-full max-w-md relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#161723] border border-[#3a3c56] rounded-lg p-6 shadow-2xl w-full max-w-md relative">
             <button
               type="button"
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-2xl"
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 transition-colors text-3xl leading-none font-semibold"
               onClick={handleCloseCreation}
               aria-label="Close"
             >
-              ×
+              &times;
             </button>
             <CharacterCreation onComplete={handleCloseCreation} />
           </div>
