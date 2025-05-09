@@ -24,7 +24,7 @@ export interface ResolveDecisionResponse {
 export function useResolveDecisionMutation() {
   console.log('useResolveDecisionMutation');
   const { getSelectedCharacter } = useGameStore();
-  const { addItem, addStoryEvent, commit } = useGameStateBuilder();
+  const { addItem, addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -53,6 +53,10 @@ export function useResolveDecisionMutation() {
         throw new Error('Failed to resolve decision');
       }
       const data: ResolveDecisionResponse = await res.json();
+
+      if (data.updatedCharacter) {
+        updateSelectedCharacter(data.updatedCharacter);
+      }
 
       const rewardItems = data.rewardItems ?? [];
 

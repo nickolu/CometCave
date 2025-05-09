@@ -179,6 +179,20 @@ export function useGameStateBuilder() {
     gameStateClone.genericMessage = message;
   };
 
+  const updateSelectedCharacter = (characterUpdate: Partial<FantasyCharacter>) => {
+    const selectedCharacterId = gameStateClone.selectedCharacterId;
+    if (!selectedCharacterId || !gameStateClone.characters) return;
+
+    const charIndex = gameStateClone.characters.findIndex(c => c.id === selectedCharacterId);
+    if (charIndex === -1) return;
+
+    // Create a new character object to ensure reactivity
+    gameStateClone.characters[charIndex] = {
+      ...gameStateClone.characters[charIndex],
+      ...characterUpdate,
+    };
+  };
+
   return {
     gameState: gameStateClone,
     commit,
@@ -186,5 +200,6 @@ export function useGameStateBuilder() {
     addStoryEvent,
     setDecisionPoint,
     setGenericMessage,
+    updateSelectedCharacter,
   };
 }
