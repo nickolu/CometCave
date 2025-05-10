@@ -21,7 +21,6 @@ export default function CharacterList() {
   const [showCreation, setShowCreation] = useState(false);
 
   const handleSelect = (character: FantasyCharacter) => {
-    console.log('handleSelect', character.id);
     selectCharacter(character.id);
   };
 
@@ -37,7 +36,6 @@ export default function CharacterList() {
   const handleCloseCreation = () => {
     setShowCreation(false);
   };
-  console.log('characters', characters);
 
   return (
     <div className="w-full mx-auto p-6 p-4 bg-[#161723] border border-[#3a3c56] rounded-lg mt-6">

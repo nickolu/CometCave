@@ -24,16 +24,6 @@ export function StoryFeed({
     if (newestEventId && feedRef.current) {
       const animationFrameId = requestAnimationFrame(() => {
         if (feedRef.current) {
-          console.log(
-            // DEBUG: Log scroll dimensions
-            '[StoryFeed useEffect] Scroll Check - scrollHeight:',
-            feedRef.current.scrollHeight,
-            'clientHeight:',
-            feedRef.current.clientHeight,
-            'scrollTop:',
-            feedRef.current.scrollTop
-          );
-          // Scroll to the visual top (end of scrollable content due to flex-col-reverse)
           feedRef.current.scrollTo({ top: 0, behavior: 'auto' });
         }
       });
@@ -127,19 +117,7 @@ export function StoryFeed({
       <button
         onClick={() => {
           if (feedRef.current) {
-            console.log(
-              // DEBUG: Log scroll dimensions
-              '[StoryFeed Button] Scroll Check - scrollHeight:',
-              feedRef.current.scrollHeight,
-              'clientHeight:',
-              feedRef.current.clientHeight,
-              'scrollTop:',
-              feedRef.current.scrollTop
-            );
-            // Scroll to the visual top (end of scrollable content due to flex-col-reverse)
             feedRef.current.scrollTo({ top: 0, behavior: 'auto' });
-          } else {
-            console.log('[StoryFeed Button] feedRef.current is null');
           }
         }}
       >

@@ -1,9 +1,7 @@
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 import { FantasyStoryEvent, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story';
 import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator';
-import extractRewardItemsFromText from '@/app/fantasy-tycoon/lib/parsers/rewardExtractor';
 import { MoveForwardResponse } from '../schemas';
-import { Item } from '@/app/fantasy-tycoon/models/item';
 
 const BASE_DISTANCE = 1;
 
@@ -19,6 +17,7 @@ export async function moveForwardService(
     const context = '';
     const llmEvents = await generateLLMEvents(character, context);
     const llmEvent = llmEvents[0];
+    
     event = {
       id: llmEvent.id,
       type: 'decision_point',
@@ -31,32 +30,16 @@ export async function moveForwardService(
       id: `decision-${llmEvent.id}`,
       eventId: llmEvent.id,
       prompt: llmEvent.description,
-      options: await Promise.all(
-        llmEvent.options.map(async opt => {
-          let extractedRewardItems: Item[] = [];
-          if (opt.outcome.description) {
-            extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
-          }
-          return {
-            id: opt.id,
-            text: opt.text,
-            effects: {
-              gold: opt.outcome.goldDelta ?? 0,
-              reputation: opt.outcome.reputationDelta ?? 0,
-              statusChange: opt.outcome.statusChange,
-              rewardItems:
-                extractedRewardItems.length > 0
-                  ? extractedRewardItems
-                  : (opt.outcome.rewardItems ?? []),
-            },
-            resultDescription: opt.outcome.description,
-            rewardItems:
-              extractedRewardItems.length > 0
-                ? extractedRewardItems
-                : (opt.outcome.rewardItems ?? []),
-          };
-        })
-      ),
+      options: llmEvent.options.map(opt => ({
+        id: opt.id,
+        text: opt.text,
+        successProbability: opt.successProbability,
+        successDescription: opt.successDescription,
+        successEffects: opt.successEffects,
+        failureDescription: opt.failureDescription,
+        failureEffects: opt.failureEffects,
+        resultDescription: opt.successDescription, // Default to success description
+      })),
       resolved: false,
     };
   } catch (err) {

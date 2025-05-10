@@ -25,11 +25,11 @@ export function calculateEffectiveProbability(
   character: FantasyCharacter
 ): number {
   const typedOption = option as {
-    baseProbability?: number;
+    successProbability?: number;
     relevantAttributes?: string[];
     attributeModifiers?: Record<string, number>;
   };
-  const base = typedOption.baseProbability ?? 1;
+  const base = typedOption.successProbability ?? 1;
 
   if (!typedOption.relevantAttributes || typedOption.relevantAttributes.length === 0) {
     return Math.max(0, Math.min(1, base));

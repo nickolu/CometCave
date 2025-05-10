@@ -33,7 +33,7 @@ describe('Decision Resolution', () => {
   });
 
   it('calculates probability with no attributes', () => {
-    const option: FantasyDecisionOption = { id: 'o1', text: 'Try', baseProbability: 0.5 };
+    const option: FantasyDecisionOption = { id: 'o1', text: 'Try', successProbability: 0.5 };
     expect(calculateEffectiveProbability(option, baseChar)).toBe(0.5);
   });
 
@@ -41,7 +41,7 @@ describe('Decision Resolution', () => {
     const option: FantasyDecisionOption = {
       id: 'o2',
       text: 'Test',
-      baseProbability: 0.2,
+      successProbability: 0.2,
       relevantAttributes: ['strength', 'luck'],
       attributeModifiers: { strength: 0.05, luck: 0.1 }
     };
