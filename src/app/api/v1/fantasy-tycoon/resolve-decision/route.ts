@@ -29,41 +29,43 @@ type ResolveDecisionResponse = {
   };
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = (await req.json()) as ResolveDecisionRequest;
-    const { character, decisionPoint, optionId } = body;
-    const option = decisionPoint.options.find(o => o.id === optionId);
-    if (!option) {
-      return NextResponse.json({ error: 'Invalid optionId' }, { status: 400 });
-    }
-
-    // If option has new resolution fields, use them
-    let outcome: 'success' | 'failure' = 'success';
-    let resultDescription = option.resultDescription;
-    let appliedEffects = option.effects;
-    let updatedCharacter = character;
-    let rewardItems: Item[] = [];
-
-    if (
-      option.baseProbability !== undefined ||
-      option.successEffects !== undefined ||
-      option.failureEffects !== undefined
-    ) {
-      // Calculate effective probability
-      const prob = calculateEffectiveProbability(option, character);
-      const roll = Math.random();
-      outcome = roll < prob ? 'success' : 'failure';
-      if (outcome === 'success') {
-        const effects = option.successEffects as
-          | {
+type Event = {
               gold?: number;
               reputation?: number;
               distance?: number;
               statusChange?: string;
               rewardItems?: { id: string; name: string; description: string; quantity: number }[];
             }
-          | undefined;
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = (await req.json()) as ResolveDecisionRequest;
+    
+    const { character, decisionPoint, optionId } = body;
+    const option = decisionPoint.options.find(o => o.id === optionId);
+    if (!option) {
+      return NextResponse.json({ error: 'Invalid optionId' }, { status: 400 });
+    }
+
+    let outcome: 'success' | 'failure' = 'success';
+    let resultDescription = option.resultDescription;
+    let appliedEffects = option.effects;
+    let updatedCharacter = character;
+    let rewardItems: Item[] = [];
+
+    console.log('option', option)
+
+    if (
+      option.successProbability !== undefined ||
+      option.successEffects !== undefined ||
+      option.failureEffects !== undefined
+    ) {
+      const prob = calculateEffectiveProbability(option, character);
+      const roll = Math.random();
+      outcome = roll < prob ? 'success' : 'failure';
+      console.log('roll was', outcome, prob, roll);
+      if (outcome === 'success') {
+        const effects = option.successEffects;
         updatedCharacter = applyEffects(character, effects);
         resultDescription = option.successDescription ?? option.resultDescription;
         appliedEffects = option.successEffects;
@@ -71,15 +73,8 @@ export async function POST(req: NextRequest) {
           rewardItems = effects.rewardItems;
         }
       } else {
-        const effects = option.failureEffects as
-          | {
-              gold?: number;
-              reputation?: number;
-              distance?: number;
-              statusChange?: string;
-              rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-            }
-          | undefined;
+        console.log('failure!')
+        const effects = option.failureEffects;
         updatedCharacter = applyEffects(character, effects);
         resultDescription = option.failureDescription ?? option.resultDescription;
         appliedEffects = option.failureEffects;
@@ -88,16 +83,8 @@ export async function POST(req: NextRequest) {
         }
       }
     } else {
-      // Fallback to legacy logic
-      const effects = option.effects as
-        | {
-            gold?: number;
-            reputation?: number;
-            distance?: number;
-            statusChange?: string;
-            rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-          }
-        | undefined;
+      console.log('legacy!')
+      const effects = option.effects;
       updatedCharacter = applyEffects(character, effects);
       resultDescription = option.resultDescription;
       appliedEffects = option.effects;
@@ -106,30 +93,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Collect reward items from all possible sources
-    // 1. Root-level rewardItems on the option
-    const typedOption = option as {
-      rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-      text?: string;
-      resultDescription?: string;
-    };
+    const typedOption = option;
     if (typedOption.rewardItems && Array.isArray(typedOption.rewardItems)) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems];
     }
-    // 2. Already merged in effects, successEffects, failureEffects, and LLM extraction above
 
-    // Build response
-    // Extend response type to include rewardItems for client inventory patching
     const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
       updatedCharacter,
-      resultDescription: resultDescription as string | undefined,
+      resultDescription: resultDescription,
       appliedEffects,
       selectedOptionId: optionId,
       selectedOptionText: typedOption.text,
-      outcomeDescription: resultDescription as string | undefined,
-      resourceDelta: appliedEffects as
-        | { gold?: number; reputation?: number; distance?: number; statusChange?: string }
-        | undefined,
+      outcomeDescription: resultDescription,
+      resourceDelta: appliedEffects,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
     };
 

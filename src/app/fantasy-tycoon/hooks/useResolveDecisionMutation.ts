@@ -22,7 +22,6 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
-  console.log('useResolveDecisionMutation');
   const { getSelectedCharacter } = useGameStore();
   const { addItem, addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder();
   const queryClient = useQueryClient();
@@ -59,6 +58,8 @@ export function useResolveDecisionMutation() {
       }
 
       const rewardItems = data.rewardItems ?? [];
+
+      console.log('rewardItems', JSON.stringify(rewardItems))
 
       for (const reward of rewardItems) {
         const item = {

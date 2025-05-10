@@ -16,9 +16,11 @@ export async function moveForwardService(
   let decisionPoint: FantasyDecisionPoint | null = null;
 
   try {
+    console.log('[moveForwardService]')
     const context = '';
     const llmEvents = await generateLLMEvents(character, context);
     const llmEvent = llmEvents[0];
+    console.log('llmEvent', llmEvent)
     event = {
       id: llmEvent.id,
       type: 'decision_point',
@@ -27,12 +29,14 @@ export async function moveForwardService(
       locationId: character.locationId,
       timestamp: new Date().toISOString(),
     };
+    console.log('event', event)
     decisionPoint = {
       id: `decision-${llmEvent.id}`,
       eventId: llmEvent.id,
       prompt: llmEvent.description,
       options: await Promise.all(
         llmEvent.options.map(async opt => {
+          console.log('raw option:', opt)
           let extractedRewardItems: Item[] = [];
           if (opt.outcome.description) {
             extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
@@ -59,6 +63,7 @@ export async function moveForwardService(
       ),
       resolved: false,
     };
+    console.log('decisionPoint', decisionPoint)
   } catch (err) {
     console.error('moveForwardService failed', err);
     event = null;
