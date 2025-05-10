@@ -16,11 +16,10 @@ export async function moveForwardService(
   let decisionPoint: FantasyDecisionPoint | null = null;
 
   try {
-    console.log('[moveForwardService]')
     const context = '';
     const llmEvents = await generateLLMEvents(character, context);
     const llmEvent = llmEvents[0];
-    console.log('llmEvent', llmEvent)
+    
     event = {
       id: llmEvent.id,
       type: 'decision_point',
@@ -29,41 +28,22 @@ export async function moveForwardService(
       locationId: character.locationId,
       timestamp: new Date().toISOString(),
     };
-    console.log('event', event)
     decisionPoint = {
       id: `decision-${llmEvent.id}`,
       eventId: llmEvent.id,
       prompt: llmEvent.description,
-      options: await Promise.all(
-        llmEvent.options.map(async opt => {
-          console.log('raw option:', opt)
-          let extractedRewardItems: Item[] = [];
-          if (opt.outcome.description) {
-            extractedRewardItems = await extractRewardItemsFromText(opt.outcome.description);
-          }
-          return {
-            id: opt.id,
-            text: opt.text,
-            effects: {
-              gold: opt.outcome.goldDelta ?? 0,
-              reputation: opt.outcome.reputationDelta ?? 0,
-              statusChange: opt.outcome.statusChange,
-              rewardItems:
-                extractedRewardItems.length > 0
-                  ? extractedRewardItems
-                  : (opt.outcome.rewardItems ?? []),
-            },
-            resultDescription: opt.outcome.description,
-            rewardItems:
-              extractedRewardItems.length > 0
-                ? extractedRewardItems
-                : (opt.outcome.rewardItems ?? []),
-          };
-        })
-      ),
+      options: llmEvent.options.map(opt => ({
+        id: opt.id,
+        text: opt.text,
+        successProbability: opt.successProbability,
+        successDescription: opt.successDescription,
+        successEffects: opt.successEffects,
+        failureDescription: opt.failureDescription,
+        failureEffects: opt.failureEffects,
+        resultDescription: opt.successDescription, // Default to success description
+      })),
       resolved: false,
     };
-    console.log('decisionPoint', decisionPoint)
   } catch (err) {
     console.error('moveForwardService failed', err);
     event = null;

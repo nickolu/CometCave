@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
     let updatedCharacter = character;
     let rewardItems: Item[] = [];
 
-    console.log('option', option)
 
     if (
       option.successProbability !== undefined ||
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest) {
       const prob = calculateEffectiveProbability(option, character);
       const roll = Math.random();
       outcome = roll < prob ? 'success' : 'failure';
-      console.log('roll was', outcome, prob, roll);
+      
       if (outcome === 'success') {
         const effects = option.successEffects;
         updatedCharacter = applyEffects(character, effects);
@@ -73,7 +72,6 @@ export async function POST(req: NextRequest) {
           rewardItems = effects.rewardItems;
         }
       } else {
-        console.log('failure!')
         const effects = option.failureEffects;
         updatedCharacter = applyEffects(character, effects);
         resultDescription = option.failureDescription ?? option.resultDescription;
@@ -83,7 +81,6 @@ export async function POST(req: NextRequest) {
         }
       }
     } else {
-      console.log('legacy!')
       const effects = option.effects;
       updatedCharacter = applyEffects(character, effects);
       resultDescription = option.resultDescription;
@@ -97,7 +94,6 @@ export async function POST(req: NextRequest) {
     if (typedOption.rewardItems && Array.isArray(typedOption.rewardItems)) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems];
     }
-
     const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
       updatedCharacter,
       resultDescription: resultDescription,

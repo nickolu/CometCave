@@ -59,8 +59,6 @@ export function useResolveDecisionMutation() {
 
       const rewardItems = data.rewardItems ?? [];
 
-      console.log('rewardItems', JSON.stringify(rewardItems))
-
       for (const reward of rewardItems) {
         const item = {
           id: reward.id,
@@ -70,7 +68,6 @@ export function useResolveDecisionMutation() {
         };
         addItem(item);
       }
-      console.log('data', data);
 
       const newStoryEvent = {
         id: `result-${Date.now()}`,

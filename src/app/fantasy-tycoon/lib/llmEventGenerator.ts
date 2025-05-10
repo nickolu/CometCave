@@ -13,19 +13,24 @@ const processFallbackRewardItems = (items?: { id: string; name?: string; descrip
     description: item.description || 'No description available',
   })) || [];
 
-  type Outcome = {
-    description: string;
-    goldDelta?: number;
-    reputationDelta?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
-
 export interface LLMEventOption {
   id: string;
   text: string;
-  successProbability: number; // 0-1
-  outcome: Outcome;
+  successProbability: number;
+  successDescription: string;
+  successEffects: {
+    gold?: number;
+    reputation?: number;
+    statusChange?: string;
+    rewardItems?: Item[];
+  };
+  failureDescription: string;
+  failureEffects: {
+    gold?: number;
+    reputation?: number;
+    statusChange?: string;
+    rewardItems?: Item[];
+  };
 }
 
 export interface LLMGeneratedEvent {
@@ -38,10 +43,22 @@ const eventOptionSchema = z.object({
   id: z.string(),
   text: z.string(),
   successProbability: z.number().min(0).max(1),
-  outcome: z.object({
-    description: z.string(),
-    goldDelta: z.number().optional(),
-    reputationDelta: z.number().optional(),
+  successDescription: z.string(),
+  successEffects: z.object({
+    gold: z.number().optional(),
+    reputation: z.number().optional(),
+    statusChange: z.string().optional(),
+    rewardItems: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string(),
+      quantity: z.number(),
+    })).optional(),
+  }),
+  failureDescription: z.string(),
+  failureEffects: z.object({
+    gold: z.number().optional(),
+    reputation: z.number().optional(),
     statusChange: z.string().optional(),
     rewardItems: z.array(z.object({
       id: z.string(),
@@ -69,12 +86,12 @@ const eventOptionSchemaForOpenAI = {
     id: { type: 'string' },
     text: { type: 'string' },
     successProbability: { type: 'number', minimum: 0, maximum: 1 },
-    outcome: {
+    successDescription: { type: 'string' },
+    successEffects: {
       type: 'object',
       properties: {
-        description: { type: 'string' },
-        goldDelta: { type: 'number' },
-        reputationDelta: { type: 'number' },
+        gold: { type: 'number' },
+        reputation: { type: 'number' },
         statusChange: { type: 'string' },
         rewardItems: {
           type: 'array',
@@ -87,13 +104,34 @@ const eventOptionSchemaForOpenAI = {
               description: { type: 'string' }
             },
             required: ['id', 'quantity', 'name', 'description']
-          },
-          description: 'Array of item rewards (id, qty, name, description)'
-        },
-      },
+          }
+        }
+      }
     },
+    failureDescription: { type: 'string' },
+    failureEffects: {
+      type: 'object',
+      properties: {
+        gold: { type: 'number' },
+        reputation: { type: 'number' },
+        statusChange: { type: 'string' },
+        rewardItems: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              quantity: { type: 'number', minimum: 1 },
+              name: { type: 'string' },
+              description: { type: 'string' }
+            },
+            required: ['id', 'quantity', 'name', 'description']
+          }
+        }
+      }
+    }
   },
-  required: ['id', 'text', 'successProbability', 'outcome'],
+  required: ['id', 'text', 'successProbability', 'successDescription', 'successEffects', 'failureDescription', 'failureEffects'],
   additionalProperties: false
 };
 
@@ -135,17 +173,13 @@ export async function generateLLMEvents(character: FantasyCharacter, context: st
     // Parse tool calls response
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
     if (toolCall && toolCall.function?.name === 'generate_events') {
-      console.log('[generateLLMEvents] using tool call to get events')
       return parseEventsFromToolCall(toolCall)
     }
-    // fallback to legacy parsing if tool call missing
-    console.log('[generateLLMEvents] no tool call, using legacy parsing')
     const raw = response.choices[0]?.message?.content?.trim();
     return parseRawEvents(raw);
 
   } catch (err) {
     console.error("LLM event generation failed", err);
-    console.log("[generateLLMEvents] failed to get events from llm")
     return getDefaultEvents()
   }
 }
@@ -202,12 +236,16 @@ function parseEventsFromToolCall(toolCall: OpenAI.Chat.Completions.ChatCompletio
     }
     seenIds.add(newId);
     
-    // Ensure reward items have required name and description
+    // Process options with the new structure
     const processedOptions: LLMEventOption[] = event.options.map(option => ({
       ...option,
-      outcome: {
-        ...option.outcome,
-        rewardItems: processFallbackRewardItems(option.outcome.rewardItems),
+      successEffects: {
+        ...option.successEffects,
+        rewardItems: processFallbackRewardItems(option.successEffects.rewardItems),
+      },
+      failureEffects: {
+        ...option.failureEffects,
+        rewardItems: processFallbackRewardItems(option.failureEffects.rewardItems),
       },
     }));
 
@@ -228,22 +266,30 @@ function getDefaultEvents() {
           id: `left-1-${uniqueSuffix}`,
           text: "Take the left path",
           successProbability: 0.5,
-          outcome: {
-            description: "You find a pouch of gold.",
-            goldDelta: 10,
+          successDescription: "You find a pouch of gold.",
+          successEffects: {
+            gold: 10,
             rewardItems: processFallbackRewardItems([
               { id: 'gold-pouch', quantity: 1, name: 'Gold Pouch', description: 'A small leather pouch filled with gold coins' }
             ])
           },
+          failureDescription: "You find nothing of value.",
+          failureEffects: {
+            gold: -5
+          }
         },
         {
           id: `right-1-${uniqueSuffix}`,
           text: "Take the right path",
           successProbability: 0.5,
-          outcome: {
-            description: "You are ambushed by bandits and lose reputation.",
-            reputationDelta: -5,
+          successDescription: "You discover a shortcut and gain reputation.",
+          successEffects: {
+            reputation: 5
           },
+          failureDescription: "You are ambushed by bandits and lose reputation.",
+          failureEffects: {
+            reputation: -5
+          }
         },
       ],
     },
@@ -255,21 +301,30 @@ function getDefaultEvents() {
           id: `accept-2-${uniqueSuffix}`,
           text: "Buy the potion",
           successProbability: 0.7,
-          outcome: {
-            description: "The potion boosts your reputation!",
-            reputationDelta: 5,
+          successDescription: "The potion boosts your reputation!",
+          successEffects: {
+            reputation: 5,
             rewardItems: processFallbackRewardItems([
               { id: 'mysterious-potion', quantity: 1, name: 'Mysterious Potion', description: 'A swirling potion with unknown effects' }
             ])
           },
+          failureDescription: "The potion was a fake and you lost your gold.",
+          failureEffects: {
+            gold: -10
+          }
         },
         {
           id: `decline-2-${uniqueSuffix}`,
           text: "Refuse the offer",
           successProbability: 0.3,
-          outcome: {
-            description: "The merchant shrugs and leaves.",
+          successDescription: "The merchant respects your caution and offers a small reward.",
+          successEffects: {
+            reputation: 2
           },
+          failureDescription: "The merchant is offended by your refusal.",
+          failureEffects: {
+            reputation: -2
+          }
         },
       ],
     },
@@ -281,18 +336,28 @@ function getDefaultEvents() {
           id: `help-3-${uniqueSuffix}`,
           text: "Help the animal",
           successProbability: 0.8,
-          outcome: {
-            description: "The animal recovers and you gain reputation.",
-            reputationDelta: 3,
+          successDescription: "The animal recovers and you gain reputation.",
+          successEffects: {
+            reputation: 3
           },
+          failureDescription: "The animal was more dangerous than it appeared.",
+          failureEffects: {
+            gold: -5,
+            reputation: -2
+          }
         },
         {
           id: `ignore-3-${uniqueSuffix}`,
           text: "Ignore it",
           successProbability: 0.2,
-          outcome: {
-            description: "You walk on, feeling a bit guilty.",
+          successDescription: "You made the right choice - it was a trap!",
+          successEffects: {
+            gold: 5
           },
+          failureDescription: "You walk on, feeling a bit guilty.",
+          failureEffects: {
+            reputation: -1
+          }
         },
       ],
     },
