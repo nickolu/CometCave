@@ -1,9 +1,7 @@
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
 import { FantasyStoryEvent, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story';
 import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator';
-import extractRewardItemsFromText from '@/app/fantasy-tycoon/lib/parsers/rewardExtractor';
 import { MoveForwardResponse } from '../schemas';
-import { Item } from '@/app/fantasy-tycoon/models/item';
 
 const BASE_DISTANCE = 1;
 

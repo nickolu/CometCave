@@ -29,18 +29,10 @@ type ResolveDecisionResponse = {
   };
 };
 
-type Event = {
-              gold?: number;
-              reputation?: number;
-              distance?: number;
-              statusChange?: string;
-              rewardItems?: { id: string; name: string; description: string; quantity: number }[];
-            }
-
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ResolveDecisionRequest;
-    
+
     const { character, decisionPoint, optionId } = body;
     const option = decisionPoint.options.find(o => o.id === optionId);
     if (!option) {
@@ -53,7 +45,6 @@ export async function POST(req: NextRequest) {
     let updatedCharacter = character;
     let rewardItems: Item[] = [];
 
-
     if (
       option.successProbability !== undefined ||
       option.successEffects !== undefined ||
@@ -62,7 +53,7 @@ export async function POST(req: NextRequest) {
       const prob = calculateEffectiveProbability(option, character);
       const roll = Math.random();
       outcome = roll < prob ? 'success' : 'failure';
-      
+
       if (outcome === 'success') {
         const effects = option.successEffects;
         updatedCharacter = applyEffects(character, effects);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { Button } from '@/app/components/ui/buutton';
 
@@ -14,7 +14,6 @@ import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
 import { flipCoin } from '@/app/utils';
 import { getGenericTravelMessage } from '../lib/getGenericTravelMessage';
 import { LoaderCircle } from 'lucide-react';
-import { HudBar } from './HudBar';
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
   if (isLoading)
@@ -51,8 +50,8 @@ export default function GameUI() {
       onSuccess: () => {
         setDecisionPoint(null);
       },
-    })
-  }
+    });
+  };
 
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
@@ -72,7 +71,6 @@ export default function GameUI() {
       moveForwardMutation();
     }
   };
-
 
   return (
     <div className="flex min-h-screen flex-col">
