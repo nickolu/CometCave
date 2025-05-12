@@ -1,6 +1,6 @@
 'use client';
 
-import { FantasyStoryEvent } from '../models/types';
+import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '../models/types';
 import { useEffect, useRef, useState } from 'react';
 
 interface ResourceDeltaDisplayProps {
@@ -8,13 +8,13 @@ interface ResourceDeltaDisplayProps {
   isHighlighted: boolean;
 }
 
-function ResourceDeltaDisplay({ resourceDelta }: ResourceDeltaDisplayProps) {
+function ResourceDeltaDisplay({ resourceDelta, isHighlighted }: ResourceDeltaDisplayProps) {
   if (!resourceDelta) return null;
 
   const getValueColor = (value: number) => {
-    if (value > 0) return 'text-green-600';
-    if (value < 0) return 'text-red-600';
-    return 'text-gray-100';
+    if (value > 0) return isHighlighted ? 'text-green-300' : 'text-green-400';
+    if (value < 0) return isHighlighted ? 'text-red-300' : 'text-red-400';
+    return isHighlighted ? 'text-slate-200' : 'text-slate-300';
   };
 
   const changes = [
@@ -37,7 +37,7 @@ function ResourceDeltaDisplay({ resourceDelta }: ResourceDeltaDisplayProps) {
       </span>
     ) : null,
     resourceDelta.statusChange ? (
-      <span key="status" className="text-gray-100">
+      <span key="status" className={isHighlighted ? 'text-slate-200' : 'text-slate-300'}>
         Status: {resourceDelta.statusChange}
       </span>
     ) : null,
@@ -45,7 +45,84 @@ function ResourceDeltaDisplay({ resourceDelta }: ResourceDeltaDisplayProps) {
 
   if (changes.length === 0) return null;
 
-  return <div className="text-sm mt-0.5 flex flex-wrap gap-2">{changes}</div>;
+  return (
+    <div className={`mt-2 p-2 rounded-md ${isHighlighted ? 'bg-slate-600' : 'bg-slate-700'}`}>
+      <div className="text-sm flex flex-wrap gap-2">{changes}</div>
+    </div>
+  );
+}
+
+interface DecisionPointDisplayProps {
+  decisionPoint: FantasyDecisionPoint;
+  isHighlighted: boolean;
+  selectedOption: string;
+}
+
+interface DecisionPointOptionDisplayProps {
+  option: FantasyDecisionOption;
+  isHighlighted: boolean;
+  isSelected: boolean;
+}
+
+function DecisionPointOptionDisplay({
+  option,
+  isHighlighted,
+  isSelected,
+}: DecisionPointOptionDisplayProps) {
+  return (
+    <div
+      className={`p-2 rounded ${isHighlighted ? 'bg-slate-500' : 'bg-slate-600'} ${isSelected && 'selected border-green-500 border-2'}`}
+    >
+      <span className={`text-sm ${isHighlighted ? 'text-yellow-300' : 'text-yellow-400'}`}>
+        {option.text} {isSelected && '(Selected)'}
+      </span>
+    </div>
+  );
+}
+
+function DecisionPointDisplay({
+  decisionPoint,
+  isHighlighted,
+  selectedOption,
+}: DecisionPointDisplayProps) {
+  const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+
+  const toggleOptionsVisibility = () => {
+    setIsOptionsVisible(!isOptionsVisible);
+  };
+
+  return (
+    <div className={`mt-2 rounded-lg`}>
+      <div
+        className="flex justify-between items-center cursor-pointer"
+        onClick={toggleOptionsVisibility}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleOptionsVisibility()}
+      >
+        <p
+          className={`text-md font-semibold ${isHighlighted ? 'text-slate-50' : 'text-slate-100'} mb-0`}
+        >
+          {decisionPoint.prompt}
+        </p>
+        <span className={`text-xs ${isHighlighted ? 'text-slate-300' : 'text-slate-400'}`}>
+          {isOptionsVisible ? 'Hide Options ▲' : 'Show Options ▼'}
+        </span>
+      </div>
+      {isOptionsVisible && decisionPoint.options.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {decisionPoint.options.map(option => (
+            <DecisionPointOptionDisplay
+              key={option.id}
+              option={option}
+              isSelected={option.text === selectedOption}
+              isHighlighted={isHighlighted}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface RewardItemDisplayProps {
@@ -55,14 +132,14 @@ interface RewardItemDisplayProps {
 
 function RewardItemDisplay({ item, isHighlighted }: RewardItemDisplayProps) {
   return (
-    <span>
-      You received {item.quantity > 1 ? `${item.quantity} ` : ''}
-      <span
-        className={`text-sm ${isHighlighted ? 'text-yellow-800 font-semibold' : 'text-yellow-600'}`}
-      >
-        {item.name}
+    <div className={`p-2 rounded-md ${isHighlighted ? 'bg-slate-600' : 'bg-slate-700'}`}>
+      <span className={isHighlighted ? 'text-slate-200' : 'text-slate-300'}>
+        You received {item.quantity > 1 ? `${item.quantity} ` : ''}
+        <span className={`font-semibold ${isHighlighted ? 'text-yellow-300' : 'text-yellow-400'}`}>
+          {item.name}
+        </span>
       </span>
-    </span>
+    </div>
   );
 }
 
@@ -104,45 +181,67 @@ export function StoryFeed({
   }, [newestEventId]);
 
   if (!filteredEvents?.length) {
-    return <div className="bg-gray-50 p-3 rounded text-gray-500 text-sm">No events yet.</div>;
+    return <div className="bg-slate-800 p-3 rounded-lg text-slate-400 text-sm">No events yet.</div>;
   }
 
   return (
     <div
       ref={feedRef}
-      className="border rounded max-h-[calc(100vh-479px)] rounded-lg overflow-y-auto flex p-2 space-y-2 flex-col"
+      className="border border-slate-700 rounded-lg max-h-[calc(100vh-479px)] overflow-y-auto flex p-2 space-y-2 flex-col bg-slate-900"
     >
-      {filteredEvents.reverse().map(e => {
-        const isHighlighted = highlightedEventId === e.id;
-        const allRewardItems = [...(e.resourceDelta?.rewardItems || []), ...(e.rewardItems || [])];
+      {filteredEvents.reverse().map(storyEvent => {
+        const isHighlighted = highlightedEventId === storyEvent.id;
+        const allRewardItems = [
+          ...(storyEvent.resourceDelta?.rewardItems || []),
+          ...(storyEvent.rewardItems || []),
+        ];
 
         return (
           <div
-            key={`${e.id}-${e.timestamp}`}
-            className={`border-b pb-1 mb-1 first:border-none last:mb-0 transition-colors duration-300 ease-in-out ${
-              isHighlighted ? 'bg-blue-800 rounded-md p-1' : ''
-            }`}
+            key={`${storyEvent.id}-${storyEvent.timestamp}`}
+            className={`border-b border-slate-700 pb-2 mb-2 first:border-none last:mb-0 transition-colors duration-300 ease-in-out rounded-lg ${isHighlighted ? 'bg-slate-700' : 'bg-slate-800'} p-3`}
           >
-            <span
-              className={`text-xs text-align-right ${isHighlighted ? 'text-gray-200' : 'text-gray-100'}`}
-            >
-              {new Date(e.timestamp).toISOString().replace('T', ' ').slice(0, 16)}
-            </span>
-            <div className="text-sm">{e.description}</div>
+            <div className="flex justify-between items-center mb-2">
+              <span className={`text-xs ${isHighlighted ? 'text-slate-300' : 'text-slate-400'}`}>
+                {new Date(storyEvent.timestamp).toISOString().replace('T', ' ').slice(0, 16)}
+              </span>
+            </div>
+
+            {storyEvent.decisionPoint && (
+              <DecisionPointDisplay
+                decisionPoint={storyEvent.decisionPoint}
+                isHighlighted={isHighlighted}
+                selectedOption={storyEvent.selectedOptionText ?? ''}
+              />
+            )}
+
+            {storyEvent.outcomeDescription && (
+              <div
+                className={`text-sm mb-2 ${isHighlighted ? 'text-slate-100' : 'text-slate-200'}`}
+              >
+                {storyEvent.outcomeDescription}
+              </div>
+            )}
 
             {allRewardItems.length > 0 && (
-              <div className="text-sm mt-0.5 text-green-700">
+              <div className="mt-2 space-y-1">
                 {allRewardItems.map((item, idx) => (
-                  <div key={item.id + idx}>
-                    <RewardItemDisplay item={item} isHighlighted={isHighlighted} />
-                  </div>
+                  <RewardItemDisplay
+                    key={item.id + idx}
+                    item={item}
+                    isHighlighted={isHighlighted}
+                  />
                 ))}
               </div>
             )}
 
-            {e.resourceDelta && (
-              <ResourceDeltaDisplay resourceDelta={e.resourceDelta} isHighlighted={isHighlighted} />
-            )}
+            {storyEvent.resourceDelta &&
+              Object.keys(storyEvent.resourceDelta).filter(k => k !== 'rewardItems').length > 0 && (
+                <ResourceDeltaDisplay
+                  resourceDelta={storyEvent.resourceDelta}
+                  isHighlighted={isHighlighted}
+                />
+              )}
           </div>
         );
       })}
@@ -152,7 +251,7 @@ export function StoryFeed({
             feedRef.current.scrollTo({ top: 0, behavior: 'auto' });
           }
         }}
-        className="text-sm text-blue-600 hover:text-blue-800"
+        className="sticky bottom-0 left-0 right-0 w-full p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm text-center"
       >
         Scroll to top
       </button>
