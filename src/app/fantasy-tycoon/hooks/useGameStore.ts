@@ -37,6 +37,7 @@ export interface GameStore {
   setGameState: (gameState: GameState) => void;
   setGenericMessage: (message: string) => void;
   discardItem: (itemId: string) => void;
+  restoreItem: (itemId: string) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -160,6 +161,35 @@ export const useGameStore = create<GameStore>()(
             });
 
             // Update the character in the characters array
+            state.gameState.characters[characterIndex] = {
+              ...selectedCharacter,
+              inventory: updatedInventory,
+            };
+          })
+        );
+      },
+      restoreItem: (itemId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter();
+            if (!selectedCharacter || !selectedCharacter.inventory) return;
+
+            const itemIndex = selectedCharacter.inventory.findIndex(item => item.id === itemId);
+            if (itemIndex === -1) return;
+
+            const characterIndex = state.gameState.characters.findIndex(char => char.id === selectedCharacter.id);
+            if (characterIndex === -1) return;
+
+            const updatedInventory = selectedCharacter.inventory.map((item, index) => {
+              if (index === itemIndex) {
+                // Set status to 'active'. Alternatively, could remove the status property
+                // if undefined status means active by default.
+                // For clarity and consistency with 'deleted', explicitly setting 'active'.
+                return { ...item, status: 'active' as const };
+              }
+              return item;
+            });
+
             state.gameState.characters[characterIndex] = {
               ...selectedCharacter,
               inventory: updatedInventory,
