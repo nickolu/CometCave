@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { Item } from '../models/types';
 import { Button } from '@/app/components/ui/buutton';
 import { List } from '@/app/components/ui/liist';
+import { useGameStore } from '../hooks/useGameStore';
 
 interface InventoryPanelProps {
   inventory: Item[];
@@ -14,10 +15,10 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   }, []);
 
   const handleDiscard = useCallback((item: Item) => {
-    console.log('Item discard not implemented in this component.', item);
+    useGameStore.getState().discardItem(item.id);
   }, []);
 
-  const items = inventory ?? [];
+  const items = (inventory ?? []).filter(item => item.status !== 'deleted');
 
   return (
     <div className="w-full flex flex-col h-full max-h-[calc(100vh-415px)] overflow-auto">

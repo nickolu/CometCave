@@ -6,6 +6,7 @@ export const ItemSchema = z.object({
   name: z.string(),
   description: z.string(),
   quantity: z.number(),
+  status: z.enum(['active', 'deleted']).optional(),
 });
 
 export type Item = z.infer<typeof ItemSchema>;

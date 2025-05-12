@@ -36,6 +36,7 @@ export interface GameStore {
   setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void;
   setGameState: (gameState: GameState) => void;
   setGenericMessage: (message: string) => void;
+  discardItem: (itemId: string) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -134,6 +135,35 @@ export const useGameStore = create<GameStore>()(
               },
             };
             return updatedState;
+          })
+        );
+      },
+      discardItem: (itemId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter();
+            if (!selectedCharacter || !selectedCharacter.inventory) return;
+
+            const itemIndex = selectedCharacter.inventory.findIndex(item => item.id === itemId);
+            if (itemIndex === -1) return;
+
+            // Ensure the characters array and the specific character are found for modification
+            const characterIndex = state.gameState.characters.findIndex(char => char.id === selectedCharacter.id);
+            if (characterIndex === -1) return;
+
+            // Create a new inventory array with the updated item
+            const updatedInventory = selectedCharacter.inventory.map((item, index) => {
+              if (index === itemIndex) {
+                return { ...item, status: 'deleted' as const };
+              }
+              return item;
+            });
+
+            // Update the character in the characters array
+            state.gameState.characters[characterIndex] = {
+              ...selectedCharacter,
+              inventory: updatedInventory,
+            };
           })
         );
       },
