@@ -43,6 +43,16 @@ export default function GameUI() {
     }
   }, [gameState]);
 
+  const handleResolveDecision = (optionId: string) => {
+    resolveDecisionMutation({
+      decisionPoint: gameState.decisionPoint!,
+      optionId: optionId,
+      onSuccess: () => {
+        setDecisionPoint(null);
+      },
+    });
+  };
+
   if (!gameState) return <div className="p-4 text-center">No game found.</div>;
 
   const { selectedCharacterId, storyEvents } = gameState;
@@ -60,17 +70,6 @@ export default function GameUI() {
     } else {
       moveForwardMutation();
     }
-  };
-
-  const handleResolveDecision = (optionId: string) => {
-    console.log('handleResolveDecision', optionId);
-    resolveDecisionMutation({
-      decisionPoint: gameState.decisionPoint!,
-      optionId: optionId,
-      onSuccess: () => {
-        setDecisionPoint(null);
-      },
-    });
   };
 
   return (
@@ -112,7 +111,6 @@ export default function GameUI() {
                         style={{ userSelect: 'none' }}
                         disabled={resolveDecisionPending}
                         onClick={() => {
-                          console.log('handleResolveDecision', option.id);
                           handleResolveDecision(option.id);
                         }}
                       >

@@ -38,7 +38,7 @@ const EffectsSchema = z.object({
 export const FantasyDecisionOptionSchema = z.object({
   id: z.string(),
   text: z.string(),
-  baseProbability: z.number().optional(),
+  successProbability: z.number().optional(),
   relevantAttributes: z.array(z.enum(["strength", "intelligence", "luck"])).optional(),
   attributeModifiers: z.record(z.enum(["strength", "intelligence", "luck"]), z.number()).optional(),
   successDescription: z.string().optional(),
