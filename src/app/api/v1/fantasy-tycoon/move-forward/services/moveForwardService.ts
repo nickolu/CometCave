@@ -17,11 +17,10 @@ export async function moveForwardService(
     const context = '';
     const llmEvents = await generateLLMEvents(character, context);
     const llmEvent = llmEvents[0];
-    
+
     event = {
       id: llmEvent.id,
       type: 'decision_point',
-      description: llmEvent.description,
       characterId: character.id,
       locationId: character.locationId,
       timestamp: new Date().toISOString(),
