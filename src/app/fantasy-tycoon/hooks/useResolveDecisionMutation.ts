@@ -70,9 +70,9 @@ export function useResolveDecisionMutation() {
       }
 
       const newStoryEvent = {
+        decisionPoint,
         id: `result-${Date.now()}`,
         type: 'decision_result',
-        description: `${data.updatedCharacter.name} chose: "${data.selectedOptionText}" → ${data.outcomeDescription}`,
         characterId: data.updatedCharacter.id,
         locationId: data.updatedCharacter.locationId,
         timestamp: new Date().toISOString(),
