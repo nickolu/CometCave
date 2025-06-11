@@ -1,0 +1,100 @@
+'use client';
+
+import { useState } from 'react';
+import VoterManagement from '../../components/voter-management';
+import VotingCriteriaComponent from '../../components/voting-criteria';
+import VotingExecution from '../../components/voting-execution';
+import VotingResults from '../../components/voting-results';
+import { Voter, VotingCriteria, Vote } from '@/types/voting';
+
+type Step = 'voters' | 'criteria' | 'voting' | 'results';
+
+export default function VotingSimulation() {
+  const [currentStep, setCurrentStep] = useState<Step>('voters');
+  const [voters, setVoters] = useState<Voter[]>([]);
+  const [criteria, setCriteria] = useState<VotingCriteria>({
+    question: '',
+    options: [],
+  });
+  const [votes, setVotes] = useState<Vote[]>([]);
+
+  const handleVotingComplete = (completedVotes: Vote[]) => {
+    setVotes(completedVotes);
+    setCurrentStep('results');
+  };
+
+  const handleRestart = () => {
+    setCurrentStep('voters');
+    setVoters([]);
+    setCriteria({ question: '', options: [] });
+    setVotes([]);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-6xl">
+        {/* Progress indicator */}
+        <div className="mb-8">
+          <div className="flex justify-center space-x-4">
+            {[
+              { key: 'voters', label: 'Manage Voters' },
+              { key: 'criteria', label: 'Set Criteria' },
+              { key: 'voting', label: 'Execute Voting' },
+              { key: 'results', label: 'View Results' },
+            ].map((step, index) => (
+              <div key={step.key} className={`flex items-center ${index < 3 ? 'flex-1' : ''}`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    currentStep === step.key
+                      ? 'bg-blue-600 text-white'
+                      : voters.length > 0 &&
+                          (step.key === 'criteria' ||
+                            (criteria.question && step.key === 'voting') ||
+                            (votes.length > 0 && step.key === 'results'))
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-300 text-gray-600'
+                  }`}
+                >
+                  {index + 1}
+                </div>
+                <span className="ml-2 text-sm font-medium hidden sm:block">{step.label}</span>
+                {index < 3 && <div className="flex-1 h-0.5 bg-gray-300 mx-4 hidden sm:block" />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Step content */}
+        {currentStep === 'voters' && (
+          <VoterManagement
+            voters={voters}
+            onVotersChange={setVoters}
+            onNext={() => setCurrentStep('criteria')}
+          />
+        )}
+
+        {currentStep === 'criteria' && (
+          <VotingCriteriaComponent
+            criteria={criteria}
+            onCriteriaChange={setCriteria}
+            onNext={() => setCurrentStep('voting')}
+            onBack={() => setCurrentStep('voters')}
+          />
+        )}
+
+        {currentStep === 'voting' && (
+          <VotingExecution
+            voters={voters}
+            criteria={criteria}
+            onVotingComplete={handleVotingComplete}
+            onBack={() => setCurrentStep('criteria')}
+          />
+        )}
+
+        {currentStep === 'results' && (
+          <VotingResults votes={votes} voters={voters} onRestart={handleRestart} />
+        )}
+      </div>
+    </div>
+  );
+}

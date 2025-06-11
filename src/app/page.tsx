@@ -49,6 +49,13 @@ export default function Home() {
           href={ROUTE_CONSTANTS.FANTASY_TYCOON}
           description="Play as a fantasy character and explore the world!"
         />
+
+        <GameCard
+          title="Voters"
+          icon={<StarIcon />}
+          href={ROUTE_CONSTANTS.VOTERS}
+          description="Create AI voters and see how they vote on different topics!"
+        />
       </div>
     </div>
   )
