@@ -55,7 +55,7 @@ Vote Distribution:
 ${Object.entries(choiceDistribution)
   .map(
     ([choice, count]) =>
-      `- ${choice}: ${count} votes (${((count / votes.length) * 100).toFixed(1)}%)`
+      `- ${choice}: ${count} votes (${Math.round(((count as number) / votes.length) * 100)}%)`
   )
   .join('\n')}
 
