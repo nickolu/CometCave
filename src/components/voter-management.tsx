@@ -10,6 +10,14 @@ import { Slider } from './ui/slider';
 import { Trash2, Copy, Users, Settings, Pencil } from 'lucide-react';
 import { Voter } from '@/types/voting';
 
+const models = [
+  { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },
+  { label: 'gpt-4-turbo', value: 'gpt-4-turbo' },
+  { label: 'gpt-4.1-mini', value: 'gpt-4.1-mini' },
+  { label: 'gpt-4.1-nano', value: 'gpt-4.1-nano' },
+  { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
+];
+
 interface VoterManagementProps {
   voters: Voter[];
   onVotersChange: (voters: Voter[]) => void;
@@ -171,10 +179,11 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-space-dark border-slate-700 text-cream-white">
-                  <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                  <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                  <SelectItem value="gpt-4">GPT-4</SelectItem>
-                  <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                  {models.map(model => (
+                    <SelectItem key={model.value} value={model.value}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -242,7 +251,12 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                 className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 space-y-4 flex flex-col"
               >
                 <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-cream-white">{voter.name}</h4>
+                  <div className="flex flex-col gap-1">
+                    <h4 className="font-semibold text-cream-white">{voter.name}</h4>
+                    <span className="text-xs px-2 py-1 bg-slate-700/50 text-slate-300 rounded-full w-fit">
+                      {voter.modelConfig.model}
+                    </span>
+                  </div>
                   <div className="flex gap-1">
                     <Button
                       variant="ghost"
@@ -400,10 +414,11 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-space-dark border-slate-700 text-cream-white">
-                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                    <SelectItem value="gpt-4">GPT-4</SelectItem>
-                    <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                    {models.map(model => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
