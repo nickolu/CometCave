@@ -57,15 +57,11 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
         id: Date.now().toString(),
       };
       onVotersChange([...voters, voter]);
+      // Keep the form fields populated for easy creation of similar voters
+      // Only clear the name to avoid duplicate names
       setNewVoter({
+        ...newVoter,
         name: '',
-        description: '',
-        count: 1,
-        modelConfig: {
-          model: 'gpt-3.5-turbo',
-          temperature: 0.7,
-          maxTokens: 150,
-        },
       });
     }
   };
@@ -293,7 +289,9 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                     type="number"
                     min="1"
                     value={voter.count}
-                    onChange={e => updateVoterCount(voter.id, Number.parseInt(e.target.value) || 1)}
+                    onChange={e =>
+                      updateVoterCount(voter.id, Number.parseInt(e.target.value) || 10)
+                    }
                     className="bg-slate-900 border-slate-600 text-cream-white w-20 h-8 text-center"
                   />
                 </div>
