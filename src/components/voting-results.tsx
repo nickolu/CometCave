@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -15,15 +15,19 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import type { Vote, Voter } from '../types/voting';
+import type { Vote, Voter, VotingCriteria } from '../types/voting';
 
 interface VotingResultsProps {
   votes: Vote[];
   voters: Voter[];
+  criteria?: VotingCriteria;
   onRestart: () => void;
 }
 
-export default function VotingResults({ votes, voters, onRestart }: VotingResultsProps) {
+export default function VotingResults({ votes, voters, criteria, onRestart }: VotingResultsProps) {
+  const [groupSummaries, setGroupSummaries] = useState<Record<string, string>>({});
+  const [loadingSummaries, setLoadingSummaries] = useState<string[]>([]);
+
   const results = useMemo(() => {
     const distribution = votes.reduce(
       (acc, vote) => {
@@ -45,17 +49,66 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
         );
 
         acc[voter.name] = {
+          voter,
           votes: voterVotes,
           distribution: groupDistribution,
           total: voterVotes.length,
         };
         return acc;
       },
-      {} as Record<string, { votes: Vote[]; distribution: Record<string, number>; total: number }>
+      {} as Record<
+        string,
+        { voter: Voter; votes: Vote[]; distribution: Record<string, number>; total: number }
+      >
     );
 
     return { distribution, groupResults };
   }, [votes, voters]);
+
+  // Generate summaries for groups with more than 5 votes
+  useEffect(() => {
+    const generateSummariesForLargeGroups = async () => {
+      if (!criteria) return;
+
+      const groupsNeedingSummary = Object.entries(results.groupResults).filter(
+        ([groupName, groupData]) =>
+          groupData.total > 5 && !groupSummaries[groupName] && !loadingSummaries.includes(groupName)
+      );
+
+      if (groupsNeedingSummary.length === 0) return;
+
+      for (const [groupName, groupData] of groupsNeedingSummary) {
+        setLoadingSummaries(prev => [...prev, groupName]);
+
+        try {
+          const response = await fetch('/api/v1/voters/generate-summary', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              voterGroup: groupData.voter,
+              votes: groupData.votes,
+              criteria,
+            }),
+          });
+
+          if (response.ok) {
+            const { summary } = await response.json();
+            setGroupSummaries(prev => ({ ...prev, [groupName]: summary }));
+          } else {
+            console.error(`Failed to generate summary for ${groupName}`);
+          }
+        } catch (error) {
+          console.error(`Error generating summary for ${groupName}:`, error);
+        } finally {
+          setLoadingSummaries(prev => prev.filter(name => name !== groupName));
+        }
+      }
+    };
+
+    generateSummariesForLargeGroups();
+  }, [results.groupResults, criteria, groupSummaries, loadingSummaries]);
 
   const chartData = Object.entries(results.distribution).map(([option, count]) => ({
     option,
@@ -147,7 +200,7 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
         <TabsContent value="groups" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(results.groupResults).map(([groupName, groupData]) => (
-              <div key={groupName}>
+              <div key={groupName} className="border rounded-lg p-4">
                 <h2 className="text-lg font-bold mb-2">{groupName}</h2>
                 <div>
                   <div className="space-y-2">
@@ -160,6 +213,29 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                         </span>
                       </div>
                     ))}
+
+                    {/* Summary for groups with more than 5 votes */}
+                    {groupData.total > 5 && (
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold mb-2 text-blue-600">
+                          AI Summary ({groupData.total} votes):
+                        </h4>
+                        {loadingSummaries.includes(groupName) ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-xs text-gray-500">Generating summary...</span>
+                          </div>
+                        ) : groupSummaries[groupName] ? (
+                          <p className="text-xs text-gray-700 leading-relaxed">
+                            {groupSummaries[groupName]}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-500 italic">
+                            Summary will be generated shortly...
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -202,7 +278,7 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
 
         <TabsContent value="analysis" className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold mb-2">AI-Generated Analysis</h2>
+            <h2 className="text-xl font-bold mb-2">Voting Analysis</h2>
             <div>
               <div className="space-y-4">
                 {Object.entries(results.groupResults).map(([groupName, groupData]) => (
@@ -211,7 +287,7 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                     <p className="text-sm text-gray-600 mb-2">
                       This group cast {groupData.total} votes with the following pattern:
                     </p>
-                    <ul className="text-sm space-y-1">
+                    <ul className="text-sm space-y-1 mb-3">
                       {Object.entries(groupData.distribution).map(([option, count]) => (
                         <li key={option}>
                           • {option}: {count} votes ({((count / groupData.total) * 100).toFixed(1)}
@@ -219,6 +295,29 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                         </li>
                       ))}
                     </ul>
+
+                    {/* Enhanced analysis with AI summary for large groups */}
+                    {groupData.total > 5 && (
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <h5 className="text-sm font-semibold mb-2 text-blue-800">
+                          Detailed Insights:
+                        </h5>
+                        {loadingSummaries.includes(groupName) ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-xs text-gray-600">
+                              Analyzing voting patterns...
+                            </span>
+                          </div>
+                        ) : groupSummaries[groupName] ? (
+                          <p className="text-sm text-blue-700">{groupSummaries[groupName]}</p>
+                        ) : (
+                          <p className="text-xs text-blue-600 italic">
+                            Advanced analysis in progress...
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

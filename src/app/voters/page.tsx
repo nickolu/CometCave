@@ -95,7 +95,12 @@ export default function VotingSimulation() {
           )}
 
           {currentStep === 'results' && (
-            <VotingResults votes={votes} voters={voters} onRestart={handleRestart} />
+            <VotingResults
+              votes={votes}
+              voters={voters}
+              criteria={criteria}
+              onRestart={handleRestart}
+            />
           )}
         </div>
       </div>

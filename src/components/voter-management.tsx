@@ -20,9 +20,9 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   const [newVoter, setNewVoter] = useState<Omit<Voter, 'id'>>({
     name: '',
     description: '',
-    count: 1,
+    count: 10,
     modelConfig: {
-      model: 'gpt-4o-mini',
+      model: 'gpt-3.5-turbo',
       temperature: 0.7,
       maxTokens: 150,
     },
@@ -54,7 +54,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
         description: '',
         count: 1,
         modelConfig: {
-          model: 'gpt-4o-mini',
+          model: 'gpt-3.5-turbo',
           temperature: 0.7,
           maxTokens: 150,
         },
@@ -121,7 +121,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
               min="1"
               value={newVoter.count}
               onChange={e =>
-                setNewVoter({ ...newVoter, count: Number.parseInt(e.target.value) || 1 })
+                setNewVoter({ ...newVoter, count: Number.parseInt(e.target.value) || 10 })
               }
               className="bg-slate-800 border-slate-700 text-cream-white mt-1"
             />
@@ -351,7 +351,7 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
                 min="1"
                 value={editedVoter.count}
                 onChange={e =>
-                  setEditedVoter({ ...editedVoter, count: Number.parseInt(e.target.value) || 1 })
+                  setEditedVoter({ ...editedVoter, count: Number.parseInt(e.target.value) || 10 })
                 }
                 className="bg-slate-800 border-slate-700 text-cream-white mt-1"
               />
