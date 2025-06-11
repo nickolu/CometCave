@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -25,8 +24,6 @@ interface VotingResultsProps {
 }
 
 export default function VotingResults({ votes, voters, onRestart }: VotingResultsProps) {
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-
   const results = useMemo(() => {
     const distribution = votes.reduce(
       (acc, vote) => {
@@ -54,7 +51,7 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
         };
         return acc;
       },
-      {} as Record<string, any>
+      {} as Record<string, { votes: Vote[]; distribution: Record<string, number>; total: number }>
     );
 
     return { distribution, groupResults };
@@ -90,11 +87,9 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vote Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div>
+              <h2 className="text-xl font-bold mb-2">Vote Distribution</h2>
+              <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -104,14 +99,12 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                     <Bar dataKey="count" fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Vote Percentages</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div>
+              <h2 className="text-xl font-bold mb-2">Vote Percentages</h2>
+              <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -131,15 +124,13 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Summary Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div>
+            <h2 className="text-xl font-bold mb-2">Summary Statistics</h2>
+            <div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {chartData.map(item => (
                   <div key={item.option} className="text-center p-4 border rounded-lg">
@@ -149,18 +140,16 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="groups" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(results.groupResults).map(([groupName, groupData]) => (
-              <Card key={groupName}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{groupName}</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div key={groupName}>
+                <h2 className="text-lg font-bold mb-2">{groupName}</h2>
+                <div>
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">Total votes: {groupData.total}</p>
                     {Object.entries(groupData.distribution).map(([option, count]) => (
@@ -172,18 +161,16 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="individual" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Individual Voter Details</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div>
+            <h2 className="text-xl font-bold mb-2">Individual Voter Details</h2>
+            <div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -209,16 +196,14 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="analysis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>AI-Generated Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div>
+            <h2 className="text-xl font-bold mb-2">AI-Generated Analysis</h2>
+            <div>
               <div className="space-y-4">
                 {Object.entries(results.groupResults).map(([groupName, groupData]) => (
                   <div key={groupName} className="p-4 border rounded-lg">
@@ -237,8 +222,8 @@ export default function VotingResults({ votes, voters, onRestart }: VotingResult
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

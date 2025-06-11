@@ -30,7 +30,6 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [editingVoterId, setEditingVoterId] = useState<string | null>(null);
   const [editedVoter, setEditedVoter] = useState<Voter | null>(null);
-  const [showAdvancedEdit, setShowAdvancedEdit] = useState(false);
 
   useEffect(() => {
     if (editingVoterId) {
@@ -40,7 +39,6 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
       }
     } else {
       setEditedVoter(null);
-      setShowAdvancedEdit(false);
     }
   }, [editingVoterId, voters]);
 
@@ -314,7 +312,14 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   );
 }
 
-function EditVoterModal({ voter, onUpdate, onCancel, onRemove }) {
+interface EditVoterModalProps {
+  voter: Voter;
+  onUpdate: (voter: Voter) => void;
+  onCancel: () => void;
+  onRemove: (id: string) => void;
+}
+
+function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalProps) {
   const [editedVoter, setEditedVoter] = useState(voter);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
