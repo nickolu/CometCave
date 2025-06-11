@@ -31,7 +31,7 @@ export default function VotingSimulation() {
   };
 
   return (
-    <div className="py-8">
+    <div className="py-12">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Progress indicator */}
         <div className="mb-8">
@@ -67,7 +67,7 @@ export default function VotingSimulation() {
         </div>
 
         {/* Step content */}
-        <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-6 md:p-8">
+        <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12">
           {currentStep === 'voters' && (
             <VoterManagement
               voters={voters}

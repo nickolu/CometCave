@@ -87,7 +87,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2 text-cream-white">Manage Voters</h2>
         <p className="text-slate-400">
@@ -98,7 +98,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
       {/* Add New Voter */}
       <div className="space-y-4">
         <h3 className="text-xl font-bold text-cream-white">Add New Voter Type</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="name" className="text-slate-400">
               Voter Name
@@ -230,16 +230,16 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
 
       {/* Voter Pool Visualization */}
       {voters.length > 0 && (
-        <div className="space-y-4 pt-6">
+        <div className="space-y-6 pt-8">
           <h3 className="flex items-center gap-2 text-xl font-bold text-cream-white">
             <Users className="w-5 h-5" />
             Voter Pool ({totalVoters} total voters)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {voters.map(voter => (
               <div
                 key={voter.id}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3 flex flex-col"
+                className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 space-y-4 flex flex-col"
               >
                 <div className="flex justify-between items-start">
                   <h4 className="font-semibold text-cream-white">{voter.name}</h4>
@@ -289,7 +289,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
         </div>
       )}
 
-      <div className="flex justify-between items-center mt-6">
+      <div className="flex justify-between items-center mt-8">
         <span className="text-lg font-semibold text-cream-white">Total Voters: {totalVoters}</span>
         <Button
           onClick={onNext}
@@ -325,7 +325,7 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-space-dark rounded-2xl p-6 md:p-8 w-full max-w-2xl border border-space-purple/30 m-4">
+      <div className="bg-space-dark rounded-2xl p-8 md:p-12 w-full max-w-2xl border border-space-purple/30 m-4">
         <h3 className="text-xl font-bold mb-4 text-cream-white">Edit Voter Type</h3>
 
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -450,7 +450,7 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
           )}
         </div>
 
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between mt-8">
           <Button onClick={() => onRemove(voter.id)} variant="destructive">
             <Trash2 className="w-4 h-4 mr-2" />
             Delete
