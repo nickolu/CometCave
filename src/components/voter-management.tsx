@@ -7,15 +7,14 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Slider } from './ui/slider';
-import { Trash2, Copy, Users, Settings, Pencil } from 'lucide-react';
+import { Trash2, Copy, Users, Settings, Pencil, Sparkles } from 'lucide-react';
 import { Voter } from '@/types/voting';
 
 const models = [
   { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },
   { label: 'gpt-4-turbo', value: 'gpt-4-turbo' },
-  { label: 'gpt-4.1-mini', value: 'gpt-4.1-mini' },
-  { label: 'gpt-4.1-nano', value: 'gpt-4.1-nano' },
   { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
+  { label: 'gpt-4o', value: 'gpt-4o' },
 ];
 
 interface VoterManagementProps {
@@ -38,6 +37,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [editingVoterId, setEditingVoterId] = useState<string | null>(null);
   const [editedVoter, setEditedVoter] = useState<Voter | null>(null);
+  const [isGeneratingRandomVoter, setIsGeneratingRandomVoter] = useState(false);
 
   useEffect(() => {
     if (editingVoterId) {
@@ -86,6 +86,33 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   const updateVoter = (updatedVoter: Voter) => {
     onVotersChange(voters.map(v => (v.id === updatedVoter.id ? updatedVoter : v)));
     setEditingVoterId(null);
+  };
+
+  const generateRandomVoter = async () => {
+    setIsGeneratingRandomVoter(true);
+    try {
+      const response = await fetch('/api/v1/voters/generate-random-voter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          existingVoters: voters,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate random voter');
+      }
+
+      const data = await response.json();
+      onVotersChange([...voters, data.voter]);
+    } catch (error) {
+      console.error('Error generating random voter:', error);
+      // You could add a toast notification here
+    } finally {
+      setIsGeneratingRandomVoter(false);
+    }
   };
 
   const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0);
@@ -225,12 +252,24 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
           </div>
         )}
 
-        <Button
-          onClick={addVoter}
-          className="w-full bg-space-purple text-cream-white hover:bg-space-purple/90"
-        >
-          Add Voter Type
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={addVoter}
+            className="flex-1 bg-space-purple text-cream-white hover:bg-space-purple/90"
+          >
+            Add Voter Type
+          </Button>
+          <Button
+            onClick={generateRandomVoter}
+            disabled={isGeneratingRandomVoter}
+            variant="outline"
+            className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+            title="Generate a random voter with AI-created characteristics"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            {isGeneratingRandomVoter ? 'Generating...' : 'Random'}
+          </Button>
+        </div>
       </div>
 
       {/* Voter Pool Visualization */}
