@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import VoterManagement from '../../components/voter-management';
 import VotingCriteriaComponent from '../../components/voting-criteria';
 import VotingExecution from '../../components/voting-execution';
@@ -8,6 +8,8 @@ import VotingResults from '../../components/voting-results';
 import { Voter, VotingCriteria, Vote } from '@/types/voting';
 
 type Step = 'voters' | 'criteria' | 'voting' | 'results';
+
+const VOTERS_STORAGE_KEY = 'voters-app-voters';
 
 export default function VotingSimulation() {
   const [currentStep, setCurrentStep] = useState<Step>('voters');
@@ -18,16 +20,52 @@ export default function VotingSimulation() {
   });
   const [votes, setVotes] = useState<Vote[]>([]);
 
+  // Load voters from local storage on component mount
+  useEffect(() => {
+    try {
+      const savedVoters = localStorage.getItem(VOTERS_STORAGE_KEY);
+      if (savedVoters) {
+        const parsedVoters = JSON.parse(savedVoters);
+        if (Array.isArray(parsedVoters)) {
+          setVoters(parsedVoters);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading voters from local storage:', error);
+    }
+  }, []);
+
+  // Function to update voters in both state and local storage
+  const handleVotersChange = (newVoters: Voter[]) => {
+    setVoters(newVoters);
+    try {
+      localStorage.setItem(VOTERS_STORAGE_KEY, JSON.stringify(newVoters));
+    } catch (error) {
+      console.error('Error saving voters to local storage:', error);
+    }
+  };
+
   const handleVotingComplete = (completedVotes: Vote[]) => {
     setVotes(completedVotes);
     setCurrentStep('results');
   };
 
+  // Modified restart function - only clears current session data, not stored voters
   const handleRestart = () => {
     setCurrentStep('voters');
-    setVoters([]);
     setCriteria({ question: '', options: [] });
     setVotes([]);
+    // Note: We don't clear voters here - they persist until user manually removes them
+  };
+
+  // Function to clear all voters (can be called from voter management if needed)
+  const handleClearAllVoters = () => {
+    setVoters([]);
+    try {
+      localStorage.removeItem(VOTERS_STORAGE_KEY);
+    } catch (error) {
+      console.error('Error clearing voters from local storage:', error);
+    }
   };
 
   return (
@@ -71,8 +109,9 @@ export default function VotingSimulation() {
           {currentStep === 'voters' && (
             <VoterManagement
               voters={voters}
-              onVotersChange={setVoters}
+              onVotersChange={handleVotersChange}
               onNext={() => setCurrentStep('criteria')}
+              onClearAll={handleClearAllVoters}
             />
           )}
 
