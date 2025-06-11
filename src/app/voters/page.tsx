@@ -55,17 +55,6 @@ export default function VotingSimulation() {
     setCurrentStep('voters');
     setCriteria({ question: '', options: [] });
     setVotes([]);
-    // Note: We don't clear voters here - they persist until user manually removes them
-  };
-
-  // Function to clear all voters (can be called from voter management if needed)
-  const handleClearAllVoters = () => {
-    setVoters([]);
-    try {
-      localStorage.removeItem(VOTERS_STORAGE_KEY);
-    } catch (error) {
-      console.error('Error clearing voters from local storage:', error);
-    }
   };
 
   return (
@@ -111,7 +100,6 @@ export default function VotingSimulation() {
               voters={voters}
               onVotersChange={handleVotersChange}
               onNext={() => setCurrentStep('criteria')}
-              onClearAll={handleClearAllVoters}
             />
           )}
 

@@ -139,9 +139,9 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
             <div>
-              <h2 className="text-xl font-bold mb-2">Vote Distribution</h2>
+              <h2 className="text-xl font-bold mb-4">Vote Distribution</h2>
               <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData}>
@@ -156,7 +156,7 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
             </div>
 
             <div>
-              <h2 className="text-xl font-bold mb-2">Vote Percentages</h2>
+              <h2 className="text-xl font-bold mb-4">Vote Percentages</h2>
               <div>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -182,7 +182,7 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
           </div>
 
           <div>
-            <h2 className="text-xl font-bold mb-2">Summary Statistics</h2>
+            <h2 className="text-xl font-bold mb-4">Summary Statistics</h2>
             <div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {chartData.map(item => (
@@ -197,7 +197,7 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
           </div>
         </TabsContent>
 
-        <TabsContent value="groups" className="space-y-4">
+        <TabsContent value="groups" className="space-y-4 p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(results.groupResults).map(([groupName, groupData]) => (
               <div key={groupName} className="border rounded-lg p-4">
@@ -226,7 +226,7 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
                             <span className="text-xs text-gray-500">Generating summary...</span>
                           </div>
                         ) : groupSummaries[groupName] ? (
-                          <p className="text-xs text-gray-700 leading-relaxed">
+                          <p className="text-xs text-gray-500 leading-relaxed">
                             {groupSummaries[groupName]}
                           </p>
                         ) : (
@@ -243,9 +243,9 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
           </div>
         </TabsContent>
 
-        <TabsContent value="individual" className="space-y-4">
+        <TabsContent value="individual" className="space-y-4 p-4">
           <div>
-            <h2 className="text-xl font-bold mb-2">Individual Voter Details</h2>
+            <h2 className="text-xl font-bold mb-4">Individual Voter Details</h2>
             <div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -276,9 +276,9 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
           </div>
         </TabsContent>
 
-        <TabsContent value="analysis" className="space-y-4">
+        <TabsContent value="analysis" className="space-y-4 p-4">
           <div>
-            <h2 className="text-xl font-bold mb-2">Voting Analysis</h2>
+            <h2 className="text-xl font-bold mb-4">Voting Analysis</h2>
             <div>
               <div className="space-y-4">
                 {Object.entries(results.groupResults).map(([groupName, groupData]) => (
