@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/app/voters/components/ui/button';
 import { Progress } from '@/app/voters/components/ui/progress';
 import { Play } from 'lucide-react';
-import type { Voter, VotingCriteria, Vote } from '../../../types/voting';
+import type { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting';
+import { useCastVote } from '../api/hooks';
 
 interface VotingExecutionProps {
   voters: Voter[];
@@ -27,31 +28,22 @@ export default function VotingExecution({
 
   const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0);
 
+  const castVoteMutation = useCastVote();
+
   const castVote = async (
     voter: Voter,
     criteria: VotingCriteria,
     instance: number
   ): Promise<Vote> => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    const response = await fetch('/api/v1/voters/cast-vote', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        voter,
-        criteria,
-        instance,
-      }),
+    return new Promise((resolve, reject) => {
+      castVoteMutation.mutate(
+        { voter, criteria, instance },
+        {
+          onSuccess: data => resolve(data),
+          onError: error => reject(error),
+        }
+      );
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
   };
 
   const executeVoting = async () => {

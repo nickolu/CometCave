@@ -15,7 +15,8 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import type { Vote, Voter, VotingCriteria } from '@/types/voting';
+import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting';
+import { useGenerateSummary } from '../api/hooks';
 
 interface VotingResultsProps {
   votes: Vote[];
@@ -27,6 +28,8 @@ interface VotingResultsProps {
 export default function VotingResults({ votes, voters, criteria, onRestart }: VotingResultsProps) {
   const [groupSummaries, setGroupSummaries] = useState<Record<string, string>>({});
   const [loadingSummaries, setLoadingSummaries] = useState<string[]>([]);
+
+  const generateSummaryMutation = useGenerateSummary();
 
   const results = useMemo(() => {
     const distribution = votes.reduce(
@@ -80,30 +83,23 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
       for (const [groupName, groupData] of groupsNeedingSummary) {
         setLoadingSummaries(prev => [...prev, groupName]);
 
-        try {
-          const response = await fetch('/api/v1/voters/generate-summary', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+        generateSummaryMutation.mutate(
+          {
+            voterGroup: groupData.voter,
+            votes: groupData.votes,
+            criteria,
+          },
+          {
+            onSuccess: data => {
+              setGroupSummaries(prev => ({ ...prev, [groupName]: data.summary }));
+              setLoadingSummaries(prev => prev.filter(name => name !== groupName));
             },
-            body: JSON.stringify({
-              voterGroup: groupData.voter,
-              votes: groupData.votes,
-              criteria,
-            }),
-          });
-
-          if (response.ok) {
-            const { summary } = await response.json();
-            setGroupSummaries(prev => ({ ...prev, [groupName]: summary }));
-          } else {
-            console.error(`Failed to generate summary for ${groupName}`);
+            onError: error => {
+              console.error(`Error generating summary for ${groupName}:`, error);
+              setLoadingSummaries(prev => prev.filter(name => name !== groupName));
+            },
           }
-        } catch (error) {
-          console.error(`Error generating summary for ${groupName}:`, error);
-        } finally {
-          setLoadingSummaries(prev => prev.filter(name => name !== groupName));
-        }
+        );
       }
     };
 
