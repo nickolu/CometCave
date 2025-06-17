@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { SecretWordSetup } from './components/SecretWordSetup';
-import { SecretWordChat } from './components/SecretWordChat';
-import { SecretWordEnd } from './components/SecretWordEnd';
+import { SecretWordSetup } from '@/app/secret-word/components/SecretWordSetup';
+import { SecretWordChat } from '@/app/secret-word/components/SecretWordChat';
+import { SecretWordEnd } from '@/app/secret-word/components/SecretWordEnd';
 
 type GamePhase = 'setup' | 'playing' | 'ended';
 

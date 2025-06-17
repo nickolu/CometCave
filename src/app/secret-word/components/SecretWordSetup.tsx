@@ -89,7 +89,7 @@ export function SecretWordSetup({ onSetupComplete }: SecretWordSetupProps) {
           <li>• Players take turns asking questions and giving answers</li>
           <li>• All answers must be truthful</li>
           <li>• If you say your own secret word, you lose immediately</li>
-          <li>• If you say your opponent's secret word, you win immediately</li>
+          <li>• If you say your opponent&apos;s secret word, you win immediately</li>
           <li>• Try to trick your opponent into saying their word!</li>
         </ul>
       </div>
@@ -197,8 +197,8 @@ export function SecretWordSetup({ onSetupComplete }: SecretWordSetupProps) {
       {canProceed && (
         <div className="text-center">
           <p className="text-slate-400 text-sm">
-            Make sure both players have entered their names and secret words, then click "Start
-            Game"
+            Make sure both players have entered their names and secret words, then click &quot;Start
+            Game&quot;
           </p>
         </div>
       )}

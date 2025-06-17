@@ -10,9 +10,6 @@ interface SecretWordEndProps {
 
 export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
   const winner = gameState.winner ? gameState.players[gameState.winner] : null;
-  const loser = gameState.winner
-    ? gameState.players[gameState.winner === 'player1' ? 'player2' : 'player1']
-    : null;
 
   return (
     <div className="space-y-8 text-center">
@@ -90,7 +87,7 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
         <div className="bg-space-dark/30 border border-slate-700 rounded-lg p-4 max-w-2xl mx-auto">
           <h4 className="font-semibold text-cream-white mb-4">Message History</h4>
           <div className="max-h-64 overflow-y-auto space-y-2">
-            {gameState.messages.map((message, index) => {
+            {gameState.messages.map(message => {
               const player = gameState.players[message.playerId];
               const isPlayer1 = message.playerId === 'player1';
 
@@ -146,9 +143,9 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
       <div className="bg-space-purple/10 border border-space-purple/20 rounded-lg p-4 max-w-xl mx-auto">
         <h4 className="font-semibold text-cream-white mb-2">Did you know?</h4>
         <p className="text-slate-400 text-sm">
-          The Secret Word game is also known as "Taboo" and is great for improving vocabulary and
-          strategic thinking. The key is to ask clever questions while avoiding your own forbidden
-          word!
+          The Secret Word game is also known as &quot;Taboo&quot; and is great for improving
+          vocabulary and strategic thinking. The key is to ask clever questions while avoiding your
+          own forbidden word!
         </p>
       </div>
     </div>

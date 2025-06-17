@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/app/voters/components/ui/button';
 import { Input } from '@/app/voters/components/ui/input';
-import type { GameState, Message } from '../page';
+import type { GameState, Message } from '@/app/secret-word/page';
 
 interface SecretWordChatProps {
   gameState: GameState;
@@ -15,8 +15,6 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentPlayer = gameState.players[gameState.currentTurn];
-  const otherPlayer =
-    gameState.players[gameState.currentTurn === 'player1' ? 'player2' : 'player1'];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,10 +32,6 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -58,11 +52,11 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
       {/* Current Turn Indicator */}
       <div className="bg-space-purple/20 border border-space-purple/30 rounded-lg p-4 text-center">
         <p className="text-cream-white">
-          <span className="font-semibold text-space-purple">{currentPlayer.name}</span>'s turn to
-          speak
+          <span className="font-semibold text-space-purple">{currentPlayer.name}</span>&apos;s turn
+          to speak
         </p>
         <p className="text-slate-400 text-sm mt-1">
-          Remember: Don't say your secret word or you'll lose!
+          Remember: Don&apos;t say your secret word or you&apos;ll lose!
         </p>
       </div>
 
@@ -106,8 +100,8 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
 
         <div className="text-center text-slate-400 text-sm">
           <p>
-            Tips: Ask questions to learn about your opponent's word, but be careful not to say your
-            own word!
+            Tips: Ask questions to learn about your opponent&apos;s word, but be careful not to say
+            your own word!
           </p>
         </div>
       </div>
