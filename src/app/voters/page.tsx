@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import VoterManagement from './components/VoterManagement';
 import VotingCriteriaComponent from './components/VotingCriteria';
 import VotingExecution from './components/VotingExecution';
 import VotingResults from './components/VotingResults';
-import { Voter, VotingCriteria, Vote } from '@/types/voting';
+import { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting';
+
+const queryClient = new QueryClient();
 
 type Step = 'voters' | 'criteria' | 'voting' | 'results';
 
@@ -58,79 +61,81 @@ export default function VotingSimulation() {
   };
 
   return (
-    <div className="py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex justify-center space-x-4">
-            {[
-              { key: 'voters', label: 'Manage Voters' },
-              { key: 'criteria', label: 'Set Criteria' },
-              { key: 'voting', label: 'Execute Voting' },
-              { key: 'results', label: 'View Results' },
-            ].map((step, index) => (
-              <div key={step.key} className={`flex items-center ${index < 3 ? 'flex-1' : ''}`}>
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep === step.key
-                      ? 'bg-space-purple text-cream-white'
-                      : voters.length > 0 &&
-                          (step.key === 'criteria' ||
-                            (criteria.question && step.key === 'voting') ||
-                            (votes.length > 0 && step.key === 'results'))
-                        ? 'bg-space-blue text-cream-white'
-                        : 'bg-space-dark text-slate-400'
-                  }`}
-                >
-                  {index + 1}
+    <QueryClientProvider client={queryClient}>
+      <div className="py-12">
+        <div className="container mx-auto px-4 max-w-6xl">
+          {/* Progress indicator */}
+          <div className="mb-8">
+            <div className="flex justify-center space-x-4">
+              {[
+                { key: 'voters', label: 'Manage Voters' },
+                { key: 'criteria', label: 'Set Criteria' },
+                { key: 'voting', label: 'Execute Voting' },
+                { key: 'results', label: 'View Results' },
+              ].map((step, index) => (
+                <div key={step.key} className={`flex items-center ${index < 3 ? 'flex-1' : ''}`}>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      currentStep === step.key
+                        ? 'bg-space-purple text-cream-white'
+                        : voters.length > 0 &&
+                            (step.key === 'criteria' ||
+                              (criteria.question && step.key === 'voting') ||
+                              (votes.length > 0 && step.key === 'results'))
+                          ? 'bg-space-blue text-cream-white'
+                          : 'bg-space-dark text-slate-400'
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+                  <span className="ml-2 text-sm font-medium hidden sm:block text-cream-white">
+                    {step.label}
+                  </span>
+                  {index < 3 && <div className="flex-1 h-0.5 bg-space-dark mx-4 hidden sm:block" />}
                 </div>
-                <span className="ml-2 text-sm font-medium hidden sm:block text-cream-white">
-                  {step.label}
-                </span>
-                {index < 3 && <div className="flex-1 h-0.5 bg-space-dark mx-4 hidden sm:block" />}
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Step content */}
+          <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12">
+            {currentStep === 'voters' && (
+              <VoterManagement
+                voters={voters}
+                onVotersChange={handleVotersChange}
+                onNext={() => setCurrentStep('criteria')}
+              />
+            )}
+
+            {currentStep === 'criteria' && (
+              <VotingCriteriaComponent
+                criteria={criteria}
+                onCriteriaChange={setCriteria}
+                onNext={() => setCurrentStep('voting')}
+                onBack={() => setCurrentStep('voters')}
+              />
+            )}
+
+            {currentStep === 'voting' && (
+              <VotingExecution
+                voters={voters}
+                criteria={criteria}
+                onVotingComplete={handleVotingComplete}
+                onBack={() => setCurrentStep('criteria')}
+              />
+            )}
+
+            {currentStep === 'results' && (
+              <VotingResults
+                votes={votes}
+                voters={voters}
+                criteria={criteria}
+                onRestart={handleRestart}
+              />
+            )}
           </div>
         </div>
-
-        {/* Step content */}
-        <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12">
-          {currentStep === 'voters' && (
-            <VoterManagement
-              voters={voters}
-              onVotersChange={handleVotersChange}
-              onNext={() => setCurrentStep('criteria')}
-            />
-          )}
-
-          {currentStep === 'criteria' && (
-            <VotingCriteriaComponent
-              criteria={criteria}
-              onCriteriaChange={setCriteria}
-              onNext={() => setCurrentStep('voting')}
-              onBack={() => setCurrentStep('voters')}
-            />
-          )}
-
-          {currentStep === 'voting' && (
-            <VotingExecution
-              voters={voters}
-              criteria={criteria}
-              onVotingComplete={handleVotingComplete}
-              onBack={() => setCurrentStep('criteria')}
-            />
-          )}
-
-          {currentStep === 'results' && (
-            <VotingResults
-              votes={votes}
-              voters={voters}
-              criteria={criteria}
-              onRestart={handleRestart}
-            />
-          )}
-        </div>
       </div>
-    </div>
+    </QueryClientProvider>
   );
 }

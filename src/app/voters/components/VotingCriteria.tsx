@@ -6,7 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Plus, Trash2, Vote, Wand2, Lightbulb, RefreshCw } from 'lucide-react';
-import { VotingCriteria } from '@/types/voting';
+import { VotingCriteria } from '@/app/voters/types/voting';
+import { useGenerateRandomQuestion, useGenerateCriteria } from '../api/hooks';
 
 interface VotingCriteriaProps {
   criteria: VotingCriteria;
@@ -22,9 +23,10 @@ export default function VotingCriteriaComponent({
   onBack,
 }: VotingCriteriaProps) {
   const [newOption, setNewOption] = useState('');
-  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
-  const [isGeneratingCriteria, setIsGeneratingCriteria] = useState(false);
   const [generationTips, setGenerationTips] = useState<string[]>([]);
+
+  const generateRandomQuestionMutation = useGenerateRandomQuestion();
+  const generateCriteriaMutation = useGenerateCriteria();
 
   const addOption = () => {
     if (newOption.trim()) {
@@ -52,66 +54,44 @@ export default function VotingCriteriaComponent({
     });
   };
 
-  const generateRandomQuestion = async () => {
-    setIsGeneratingQuestion(true);
-    try {
-      const response = await fetch('/api/v1/voters/generate-random-question', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate random question');
-      }
-
-      const data = await response.json();
-      onCriteriaChange({
-        question: data.question,
-        options: data.suggestedOptions || [],
-      });
-      setGenerationTips([]);
-    } catch (error) {
-      console.error('Error generating random question:', error);
-    } finally {
-      setIsGeneratingQuestion(false);
-    }
+  const handleGenerateRandomQuestion = () => {
+    generateRandomQuestionMutation.mutate(undefined, {
+      onSuccess: data => {
+        onCriteriaChange({
+          question: data.question,
+          options: data.suggestedOptions || [],
+        });
+        setGenerationTips([]);
+      },
+      onError: error => {
+        console.error('Error generating random question:', error);
+      },
+    });
   };
 
-  const generateCriteria = async () => {
+  const handleGenerateCriteria = () => {
     if (!criteria.question.trim()) {
       return;
     }
 
-    setIsGeneratingCriteria(true);
-    try {
-      const response = await fetch('/api/v1/voters/generate-criteria', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    generateCriteriaMutation.mutate(
+      {
+        question: criteria.question,
+        existingOptions: criteria.options,
+      },
+      {
+        onSuccess: data => {
+          onCriteriaChange({
+            ...criteria,
+            options: data.options,
+          });
+          setGenerationTips(data.tips || []);
         },
-        body: JSON.stringify({
-          question: criteria.question,
-          existingOptions: criteria.options,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate criteria');
+        onError: error => {
+          console.error('Error generating criteria:', error);
+        },
       }
-
-      const data = await response.json();
-      onCriteriaChange({
-        ...criteria,
-        options: data.options,
-      });
-      setGenerationTips(data.tips || []);
-    } catch (error) {
-      console.error('Error generating criteria:', error);
-    } finally {
-      setIsGeneratingCriteria(false);
-    }
+    );
   };
 
   const canProceed = criteria.question.trim() && criteria.options.length >= 2;
@@ -137,11 +117,11 @@ export default function VotingCriteriaComponent({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={generateRandomQuestion}
-                disabled={isGeneratingQuestion}
+                onClick={handleGenerateRandomQuestion}
+                disabled={generateRandomQuestionMutation.isPending}
                 className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
               >
-                {isGeneratingQuestion ? (
+                {generateRandomQuestionMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <Wand2 className="w-4 h-4 mr-2" />
@@ -165,11 +145,11 @@ export default function VotingCriteriaComponent({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={generateCriteria}
-                disabled={isGeneratingCriteria || !criteria.question.trim()}
+                onClick={handleGenerateCriteria}
+                disabled={generateCriteriaMutation.isPending || !criteria.question.trim()}
                 className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
               >
-                {isGeneratingCriteria ? (
+                {generateCriteriaMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <Lightbulb className="w-4 h-4 mr-2" />
