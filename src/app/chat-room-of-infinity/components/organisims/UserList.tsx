@@ -17,42 +17,44 @@ const sx = {
     borderColor: 'divider',
     width: isCollapsed ? 50 : 300,
     opacity: isCollapsed ? 0 : 1,
-    transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, opacity 325ms cubic-bezier(0.4, 0, 0.6, 1) 0ms'
+    transition:
+      'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, opacity 325ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
   }),
-  drawerToggle: (isCollapsed: boolean) => ({ 
-    position: 'absolute', 
-    top: '36px', 
+  drawerToggle: (isCollapsed: boolean) => ({
+    position: 'absolute',
+    top: '36px',
     transform: 'translateY(-50%) rotate(-90deg)',
-    right: isCollapsed ? '10px' : '-46px', 
-    transition: 'right 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, transform 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
-    zIndex: 1 
+    right: isCollapsed ? '10px' : '-46px',
+    transition:
+      'right 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, transform 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
+    zIndex: 1,
   }),
-  drawerContent: (isCollapsed: boolean) => ({ 
+  drawerContent: (isCollapsed: boolean) => ({
     padding: 1,
     position: 'relative',
     left: isCollapsed ? '-300px' : 0,
     transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
-    minWidth: 300, 
-    display: 'flex', 
-    flexDirection: 'column', 
+    minWidth: 300,
+    display: 'flex',
+    flexDirection: 'column',
     height: 'calc(100vh - 200px)',
   }),
-  drawerHeader: { 
-    p: 1, 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'space-between' 
+  drawerHeader: {
+    p: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   iconButton: (isSelectorOpen: boolean) => ({
     bgcolor: isSelectorOpen ? 'action.selected' : 'transparent',
     '&:hover': {
-      bgcolor: isSelectorOpen ? 'action.selected' : 'action.hover'
-    }
+      bgcolor: isSelectorOpen ? 'action.selected' : 'action.hover',
+    },
   }),
-  list: { 
+  list: {
     display: 'flex',
     flexDirection: 'column',
-    flexGrow: 1, 
+    flexGrow: 1,
     gap: 1,
     overflowY: 'auto',
     '&::-webkit-scrollbar': {
@@ -65,13 +67,13 @@ const sx = {
       backgroundColor: 'action.hover',
       borderRadius: '4px',
     },
-  }
+  },
 };
 
 export default function UserList() {
   const { userList, toggleUserList, toggleUserSelector, clearCharacters } = useStore();
   const { isCollapsed, characters } = userList;
-  const { isOpen: isSelectorOpen } = useStore((state) => state.userSelector);
+  const { isOpen: isSelectorOpen } = useStore(state => state.userSelector);
 
   return (
     <Box sx={sx.container}>
@@ -85,10 +87,10 @@ export default function UserList() {
           <Box sx={sx.drawerHeader}>
             <Typography variant="h6">Users</Typography>
             <Box>
-              <Tooltip title={isSelectorOpen ? "Close character selector" : "Add new character"}>
-                <IconButton 
+              <Tooltip title={isSelectorOpen ? 'Close character selector' : 'Add new character'}>
+                <IconButton
                   onClick={toggleUserSelector}
-                  color={isSelectorOpen ? "primary" : "default"}
+                  color={isSelectorOpen ? 'primary' : 'default'}
                   sx={sx.iconButton(isSelectorOpen)}
                 >
                   {isSelectorOpen ? <Close /> : <PersonAdd />}
@@ -99,17 +101,17 @@ export default function UserList() {
           <UserSelector />
           <List sx={sx.list}>
             <HumanUserItem />
-            {characters.length > 0 && (
+            {characters?.length > 0 && (
               <Box sx={{ mt: 2, mb: 1 }}>
                 <Typography variant="overline" sx={{ px: 2 }}>
                   Characters
                 </Typography>
               </Box>
             )}
-            {characters.map((character: Character) => (
+            {characters?.map((character: Character) => (
               <CharacterUserItem key={character.id} character={character} />
             ))}
-            {characters.length > 0 && (
+            {characters?.length > 0 && (
               <Box sx={{ p: 2 }}>
                 <Button
                   variant="outlined"

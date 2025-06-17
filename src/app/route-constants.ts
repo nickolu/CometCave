@@ -4,4 +4,5 @@ export const ROUTE_CONSTANTS = {
   HOME: '/',
   RING_TOSS: '/ring-toss',
   VOTERS: '/voters',
+  SECRET_WORD: '/secret-word',
 };

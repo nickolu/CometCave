@@ -6,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
   TooltipContent,
-} from '@/app/components/ui/tooltip';
+} from '@/app/fantasy-tycoon/components/ui/tooltip';
 import { FantasyCharacter } from '../models/character';
 
 type IconType =

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { Button } from '@/app/components/ui/buutton';
+import { Button } from '@/app/fantasy-tycoon/components/ui/button';
 
 import { useGameStore } from '../hooks/useGameStore';
 

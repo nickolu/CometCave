@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import VoterManagement from '../../components/voter-management';
-import VotingCriteriaComponent from '../../components/voting-criteria';
-import VotingExecution from '../../components/voting-execution';
-import VotingResults from '../../components/voting-results';
+import VoterManagement from './components/VoterManagement';
+import VotingCriteriaComponent from './components/VotingCriteria';
+import VotingExecution from './components/VotingExecution';
+import VotingResults from './components/VotingResults';
 import { Voter, VotingCriteria, Vote } from '@/types/voting';
 
 type Step = 'voters' | 'criteria' | 'voting' | 'results';

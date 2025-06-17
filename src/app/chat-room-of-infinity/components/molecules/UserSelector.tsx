@@ -45,7 +45,7 @@ export default function UserSelector() {
 
   // Filter out characters that are already in the user list
   const filteredAvailableCharacters = availableCharacters.filter(
-    (c: Character) => !selectedCharacters.some((selected: Character) => selected.id === c.id)
+    (c: Character) => !selectedCharacters?.some((selected: Character) => selected.id === c.id)
   );
 
   const handleCharacterSelect = (characterId: string) => {

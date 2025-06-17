@@ -1,9 +1,9 @@
 import type React from 'react';
 import Link from 'next/link';
-import { MoonIcon } from './components/moon-icon';
-import { PlanetIcon } from './components/planet-icon';
-import { StarIcon } from './components/star-icon';
-import { BallotIcon } from './components/ballot-icon';
+import { MoonIcon } from '@/components/moon-icon';
+import { PlanetIcon } from '@/components/planet-icon';
+import { StarIcon } from '@/components/star-icon';
+import { BallotIcon } from '@/components/ballot-icon';
 import { ROUTE_CONSTANTS } from './route-constants';
 
 export default function Home() {
@@ -59,6 +59,13 @@ export default function Home() {
           icon={<BallotIcon />}
           href={ROUTE_CONSTANTS.VOTERS}
           description="Create AI voters and see how they vote on different topics!"
+        />
+
+        <GameCard
+          title="Secret Word"
+          icon={<StarIcon />}
+          href={ROUTE_CONSTANTS.SECRET_WORD}
+          description="Guess the secret word!"
         />
       </div>
     </div>
