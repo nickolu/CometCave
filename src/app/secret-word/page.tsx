@@ -270,6 +270,16 @@ function SecretWordGameContent() {
     }
   };
 
+  // Player chooses to reveal the AI's word and forfeit the game
+  const handleRevealAIWord = () => {
+    setGameState(prev => ({
+      ...prev,
+      winner: 'ai',
+      winReason: `You revealed the AI's secret word: "${prev.players.ai.secretWord}"`,
+      gamePhase: 'ended',
+    }));
+  };
+
   const handleRestart = () => {
     setGameState(INITIAL_GAME_STATE);
   };
@@ -321,6 +331,7 @@ function SecretWordGameContent() {
             <SecretWordChat
               gameState={gameState}
               onSendMessage={handleSendMessage}
+              onRevealAIWord={handleRevealAIWord}
               isAIThinking={getAIResponse.isPending}
             />
           )}

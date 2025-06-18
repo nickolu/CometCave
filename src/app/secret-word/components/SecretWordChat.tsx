@@ -9,12 +9,14 @@ interface SecretWordChatProps {
   gameState: GameState;
   onSendMessage: (content: string, isQuestion?: boolean) => void | Promise<void>;
   isAIThinking?: boolean;
+  onRevealAIWord: () => void;
 }
 
 export function SecretWordChat({
   gameState,
   onSendMessage,
   isAIThinking: _isAIThinking = false,
+  onRevealAIWord,
 }: SecretWordChatProps) {
   const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ export function SecretWordChat({
       </div>
 
       {/* Messages */}
-      <div className="bg-slate-900/50 rounded-lg p-4 h-96 overflow-y-auto border border-slate-700">
+      <div className="bg-slate-900/50 rounded-lg p-4 h-64 overflow-y-auto border border-slate-700">
         <div className="space-y-4">
           {gameState.messages.length === 0 ? (
             <div className="text-center text-slate-400 py-8">
@@ -113,8 +115,8 @@ export function SecretWordChat({
       </div>
 
       {/* Game Info */}
-      <div className="grid md:grid-cols-2 gap-4 text-sm">
-        <div className="bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
+      <div className="grid md:grid-cols-2 gap-4 text-sm align-start">
+        <div className="h-full bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
           <h4 className="font-semibold text-cream-white mb-2">{gameState.players.player.name}</h4>
           <p className="text-slate-300">
             Your secret word:{' '}
@@ -122,6 +124,16 @@ export function SecretWordChat({
               {gameState.players.player.secretWord}
             </span>
           </p>
+        </div>
+        {/* Reveal AI Word / Forfeit Button */}
+        <div className="h-full text-center bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
+          <Button
+            variant="outline"
+            onClick={onRevealAIWord}
+            className="bg-space-purple text-cream-white hover:bg-space-purple/90 border-space-purple"
+          >
+            Reveal AI&apos;s secret word (I give up)
+          </Button>
         </div>
       </div>
     </div>
