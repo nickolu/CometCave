@@ -35,3 +35,11 @@ export interface GenerateWordResponse {
 export interface APIError {
   error: string;
 }
+
+export interface ScoreWordRequest {
+  word: string;
+}
+
+export interface ScoreWordResponse {
+  score: number;
+}
