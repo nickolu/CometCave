@@ -7,7 +7,11 @@ import { useScoreWord } from '../api/hooks';
 import { ScoreWordResponse } from '../api/types';
 
 interface SecretWordSetupProps {
-  onSetupComplete: (playerWord: string, playerName: string) => void | Promise<void>;
+  onSetupComplete: (
+    playerWord: string,
+    playerName: string,
+    wordScore: number
+  ) => void | Promise<void>;
   isLoading?: boolean;
 }
 
@@ -49,8 +53,8 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
   const wordScoreTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleProceed = async () => {
-    if (canProceed) {
-      onSetupComplete(playerWord.trim(), playerName.trim());
+    if (canProceed && scoreData?.score) {
+      onSetupComplete(playerWord.trim(), playerName.trim(), scoreData.score);
     }
   };
 

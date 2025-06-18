@@ -51,7 +51,7 @@ export function SecretWordChat({
             <span className="text-slate-400">Playing:</span>
             <span className="text-space-blue font-medium">{gameState.players.player.name}</span>
             <span className="text-slate-500">vs</span>
-            <span className="text-space-purple font-medium">{gameState.players.ai.name}</span>
+            <span className="text-white font-medium">{gameState.players.ai.name}</span>
           </div>
         </div>
       </div>
