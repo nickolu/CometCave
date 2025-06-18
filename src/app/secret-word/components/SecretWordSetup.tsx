@@ -63,7 +63,7 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
         <h2 className="text-3xl font-bold text-cream-white mb-4">Secret Word vs AI</h2>
         <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
           Choose your secret word and challenge the AI! The goal is to make the AI say your word or
-          guess the AI&apos;s word correctly. If you say your own word, you lose! Be strategic with
+          and not say the AI&apos;s word. If you say your own word, you lose! Be strategic with
           your questions and answers.
         </p>
       </div>

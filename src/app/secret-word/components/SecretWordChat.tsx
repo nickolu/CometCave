@@ -117,14 +117,10 @@ export function SecretWordChat({
         <div className="bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
           <h4 className="font-semibold text-cream-white mb-2">{gameState.players.player.name}</h4>
           <p className="text-slate-300">
-            Your secret word: <span className="font-mono bg-slate-800 px-2 py-1 rounded">***</span>
-          </p>
-        </div>
-
-        <div className="bg-space-purple/20 border border-space-purple/30 rounded-lg p-4">
-          <h4 className="font-semibold text-cream-white mb-2">{gameState.players.ai.name}</h4>
-          <p className="text-slate-300">
-            Your secret word: <span className="font-mono bg-slate-800 px-2 py-1 rounded">***</span>
+            Your secret word:{' '}
+            <span className="font-mono bg-slate-800 px-2 py-1 rounded">
+              {gameState.players.player.secretWord}
+            </span>
           </p>
         </div>
       </div>
