@@ -3,8 +3,9 @@
 import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/app/voters/components/ui/button';
 import { Input } from '@/app/voters/components/ui/input';
-import { useScoreWord } from '../api/hooks';
+import { useGenerateWord, useScoreWord } from '../api/hooks';
 import { ScoreWordResponse } from '../api/types';
+import { Loader2 } from 'lucide-react';
 
 interface SecretWordSetupProps {
   onSetupComplete: (
@@ -40,6 +41,9 @@ const MINIMUM_WORD_SCORE = 10;
 export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWordSetupProps) {
   const [playerName, setPlayerName] = useState('Player');
   const [playerWord, setPlayerWord] = useState('');
+  const [previousRandomWords, setPreviousRandomWords] = useState<string[]>([]);
+
+  const { mutateAsync: generateWord, isPending: isGenerating } = useGenerateWord();
 
   const { mutateAsync: scoreWord, isPending: isScoring, data: scoreData } = useScoreWord();
   const currentWordScore = scoreData?.score ?? -1;
@@ -80,41 +84,12 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
     [scoreWord]
   );
 
-  const generateRandomWord = () => {
-    const words = [
-      'elephant',
-      'butterfly',
-      'mountain',
-      'ocean',
-      'rainbow',
-      'thunder',
-      'whisper',
-      'crystal',
-      'garden',
-      'miracle',
-      'adventure',
-      'mystery',
-      'harmony',
-      'serenity',
-      'wisdom',
-      'courage',
-      'friendship',
-      'treasure',
-      'journey',
-      'discovery',
-      'imagination',
-      'creativity',
-      'inspiration',
-      'celebration',
-      'laughter',
-      'sunshine',
-      'moonlight',
-      'starlight',
-      'firefly',
-      'blossom',
-    ];
-    return words[Math.floor(Math.random() * words.length)];
-  };
+  const generateRandomWord = useCallback(async () => {
+    const { word } = await generateWord({ avoidWords: previousRandomWords });
+    setPreviousRandomWords(prev => [...prev, word]);
+    setPlayerWord(word);
+    scoreWord({ word });
+  }, [generateWord, previousRandomWords, scoreWord]);
 
   return (
     <div className="space-y-8">
@@ -182,11 +157,15 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
                   />
                   <Button
                     type="button"
-                    onClick={() => setPlayerWord(generateRandomWord())}
+                    onClick={generateRandomWord}
                     variant="outline"
                     className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
                   >
-                    Random
+                    {isGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <span className="text-slate-300">Random</span>
+                    )}
                   </Button>
                 </div>
                 <div className="text-sm text-slate-400 mt-2">
@@ -219,15 +198,6 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
               {isLoading ? 'Setting up game...' : 'Challenge AI'}
             </Button>
           </div>
-
-          {!canProceed && (
-            <div className="text-center md:text-left">
-              <p className="text-slate-400 text-sm">
-                Make sure you&apos;ve entered your name and secret word, then click &quot;Challenge
-                AI&quot;
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { difficulty = 'medium', avoidWords = [] } = await request.json();
+    const { difficulty = 'random', avoidWords = [] } = await request.json();
 
     // Create list of words to avoid
     const avoidWordsText =
@@ -116,7 +116,7 @@ Select a word that will make for an engaging game where the player has a fair ch
       ],
     };
 
-    const difficulty = request.body?.difficulty || 'medium';
+    const difficulty = 'medium';
     const wordList =
       fallbackWords[difficulty as keyof typeof fallbackWords] || fallbackWords.medium;
     const randomWord = wordList[Math.floor(Math.random() * wordList.length)];

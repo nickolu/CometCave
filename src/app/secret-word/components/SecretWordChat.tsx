@@ -59,8 +59,8 @@ export function SecretWordChat({
       {/* Current Turn Indicator */}
       <div className="bg-space-purple/20 border border-space-purple/30 rounded-lg p-4 text-center">
         <p className="text-cream-white">
-          <span className="font-semibold text-space-purple">{currentPlayer.name}</span>&apos;s turn
-          to speak
+          <span className="font-semibold text-purple-300">{currentPlayer.name}</span>&apos;s turn to
+          speak
         </p>
         <p className="text-slate-400 text-sm mt-1">
           Remember: If you say <span className="underline">any</span> secret word you lose!
@@ -154,9 +154,7 @@ function MessageBubble({ message, gameState }: { message: Message; gameState: Ga
         }`}
       >
         <div className="flex items-center gap-2 mb-1">
-          <span
-            className={`text-sm font-medium ${isPlayer ? 'text-space-blue' : 'text-space-purple'}`}
-          >
+          <span className={`text-sm font-medium ${isPlayer ? 'text-blue-300' : 'text-purple-300'}`}>
             {player.name}
           </span>
           <span className="text-xs text-slate-400">
