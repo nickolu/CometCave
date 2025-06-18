@@ -12,6 +12,36 @@ const SecretWordSchema = z.object({
   hint: z.string().describe('A subtle hint about the word without giving it away'),
 });
 
+const categories = [
+  'animal',
+  'object',
+  'concept',
+  'nature',
+  'technology',
+  'food',
+  'activity',
+  'emotion',
+  'place',
+  'color',
+  'shape',
+  'mythology',
+  'history',
+  'science',
+  'art',
+  'music',
+  'literature',
+  'philosophy',
+  'religion',
+  'name',
+  'language',
+  'currency',
+  'sport',
+  'game',
+  'vehicle',
+  'weapon',
+  'location',
+];
+
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
@@ -29,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { difficulty = 'random', avoidWords = [] } = await request.json();
+    const { avoidWords = [] } = await request.json();
 
     // Create list of words to avoid
     const avoidWordsText =
@@ -37,20 +67,24 @@ export async function POST(request: NextRequest) {
         ? `\n\nAvoid these words that have been used recently: ${avoidWords.join(', ')}`
         : '';
 
+    const wordUsage = [
+      'extremely commonly',
+      'very commonly',
+      'commonly',
+      'regularly',
+      'somewhat regularly',
+    ];
+    const randomUsage = wordUsage[Math.floor(Math.random() * wordUsage.length)];
+
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
     const prompt = `Generate a creative secret word for the AI to use in a Secret Word game.
 
 REQUIREMENTS:
-- The word should be a ${difficulty} difficulty level
-- Choose from categories like: animals, objects, concepts, nature, technology, food, activities, emotions, places
-- The word should be interesting and challenging but fair
+- The word should be used ${randomUsage} in everyday conversation
+- Choose a word from the following random category: ${randomCategory}
 - It should be a single word (no phrases or compound words with spaces)
 - It should be appropriate for all ages
-- It should be a common enough word that the player might guess it${avoidWordsText}
-
-DIFFICULTY LEVELS:
-- Easy: Common, everyday words (cat, house, happy, blue, tree)
-- Medium: Moderately challenging words (butterfly, adventure, wisdom, castle, thunder)
-- Hard: More complex or abstract words (serenity, enigma, philosopher, constellation, metamorphosis)
+- Avoid these words: ${avoidWordsText}
 
 Select a word that will make for an engaging game where the player has a fair chance of guessing it through strategic questions.`;
 
