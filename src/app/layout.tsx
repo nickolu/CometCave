@@ -11,9 +11,8 @@ import { Providers } from './providers';
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'CometCave - Kid-Friendly Games',
-  description: 'Free games that are safe for kids and ad-free',
-  generator: 'v0.dev',
+  title: 'CometCave - AI Galaxy Arcade',
+  description: 'Fun games for space hermits',
 };
 
 export default function RootLayout({
