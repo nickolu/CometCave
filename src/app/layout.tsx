@@ -28,14 +28,16 @@ export default function RootLayout({
           <div className="min-h-screen flex flex-col bg-space-black text-cream-white relative overflow-hidden">
             <StarField />
             <header className="p-4 z-10 relative">
-              <div className="container mx-auto flex justify-between items-center">
-                <Link
-                  href="/"
-                  className="text-2xl font-bold text-cream-white hover:text-cream-white/90 transition-colors"
-                >
-                  COMETCAVE<span className="text-slate-400">.COM</span>
-                </Link>
-                <nav className="flex gap-6">
+              <div className="container mx-auto flex justify-between items-center flex-col md:flex-row">
+                <div>
+                  <Link
+                    href="/"
+                    className="text-2xl font-bold text-cream-white hover:text-cream-white/90 transition-colors"
+                  >
+                    COMETCAVE<span className="text-slate-400">.COM</span>
+                  </Link>
+                </div>
+                <nav className="flex gap-6 w-full justify-end md:justify-end gap-y-0 mt-1 md:mt-0 flex-wrap">
                   <Link
                     href={ROUTE_CONSTANTS.HOME}
                     className="text-cream-white hover:text-cream-white/80 transition-colors"
@@ -49,6 +51,12 @@ export default function RootLayout({
                     RING TOSS
                   </Link>
                   <Link
+                    href={ROUTE_CONSTANTS.FANTASY_TYCOON}
+                    className="text-cream-white hover:text-cream-white/80 transition-colors"
+                  >
+                    FANTASY TYCOON
+                  </Link>
+                  <Link
                     href={ROUTE_CONSTANTS.CHAT_ROOM}
                     className="text-cream-white hover:text-cream-white/80 transition-colors"
                   >
@@ -59,6 +67,12 @@ export default function RootLayout({
                     className="text-cream-white hover:text-cream-white/80 transition-colors"
                   >
                     SECRET WORD
+                  </Link>
+                  <Link
+                    href={ROUTE_CONSTANTS.VOTERS}
+                    className="text-cream-white hover:text-cream-white/80 transition-colors"
+                  >
+                    VOTERS
                   </Link>
                 </nav>
               </div>

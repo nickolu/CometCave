@@ -1,61 +1,95 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Button } from '@/app/voters/components/ui/button';
 import { Input } from '@/app/voters/components/ui/input';
+import { useGenerateWord, useScoreWord } from '../api/hooks';
+import { ScoreWordResponse } from '../api/types';
+import { Loader2 } from 'lucide-react';
 
 interface SecretWordSetupProps {
-  onSetupComplete: (playerWord: string, playerName: string) => void | Promise<void>;
+  onSetupComplete: (
+    playerWord: string,
+    playerName: string,
+    wordScore: number
+  ) => void | Promise<void>;
   isLoading?: boolean;
 }
+
+const WordScore = ({
+  isScoring,
+  scoreData,
+}: {
+  isScoring: boolean;
+  scoreData: ScoreWordResponse | undefined;
+}) => {
+  const score = scoreData?.score;
+
+  if (isScoring) {
+    return <div>Scoring...</div>;
+  }
+
+  return (
+    <div>
+      This word is worth <span className="font-bold text-green-500">{score}</span> points
+    </div>
+  );
+};
+
+const MINIMUM_WORD_SCORE = 10;
 
 export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWordSetupProps) {
   const [playerName, setPlayerName] = useState('Player');
   const [playerWord, setPlayerWord] = useState('');
+  const [previousRandomWords, setPreviousRandomWords] = useState<string[]>([]);
 
-  const canProceed = playerWord.trim() && playerName.trim();
+  const { mutateAsync: generateWord, isPending: isGenerating } = useGenerateWord();
 
-  const handleProceed = () => {
-    if (canProceed) {
-      onSetupComplete(playerWord.trim(), playerName.trim());
+  const { mutateAsync: scoreWord, isPending: isScoring, data: scoreData } = useScoreWord();
+  const currentWordScore = scoreData?.score ?? -1;
+  const canProceed =
+    playerWord.trim() &&
+    playerName.trim() &&
+    scoreData?.score !== undefined &&
+    scoreData?.score >= MINIMUM_WORD_SCORE &&
+    !isScoring;
+
+  const wordScoreTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handleProceed = async () => {
+    if (canProceed && scoreData?.score) {
+      onSetupComplete(playerWord.trim(), playerName.trim(), scoreData.score);
     }
   };
 
-  const generateRandomWord = () => {
-    const words = [
-      'elephant',
-      'butterfly',
-      'mountain',
-      'ocean',
-      'rainbow',
-      'thunder',
-      'whisper',
-      'crystal',
-      'garden',
-      'miracle',
-      'adventure',
-      'mystery',
-      'harmony',
-      'serenity',
-      'wisdom',
-      'courage',
-      'friendship',
-      'treasure',
-      'journey',
-      'discovery',
-      'imagination',
-      'creativity',
-      'inspiration',
-      'celebration',
-      'laughter',
-      'sunshine',
-      'moonlight',
-      'starlight',
-      'firefly',
-      'blossom',
-    ];
-    return words[Math.floor(Math.random() * words.length)];
-  };
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      // replace spaces with empty string
+      const value = e.target.value.replace(/\s/g, '');
+      setPlayerWord(value);
+      if (wordScoreTimeout.current) {
+        clearTimeout(wordScoreTimeout.current);
+      }
+      wordScoreTimeout.current = setTimeout(() => {
+        if (value.trim()) {
+          scoreWord({ word: value.trim() });
+        }
+      }, 1000);
+      return () => {
+        if (wordScoreTimeout.current) {
+          clearTimeout(wordScoreTimeout.current);
+        }
+      };
+    },
+    [scoreWord]
+  );
+
+  const generateRandomWord = useCallback(async () => {
+    const { word } = await generateWord({ avoidWords: previousRandomWords });
+    setPreviousRandomWords(prev => [...prev, word]);
+    setPlayerWord(word);
+    scoreWord({ word });
+  }, [generateWord, previousRandomWords, scoreWord]);
 
   return (
     <div className="space-y-8">
@@ -63,8 +97,8 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
         <h2 className="text-3xl font-bold text-cream-white mb-4">Secret Word vs AI</h2>
         <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
           Choose your secret word and challenge the AI! The goal is to make the AI say your word or
-          guess the AI&apos;s word correctly. If you say your own word, you lose! Be strategic with
-          your questions and answers.
+          and not say the AI&apos;s word. If you say your own word, you lose! Be strategic with your
+          questions and answers.
         </p>
       </div>
 
@@ -117,24 +151,43 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
                   <Input
                     type="text"
                     value={playerWord}
-                    onChange={e => setPlayerWord(e.target.value)}
+                    onChange={handleInputChange}
                     className="bg-slate-800 border-slate-700 text-cream-white"
                     placeholder="Enter your secret word"
                   />
                   <Button
                     type="button"
-                    onClick={() => setPlayerWord(generateRandomWord())}
+                    onClick={generateRandomWord}
                     variant="outline"
                     className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
                   >
-                    Random
+                    {isGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <span className="text-slate-300">Random</span>
+                    )}
                   </Button>
+                </div>
+                <div className="text-sm text-slate-400 mt-2">
+                  <WordScore isScoring={isScoring} scoreData={scoreData} />
+                  {currentWordScore === 0 && (
+                    <div className="text-center md:text-left">
+                      <p className="text-slate-400 text-sm">
+                        Invalid word. Please enter a valid word.
+                      </p>
+                    </div>
+                  )}
+                  {currentWordScore > 0 && currentWordScore < MINIMUM_WORD_SCORE && (
+                    <div className="text-center md:text-left">
+                      <p className="text-slate-400 text-sm">
+                        Your word is too common. Please enter a more unique word.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Controls */}
 
           <div className="flex justify-center w-full">
             <Button
@@ -145,15 +198,6 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
               {isLoading ? 'Setting up game...' : 'Challenge AI'}
             </Button>
           </div>
-
-          {!canProceed && (
-            <div className="text-center md:text-left">
-              <p className="text-slate-400 text-sm">
-                Make sure you&apos;ve entered your name and secret word, then click &quot;Challenge
-                AI&quot;
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

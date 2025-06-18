@@ -5,28 +5,14 @@ import { PlanetIcon } from '@/components/planet-icon';
 import { StarIcon } from '@/components/star-icon';
 import { BallotIcon } from '@/components/ballot-icon';
 import { ROUTE_CONSTANTS } from './route-constants';
+import { SecretWordIcon } from '@/components/secret-word-icon';
 
 export default function Home() {
   return (
     <div className="flex flex-col gap-12 py-12">
       <div className="text-center max-w-3xl mx-auto">
-        <h1 className="text-7xl font-bold text-cream-white mb-6">WELCOME</h1>
-        <p className="text-slate-400 text-xl">Like a comet... in a cave!</p>
-
-        <div className="flex gap-4 justify-center mt-8">
-          <Link
-            href="/ring-toss"
-            className="bg-space-purple text-cream-white px-8 py-3 rounded-full text-lg font-medium hover:bg-space-purple/90 transition-all"
-          >
-            PLAY
-          </Link>
-          <Link
-            href="#games"
-            className="border border-slate-600 text-cream-white px-8 py-3 rounded-full text-lg font-medium hover:border-slate-400 transition-all"
-          >
-            MORE GAMES
-          </Link>
-        </div>
+        <h1 className="text-7xl font-bold text-cream-white mb-6">Comet Cave</h1>
+        <p className="text-slate-400 text-xl">AI Dream Arcade</p>
       </div>
 
       <div
@@ -34,24 +20,10 @@ export default function Home() {
         className="max-w-4xl mx-auto w-full mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         <GameCard
-          title="Ring Toss"
-          icon={<MoonIcon />}
-          href={ROUTE_CONSTANTS.RING_TOSS}
-          description="Test your aim in this classic carnival game!"
-        />
-
-        <GameCard
-          title="Chat Room"
-          icon={<PlanetIcon />}
-          href={ROUTE_CONSTANTS.CHAT_ROOM}
-          description="Chat with fictional characters in a chat room!"
-        />
-
-        <GameCard
-          title="Fantasy Tycoon"
-          icon={<StarIcon />}
-          href={ROUTE_CONSTANTS.FANTASY_TYCOON}
-          description="Play as a fantasy character and explore the world!"
+          title="Secret Word"
+          icon={<SecretWordIcon />}
+          href={ROUTE_CONSTANTS.SECRET_WORD}
+          description="Guess the secret word!"
         />
 
         <GameCard
@@ -62,10 +34,24 @@ export default function Home() {
         />
 
         <GameCard
-          title="Secret Word"
+          title="Fantasy Tycoon"
           icon={<StarIcon />}
-          href={ROUTE_CONSTANTS.SECRET_WORD}
-          description="Guess the secret word!"
+          href={ROUTE_CONSTANTS.FANTASY_TYCOON}
+          description="Play as a fantasy character and explore the world!"
+        />
+
+        <GameCard
+          title="Ring Toss"
+          icon={<MoonIcon />}
+          href={ROUTE_CONSTANTS.RING_TOSS}
+          description="Test your aim in this classic carnival game!"
+        />
+
+        <GameCard
+          title="AI Character Chat Room"
+          icon={<PlanetIcon />}
+          href={ROUTE_CONSTANTS.CHAT_ROOM}
+          description="Chat with fictional characters in a chat room!"
         />
       </div>
     </div>

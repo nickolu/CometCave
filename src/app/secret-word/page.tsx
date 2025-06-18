@@ -14,6 +14,7 @@ export interface Player {
   name: string;
   secretWord: string;
   isAI?: boolean;
+  wordScore?: number;
 }
 
 export interface Message {
@@ -99,7 +100,7 @@ function SecretWordGameContent() {
     return { hasViolation: false, winner: undefined, reason: undefined };
   };
 
-  const handleSetupComplete = async (playerWord: string, playerName: string) => {
+  const handleSetupComplete = async (playerWord: string, playerName: string, wordScore: number) => {
     try {
       // Generate AI word using OpenAI
       const result = await generateWord.mutateAsync({
@@ -110,7 +111,7 @@ function SecretWordGameContent() {
       setGameState(prev => ({
         ...prev,
         players: {
-          player: { ...prev.players.player, secretWord: playerWord, name: playerName },
+          player: { ...prev.players.player, secretWord: playerWord, name: playerName, wordScore },
           ai: { ...prev.players.ai, secretWord: result.word },
         },
         gamePhase: 'playing',
@@ -133,7 +134,7 @@ function SecretWordGameContent() {
       setGameState(prev => ({
         ...prev,
         players: {
-          player: { ...prev.players.player, secretWord: playerWord, name: playerName },
+          player: { ...prev.players.player, secretWord: playerWord, name: playerName, wordScore },
           ai: { ...prev.players.ai, secretWord: randomWord },
         },
         gamePhase: 'playing',
@@ -270,6 +271,16 @@ function SecretWordGameContent() {
     }
   };
 
+  // Player chooses to reveal the AI's word and forfeit the game
+  const handleRevealAIWord = () => {
+    setGameState(prev => ({
+      ...prev,
+      winner: 'ai',
+      winReason: `You revealed the AI's secret word: "${prev.players.ai.secretWord}"`,
+      gamePhase: 'ended',
+    }));
+  };
+
   const handleRestart = () => {
     setGameState(INITIAL_GAME_STATE);
   };
@@ -321,6 +332,7 @@ function SecretWordGameContent() {
             <SecretWordChat
               gameState={gameState}
               onSendMessage={handleSendMessage}
+              onRevealAIWord={handleRevealAIWord}
               isAIThinking={getAIResponse.isPending}
             />
           )}
