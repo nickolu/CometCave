@@ -7,10 +7,15 @@ import type { GameState, Message } from '@/app/secret-word/page';
 
 interface SecretWordChatProps {
   gameState: GameState;
-  onSendMessage: (content: string, isQuestion?: boolean) => void;
+  onSendMessage: (content: string, isQuestion?: boolean) => void | Promise<void>;
+  isAIThinking?: boolean;
 }
 
-export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps) {
+export function SecretWordChat({
+  gameState,
+  onSendMessage,
+  isAIThinking: _isAIThinking = false,
+}: SecretWordChatProps) {
   const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,9 +47,9 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
         <div className="flex justify-center items-center gap-8 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-slate-400">Playing:</span>
-            <span className="text-space-blue font-medium">{gameState.players.player1.name}</span>
+            <span className="text-space-blue font-medium">{gameState.players.player.name}</span>
             <span className="text-slate-500">vs</span>
-            <span className="text-space-purple font-medium">{gameState.players.player2.name}</span>
+            <span className="text-space-purple font-medium">{gameState.players.ai.name}</span>
           </div>
         </div>
       </div>
@@ -56,7 +61,7 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
           to speak
         </p>
         <p className="text-slate-400 text-sm mt-1">
-          Remember: Don&apos;t say your secret word or you&apos;ll lose!
+          Remember: If you say <span className="underline">any</span> secret word you lose!
         </p>
       </div>
 
@@ -66,7 +71,7 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
           {gameState.messages.length === 0 ? (
             <div className="text-center text-slate-400 py-8">
               <p>
-                Game started! {gameState.players.player1.name} can ask the first question or make a
+                Game started! {gameState.players.player.name} can ask the first question or make a
                 statement.
               </p>
             </div>
@@ -76,6 +81,7 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
             ))
           )}
           <div ref={messagesEndRef} />
+          {_isAIThinking && <p className="text-center text-slate-400 text-sm">AI is thinking</p>}
         </div>
       </div>
 
@@ -109,14 +115,14 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
       {/* Game Info */}
       <div className="grid md:grid-cols-2 gap-4 text-sm">
         <div className="bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
-          <h4 className="font-semibold text-cream-white mb-2">{gameState.players.player1.name}</h4>
+          <h4 className="font-semibold text-cream-white mb-2">{gameState.players.player.name}</h4>
           <p className="text-slate-300">
             Your secret word: <span className="font-mono bg-slate-800 px-2 py-1 rounded">***</span>
           </p>
         </div>
 
         <div className="bg-space-purple/20 border border-space-purple/30 rounded-lg p-4">
-          <h4 className="font-semibold text-cream-white mb-2">{gameState.players.player2.name}</h4>
+          <h4 className="font-semibold text-cream-white mb-2">{gameState.players.ai.name}</h4>
           <p className="text-slate-300">
             Your secret word: <span className="font-mono bg-slate-800 px-2 py-1 rounded">***</span>
           </p>
@@ -128,20 +134,20 @@ export function SecretWordChat({ gameState, onSendMessage }: SecretWordChatProps
 
 function MessageBubble({ message, gameState }: { message: Message; gameState: GameState }) {
   const player = gameState.players[message.playerId];
-  const isPlayer1 = message.playerId === 'player1';
+  const isPlayer = message.playerId === 'player';
 
   return (
-    <div className={`flex ${isPlayer1 ? 'justify-start' : 'justify-end'}`}>
+    <div className={`flex ${isPlayer ? 'justify-start' : 'justify-end'}`}>
       <div
         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-          isPlayer1
+          isPlayer
             ? 'bg-space-blue/30 border border-space-blue/50'
             : 'bg-space-purple/30 border border-space-purple/50'
         }`}
       >
         <div className="flex items-center gap-2 mb-1">
           <span
-            className={`text-sm font-medium ${isPlayer1 ? 'text-space-blue' : 'text-space-purple'}`}
+            className={`text-sm font-medium ${isPlayer ? 'text-space-blue' : 'text-space-purple'}`}
           >
             {player.name}
           </span>

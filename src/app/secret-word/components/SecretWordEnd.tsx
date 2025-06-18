@@ -35,32 +35,28 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
 
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           <div className="bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
-            <h4 className="font-semibold text-cream-white mb-2">
-              {gameState.players.player1.name}
-            </h4>
+            <h4 className="font-semibold text-cream-white mb-2">{gameState.players.player.name}</h4>
             <p className="text-slate-300 text-sm">
               Secret word:{' '}
               <span className="font-mono bg-slate-800 px-2 py-1 rounded text-cream-white">
-                {gameState.players.player1.secretWord}
+                {gameState.players.player.secretWord}
               </span>
             </p>
             <p className="text-xs text-slate-400 mt-2">
-              {gameState.winner === 'player1' ? '🏆 Winner' : '😔 Lost'}
+              {gameState.winner === 'player' ? '🏆 Winner' : '😔 Lost'}
             </p>
           </div>
 
           <div className="bg-space-purple/20 border border-space-purple/30 rounded-lg p-4">
-            <h4 className="font-semibold text-cream-white mb-2">
-              {gameState.players.player2.name}
-            </h4>
+            <h4 className="font-semibold text-cream-white mb-2">{gameState.players.ai.name}</h4>
             <p className="text-slate-300 text-sm">
               Secret word:{' '}
               <span className="font-mono bg-slate-800 px-2 py-1 rounded text-cream-white">
-                {gameState.players.player2.secretWord}
+                {gameState.players.ai.secretWord}
               </span>
             </p>
             <p className="text-xs text-slate-400 mt-2">
-              {gameState.winner === 'player2' ? '🏆 Winner' : '😔 Lost'}
+              {gameState.winner === 'ai' ? '🏆 Winner' : '😔 Lost'}
             </p>
           </div>
         </div>
@@ -89,20 +85,20 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
           <div className="max-h-64 overflow-y-auto space-y-2">
             {gameState.messages.map(message => {
               const player = gameState.players[message.playerId];
-              const isPlayer1 = message.playerId === 'player1';
+              const isPlayer = message.playerId === 'player';
 
               return (
                 <div
                   key={message.id}
                   className={`text-sm p-2 rounded ${
-                    isPlayer1
+                    isPlayer
                       ? 'bg-space-blue/20 border-l-2 border-space-blue'
                       : 'bg-space-purple/20 border-l-2 border-space-purple'
                   }`}
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span
-                      className={`font-medium ${isPlayer1 ? 'text-space-blue' : 'text-space-purple'}`}
+                      className={`font-medium ${isPlayer ? 'text-space-blue' : 'text-space-purple'}`}
                     >
                       {player.name}
                     </span>
