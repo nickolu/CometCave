@@ -29,17 +29,6 @@ export async function POST(request: Request) {
     const lastMessage = chatMessages[chatMessages.length - 1];
     const isLastMessageFromCharacter = lastMessage && lastMessage.character.id !== 'user';
 
-    // Count consecutive character messages at the end of the conversation
-    let consecutiveCharacterMessages = 0;
-    for (let i = chatMessages.length - 1; i >= 0; i--) {
-      if (chatMessages[i].character.id !== 'user') {
-        consecutiveCharacterMessages++;
-      } else {
-        // Found a user message, stop counting
-        break;
-      }
-    }
-
     // Get the last 3 messages to check for recent responders
     const recentMessages = chatMessages.slice(-3);
     const recentResponderIds = recentMessages

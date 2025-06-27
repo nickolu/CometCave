@@ -104,7 +104,7 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
     };
 
     generateSummariesForLargeGroups();
-  }, [results.groupResults, criteria, groupSummaries, loadingSummaries]);
+  }, [results.groupResults, criteria, groupSummaries, loadingSummaries, generateSummaryMutation]);
 
   const chartData = Object.entries(results.distribution).map(([option, count]) => ({
     option,

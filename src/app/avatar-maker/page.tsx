@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { cn } from '@/lib/utils';
 import { Square, RectangleHorizontal, RectangleVertical, UploadCloud } from 'lucide-react';
+import NextImage from 'next/image';
 
 // Map of mediums to their available styles
 const mediumStyles: Record<string, { styles: string[] }> = {
@@ -339,7 +340,7 @@ export default function AvatarMakerPage() {
               )}
             >
               {imageFile ? (
-                <img
+                <NextImage
                   src={URL.createObjectURL(imageFile)}
                   alt="Uploaded preview"
                   className="rounded max-h-80 object-contain"
@@ -469,7 +470,7 @@ export default function AvatarMakerPage() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {generatedImages.map(src => (
-                    <img
+                    <NextImage
                       key={src}
                       src={src}
                       alt="Generated avatar"
