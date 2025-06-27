@@ -58,7 +58,14 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Avatar Maker API error:', error);
     if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      try {
+        const errorJson = JSON.parse(error.message);
+        if (errorJson.error.message.includes('Rate limit')) {
+          return NextResponse.json({ error: errorJson.error.message }, { status: 500 });
+        }
+      } catch (e) {
+        console.error('Avatar Maker API error:', e);
+      }
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
