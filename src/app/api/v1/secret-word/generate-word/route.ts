@@ -155,8 +155,6 @@ Select a word that will make for an engaging game where the player has a fair ch
       fallbackWords[difficulty as keyof typeof fallbackWords] || fallbackWords.medium;
     const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
 
-    console.log('Using fallback word due to API error:', randomWord);
-
     return NextResponse.json({
       word: randomWord,
       difficulty,
