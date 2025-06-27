@@ -5,4 +5,5 @@ export const ROUTE_CONSTANTS = {
   RING_TOSS: '/ring-toss',
   VOTERS: '/voters',
   SECRET_WORD: '/secret-word',
+  AVATAR_MAKER: '/avatar-maker',
 };
