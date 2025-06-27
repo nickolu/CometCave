@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { Button } from '@/app/voters/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/voters/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart,
   Bar,

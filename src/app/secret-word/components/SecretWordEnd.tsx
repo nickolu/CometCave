@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/app/voters/components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { GameState } from '../page';
 
 interface SecretWordEndProps {

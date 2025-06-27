@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/app/voters/components/ui/button';
-import { Input } from '@/app/voters/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import type { GameState, Message } from '@/app/secret-word/page';
 
 interface SecretWordChatProps {
