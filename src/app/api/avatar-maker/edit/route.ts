@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-export const maxDuration = 5 * 60; // seconds
+export const config = {
+  maxDuration: 300, // 5 minutes in seconds
+};
 
 // This route handles avatar editing by calling OpenAI's Images Edit endpoint.
 // It expects a multipart/form-data POST request containing:
