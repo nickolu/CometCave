@@ -15,24 +15,24 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  IconButton
+  IconButton,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useStore } from '../../store';
 import { Character } from '../../types';
 
 export default function UserSelector() {
-  const { isOpen, availableCharacters }  = useStore((state) => state.userSelector);
-  const { characters: selectedCharacters } = useStore((state) => state.userList);
-  const { name, description } = useStore((state) => state.customCharacterForm);
-  const { 
-    toggleUserSelector, 
+  const { isOpen, availableCharacters } = useStore(state => state.userSelector);
+  const { characters: selectedCharacters } = useStore(state => state.userList);
+  const { name, description } = useStore(state => state.customCharacterForm);
+  const {
+    toggleUserSelector,
     addCharacter,
     updateCustomCharacterForm,
     saveCustomCharacter,
-    loadSampleCharacters
+    loadSampleCharacters,
   } = useStore();
-  
+
   const [generationPrompt, setGenerationPrompt] = useState('');
   const [showGenerateForm, setShowGenerateForm] = useState(false);
 
@@ -50,8 +50,7 @@ export default function UserSelector() {
 
   const handleCharacterSelect = (characterId: string) => {
     const character = filteredAvailableCharacters.find((c: Character) => c.id === characterId);
-    console.log('Selected character:', character);
-    console.log(characterId);
+
     if (character) {
       addCharacter(character);
       toggleUserSelector();
@@ -76,57 +75,58 @@ export default function UserSelector() {
   if (!isOpen) return null;
 
   return (
-    <Dialog 
-      open={isOpen} 
+    <Dialog
+      open={isOpen}
       onClose={toggleUserSelector}
       maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: {
-          maxHeight: '80vh'
-        }
+          maxHeight: '80vh',
+        },
       }}
     >
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <DialogTitle
+        sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+      >
         Select Character
         <IconButton
           onClick={toggleUserSelector}
           sx={{
             color: 'text.secondary',
             '&:hover': {
-              color: 'text.primary'
-            }
+              color: 'text.primary',
+            },
           }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ maxHeight: '80vh' }}>
-        <List sx={{ 
-          maxHeight: '30vh',
-          overflowY: 'scroll',
-          bgcolor: 'background.paper',
-          borderRadius: 1,
-          mb: 2
-        }}>
+        <List
+          sx={{
+            maxHeight: '30vh',
+            overflowY: 'scroll',
+            bgcolor: 'background.paper',
+            borderRadius: 1,
+            mb: 2,
+          }}
+        >
           {filteredAvailableCharacters.map((character: Character) => (
             <ListItem
               key={character.id}
               sx={{
                 cursor: 'pointer',
                 '&:hover': {
-                  bgcolor: 'action.hover'
-                }
+                  bgcolor: 'action.hover',
+                },
               }}
               onClick={() => handleCharacterSelect(character.id)}
             >
               <ListItemAvatar>
                 <Avatar>{character.name[0]}</Avatar>
               </ListItemAvatar>
-              <ListItemText
-                primary={character.name}
-                secondary={character.description}
-              />
+              <ListItemText primary={character.name} secondary={character.description} />
             </ListItem>
           ))}
         </List>
@@ -143,14 +143,14 @@ export default function UserSelector() {
                   fullWidth
                   placeholder="Optional prompt for character generation"
                   value={generationPrompt}
-                  onChange={(e) => setGenerationPrompt(e.target.value)}
+                  onChange={e => setGenerationPrompt(e.target.value)}
                   sx={{
                     bgcolor: 'background.default',
                     '& .MuiOutlinedInput-root': {
                       '&.Mui-focused': {
-                        bgcolor: 'background.paper'
-                      }
-                    }
+                        bgcolor: 'background.paper',
+                      },
+                    },
                   }}
                 />
                 <Button
@@ -166,11 +166,7 @@ export default function UserSelector() {
             </Box>
           </Collapse>
           {!showGenerateForm && (
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => setShowGenerateForm(true)}
-            >
+            <Button fullWidth variant="outlined" onClick={() => setShowGenerateForm(true)}>
               Generate More Characters
             </Button>
           )}
@@ -187,7 +183,7 @@ export default function UserSelector() {
               label="Name"
               fullWidth
               value={name}
-              onChange={(e) => updateCustomCharacterForm({ name: e.target.value })}
+              onChange={e => updateCustomCharacterForm({ name: e.target.value })}
               required
               sx={{ mb: 2 }}
             />
@@ -198,14 +194,12 @@ export default function UserSelector() {
               multiline
               rows={3}
               value={description}
-              onChange={(e) => updateCustomCharacterForm({ description: e.target.value })}
+              onChange={e => updateCustomCharacterForm({ description: e.target.value })}
               required
               sx={{ mb: 2 }}
             />
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-              <Button onClick={handleCustomCancel}>
-                Clear
-              </Button>
+              <Button onClick={handleCustomCancel}>Clear</Button>
               <Button type="submit" variant="contained">
                 Add
               </Button>

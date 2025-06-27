@@ -35,8 +35,6 @@ export async function POST(req: Request) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    console.log('prompt', prompt);
-
     // Call the Images Edit endpoint.
     const response = await openai.images.edit({
       image,
@@ -45,8 +43,6 @@ export async function POST(req: Request) {
       n,
       size: size as '1024x1024' | '1024x1536' | '1536x1024' | 'auto',
     });
-
-    console.log('response', response);
 
     const images = response.data
       ?.map(item => {

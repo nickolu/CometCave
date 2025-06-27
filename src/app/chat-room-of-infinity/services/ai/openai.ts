@@ -33,7 +33,6 @@ export class OpenAIService implements AIService {
       max_tokens: 100,
       response_format: { type: 'json_object' },
     });
-    console.log('response', response.choices[0].message.content);
     return JSON.parse(response.choices[0].message.content || '');
   }
 
@@ -152,10 +151,8 @@ You will receive a list of available characters with their descriptions and the 
 
       // Extract the function call response
       const toolCalls = response.choices[0].message.tool_calls;
-      console.log('Raw API response:', toolCalls);
 
       if (!toolCalls || toolCalls.length === 0) {
-        console.log('No tool calls found in response, using random selection');
         const numToSelect = Math.floor(Math.random() * 3) + 1;
         const shuffled = [...characters].sort(() => 0.5 - Math.random());
         return shuffled.slice(0, Math.min(numToSelect, characters.length));
@@ -168,18 +165,11 @@ You will receive a list of available characters with their descriptions and the 
       try {
         // Parse the function arguments
         const args = JSON.parse(functionCall.function.arguments);
-        console.log('Function call arguments:', args);
 
         // Extract character IDs from the response
         if (args.character_ids && Array.isArray(args.character_ids)) {
           selectedIds = args.character_ids;
-
-          // Log the reasoning if provided
-          if (args.reasoning) {
-            console.log('Selection reasoning:', args.reasoning);
-          }
         } else {
-          console.log('No character_ids found in function call, using random selection');
           const numToSelect = Math.floor(Math.random() * 3) + 1;
           const shuffled = [...characters].sort(() => 0.5 - Math.random());
           return shuffled.slice(0, Math.min(numToSelect, characters.length));
