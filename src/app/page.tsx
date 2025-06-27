@@ -6,6 +6,7 @@ import { StarIcon } from '@/components/star-icon';
 import { BallotIcon } from '@/components/ballot-icon';
 import { ROUTE_CONSTANTS } from './route-constants';
 import { SecretWordIcon } from '@/components/secret-word-icon';
+import { User as UserIcon } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -52,6 +53,14 @@ export default function Home() {
           icon={<PlanetIcon />}
           href={ROUTE_CONSTANTS.CHAT_ROOM}
           description="Chat with fictional characters in a chat room!"
+        />
+
+        {/* Avatar Generator */}
+        <GameCard
+          title="Avatar Generator"
+          icon={<UserIcon className="w-full h-full text-space-purple" />}
+          href={ROUTE_CONSTANTS.AVATAR_MAKER}
+          description="Create unique AI-powered avatars from your photos!"
         />
       </div>
     </div>

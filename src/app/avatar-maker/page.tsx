@@ -1,12 +1,164 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { cn } from '@/lib/utils';
 import { Square, RectangleHorizontal, RectangleVertical, UploadCloud } from 'lucide-react';
+
+// Map of mediums to their available styles
+const mediumStyles: Record<string, { styles: string[] }> = {
+  'Digital painting': {
+    styles: [
+      'Cartoon',
+      'Anime',
+      'Realistic',
+      'Watercolor',
+      'Cyberpunk',
+      'Concept Art',
+      'Fantasy',
+      'Matte Painting',
+      'Cel-shaded',
+      'Synthwave',
+    ],
+  },
+  'Oil painting': {
+    styles: [
+      'Pointillism',
+      'Impressionism',
+      'Post-Impressionism',
+      'Realistic',
+      'Abstract',
+      'Surrealism',
+      'Expressionism',
+      'Romantic',
+      'Baroque',
+      'Cubism',
+      'Fauvism',
+      'Neo-Classicism',
+      'Modernism',
+      'Ancient Hindu',
+    ],
+  },
+  '3D render': {
+    styles: [
+      'Realistic',
+      'Photorealistic',
+      'Abstract',
+      'Surrealism',
+      'Low-poly',
+      'Voxel',
+      'Stylized',
+      'Cartoonish',
+    ],
+  },
+  'Pencil sketch': {
+    styles: [
+      'Realistic',
+      'Abstract',
+      'Surrealism',
+      'Gesture',
+      'Cross-hatching',
+      'Caricature',
+      'Comic',
+      'Blueprint',
+    ],
+  },
+  Photograph: {
+    styles: [
+      'Realistic',
+      'Abstract',
+      'Surrealism',
+      'Black and White',
+      'Film Grain',
+      'HDR',
+      'Macro',
+      'Panorama',
+      'Candid',
+    ],
+  },
+  // ---- Added mediums ----
+  'Watercolor painting': {
+    styles: ['Loose', 'Wet-on-wet', 'Drybrush', 'Realistic', 'Abstract'],
+  },
+  'Acrylic painting': {
+    styles: ['Impasto', 'Realistic', 'Abstract', 'Pour', 'Palette knife'],
+  },
+  'Ink wash / Sumi-e': {
+    styles: ['Traditional', 'Minimalist', 'Monochrome', 'Expressive'],
+  },
+  'Charcoal drawing': {
+    styles: ['Sketch', 'Realistic', 'Abstract', 'Gestural'],
+  },
+  'Pastel drawing': {
+    styles: ['Soft', 'Oil', 'Impressionistic', 'Realistic', 'Abstract'],
+  },
+  'Vector illustration': {
+    styles: ['Flat', 'Minimalist', 'Isometric', 'Bold', 'Line art'],
+  },
+  'Pixel art': {
+    styles: ['8-bit', '16-bit', 'Monochrome', 'Isometric', 'Animated'],
+  },
+  'Clay sculpture': {
+    styles: ['Realistic', 'Stylized', 'Cartoon', 'Abstract'],
+  },
+  'Graffiti street art': {
+    styles: ['Wildstyle', 'Stencil', 'Bubble', 'Throw-up', 'Character'],
+  },
+  'Mosaic tile': {
+    styles: ['Classic', 'Modern', 'Abstract', 'Geometric', 'Photorealistic'],
+  },
+} as const;
+
+const filterOptions = [
+  'Fisheye',
+  'Blur',
+  'Grayscale',
+  'Sepia',
+  'Vignette',
+  'Vintage',
+  'HDR',
+  'Macro',
+  'Panorama',
+  'Candid',
+];
+const moodOptions = [
+  'Dark',
+  'Mysterious',
+  'Pleasant',
+  'Playful',
+  'Whimsical',
+  'Gothic',
+  'Ethereal',
+  'Gloomy',
+  'Dreamy',
+];
+const themeOptions = [
+  'Fantasy',
+  'Sci-fi',
+  'Cyberpunk',
+  'Realistic',
+  'Gothic',
+  'Gloomy',
+  'Dreamy',
+  'Patriotic',
+  'Halloween',
+  'Christmas',
+  'Valentines',
+  'Easter',
+  'Thanksgiving',
+];
+
+// Flatten list of all styles for default option list
+const ALL_STYLES: string[] = Array.from(
+  new Set(
+    Object.values(mediumStyles)
+      .flatMap(m => m.styles)
+      .map(s => s.trim())
+  )
+);
 
 export default function AvatarMakerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -15,10 +167,22 @@ export default function AvatarMakerPage() {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<'1024x1024' | '1024x1536' | '1536x1024'>('1024x1024');
-  const styles = ['None', 'Cartoon', 'Anime', 'Realistic', 'Watercolor', 'Cyberpunk'];
-  const mediums = ['None', 'Digital painting', 'Oil painting', '3D render', 'Pencil sketch'];
-  const [style, setStyle] = useState<string>('None');
-  const [medium, setMedium] = useState<string>('None');
+  const mediums = ['', ...Object.keys(mediumStyles)];
+  const [style, setStyle] = useState<string>('');
+  const [medium, setMedium] = useState<string>('');
+  const [filter, setFilter] = useState<string>('');
+  const [mood, setMood] = useState<string>('');
+  const [theme, setTheme] = useState<string>('');
+
+  // Style list becomes dependent on selected medium
+  const styleOptions = medium && mediumStyles[medium] ? mediumStyles[medium].styles : ALL_STYLES;
+
+  // Reset style if it's not valid for the chosen medium
+  useEffect(() => {
+    if (medium && mediumStyles[medium] && style && !mediumStyles[medium].styles.includes(style)) {
+      setStyle('');
+    }
+  }, [medium, style]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,7 +233,7 @@ export default function AvatarMakerPage() {
   };
 
   const handleGenerate = async () => {
-    if (!imageFile || !prompt) return;
+    if (!imageFile) return;
     try {
       setLoading(true);
 
@@ -93,7 +257,11 @@ export default function AvatarMakerPage() {
       const extra: string[] = [];
       if (style !== 'None') extra.push(`${style} style`);
       if (medium !== 'None') extra.push(`in ${medium}`);
-      const finalPrompt = extra.length ? `${prompt}, ${extra.join(', ')}` : prompt;
+      if (filter !== 'None') extra.push(`with ${filter} filter`);
+      if (mood !== 'None') extra.push(`in ${mood} mood`);
+      if (theme !== 'None') extra.push(`in ${theme} theme`);
+
+      const finalPrompt = `${prompt && prompt + ', '} ${extra.length ? extra.join(', ') : ''}`;
 
       formData.append('prompt', finalPrompt);
       formData.append('n', '4');
@@ -207,15 +375,6 @@ export default function AvatarMakerPage() {
           <Label className="text-slate-400">3. Optional parameters</Label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label className="text-slate-400">Style</Label>
-              <Autocomplete
-                value={style}
-                onChange={setStyle}
-                options={styles}
-                placeholder="Cartoon, Realistic..."
-              />
-            </div>
-            <div className="space-y-1">
               <Label className="text-slate-400">Medium</Label>
               <Autocomplete
                 value={medium}
@@ -224,38 +383,77 @@ export default function AvatarMakerPage() {
                 placeholder="Oil painting, 3D render..."
               />
             </div>
-            {/* Orientation */}
-            <div className="space-y-2">
-              <Label className="text-slate-400">Orientation</Label>
-              <div className="flex gap-2">
-                {(
-                  [
-                    { val: '1024x1536', icon: <RectangleVertical className="w-4 h-4" /> },
-                    { val: '1024x1024', icon: <Square className="w-4 h-4" /> },
-                    { val: '1536x1024', icon: <RectangleHorizontal className="w-4 h-4" /> },
-                  ] as { val: typeof size; icon: React.ReactNode }[]
-                ).map(o => (
-                  <button
-                    key={o.val}
-                    type="button"
-                    onClick={() => setSize(o.val)}
-                    className={cn(
-                      'flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm border transition-colors',
-                      size === o.val
-                        ? 'bg-space-purple text-cream-white border-space-purple'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    )}
-                  >
-                    {o.icon}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-1">
+              <Label className="text-slate-400">Style</Label>
+              <Autocomplete
+                value={style}
+                onChange={setStyle}
+                options={['', ...styleOptions]}
+                placeholder="Cartoon, Realistic..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-slate-400">Filter</Label>
+              <Autocomplete
+                value={filter}
+                onChange={setFilter}
+                options={['', ...filterOptions]}
+                placeholder="Cartoon, Realistic..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-slate-400">Mood</Label>
+              <Autocomplete
+                value={mood}
+                onChange={setMood}
+                options={['', ...moodOptions]}
+                placeholder="Cartoon, Realistic..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-slate-400">Theme</Label>
+              <Autocomplete
+                value={theme}
+                onChange={setTheme}
+                options={['', ...themeOptions]}
+                placeholder="Cartoon, Realistic..."
+              />
+            </div>
+          </div>
+
+          <hr className="border-space-purple" />
+
+          {/* Orientation */}
+          <div className="space-y-2">
+            <Label className="text-slate-400">Orientation</Label>
+            <div className="flex gap-2">
+              {(
+                [
+                  { val: '1024x1536', icon: <RectangleVertical className="w-4 h-4" /> },
+                  { val: '1024x1024', icon: <Square className="w-4 h-4" /> },
+                  { val: '1536x1024', icon: <RectangleHorizontal className="w-4 h-4" /> },
+                ] as { val: typeof size; icon: React.ReactNode }[]
+              ).map(o => (
+                <button
+                  key={o.val}
+                  type="button"
+                  onClick={() => setSize(o.val)}
+                  className={cn(
+                    'flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm border transition-colors',
+                    size === o.val
+                      ? 'bg-space-purple text-cream-white border-space-purple'
+                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                  )}
+                >
+                  {o.icon}
+                </button>
+              ))}
             </div>
           </div>
 
           <Button
             onClick={handleGenerate}
-            disabled={!imageFile || !prompt || loading}
+            disabled={!imageFile || loading}
             className={cn('w-full bg-space-purple hover:bg-space-purple/80 text-cream-white', {
               'opacity-75': loading,
             })}
