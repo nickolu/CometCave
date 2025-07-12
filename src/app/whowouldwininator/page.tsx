@@ -12,8 +12,11 @@ export default function Whowouldwininator() {
     candidate2Name,
     candidate1Description,
     candidate2Description,
+    isGeneratingCandidate1,
+    isGeneratingCandidate2,
     updateCandidate1,
     updateCandidate2,
+    generateRandomCharacter,
   } = useWhowouldwininatorState();
 
   return (
@@ -27,8 +30,11 @@ export default function Whowouldwininator() {
             candidate2Name={candidate2Name}
             candidate1Description={candidate1Description}
             candidate2Description={candidate2Description}
+            isGeneratingCandidate1={isGeneratingCandidate1}
+            isGeneratingCandidate2={isGeneratingCandidate2}
             updateCandidate1={updateCandidate1}
             updateCandidate2={updateCandidate2}
+            generateRandomCharacter={generateRandomCharacter}
             onNext={nextStep}
           />
         )}

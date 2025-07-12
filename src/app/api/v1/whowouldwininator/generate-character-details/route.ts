@@ -3,7 +3,7 @@ import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { CharacterDetailsSchema } from '../types';
 
-export async function POST(request: Request) {
+export async function POST() {
   const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
