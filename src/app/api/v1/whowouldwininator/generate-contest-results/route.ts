@@ -3,31 +3,18 @@ import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { ContestResultsSchema } from '../types';
 
-// Helper function to truncate text to prevent payload overflow
-function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
-}
-
-// Helper function to truncate arrays
-function truncateArray<T>(arr: T[], maxItems: number): T[] {
-  return arr.slice(0, maxItems);
-}
-
-// Helper function to build a concise character summary
+// Helper function to build a concise character summary (no backstory)
 function buildCharacterSummary(
   name: string,
   description: string,
   details: Record<string, unknown>
 ): string {
-  const summary = [`${name}: ${truncateText(description, 200)}`];
+  const summary = [`${name}: ${description}`];
 
-  if (details.backstory && typeof details.backstory === 'string') {
-    summary.push(`Background: ${truncateText(details.backstory, 300)}`);
-  }
+  // Skip backstory - it's too long and not needed for battle analysis
 
   if (details.powers && Array.isArray(details.powers)) {
-    const powers = truncateArray(details.powers, 5).map(p => truncateText(String(p), 50));
+    const powers = details.powers.map(p => String(p));
     summary.push(`Powers: ${powers.join(', ')}`);
   }
 
@@ -38,7 +25,7 @@ function buildCharacterSummary(
   }
 
   if (details.feats && Array.isArray(details.feats)) {
-    const feats = truncateArray(details.feats, 3).map(f => truncateText(String(f), 100));
+    const feats = details.feats.map(f => String(f));
     summary.push(`Key Feats: ${feats.join(', ')}`);
   }
 
@@ -95,18 +82,15 @@ export async function POST(request: Request) {
     // Build concise scenario description
     const scenarioSummary =
       battleScenario?.setting || battleScenario?.rules || battleScenario?.additionalContext
-        ? `Scenario: ${truncateText(
-            [
-              battleScenario.setting,
-              battleScenario.rules,
-              battleScenario.obstacles,
-              battleScenario.limitations,
-              battleScenario.additionalContext,
-            ]
-              .filter(Boolean)
-              .join(' | '),
-            400
-          )}`
+        ? `Scenario: ${[
+            battleScenario.setting,
+            battleScenario.rules,
+            battleScenario.obstacles,
+            battleScenario.limitations,
+            battleScenario.additionalContext,
+          ]
+            .filter(Boolean)
+            .join(' | ')}`
         : 'Standard battle scenario';
 
     // Concise prompt to avoid payload limits

@@ -254,6 +254,16 @@ Victory: First to incapacitate their opponent wins`;
   const generateContestResults = useCallback(async () => {
     setIsGeneratingResults(true);
     try {
+      // Strip backstory from character details to reduce payload size
+      const stripBackstory = (details: Partial<CharacterDetails>) => {
+        return {
+          stats: details.stats,
+          powers: details.powers,
+          feats: details.feats,
+          portrait: details.portrait,
+        };
+      };
+
       const response = await fetch('/api/v1/whowouldwininator/generate-contest-results', {
         method: 'POST',
         headers: {
@@ -262,10 +272,10 @@ Victory: First to incapacitate their opponent wins`;
         body: JSON.stringify({
           candidate1Name,
           candidate1Description,
-          candidate1Details,
+          candidate1Details: stripBackstory(candidate1Details),
           candidate2Name,
           candidate2Description,
-          candidate2Details,
+          candidate2Details: stripBackstory(candidate2Details),
           battleScenario,
         }),
       });
