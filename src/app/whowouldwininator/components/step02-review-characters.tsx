@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
 import { Loader2, Edit2, Save } from 'lucide-react';
 import { useState } from 'react';
 
@@ -354,11 +355,49 @@ export function Step02ReviewCharacters({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-cream-white">Combat Stats</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleEdit(candidateNumber, 'stats')}
+              >
+                {isEditing('stats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+              </Button>
             </div>
             {loading.stats ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
                 <span className="text-sm text-gray-400">Generating stats...</span>
+              </div>
+            ) : isEditing('stats') ? (
+              <div className="space-y-4">
+                {details.stats ? (
+                  Object.entries(details.stats).map(([statName, statValue]) => (
+                    <div key={statName} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-sm font-medium text-cream-white capitalize">
+                          {statName}
+                        </label>
+                        <span className="text-sm text-gray-300">{statValue}</span>
+                      </div>
+                      <Slider
+                        value={[statValue]}
+                        onValueChange={([newValue]) => {
+                          const updatedStats = {
+                            ...details.stats,
+                            [statName]: newValue,
+                          } as CharacterStats;
+                          updateCharacterDetail(candidateNumber, 'stats', updatedStats);
+                        }}
+                        max={10}
+                        min={1}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-gray-400">No stats available to edit</span>
+                )}
               </div>
             ) : details.stats ? (
               <div className="space-y-2">
