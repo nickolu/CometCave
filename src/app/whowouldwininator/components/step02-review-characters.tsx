@@ -150,7 +150,7 @@ export function Step02ReviewCharacters({
   const StatBar = ({ label, value, max = 10 }: { label: string; value: number; max?: number }) => (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium w-20">{label}:</span>
-      <Progress value={(value / max) * 100} className="flex-1" />
+      <Progress value={(value / max) * 100} className="flex-1 text-space-purple" />
       <span className="text-sm w-8">{value}</span>
     </div>
   );
@@ -271,7 +271,7 @@ export function Step02ReviewCharacters({
                 {details.powers?.map((power, index) => (
                   <span
                     key={index}
-                    className="px-2 py-1 bg-space-purple/20 text-space-purple rounded-md text-sm"
+                    className="px-2 py-1 bg-space-purple/20 text-purple-200 rounded-md text-sm"
                   >
                     {power}
                   </span>

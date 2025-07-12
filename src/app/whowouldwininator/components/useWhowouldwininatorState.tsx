@@ -29,6 +29,14 @@ interface CharacterDetailsLoading {
   portrait: boolean;
 }
 
+interface BattleScenario {
+  setting: string;
+  rules: string;
+  obstacles: string;
+  limitations: string;
+  additionalContext: string;
+}
+
 export function useWhowouldwininatorState() {
   const [candidate1Name, setCandidate1Name] = useState('');
   const [candidate1Description, setCandidate1Description] = useState('');
@@ -67,6 +75,15 @@ export function useWhowouldwininatorState() {
   const [candidate2DetailsGenerated, setCandidate2DetailsGenerated] = useState<
     Set<keyof CharacterDetails>
   >(new Set());
+
+  // Battle scenario state
+  const [battleScenario, setBattleScenario] = useState<BattleScenario>({
+    setting: '',
+    rules: '',
+    obstacles: '',
+    limitations: '',
+    additionalContext: '',
+  });
 
   const updateCandidate1 = useCallback((candidate: string | null, description: string | null) => {
     if (candidate !== null) {
@@ -193,6 +210,19 @@ export function useWhowouldwininatorState() {
     []
   );
 
+  const updateBattleScenario = useCallback((field: keyof BattleScenario, value: string) => {
+    setBattleScenario(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const getDefaultScenario = useCallback((): string => {
+    return `${candidate1Name} vs ${candidate2Name} - Battle to TKO
+
+Setting: Open field with no obstacles
+Rules: Standard combat, fight until one character is knocked out or unable to continue
+Conditions: Both characters are at peak abilities from their respective canon
+Victory: First to incapacitate their opponent wins`;
+  }, [candidate1Name, candidate2Name]);
+
   return {
     candidate1Name,
     candidate2Name,
@@ -204,10 +234,13 @@ export function useWhowouldwininatorState() {
     candidate2Details,
     candidate1DetailsLoading,
     candidate2DetailsLoading,
+    battleScenario,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
     generateCharacterDetail,
     updateCharacterDetail,
+    updateBattleScenario,
+    getDefaultScenario,
   };
 }

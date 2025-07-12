@@ -4,6 +4,7 @@ import { useWorkflow } from './components/useWorkflow';
 import { useWhowouldwininatorState } from './components/useWhowouldwininatorState';
 import { Step01DefineCharacters } from './components/step01-define-characters';
 import { Step02ReviewCharacters } from './components/step02-review-characters';
+import { Step03DefineScenario } from './components/step03-define-scenario';
 
 export default function Whowouldwininator() {
   const { currentStep, nextStep, previousStep } = useWorkflow();
@@ -18,16 +19,18 @@ export default function Whowouldwininator() {
     candidate2Details,
     candidate1DetailsLoading,
     candidate2DetailsLoading,
+    battleScenario,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
     generateCharacterDetail,
     updateCharacterDetail,
+    updateBattleScenario,
   } = useWhowouldwininatorState();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="w-full max-w-screen-lg">
+    <div className="flex flex-col items-center justify-center">
+      <div className="w-full max-w-screen-lg mt-20">
         <h1 className="text-4xl font-bold text-center">The Amazing Whowouldwininator</h1>
 
         {currentStep === 0 && (
@@ -56,6 +59,16 @@ export default function Whowouldwininator() {
             candidate2DetailsLoading={candidate2DetailsLoading}
             generateCharacterDetail={generateCharacterDetail}
             updateCharacterDetail={updateCharacterDetail}
+            onNext={nextStep}
+            onPrevious={previousStep}
+          />
+        )}
+        {currentStep === 2 && (
+          <Step03DefineScenario
+            candidate1Name={candidate1Name}
+            candidate2Name={candidate2Name}
+            battleScenario={battleScenario}
+            updateBattleScenario={updateBattleScenario}
             onNext={nextStep}
             onPrevious={previousStep}
           />
