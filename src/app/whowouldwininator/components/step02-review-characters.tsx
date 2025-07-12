@@ -13,7 +13,7 @@ interface CharacterStats {
   speed: number;
   durability: number;
   intelligence: number;
-  energy: number;
+  specialAbilities: number;
   fighting: number;
 }
 
@@ -202,7 +202,7 @@ export function Step02ReviewCharacters({
     return text.substring(0, maxLength) + '...';
   };
 
-  const StatBar = ({ label, value, max = 10 }: { label: string; value: number; max?: number }) => (
+  const StatBar = ({ label, value, max = 100 }: { label: string; value: number; max?: number }) => (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium w-20">{label}:</span>
       <Progress value={(value / max) * 100} className="flex-1 text-space-purple" />
@@ -388,7 +388,7 @@ export function Step02ReviewCharacters({
                           } as CharacterStats;
                           updateCharacterDetail(candidateNumber, 'stats', updatedStats);
                         }}
-                        max={10}
+                        max={100}
                         min={1}
                         step={1}
                         className="w-full"
@@ -405,7 +405,7 @@ export function Step02ReviewCharacters({
                 <StatBar label="Speed" value={details.stats.speed} />
                 <StatBar label="Durability" value={details.stats.durability} />
                 <StatBar label="Intelligence" value={details.stats.intelligence} />
-                <StatBar label="Energy" value={details.stats.energy} />
+                <StatBar label="Special Abilities" value={details.stats.specialAbilities} />
                 <StatBar label="Fighting" value={details.stats.fighting} />
               </div>
             ) : (
@@ -462,7 +462,7 @@ export function Step02ReviewCharacters({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-cream-white mb-2">Review Your Characters</h2>
+        <h2 className="text-2xl font-bold text-gray-400 mb-2 mt-6">Review Your Characters</h2>
         <p className="text-gray-300">
           Character details are being generated. You can edit any field by clicking the edit button.
         </p>

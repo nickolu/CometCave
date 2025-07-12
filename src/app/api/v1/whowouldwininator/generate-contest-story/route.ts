@@ -40,7 +40,7 @@ Character 1: ${candidate1Name}
 Description: ${candidate1Description}
 ${candidate1Details.backstory ? `Backstory: ${candidate1Details.backstory}` : ''}
 ${candidate1Details.powers ? `Powers: ${candidate1Details.powers.join(', ')}` : ''}
-${candidate1Details.stats ? `Stats (1-10 scale): Strength: ${candidate1Details.stats.strength}, Speed: ${candidate1Details.stats.speed}, Durability: ${candidate1Details.stats.durability}, Intelligence: ${candidate1Details.stats.intelligence}, Energy: ${candidate1Details.stats.energy}, Fighting: ${candidate1Details.stats.fighting}` : ''}
+${candidate1Details.stats ? `Stats (1-100 scale): Strength: ${candidate1Details.stats.strength}, Speed: ${candidate1Details.stats.speed}, Durability: ${candidate1Details.stats.durability}, Intelligence: ${candidate1Details.stats.intelligence}, Special Abilities: ${candidate1Details.stats.specialAbilities}, Fighting: ${candidate1Details.stats.fighting}` : ''}
 ${candidate1Details.feats ? `Notable Feats: ${candidate1Details.feats.join(', ')}` : ''}
     `;
 
@@ -49,7 +49,7 @@ Character 2: ${candidate2Name}
 Description: ${candidate2Description}
 ${candidate2Details.backstory ? `Backstory: ${candidate2Details.backstory}` : ''}
 ${candidate2Details.powers ? `Powers: ${candidate2Details.powers.join(', ')}` : ''}
-${candidate2Details.stats ? `Stats (1-10 scale): Strength: ${candidate2Details.stats.strength}, Speed: ${candidate2Details.stats.speed}, Durability: ${candidate2Details.stats.durability}, Intelligence: ${candidate2Details.stats.intelligence}, Energy: ${candidate2Details.stats.energy}, Fighting: ${candidate2Details.stats.fighting}` : ''}
+${candidate2Details.stats ? `Stats (1-100 scale): Strength: ${candidate2Details.stats.strength}, Speed: ${candidate2Details.stats.speed}, Durability: ${candidate2Details.stats.durability}, Intelligence: ${candidate2Details.stats.intelligence}, Special Abilities: ${candidate2Details.stats.specialAbilities}, Fighting: ${candidate2Details.stats.fighting}` : ''}
 ${candidate2Details.feats ? `Notable Feats: ${candidate2Details.feats.join(', ')}` : ''}
     `;
 

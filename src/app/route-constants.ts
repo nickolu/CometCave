@@ -6,4 +6,5 @@ export const ROUTE_CONSTANTS = {
   VOTERS: '/voters',
   SECRET_WORD: '/secret-word',
   AVATAR_MAKER: '/avatar-maker',
+  WHOWOULDWININATOR: '/whowouldwininator',
 };

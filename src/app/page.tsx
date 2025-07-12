@@ -6,7 +6,7 @@ import { StarIcon } from '@/components/star-icon';
 import { BallotIcon } from '@/components/ballot-icon';
 import { ROUTE_CONSTANTS } from './route-constants';
 import { SecretWordIcon } from '@/components/secret-word-icon';
-import { User as UserIcon } from 'lucide-react';
+import { User as UserIcon, HelpCircle } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -32,6 +32,13 @@ export default function Home() {
           icon={<BallotIcon />}
           href={ROUTE_CONSTANTS.VOTERS}
           description="Create AI voters and see how they vote on different topics!"
+        />
+
+        <GameCard
+          title="Whowouldwininator"
+          icon={<HelpCircle className="w-full h-full text-space-purple" />}
+          href={ROUTE_CONSTANTS.WHOWOULDWININATOR}
+          description="Create two characters and see who would win in a battle!"
         />
 
         <GameCard

@@ -72,7 +72,7 @@ export function Step03DefineScenario({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-cream-white mb-2">Define the Battle Scenario</h2>
+        <h2 className="text-2xl font-bold text-gray-400 mb-2 mt-6">Define the Battle Scenario</h2>
         <p className="text-gray-300 mb-4">
           Customize the battle conditions for{' '}
           <span className="text-space-purple font-semibold">{candidate1Name}</span> vs{' '}

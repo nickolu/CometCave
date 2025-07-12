@@ -31,7 +31,7 @@ export function Step01DefineCharacters({
       {/* Mobile and Desktop Layout */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-4 w-full">
         {/* Character 1 */}
-        <div className="flex flex-col gap-4 flex-grow bg-space-dark rounded-lg p-4 lg:p-6">
+        <div className="flex flex-col gap-4 flex-grow bg-space-dark rounded-lg p-4 lg:p-6 lg:w-[35%]">
           <div className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
             <h2 className="text-xl sm:text-2xl font-bold text-cream-white">
               {candidate1Name ? candidate1Name : `Character 1`}
@@ -92,7 +92,7 @@ export function Step01DefineCharacters({
         </div>
 
         {/* Character 2 */}
-        <div className="flex flex-col gap-4 flex-grow bg-space-dark rounded-lg p-4 lg:p-6">
+        <div className="flex flex-col gap-4 flex-grow bg-space-dark rounded-lg p-4 lg:p-6 lg:w-[35%]">
           <div className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
             <h2 className="text-xl sm:text-2xl font-bold text-cream-white">
               {candidate2Name ? candidate2Name : `Character 2`}

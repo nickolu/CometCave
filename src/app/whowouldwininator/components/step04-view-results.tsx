@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, Target, Zap, Loader2 } from 'lucide-react';
@@ -26,7 +26,7 @@ interface CharacterStats {
   speed: number;
   durability: number;
   intelligence: number;
-  energy: number;
+  specialAbilities: number;
   fighting: number;
 }
 
@@ -87,26 +87,56 @@ export function Step04ViewResults({
   generateContestImage: () => Promise<void>;
   onPrevious: () => void;
 }) {
+  // Use refs to track if we've already initiated generation to prevent infinite loops
+  const resultsGenerationInitiated = useRef(false);
+  const storyGenerationInitiated = useRef(false);
+  const imageGenerationInitiated = useRef(false);
+
+  // Reset refs when results are cleared (e.g., when starting over)
+  useEffect(() => {
+    if (!contestResults) {
+      resultsGenerationInitiated.current = false;
+      storyGenerationInitiated.current = false;
+      imageGenerationInitiated.current = false;
+    }
+  }, [contestResults]);
+
   // Auto-generate results when component mounts
   useEffect(() => {
-    if (!contestResults && !isGeneratingResults) {
+    if (!contestResults && !isGeneratingResults && !resultsGenerationInitiated.current) {
+      resultsGenerationInitiated.current = true;
       generateContestResults();
     }
-  }, [contestResults, isGeneratingResults, generateContestResults]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contestResults, isGeneratingResults]);
 
   // Auto-generate story after results are available
   useEffect(() => {
-    if (contestResults && !contestStory && !isGeneratingStory) {
+    if (
+      contestResults &&
+      !contestStory &&
+      !isGeneratingStory &&
+      !storyGenerationInitiated.current
+    ) {
+      storyGenerationInitiated.current = true;
       generateContestStory();
     }
-  }, [contestResults, contestStory, isGeneratingStory, generateContestStory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contestResults, contestStory, isGeneratingStory]);
 
   // Auto-generate image after results are available
   useEffect(() => {
-    if (contestResults && !contestImage && !isGeneratingImage) {
+    if (
+      contestResults &&
+      !contestImage &&
+      !isGeneratingImage &&
+      !imageGenerationInitiated.current
+    ) {
+      imageGenerationInitiated.current = true;
       generateContestImage();
     }
-  }, [contestResults, contestImage, isGeneratingImage, generateContestImage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contestResults, contestImage, isGeneratingImage]);
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -134,7 +164,7 @@ export function Step04ViewResults({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-cream-white mb-2">Battle Results</h2>
+        <h2 className="text-2xl font-bold text-gray-400 mb-2 mt-6">Battle Results</h2>
         <p className="text-gray-300">
           {candidate1Name} vs {candidate2Name}
         </p>
@@ -235,7 +265,7 @@ export function Step04ViewResults({
                     <div key={stat} className="flex justify-between items-center">
                       <span className="text-gray-300 capitalize">{stat}</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={value * 10} className="w-20 h-2" />
+                        <Progress value={value} className="w-20 h-2" />
                         <span className="text-sm text-cream-white w-6">{value}</span>
                       </div>
                     </div>
@@ -259,7 +289,7 @@ export function Step04ViewResults({
                     <div key={stat} className="flex justify-between items-center">
                       <span className="text-gray-300 capitalize">{stat}</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={value * 10} className="w-20 h-2" />
+                        <Progress value={value} className="w-20 h-2" />
                         <span className="text-sm text-cream-white w-6">{value}</span>
                       </div>
                     </div>
@@ -390,7 +420,13 @@ export function Step04ViewResults({
         <div className="flex gap-3">
           {contestResults && (
             <Button
-              onClick={generateContestResults}
+              onClick={() => {
+                // Reset refs to allow regeneration
+                resultsGenerationInitiated.current = false;
+                storyGenerationInitiated.current = false;
+                imageGenerationInitiated.current = false;
+                generateContestResults();
+              }}
               variant="ghost"
               className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
             >

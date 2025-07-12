@@ -5,7 +5,7 @@ interface CharacterStats {
   speed: number;
   durability: number;
   intelligence: number;
-  energy: number;
+  specialAbilities: number;
   fighting: number;
 }
 

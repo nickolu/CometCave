@@ -15,16 +15,20 @@ export const CharacterPowersSchema = z.object({
 });
 
 export const CharacterStatsSchema = z.object({
-  strength: z.number().min(1).max(10).describe('Physical strength (1-10 scale)'),
-  speed: z.number().min(1).max(10).describe('Speed and agility (1-10 scale)'),
-  durability: z.number().min(1).max(10).describe('Durability and toughness (1-10 scale)'),
-  intelligence: z.number().min(1).max(10).describe('Intelligence and strategy (1-10 scale)'),
-  energy: z.number().min(1).max(10).describe('Energy projection and magical power (1-10 scale)'),
+  strength: z.number().min(1).max(100).describe('Physical strength (1-100 scale)'),
+  speed: z.number().min(1).max(100).describe('Speed and agility (1-100 scale)'),
+  durability: z.number().min(1).max(100).describe('Durability and toughness (1-100 scale)'),
+  intelligence: z.number().min(1).max(100).describe('Intelligence and strategy (1-100 scale)'),
+  specialAbilities: z
+    .number()
+    .min(1)
+    .max(100)
+    .describe('Special abilities and powers (1-100 scale)'),
   fighting: z
     .number()
     .min(1)
-    .max(10)
-    .describe('Fighting skills and combat experience (1-10 scale)'),
+    .max(100)
+    .describe('Fighting skills and combat experience (1-100 scale)'),
 });
 
 export const CharacterFeatsSchema = z.object({

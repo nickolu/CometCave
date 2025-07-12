@@ -19,6 +19,7 @@ export async function POST(request: Request) {
 Requirements:
 - Generate 3-5 impressive feats that demonstrate the character's capabilities
 - Each feat should be a specific accomplishment or demonstrated ability
+- Each feat should be associated with one of the following character stats: strength, speed, durability, intelligence, special abilities, fighting
 - Feats should be consistent with the character's description and power level
 - Include both combat and non-combat achievements where appropriate
 - Make feats concrete and measurable when possible

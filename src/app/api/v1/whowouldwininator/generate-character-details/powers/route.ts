@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       prompt: `Generate a list of powers and abilities for a character named "${name}" with the following description: ${description}
 
 Requirements:
-- Generate 3-6 specific powers/abilities
+- Generate 5-10 specific powers/abilities
 - Each power should be concise but descriptive (1-2 words or short phrase)
 - Powers should be consistent with the character's description
 - Include both active abilities and passive traits
