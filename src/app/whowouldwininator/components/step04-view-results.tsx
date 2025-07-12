@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, Target, Zap, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface ContestResults {
   winner: 'candidate1' | 'candidate2' | 'tie';
@@ -388,10 +389,12 @@ export function Step04ViewResults({
             {contestImage && !isGeneratingImage && (
               <div className="space-y-4">
                 <div className="relative">
-                  <img
+                  <Image
                     src={contestImage.imageUrl}
                     alt={contestImage.altText}
                     className="w-full rounded-lg shadow-lg"
+                    width={1024}
+                    height={1024}
                   />
                 </div>
                 <p className="text-sm text-gray-400 italic">{contestImage.altText}</p>

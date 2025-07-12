@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Loader2, Edit2, Save } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface CharacterStats {
   strength: number;
@@ -243,10 +244,12 @@ export function Step02ReviewCharacters({
                 <Loader2 className="w-8 h-8 animate-spin text-space-purple" />
               </div>
             ) : details.portrait ? (
-              <img
+              <Image
                 src={details.portrait.imageUrl}
                 alt={details.portrait.altText}
                 className="w-full object-cover rounded-lg"
+                width={1024}
+                height={1024}
               />
             ) : (
               <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
