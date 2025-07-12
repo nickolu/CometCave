@@ -387,15 +387,25 @@ export function Step04ViewResults({
           Previous
         </Button>
 
-        {contestResults && (
+        <div className="flex gap-3">
+          {contestResults && (
+            <Button
+              onClick={generateContestResults}
+              variant="ghost"
+              className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
+            >
+              Generate New Results
+            </Button>
+          )}
+
           <Button
-            onClick={generateContestResults}
-            variant="ghost"
-            className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
           >
-            Generate New Results
+            Start Over
           </Button>
-        )}
+        </div>
       </div>
     </div>
   );
