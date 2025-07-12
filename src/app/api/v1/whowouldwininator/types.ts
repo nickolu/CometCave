@@ -36,3 +36,11 @@ export const CharacterPortraitSchema = z.object({
   altText: z.string().describe('Alt text description of the image'),
   prompt: z.string().describe('The prompt used to generate the image'),
 });
+
+export const ContestResultsSchema = z.object({
+  winner: z.enum(['candidate1', 'candidate2', 'tie']).describe('The winner of the contest'),
+  confidence: z.number().min(1).max(10).describe('Confidence score for the outcome (1-10 scale)'),
+  reasoning: z
+    .string()
+    .describe('Detailed reasoning for why this character won or why it was a tie'),
+});

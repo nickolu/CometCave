@@ -34,8 +34,6 @@ The portrait should:
     // Progressive safety easing - try up to 3 times with increasingly safe prompts
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.log(`Portrait generation attempt ${attempt} for ${name}:`, imagePrompt);
-
         // Generate the actual image using GPT-Image-1
         const imageResponse = await openai.images.generate({
           model: 'gpt-image-1',
@@ -78,12 +76,14 @@ Keep it under 200 characters.`,
           },
         });
       } catch (error: unknown) {
-        console.error(`Portrait generation attempt ${attempt} failed:`, error);
+        console.error(`Portrait generation attempt ${attempt} failed`);
 
         if (attempt < 3) {
           // Generate a safer prompt for the next attempt
           try {
             const errorMessage = error instanceof Error ? error.message : 'a safety error';
+            console.log('errorMessage', errorMessage);
+            console.log('failure attempt', attempt);
             const safetyResult = await generateText({
               model: openaiClient('gpt-4o-mini'),
               prompt: `This image generation prompt failed due to ${errorMessage}. Please respond with a new prompt that addresses the concerns of the previous failure, but remains as close to what the user is asking for as possible. If the user was asking for a generation of a copyrighted character, for example, try describing that character in vague terms that are not specific to that character, or describing details that allude to the character without saying it outright. e.g. "left webbing behind", "a lean but muscular young man in a tight fitting superhero costume, swinging from a white rope", etc.

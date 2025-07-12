@@ -5,6 +5,7 @@ import { useWhowouldwininatorState } from './components/useWhowouldwininatorStat
 import { Step01DefineCharacters } from './components/step01-define-characters';
 import { Step02ReviewCharacters } from './components/step02-review-characters';
 import { Step03DefineScenario } from './components/step03-define-scenario';
+import { Step04ViewResults } from './components/step04-view-results';
 
 export default function Whowouldwininator() {
   const { currentStep, nextStep, previousStep } = useWorkflow();
@@ -20,12 +21,15 @@ export default function Whowouldwininator() {
     candidate1DetailsLoading,
     candidate2DetailsLoading,
     battleScenario,
+    contestResults,
+    isGeneratingResults,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
     generateCharacterDetail,
     updateCharacterDetail,
     updateBattleScenario,
+    generateContestResults,
   } = useWhowouldwininatorState();
 
   return (
@@ -70,6 +74,21 @@ export default function Whowouldwininator() {
             battleScenario={battleScenario}
             updateBattleScenario={updateBattleScenario}
             onNext={nextStep}
+            onPrevious={previousStep}
+          />
+        )}
+        {currentStep === 3 && (
+          <Step04ViewResults
+            candidate1Name={candidate1Name}
+            candidate2Name={candidate2Name}
+            candidate1Description={candidate1Description}
+            candidate2Description={candidate2Description}
+            candidate1Details={candidate1Details}
+            candidate2Details={candidate2Details}
+            battleScenario={battleScenario}
+            contestResults={contestResults}
+            isGeneratingResults={isGeneratingResults}
+            generateContestResults={generateContestResults}
             onPrevious={previousStep}
           />
         )}

@@ -37,6 +37,12 @@ interface BattleScenario {
   additionalContext: string;
 }
 
+interface ContestResults {
+  winner: 'candidate1' | 'candidate2' | 'tie';
+  confidence: number;
+  reasoning: string;
+}
+
 export function useWhowouldwininatorState() {
   const [candidate1Name, setCandidate1Name] = useState('');
   const [candidate1Description, setCandidate1Description] = useState('');
@@ -84,6 +90,10 @@ export function useWhowouldwininatorState() {
     limitations: '',
     additionalContext: '',
   });
+
+  // Contest results state
+  const [contestResults, setContestResults] = useState<ContestResults | null>(null);
+  const [isGeneratingResults, setIsGeneratingResults] = useState(false);
 
   const updateCandidate1 = useCallback((candidate: string | null, description: string | null) => {
     if (candidate !== null) {
@@ -223,6 +233,46 @@ Conditions: Both characters are at peak abilities from their respective canon
 Victory: First to incapacitate their opponent wins`;
   }, [candidate1Name, candidate2Name]);
 
+  const generateContestResults = useCallback(async () => {
+    setIsGeneratingResults(true);
+    try {
+      const response = await fetch('/api/v1/whowouldwininator/generate-contest-results', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidate1Name,
+          candidate1Description,
+          candidate1Details,
+          candidate2Name,
+          candidate2Description,
+          candidate2Details,
+          battleScenario,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate contest results');
+      }
+
+      const data = await response.json();
+      setContestResults(data);
+    } catch (error) {
+      console.error('Error generating contest results:', error);
+    } finally {
+      setIsGeneratingResults(false);
+    }
+  }, [
+    candidate1Name,
+    candidate1Description,
+    candidate1Details,
+    candidate2Name,
+    candidate2Description,
+    candidate2Details,
+    battleScenario,
+  ]);
+
   return {
     candidate1Name,
     candidate2Name,
@@ -235,6 +285,8 @@ Victory: First to incapacitate their opponent wins`;
     candidate1DetailsLoading,
     candidate2DetailsLoading,
     battleScenario,
+    contestResults,
+    isGeneratingResults,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
@@ -242,5 +294,6 @@ Victory: First to incapacitate their opponent wins`;
     updateCharacterDetail,
     updateBattleScenario,
     getDefaultScenario,
+    generateContestResults,
   };
 }
