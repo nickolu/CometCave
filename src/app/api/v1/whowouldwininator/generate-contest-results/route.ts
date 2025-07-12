@@ -3,8 +3,63 @@ import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { ContestResultsSchema } from '../types';
 
+// Helper function to truncate text to prevent payload overflow
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+}
+
+// Helper function to truncate arrays
+function truncateArray<T>(arr: T[], maxItems: number): T[] {
+  return arr.slice(0, maxItems);
+}
+
+// Helper function to build a concise character summary
+function buildCharacterSummary(
+  name: string,
+  description: string,
+  details: Record<string, unknown>
+): string {
+  const summary = [`${name}: ${truncateText(description, 200)}`];
+
+  if (details.backstory && typeof details.backstory === 'string') {
+    summary.push(`Background: ${truncateText(details.backstory, 300)}`);
+  }
+
+  if (details.powers && Array.isArray(details.powers)) {
+    const powers = truncateArray(details.powers, 5).map(p => truncateText(String(p), 50));
+    summary.push(`Powers: ${powers.join(', ')}`);
+  }
+
+  if (details.stats && typeof details.stats === 'object' && details.stats !== null) {
+    const stats = details.stats as Record<string, unknown>;
+    const statsStr = `Stats: STR:${stats.strength} SPD:${stats.speed} DUR:${stats.durability} INT:${stats.intelligence} SPC:${stats.specialAbilities} FGT:${stats.fighting}`;
+    summary.push(statsStr);
+  }
+
+  if (details.feats && Array.isArray(details.feats)) {
+    const feats = truncateArray(details.feats, 3).map(f => truncateText(String(f), 100));
+    summary.push(`Key Feats: ${feats.join(', ')}`);
+  }
+
+  return summary.join('\n');
+}
+
 export async function POST(request: Request) {
   try {
+    // Check content length before parsing to prevent large payloads
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 4000000) {
+      // 4MB limit
+      return NextResponse.json(
+        { error: 'Request too large. Please reduce character descriptions and details.' },
+        { status: 413 }
+      );
+    }
+
+    const body = await request.json();
+
+    // Validate and extract data
     const {
       candidate1Name,
       candidate1Description,
@@ -13,80 +68,74 @@ export async function POST(request: Request) {
       candidate2Description,
       candidate2Details,
       battleScenario,
-    } = await request.json();
+    } = body;
+
+    // Validate required fields
+    if (!candidate1Name || !candidate2Name) {
+      return NextResponse.json({ error: 'Both character names are required' }, { status: 400 });
+    }
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Build scenario description
-    const scenarioDescription =
-      battleScenario.setting ||
-      battleScenario.rules ||
-      battleScenario.obstacles ||
-      battleScenario.limitations ||
-      battleScenario.additionalContext
-        ? `Battle Scenario:
-        Setting: ${battleScenario.setting || 'Open field with no obstacles'}
-        Rules: ${battleScenario.rules || 'Standard combat, fight until one character is knocked out or unable to continue'}
-        Obstacles: ${battleScenario.obstacles || 'None'}
-        Limitations: ${battleScenario.limitations || 'None'}
-        Additional Context: ${battleScenario.additionalContext || 'Both characters are at peak abilities from their respective canon'}`
-        : `Battle Scenario: Standard TKO battle in an open field with both characters at peak abilities from their respective canon`;
+    // Build concise character summaries to avoid payload limits
+    const char1Summary = buildCharacterSummary(
+      candidate1Name,
+      candidate1Description || 'No description provided',
+      candidate1Details || {}
+    );
 
-    // Build character profiles
-    const candidate1Profile = `
-Character 1: ${candidate1Name}
-Description: ${candidate1Description}
-${candidate1Details.backstory ? `Backstory: ${candidate1Details.backstory}` : ''}
-${candidate1Details.powers ? `Powers: ${candidate1Details.powers.join(', ')}` : ''}
-${candidate1Details.stats ? `Stats (1-100 scale): Strength: ${candidate1Details.stats.strength}, Speed: ${candidate1Details.stats.speed}, Durability: ${candidate1Details.stats.durability}, Intelligence: ${candidate1Details.stats.intelligence}, Special Abilities: ${candidate1Details.stats.specialAbilities}, Fighting: ${candidate1Details.stats.fighting}` : ''}
-${candidate1Details.feats ? `Notable Feats: ${candidate1Details.feats.join(', ')}` : ''}
-    `;
+    const char2Summary = buildCharacterSummary(
+      candidate2Name,
+      candidate2Description || 'No description provided',
+      candidate2Details || {}
+    );
 
-    const candidate2Profile = `
-Character 2: ${candidate2Name}
-Description: ${candidate2Description}
-${candidate2Details.backstory ? `Backstory: ${candidate2Details.backstory}` : ''}
-${candidate2Details.powers ? `Powers: ${candidate2Details.powers.join(', ')}` : ''}
-${candidate2Details.stats ? `Stats (1-100 scale): Strength: ${candidate2Details.stats.strength}, Speed: ${candidate2Details.stats.speed}, Durability: ${candidate2Details.stats.durability}, Intelligence: ${candidate2Details.stats.intelligence}, Special Abilities: ${candidate2Details.stats.specialAbilities}, Fighting: ${candidate2Details.stats.fighting}` : ''}
-${candidate2Details.feats ? `Notable Feats: ${candidate2Details.feats.join(', ')}` : ''}
-    `;
+    // Build concise scenario description
+    const scenarioSummary =
+      battleScenario?.setting || battleScenario?.rules || battleScenario?.additionalContext
+        ? `Scenario: ${truncateText(
+            [
+              battleScenario.setting,
+              battleScenario.rules,
+              battleScenario.obstacles,
+              battleScenario.limitations,
+              battleScenario.additionalContext,
+            ]
+              .filter(Boolean)
+              .join(' | '),
+            400
+          )}`
+        : 'Standard battle scenario';
+
+    // Concise prompt to avoid payload limits
+    const prompt = `Analyze this battle and determine the winner:
+
+CHARACTER 1:
+${char1Summary}
+
+CHARACTER 2:
+${char2Summary}
+
+${scenarioSummary}
+
+Instructions:
+- Analyze abilities, stats, and context
+- Determine winner: "candidate1", "candidate2", or "tie"
+- Provide confidence (1-10): 1-3=uncertain, 4-6=moderate, 7-8=high, 9-10=certain
+- Give brief reasoning (max 200 words)
+
+Examples:
+- Superman vs human in combat = candidate1 wins, confidence 10
+- Evenly matched opponents = tie, confidence 8-10`;
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
       schema: ContestResultsSchema,
-      prompt: `Analyze this battle scenario and determine the winner with a confidence score:
-
-${candidate1Profile}
-
-${candidate2Profile}
-
-${scenarioDescription}
-
-Instructions:
-- Carefully analyze each character's abilities, stats, powers, and feats
-- Consider how the specific scenario affects the outcome
-- Determine if one character would clearly win, or if it would be a tie
-- Provide a confidence score from 1-10 where:
-  - 1-3: Very uncertain, could go either way
-  - 4-6: Moderate confidence, slight advantage
-  - 7-8: High confidence, clear advantage
-  - 9-10: Almost certain, overwhelming advantage
-- A tie is possible if the characters are extremely evenly matched
-- Provide detailed reasoning for your decision
-
-Examples:
-- Superman vs ordinary human in combat = candidate1 wins, confidence 10
-- Superman vs ordinary human in chess = could be candidate2 wins, confidence 5
-- Two identical characters = tie, confidence 10
-
-Winner should be:
-- "candidate1" if the first character wins
-- "candidate2" if the second character wins  
-- "tie" if they are evenly matched`,
-      temperature: 0.3, // Lower temperature for more consistent analysis
-      maxTokens: 500,
+      prompt,
+      temperature: 0.3,
+      maxTokens: 300, // Reduced to keep response concise
     });
 
     return NextResponse.json({
@@ -96,6 +145,18 @@ Winner should be:
     });
   } catch (error) {
     console.error('Error generating contest results:', error);
+
+    // Handle specific payload errors
+    if (error instanceof Error && error.message.includes('413')) {
+      return NextResponse.json(
+        {
+          error:
+            'Character data too large. Please reduce the length of descriptions, backstories, and lists.',
+        },
+        { status: 413 }
+      );
+    }
+
     return NextResponse.json({ error: 'Failed to generate contest results' }, { status: 500 });
   }
 }
