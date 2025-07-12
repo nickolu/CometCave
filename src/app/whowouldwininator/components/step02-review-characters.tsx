@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -113,26 +113,67 @@ export function Step02ReviewCharacters({
     candidate2: new Set(),
   });
 
+  const [expandedBackstories, setExpandedBackstories] = useState<{
+    candidate1: boolean;
+    candidate2: boolean;
+  }>({
+    candidate1: false,
+    candidate2: false,
+  });
+
+  // Track generation initiation to prevent duplicates
+  const generationInitiated = useRef<{
+    candidate1: Set<keyof CharacterDetails>;
+    candidate2: Set<keyof CharacterDetails>;
+  }>({
+    candidate1: new Set(),
+    candidate2: new Set(),
+  });
+
   // Auto-generate character details when component mounts
   useEffect(() => {
     if (candidate1Name && candidate1Description) {
-      generateCharacterDetail(1, 'backstory', candidate1Name, candidate1Description);
-      generateCharacterDetail(1, 'powers', candidate1Name, candidate1Description);
-      generateCharacterDetail(1, 'stats', candidate1Name, candidate1Description);
-      generateCharacterDetail(1, 'feats', candidate1Name, candidate1Description);
-      generateCharacterDetail(1, 'portrait', candidate1Name, candidate1Description);
+      const detailTypes: Array<keyof CharacterDetails> = [
+        'backstory',
+        'powers',
+        'stats',
+        'feats',
+        'portrait',
+      ];
+
+      detailTypes.forEach(detailType => {
+        if (!generationInitiated.current.candidate1.has(detailType)) {
+          generationInitiated.current.candidate1.add(detailType);
+          generateCharacterDetail(1, detailType, candidate1Name, candidate1Description);
+        }
+      });
+    } else {
+      // Reset generation tracking when character changes
+      generationInitiated.current.candidate1.clear();
     }
-  }, [candidate1Name, candidate1Description]); // Only depend on name and description
+  }, [candidate1Name, candidate1Description, generateCharacterDetail]);
 
   useEffect(() => {
     if (candidate2Name && candidate2Description) {
-      generateCharacterDetail(2, 'backstory', candidate2Name, candidate2Description);
-      generateCharacterDetail(2, 'powers', candidate2Name, candidate2Description);
-      generateCharacterDetail(2, 'stats', candidate2Name, candidate2Description);
-      generateCharacterDetail(2, 'feats', candidate2Name, candidate2Description);
-      generateCharacterDetail(2, 'portrait', candidate2Name, candidate2Description);
+      const detailTypes: Array<keyof CharacterDetails> = [
+        'backstory',
+        'powers',
+        'stats',
+        'feats',
+        'portrait',
+      ];
+
+      detailTypes.forEach(detailType => {
+        if (!generationInitiated.current.candidate2.has(detailType)) {
+          generationInitiated.current.candidate2.add(detailType);
+          generateCharacterDetail(2, detailType, candidate2Name, candidate2Description);
+        }
+      });
+    } else {
+      // Reset generation tracking when character changes
+      generationInitiated.current.candidate2.clear();
     }
-  }, [candidate2Name, candidate2Description]); // Only depend on name and description
+  }, [candidate2Name, candidate2Description, generateCharacterDetail]);
 
   const toggleEdit = (candidateNumber: 1 | 2, field: keyof CharacterDetails) => {
     const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2';
@@ -145,6 +186,19 @@ export function Step02ReviewCharacters({
       }
       return { ...prev, [candidateKey]: newSet };
     });
+  };
+
+  const toggleBackstoryExpansion = (candidateNumber: 1 | 2) => {
+    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2';
+    setExpandedBackstories(prev => ({
+      ...prev,
+      [candidateKey]: !prev[candidateKey],
+    }));
+  };
+
+  const truncateText = (text: string, maxLength: number = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   const StatBar = ({ label, value, max = 10 }: { label: string; value: number; max?: number }) => (
@@ -191,7 +245,7 @@ export function Step02ReviewCharacters({
               <img
                 src={details.portrait.imageUrl}
                 alt={details.portrait.altText}
-                className="w-full h-48 object-cover rounded-lg"
+                className="w-full object-cover rounded-lg"
               />
             ) : (
               <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
@@ -229,9 +283,25 @@ export function Step02ReviewCharacters({
                 rows={4}
               />
             ) : (
-              <p className="text-sm text-gray-300">
-                {details.backstory || 'No backstory available'}
-              </p>
+              <div>
+                <p className="text-sm text-gray-300">
+                  {details.backstory
+                    ? expandedBackstories[candidateKey]
+                      ? details.backstory
+                      : truncateText(details.backstory)
+                    : 'No backstory available'}
+                </p>
+                {details.backstory && details.backstory.length > 150 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleBackstoryExpansion(candidateNumber)}
+                    className="mt-2 text-space-purple hover:text-space-purple/80 p-0 h-auto"
+                  >
+                    {expandedBackstories[candidateKey] ? 'Show less' : 'Show more'}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 
