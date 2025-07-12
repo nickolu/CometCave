@@ -55,13 +55,10 @@ ${candidate2Details.feats ? `Notable Feats: ${candidate2Details.feats.join(', ')
 
     // Determine winner name for story consistency
     let winnerName = '';
-    let loserName = '';
     if (contestResults.winner === 'candidate1') {
       winnerName = candidate1Name;
-      loserName = candidate2Name;
     } else if (contestResults.winner === 'candidate2') {
       winnerName = candidate2Name;
-      loserName = candidate1Name;
     }
 
     const result = await generateText({
