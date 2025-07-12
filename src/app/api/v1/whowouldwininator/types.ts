@@ -44,3 +44,13 @@ export const ContestResultsSchema = z.object({
     .string()
     .describe('Detailed reasoning for why this character won or why it was a tie'),
 });
+
+export const ContestStorySchema = z.object({
+  story: z.string().describe('A cinematic description of the battle/contest'),
+});
+
+export const ContestImageSchema = z.object({
+  imageUrl: z.string().describe('URL of the generated contest image'),
+  altText: z.string().describe('Alt text description of the contest image'),
+  prompt: z.string().describe('The prompt used to generate the contest image'),
+});

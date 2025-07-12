@@ -23,6 +23,10 @@ export default function Whowouldwininator() {
     battleScenario,
     contestResults,
     isGeneratingResults,
+    contestStory,
+    isGeneratingStory,
+    contestImage,
+    isGeneratingImage,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
@@ -30,6 +34,8 @@ export default function Whowouldwininator() {
     updateCharacterDetail,
     updateBattleScenario,
     generateContestResults,
+    generateContestStory,
+    generateContestImage,
   } = useWhowouldwininatorState();
 
   return (
@@ -88,7 +94,13 @@ export default function Whowouldwininator() {
             battleScenario={battleScenario}
             contestResults={contestResults}
             isGeneratingResults={isGeneratingResults}
+            contestStory={contestStory}
+            isGeneratingStory={isGeneratingStory}
+            contestImage={contestImage}
+            isGeneratingImage={isGeneratingImage}
             generateContestResults={generateContestResults}
+            generateContestStory={generateContestStory}
+            generateContestImage={generateContestImage}
             onPrevious={previousStep}
           />
         )}

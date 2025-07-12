@@ -43,6 +43,16 @@ interface ContestResults {
   reasoning: string;
 }
 
+interface ContestStory {
+  story: string;
+}
+
+interface ContestImage {
+  imageUrl: string;
+  altText: string;
+  prompt: string;
+}
+
 export function useWhowouldwininatorState() {
   const [candidate1Name, setCandidate1Name] = useState('');
   const [candidate1Description, setCandidate1Description] = useState('');
@@ -94,6 +104,14 @@ export function useWhowouldwininatorState() {
   // Contest results state
   const [contestResults, setContestResults] = useState<ContestResults | null>(null);
   const [isGeneratingResults, setIsGeneratingResults] = useState(false);
+
+  // Contest story state
+  const [contestStory, setContestStory] = useState<ContestStory | null>(null);
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+
+  // Contest image state
+  const [contestImage, setContestImage] = useState<ContestImage | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const updateCandidate1 = useCallback((candidate: string | null, description: string | null) => {
     if (candidate !== null) {
@@ -273,6 +291,90 @@ Victory: First to incapacitate their opponent wins`;
     battleScenario,
   ]);
 
+  const generateContestStory = useCallback(async () => {
+    if (!contestResults) return;
+
+    setIsGeneratingStory(true);
+    try {
+      const response = await fetch('/api/v1/whowouldwininator/generate-contest-story', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidate1Name,
+          candidate1Description,
+          candidate1Details,
+          candidate2Name,
+          candidate2Description,
+          candidate2Details,
+          battleScenario,
+          contestResults,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate contest story');
+      }
+
+      const data = await response.json();
+      setContestStory(data);
+    } catch (error) {
+      console.error('Error generating contest story:', error);
+    } finally {
+      setIsGeneratingStory(false);
+    }
+  }, [
+    candidate1Name,
+    candidate1Description,
+    candidate1Details,
+    candidate2Name,
+    candidate2Description,
+    candidate2Details,
+    battleScenario,
+    contestResults,
+  ]);
+
+  const generateContestImage = useCallback(async () => {
+    if (!contestResults) return;
+
+    setIsGeneratingImage(true);
+    try {
+      const response = await fetch('/api/v1/whowouldwininator/generate-contest-results-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidate1Name,
+          candidate1Description,
+          candidate2Name,
+          candidate2Description,
+          battleScenario,
+          contestResults,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate contest image');
+      }
+
+      const data = await response.json();
+      setContestImage(data);
+    } catch (error) {
+      console.error('Error generating contest image:', error);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  }, [
+    candidate1Name,
+    candidate1Description,
+    candidate2Name,
+    candidate2Description,
+    battleScenario,
+    contestResults,
+  ]);
+
   return {
     candidate1Name,
     candidate2Name,
@@ -287,6 +389,10 @@ Victory: First to incapacitate their opponent wins`;
     battleScenario,
     contestResults,
     isGeneratingResults,
+    contestStory,
+    isGeneratingStory,
+    contestImage,
+    isGeneratingImage,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
@@ -295,5 +401,7 @@ Victory: First to incapacitate their opponent wins`;
     updateBattleScenario,
     getDefaultScenario,
     generateContestResults,
+    generateContestStory,
+    generateContestImage,
   };
 }

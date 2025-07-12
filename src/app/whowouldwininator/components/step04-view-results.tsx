@@ -11,6 +11,16 @@ interface ContestResults {
   reasoning: string;
 }
 
+interface ContestStory {
+  story: string;
+}
+
+interface ContestImage {
+  imageUrl: string;
+  altText: string;
+  prompt: string;
+}
+
 interface CharacterStats {
   strength: number;
   speed: number;
@@ -50,7 +60,13 @@ export function Step04ViewResults({
   battleScenario,
   contestResults,
   isGeneratingResults,
+  contestStory,
+  isGeneratingStory,
+  contestImage,
+  isGeneratingImage,
   generateContestResults,
+  generateContestStory,
+  generateContestImage,
   onPrevious,
 }: {
   candidate1Name: string;
@@ -62,7 +78,13 @@ export function Step04ViewResults({
   battleScenario: BattleScenario;
   contestResults: ContestResults | null;
   isGeneratingResults: boolean;
+  contestStory: ContestStory | null;
+  isGeneratingStory: boolean;
+  contestImage: ContestImage | null;
+  isGeneratingImage: boolean;
   generateContestResults: () => Promise<void>;
+  generateContestStory: () => Promise<void>;
+  generateContestImage: () => Promise<void>;
   onPrevious: () => void;
 }) {
   // Auto-generate results when component mounts
@@ -71,6 +93,20 @@ export function Step04ViewResults({
       generateContestResults();
     }
   }, [contestResults, isGeneratingResults, generateContestResults]);
+
+  // Auto-generate story after results are available
+  useEffect(() => {
+    if (contestResults && !contestStory && !isGeneratingStory) {
+      generateContestStory();
+    }
+  }, [contestResults, contestStory, isGeneratingStory, generateContestStory]);
+
+  // Auto-generate image after results are available
+  useEffect(() => {
+    if (contestResults && !contestImage && !isGeneratingImage) {
+      generateContestImage();
+    }
+  }, [contestResults, contestImage, isGeneratingImage, generateContestImage]);
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -275,6 +311,69 @@ export function Step04ViewResults({
               </div>
             </div>
           )}
+
+          {/* Contest Story */}
+          <div className="bg-space-dark rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Zap className="w-6 h-6 text-space-purple" />
+              <h3 className="text-xl font-semibold text-cream-white">Battle Story</h3>
+            </div>
+
+            {isGeneratingStory && (
+              <div className="flex items-center gap-3 text-gray-300">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Generating cinematic battle story...</span>
+              </div>
+            )}
+
+            {contestStory && !isGeneratingStory && (
+              <div className="prose prose-invert max-w-none">
+                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {contestStory.story}
+                </p>
+              </div>
+            )}
+
+            {!contestStory && !isGeneratingStory && (
+              <div className="text-gray-400 italic">
+                Story will be generated after battle results are determined...
+              </div>
+            )}
+          </div>
+
+          {/* Contest Image */}
+          <div className="bg-space-dark rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Target className="w-6 h-6 text-space-purple" />
+              <h3 className="text-xl font-semibold text-cream-white">Battle Scene</h3>
+            </div>
+
+            {isGeneratingImage && (
+              <div className="flex items-center gap-3 text-gray-300 mb-4">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Generating epic battle image...</span>
+              </div>
+            )}
+
+            {contestImage && !isGeneratingImage && (
+              <div className="space-y-4">
+                <div className="relative">
+                  <img
+                    src={contestImage.imageUrl}
+                    alt={contestImage.altText}
+                    className="w-full rounded-lg shadow-lg"
+                  />
+                </div>
+                <p className="text-sm text-gray-400 italic">{contestImage.altText}</p>
+              </div>
+            )}
+
+            {!contestImage && !isGeneratingImage && (
+              <div className="text-gray-400 italic">
+                Battle scene image will be generated after battle results are determined...
+              </div>
+            )}
+          </div>
         </div>
       )}
 
