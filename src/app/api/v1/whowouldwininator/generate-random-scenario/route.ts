@@ -242,7 +242,7 @@ export async function POST() {
       prompt: `Generate a creative and interesting battle scenario set in or around ${randomCategory}. 
 
 The scenario should include:
-- Setting: A detailed description of the battle environment and location
+- Setting: A brief description of the battle environment and location
 - Rules: Specific victory conditions and combat rules (not just "fight until knockout")
 - Obstacles: Environmental hazards, traps, or challenges that affect the battle
 - Limitations: Power restrictions, equipment limitations, or special conditions
@@ -250,13 +250,9 @@ The scenario should include:
 
 Make the scenario creative, engaging, and suitable for an epic battle between powerful characters. The scenario should add interesting tactical elements and not just be a standard fight.
 
-Examples of good scenarios:
-- A battle on a collapsing bridge over lava where fighters must also avoid falling debris
-- A contest in a gravity-shifting room where the direction of gravity changes every 30 seconds
-- A fight in a hall of mirrors where illusions and reflections confuse the combatants
-- A battle during a solar eclipse that temporarily drains magical powers
-
-Be creative and make it memorable!`,
+Writing Style:
+- Use brief, direct language in a Hemingwayesque style
+`,
       temperature: 0.9, // High temperature for creative variety
       maxTokens: 500,
     });
