@@ -440,22 +440,6 @@ export function Step04ViewResults({
         </Button>
 
         <div className="flex gap-3">
-          {contestResults && (
-            <Button
-              onClick={() => {
-                // Reset refs to allow regeneration
-                resultsGenerationInitiated.current = false;
-                storyGenerationInitiated.current = false;
-                imageGenerationInitiated.current = false;
-                generateContestResults();
-              }}
-              variant="ghost"
-              className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
-            >
-              Generate New Results
-            </Button>
-          )}
-
           <Button
             onClick={() => window.location.reload()}
             variant="outline"
