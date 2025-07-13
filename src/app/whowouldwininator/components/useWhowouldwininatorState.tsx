@@ -328,7 +328,7 @@ Victory: First to incapacitate their opponent wins`;
   ]);
 
   const generateContestImage = useCallback(async () => {
-    if (!contestResults) return;
+    if (!contestResults || !contestStory) return;
 
     setIsGeneratingImage(true);
     try {
@@ -344,6 +344,7 @@ Victory: First to incapacitate their opponent wins`;
           candidate2Description,
           battleScenario,
           contestResults,
+          contestStory: contestStory.story,
         }),
       });
 
@@ -365,6 +366,7 @@ Victory: First to incapacitate their opponent wins`;
     candidate2Description,
     battleScenario,
     contestResults,
+    contestStory,
   ]);
 
   return {

@@ -125,10 +125,11 @@ export function Step04ViewResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestResults, contestStory, isGeneratingStory]);
 
-  // Auto-generate image after results are available
+  // Auto-generate image after results and story are available
   useEffect(() => {
     if (
       contestResults &&
+      contestStory &&
       !contestImage &&
       !isGeneratingImage &&
       !imageGenerationInitiated.current
@@ -137,7 +138,7 @@ export function Step04ViewResults({
       generateContestImage();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contestResults, contestImage, isGeneratingImage]);
+  }, [contestResults, contestStory, contestImage, isGeneratingImage]);
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -403,7 +404,9 @@ export function Step04ViewResults({
 
             {!contestImage && !isGeneratingImage && (
               <div className="text-gray-400 italic">
-                Battle scene image will be generated after battle results are determined...
+                {contestStory
+                  ? 'Battle scene image will be generated after battle story is complete...'
+                  : 'Battle scene image will be generated after battle results and story are determined...'}
               </div>
             )}
           </div>

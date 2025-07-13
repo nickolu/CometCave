@@ -18,6 +18,7 @@ export async function POST(request: Request) {
       candidate2Description,
       battleScenario,
       contestResults,
+      contestStory,
     } = await request.json();
 
     const openaiClient = createOpenAI({
@@ -31,6 +32,15 @@ export async function POST(request: Request) {
     // Build scenario description for image prompt
     const scenarioDescription = battleScenario.setting || 'open field';
 
+    // Extract the last paragraph from the story to use as context
+    let storyContext = '';
+    if (contestStory) {
+      const paragraphs = contestStory.split('\n\n').filter((p: string) => p.trim().length > 0);
+      if (paragraphs.length > 0) {
+        storyContext = paragraphs[paragraphs.length - 1].trim();
+      }
+    }
+
     // Determine winner for image composition
     let winnerName = '';
     if (contestResults.winner === 'candidate1') {
@@ -39,12 +49,18 @@ export async function POST(request: Request) {
       winnerName = candidate2Name;
     }
 
-    // Initial image generation prompt
+    // Initial image generation prompt using story context
     let imagePrompt = '';
-    if (contestResults.winner === 'tie') {
-      imagePrompt = `An epic battle scene showing two powerful characters locked in combat in ${scenarioDescription}. Character 1: ${candidate1Description}. Character 2: ${candidate2Description}. Both characters are evenly matched, showing equal power and determination. The scene should be dramatic and cinematic, with dynamic action, energy effects, and dramatic lighting. The composition should show both characters as equals in the frame.`;
+    if (contestStory && storyContext) {
+      // Use the story context as the primary basis for the image
+      imagePrompt = `Create an epic cinematic image depicting the final moment of this battle: "${storyContext}". The setting is ${scenarioDescription}. Character 1: ${candidate1Description}. Character 2: ${candidate2Description}. The image should capture the exact dramatic moment described in the text with dynamic action, energy effects, and cinematic lighting. Focus on the decisive action and outcome shown in the scene description. Make it visually striking and epic.`;
     } else {
-      imagePrompt = `An epic battle scene showing the decisive moment where ${winnerName} defeats their opponent in ${scenarioDescription}. Winner: ${contestResults.winner === 'candidate1' ? candidate1Description : candidate2Description}. Opponent: ${contestResults.winner === 'candidate1' ? candidate2Description : candidate1Description}. The scene should be dramatic and cinematic, showing the winner in a triumphant pose while the opponent is clearly defeated.`;
+      // Fallback to the original approach if no story context
+      if (contestResults.winner === 'tie') {
+        imagePrompt = `An epic battle scene showing two powerful characters locked in combat in ${scenarioDescription}. Character 1: ${candidate1Description}. Character 2: ${candidate2Description}. Both characters are evenly matched, showing equal power and determination. The scene should be dramatic and cinematic, with dynamic action, energy effects, and dramatic lighting. The composition should show both characters as equals in the frame.`;
+      } else {
+        imagePrompt = `An epic battle scene showing the decisive moment where ${winnerName} defeats their opponent in ${scenarioDescription}. Winner: ${contestResults.winner === 'candidate1' ? candidate1Description : candidate2Description}. Opponent: ${contestResults.winner === 'candidate1' ? candidate2Description : candidate1Description}. The scene should be dramatic and cinematic, showing the winner in a triumphant pose while the opponent is clearly defeated.`;
+      }
     }
 
     console.log(
@@ -118,7 +134,11 @@ New safer prompt:`,
           } catch (safetyError) {
             console.error('Failed to generate safer prompt:', safetyError);
             // If we can't generate a safer prompt, make a generic one
-            imagePrompt = `A generic fantasy battle scene between two warriors in ${scenarioDescription}, with dramatic lighting and cinematic composition`;
+            if (storyContext) {
+              imagePrompt = `A generic fantasy battle scene depicting: "${storyContext.substring(0, 200)}..." in ${scenarioDescription}, with dramatic lighting and cinematic composition`;
+            } else {
+              imagePrompt = `A generic fantasy battle scene between two warriors in ${scenarioDescription}, with dramatic lighting and cinematic composition`;
+            }
           }
         } else {
           // Final fallback after 3 attempts
