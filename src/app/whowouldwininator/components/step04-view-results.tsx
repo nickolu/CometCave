@@ -125,20 +125,13 @@ export function Step04ViewResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestResults, contestStory, isGeneratingStory]);
 
-  // Auto-generate image after results and story are available
-  useEffect(() => {
-    if (
-      contestResults &&
-      contestStory &&
-      !contestImage &&
-      !isGeneratingImage &&
-      !imageGenerationInitiated.current
-    ) {
+  // Manual image generation function
+  const handleGenerateImage = () => {
+    if (!imageGenerationInitiated.current) {
       imageGenerationInitiated.current = true;
       generateContestImage();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contestResults, contestStory, contestImage, isGeneratingImage]);
+  };
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -375,9 +368,21 @@ export function Step04ViewResults({
 
           {/* Contest Image */}
           <div className="bg-space-dark rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Target className="w-6 h-6 text-space-purple" />
-              <h3 className="text-xl font-semibold text-cream-white">Battle Scene</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Target className="w-6 h-6 text-space-purple" />
+                <h3 className="text-xl font-semibold text-cream-white">Battle Scene</h3>
+              </div>
+              {!contestImage && !isGeneratingImage && contestStory && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateImage}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Image
+                </Button>
+              )}
             </div>
 
             {isGeneratingImage && (
@@ -403,10 +408,21 @@ export function Step04ViewResults({
             )}
 
             {!contestImage && !isGeneratingImage && (
-              <div className="text-gray-400 italic">
-                {contestStory
-                  ? 'Battle scene image will be generated after battle story is complete...'
-                  : 'Battle scene image will be generated after battle results and story are determined...'}
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-gray-400 italic text-center">
+                  {contestStory
+                    ? 'Ready to generate battle scene image'
+                    : 'Battle scene image will be available after battle results and story are determined'}
+                </div>
+                {contestStory && (
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateImage}
+                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  >
+                    Generate Battle Scene
+                  </Button>
+                )}
               </div>
             )}
           </div>

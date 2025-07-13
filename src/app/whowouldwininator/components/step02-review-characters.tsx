@@ -132,16 +132,10 @@ export function Step02ReviewCharacters({
     candidate2: new Set(),
   });
 
-  // Auto-generate character details when component mounts
+  // Auto-generate character details when component mounts (excluding portrait)
   useEffect(() => {
     if (candidate1Name && candidate1Description) {
-      const detailTypes: Array<keyof CharacterDetails> = [
-        'backstory',
-        'powers',
-        'stats',
-        'feats',
-        'portrait',
-      ];
+      const detailTypes: Array<keyof CharacterDetails> = ['backstory', 'powers', 'stats', 'feats'];
 
       detailTypes.forEach(detailType => {
         if (!generationInitiated.current.candidate1.has(detailType)) {
@@ -157,13 +151,7 @@ export function Step02ReviewCharacters({
 
   useEffect(() => {
     if (candidate2Name && candidate2Description) {
-      const detailTypes: Array<keyof CharacterDetails> = [
-        'backstory',
-        'powers',
-        'stats',
-        'feats',
-        'portrait',
-      ];
+      const detailTypes: Array<keyof CharacterDetails> = ['backstory', 'powers', 'stats', 'feats'];
 
       detailTypes.forEach(detailType => {
         if (!generationInitiated.current.candidate2.has(detailType)) {
@@ -203,6 +191,16 @@ export function Step02ReviewCharacters({
     return text.substring(0, maxLength) + '...';
   };
 
+  const handleGeneratePortrait = (candidateNumber: 1 | 2) => {
+    const name = candidateNumber === 1 ? candidate1Name : candidate2Name;
+    const description = candidateNumber === 1 ? candidate1Description : candidate2Description;
+
+    if (!generationInitiated.current[`candidate${candidateNumber}`].has('portrait')) {
+      generationInitiated.current[`candidate${candidateNumber}`].add('portrait');
+      generateCharacterDetail(candidateNumber, 'portrait', name, description);
+    }
+  };
+
   const StatBar = ({ label, value, max = 100 }: { label: string; value: number; max?: number }) => (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium w-20">{label}:</span>
@@ -238,6 +236,16 @@ export function Step02ReviewCharacters({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-cream-white">Portrait</h3>
+              {!details.portrait && !loading.portrait && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleGeneratePortrait(candidateNumber)}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Portrait
+                </Button>
+              )}
             </div>
             {loading.portrait ? (
               <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
@@ -252,8 +260,14 @@ export function Step02ReviewCharacters({
                 height={1024}
               />
             ) : (
-              <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
-                <span className="text-gray-400">Portrait not available</span>
+              <div className="flex flex-col items-center justify-center h-48 bg-space-grey/20 rounded-lg gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => handleGeneratePortrait(candidateNumber)}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Portrait
+                </Button>
               </div>
             )}
           </div>
