@@ -225,7 +225,10 @@ const SCENARIO_CATEGORIES = [
   'izar',
 ];
 
-export async function POST() {
+export async function POST(request: Request) {
+  const { character1Name, character2Name, character1Description, character2Description } =
+    await request.json();
+
   try {
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -240,6 +243,10 @@ export async function POST() {
       model: openaiClient('gpt-4o-mini'),
       schema: RandomScenarioSchema,
       prompt: `Generate a creative and interesting battle scenario set in or around ${randomCategory}. 
+
+      If possible, make the setting relevant to a battle between the following characters:
+      ${character1Name}: ${character1Description}
+      ${character2Name}: ${character2Description}
 
 The scenario should include:
 - Setting: A brief description of the battle environment and location

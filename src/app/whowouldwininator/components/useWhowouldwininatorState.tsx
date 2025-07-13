@@ -251,6 +251,12 @@ export function useWhowouldwininatorState() {
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          character1Name: candidate1Name,
+          character2Name: candidate2Name,
+          character1Description: candidate1Description,
+          character2Description: candidate2Description,
+        }),
       });
 
       if (!response.ok) {
