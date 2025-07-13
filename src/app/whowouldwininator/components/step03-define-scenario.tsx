@@ -2,7 +2,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Swords, MapPin, Shield, AlertTriangle, FileText, RotateCcw } from 'lucide-react';
+import {
+  Swords,
+  MapPin,
+  Shield,
+  AlertTriangle,
+  FileText,
+  RotateCcw,
+  RefreshCcw,
+  Loader2,
+} from 'lucide-react';
 
 interface BattleScenario {
   setting: string;
@@ -38,6 +47,8 @@ export function Step03DefineScenario({
   candidate2Name,
   battleScenario,
   updateBattleScenario,
+  generateRandomScenario,
+  isGeneratingScenario,
   onNext,
   onPrevious,
 }: {
@@ -45,6 +56,8 @@ export function Step03DefineScenario({
   candidate2Name: string;
   battleScenario: BattleScenario;
   updateBattleScenario: (field: keyof BattleScenario, value: string) => void;
+  generateRandomScenario: () => Promise<void>;
+  isGeneratingScenario: boolean;
   onNext: () => void;
   onPrevious: () => void;
 }) {
@@ -268,6 +281,20 @@ export function Step03DefineScenario({
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset to Defaults
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={generateRandomScenario}
+            disabled={isGeneratingScenario}
+            className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
+          >
+            {isGeneratingScenario ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCcw className="w-4 h-4 mr-2" />
+            )}
+            {isGeneratingScenario ? 'Generating...' : 'Random Scenario'}
           </Button>
 
           <Button

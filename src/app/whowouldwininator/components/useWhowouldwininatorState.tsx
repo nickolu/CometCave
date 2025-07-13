@@ -100,6 +100,7 @@ export function useWhowouldwininatorState() {
     limitations: '',
     additionalContext: '',
   });
+  const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
 
   // Contest results state
   const [contestResults, setContestResults] = useState<ContestResults | null>(null);
@@ -242,6 +243,35 @@ export function useWhowouldwininatorState() {
     setBattleScenario(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  const generateRandomScenario = useCallback(async () => {
+    setIsGeneratingScenario(true);
+    try {
+      const response = await fetch('/api/v1/whowouldwininator/generate-random-scenario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate random scenario');
+      }
+
+      const data = await response.json();
+      setBattleScenario({
+        setting: data.setting,
+        rules: data.rules,
+        obstacles: data.obstacles,
+        limitations: data.limitations,
+        additionalContext: data.additionalContext,
+      });
+    } catch (error) {
+      console.error('Error generating random scenario:', error);
+    } finally {
+      setIsGeneratingScenario(false);
+    }
+  }, []);
+
   const getDefaultScenario = useCallback((): string => {
     return `${candidate1Name} vs ${candidate2Name} - Battle to TKO
 
@@ -381,6 +411,7 @@ Victory: First to incapacitate their opponent wins`;
     candidate1DetailsLoading,
     candidate2DetailsLoading,
     battleScenario,
+    isGeneratingScenario,
     contestResults,
     isGeneratingResults,
     contestStory,
@@ -393,6 +424,7 @@ Victory: First to incapacitate their opponent wins`;
     generateCharacterDetail,
     updateCharacterDetail,
     updateBattleScenario,
+    generateRandomScenario,
     getDefaultScenario,
     generateContestResults,
     generateContestStory,

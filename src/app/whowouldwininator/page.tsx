@@ -21,6 +21,7 @@ export default function Whowouldwininator() {
     candidate1DetailsLoading,
     candidate2DetailsLoading,
     battleScenario,
+    isGeneratingScenario,
     contestResults,
     isGeneratingResults,
     contestStory,
@@ -33,6 +34,7 @@ export default function Whowouldwininator() {
     generateCharacterDetail,
     updateCharacterDetail,
     updateBattleScenario,
+    generateRandomScenario,
     generateContestResults,
     generateContestStory,
     generateContestImage,
@@ -79,6 +81,8 @@ export default function Whowouldwininator() {
             candidate2Name={candidate2Name}
             battleScenario={battleScenario}
             updateBattleScenario={updateBattleScenario}
+            generateRandomScenario={generateRandomScenario}
+            isGeneratingScenario={isGeneratingScenario}
             onNext={nextStep}
             onPrevious={previousStep}
           />
