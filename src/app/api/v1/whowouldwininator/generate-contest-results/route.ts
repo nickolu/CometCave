@@ -3,35 +3,6 @@ import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { ContestResultsSchema } from '../types';
 
-// Helper function to build a concise character summary (no backstory)
-function buildCharacterSummary(
-  name: string,
-  description: string,
-  details: Record<string, unknown>
-): string {
-  const summary = [`${name}: ${description}`];
-
-  // Skip backstory - it's too long and not needed for battle analysis
-
-  if (details.powers && Array.isArray(details.powers)) {
-    const powers = details.powers.map(p => String(p));
-    summary.push(`Powers: ${powers.join(', ')}`);
-  }
-
-  if (details.stats && typeof details.stats === 'object' && details.stats !== null) {
-    const stats = details.stats as Record<string, unknown>;
-    const statsStr = `Stats: STR:${stats.strength} SPD:${stats.speed} DUR:${stats.durability} INT:${stats.intelligence} SPC:${stats.specialAbilities} FGT:${stats.fighting}`;
-    summary.push(statsStr);
-  }
-
-  if (details.feats && Array.isArray(details.feats)) {
-    const feats = details.feats.map(f => String(f));
-    summary.push(`Key Feats: ${feats.join(', ')}`);
-  }
-
-  return summary.join('\n');
-}
-
 export async function POST(request: Request) {
   try {
     // Check content length before parsing to prevent large payloads
@@ -50,10 +21,8 @@ export async function POST(request: Request) {
     const {
       candidate1Name,
       candidate1Description,
-      candidate1Details,
       candidate2Name,
       candidate2Description,
-      candidate2Details,
       battleScenario,
     } = body;
 
@@ -65,19 +34,6 @@ export async function POST(request: Request) {
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-
-    // Build concise character summaries to avoid payload limits
-    const char1Summary = buildCharacterSummary(
-      candidate1Name,
-      candidate1Description || 'No description provided',
-      candidate1Details || {}
-    );
-
-    const char2Summary = buildCharacterSummary(
-      candidate2Name,
-      candidate2Description || 'No description provided',
-      candidate2Details || {}
-    );
 
     // Build concise scenario description
     const scenarioSummary =
@@ -97,10 +53,12 @@ export async function POST(request: Request) {
     const prompt = `Analyze this battle and determine the winner:
 
 CHARACTER 1:
-${char1Summary}
+name: ${candidate1Name}
+description: ${candidate1Description}
 
 CHARACTER 2:
-${char2Summary}
+name: ${candidate2Name}
+description: ${candidate2Description}
 
 ${scenarioSummary}
 

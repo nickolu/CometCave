@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     if (contestResults.winner === 'tie') {
       imagePrompt = `An epic battle scene showing two powerful characters locked in combat in ${scenarioDescription}. Character 1: ${candidate1Description}. Character 2: ${candidate2Description}. Both characters are evenly matched, showing equal power and determination. The scene should be dramatic and cinematic, with dynamic action, energy effects, and dramatic lighting. The composition should show both characters as equals in the frame.`;
     } else {
-      imagePrompt = `An epic battle scene showing the decisive moment where ${winnerName} defeats their opponent in ${scenarioDescription}. Winner: ${contestResults.winner === 'candidate1' ? candidate1Description : candidate2Description}. Opponent: ${contestResults.winner === 'candidate1' ? candidate2Description : candidate1Description}. The scene should be dramatic and cinematic, showing the winner in a triumphant pose while the opponent is clearly defeated. Include dynamic action, energy effects, and dramatic lighting.`;
+      imagePrompt = `An epic battle scene showing the decisive moment where ${winnerName} defeats their opponent in ${scenarioDescription}. Winner: ${contestResults.winner === 'candidate1' ? candidate1Description : candidate2Description}. Opponent: ${contestResults.winner === 'candidate1' ? candidate2Description : candidate1Description}. The scene should be dramatic and cinematic, showing the winner in a triumphant pose while the opponent is clearly defeated.`;
     }
 
     console.log(
