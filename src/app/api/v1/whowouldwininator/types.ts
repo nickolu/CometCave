@@ -39,6 +39,7 @@ export const CharacterPortraitSchema = z.object({
   imageUrl: z.string().describe('URL of the generated character portrait'),
   altText: z.string().describe('Alt text description of the image'),
   prompt: z.string().describe('The prompt used to generate the image'),
+  cloudinaryPublicId: z.string().optional().describe('Cloudinary public ID for the uploaded image'),
 });
 
 export const ContestResultsSchema = z.object({
@@ -57,4 +58,5 @@ export const ContestImageSchema = z.object({
   imageUrl: z.string().describe('URL of the generated contest image'),
   altText: z.string().describe('Alt text description of the contest image'),
   prompt: z.string().describe('The prompt used to generate the contest image'),
+  cloudinaryPublicId: z.string().optional().describe('Cloudinary public ID for the uploaded image'),
 });

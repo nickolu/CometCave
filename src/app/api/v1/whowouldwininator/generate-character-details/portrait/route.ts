@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { uploadBase64Image, generatePublicId } from '@/lib/cloudinary';
 
 export const config = {
   maxDuration: 300, // 5 minutes in seconds
@@ -48,8 +49,27 @@ The portrait should:
           throw new Error('No image data returned from OpenAI');
         }
 
-        // Convert base64 to data URL
+        // Convert base64 to data URL for fallback
         const imageUrl = `data:image/png;base64,${imageB64}`;
+
+        // Upload to Cloudinary
+        let cloudinaryUrl = imageUrl; // fallback to base64 if Cloudinary fails
+        let cloudinaryPublicId = '';
+
+        try {
+          const publicId = generatePublicId('whowouldwininator_portrait', name);
+          const cloudinaryResult = await uploadBase64Image(imageUrl, {
+            folder: 'whowouldwininator-portraits',
+            public_id: publicId,
+            overwrite: true,
+          });
+          cloudinaryUrl = cloudinaryResult.secure_url;
+          cloudinaryPublicId = cloudinaryResult.public_id;
+          console.log(`Successfully uploaded portrait to Cloudinary: ${cloudinaryUrl}`);
+        } catch (cloudinaryError) {
+          console.error('Failed to upload portrait to Cloudinary:', cloudinaryError);
+          // Continue with base64 URL as fallback
+        }
 
         // Generate alt text description
         const altTextResult = await generateText({
@@ -69,10 +89,11 @@ Keep it under 200 characters.`,
 
         return NextResponse.json({
           portrait: {
-            imageUrl: imageUrl,
+            imageUrl: cloudinaryUrl,
             altText: altTextResult.text,
             prompt: imagePrompt,
             attempt: attempt,
+            cloudinaryPublicId: cloudinaryPublicId || undefined,
           },
         });
       } catch (error: unknown) {

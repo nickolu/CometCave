@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { uploadBase64Image, generatePublicId } from '@/lib/cloudinary';
 
 export const config = {
   maxDuration: 300, // 5 minutes in seconds
@@ -85,8 +86,28 @@ export async function POST(request: Request) {
           throw new Error('No image data returned from OpenAI');
         }
 
-        // Convert base64 to data URL
+        // Convert base64 to data URL for fallback
         const imageUrl = `data:image/png;base64,${imageB64}`;
+        
+        // Upload to Cloudinary
+        let cloudinaryUrl = imageUrl; // fallback to base64 if Cloudinary fails
+        let cloudinaryPublicId = '';
+        
+        try {
+          const battleName = `${candidate1Name}_vs_${candidate2Name}`;
+          const publicId = generatePublicId('whowouldwininator_battle', battleName);
+          const cloudinaryResult = await uploadBase64Image(imageUrl, {
+            folder: 'whowouldwininator-battle-scenes',
+            public_id: publicId,
+            overwrite: true,
+          });
+          cloudinaryUrl = cloudinaryResult.secure_url;
+          cloudinaryPublicId = cloudinaryResult.public_id;
+          console.log(`Successfully uploaded battle scene to Cloudinary: ${cloudinaryUrl}`);
+        } catch (cloudinaryError) {
+          console.error('Failed to upload battle scene to Cloudinary:', cloudinaryError);
+          // Continue with base64 URL as fallback
+        }
 
         // Generate alt text description
         const altTextResult = await generateText({
@@ -106,10 +127,11 @@ Keep it under 200 characters.`,
         });
 
         return NextResponse.json({
-          imageUrl: imageUrl,
+          imageUrl: cloudinaryUrl,
           altText: altTextResult.text,
           prompt: imagePrompt,
           attempt: attempt,
+          cloudinaryPublicId: cloudinaryPublicId || undefined,
         });
       } catch (error: unknown) {
         console.error(`Contest image generation attempt ${attempt} failed:`, error);
