@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RefreshCcw, Loader2 } from 'lucide-react';
+import { RefreshCcw, Loader2, Sparkles } from 'lucide-react';
 
 export function Step01DefineCharacters({
   candidate1Name,
@@ -10,9 +10,12 @@ export function Step01DefineCharacters({
   candidate2Description,
   isGeneratingCandidate1,
   isGeneratingCandidate2,
+  isGeneratingCandidate1Description,
+  isGeneratingCandidate2Description,
   updateCandidate1,
   updateCandidate2,
   generateRandomCharacter,
+  generateCharacterDescription,
   onNext,
 }: {
   candidate1Name: string;
@@ -21,9 +24,12 @@ export function Step01DefineCharacters({
   candidate2Description: string;
   isGeneratingCandidate1: boolean;
   isGeneratingCandidate2: boolean;
+  isGeneratingCandidate1Description: boolean;
+  isGeneratingCandidate2Description: boolean;
   updateCandidate1: (candidate: string | null, description: string | null) => void;
   updateCandidate2: (candidate: string | null, description: string | null) => void;
   generateRandomCharacter: (candidateNumber: 1 | 2) => Promise<void>;
+  generateCharacterDescription: (candidateNumber: 1 | 2) => Promise<void>;
   onNext: () => void;
 }) {
   return (
@@ -67,19 +73,35 @@ export function Step01DefineCharacters({
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="candidate1-description"
-              className="text-sm font-medium text-cream-white"
-            >
-              Description:
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="candidate1-description"
+                className="text-sm font-medium text-cream-white"
+              >
+                Description:
+              </label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generateCharacterDescription(1)}
+                disabled={!candidate1Name || candidate1Name.trim() === '' || isGeneratingCandidate1Description || isGeneratingCandidate1}
+                className="self-start sm:self-auto"
+              >
+                {isGeneratingCandidate1Description ? (
+                  <Loader2 className="w-4 h-4 text-space-purple animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-space-purple" />
+                )}
+                <span className="ml-2">Generate</span>
+              </Button>
+            </div>
             <Textarea
               id="candidate1-description"
               value={candidate1Description ?? ''}
               onChange={e => updateCandidate1(null, e.target.value)}
               placeholder="(Optional) Describe your character's appearance, abilities, and personality..."
               className="min-h-[100px] sm:min-h-[120px] resize-none bg-space-dark border-space-purple/30"
-              disabled={isGeneratingCandidate1}
+              disabled={isGeneratingCandidate1 || isGeneratingCandidate1Description}
             />
           </div>
         </div>
@@ -128,19 +150,35 @@ export function Step01DefineCharacters({
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="candidate2-description"
-              className="text-sm font-medium text-cream-white"
-            >
-              Description:
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="candidate2-description"
+                className="text-sm font-medium text-cream-white"
+              >
+                Description:
+              </label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generateCharacterDescription(2)}
+                disabled={!candidate2Name || candidate2Name.trim() === '' || isGeneratingCandidate2Description || isGeneratingCandidate2}
+                className="self-start sm:self-auto"
+              >
+                {isGeneratingCandidate2Description ? (
+                  <Loader2 className="w-4 h-4 text-space-purple animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 text-space-purple" />
+                )}
+                <span className="ml-2">Generate</span>
+              </Button>
+            </div>
             <Textarea
               id="candidate2-description"
               value={candidate2Description ?? ''}
               onChange={e => updateCandidate2(null, e.target.value)}
               placeholder="(Optional) Describe your character's appearance, abilities, and personality..."
               className="min-h-[100px] sm:min-h-[120px] resize-none bg-space-dark border-space-purple/30"
-              disabled={isGeneratingCandidate2}
+              disabled={isGeneratingCandidate2 || isGeneratingCandidate2Description}
             />
           </div>
         </div>

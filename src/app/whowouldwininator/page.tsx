@@ -16,6 +16,8 @@ export default function Whowouldwininator() {
     candidate2Description,
     isGeneratingCandidate1,
     isGeneratingCandidate2,
+    isGeneratingCandidate1Description,
+    isGeneratingCandidate2Description,
     candidate1Details,
     candidate2Details,
     candidate1DetailsLoading,
@@ -31,6 +33,7 @@ export default function Whowouldwininator() {
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
+    generateCharacterDescription,
     generateCharacterDetail,
     updateCharacterDetail,
     updateBattleScenario,
@@ -53,9 +56,12 @@ export default function Whowouldwininator() {
             candidate2Description={candidate2Description}
             isGeneratingCandidate1={isGeneratingCandidate1}
             isGeneratingCandidate2={isGeneratingCandidate2}
+            isGeneratingCandidate1Description={isGeneratingCandidate1Description}
+            isGeneratingCandidate2Description={isGeneratingCandidate2Description}
             updateCandidate1={updateCandidate1}
             updateCandidate2={updateCandidate2}
             generateRandomCharacter={generateRandomCharacter}
+            generateCharacterDescription={generateCharacterDescription}
             onNext={nextStep}
           />
         )}

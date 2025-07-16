@@ -61,6 +61,8 @@ export function useWhowouldwininatorState() {
   const [generatedCharacters, setGeneratedCharacters] = useState<string[]>([]);
   const [isGeneratingCandidate1, setIsGeneratingCandidate1] = useState(false);
   const [isGeneratingCandidate2, setIsGeneratingCandidate2] = useState(false);
+  const [isGeneratingCandidate1Description, setIsGeneratingCandidate1Description] = useState(false);
+  const [isGeneratingCandidate2Description, setIsGeneratingCandidate2Description] = useState(false);
 
   // Character details state
   const [candidate1Details, setCandidate1Details] = useState<Partial<CharacterDetails>>({});
@@ -164,6 +166,44 @@ export function useWhowouldwininatorState() {
       }
     },
     [generatedCharacters, updateCandidate1, updateCandidate2]
+  );
+
+  const generateCharacterDescription = useCallback(
+    async (candidateNumber: 1 | 2) => {
+      const setIsGenerating =
+        candidateNumber === 1 ? setIsGeneratingCandidate1Description : setIsGeneratingCandidate2Description;
+      const updateCandidate = candidateNumber === 1 ? updateCandidate1 : updateCandidate2;
+      const candidateName = candidateNumber === 1 ? candidate1Name : candidate2Name;
+
+      if (!candidateName || candidateName.trim() === '') {
+        return;
+      }
+
+      setIsGenerating(true);
+      try {
+        const response = await fetch('/api/v1/whowouldwininator/generate-character-description', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: candidateName,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate character description');
+        }
+
+        const data = await response.json();
+        updateCandidate(null, data.description);
+      } catch (error) {
+        console.error('Error generating character description:', error);
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [candidate1Name, candidate2Name, updateCandidate1, updateCandidate2]
   );
 
   const generateCharacterDetail = useCallback(
@@ -276,7 +316,7 @@ export function useWhowouldwininatorState() {
     } finally {
       setIsGeneratingScenario(false);
     }
-  }, []);
+  }, [candidate1Name, candidate2Name, candidate1Description, candidate2Description]);
 
   const getDefaultScenario = useCallback((): string => {
     return `${candidate1Name} vs ${candidate2Name} - Battle to TKO
@@ -412,6 +452,8 @@ Victory: First to incapacitate their opponent wins`;
     candidate2Description,
     isGeneratingCandidate1,
     isGeneratingCandidate2,
+    isGeneratingCandidate1Description,
+    isGeneratingCandidate2Description,
     candidate1Details,
     candidate2Details,
     candidate1DetailsLoading,
@@ -427,6 +469,7 @@ Victory: First to incapacitate their opponent wins`;
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
+    generateCharacterDescription,
     generateCharacterDetail,
     updateCharacterDetail,
     updateBattleScenario,
