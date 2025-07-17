@@ -273,7 +273,7 @@ export function Step03DefineScenario({
           Previous
         </Button>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end flex-wrap">
           <Button
             variant="ghost"
             onClick={resetToDefaults}
