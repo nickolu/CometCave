@@ -6,7 +6,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { cn } from '@/lib/utils';
-import { Square, RectangleHorizontal, RectangleVertical, UploadCloud } from 'lucide-react';
+import {
+  Square,
+  RectangleHorizontal,
+  RectangleVertical,
+  UploadCloud,
+  RefreshCcw,
+} from 'lucide-react';
+import Image from 'next/image';
 
 // Map of mediums to their available styles
 const mediumStyles: Record<string, { styles: string[] }> = {
@@ -195,7 +202,7 @@ export default function AvatarMakerPage() {
 
   const convertToPng = (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -244,7 +251,7 @@ export default function AvatarMakerPage() {
       }
 
       // Create a fully transparent mask of same dimensions
-      const img = new Image();
+      const img = new window.Image();
       img.src = URL.createObjectURL(uploadFile);
       await new Promise(resolve => (img.onload = resolve));
       const maskFile = createTransparentMask(img.width, img.height);
@@ -278,7 +285,7 @@ export default function AvatarMakerPage() {
       }
 
       const data: { images: string[] } = await res.json();
-      setGeneratedImages(data.images);
+      setGeneratedImages(prev => [...prev, ...data.images]);
     } catch (err) {
       console.error(err);
       alert((err as Error).message);
@@ -302,7 +309,7 @@ export default function AvatarMakerPage() {
           {loading && (
             <div className="absolute inset-0 bg-black/70 flex flex-col gap-4 items-center justify-center z-10 animate-fade-in">
               <span className="h-10 w-10 border-4 border-t-transparent border-space-purple rounded-full animate-spin" />
-              <p className="text-cream-white">Generating avatars...</p>
+              <p className="text-cream-white">Generating avatar...</p>
             </div>
           )}
 
@@ -339,10 +346,12 @@ export default function AvatarMakerPage() {
               )}
             >
               {imageFile ? (
-                <img
+                <Image
                   src={URL.createObjectURL(imageFile)}
                   alt="Uploaded preview"
-                  className="rounded max-h-80 object-contain"
+                  className="rounded max-h-80 object-contain w-full"
+                  width={320}
+                  height={320}
                 />
               ) : (
                 <>
@@ -451,30 +460,35 @@ export default function AvatarMakerPage() {
             </div>
           </div>
 
-          <Button
-            onClick={handleGenerate}
-            disabled={!imageFile || loading}
-            className={cn('w-full bg-space-purple hover:bg-space-purple/80 text-cream-white', {
-              'opacity-75': loading,
-            })}
-          >
-            {loading ? 'Generating...' : 'Generate Avatar'}
-          </Button>
+          {generatedImages.length === 0 && (
+            <Button
+              onClick={handleGenerate}
+              disabled={!imageFile || loading}
+              className={cn('w-full bg-space-purple hover:bg-space-purple/80 text-cream-white', {
+                'opacity-75': loading,
+              })}
+            >
+              {loading ? 'Generating...' : 'Generate Avatar'}
+            </Button>
+          )}
 
           {generatedImages.length > 0 && (
             <div className="space-y-6 animate-in fade-in">
               <div>
-                <h2 className="text-2xl font-semibold text-center text-cream-white mb-4">
-                  Generated Avatar
+                <h2 className="text-2xl font-semibold text-center text-cream-white mb-4 text-center">
+                  Generated Avatar{generatedImages.length > 1 ? 's' : ''}
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="gap-4 justify-center items-center w-full">
                   {generatedImages.map(src => (
-                    <img
-                      key={src}
-                      src={src}
-                      alt="Generated avatar"
-                      className="rounded border border-slate-700 object-contain w-full"
-                    />
+                    <div key={src}>
+                      <Image
+                        src={src}
+                        alt="Generated avatar"
+                        className="rounded border border-slate-700 object-contain w-full"
+                        width={320}
+                        height={320}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -483,8 +497,9 @@ export default function AvatarMakerPage() {
                 <Button
                   onClick={handleGenerate}
                   disabled={loading}
-                  className="bg-space-blue hover:bg-space-blue/80 text-cream-white"
+                  className="bg-space-blue hover:bg-space-blue/80 text-cream-white w-full"
                 >
+                  <RefreshCcw className="w-4 h-4 mr-2" />
                   {loading ? 'Generating...' : 'Generate More'}
                 </Button>
               </div>
