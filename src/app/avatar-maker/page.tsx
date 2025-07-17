@@ -465,7 +465,7 @@ export default function AvatarMakerPage() {
             <div className="space-y-6 animate-in fade-in">
               <div>
                 <h2 className="text-2xl font-semibold text-center text-cream-white mb-4">
-                  Generated Avatars
+                  Generated Avatar
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {generatedImages.map(src => (
