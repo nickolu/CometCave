@@ -267,7 +267,7 @@ export default function AvatarMakerPage() {
       formData.append('n', '4');
       formData.append('size', size);
 
-      const res = await fetch('/api/avatar-maker/edit', {
+      const res = await fetch('/api/v1/avatar-maker/edit', {
         method: 'POST',
         body: formData,
       });
