@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { uploadBase64Image, generatePublicId } from '@/lib/cloudinary';
 
 export const config = {
   maxDuration: 300, // 5 minutes in seconds
@@ -24,7 +25,6 @@ export async function POST(req: Request) {
 
     const image = formData.get('image');
     const prompt = formData.get('prompt') as string | null;
-    const nStr = formData.get('n') as string | null;
     const size = (formData.get('size') as string | null) || '1024x1024';
 
     if (!image || !(image instanceof File)) {
@@ -35,8 +35,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing prompt' }, { status: 400 });
     }
 
-    const n = nStr ? Number.parseInt(nStr, 10) : 1;
-
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // Call the Images Edit endpoint.
@@ -44,7 +42,7 @@ export async function POST(req: Request) {
       image,
       prompt,
       model: 'gpt-image-1',
-      n,
+      n: 1,
       size: size as '1024x1024' | '1024x1536' | '1536x1024' | 'auto',
     });
 
@@ -56,7 +54,51 @@ export async function POST(req: Request) {
       })
       .filter(Boolean);
 
-    return NextResponse.json({ images });
+    // Upload images to Cloudinary
+    const uploadedImages = await Promise.all(
+      (images || []).map(async (imageUrl, index) => {
+        if (!imageUrl) return null;
+
+        // Only upload base64 images (not external URLs)
+        if (imageUrl.startsWith('data:image/')) {
+          try {
+            const publicId = generatePublicId('avatar_maker', `edit_${Date.now()}_${index}`);
+            const cloudinaryResult = await uploadBase64Image(imageUrl, {
+              folder: 'avatar-maker',
+              public_id: publicId,
+              overwrite: true,
+            });
+            console.log(
+              `Successfully uploaded avatar to Cloudinary: ${cloudinaryResult.secure_url}`
+            );
+            return {
+              originalUrl: imageUrl,
+              cloudinaryUrl: cloudinaryResult.secure_url,
+              cloudinaryPublicId: cloudinaryResult.public_id,
+            };
+          } catch (cloudinaryError) {
+            console.error('Failed to upload avatar to Cloudinary:', cloudinaryError);
+            return {
+              originalUrl: imageUrl,
+              cloudinaryUrl: imageUrl, // fallback to original
+              cloudinaryPublicId: undefined,
+            };
+          }
+        } else {
+          // For external URLs, just return as-is
+          return {
+            originalUrl: imageUrl,
+            cloudinaryUrl: imageUrl,
+            cloudinaryPublicId: undefined,
+          };
+        }
+      })
+    );
+
+    return NextResponse.json({
+      images: uploadedImages.map(img => img?.cloudinaryUrl).filter(Boolean),
+      uploadDetails: uploadedImages.filter(Boolean),
+    });
   } catch (error) {
     console.error('Avatar Maker API error:', error);
     if (error instanceof Error) {

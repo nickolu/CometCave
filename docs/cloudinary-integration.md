@@ -4,10 +4,14 @@ This document describes the Cloudinary integration added to the whowouldwininato
 
 ## Overview
 
-The whowouldwininator app now automatically uploads all generated images to Cloudinary for persistent storage. This includes:
+The following apps now automatically upload all generated images to Cloudinary for persistent storage:
 
+### Whowouldwininator
 - **Character portraits**: Uploaded to the `whowouldwininator-portraits` folder
 - **Battle scenes**: Uploaded to the `whowouldwininator-battle-scenes` folder
+
+### Avatar Maker
+- **Edited avatars**: Uploaded to the `avatar-maker` folder
 
 ## Environment Variables
 
@@ -27,6 +31,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 2. **`src/app/api/v1/whowouldwininator/generate-character-details/portrait/route.ts`** - Character portrait generation
 3. **`src/app/api/v1/whowouldwininator/generate-contest-results-image/route.ts`** - Battle scene generation
 4. **`src/app/api/v1/whowouldwininator/types.ts`** - Updated TypeScript types
+5. **`src/app/api/v1/avatar-maker/edit/route.ts`** - Avatar editing and generation
 
 ### Key Features
 
@@ -38,7 +43,8 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 ### API Response Changes
 
-The API responses now include an optional `cloudinaryPublicId` field:
+#### Whowouldwininator APIs
+The whowouldwininator API responses now include an optional `cloudinaryPublicId` field:
 
 ```typescript
 {
@@ -49,12 +55,28 @@ The API responses now include an optional `cloudinaryPublicId` field:
 }
 ```
 
+#### Avatar Maker API
+The avatar maker API now returns additional upload details:
+
+```typescript
+{
+  images: string[];           // Array of Cloudinary URLs (or base64 fallbacks)
+  uploadDetails: Array<{
+    originalUrl: string;      // Original image URL
+    cloudinaryUrl: string;    // Cloudinary URL (or fallback)
+    cloudinaryPublicId?: string; // Cloudinary public ID (if upload succeeded)
+  }>;
+}
+```
+
 ### Folder Structure
 
 - **`whowouldwininator-portraits/`**: Character portrait images
   - Format: `whowouldwininator_portrait_{character_name}_{timestamp}_{random}`
 - **`whowouldwininator-battle-scenes/`**: Battle scene images
   - Format: `whowouldwininator_battle_{char1_vs_char2}_{timestamp}_{random}`
+- **`avatar-maker/`**: Avatar editing results
+  - Format: `avatar_maker_edit_{timestamp}_{index}_{random}`
 
 ## Testing
 
