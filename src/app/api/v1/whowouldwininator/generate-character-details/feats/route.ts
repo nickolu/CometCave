@@ -14,16 +14,12 @@ export async function POST(request: Request) {
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
       schema: CharacterFeatsSchema,
-      prompt: `Generate a list of notable feats and accomplishments for a character named "${name}" with the following description: ${description}
+      prompt: `Generate a list of notable feats and accomplishments performed by "${name}" (${description}))
 
 Requirements:
-- Generate 3-5 impressive feats that demonstrate the character's capabilities
-- Each feat should be a specific accomplishment or demonstrated ability
-- Each feat should be associated with one of the following character stats: strength, speed, durability, intelligence, special abilities, fighting
-- Feats should be consistent with the character's description and power level
-- Include both combat and non-combat achievements where appropriate
-- Make feats concrete and measurable when possible
-- Avoid vague statements like "very strong" - be specific
+- Each feat should be related to one of the following character stats: strength, speed, durability, intelligence, special abilities, fighting
+- Use feats that occurred in the canon of the character
+- Choose feats that are relevant for determining the character's likelikhood of winning a fight or other contest
 
 Examples of good feats:
 - "Defeated an army of 1,000 soldiers single-handedly"

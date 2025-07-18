@@ -69,9 +69,10 @@ Instructions:
 - Give brief reasoning (max 200 words)
 
 Examples:
-- Superman vs human in combat = candidate1 wins, confidence 10
-- Evenly matched opponents = tie, confidence 8-10`;
-
+- Superman vs human in combat = candidate1 wins, confidence 10 
+- A fight between Goku and Superman = candidate1 wins, confidence 2 (very closely matched)
+- Average human male trying to take dwon a medium sized dog  = candidate1 wins, confidence 6 (no contest)
+- Crocodile vs an Alligator, one must eat the other = candidate2 wins, confidence 4 (closely matched)`;
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
       schema: ContestResultsSchema,

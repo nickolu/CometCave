@@ -17,20 +17,26 @@ export async function POST(request: Request) {
       prompt: `Generate a list of powers and abilities for a character named "${name}" with the following description: ${description}
 
 Requirements:
-- Generate 5-10 specific powers/abilities
+- Generate 3-10 specific powers/abilities
 - Each power should be concise but descriptive (1-2 words or short phrase)
 - Powers should be consistent with the character's description
-- Include both active abilities and passive traits
 - Make powers suitable for combat scenarios
-- Avoid overly generic powers like "super strength" unless specific to the character
+- Only include powers the character has in their canon
 
 Examples of good powers:
 - "Flame Manipulation"
 - "Telepathic Reading"
-- "Dimensional Phasing"
-- "Berserker Rage"
+- "Expert Survival Skills"
+- "Teleportation"
+- "Time Manipulation"
 - "Healing Factor"
-- "Energy Absorption"`,
+- "Invincibility"
+- "Flight"
+- "Energy Absorption"
+- "Super Strength"
+- "Super Speed"
+- "Omniscience"
+- "Spell Casting"`,
       temperature: 0.7,
       maxTokens: 200,
     });
