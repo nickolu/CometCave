@@ -52,6 +52,9 @@ export const ContestResultsSchema = z.object({
 
 export const ContestStorySchema = z.object({
   story: z.string().describe('A cinematic description of the battle/contest'),
+  intro: z.string().describe('The introduction/setup of the battle'),
+  climax: z.string().describe('The climactic moment of the battle'),
+  ending: z.string().describe('The conclusion and outcome of the battle'),
 });
 
 export const ContestImageSchema = z.object({

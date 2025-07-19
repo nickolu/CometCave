@@ -67,22 +67,49 @@ Contest Outcome:
 - Reasoning: ${contestResults.reasoning}
 
 Instructions:
-- Write a dramatic, cinematic story of 3-4 paragraphs
+- Write a dramatic, cinematic story broken into three distinct sections
 - Show both characters using their abilities and powers
 - Make the story consistent with the predetermined outcome
 - Include vivid action sequences and descriptions
-- Build tension and excitement
-- Show the decisive moment that leads to the outcome
-- If it's a tie, show how both characters reach their limits simultaneously
+- Build tension and excitement throughout
 - Keep the tone exciting and engaging like a movie scene
 
-The story should read like an epic battle scene from a movie or book, with detailed descriptions of the action, the environment, and the characters' abilities in use.`,
+Structure your response EXACTLY as follows:
+
+INTRO:
+[Write the introduction/setup section - a few sentences describing the initial confrontation, setting the scene, and showing both characters preparing for battle]
+
+CLIMAX:
+[Write the climactic section - a few sentences showing the most intense moment of the battle, the decisive action, and the turning point]
+
+ENDING:
+[Write the conclusion - a few sentences showing the final outcome, aftermath, and resolution]
+
+The story should be brief but engaging. Always start by drawing the reader in with an interesting hook. Keep the writing at a 3rd grade reading level.`,
       temperature: 0.8, // Higher temperature for more creative storytelling
-      maxTokens: 800,
+      maxTokens: 1200,
     });
 
+    // Parse the structured response
+    const storyText = result.text;
+    // Strip markdown formatting (bold text markers)
+    const cleanedStoryText = storyText.replace(/\*\*/g, '');
+    const introMatch = cleanedStoryText.match(/INTRO:\s*([\s\S]*?)\s*CLIMAX:/);
+    const climaxMatch = cleanedStoryText.match(/CLIMAX:\s*([\s\S]*?)\s*ENDING:/);
+    const endingMatch = cleanedStoryText.match(/ENDING:\s*([\s\S]*?)$/);
+
+    const intro = introMatch?.[1]?.trim() || '';
+    const climax = climaxMatch?.[1]?.trim() || '';
+    const ending = endingMatch?.[1]?.trim() || '';
+
+    // Combine all sections for the full story (backwards compatibility)
+    const fullStory = `${intro}\n\n${climax}\n\n${ending}`;
+
     return NextResponse.json({
-      story: result.text,
+      story: fullStory,
+      intro,
+      climax,
+      ending,
     });
   } catch (error) {
     console.error('Error generating contest story:', error);

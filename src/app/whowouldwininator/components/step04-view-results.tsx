@@ -14,12 +14,16 @@ interface ContestResults {
 
 interface ContestStory {
   story: string;
+  intro: string;
+  climax: string;
+  ending: string;
 }
 
-interface ContestImage {
+interface StorySectionImage {
   imageUrl: string;
   altText: string;
   prompt: string;
+  sectionType: 'intro' | 'climax' | 'ending';
 }
 
 interface CharacterStats {
@@ -63,11 +67,11 @@ export function Step04ViewResults({
   isGeneratingResults,
   contestStory,
   isGeneratingStory,
-  contestImage,
-  isGeneratingImage,
+  storySectionImages,
+  isGeneratingSectionImages,
   generateContestResults,
   generateContestStory,
-  generateContestImage,
+  generateStorySectionImage,
   onPrevious,
 }: {
   candidate1Name: string;
@@ -81,24 +85,28 @@ export function Step04ViewResults({
   isGeneratingResults: boolean;
   contestStory: ContestStory | null;
   isGeneratingStory: boolean;
-  contestImage: ContestImage | null;
-  isGeneratingImage: boolean;
+  storySectionImages: {
+    intro: StorySectionImage | null;
+    climax: StorySectionImage | null;
+    ending: StorySectionImage | null;
+  };
+  isGeneratingSectionImages: {
+    intro: boolean;
+    climax: boolean;
+    ending: boolean;
+  };
   generateContestResults: () => Promise<void>;
   generateContestStory: () => Promise<void>;
-  generateContestImage: () => Promise<void>;
+  generateStorySectionImage: (sectionType: 'intro' | 'climax' | 'ending') => Promise<void>;
   onPrevious: () => void;
 }) {
   // Use refs to track if we've already initiated generation to prevent infinite loops
   const resultsGenerationInitiated = useRef(false);
-  const storyGenerationInitiated = useRef(false);
-  const imageGenerationInitiated = useRef(false);
 
   // Reset refs when results are cleared (e.g., when starting over)
   useEffect(() => {
     if (!contestResults) {
       resultsGenerationInitiated.current = false;
-      storyGenerationInitiated.current = false;
-      imageGenerationInitiated.current = false;
     }
   }, [contestResults]);
 
@@ -111,27 +119,36 @@ export function Step04ViewResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestResults, isGeneratingResults]);
 
-  // Auto-generate story after results are available
-  useEffect(() => {
-    if (
-      contestResults &&
-      !contestStory &&
-      !isGeneratingStory &&
-      !storyGenerationInitiated.current
-    ) {
-      storyGenerationInitiated.current = true;
-      generateContestStory();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contestResults, contestStory, isGeneratingStory]);
+  // Track if we should auto-generate images after story is created
+  const shouldGenerateImagesAfterStory = useRef(false);
 
-  // Manual image generation function
-  const handleGenerateImage = () => {
-    if (!imageGenerationInitiated.current) {
-      imageGenerationInitiated.current = true;
-      generateContestImage();
+  // Function to generate story and trigger image generation
+  const handleGenerateStoryAndImages = async () => {
+    if (!contestResults) return;
+
+    try {
+      // Mark that we should generate images after story completes
+      shouldGenerateImagesAfterStory.current = true;
+      // Generate the story
+      await generateContestStory();
+    } catch (error) {
+      console.error('Error generating story:', error);
     }
   };
+
+  // Auto-generate images when story becomes available (only if triggered by button)
+  useEffect(() => {
+    if (contestStory && shouldGenerateImagesAfterStory.current) {
+      shouldGenerateImagesAfterStory.current = false;
+
+      const sections: ('intro' | 'climax' | 'ending')[] = ['intro', 'climax', 'ending'];
+      sections.forEach(section => {
+        if (!storySectionImages[section] && !isGeneratingSectionImages[section]) {
+          generateStorySectionImage(section);
+        }
+      });
+    }
+  }, [contestStory, storySectionImages, isGeneratingSectionImages, generateStorySectionImage]);
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -337,92 +354,158 @@ export function Step04ViewResults({
             </div>
           )}
 
-          {/* Contest Story */}
+          {/* Contest Story Sections */}
           <div className="bg-space-dark rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Zap className="w-6 h-6 text-space-purple" />
-              <h3 className="text-xl font-semibold text-cream-white">Battle Story</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Zap className="w-6 h-6 text-space-purple" />
+                <h3 className="text-xl font-semibold text-cream-white">Battle Story</h3>
+              </div>
+              {!contestStory && !isGeneratingStory && (
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateStoryAndImages}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Story & Images
+                </Button>
+              )}
             </div>
 
             {isGeneratingStory && (
               <div className="flex items-center gap-3 text-gray-300">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generating cinematic battle story...</span>
+                <span>Generating cinematic battle story and images...</span>
               </div>
             )}
 
             {contestStory && !isGeneratingStory && (
-              <div className="prose prose-invert max-w-none">
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                  {contestStory.story}
-                </p>
+              <div className="space-y-6">
+                {/* Intro Section */}
+                <div className="border-l-4 border-space-purple pl-4">
+                  <div className="mb-3">
+                    <h4 className="text-lg font-semibold text-cream-white">Introduction</h4>
+                  </div>
+                  <div className="prose prose-invert max-w-none mb-4">
+                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {contestStory.intro}
+                    </p>
+                  </div>
+
+                  {/* Intro Image */}
+                  {isGeneratingSectionImages.intro && (
+                    <div className="flex items-center gap-3 text-gray-300 mb-4">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Generating intro scene image...</span>
+                    </div>
+                  )}
+
+                  {storySectionImages.intro && !isGeneratingSectionImages.intro && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Image
+                          src={storySectionImages.intro.imageUrl}
+                          alt={storySectionImages.intro.altText}
+                          className="w-full rounded-lg shadow-lg"
+                          width={1024}
+                          height={1024}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-400 italic">
+                        {storySectionImages.intro.altText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Climax Section */}
+                <div className="border-l-4 border-red-500 pl-4">
+                  <div className="mb-3">
+                    <h4 className="text-lg font-semibold text-cream-white">Climax</h4>
+                  </div>
+                  <div className="prose prose-invert max-w-none mb-4">
+                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {contestStory.climax}
+                    </p>
+                  </div>
+
+                  {/* Climax Image */}
+                  {isGeneratingSectionImages.climax && (
+                    <div className="flex items-center gap-3 text-gray-300 mb-4">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Generating climax scene image...</span>
+                    </div>
+                  )}
+
+                  {storySectionImages.climax && !isGeneratingSectionImages.climax && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Image
+                          src={storySectionImages.climax.imageUrl}
+                          alt={storySectionImages.climax.altText}
+                          className="w-full rounded-lg shadow-lg"
+                          width={1024}
+                          height={1024}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-400 italic">
+                        {storySectionImages.climax.altText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Ending Section */}
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <div className="mb-3">
+                    <h4 className="text-lg font-semibold text-cream-white">Ending</h4>
+                  </div>
+                  <div className="prose prose-invert max-w-none mb-4">
+                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                      {contestStory.ending}
+                    </p>
+                  </div>
+
+                  {/* Ending Image */}
+                  {isGeneratingSectionImages.ending && (
+                    <div className="flex items-center gap-3 text-gray-300 mb-4">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Generating ending scene image...</span>
+                    </div>
+                  )}
+
+                  {storySectionImages.ending && !isGeneratingSectionImages.ending && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Image
+                          src={storySectionImages.ending.imageUrl}
+                          alt={storySectionImages.ending.altText}
+                          className="w-full rounded-lg shadow-lg"
+                          width={1024}
+                          height={1024}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-400 italic">
+                        {storySectionImages.ending.altText}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {!contestStory && !isGeneratingStory && (
-              <div className="text-gray-400 italic">
-                Story will be generated after battle results are determined...
-              </div>
-            )}
-          </div>
-
-          {/* Contest Image */}
-          <div className="bg-space-dark rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Target className="w-6 h-6 text-space-purple" />
-                <h3 className="text-xl font-semibold text-cream-white">Battle Scene</h3>
-              </div>
-              {!contestImage && !isGeneratingImage && contestStory && (
+              <div className="text-center py-8">
+                <div className="text-gray-400 italic mb-4">
+                  Ready to generate the complete battle story with images for each section
+                </div>
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={handleGenerateImage}
+                  onClick={handleGenerateStoryAndImages}
                   className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
                 >
-                  Generate Image
+                  Generate Story & Images
                 </Button>
-              )}
-            </div>
-
-            {isGeneratingImage && (
-              <div className="flex items-center gap-3 text-gray-300 mb-4">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generating epic battle image...</span>
-              </div>
-            )}
-
-            {contestImage && !isGeneratingImage && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Image
-                    src={contestImage.imageUrl}
-                    alt={contestImage.altText}
-                    className="w-full rounded-lg shadow-lg"
-                    width={1024}
-                    height={1024}
-                  />
-                </div>
-                <p className="text-sm text-gray-400 italic">{contestImage.altText}</p>
-              </div>
-            )}
-
-            {!contestImage && !isGeneratingImage && (
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-gray-400 italic text-center">
-                  {contestStory
-                    ? 'Ready to generate battle scene image'
-                    : 'Battle scene image will be available after battle results and story are determined'}
-                </div>
-                {contestStory && (
-                  <Button
-                    variant="outline"
-                    onClick={handleGenerateImage}
-                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                  >
-                    Generate Battle Scene
-                  </Button>
-                )}
               </div>
             )}
           </div>
