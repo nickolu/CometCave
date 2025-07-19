@@ -19,12 +19,6 @@ interface ContestStory {
   ending: string;
 }
 
-interface ContestImage {
-  imageUrl: string;
-  altText: string;
-  prompt: string;
-}
-
 interface StorySectionImage {
   imageUrl: string;
   altText: string;
@@ -73,13 +67,10 @@ export function Step04ViewResults({
   isGeneratingResults,
   contestStory,
   isGeneratingStory,
-  contestImage,
-  isGeneratingImage,
   storySectionImages,
   isGeneratingSectionImages,
   generateContestResults,
   generateContestStory,
-  generateContestImage,
   generateStorySectionImage,
   onPrevious,
 }: {
@@ -94,8 +85,6 @@ export function Step04ViewResults({
   isGeneratingResults: boolean;
   contestStory: ContestStory | null;
   isGeneratingStory: boolean;
-  contestImage: ContestImage | null;
-  isGeneratingImage: boolean;
   storySectionImages: {
     intro: StorySectionImage | null;
     climax: StorySectionImage | null;
@@ -108,21 +97,18 @@ export function Step04ViewResults({
   };
   generateContestResults: () => Promise<void>;
   generateContestStory: () => Promise<void>;
-  generateContestImage: () => Promise<void>;
   generateStorySectionImage: (sectionType: 'intro' | 'climax' | 'ending') => Promise<void>;
   onPrevious: () => void;
 }) {
   // Use refs to track if we've already initiated generation to prevent infinite loops
   const resultsGenerationInitiated = useRef(false);
   const storyGenerationInitiated = useRef(false);
-  const imageGenerationInitiated = useRef(false);
 
   // Reset refs when results are cleared (e.g., when starting over)
   useEffect(() => {
     if (!contestResults) {
       resultsGenerationInitiated.current = false;
       storyGenerationInitiated.current = false;
-      imageGenerationInitiated.current = false;
     }
   }, [contestResults]);
 
@@ -148,14 +134,6 @@ export function Step04ViewResults({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestResults, contestStory, isGeneratingStory]);
-
-  // Manual image generation function
-  const handleGenerateImage = () => {
-    if (!imageGenerationInitiated.current) {
-      imageGenerationInitiated.current = true;
-      generateContestImage();
-    }
-  };
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -397,7 +375,7 @@ export function Step04ViewResults({
                       {contestStory.intro}
                     </p>
                   </div>
-                  
+
                   {/* Intro Image */}
                   {isGeneratingSectionImages.intro && (
                     <div className="flex items-center gap-3 text-gray-300 mb-4">
@@ -405,7 +383,7 @@ export function Step04ViewResults({
                       <span>Generating intro scene image...</span>
                     </div>
                   )}
-                  
+
                   {storySectionImages.intro && !isGeneratingSectionImages.intro && (
                     <div className="space-y-2">
                       <div className="relative">
@@ -417,7 +395,9 @@ export function Step04ViewResults({
                           height={1024}
                         />
                       </div>
-                      <p className="text-sm text-gray-400 italic">{storySectionImages.intro.altText}</p>
+                      <p className="text-sm text-gray-400 italic">
+                        {storySectionImages.intro.altText}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -442,7 +422,7 @@ export function Step04ViewResults({
                       {contestStory.climax}
                     </p>
                   </div>
-                  
+
                   {/* Climax Image */}
                   {isGeneratingSectionImages.climax && (
                     <div className="flex items-center gap-3 text-gray-300 mb-4">
@@ -450,7 +430,7 @@ export function Step04ViewResults({
                       <span>Generating climax scene image...</span>
                     </div>
                   )}
-                  
+
                   {storySectionImages.climax && !isGeneratingSectionImages.climax && (
                     <div className="space-y-2">
                       <div className="relative">
@@ -462,7 +442,9 @@ export function Step04ViewResults({
                           height={1024}
                         />
                       </div>
-                      <p className="text-sm text-gray-400 italic">{storySectionImages.climax.altText}</p>
+                      <p className="text-sm text-gray-400 italic">
+                        {storySectionImages.climax.altText}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -487,7 +469,7 @@ export function Step04ViewResults({
                       {contestStory.ending}
                     </p>
                   </div>
-                  
+
                   {/* Ending Image */}
                   {isGeneratingSectionImages.ending && (
                     <div className="flex items-center gap-3 text-gray-300 mb-4">
@@ -495,7 +477,7 @@ export function Step04ViewResults({
                       <span>Generating ending scene image...</span>
                     </div>
                   )}
-                  
+
                   {storySectionImages.ending && !isGeneratingSectionImages.ending && (
                     <div className="space-y-2">
                       <div className="relative">
@@ -507,7 +489,9 @@ export function Step04ViewResults({
                           height={1024}
                         />
                       </div>
-                      <p className="text-sm text-gray-400 italic">{storySectionImages.ending.altText}</p>
+                      <p className="text-sm text-gray-400 italic">
+                        {storySectionImages.ending.altText}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -517,67 +501,6 @@ export function Step04ViewResults({
             {!contestStory && !isGeneratingStory && (
               <div className="text-gray-400 italic">
                 Story will be generated after battle results are determined...
-              </div>
-            )}
-          </div>
-
-          {/* Contest Image */}
-          <div className="bg-space-dark rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Target className="w-6 h-6 text-space-purple" />
-                <h3 className="text-xl font-semibold text-cream-white">Battle Scene</h3>
-              </div>
-              {!contestImage && !isGeneratingImage && contestStory && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateImage}
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                >
-                  Generate Image
-                </Button>
-              )}
-            </div>
-
-            {isGeneratingImage && (
-              <div className="flex items-center gap-3 text-gray-300 mb-4">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generating epic battle image...</span>
-              </div>
-            )}
-
-            {contestImage && !isGeneratingImage && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Image
-                    src={contestImage.imageUrl}
-                    alt={contestImage.altText}
-                    className="w-full rounded-lg shadow-lg"
-                    width={1024}
-                    height={1024}
-                  />
-                </div>
-                <p className="text-sm text-gray-400 italic">{contestImage.altText}</p>
-              </div>
-            )}
-
-            {!contestImage && !isGeneratingImage && (
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-gray-400 italic text-center">
-                  {contestStory
-                    ? 'Ready to generate battle scene image'
-                    : 'Battle scene image will be available after battle results and story are determined'}
-                </div>
-                {contestStory && (
-                  <Button
-                    variant="outline"
-                    onClick={handleGenerateImage}
-                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                  >
-                    Generate Battle Scene
-                  </Button>
-                )}
               </div>
             )}
           </div>
