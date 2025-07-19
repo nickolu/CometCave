@@ -67,22 +67,47 @@ Contest Outcome:
 - Reasoning: ${contestResults.reasoning}
 
 Instructions:
-- Write a dramatic, cinematic story of 3-4 paragraphs
+- Write a dramatic, cinematic story broken into three distinct sections
 - Show both characters using their abilities and powers
 - Make the story consistent with the predetermined outcome
 - Include vivid action sequences and descriptions
-- Build tension and excitement
-- Show the decisive moment that leads to the outcome
-- If it's a tie, show how both characters reach their limits simultaneously
+- Build tension and excitement throughout
 - Keep the tone exciting and engaging like a movie scene
+
+Structure your response EXACTLY as follows:
+
+INTRO:
+[Write the introduction/setup section - 1-2 paragraphs describing the initial confrontation, setting the scene, and showing both characters preparing for battle]
+
+CLIMAX:
+[Write the climactic section - 1-2 paragraphs showing the most intense moment of the battle, the decisive action, and the turning point]
+
+ENDING:
+[Write the conclusion - 1 paragraph showing the final outcome, aftermath, and resolution]
 
 The story should read like an epic battle scene from a movie or book, with detailed descriptions of the action, the environment, and the characters' abilities in use.`,
       temperature: 0.8, // Higher temperature for more creative storytelling
-      maxTokens: 800,
+      maxTokens: 1200,
     });
 
+    // Parse the structured response
+    const storyText = result.text;
+    const introMatch = storyText.match(/INTRO:\s*(.*?)\s*CLIMAX:/s);
+    const climaxMatch = storyText.match(/CLIMAX:\s*(.*?)\s*ENDING:/s);
+    const endingMatch = storyText.match(/ENDING:\s*(.*?)$/s);
+
+    const intro = introMatch?.[1]?.trim() || '';
+    const climax = climaxMatch?.[1]?.trim() || '';
+    const ending = endingMatch?.[1]?.trim() || '';
+
+    // Combine all sections for the full story (backwards compatibility)
+    const fullStory = `${intro}\n\n${climax}\n\n${ending}`;
+
     return NextResponse.json({
-      story: result.text,
+      story: fullStory,
+      intro,
+      climax,
+      ending,
     });
   } catch (error) {
     console.error('Error generating contest story:', error);

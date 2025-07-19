@@ -45,12 +45,22 @@ interface ContestResults {
 
 interface ContestStory {
   story: string;
+  intro: string;
+  climax: string;
+  ending: string;
 }
 
 interface ContestImage {
   imageUrl: string;
   altText: string;
   prompt: string;
+}
+
+interface StorySectionImage {
+  imageUrl: string;
+  altText: string;
+  prompt: string;
+  sectionType: 'intro' | 'climax' | 'ending';
 }
 
 export function useWhowouldwininatorState() {
@@ -115,6 +125,26 @@ export function useWhowouldwininatorState() {
   // Contest image state
   const [contestImage, setContestImage] = useState<ContestImage | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  // Story section images state
+  const [storySectionImages, setStorySectionImages] = useState<{
+    intro: StorySectionImage | null;
+    climax: StorySectionImage | null;
+    ending: StorySectionImage | null;
+  }>({
+    intro: null,
+    climax: null,
+    ending: null,
+  });
+  const [isGeneratingSectionImages, setIsGeneratingSectionImages] = useState<{
+    intro: boolean;
+    climax: boolean;
+    ending: boolean;
+  }>({
+    intro: false,
+    climax: false,
+    ending: false,
+  });
 
   const updateCandidate1 = useCallback((candidate: string | null, description: string | null) => {
     if (candidate !== null) {
@@ -445,6 +475,52 @@ Victory: First to incapacitate their opponent wins`;
     contestStory,
   ]);
 
+  const generateStorySectionImage = useCallback(async (sectionType: 'intro' | 'climax' | 'ending') => {
+    if (!contestResults || !contestStory) return;
+
+    const storySection = contestStory[sectionType];
+    if (!storySection) return;
+
+    setIsGeneratingSectionImages(prev => ({ ...prev, [sectionType]: true }));
+    try {
+      const response = await fetch('/api/v1/whowouldwininator/generate-story-section-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          candidate1Name,
+          candidate1Description,
+          candidate2Name,
+          candidate2Description,
+          battleScenario,
+          contestResults,
+          storySection,
+          sectionType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate ${sectionType} image`);
+      }
+
+      const data = await response.json();
+      setStorySectionImages(prev => ({ ...prev, [sectionType]: data }));
+    } catch (error) {
+      console.error(`Error generating ${sectionType} image:`, error);
+    } finally {
+      setIsGeneratingSectionImages(prev => ({ ...prev, [sectionType]: false }));
+    }
+  }, [
+    candidate1Name,
+    candidate1Description,
+    candidate2Name,
+    candidate2Description,
+    battleScenario,
+    contestResults,
+    contestStory,
+  ]);
+
   return {
     candidate1Name,
     candidate2Name,
@@ -466,6 +542,8 @@ Victory: First to incapacitate their opponent wins`;
     isGeneratingStory,
     contestImage,
     isGeneratingImage,
+    storySectionImages,
+    isGeneratingSectionImages,
     updateCandidate1,
     updateCandidate2,
     generateRandomCharacter,
@@ -478,5 +556,6 @@ Victory: First to incapacitate their opponent wins`;
     generateContestResults,
     generateContestStory,
     generateContestImage,
+    generateStorySectionImage,
   };
 }
