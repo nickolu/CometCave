@@ -73,6 +73,7 @@ Instructions:
 - Include vivid action sequences and descriptions
 - Build tension and excitement throughout
 - Keep the tone exciting and engaging like a movie scene
+- Keep the writing at a 3rd grade reading level.
 
 Structure your response EXACTLY as follows:
 

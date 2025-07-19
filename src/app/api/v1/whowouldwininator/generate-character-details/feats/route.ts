@@ -19,16 +19,18 @@ export async function POST(request: Request) {
 Requirements:
 - Each feat should be related to one of the following character stats: strength, speed, durability, intelligence, special abilities, fighting
 - Use feats that occurred in the canon of the character
-- Choose feats that are relevant for determining the character's likelikhood of winning a fight or other contest
 
-Examples of good feats:
-- "Defeated an army of 1,000 soldiers single-handedly"
+Examples:
+- "Fell 30 feet onto concrete and stood up unharmed"
 - "Lifted a 50-ton boulder with one hand"
 - "Survived a direct nuclear blast"
 - "Traveled faster than light across galaxies"
 - "Mastered 47 different martial arts"
 - "Solved the Riddle of the Sphinx"
-- "Resurrected from complete disintegration"`,
+- "Resurrected from complete disintegration"
+
+Keep the writing at a 3rd grade reading level.
+`,
       temperature: 0.8,
       maxTokens: 250,
     });

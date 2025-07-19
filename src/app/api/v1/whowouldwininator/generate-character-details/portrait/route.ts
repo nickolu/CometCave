@@ -28,7 +28,6 @@ export async function POST(request: Request) {
 The portrait should:
 - Show the character in a heroic pose
 - Capture their unique features and abilities
-- Be suitable for a battle scenario context
 - Have dramatic lighting and composition
 - Be in a realistic art style`;
 

@@ -15,11 +15,11 @@ export async function POST(request: Request) {
       prompt: `Generate a detailed backstory for a character named "${name}" with the following description: ${description}
 
 The backstory should:
-- Be 2-3 paragraphs long
+- Be 1-2 paragraphs long
 - Explain their origin and how they gained their abilities
 - Include key events that shaped their personality
-- Make them compelling for a battle scenario
-- Be consistent with their description`,
+- Be consistent with their description
+- Keep the writing at a 3rd grade reading level.`,
       temperature: 0.8,
       maxTokens: 400,
     });

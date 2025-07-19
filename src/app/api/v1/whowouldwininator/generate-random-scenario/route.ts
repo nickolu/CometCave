@@ -244,7 +244,7 @@ export async function POST(request: Request) {
       schema: RandomScenarioSchema,
       prompt: `Generate a creative and interesting battle scenario set in or around ${randomCategory}. 
 
-      If possible, make the setting relevant to a battle between the following characters:
+      If possible, make the setting relevant to a battle between the following characters.
       ${character1Name}: ${character1Description}
       ${character2Name}: ${character2Description}
 
@@ -255,10 +255,7 @@ The scenario should include:
 - Limitations: Power restrictions, equipment limitations, or special conditions
 - Additional Context: Special circumstances, motivations, or unique elements
 
-Make the scenario creative, engaging, and suitable for an epic battle between powerful characters. The scenario should add interesting tactical elements and not just be a standard fight.
-
-Writing Style:
-- Use brief, direct language in a Hemingwayesque style
+Keep the writing at a 3rd grade reading level.
 `,
       temperature: 0.9, // High temperature for creative variety
       maxTokens: 500,
