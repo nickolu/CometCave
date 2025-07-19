@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { READING_LEVEL } from '../constants';
 
 const RandomScenarioSchema = z.object({
   setting: z.string().describe('The battle setting and environment'),
@@ -255,7 +256,7 @@ The scenario should include:
 - Limitations: Power restrictions, equipment limitations, or special conditions
 - Additional Context: Special circumstances, motivations, or unique elements
 
-Keep the writing at a 3rd grade reading level.
+Keep the writing at a ${READING_LEVEL} reading level.
 `,
       temperature: 0.9, // High temperature for creative variety
       maxTokens: 500,

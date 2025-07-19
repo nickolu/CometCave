@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { READING_LEVEL } from '../constants';
 
 const RandomCharacterSchema = z.object({
   name: z.string().describe('The name of the character'),
@@ -41,6 +42,12 @@ const CHARACTER_CATEGORIES = [
   'fallen hero',
   'anti-hero',
   'trickster god',
+  'deity',
+  'god',
+  'demigod',
+  'mythological figure',
+  'american hero',
+  'american president',
   'war deity',
   'love deity',
   'death deity',
@@ -67,7 +74,15 @@ const CHARACTER_CATEGORIES = [
   'gladiator',
   'sailor',
   'explorer',
-  'rebel leader',
+  'random character',
+  'random character',
+  'movie character',
+  'comic book character',
+  'video game character',
+  'cartoon character',
+  'anime character',
+  'manga character',
+  'video game character',
 ];
 
 const obscureOrWellKnown = () => {
@@ -92,13 +107,13 @@ export async function POST(request: Request) {
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
       schema: RandomCharacterSchema,
-      prompt: `Please tell me the name of an ${obscureOrWellKnown()} character. The character should be a ${randomCategory}.
+      prompt: `Please tell me the name of an ${obscureOrWellKnown()} ${randomCategory}.
 
 The description should:
 - Be 1-2 sentences long
 - Include their appearance, abilities, and personality traits
 - Be engaging and vivid
-- Keep the writing at a 3rd grade reading level.
+- Keep the writing at a ${READING_LEVEL} reading level.
 
 ${excludedCharacters.length > 0 ? `Do not create any of these characters that have already been generated: ${excludedCharacters.join(', ')}` : ''}`,
       temperature: 0.9, // High temperature for creative variety

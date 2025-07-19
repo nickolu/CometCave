@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { NextResponse } from 'next/server';
 import { CharacterFeatsSchema } from '../../types';
+import { READING_LEVEL } from '../../constants';
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +30,7 @@ Examples:
 - "Solved the Riddle of the Sphinx"
 - "Resurrected from complete disintegration"
 
-Keep the writing at a 3rd grade reading level.
+Keep the writing at a ${READING_LEVEL} reading level.
 `,
       temperature: 0.8,
       maxTokens: 250,

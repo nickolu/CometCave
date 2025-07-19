@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
+import { READING_LEVEL } from '../constants';
 
 export async function POST(request: Request) {
   try {
@@ -73,7 +74,7 @@ Instructions:
 - Include vivid action sequences and descriptions
 - Build tension and excitement throughout
 - Keep the tone exciting and engaging like a movie scene
-- Keep the writing at a 3rd grade reading level.
+- Keep the writing at a ${READING_LEVEL} reading level.
 
 Structure your response EXACTLY as follows:
 
@@ -86,7 +87,7 @@ CLIMAX:
 ENDING:
 [Write the conclusion - a few sentences showing the final outcome, aftermath, and resolution]
 
-The story should be brief but engaging. Always start by drawing the reader in with an interesting hook. Keep the writing at a 3rd grade reading level.`,
+The story should be brief but engaging. Always start by drawing the reader in with an interesting hook. Keep the writing at a ${READING_LEVEL} reading level.`,
       temperature: 0.8, // Higher temperature for more creative storytelling
       maxTokens: 1200,
     });

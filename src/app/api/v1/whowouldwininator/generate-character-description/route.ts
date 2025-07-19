@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
+import { READING_LEVEL } from '../constants';
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,7 @@ The description should:
 - Be 1-2 sentences long
 - Include their appearance, abilities, and personality traits
 - Be engaging and vivid
-- Keep the writing at a 3rd grade reading level.
+- Keep the writing at a ${READING_LEVEL} reading level.
 
 Generate a compelling description for "${name}":`,
       temperature: 0.8,
