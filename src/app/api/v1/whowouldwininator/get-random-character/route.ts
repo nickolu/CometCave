@@ -83,6 +83,8 @@ const CHARACTER_CATEGORIES = [
   'anime character',
   'manga character',
   'video game character',
+  'animal',
+  'mutated animal',
 ];
 
 const obscureOrWellKnown = () => {
