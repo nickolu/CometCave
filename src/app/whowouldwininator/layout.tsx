@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/placeholder-logo.png', // Using existing logo from public folder
+        url: '/whowouldwininator-preview.png',
         width: 1200,
         height: 630,
         alt: 'The Amazing Whowouldwininator - Epic Character Battles',
