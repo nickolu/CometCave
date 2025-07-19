@@ -77,24 +77,26 @@ Instructions:
 Structure your response EXACTLY as follows:
 
 INTRO:
-[Write the introduction/setup section - 1-2 paragraphs describing the initial confrontation, setting the scene, and showing both characters preparing for battle]
+[Write the introduction/setup section - a few sentences describing the initial confrontation, setting the scene, and showing both characters preparing for battle]
 
 CLIMAX:
-[Write the climactic section - 1-2 paragraphs showing the most intense moment of the battle, the decisive action, and the turning point]
+[Write the climactic section - a few sentences showing the most intense moment of the battle, the decisive action, and the turning point]
 
 ENDING:
-[Write the conclusion - 1 paragraph showing the final outcome, aftermath, and resolution]
+[Write the conclusion - a few sentences showing the final outcome, aftermath, and resolution]
 
-The story should read like an epic battle scene from a movie or book, with detailed descriptions of the action, the environment, and the characters' abilities in use.`,
+The story should be brief but engaging. Always start by drawing the reader in with an interesting hook. Keep the writing at a 3rd grade reading level.`,
       temperature: 0.8, // Higher temperature for more creative storytelling
       maxTokens: 1200,
     });
 
     // Parse the structured response
     const storyText = result.text;
-    const introMatch = storyText.match(/INTRO:\s*(.*?)\s*CLIMAX:/s);
-    const climaxMatch = storyText.match(/CLIMAX:\s*(.*?)\s*ENDING:/s);
-    const endingMatch = storyText.match(/ENDING:\s*(.*?)$/s);
+    // Strip markdown formatting (bold text markers)
+    const cleanedStoryText = storyText.replace(/\*\*/g, '');
+    const introMatch = cleanedStoryText.match(/INTRO:\s*([\s\S]*?)\s*CLIMAX:/);
+    const climaxMatch = cleanedStoryText.match(/CLIMAX:\s*([\s\S]*?)\s*ENDING:/);
+    const endingMatch = cleanedStoryText.match(/ENDING:\s*([\s\S]*?)$/);
 
     const intro = introMatch?.[1]?.trim() || '';
     const climax = climaxMatch?.[1]?.trim() || '';

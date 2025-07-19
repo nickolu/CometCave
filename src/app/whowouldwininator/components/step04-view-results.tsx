@@ -102,13 +102,11 @@ export function Step04ViewResults({
 }) {
   // Use refs to track if we've already initiated generation to prevent infinite loops
   const resultsGenerationInitiated = useRef(false);
-  const storyGenerationInitiated = useRef(false);
 
   // Reset refs when results are cleared (e.g., when starting over)
   useEffect(() => {
     if (!contestResults) {
       resultsGenerationInitiated.current = false;
-      storyGenerationInitiated.current = false;
     }
   }, [contestResults]);
 
@@ -121,19 +119,36 @@ export function Step04ViewResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contestResults, isGeneratingResults]);
 
-  // Auto-generate story after results are available
-  useEffect(() => {
-    if (
-      contestResults &&
-      !contestStory &&
-      !isGeneratingStory &&
-      !storyGenerationInitiated.current
-    ) {
-      storyGenerationInitiated.current = true;
-      generateContestStory();
+  // Track if we should auto-generate images after story is created
+  const shouldGenerateImagesAfterStory = useRef(false);
+
+  // Function to generate story and trigger image generation
+  const handleGenerateStoryAndImages = async () => {
+    if (!contestResults) return;
+
+    try {
+      // Mark that we should generate images after story completes
+      shouldGenerateImagesAfterStory.current = true;
+      // Generate the story
+      await generateContestStory();
+    } catch (error) {
+      console.error('Error generating story:', error);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contestResults, contestStory, isGeneratingStory]);
+  };
+
+  // Auto-generate images when story becomes available (only if triggered by button)
+  useEffect(() => {
+    if (contestStory && shouldGenerateImagesAfterStory.current) {
+      shouldGenerateImagesAfterStory.current = false;
+
+      const sections: ('intro' | 'climax' | 'ending')[] = ['intro', 'climax', 'ending'];
+      sections.forEach(section => {
+        if (!storySectionImages[section] && !isGeneratingSectionImages[section]) {
+          generateStorySectionImage(section);
+        }
+      });
+    }
+  }, [contestStory, storySectionImages, isGeneratingSectionImages, generateStorySectionImage]);
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -341,15 +356,26 @@ export function Step04ViewResults({
 
           {/* Contest Story Sections */}
           <div className="bg-space-dark rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Zap className="w-6 h-6 text-space-purple" />
-              <h3 className="text-xl font-semibold text-cream-white">Battle Story</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Zap className="w-6 h-6 text-space-purple" />
+                <h3 className="text-xl font-semibold text-cream-white">Battle Story</h3>
+              </div>
+              {!contestStory && !isGeneratingStory && (
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateStoryAndImages}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Story & Images
+                </Button>
+              )}
             </div>
 
             {isGeneratingStory && (
               <div className="flex items-center gap-3 text-gray-300">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generating cinematic battle story...</span>
+                <span>Generating cinematic battle story and images...</span>
               </div>
             )}
 
@@ -357,18 +383,8 @@ export function Step04ViewResults({
               <div className="space-y-6">
                 {/* Intro Section */}
                 <div className="border-l-4 border-space-purple pl-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="mb-3">
                     <h4 className="text-lg font-semibold text-cream-white">Introduction</h4>
-                    {!storySectionImages.intro && !isGeneratingSectionImages.intro && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generateStorySectionImage('intro')}
-                        className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                      >
-                        Generate Image
-                      </Button>
-                    )}
                   </div>
                   <div className="prose prose-invert max-w-none mb-4">
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -404,18 +420,8 @@ export function Step04ViewResults({
 
                 {/* Climax Section */}
                 <div className="border-l-4 border-red-500 pl-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="mb-3">
                     <h4 className="text-lg font-semibold text-cream-white">Climax</h4>
-                    {!storySectionImages.climax && !isGeneratingSectionImages.climax && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generateStorySectionImage('climax')}
-                        className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                      >
-                        Generate Image
-                      </Button>
-                    )}
                   </div>
                   <div className="prose prose-invert max-w-none mb-4">
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -451,18 +457,8 @@ export function Step04ViewResults({
 
                 {/* Ending Section */}
                 <div className="border-l-4 border-yellow-500 pl-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="mb-3">
                     <h4 className="text-lg font-semibold text-cream-white">Ending</h4>
-                    {!storySectionImages.ending && !isGeneratingSectionImages.ending && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generateStorySectionImage('ending')}
-                        className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                      >
-                        Generate Image
-                      </Button>
-                    )}
                   </div>
                   <div className="prose prose-invert max-w-none mb-4">
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -499,8 +495,17 @@ export function Step04ViewResults({
             )}
 
             {!contestStory && !isGeneratingStory && (
-              <div className="text-gray-400 italic">
-                Story will be generated after battle results are determined...
+              <div className="text-center py-8">
+                <div className="text-gray-400 italic mb-4">
+                  Ready to generate the complete battle story with images for each section
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateStoryAndImages}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Story & Images
+                </Button>
               </div>
             )}
           </div>
