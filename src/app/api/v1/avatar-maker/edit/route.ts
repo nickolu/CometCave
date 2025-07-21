@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { uploadBase64Image, generatePublicId } from '@/lib/cloudinary';
+import { isImageGenerationAllowed } from '@/lib/utils';
 
 export const config = {
   maxDuration: 300, // 5 minutes in seconds
@@ -21,6 +22,13 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    // Check if image generation is allowed
+    if (!isImageGenerationAllowed()) {
+      return NextResponse.json(
+        { error: 'Image generation is currently disabled' },
+        { status: 403 }
+      );
+    }
     const formData = await req.formData();
 
     const image = formData.get('image');

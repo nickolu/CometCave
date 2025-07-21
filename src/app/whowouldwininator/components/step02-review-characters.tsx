@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { Loader2, Edit2, Save } from 'lucide-react';
-import { useState } from 'react';
 import Image from 'next/image';
+import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils';
 
 interface CharacterStats {
   strength: number;
@@ -107,6 +107,14 @@ export function Step02ReviewCharacters({
   onNext: () => void;
   onPrevious: () => void;
 }) {
+  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true);
+  const [disableReason, setDisableReason] = useState('');
+
+  // Check if image generation is allowed
+  useEffect(() => {
+    isImageGenerationAllowedClient().then(setImageGenerationAllowed);
+    getImageGenerationDisableReasonClient().then(setDisableReason);
+  }, []);
   const [editingFields, setEditingFields] = useState<{
     candidate1: Set<keyof CharacterDetails>;
     candidate2: Set<keyof CharacterDetails>;
@@ -233,44 +241,46 @@ export function Step02ReviewCharacters({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Portrait */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-cream-white">Portrait</h3>
-              {!details.portrait && !loading.portrait && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleGeneratePortrait(candidateNumber)}
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                >
-                  Generate Portrait
-                </Button>
+          {imageGenerationAllowed && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-cream-white">Portrait</h3>
+                {!details.portrait && !loading.portrait && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleGeneratePortrait(candidateNumber)}
+                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  >
+                    Generate Portrait
+                  </Button>
+                )}
+              </div>
+              {loading.portrait ? (
+                <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
+                  <Loader2 className="w-8 h-8 animate-spin text-space-purple" />
+                </div>
+              ) : details.portrait ? (
+                <Image
+                  src={details.portrait.imageUrl}
+                  alt={details.portrait.altText}
+                  className="w-full object-cover rounded-lg"
+                  width={1024}
+                  height={1024}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-48 bg-space-grey/20 rounded-lg gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleGeneratePortrait(candidateNumber)}
+                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  >
+                    Generate Portrait
+                  </Button>
+                </div>
               )}
             </div>
-            {loading.portrait ? (
-              <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
-                <Loader2 className="w-8 h-8 animate-spin text-space-purple" />
-              </div>
-            ) : details.portrait ? (
-              <Image
-                src={details.portrait.imageUrl}
-                alt={details.portrait.altText}
-                className="w-full object-cover rounded-lg"
-                width={1024}
-                height={1024}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-48 bg-space-grey/20 rounded-lg gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => handleGeneratePortrait(candidateNumber)}
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                >
-                  Generate Portrait
-                </Button>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Backstory */}
           <div>
@@ -484,6 +494,29 @@ export function Step02ReviewCharacters({
           Character details are being generated. You can edit any field by clicking the edit button.
         </p>
       </div>
+
+      {/* Image Generation Disabled Alert */}
+      {!imageGenerationAllowed && (
+        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-blue-300 mb-1">
+                Portrait Generation Disabled
+              </h3>
+              <p className="text-sm text-blue-200">{disableReason}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CharacterCard

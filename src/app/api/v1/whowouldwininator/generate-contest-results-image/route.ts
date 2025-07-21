@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { uploadBase64Image, generatePublicId } from '@/lib/cloudinary';
+import { isImageGenerationAllowed } from '@/lib/utils';
 
 export const config = {
   maxDuration: 300, // 5 minutes in seconds
@@ -12,6 +13,13 @@ export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
+    // Check if image generation is allowed
+    if (!isImageGenerationAllowed()) {
+      return NextResponse.json(
+        { error: 'Image generation is currently disabled' },
+        { status: 403 }
+      );
+    }
     const {
       candidate1Name,
       candidate1Description,
@@ -88,11 +96,11 @@ export async function POST(request: Request) {
 
         // Convert base64 to data URL for fallback
         const imageUrl = `data:image/png;base64,${imageB64}`;
-        
+
         // Upload to Cloudinary
         let cloudinaryUrl = imageUrl; // fallback to base64 if Cloudinary fails
         let cloudinaryPublicId = '';
-        
+
         try {
           const battleName = `${candidate1Name}_vs_${candidate2Name}`;
           const publicId = generatePublicId('whowouldwininator_battle', battleName);

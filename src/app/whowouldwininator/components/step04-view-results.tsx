@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, Target, Zap, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils';
 
 interface ContestResults {
   winner: 'candidate1' | 'candidate2' | 'tie';
@@ -100,6 +101,15 @@ export function Step04ViewResults({
   generateStorySectionImage: (sectionType: 'intro' | 'climax' | 'ending') => Promise<void>;
   onPrevious: () => void;
 }) {
+  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true);
+  const [disableReason, setDisableReason] = useState('');
+
+  // Check if image generation is allowed
+  useEffect(() => {
+    isImageGenerationAllowedClient().then(setImageGenerationAllowed);
+    getImageGenerationDisableReasonClient().then(setDisableReason);
+  }, []);
+
   // Use refs to track if we've already initiated generation to prevent infinite loops
   const resultsGenerationInitiated = useRef(false);
 
@@ -136,9 +146,9 @@ export function Step04ViewResults({
     }
   };
 
-  // Auto-generate images when story becomes available (only if triggered by button)
+  // Auto-generate images when story becomes available (only if triggered by button and if image generation is allowed)
   useEffect(() => {
-    if (contestStory && shouldGenerateImagesAfterStory.current) {
+    if (contestStory && shouldGenerateImagesAfterStory.current && imageGenerationAllowed) {
       shouldGenerateImagesAfterStory.current = false;
 
       const sections: ('intro' | 'climax' | 'ending')[] = ['intro', 'climax', 'ending'];
@@ -148,7 +158,13 @@ export function Step04ViewResults({
         }
       });
     }
-  }, [contestStory, storySectionImages, isGeneratingSectionImages, generateStorySectionImage]);
+  }, [
+    contestStory,
+    storySectionImages,
+    isGeneratingSectionImages,
+    generateStorySectionImage,
+    imageGenerationAllowed,
+  ]);
 
   const getWinnerDisplay = () => {
     if (!contestResults) return null;
@@ -354,6 +370,33 @@ export function Step04ViewResults({
             </div>
           )}
 
+          {/* Image Generation Disabled Alert */}
+          {!imageGenerationAllowed && (
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-5 h-5 text-blue-400 mt-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-blue-300 mb-1">
+                    Story Image Generation Disabled
+                  </h3>
+                  <p className="text-sm text-blue-200">{disableReason}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Contest Story Sections */}
           <div className="bg-space-dark rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
@@ -364,10 +407,12 @@ export function Step04ViewResults({
               {!contestStory && !isGeneratingStory && (
                 <Button
                   variant="outline"
-                  onClick={handleGenerateStoryAndImages}
+                  onClick={
+                    imageGenerationAllowed ? handleGenerateStoryAndImages : generateContestStory
+                  }
                   className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
                 >
-                  Generate Story & Images
+                  {imageGenerationAllowed ? 'Generate Story & Images' : 'Generate Story'}
                 </Button>
               )}
             </div>
@@ -393,29 +438,31 @@ export function Step04ViewResults({
                   </div>
 
                   {/* Intro Image */}
-                  {isGeneratingSectionImages.intro && (
+                  {imageGenerationAllowed && isGeneratingSectionImages.intro && (
                     <div className="flex items-center gap-3 text-gray-300 mb-4">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span>Generating intro scene image...</span>
                     </div>
                   )}
 
-                  {storySectionImages.intro && !isGeneratingSectionImages.intro && (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Image
-                          src={storySectionImages.intro.imageUrl}
-                          alt={storySectionImages.intro.altText}
-                          className="w-full rounded-lg shadow-lg"
-                          width={1024}
-                          height={1024}
-                        />
+                  {imageGenerationAllowed &&
+                    storySectionImages.intro &&
+                    !isGeneratingSectionImages.intro && (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Image
+                            src={storySectionImages.intro.imageUrl}
+                            alt={storySectionImages.intro.altText}
+                            className="w-full rounded-lg shadow-lg"
+                            width={1024}
+                            height={1024}
+                          />
+                        </div>
+                        <p className="text-sm text-gray-400 italic">
+                          {storySectionImages.intro.altText}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-400 italic">
-                        {storySectionImages.intro.altText}
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 {/* Climax Section */}
@@ -430,29 +477,31 @@ export function Step04ViewResults({
                   </div>
 
                   {/* Climax Image */}
-                  {isGeneratingSectionImages.climax && (
+                  {imageGenerationAllowed && isGeneratingSectionImages.climax && (
                     <div className="flex items-center gap-3 text-gray-300 mb-4">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span>Generating climax scene image...</span>
                     </div>
                   )}
 
-                  {storySectionImages.climax && !isGeneratingSectionImages.climax && (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Image
-                          src={storySectionImages.climax.imageUrl}
-                          alt={storySectionImages.climax.altText}
-                          className="w-full rounded-lg shadow-lg"
-                          width={1024}
-                          height={1024}
-                        />
+                  {imageGenerationAllowed &&
+                    storySectionImages.climax &&
+                    !isGeneratingSectionImages.climax && (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Image
+                            src={storySectionImages.climax.imageUrl}
+                            alt={storySectionImages.climax.altText}
+                            className="w-full rounded-lg shadow-lg"
+                            width={1024}
+                            height={1024}
+                          />
+                        </div>
+                        <p className="text-sm text-gray-400 italic">
+                          {storySectionImages.climax.altText}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-400 italic">
-                        {storySectionImages.climax.altText}
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 {/* Ending Section */}
@@ -467,29 +516,31 @@ export function Step04ViewResults({
                   </div>
 
                   {/* Ending Image */}
-                  {isGeneratingSectionImages.ending && (
+                  {imageGenerationAllowed && isGeneratingSectionImages.ending && (
                     <div className="flex items-center gap-3 text-gray-300 mb-4">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span>Generating ending scene image...</span>
                     </div>
                   )}
 
-                  {storySectionImages.ending && !isGeneratingSectionImages.ending && (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Image
-                          src={storySectionImages.ending.imageUrl}
-                          alt={storySectionImages.ending.altText}
-                          className="w-full rounded-lg shadow-lg"
-                          width={1024}
-                          height={1024}
-                        />
+                  {imageGenerationAllowed &&
+                    storySectionImages.ending &&
+                    !isGeneratingSectionImages.ending && (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Image
+                            src={storySectionImages.ending.imageUrl}
+                            alt={storySectionImages.ending.altText}
+                            className="w-full rounded-lg shadow-lg"
+                            width={1024}
+                            height={1024}
+                          />
+                        </div>
+                        <p className="text-sm text-gray-400 italic">
+                          {storySectionImages.ending.altText}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-400 italic">
-                        {storySectionImages.ending.altText}
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             )}
@@ -497,14 +548,18 @@ export function Step04ViewResults({
             {!contestStory && !isGeneratingStory && (
               <div className="text-center py-8">
                 <div className="text-gray-400 italic mb-4">
-                  Ready to generate the complete battle story with images for each section
+                  {imageGenerationAllowed
+                    ? 'Ready to generate the complete battle story with images for each section'
+                    : 'Ready to generate the complete battle story'}
                 </div>
                 <Button
                   variant="outline"
-                  onClick={handleGenerateStoryAndImages}
+                  onClick={
+                    imageGenerationAllowed ? handleGenerateStoryAndImages : generateContestStory
+                  }
                   className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
                 >
-                  Generate Story & Images
+                  {imageGenerationAllowed ? 'Generate Story & Images' : 'Generate Story'}
                 </Button>
               </div>
             )}

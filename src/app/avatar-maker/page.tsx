@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Autocomplete } from '@/components/ui/autocomplete';
-import { cn } from '@/lib/utils';
+import {
+  cn,
+  isImageGenerationAllowedClient,
+  getImageGenerationDisableReasonClient,
+} from '@/lib/utils';
 import {
   Square,
   RectangleHorizontal,
@@ -180,6 +184,14 @@ export default function AvatarMakerPage() {
   const [filter, setFilter] = useState<string>('');
   const [mood, setMood] = useState<string>('');
   const [theme, setTheme] = useState<string>('');
+  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true);
+  const [disableReason, setDisableReason] = useState('');
+
+  // Check if image generation is allowed
+  useEffect(() => {
+    isImageGenerationAllowedClient().then(setImageGenerationAllowed);
+    getImageGenerationDisableReasonClient().then(setDisableReason);
+  }, []);
 
   // Style list becomes dependent on selected medium
   const styleOptions = medium && mediumStyles[medium] ? mediumStyles[medium].styles : ALL_STYLES;
@@ -300,212 +312,247 @@ export default function AvatarMakerPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-cream-white">Avatar Maker</h1>
           <p className="text-slate-400 mt-2">
-            Upload an image and let the AI turn it into unique avatars
+            {imageGenerationAllowed
+              ? 'Upload an image and let the AI turn it into unique avatars'
+              : 'Avatar generation is currently disabled'}
           </p>
         </div>
 
-        <div className="relative flex flex-col gap-1 bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12 space-y-8 overflow-hidden">
-          {/* loading overlay */}
-          {loading && (
-            <div className="absolute inset-0 bg-black/70 flex flex-col gap-4 items-center justify-center z-10 animate-fade-in">
-              <span className="h-10 w-10 border-4 border-t-transparent border-space-purple rounded-full animate-spin" />
-              <p className="text-cream-white">Generating avatar...</p>
-            </div>
-          )}
-
-          {/* Upload */}
-          <div className="space-y-4">
-            <Label className="text-slate-400">1. Upload a base image</Label>
-            {/* Hidden real input */}
-            <input
-              ref={fileInputRef}
-              id="image"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-
-            {/* Dropzone */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => {
-                e.preventDefault();
-                const files = e.dataTransfer.files;
-                if (files?.length) {
-                  const fileList: FileList = files;
-                  handleFileChange({
-                    target: { files: fileList },
-                  } as unknown as React.ChangeEvent<HTMLInputElement>);
-                }
-              }}
-              className={cn(
-                'flex flex-col items-center justify-center gap-2 px-6 py-10 rounded-lg border-2 border-dashed transition-colors cursor-pointer',
-                imageFile ? 'border-space-purple' : 'border-slate-700 hover:border-space-purple'
-              )}
-            >
-              {imageFile ? (
-                <Image
-                  src={URL.createObjectURL(imageFile)}
-                  alt="Uploaded preview"
-                  className="rounded max-h-80 object-contain w-full"
-                  width={320}
-                  height={320}
-                />
-              ) : (
-                <>
-                  <UploadCloud className="w-10 h-10 text-slate-400" />
-                  <p className="text-slate-400 text-sm">Click or drag & drop to upload</p>
-                </>
-              )}
-            </div>
-          </div>
-          <hr className="border-space-purple" />
-
-          {/* Prompt */}
-          <div className="space-y-2">
-            <Label htmlFor="prompt" className="text-slate-400">
-              2. Enter a prompt to edit the image
-            </Label>
-            <Textarea
-              id="prompt"
-              placeholder="e.g. Turn this photo into a cyber-punk cartoon avatar wearing sunglasses"
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              rows={3}
-              className="bg-slate-800 border-slate-700 text-cream-white mt-1"
-            />
-          </div>
-
-          <hr className="border-space-purple" />
-
-          {/* Optional parameters */}
-          <Label className="text-slate-400">3. Optional parameters</Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label className="text-slate-400">Medium</Label>
-              <Autocomplete
-                value={medium}
-                onChange={setMedium}
-                options={mediums}
-                placeholder="Oil painting, 3D render..."
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-slate-400">Style</Label>
-              <Autocomplete
-                value={style}
-                onChange={setStyle}
-                options={['', ...styleOptions]}
-                placeholder="Cartoon, Realistic..."
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-slate-400">Filter</Label>
-              <Autocomplete
-                value={filter}
-                onChange={setFilter}
-                options={['', ...filterOptions]}
-                placeholder="Cartoon, Realistic..."
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-slate-400">Mood</Label>
-              <Autocomplete
-                value={mood}
-                onChange={setMood}
-                options={['', ...moodOptions]}
-                placeholder="Cartoon, Realistic..."
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-slate-400">Theme</Label>
-              <Autocomplete
-                value={theme}
-                onChange={setTheme}
-                options={['', ...themeOptions]}
-                placeholder="Cartoon, Realistic..."
-              />
-            </div>
-          </div>
-
-          <hr className="border-space-purple" />
-
-          {/* Orientation */}
-          <div className="space-y-2">
-            <Label className="text-slate-400">Orientation</Label>
-            <div className="flex gap-2">
-              {(
-                [
-                  { val: '1024x1536', icon: <RectangleVertical className="w-4 h-4" /> },
-                  { val: '1024x1024', icon: <Square className="w-4 h-4" /> },
-                  { val: '1536x1024', icon: <RectangleHorizontal className="w-4 h-4" /> },
-                ] as { val: typeof size; icon: React.ReactNode }[]
-              ).map(o => (
-                <button
-                  key={o.val}
-                  type="button"
-                  onClick={() => setSize(o.val)}
-                  className={cn(
-                    'flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm border transition-colors',
-                    size === o.val
-                      ? 'bg-space-purple text-cream-white border-space-purple'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                  )}
+        {/* Image Generation Disabled Alert */}
+        {!imageGenerationAllowed && (
+          <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-blue-400 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
-                  {o.icon}
-                </button>
-              ))}
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-blue-300 mb-1">
+                  Avatar Generation Disabled
+                </h3>
+                <p className="text-sm text-blue-200">{disableReason}</p>
+              </div>
             </div>
           </div>
+        )}
 
-          {generatedImages.length === 0 && (
-            <Button
-              onClick={handleGenerate}
-              disabled={!imageFile || loading}
-              className={cn('w-full bg-space-purple hover:bg-space-purple/80 text-cream-white', {
-                'opacity-75': loading,
-              })}
-            >
-              {loading ? 'Generating...' : 'Generate Avatar'}
-            </Button>
-          )}
+        {imageGenerationAllowed ? (
+          <div className="relative flex flex-col gap-1 bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12 space-y-8 overflow-hidden">
+            {/* loading overlay */}
+            {loading && (
+              <div className="absolute inset-0 bg-black/70 flex flex-col gap-4 items-center justify-center z-10 animate-fade-in">
+                <span className="h-10 w-10 border-4 border-t-transparent border-space-purple rounded-full animate-spin" />
+                <p className="text-cream-white">Generating avatar...</p>
+              </div>
+            )}
 
-          {generatedImages.length > 0 && (
-            <div className="space-y-6 animate-in fade-in">
-              <div>
-                <h2 className="text-2xl font-semibold text-center text-cream-white mb-4 text-center">
-                  Generated Avatar{generatedImages.length > 1 ? 's' : ''}
-                </h2>
-                <div className="gap-4 justify-center items-center w-full">
-                  {generatedImages.map(src => (
-                    <div key={src}>
-                      <Image
-                        src={src}
-                        alt="Generated avatar"
-                        className="rounded border border-slate-700 object-contain w-full"
-                        width={320}
-                        height={320}
-                      />
-                    </div>
-                  ))}
+            {/* Upload */}
+            <div className="space-y-4">
+              <Label className="text-slate-400">1. Upload a base image</Label>
+              {/* Hidden real input */}
+              <input
+                ref={fileInputRef}
+                id="image"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              {/* Dropzone */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => {
+                  e.preventDefault();
+                  const files = e.dataTransfer.files;
+                  if (files?.length) {
+                    const fileList: FileList = files;
+                    handleFileChange({
+                      target: { files: fileList },
+                    } as unknown as React.ChangeEvent<HTMLInputElement>);
+                  }
+                }}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-2 px-6 py-10 rounded-lg border-2 border-dashed transition-colors cursor-pointer',
+                  imageFile ? 'border-space-purple' : 'border-slate-700 hover:border-space-purple'
+                )}
+              >
+                {imageFile ? (
+                  <Image
+                    src={URL.createObjectURL(imageFile)}
+                    alt="Uploaded preview"
+                    className="rounded max-h-80 object-contain w-full"
+                    width={320}
+                    height={320}
+                  />
+                ) : (
+                  <>
+                    <UploadCloud className="w-10 h-10 text-slate-400" />
+                    <p className="text-slate-400 text-sm">Click or drag & drop to upload</p>
+                  </>
+                )}
+              </div>
+            </div>
+            <hr className="border-space-purple" />
+
+            {/* Prompt */}
+            <div className="space-y-2">
+              <Label htmlFor="prompt" className="text-slate-400">
+                2. Enter a prompt to edit the image
+              </Label>
+              <Textarea
+                id="prompt"
+                placeholder="e.g. Turn this photo into a cyber-punk cartoon avatar wearing sunglasses"
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                rows={3}
+                className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+              />
+            </div>
+
+            <hr className="border-space-purple" />
+
+            {/* Optional parameters */}
+            <Label className="text-slate-400">3. Optional parameters</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-slate-400">Medium</Label>
+                <Autocomplete
+                  value={medium}
+                  onChange={setMedium}
+                  options={mediums}
+                  placeholder="Oil painting, 3D render..."
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-slate-400">Style</Label>
+                <Autocomplete
+                  value={style}
+                  onChange={setStyle}
+                  options={['', ...styleOptions]}
+                  placeholder="Cartoon, Realistic..."
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-slate-400">Filter</Label>
+                <Autocomplete
+                  value={filter}
+                  onChange={setFilter}
+                  options={['', ...filterOptions]}
+                  placeholder="Cartoon, Realistic..."
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-slate-400">Mood</Label>
+                <Autocomplete
+                  value={mood}
+                  onChange={setMood}
+                  options={['', ...moodOptions]}
+                  placeholder="Cartoon, Realistic..."
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-slate-400">Theme</Label>
+                <Autocomplete
+                  value={theme}
+                  onChange={setTheme}
+                  options={['', ...themeOptions]}
+                  placeholder="Cartoon, Realistic..."
+                />
+              </div>
+            </div>
+
+            <hr className="border-space-purple" />
+
+            {/* Orientation */}
+            <div className="space-y-2">
+              <Label className="text-slate-400">Orientation</Label>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { val: '1024x1536', icon: <RectangleVertical className="w-4 h-4" /> },
+                    { val: '1024x1024', icon: <Square className="w-4 h-4" /> },
+                    { val: '1536x1024', icon: <RectangleHorizontal className="w-4 h-4" /> },
+                  ] as { val: typeof size; icon: React.ReactNode }[]
+                ).map(o => (
+                  <button
+                    key={o.val}
+                    type="button"
+                    onClick={() => setSize(o.val)}
+                    className={cn(
+                      'flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm border transition-colors',
+                      size === o.val
+                        ? 'bg-space-purple text-cream-white border-space-purple'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    )}
+                  >
+                    {o.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {generatedImages.length === 0 && (
+              <Button
+                onClick={handleGenerate}
+                disabled={!imageFile || loading}
+                className={cn('w-full bg-space-purple hover:bg-space-purple/80 text-cream-white', {
+                  'opacity-75': loading,
+                })}
+              >
+                {loading ? 'Generating...' : 'Generate Avatar'}
+              </Button>
+            )}
+
+            {generatedImages.length > 0 && (
+              <div className="space-y-6 animate-in fade-in">
+                <div>
+                  <h2 className="text-2xl font-semibold text-center text-cream-white mb-4 text-center">
+                    Generated Avatar{generatedImages.length > 1 ? 's' : ''}
+                  </h2>
+                  <div className="gap-4 justify-center items-center w-full">
+                    {generatedImages.map(src => (
+                      <div key={src}>
+                        <Image
+                          src={src}
+                          alt="Generated avatar"
+                          className="rounded border border-slate-700 object-contain w-full"
+                          width={320}
+                          height={320}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={loading}
+                    className="bg-space-blue hover:bg-space-blue/80 text-cream-white w-full"
+                  >
+                    <RefreshCcw className="w-4 h-4 mr-2" />
+                    {loading ? 'Generating...' : 'Generate More'}
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex justify-center">
-                <Button
-                  onClick={handleGenerate}
-                  disabled={loading}
-                  className="bg-space-blue hover:bg-space-blue/80 text-cream-white w-full"
-                >
-                  <RefreshCcw className="w-4 h-4 mr-2" />
-                  {loading ? 'Generating...' : 'Generate More'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12 text-center">
+            <p className="text-slate-400 text-lg">{disableReason}</p>
+          </div>
+        )}
       </div>
     </div>
   );
