@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { useGameState } from '@/app/daily-card-game/useGameState';
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useGameState } from '@/app/daily-card-game/useGameState'
+import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
 export const Deck = () => {
-  const { game } = useGameState();
-  const { gamePlayState, fullDeck } = game;
-  const { remainingDeck } = gamePlayState;
-  const [deckType, setDeckType] = useState<'remaining' | 'full'>('remaining');
+  const { game } = useGameState()
+  const { gamePlayState, fullDeck } = game
+  const { remainingDeck } = gamePlayState
+  const [deckType, setDeckType] = useState<'remaining' | 'full'>('remaining')
 
-  const deck = deckType === 'remaining' ? remainingDeck : fullDeck;
+  const deck = deckType === 'remaining' ? remainingDeck : fullDeck
 
   return (
     <div>
@@ -23,5 +23,5 @@ export const Deck = () => {
         </p>
       ))}
     </div>
-  );
-};
+  )
+}

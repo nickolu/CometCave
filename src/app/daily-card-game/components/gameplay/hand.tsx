@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { useGameState } from '@/app/daily-card-game/useGameState';
-import { Card } from './card';
+import { useGameState } from '@/app/daily-card-game/useGameState'
+import { Card } from './card'
 
 export const Hand = () => {
-  const { game } = useGameState();
-  const { gamePlayState } = game;
-  const { dealtCards, selectedCardIds } = gamePlayState;
+  const { game } = useGameState()
+  const { gamePlayState } = game
+  const { dealtCards, selectedCardIds } = gamePlayState
 
   return (
     <div>
@@ -21,5 +21,5 @@ export const Hand = () => {
         ))}
       </div>
     </div>
-  );
-};
+  )
+}

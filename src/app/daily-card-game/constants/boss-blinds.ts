@@ -1,4 +1,4 @@
-import { BossBlindDefinition, EffectContext } from '@/app/daily-card-game/domain/types';
+import { BossBlindDefinition, EffectContext } from '@/app/daily-card-game/domain/types'
 
 const theHook: BossBlindDefinition = {
   status: 'notStarted',
@@ -17,11 +17,11 @@ const theHook: BossBlindDefinition = {
         ctx.game.gamePlayState.dealtCards.splice(
           Math.floor(Math.random() * ctx.game.gamePlayState.dealtCards.length),
           2
-        );
+        )
       },
     },
   ],
-};
+}
 
 const theOx: BossBlindDefinition = {
   status: 'notStarted',
@@ -37,13 +37,13 @@ const theOx: BossBlindDefinition = {
       priority: 1,
       condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_END',
       apply: (ctx: EffectContext) => {
-        ctx.game.money = 0;
+        ctx.game.money = 0
       },
     },
   ],
-};
+}
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx];
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
 
 /**
  

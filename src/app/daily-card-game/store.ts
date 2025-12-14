@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { create } from 'zustand';
-import type { GamePhase, GameState } from './domain/types';
-import { defaultGameState } from './constants/default-game-state';
+import { create } from 'zustand'
+import type { GamePhase, GameState } from './domain/types'
+import { defaultGameState } from './constants/default-game-state'
 
-const HAND_SIZE = 7;
+const HAND_SIZE = 7
 
 export interface DailyCardGameStore {
-  game: GameState;
-  setGame: (game: GameState) => void;
-  clearGame: () => void;
-  setGamePhase: (gamePhase: GamePhase) => void;
-  dealHand: () => void;
-  selectCard: (id: string) => void;
-  deselectCard: (id: string) => void;
-  discardSelectedCards: () => void;
-  dealCards: (count: number) => void;
-  refillHand: () => void;
+  game: GameState
+  setGame: (game: GameState) => void
+  clearGame: () => void
+  setGamePhase: (gamePhase: GamePhase) => void
+  dealHand: () => void
+  selectCard: (id: string) => void
+  deselectCard: (id: string) => void
+  discardSelectedCards: () => void
+  dealCards: (count: number) => void
+  refillHand: () => void
 }
 
 export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
@@ -27,7 +27,7 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
   dealHand: () =>
     set(state => {
       if (state.game.gamePlayState.dealtCards.length) {
-        return state;
+        return state
       }
       return {
         game: {
@@ -38,16 +38,16 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
             remainingDeck: state.game.gamePlayState.remainingDeck.slice(HAND_SIZE),
           },
         },
-      };
+      }
     }),
   dealCards: (count: number) =>
     set(state => {
-      const gamePlayState = state.game.gamePlayState;
-      const shouldDeal = gamePlayState.dealtCards.length + count <= HAND_SIZE;
+      const gamePlayState = state.game.gamePlayState
+      const shouldDeal = gamePlayState.dealtCards.length + count <= HAND_SIZE
       const dealtCards = gamePlayState.dealtCards.concat(
         gamePlayState.remainingDeck.slice(0, count)
-      );
-      const remainingDeck = gamePlayState.remainingDeck.slice(count);
+      )
+      const remainingDeck = gamePlayState.remainingDeck.slice(count)
 
       if (shouldDeal) {
         return {
@@ -59,17 +59,17 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
               remainingDeck,
             },
           },
-        };
+        }
       }
-      throw new Error('Not enough cards to deal');
+      throw new Error('Not enough cards to deal')
     }),
   refillHand: () =>
     set(state => {
-      const gamePlayState = state.game.gamePlayState;
+      const gamePlayState = state.game.gamePlayState
       const cardsToRefill = gamePlayState.remainingDeck.slice(
         0,
         HAND_SIZE - gamePlayState.dealtCards.length
-      );
+      )
       return {
         game: {
           ...state.game,
@@ -79,7 +79,7 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
             remainingDeck: gamePlayState.remainingDeck.slice(cardsToRefill.length),
           },
         },
-      };
+      }
     }),
   selectCard: (id: string) =>
     set(state => ({
@@ -103,16 +103,16 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
     })),
   discardSelectedCards: () =>
     set(state => {
-      const gameState = state.game;
-      const gamePlayState = gameState.gamePlayState;
+      const gameState = state.game
+      const gamePlayState = gameState.gamePlayState
       const cardsToDiscard = gamePlayState.dealtCards.filter(card =>
         gamePlayState.selectedCardIds.includes(card.id)
-      );
+      )
       const cardsToKeep = gamePlayState.dealtCards.filter(
         card => !gamePlayState.selectedCardIds.includes(card.id)
-      );
-      console.log('cardsToDiscard', cardsToDiscard);
-      console.log('cardsToKeep', cardsToKeep);
+      )
+      console.log('cardsToDiscard', cardsToDiscard)
+      console.log('cardsToKeep', cardsToKeep)
       return {
         game: {
           ...gameState,
@@ -124,6 +124,6 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
             remainingDiscards: gamePlayState.remainingDiscards - 1,
           },
         },
-      };
+      }
     }),
-}));
+}))

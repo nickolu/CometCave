@@ -1,28 +1,28 @@
-'use client';
-import { GamePlayView } from './game-views/gameplay';
-import { BlindSelectionView } from './game-views/blind-selection';
-import { PackOpenView } from './game-views/pack-open';
-import { ShopView } from './game-views/shop';
-import { useGameState } from './useGameState';
-import { MainMenuView } from './game-views/main-menu';
-import { useGameEvents } from './events/use-game-events';
+'use client'
+import { GamePlayView } from './game-views/gameplay'
+import { BlindSelectionView } from './game-views/blind-selection'
+import { PackOpenView } from './game-views/pack-open'
+import { ShopView } from './game-views/shop'
+import { useGameState } from './useGameState'
+import { MainMenuView } from './game-views/main-menu'
+import { useGameEvents } from './events/use-game-events'
 
 export default function DailyCardGamePage() {
-  const { game } = useGameState();
-  useGameEvents();
+  const { game } = useGameState()
+  useGameEvents()
 
   switch (game.gamePhase) {
     case 'mainMenu':
-      return <MainMenuView />;
+      return <MainMenuView />
     case 'shop':
-      return <ShopView />;
+      return <ShopView />
     case 'blindSelection':
-      return <BlindSelectionView />;
+      return <BlindSelectionView />
     case 'gameplay':
-      return <GamePlayView />;
+      return <GamePlayView />
     case 'packOpening':
-      return <PackOpenView />;
+      return <PackOpenView />
     default:
-      return <div>Error: Unknown game phase {game.gamePhase}</div>;
+      return <div>Error: Unknown game phase {game.gamePhase}</div>
   }
 }

@@ -1,4 +1,4 @@
-import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/types';
+import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/types'
 
 const cardValueBaseChips: Record<CardValue, number> = {
   2: 2,
@@ -14,7 +14,7 @@ const cardValueBaseChips: Record<CardValue, number> = {
   Q: 10,
   K: 10,
   A: 11,
-};
+}
 
 const getDefaultCard = (
   value: CardValue,
@@ -28,8 +28,8 @@ const getDefaultCard = (
     isHolographic: false,
     isFoil: false,
     faceUp: true,
-  };
-};
+  }
+}
 
 export const pokerDeck: PlayingCard[] = [
   getDefaultCard('2', 'hearts'),
@@ -84,4 +84,4 @@ export const pokerDeck: PlayingCard[] = [
   getDefaultCard('A', 'diamonds'),
   getDefaultCard('A', 'clubs'),
   getDefaultCard('A', 'spades'),
-];
+]

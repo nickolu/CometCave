@@ -1,8 +1,8 @@
-import { RoundDefinition } from '../domain/types';
-import { bossBlinds } from './boss-blinds';
+import { RoundDefinition } from '../domain/types'
+import { bossBlinds } from './boss-blinds'
 
 const getDefaultRoundState = (baseChips: number, ante: number): RoundDefinition => {
-  console.log('ante', ante); // this will be used to determine the boss blind eventually
+  console.log('ante', ante) // this will be used to determine the boss blind eventually
   return {
     baseChips: baseChips,
     smallBlind: {
@@ -14,8 +14,8 @@ const getDefaultRoundState = (baseChips: number, ante: number): RoundDefinition 
       anteMultiplier: 1.5,
     },
     bossBlind: bossBlinds[0],
-  };
-};
+  }
+}
 
 export const rounds: RoundDefinition[] = [
   getDefaultRoundState(100, 0), // can only go here due to voucher
@@ -27,4 +27,4 @@ export const rounds: RoundDefinition[] = [
   getDefaultRoundState(20000, 6),
   getDefaultRoundState(35000, 7),
   getDefaultRoundState(80000, 8),
-];
+]

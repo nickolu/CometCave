@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { eventEmitter } from '@/app/daily-card-game/events/event-emitter';
-import { Button } from '@/components/ui/button';
+import { eventEmitter } from '@/app/daily-card-game/events/event-emitter'
+import { Button } from '@/components/ui/button'
 
 export function MainMenuView() {
   return (
@@ -9,11 +9,11 @@ export function MainMenuView() {
       <h1>Main Menu</h1>
       <Button
         onClick={() => {
-          eventEmitter.emit({ type: 'ROUND_START' });
+          eventEmitter.emit({ type: 'ROUND_START' })
         }}
       >
         Start Game
       </Button>
     </div>
-  );
+  )
 }

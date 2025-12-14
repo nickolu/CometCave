@@ -1,20 +1,20 @@
-'use client';
+'use client'
 
-import { Hand } from '@/app/daily-card-game/components/gameplay/hand';
-import { useGameState } from '@/app/daily-card-game/useGameState';
-import { Button } from '@/components/ui/button';
-import { eventEmitter } from '@/app/daily-card-game/events/event-emitter';
-import { useEffect, useState } from 'react';
-import { Deck } from '@/app/daily-card-game/components/global/deck';
+import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
+import { useGameState } from '@/app/daily-card-game/useGameState'
+import { Button } from '@/components/ui/button'
+import { eventEmitter } from '@/app/daily-card-game/events/event-emitter'
+import { useEffect, useState } from 'react'
+import { Deck } from '@/app/daily-card-game/components/global/deck'
 
 export function GamePlayView() {
-  const [showDeck, setShowDeck] = useState(false);
-  const { game } = useGameState();
-  const { gamePlayState } = game;
+  const [showDeck, setShowDeck] = useState(false)
+  const { game } = useGameState()
+  const { gamePlayState } = game
 
   useEffect(() => {
-    eventEmitter.emit({ type: 'HAND_DEALT' });
-  }, []);
+    eventEmitter.emit({ type: 'HAND_DEALT' })
+  }, [])
 
   return (
     <div>
@@ -25,7 +25,7 @@ export function GamePlayView() {
           <Button
             disabled={gamePlayState.remainingDiscards === 0}
             onClick={() => {
-              eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' });
+              eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
             }}
           >
             Discard
@@ -40,5 +40,5 @@ export function GamePlayView() {
       </div>
       {showDeck && <Deck />}
     </div>
-  );
+  )
 }
