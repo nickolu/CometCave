@@ -20,7 +20,20 @@ export type GamePhase = 'mainMenu' | 'shop' | 'blindSelection' | 'gameplay' | 'p
 
 export type Consumable = Celestial | Arcane;
 
-export type CardValue = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 'J' | 'Q' | 'K' | 'A';
+export type CardValue =
+  | '2'
+  | '3'
+  | '4'
+  | '5'
+  | '6'
+  | '7'
+  | '8'
+  | '9'
+  | '10'
+  | 'J'
+  | 'Q'
+  | 'K'
+  | 'A';
 
 export interface PlayingCard {
   value: CardValue;
