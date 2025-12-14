@@ -10,6 +10,7 @@ class EventEmitter {
     ROUND_END: [],
     CARD_SELECTED: [],
     CARD_DESELECTED: [],
+    DISCARD_SELECTED_CARDS: [],
   };
 
   on<TType extends GameEvent['type']>(

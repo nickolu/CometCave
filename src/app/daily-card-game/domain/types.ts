@@ -183,7 +183,8 @@ export type GameEvent =
   | CardSelectedEvent
   | CardDeselectedEvent
   | RoundStartEvent
-  | RoundEndEvent;
+  | RoundEndEvent
+  | DiscardSelectedCardsEvent;
 
 export type HandDealtEvent = {
   type: 'HAND_DEALT';
@@ -219,6 +220,9 @@ export type CardDeselectedEvent = {
   id: string;
 };
 
+export type DiscardSelectedCardsEvent = {
+  type: 'DISCARD_SELECTED_CARDS';
+};
 export interface EffectContext {
   event: GameEvent;
   game: GameState;

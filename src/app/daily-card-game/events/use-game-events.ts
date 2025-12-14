@@ -4,7 +4,8 @@ import { useGameState } from '@/app/daily-card-game/useGameState';
 import { eventEmitter } from './event-emitter';
 
 export const useGameEvents = () => {
-  const { setGamePhase, dealHand, selectCard, deselectCard } = useGameState();
+  const { setGamePhase, dealHand, selectCard, deselectCard, discardSelectedCards, refillHand } =
+    useGameState();
 
   useEffect(() => {
     const unsubRoundStart = eventEmitter.on('ROUND_START', () => {
@@ -35,6 +36,12 @@ export const useGameEvents = () => {
       deselectCard(event.id);
     });
 
+    const unsubDiscardSelectedCards = eventEmitter.on('DISCARD_SELECTED_CARDS', () => {
+      console.log('DISCARD_SELECTED_CARDS');
+      discardSelectedCards();
+      refillHand();
+    });
+
     return () => {
       unsubRoundStart();
       unsubRoundEnd();
@@ -42,6 +49,7 @@ export const useGameEvents = () => {
       unsubHandDealt();
       unsubCardSelected();
       unsubCardDeselected();
+      unsubDiscardSelectedCards();
     };
-  }, [dealHand, selectCard, deselectCard, setGamePhase]);
+  }, [dealHand, selectCard, deselectCard, setGamePhase, discardSelectedCards, refillHand]);
 };
