@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
+
+import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
 
 export const Deck = () => {
   const { game } = useGameState()
@@ -17,7 +19,7 @@ export const Deck = () => {
       <Button onClick={() => setDeckType(deckType === 'remaining' ? 'full' : 'remaining')}>
         Show {deckType === 'remaining' ? 'Full' : 'Remaining'} Deck
       </Button>
-      {deck.map(card => (
+      {deck.map((card: PlayingCard) => (
         <p key={card.id}>
           {card.value} {card.suit}
         </p>

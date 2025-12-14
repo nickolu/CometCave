@@ -1,4 +1,4 @@
-import { GameEvent } from '../domain/types'
+import { GameEvent } from '@/app/daily-card-game/domain/events/types'
 
 class EventEmitter {
   private events: Record<GameEvent['type'], Array<(event: GameEvent) => void>> = {

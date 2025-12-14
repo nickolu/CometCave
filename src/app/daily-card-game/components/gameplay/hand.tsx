@@ -2,6 +2,7 @@
 
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Card } from './card'
+import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
 export const Hand = () => {
   const { game } = useGameState()
@@ -11,7 +12,7 @@ export const Hand = () => {
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {dealtCards.map((card, index) => (
+        {dealtCards.map((card: PlayingCard, index: number) => (
           <Card
             key={card.id}
             playingCard={card}

@@ -1,6 +1,6 @@
 'use client'
 
-import { eventEmitter } from '@/app/daily-card-game/events/event-emitter'
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { Button } from '@/components/ui/button'
 
 export function MainMenuView() {

@@ -1,4 +1,4 @@
-import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/types'
+import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
 const cardValueBaseChips: Record<CardValue, number> = {
   2: 2,

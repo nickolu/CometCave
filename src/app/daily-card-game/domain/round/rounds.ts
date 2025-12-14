@@ -1,4 +1,4 @@
-import { RoundDefinition } from '../domain/types'
+import { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 import { bossBlinds } from './boss-blinds'
 
 const getDefaultRoundState = (baseChips: number, ante: number): RoundDefinition => {

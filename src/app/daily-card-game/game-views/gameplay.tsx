@@ -3,7 +3,7 @@
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
-import { eventEmitter } from '@/app/daily-card-game/events/event-emitter'
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useEffect, useState } from 'react'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
 

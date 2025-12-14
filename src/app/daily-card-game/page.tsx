@@ -5,7 +5,7 @@ import { PackOpenView } from './game-views/pack-open'
 import { ShopView } from './game-views/shop'
 import { useGameState } from './useGameState'
 import { MainMenuView } from './game-views/main-menu'
-import { useGameEvents } from './events/use-game-events'
+import { useGameEvents } from './domain/events/use-game-events'
 
 export default function DailyCardGamePage() {
   const { game } = useGameState()

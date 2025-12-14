@@ -1,8 +1,10 @@
 'use client'
 
 import { create } from 'zustand'
-import type { GamePhase, GameState } from './domain/types'
-import { defaultGameState } from './constants/default-game-state'
+
+import type { GamePhase, GameState } from '@/app/daily-card-game/domain/game/types'
+
+import { defaultGameState } from './domain/game/default-game-state'
 
 const HAND_SIZE = 7
 
