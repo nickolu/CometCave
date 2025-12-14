@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -11,35 +11,35 @@ import {
   Select,
   MenuItem,
   IconButton,
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import { CharacterStatus, HumanUser } from '../../types';
-import { useStore } from '../../store';
+} from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import { CharacterStatus, HumanUser } from '../../types'
+import { useStore } from '../../store'
 
 interface UserProfileDialogProps {
-  open: boolean;
-  onClose: () => void;
+  open: boolean
+  onClose: () => void
 }
 
 export default function UserProfileDialog({ open, onClose }: UserProfileDialogProps) {
-  const humanUser = useStore((state) => state.userList.humanUser);
-  const updateHumanUser = useStore((state) => state.updateHumanUser);
+  const humanUser = useStore(state => state.userList.humanUser)
+  const updateHumanUser = useStore(state => state.updateHumanUser)
 
   const [formData, setFormData] = useState<HumanUser>({
     name: humanUser.name,
     status: humanUser.status,
     description: humanUser.description || '',
-  });
+  })
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    e.preventDefault()
     updateHumanUser({
       name: formData.name,
       status: formData.status,
       description: formData.description,
-    });
-    onClose();
-  };
+    })
+    onClose()
+  }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -61,7 +61,7 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
             label="Name"
             fullWidth
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={e => setFormData({ ...formData, name: e.target.value })}
             required
             sx={{ mb: 2 }}
           />
@@ -72,7 +72,7 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
             multiline
             rows={3}
             value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={e => setFormData({ ...formData, description: e.target.value })}
             sx={{ mb: 2 }}
           />
           <FormControl fullWidth sx={{ mb: 2 }}>
@@ -80,7 +80,9 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
             <Select
               value={formData.status}
               label="Status"
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as CharacterStatus })}
+              onChange={e =>
+                setFormData({ ...formData, status: e.target.value as CharacterStatus })
+              }
             >
               <MenuItem value="online">Online</MenuItem>
               <MenuItem value="away">Away</MenuItem>
@@ -95,14 +97,16 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
             multiline
             rows={3}
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={e => setFormData({ ...formData, description: e.target.value })}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained">Save</Button>
+          <Button type="submit" variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </form>
     </Dialog>
-  );
+  )
 }

@@ -1,22 +1,22 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import type { GameState } from '../page';
+import { Button } from '@/components/ui/button'
+import type { GameState } from '../page'
 
 interface SecretWordEndProps {
-  gameState: GameState;
-  onRestart: () => void;
+  gameState: GameState
+  onRestart: () => void
 }
 
 // Scoring calculation function
 function calculateFinalScore(gameState: GameState): number | null {
   // Only calculate score if player won
   if (gameState.winner !== 'player' || !gameState.players.player.wordScore) {
-    return null;
+    return null
   }
 
-  const baseScore = gameState.players.player.wordScore;
-  const messageCount = gameState.messages.length;
+  const baseScore = gameState.players.player.wordScore
+  const messageCount = gameState.messages.length
   const gameDurationMinutes =
     gameState.messages.length > 0
       ? Math.round(
@@ -25,28 +25,28 @@ function calculateFinalScore(gameState: GameState): number | null {
             1000 /
             60
         )
-      : 0;
+      : 0
 
   // Bonus calculations (shorter/fewer is better)
   // Message bonus: fewer messages = higher bonus (max 50 bonus points)
-  const messageBonus = Math.max(0, 50 - Math.floor(messageCount / 2));
+  const messageBonus = Math.max(0, 50 - Math.floor(messageCount / 2))
 
   // Time bonus: shorter time = higher bonus (max 30 bonus points)
   // Bonus decreases by 5 points per minute after the first minute
-  const timeBonus = Math.max(0, 30 - Math.max(0, gameDurationMinutes - 1) * 5);
+  const timeBonus = Math.max(0, 30 - Math.max(0, gameDurationMinutes - 1) * 5)
 
-  const finalScore = baseScore + messageBonus + timeBonus;
+  const finalScore = baseScore + messageBonus + timeBonus
 
-  return Math.max(finalScore, baseScore); // Ensure score is never less than base word score
+  return Math.max(finalScore, baseScore) // Ensure score is never less than base word score
 }
 
 function getScoreBreakdown(gameState: GameState) {
   if (gameState.winner !== 'player' || !gameState.players.player.wordScore) {
-    return null;
+    return null
   }
 
-  const baseScore = gameState.players.player.wordScore;
-  const messageCount = gameState.messages.length;
+  const baseScore = gameState.players.player.wordScore
+  const messageCount = gameState.messages.length
   const gameDurationMinutes =
     gameState.messages.length > 0
       ? Math.round(
@@ -55,10 +55,10 @@ function getScoreBreakdown(gameState: GameState) {
             1000 /
             60
         )
-      : 0;
+      : 0
 
-  const messageBonus = Math.max(0, 50 - Math.floor(messageCount / 2));
-  const timeBonus = Math.max(0, 30 - Math.max(0, gameDurationMinutes - 1) * 5);
+  const messageBonus = Math.max(0, 50 - Math.floor(messageCount / 2))
+  const timeBonus = Math.max(0, 30 - Math.max(0, gameDurationMinutes - 1) * 5)
 
   return {
     baseScore,
@@ -66,13 +66,13 @@ function getScoreBreakdown(gameState: GameState) {
     timeBonus,
     messageCount,
     gameDurationMinutes,
-  };
+  }
 }
 
 export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
-  const winner = gameState.winner ? gameState.players[gameState.winner] : null;
-  const finalScore = calculateFinalScore(gameState);
-  const scoreBreakdown = getScoreBreakdown(gameState);
+  const winner = gameState.winner ? gameState.players[gameState.winner] : null
+  const finalScore = calculateFinalScore(gameState)
+  const scoreBreakdown = getScoreBreakdown(gameState)
 
   return (
     <div className="space-y-8 text-center">
@@ -182,8 +182,8 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
           <h4 className="font-semibold text-cream-white mb-4">Message History</h4>
           <div className="max-h-64 overflow-y-auto space-y-2">
             {gameState.messages.map(message => {
-              const player = gameState.players[message.playerId];
-              const isPlayer = message.playerId === 'player';
+              const player = gameState.players[message.playerId]
+              const isPlayer = message.playerId === 'player'
 
               return (
                 <div
@@ -207,7 +207,7 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
                   </div>
                   <p className="text-cream-white text-left">{message.content}</p>
                 </div>
-              );
+              )
             })}
           </div>
         </div>
@@ -241,5 +241,5 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
         </p>
       </div>
     </div>
-  );
+  )
 }

@@ -1,8 +1,8 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { READING_LEVEL } from '../constants';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { READING_LEVEL } from '../constants'
 
 const RandomScenarioSchema = z.object({
   setting: z.string().describe('The battle setting and environment'),
@@ -10,7 +10,7 @@ const RandomScenarioSchema = z.object({
   obstacles: z.string().describe('Environmental hazards and obstacles'),
   limitations: z.string().describe('Power restrictions and limitations'),
   additionalContext: z.string().describe('Additional context and special circumstances'),
-});
+})
 
 // Large list of scenario categories to choose from
 const SCENARIO_CATEGORIES = [
@@ -224,20 +224,20 @@ const SCENARIO_CATEGORIES = [
   'almach',
   'caph',
   'izar',
-];
+]
 
 export async function POST(request: Request) {
   const { character1Name, character2Name, character1Description, character2Description } =
-    await request.json();
+    await request.json()
 
   try {
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     // Choose a random scenario category
     const randomCategory =
-      SCENARIO_CATEGORIES[Math.floor(Math.random() * SCENARIO_CATEGORIES.length)];
+      SCENARIO_CATEGORIES[Math.floor(Math.random() * SCENARIO_CATEGORIES.length)]
 
     // Generate scenario based on the category
     const result = await generateObject({
@@ -260,7 +260,7 @@ Keep the writing at a ${READING_LEVEL} reading level.
 `,
       temperature: 0.9, // High temperature for creative variety
       maxTokens: 500,
-    });
+    })
 
     return NextResponse.json({
       setting: result.object.setting,
@@ -269,9 +269,9 @@ Keep the writing at a ${READING_LEVEL} reading level.
       limitations: result.object.limitations,
       additionalContext: result.object.additionalContext,
       category: randomCategory,
-    });
+    })
   } catch (error) {
-    console.error('Error generating random scenario:', error);
-    return NextResponse.json({ error: 'Failed to generate random scenario' }, { status: 500 });
+    console.error('Error generating random scenario:', error)
+    return NextResponse.json({ error: 'Failed to generate random scenario' }, { status: 500 })
   }
 }

@@ -1,16 +1,16 @@
-import OpenAI from 'openai';
-import { AIService, AIServiceConfig, Message, SafetyCheckResponse } from './types';
-import { Character } from '../../types';
+import OpenAI from 'openai'
+import { AIService, AIServiceConfig, Message, SafetyCheckResponse } from './types'
+import { Character } from '../../types'
 
 export class OpenAIService implements AIService {
-  private client: OpenAI;
-  private config: AIServiceConfig;
+  private client: OpenAI
+  private config: AIServiceConfig
 
   constructor(config: AIServiceConfig) {
-    this.config = config;
+    this.config = config
     this.client = new OpenAI({
       apiKey: config.apiKey,
-    });
+    })
   }
 
   async checkMessageSafety(message: string): Promise<SafetyCheckResponse> {
@@ -24,7 +24,7 @@ export class OpenAIService implements AIService {
         role: 'user' as const,
         content: message,
       },
-    ];
+    ]
 
     const response = await this.client.chat.completions.create({
       model: this.config.model,
@@ -32,8 +32,8 @@ export class OpenAIService implements AIService {
       temperature: 0,
       max_tokens: 100,
       response_format: { type: 'json_object' },
-    });
-    return JSON.parse(response.choices[0].message.content || '');
+    })
+    return JSON.parse(response.choices[0].message.content || '')
   }
 
   async generateResponse(messages: Message[]): Promise<string> {
@@ -42,9 +42,9 @@ export class OpenAIService implements AIService {
       messages,
       temperature: this.config.temperature ?? 0.7,
       max_tokens: this.config.maxTokens ?? 150,
-    });
+    })
 
-    return response.choices[0].message.content || '';
+    return response.choices[0].message.content || ''
   }
 
   async generateCharacterResponse(character: Character, messages: Message[]): Promise<string> {
@@ -70,16 +70,16 @@ Respond in a concise manner (1-3 sentences) as your character would, while adher
         role: 'user' as const,
         content: msg.content,
       })),
-    ];
+    ]
 
     const response = await this.client.chat.completions.create({
       model: this.config.model,
       messages: prompt,
       temperature: this.config.temperature ?? 0.7,
       max_tokens: this.config.maxTokens ?? 150,
-    });
+    })
 
-    return response.choices[0].message.content || '';
+    return response.choices[0].message.content || ''
   }
 
   async selectRespondingCharacters(
@@ -87,7 +87,7 @@ Respond in a concise manner (1-3 sentences) as your character would, while adher
     chatMessages: Message[]
   ): Promise<Character[]> {
     if (!characters || characters.length === 0) {
-      return [];
+      return []
     }
 
     // Define the function for character selection with JSON schema
@@ -114,7 +114,7 @@ Respond in a concise manner (1-3 sentences) as your character would, while adher
           required: ['character_ids'],
         },
       },
-    ];
+    ]
 
     // Prepare the system prompt
     const systemPrompt = {
@@ -127,7 +127,7 @@ You will receive a list of available characters with their descriptions and the 
 2. Their potential interest in the topic being discussed
 3. Their relationship to the current conversation flow
 4. The need for diverse perspectives`,
-    };
+    }
 
     // Prepare the user prompt with character information and chat history
     const userPrompt = {
@@ -137,7 +137,7 @@ You will receive a list of available characters with their descriptions and the 
         .join('\n')}\n\nConversation history:\n${chatMessages
         .map(msg => `${msg.content}`)
         .join('\n')}\n\nWhich characters should respond to the latest message?`,
-    };
+    }
 
     try {
       // Call OpenAI API with function calling
@@ -147,58 +147,58 @@ You will receive a list of available characters with their descriptions and the 
         temperature: 0.3, // Lower temperature for more consistent results
         tools: [{ type: 'function', function: functions[0] }],
         tool_choice: { type: 'function', function: { name: 'select_responding_characters' } },
-      });
+      })
 
       // Extract the function call response
-      const toolCalls = response.choices[0].message.tool_calls;
+      const toolCalls = response.choices[0].message.tool_calls
 
       if (!toolCalls || toolCalls.length === 0) {
-        const numToSelect = Math.floor(Math.random() * 3) + 1;
-        const shuffled = [...characters].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, Math.min(numToSelect, characters.length));
+        const numToSelect = Math.floor(Math.random() * 3) + 1
+        const shuffled = [...characters].sort(() => 0.5 - Math.random())
+        return shuffled.slice(0, Math.min(numToSelect, characters.length))
       }
 
       // Get the function call arguments
-      const functionCall = toolCalls[0];
-      let selectedIds: string[] = [];
+      const functionCall = toolCalls[0]
+      let selectedIds: string[] = []
 
       try {
         // Parse the function arguments
-        const args = JSON.parse(functionCall.function.arguments);
+        const args = JSON.parse(functionCall.function.arguments)
 
         // Extract character IDs from the response
         if (args.character_ids && Array.isArray(args.character_ids)) {
-          selectedIds = args.character_ids;
+          selectedIds = args.character_ids
         } else {
-          const numToSelect = Math.floor(Math.random() * 3) + 1;
-          const shuffled = [...characters].sort(() => 0.5 - Math.random());
-          return shuffled.slice(0, Math.min(numToSelect, characters.length));
+          const numToSelect = Math.floor(Math.random() * 3) + 1
+          const shuffled = [...characters].sort(() => 0.5 - Math.random())
+          return shuffled.slice(0, Math.min(numToSelect, characters.length))
         }
       } catch (error) {
-        console.error('Error parsing character selection response:', error);
+        console.error('Error parsing character selection response:', error)
         // Fall back to random selection
-        const numToSelect = Math.floor(Math.random() * 3) + 1;
-        const shuffled = [...characters].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, Math.min(numToSelect, characters.length));
+        const numToSelect = Math.floor(Math.random() * 3) + 1
+        const shuffled = [...characters].sort(() => 0.5 - Math.random())
+        return shuffled.slice(0, Math.min(numToSelect, characters.length))
       }
 
       // Find the characters with the selected IDs
-      const selectedCharacters = characters.filter(char => selectedIds.includes(char.id));
+      const selectedCharacters = characters.filter(char => selectedIds.includes(char.id))
 
       // If no characters were selected or something went wrong, fall back to random selection
       if (selectedCharacters?.length === 0) {
-        const numToSelect = Math.floor(Math.random() * 3) + 1;
-        const shuffled = [...characters].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, Math.min(numToSelect, characters.length));
+        const numToSelect = Math.floor(Math.random() * 3) + 1
+        const shuffled = [...characters].sort(() => 0.5 - Math.random())
+        return shuffled.slice(0, Math.min(numToSelect, characters.length))
       }
 
-      return selectedCharacters;
+      return selectedCharacters
     } catch (error) {
-      console.error('Error selecting responding characters:', error);
+      console.error('Error selecting responding characters:', error)
       // Fall back to random selection
-      const numToSelect = Math.floor(Math.random() * 3) + 1;
-      const shuffled = [...characters].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, Math.min(numToSelect, characters.length));
+      const numToSelect = Math.floor(Math.random() * 3) + 1
+      const shuffled = [...characters].sort(() => 0.5 - Math.random())
+      return shuffled.slice(0, Math.min(numToSelect, characters.length))
     }
   }
 }

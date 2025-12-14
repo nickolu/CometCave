@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { useMemo, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useMemo, useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   BarChart,
   Bar,
@@ -14,74 +14,74 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts';
-import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting';
-import { useGenerateSummary } from '../api/hooks';
+} from 'recharts'
+import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
+import { useGenerateSummary } from '../api/hooks'
 
 interface VotingResultsProps {
-  votes: Vote[];
-  voters: Voter[];
-  criteria?: VotingCriteria;
-  onRestart: () => void;
+  votes: Vote[]
+  voters: Voter[]
+  criteria?: VotingCriteria
+  onRestart: () => void
 }
 
 export default function VotingResults({ votes, voters, criteria, onRestart }: VotingResultsProps) {
-  const [groupSummaries, setGroupSummaries] = useState<Record<string, string>>({});
-  const [loadingSummaries, setLoadingSummaries] = useState<string[]>([]);
+  const [groupSummaries, setGroupSummaries] = useState<Record<string, string>>({})
+  const [loadingSummaries, setLoadingSummaries] = useState<string[]>([])
 
-  const generateSummaryMutation = useGenerateSummary();
+  const generateSummaryMutation = useGenerateSummary()
 
   const results = useMemo(() => {
     const distribution = votes.reduce(
       (acc, vote) => {
-        acc[vote.choice] = (acc[vote.choice] || 0) + 1;
-        return acc;
+        acc[vote.choice] = (acc[vote.choice] || 0) + 1
+        return acc
       },
       {} as Record<string, number>
-    );
+    )
 
     const groupResults = voters.reduce(
       (acc, voter) => {
-        const voterVotes = votes.filter(v => v.voterName === voter.name);
+        const voterVotes = votes.filter(v => v.voterName === voter.name)
         const groupDistribution = voterVotes.reduce(
           (dist, vote) => {
-            dist[vote.choice] = (dist[vote.choice] || 0) + 1;
-            return dist;
+            dist[vote.choice] = (dist[vote.choice] || 0) + 1
+            return dist
           },
           {} as Record<string, number>
-        );
+        )
 
         acc[voter.name] = {
           voter,
           votes: voterVotes,
           distribution: groupDistribution,
           total: voterVotes.length,
-        };
-        return acc;
+        }
+        return acc
       },
       {} as Record<
         string,
         { voter: Voter; votes: Vote[]; distribution: Record<string, number>; total: number }
       >
-    );
+    )
 
-    return { distribution, groupResults };
-  }, [votes, voters]);
+    return { distribution, groupResults }
+  }, [votes, voters])
 
   // Generate summaries for groups with more than 5 votes
   useEffect(() => {
     const generateSummariesForLargeGroups = async () => {
-      if (!criteria) return;
+      if (!criteria) return
 
       const groupsNeedingSummary = Object.entries(results.groupResults).filter(
         ([groupName, groupData]) =>
           groupData.total > 5 && !groupSummaries[groupName] && !loadingSummaries.includes(groupName)
-      );
+      )
 
-      if (groupsNeedingSummary.length === 0) return;
+      if (groupsNeedingSummary.length === 0) return
 
       for (const [groupName, groupData] of groupsNeedingSummary) {
-        setLoadingSummaries(prev => [...prev, groupName]);
+        setLoadingSummaries(prev => [...prev, groupName])
 
         generateSummaryMutation.mutate(
           {
@@ -91,31 +91,31 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
           },
           {
             onSuccess: data => {
-              setGroupSummaries(prev => ({ ...prev, [groupName]: data.summary }));
-              setLoadingSummaries(prev => prev.filter(name => name !== groupName));
+              setGroupSummaries(prev => ({ ...prev, [groupName]: data.summary }))
+              setLoadingSummaries(prev => prev.filter(name => name !== groupName))
             },
             onError: error => {
-              console.error(`Error generating summary for ${groupName}:`, error);
-              setLoadingSummaries(prev => prev.filter(name => name !== groupName));
+              console.error(`Error generating summary for ${groupName}:`, error)
+              setLoadingSummaries(prev => prev.filter(name => name !== groupName))
             },
           }
-        );
+        )
       }
-    };
+    }
 
-    generateSummariesForLargeGroups();
-  }, [results.groupResults, criteria, groupSummaries, loadingSummaries, generateSummaryMutation]);
+    generateSummariesForLargeGroups()
+  }, [results.groupResults, criteria, groupSummaries, loadingSummaries, generateSummaryMutation])
 
   const chartData = Object.entries(results.distribution).map(([option, count]) => ({
     option,
     count,
     percentage: ((count / votes.length) * 100).toFixed(1),
-  }));
+  }))
 
   const pieData = chartData.map((item, index) => ({
     ...item,
     fill: `hsl(${(index * 137.5) % 360}, 70%, 50%)`,
-  }));
+  }))
 
   return (
     <div className="space-y-6">
@@ -328,5 +328,5 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
         </Button>
       </div>
     </div>
-  );
+  )
 }

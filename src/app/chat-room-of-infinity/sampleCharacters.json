@@ -1,52 +1,52 @@
 [
-    {
-        "id": "1",
-        "name": "Gandalf",
-        "description": "A powerful wizard with a staff and a hat"
-    },
-    {
-        "id": "2",
-        "name": "Marie Curie",
-        "description": "Pioneering scientist who discovered radium and polonium"
-    },
-    {
-        "id": "3",
-        "name": "Spider-Man",
-        "description": "Friendly neighborhood superhero with spider-like abilities"
-    },
-    {
-        "id": "4",
-        "name": "Frida Kahlo",
-        "description": "Revolutionary Mexican artist known for her self-portraits"
-    },
-    {
-        "id": "5",
-        "name": "Sherlock Holmes",
-        "description": "Brilliant detective with exceptional deductive reasoning"
-    },
-    {
-        "id": "6",
-        "name": "Ada Lovelace",
-        "description": "The world's first computer programmer"
-    },
-    {
-        "id": "7",
-        "name": "Black Panther",
-        "description": "King T'Challa, protector of Wakanda"
-    },
-    {
-        "id": "8",
-        "name": "Leonardo da Vinci",
-        "description": "Renaissance polymath and artistic genius"
-    },
-    {
-        "id": "9",
-        "name": "Princess Leia",
-        "description": "Leader of the Rebel Alliance and Force-sensitive warrior"
-    },
-    {
-        "id": "10",
-        "name": "Nelson Mandela",
-        "description": "Anti-apartheid revolutionary and symbol of peace"
-    }
+  {
+    "id": "1",
+    "name": "Gandalf",
+    "description": "A powerful wizard with a staff and a hat"
+  },
+  {
+    "id": "2",
+    "name": "Marie Curie",
+    "description": "Pioneering scientist who discovered radium and polonium"
+  },
+  {
+    "id": "3",
+    "name": "Spider-Man",
+    "description": "Friendly neighborhood superhero with spider-like abilities"
+  },
+  {
+    "id": "4",
+    "name": "Frida Kahlo",
+    "description": "Revolutionary Mexican artist known for her self-portraits"
+  },
+  {
+    "id": "5",
+    "name": "Sherlock Holmes",
+    "description": "Brilliant detective with exceptional deductive reasoning"
+  },
+  {
+    "id": "6",
+    "name": "Ada Lovelace",
+    "description": "The world's first computer programmer"
+  },
+  {
+    "id": "7",
+    "name": "Black Panther",
+    "description": "King T'Challa, protector of Wakanda"
+  },
+  {
+    "id": "8",
+    "name": "Leonardo da Vinci",
+    "description": "Renaissance polymath and artistic genius"
+  },
+  {
+    "id": "9",
+    "name": "Princess Leia",
+    "description": "Leader of the Rebel Alliance and Force-sensitive warrior"
+  },
+  {
+    "id": "10",
+    "name": "Nelson Mandela",
+    "description": "Anti-apartheid revolutionary and symbol of peace"
+  }
 ]

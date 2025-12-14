@@ -33,5 +33,5 @@ export function BallotIcon() {
       <circle cx="100" cy="120" r="15" fill="#F5F2E3" opacity="0.1" />
       <circle cx="100" cy="120" r="25" fill="#F5F2E3" opacity="0.05" />
     </svg>
-  );
+  )
 }

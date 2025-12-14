@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const CharacterDetailsSchema = z.object({
   description: z.string().describe('The description of the character'),
@@ -8,11 +8,11 @@ export const CharacterDetailsSchema = z.object({
   durability: z.number().describe('The durability of the character'),
   speed: z.number().describe('The speed of the character'),
   weaponsAndEquipment: z.array(z.string()).describe('The weapons and equipment of the character'),
-});
+})
 
 export const CharacterPowersSchema = z.object({
   powers: z.array(z.string()).describe("List of the character's powers and abilities"),
-});
+})
 
 export const CharacterStatsSchema = z.object({
   strength: z.number().min(1).max(100).describe('Physical strength (1-100 scale)'),
@@ -29,18 +29,18 @@ export const CharacterStatsSchema = z.object({
     .min(1)
     .max(100)
     .describe('Fighting skills and combat experience (1-100 scale)'),
-});
+})
 
 export const CharacterFeatsSchema = z.object({
   feats: z.array(z.string()).describe('List of notable feats and accomplishments'),
-});
+})
 
 export const CharacterPortraitSchema = z.object({
   imageUrl: z.string().describe('URL of the generated character portrait'),
   altText: z.string().describe('Alt text description of the image'),
   prompt: z.string().describe('The prompt used to generate the image'),
   cloudinaryPublicId: z.string().optional().describe('Cloudinary public ID for the uploaded image'),
-});
+})
 
 export const ContestResultsSchema = z.object({
   winner: z.enum(['candidate1', 'candidate2', 'tie']).describe('The winner of the contest'),
@@ -48,18 +48,18 @@ export const ContestResultsSchema = z.object({
   reasoning: z
     .string()
     .describe('Detailed reasoning for why this character won or why it was a tie'),
-});
+})
 
 export const ContestStorySchema = z.object({
   story: z.string().describe('A cinematic description of the battle/contest'),
   intro: z.string().describe('The introduction/setup of the battle'),
   climax: z.string().describe('The climactic moment of the battle'),
   ending: z.string().describe('The conclusion and outcome of the battle'),
-});
+})
 
 export const ContestImageSchema = z.object({
   imageUrl: z.string().describe('URL of the generated contest image'),
   altText: z.string().describe('Alt text description of the contest image'),
   prompt: z.string().describe('The prompt used to generate the contest image'),
   cloudinaryPublicId: z.string().optional().describe('Cloudinary public ID for the uploaded image'),
-});
+})

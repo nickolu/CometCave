@@ -8,16 +8,16 @@ The inventory system in Fantasy Tycoon enables each player to collect, store, an
 
 ## Inventory Data Model
 
-- **Inventory**: Each player has an `inventory` array, stored as part of the `GameState` object.  
+- **Inventory**: Each player has an `inventory` array, stored as part of the `GameState` object.
 - **Item**: Each inventory item is represented by an `Item` type:
 
 ```typescript
 interface Item {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  quantity: number;
+  id: string
+  name: string
+  description: string
+  icon: string
+  quantity: number
 }
 ```
 
@@ -41,7 +41,7 @@ Items are awarded to players primarily through **story events** and **decision o
 
 ### 3. Client-Side Inventory Mutation
 
-- **All inventory changes happen on the client.**  
+- **All inventory changes happen on the client.**
 - When the client receives a response from the server containing `rewardItems`, it uses the `addItem` utility to update the local inventory state. This ensures all item rewards are reflected in the player's inventory.
 - This logic is implemented in the React hooks:
   - `useResolveDecisionMutation`: Handles rewards from decision outcomes.

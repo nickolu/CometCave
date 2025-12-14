@@ -1,1 +1,1 @@
-export const READING_LEVEL = '5th grade';
+export const READING_LEVEL = '5th grade'

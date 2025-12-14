@@ -6,9 +6,9 @@ import type {
   APIError,
   ScoreWordRequest,
   ScoreWordResponse,
-} from './types';
+} from './types'
 
-const API_BASE = '/api/v1/secret-word';
+const API_BASE = '/api/v1/secret-word'
 
 async function post<TResponse>(
   endpoint: string,
@@ -20,16 +20,16 @@ async function post<TResponse>(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
-  });
+  })
 
   if (!response.ok) {
     const errorData: APIError = await response.json().catch(() => ({
       error: `HTTP error! status: ${response.status}`,
-    }));
-    throw new Error(errorData.error);
+    }))
+    throw new Error(errorData.error)
   }
 
-  return response.json();
+  return response.json()
 }
 
 export const secretWordApi = {
@@ -40,4 +40,4 @@ export const secretWordApi = {
       post<GenerateWordResponse>('/generate-word', request),
     scoreWord: (request: ScoreWordRequest) => post<ScoreWordResponse>('/score-word', request),
   },
-};
+}

@@ -1,45 +1,45 @@
 export interface AIResponseRequest {
-  playerMessage: string;
-  aiSecretWord: string;
+  playerMessage: string
+  aiSecretWord: string
   gameMessages: Array<{
-    playerId: 'player' | 'ai';
-    content: string;
-    timestamp: number;
-  }>;
-  isPlayerTurn?: boolean;
+    playerId: 'player' | 'ai'
+    content: string
+    timestamp: number
+  }>
+  isPlayerTurn?: boolean
 }
 
 export interface AIResponseResponse {
-  response: string;
-  isQuestion: boolean;
-  confidence: number;
+  response: string
+  isQuestion: boolean
+  confidence: number
   violation?: {
-    type: 'ai_said_own_word';
-    winner: 'player';
-    reason: string;
-  };
+    type: 'ai_said_own_word'
+    winner: 'player'
+    reason: string
+  }
 }
 
 export interface GenerateWordRequest {
-  difficulty?: 'easy' | 'medium' | 'hard';
-  avoidWords?: string[];
+  difficulty?: 'easy' | 'medium' | 'hard'
+  avoidWords?: string[]
 }
 
 export interface GenerateWordResponse {
-  word: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  category: string;
-  hint: string;
+  word: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  category: string
+  hint: string
 }
 
 export interface APIError {
-  error: string;
+  error: string
 }
 
 export interface ScoreWordRequest {
-  word: string;
+  word: string
 }
 
 export interface ScoreWordResponse {
-  score: number;
+  score: number
 }

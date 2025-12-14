@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { RefreshCcw, Loader2, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { RefreshCcw, Loader2, Sparkles } from 'lucide-react'
 
 export function Step01DefineCharacters({
   candidate1Name,
@@ -18,19 +18,19 @@ export function Step01DefineCharacters({
   generateCharacterDescription,
   onNext,
 }: {
-  candidate1Name: string;
-  candidate2Name: string;
-  candidate1Description: string;
-  candidate2Description: string;
-  isGeneratingCandidate1: boolean;
-  isGeneratingCandidate2: boolean;
-  isGeneratingCandidate1Description: boolean;
-  isGeneratingCandidate2Description: boolean;
-  updateCandidate1: (candidate: string | null, description: string | null) => void;
-  updateCandidate2: (candidate: string | null, description: string | null) => void;
-  generateRandomCharacter: (candidateNumber: 1 | 2) => Promise<void>;
-  generateCharacterDescription: (candidateNumber: 1 | 2) => Promise<void>;
-  onNext: () => void;
+  candidate1Name: string
+  candidate2Name: string
+  candidate1Description: string
+  candidate2Description: string
+  isGeneratingCandidate1: boolean
+  isGeneratingCandidate2: boolean
+  isGeneratingCandidate1Description: boolean
+  isGeneratingCandidate2Description: boolean
+  updateCandidate1: (candidate: string | null, description: string | null) => void
+  updateCandidate2: (candidate: string | null, description: string | null) => void
+  generateRandomCharacter: (candidateNumber: 1 | 2) => Promise<void>
+  generateCharacterDescription: (candidateNumber: 1 | 2) => Promise<void>
+  onNext: () => void
 }) {
   return (
     <div className="space-y-6 mt-6">
@@ -84,7 +84,12 @@ export function Step01DefineCharacters({
                 variant="outline"
                 size="sm"
                 onClick={() => generateCharacterDescription(1)}
-                disabled={!candidate1Name || candidate1Name.trim() === '' || isGeneratingCandidate1Description || isGeneratingCandidate1}
+                disabled={
+                  !candidate1Name ||
+                  candidate1Name.trim() === '' ||
+                  isGeneratingCandidate1Description ||
+                  isGeneratingCandidate1
+                }
                 className="self-start sm:self-auto"
               >
                 {isGeneratingCandidate1Description ? (
@@ -161,7 +166,12 @@ export function Step01DefineCharacters({
                 variant="outline"
                 size="sm"
                 onClick={() => generateCharacterDescription(2)}
-                disabled={!candidate2Name || candidate2Name.trim() === '' || isGeneratingCandidate2Description || isGeneratingCandidate2}
+                disabled={
+                  !candidate2Name ||
+                  candidate2Name.trim() === '' ||
+                  isGeneratingCandidate2Description ||
+                  isGeneratingCandidate2
+                }
                 className="self-start sm:self-auto"
               >
                 {isGeneratingCandidate2Description ? (
@@ -195,5 +205,5 @@ export function Step01DefineCharacters({
         Next: Review Characters
       </Button>
     </div>
-  );
+  )
 }

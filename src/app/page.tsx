@@ -1,12 +1,12 @@
-import type React from 'react';
-import Link from 'next/link';
-import { MoonIcon } from '@/components/moon-icon';
-import { PlanetIcon } from '@/components/planet-icon';
-import { StarIcon } from '@/components/star-icon';
-import { BallotIcon } from '@/components/ballot-icon';
-import { ROUTE_CONSTANTS } from './route-constants';
-import { SecretWordIcon } from '@/components/secret-word-icon';
-import { User as UserIcon, HelpCircle } from 'lucide-react';
+import type React from 'react'
+import Link from 'next/link'
+import { MoonIcon } from '@/components/moon-icon'
+import { PlanetIcon } from '@/components/planet-icon'
+import { StarIcon } from '@/components/star-icon'
+import { BallotIcon } from '@/components/ballot-icon'
+import { ROUTE_CONSTANTS } from './route-constants'
+import { SecretWordIcon } from '@/components/secret-word-icon'
+import { User as UserIcon, HelpCircle } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -71,7 +71,7 @@ export default function Home() {
         />
       </div>
     </div>
-  );
+  )
 }
 
 function GameCard({
@@ -80,10 +80,10 @@ function GameCard({
   href,
   description,
 }: {
-  title: string;
-  icon: React.ReactNode;
-  href: string;
-  description: string;
+  title: string
+  icon: React.ReactNode
+  href: string
+  description: string
 }) {
   return (
     <Link
@@ -96,5 +96,5 @@ function GameCard({
       <h3 className="text-xl font-bold text-cream-white text-center">{title}</h3>
       <p className="text-slate-400 text-sm text-center mt-2">{description}</p>
     </Link>
-  );
+  )
 }

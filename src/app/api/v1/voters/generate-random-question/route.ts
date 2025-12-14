@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { type NextRequest, NextResponse } from 'next/server'
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { z } from 'zod'
 
 const QUESTION_CATEGORIES = [
   'Food & Dining',
@@ -24,7 +24,7 @@ const QUESTION_CATEGORIES = [
   'Politics & Governance',
   'Philosophy & Ethics',
   'Hobbies & Interests',
-];
+]
 
 const QuestionSchema = z.object({
   question: z
@@ -37,28 +37,28 @@ const QuestionSchema = z.object({
     .min(2)
     .max(6)
     .describe('2-6 potential answer options for this question'),
-});
+})
 
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
-    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-    const headerApiKey = request.headers.get('x-openai-api-key');
+    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+    const headerApiKey = request.headers.get('x-openai-api-key')
 
     if (headerApiKey) {
-      apiKey = headerApiKey;
+      apiKey = headerApiKey
     }
 
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OpenAI API key is not configured. Please provide an API key.' },
         { status: 500 }
-      );
+      )
     }
 
     // Pick a random category
     const randomCategory =
-      QUESTION_CATEGORIES[Math.floor(Math.random() * QUESTION_CATEGORIES.length)];
+      QUESTION_CATEGORIES[Math.floor(Math.random() * QUESTION_CATEGORIES.length)]
 
     const prompt = `Generate a unique and engaging voting question in the "${randomCategory}" category.
 
@@ -80,11 +80,11 @@ Examples of good questions:
 - "Which skill should be mandatory in schools?" (Options: Financial literacy, Critical thinking, Coding, Communication, Time management)
 - "What's the best approach to morning productivity?" (Options: Exercise first, Plan the day, Check emails, Meditate, Eat a good breakfast)
 
-Make the question engaging and the options comprehensive but not overwhelming.`;
+Make the question engaging and the options comprehensive but not overwhelming.`
 
     const openaiClient = createOpenAI({
       apiKey,
-    });
+    })
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
@@ -92,16 +92,16 @@ Make the question engaging and the options comprehensive but not overwhelming.`;
       prompt,
       temperature: 0.8, // Higher temperature for more creativity
       maxTokens: 800,
-    });
+    })
 
     return NextResponse.json({
       question: result.object.question,
       category: result.object.category,
       difficulty: result.object.difficulty,
       suggestedOptions: result.object.expectedOptions,
-    });
+    })
   } catch (error) {
-    console.error('Error generating random question:', error);
+    console.error('Error generating random question:', error)
 
     // Provide more specific error messages
     if (error instanceof Error) {
@@ -109,19 +109,19 @@ Make the question engaging and the options comprehensive but not overwhelming.`;
         return NextResponse.json(
           { error: 'OpenAI API key is invalid or missing. Please check your API key.' },
           { status: 401 }
-        );
+        )
       }
       if (error.message.includes('quota')) {
         return NextResponse.json(
           { error: 'OpenAI API quota exceeded. Please check your OpenAI account.' },
           { status: 429 }
-        );
+        )
       }
     }
 
     return NextResponse.json(
       { error: 'Failed to generate random question. Please try again.' },
       { status: 500 }
-    );
+    )
   }
 }

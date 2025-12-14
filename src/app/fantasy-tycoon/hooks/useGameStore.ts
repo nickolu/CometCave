@@ -1,10 +1,10 @@
-'use client';
-import { create } from 'zustand';
-import { produce } from 'immer';
-import { persist } from 'zustand/middleware';
-import { FantasyDecisionPoint, FantasyStoryEvent, GameState, Item } from '../models/types';
-import { FantasyCharacter } from '../models/character';
-import { defaultGameState } from '../lib/defaultGameState';
+'use client'
+import { create } from 'zustand'
+import { produce } from 'immer'
+import { persist } from 'zustand/middleware'
+import { FantasyDecisionPoint, FantasyStoryEvent, GameState, Item } from '../models/types'
+import { FantasyCharacter } from '../models/character'
+import { defaultGameState } from '../lib/defaultGameState'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -23,21 +23,21 @@ const defaultCharacter: FantasyCharacter = {
   intelligence: 0,
   luck: 0,
   inventory: [],
-};
+}
 
 export interface GameStore {
-  gameState: GameState;
-  addCharacter: (c: Partial<FantasyCharacter>) => void;
-  clearGameState: () => void;
-  deleteCharacter: (id: string) => void;
-  getSelectedCharacter: () => FantasyCharacter | null;
-  incrementDistance: () => void;
-  selectCharacter: (id: string) => void;
-  setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void;
-  setGameState: (gameState: GameState) => void;
-  setGenericMessage: (message: string) => void;
-  discardItem: (itemId: string) => void;
-  restoreItem: (itemId: string) => void;
+  gameState: GameState
+  addCharacter: (c: Partial<FantasyCharacter>) => void
+  clearGameState: () => void
+  deleteCharacter: (id: string) => void
+  getSelectedCharacter: () => FantasyCharacter | null
+  incrementDistance: () => void
+  selectCharacter: (id: string) => void
+  setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void
+  setGameState: (gameState: GameState) => void
+  setGenericMessage: (message: string) => void
+  discardItem: (itemId: string) => void
+  restoreItem: (itemId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -47,23 +47,23 @@ export const useGameStore = create<GameStore>()(
       addCharacter: c => {
         set(
           produce((state: GameStore) => {
-            if (!state.gameState) return;
-            const characters = state.gameState.characters || [];
-            if (characters.length >= 5) return;
-            state.gameState.characters = [...characters, { ...defaultCharacter, ...c }];
+            if (!state.gameState) return
+            const characters = state.gameState.characters || []
+            if (characters.length >= 5) return
+            state.gameState.characters = [...characters, { ...defaultCharacter, ...c }]
           })
-        );
+        )
       },
       clearGameState: () => set({ gameState: defaultGameState }),
       deleteCharacter: id => {
         set(
           produce((state: GameStore) => {
-            if (!state.gameState) return {};
-            const characters = state.gameState.characters || [];
-            const selectedCharacterId = state.gameState.selectedCharacterId ?? '';
-            const updatedCharacters = characters.filter((char: FantasyCharacter) => char.id !== id);
+            if (!state.gameState) return {}
+            const characters = state.gameState.characters || []
+            const selectedCharacterId = state.gameState.selectedCharacterId ?? ''
+            const updatedCharacters = characters.filter((char: FantasyCharacter) => char.id !== id)
             const updatedSelectedCharacterId =
-              selectedCharacterId === id ? null : selectedCharacterId;
+              selectedCharacterId === id ? null : selectedCharacterId
 
             return {
               gameState: {
@@ -71,29 +71,29 @@ export const useGameStore = create<GameStore>()(
                 characters: updatedCharacters,
                 selectedCharacterId: updatedSelectedCharacterId,
               },
-            };
+            }
           })
-        );
+        )
       },
       getSelectedCharacter: () => {
-        const state = get().gameState;
-        if (!state) return null;
-        return state.characters?.find(c => c.id === state.selectedCharacterId) ?? null;
+        const state = get().gameState
+        if (!state) return null
+        return state.characters?.find(c => c.id === state.selectedCharacterId) ?? null
       },
       incrementDistance: () => {
         set(
           produce((state: GameStore) => {
-            const selectedCharacter = get().getSelectedCharacter();
-            if (!selectedCharacter) return;
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
             const updatedCharacter = {
               ...selectedCharacter,
               distance: (selectedCharacter.distance || 0) + 1,
-            };
+            }
             state.gameState.characters = state.gameState.characters.map(char =>
               char.id === selectedCharacter.id ? updatedCharacter : char
-            );
+            )
           })
-        );
+        )
       },
       setGameState: (state: GameState) => set({ gameState: state }),
       selectCharacter: id => {
@@ -101,17 +101,17 @@ export const useGameStore = create<GameStore>()(
           produce((state: GameStore) => {
             const matchingCharacter = state.gameState?.characters?.find(
               (char: FantasyCharacter) => char.id === id
-            );
-            if (!matchingCharacter) return {};
+            )
+            if (!matchingCharacter) return {}
             const updatedState = {
               gameState: {
                 ...state.gameState,
                 selectedCharacterId: id,
               },
-            };
-            return updatedState;
+            }
+            return updatedState
           })
-        );
+        )
       },
       setGenericMessage: (message: string) => {
         set(
@@ -121,10 +121,10 @@ export const useGameStore = create<GameStore>()(
                 ...state.gameState,
                 genericMessage: message,
               },
-            };
-            return updatedState;
+            }
+            return updatedState
           })
-        );
+        )
       },
       setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => {
         set(
@@ -134,124 +134,128 @@ export const useGameStore = create<GameStore>()(
                 ...state.gameState,
                 decisionPoint: decisionPoint,
               },
-            };
-            return updatedState;
+            }
+            return updatedState
           })
-        );
+        )
       },
       discardItem: (itemId: string) => {
         set(
           produce((state: GameStore) => {
-            const selectedCharacter = get().getSelectedCharacter();
-            if (!selectedCharacter || !selectedCharacter.inventory) return;
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter || !selectedCharacter.inventory) return
 
-            const itemIndex = selectedCharacter.inventory.findIndex(item => item.id === itemId);
-            if (itemIndex === -1) return;
+            const itemIndex = selectedCharacter.inventory.findIndex(item => item.id === itemId)
+            if (itemIndex === -1) return
 
             // Ensure the characters array and the specific character are found for modification
-            const characterIndex = state.gameState.characters.findIndex(char => char.id === selectedCharacter.id);
-            if (characterIndex === -1) return;
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
 
             // Create a new inventory array with the updated item
             const updatedInventory = selectedCharacter.inventory.map((item, index) => {
               if (index === itemIndex) {
-                return { ...item, status: 'deleted' as const };
+                return { ...item, status: 'deleted' as const }
               }
-              return item;
-            });
+              return item
+            })
 
             // Update the character in the characters array
             state.gameState.characters[characterIndex] = {
               ...selectedCharacter,
               inventory: updatedInventory,
-            };
+            }
           })
-        );
+        )
       },
       restoreItem: (itemId: string) => {
         set(
           produce((state: GameStore) => {
-            const selectedCharacter = get().getSelectedCharacter();
-            if (!selectedCharacter || !selectedCharacter.inventory) return;
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter || !selectedCharacter.inventory) return
 
-            const itemIndex = selectedCharacter.inventory.findIndex(item => item.id === itemId);
-            if (itemIndex === -1) return;
+            const itemIndex = selectedCharacter.inventory.findIndex(item => item.id === itemId)
+            if (itemIndex === -1) return
 
-            const characterIndex = state.gameState.characters.findIndex(char => char.id === selectedCharacter.id);
-            if (characterIndex === -1) return;
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
 
             const updatedInventory = selectedCharacter.inventory.map((item, index) => {
               if (index === itemIndex) {
                 // Set status to 'active'. Alternatively, could remove the status property
                 // if undefined status means active by default.
                 // For clarity and consistency with 'deleted', explicitly setting 'active'.
-                return { ...item, status: 'active' as const };
+                return { ...item, status: 'active' as const }
               }
-              return item;
-            });
+              return item
+            })
 
             state.gameState.characters[characterIndex] = {
               ...selectedCharacter,
               inventory: updatedInventory,
-            };
+            }
           })
-        );
+        )
       },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key
     }
   )
-);
+)
 
 // Helper to get state with fallback to default
 export function useEffectiveGameState(): GameState {
-  const state = useGameStore(s => s.gameState);
-  return state || defaultGameState;
+  const state = useGameStore(s => s.gameState)
+  return state || defaultGameState
 }
 
 export function useGameStateBuilder() {
-  const { gameState, setGameState: saveGameState } = useGameStore();
+  const { gameState, setGameState: saveGameState } = useGameStore()
 
-  const gameStateClone = structuredClone(gameState);
+  const gameStateClone = structuredClone(gameState)
 
   const commit = () => {
-    saveGameState(gameStateClone);
-  };
+    saveGameState(gameStateClone)
+  }
 
   const addItem = (item: Item) => {
-    const selectedCharacterId = gameStateClone.selectedCharacterId;
-    if (!selectedCharacterId) return;
-    const selectedCharacter = gameStateClone.characters?.find(c => c.id === selectedCharacterId);
-    if (!selectedCharacter) return;
-    selectedCharacter.inventory.push(item);
-  };
+    const selectedCharacterId = gameStateClone.selectedCharacterId
+    if (!selectedCharacterId) return
+    const selectedCharacter = gameStateClone.characters?.find(c => c.id === selectedCharacterId)
+    if (!selectedCharacter) return
+    selectedCharacter.inventory.push(item)
+  }
 
   const addStoryEvent = (event: FantasyStoryEvent) => {
-    gameStateClone.storyEvents.push(event);
-  };
+    gameStateClone.storyEvents.push(event)
+  }
 
   const setDecisionPoint = (decisionPoint: FantasyDecisionPoint | null) => {
-    gameStateClone.decisionPoint = decisionPoint;
-  };
+    gameStateClone.decisionPoint = decisionPoint
+  }
 
   const setGenericMessage = (message: string | null) => {
-    gameStateClone.genericMessage = message;
-  };
+    gameStateClone.genericMessage = message
+  }
 
   const updateSelectedCharacter = (characterUpdate: Partial<FantasyCharacter>) => {
-    const selectedCharacterId = gameStateClone.selectedCharacterId;
-    if (!selectedCharacterId || !gameStateClone.characters) return;
+    const selectedCharacterId = gameStateClone.selectedCharacterId
+    if (!selectedCharacterId || !gameStateClone.characters) return
 
-    const charIndex = gameStateClone.characters.findIndex(c => c.id === selectedCharacterId);
-    if (charIndex === -1) return;
+    const charIndex = gameStateClone.characters.findIndex(c => c.id === selectedCharacterId)
+    if (charIndex === -1) return
 
     // Create a new character object to ensure reactivity
     gameStateClone.characters[charIndex] = {
       ...gameStateClone.characters[charIndex],
       ...characterUpdate,
-    };
-  };
+    }
+  }
 
   return {
     gameState: gameStateClone,
@@ -261,5 +265,5 @@ export function useGameStateBuilder() {
     setDecisionPoint,
     setGenericMessage,
     updateSelectedCharacter,
-  };
+  }
 }

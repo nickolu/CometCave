@@ -49,12 +49,12 @@ Two utility functions are available:
 
 ```typescript
 // Server-side (API routes)
-import { isImageGenerationAllowed } from '@/lib/utils';
-const allowed = isImageGenerationAllowed();
+import { isImageGenerationAllowed } from '@/lib/utils'
+const allowed = isImageGenerationAllowed()
 
 // Client-side (React components)
-import { isImageGenerationAllowedClient } from '@/lib/utils';
-const allowed = await isImageGenerationAllowedClient();
+import { isImageGenerationAllowedClient } from '@/lib/utils'
+const allowed = await isImageGenerationAllowedClient()
 ```
 
 ## Usage

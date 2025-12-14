@@ -1,21 +1,21 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { NextResponse } from 'next/server';
-import { ContestResultsSchema } from '../types';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { NextResponse } from 'next/server'
+import { ContestResultsSchema } from '../types'
 
 export async function POST(request: Request) {
   try {
     // Check content length before parsing to prevent large payloads
-    const contentLength = request.headers.get('content-length');
+    const contentLength = request.headers.get('content-length')
     if (contentLength && parseInt(contentLength) > 4000000) {
       // 4MB limit
       return NextResponse.json(
         { error: 'Request too large. Please reduce character descriptions and details.' },
         { status: 413 }
-      );
+      )
     }
 
-    const body = await request.json();
+    const body = await request.json()
 
     // Validate and extract data
     const {
@@ -24,16 +24,16 @@ export async function POST(request: Request) {
       candidate2Name,
       candidate2Description,
       battleScenario,
-    } = body;
+    } = body
 
     // Validate required fields
     if (!candidate1Name || !candidate2Name) {
-      return NextResponse.json({ error: 'Both character names are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Both character names are required' }, { status: 400 })
     }
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     // Build concise scenario description
     const scenarioSummary =
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
           ]
             .filter(Boolean)
             .join(' | ')}`
-        : 'Standard battle scenario';
+        : 'Standard battle scenario'
 
     // Concise prompt to avoid payload limits
     const prompt = `Analyze this battle and determine the winner:
@@ -72,22 +72,22 @@ Examples:
 - Superman vs human in combat = candidate1 wins, confidence 10 
 - A fight between Goku and Superman = candidate1 wins, confidence 2 (very closely matched)
 - Average human male trying to take dwon a medium sized dog  = candidate1 wins, confidence 6 (no contest)
-- Crocodile vs an Alligator, one must eat the other = candidate2 wins, confidence 4 (closely matched)`;
+- Crocodile vs an Alligator, one must eat the other = candidate2 wins, confidence 4 (closely matched)`
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
       schema: ContestResultsSchema,
       prompt,
       temperature: 0.3,
       maxTokens: 300, // Reduced to keep response concise
-    });
+    })
 
     return NextResponse.json({
       winner: result.object.winner,
       confidence: result.object.confidence,
       reasoning: result.object.reasoning,
-    });
+    })
   } catch (error) {
-    console.error('Error generating contest results:', error);
+    console.error('Error generating contest results:', error)
 
     // Handle specific payload errors
     if (error instanceof Error && error.message.includes('413')) {
@@ -97,9 +97,9 @@ Examples:
             'Character data too large. Please reduce the length of descriptions, backstories, and lists.',
         },
         { status: 413 }
-      );
+      )
     }
 
-    return NextResponse.json({ error: 'Failed to generate contest results' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate contest results' }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
-'use client';
-import CharacterList from '../components/CharacterList';
-import { HudBar } from '../components/HudBar';
-import { PageTemplate } from '../components/ui/PageTemplate';
+'use client'
+import CharacterList from '../components/CharacterList'
+import { HudBar } from '../components/HudBar'
+import { PageTemplate } from '../components/ui/PageTemplate'
 
 export default function FantasyTycoonPageCharacters() {
   return (
@@ -11,5 +11,5 @@ export default function FantasyTycoonPageCharacters() {
       </div>
       <CharacterList />
     </PageTemplate>
-  );
+  )
 }

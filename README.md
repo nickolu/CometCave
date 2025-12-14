@@ -62,6 +62,7 @@ src/
 ## 🎨 Styling
 
 The project uses Tailwind CSS for styling, featuring:
+
 - Responsive design
 - Custom gradients
 - Glassmorphism effects

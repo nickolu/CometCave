@@ -1,6 +1,6 @@
-'use client';
+'use client'
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect } from 'react'
 import {
   List,
   ListItem,
@@ -16,63 +16,63 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
-} from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
-import { useStore } from '../../store';
-import { Character } from '../../types';
+} from '@mui/material'
+import { Close as CloseIcon } from '@mui/icons-material'
+import { useStore } from '../../store'
+import { Character } from '../../types'
 
 export default function UserSelector() {
-  const { isOpen, availableCharacters } = useStore(state => state.userSelector);
-  const { characters: selectedCharacters } = useStore(state => state.userList);
-  const { name, description } = useStore(state => state.customCharacterForm);
+  const { isOpen, availableCharacters } = useStore(state => state.userSelector)
+  const { characters: selectedCharacters } = useStore(state => state.userList)
+  const { name, description } = useStore(state => state.customCharacterForm)
   const {
     toggleUserSelector,
     addCharacter,
     updateCustomCharacterForm,
     saveCustomCharacter,
     loadSampleCharacters,
-  } = useStore();
+  } = useStore()
 
-  const [generationPrompt, setGenerationPrompt] = useState('');
-  const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [generationPrompt, setGenerationPrompt] = useState('')
+  const [showGenerateForm, setShowGenerateForm] = useState(false)
 
   // Load sample characters when the component mounts
   useEffect(() => {
     if (availableCharacters.length === 0) {
-      loadSampleCharacters();
+      loadSampleCharacters()
     }
-  }, [availableCharacters.length, loadSampleCharacters]);
+  }, [availableCharacters.length, loadSampleCharacters])
 
   // Filter out characters that are already in the user list
   const filteredAvailableCharacters = availableCharacters.filter(
     (c: Character) => !selectedCharacters?.some((selected: Character) => selected.id === c.id)
-  );
+  )
 
   const handleCharacterSelect = (characterId: string) => {
-    const character = filteredAvailableCharacters.find((c: Character) => c.id === characterId);
+    const character = filteredAvailableCharacters.find((c: Character) => c.id === characterId)
 
     if (character) {
-      addCharacter(character);
-      toggleUserSelector();
+      addCharacter(character)
+      toggleUserSelector()
     }
-  };
+  }
 
   const handleGenerateMore = () => {
     // TODO: Implement character generation
-    console.log('Generating with prompt:', generationPrompt);
-  };
+    console.log('Generating with prompt:', generationPrompt)
+  }
 
   const handleCustomSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    saveCustomCharacter();
-    toggleUserSelector();
-  };
+    e.preventDefault()
+    saveCustomCharacter()
+    toggleUserSelector()
+  }
 
   const handleCustomCancel = () => {
-    updateCustomCharacterForm({ name: '', description: '' });
-  };
+    updateCustomCharacterForm({ name: '', description: '' })
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <Dialog
@@ -156,8 +156,8 @@ export default function UserSelector() {
                 <Button
                   variant="contained"
                   onClick={() => {
-                    handleGenerateMore();
-                    setShowGenerateForm(false);
+                    handleGenerateMore()
+                    setShowGenerateForm(false)
                   }}
                 >
                   Generate
@@ -208,5 +208,5 @@ export default function UserSelector() {
         </Box>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

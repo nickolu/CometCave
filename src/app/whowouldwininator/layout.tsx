@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'The Amazing Whowouldwininator - CometCave',
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://cometcave.com/whowouldwininator',
   },
-};
+}
 
 export default function WhowouldwininatorLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <>{children}</>
 }

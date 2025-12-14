@@ -7,10 +7,12 @@ This document describes the Cloudinary integration added to the whowouldwininato
 The following apps now automatically upload all generated images to Cloudinary for persistent storage:
 
 ### Whowouldwininator
+
 - **Character portraits**: Uploaded to the `whowouldwininator-portraits` folder
 - **Battle scenes**: Uploaded to the `whowouldwininator-battle-scenes` folder
 
 ### Avatar Maker
+
 - **Edited avatars**: Uploaded to the `avatar-maker` folder
 
 ## Environment Variables
@@ -44,6 +46,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 ### API Response Changes
 
 #### Whowouldwininator APIs
+
 The whowouldwininator API responses now include an optional `cloudinaryPublicId` field:
 
 ```typescript
@@ -56,6 +59,7 @@ The whowouldwininator API responses now include an optional `cloudinaryPublicId`
 ```
 
 #### Avatar Maker API
+
 The avatar maker API now returns additional upload details:
 
 ```typescript

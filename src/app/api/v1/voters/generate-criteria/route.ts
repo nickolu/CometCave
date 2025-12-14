@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { type NextRequest, NextResponse } from 'next/server'
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { z } from 'zod'
 
 const CriteriaSchema = z.object({
   options: z
@@ -15,38 +15,38 @@ const CriteriaSchema = z.object({
     .min(2)
     .max(4)
     .describe('2-4 tips for improving the question or options'),
-});
+})
 
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
-    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-    const headerApiKey = request.headers.get('x-openai-api-key');
+    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+    const headerApiKey = request.headers.get('x-openai-api-key')
 
     if (headerApiKey) {
-      apiKey = headerApiKey;
+      apiKey = headerApiKey
     }
 
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OpenAI API key is not configured. Please provide an API key.' },
         { status: 500 }
-      );
+      )
     }
 
-    const { question, existingOptions = [] } = await request.json();
+    const { question, existingOptions = [] } = await request.json()
 
     if (!question || typeof question !== 'string' || question.trim().length === 0) {
       return NextResponse.json(
         { error: 'Question is required and must be a non-empty string.' },
         { status: 400 }
-      );
+      )
     }
 
     const existingOptionsText =
       existingOptions.length > 0
         ? `\n\nCurrent options: ${existingOptions.join(', ')}\n\nYou can improve upon these or suggest completely different options.`
-        : '';
+        : ''
 
     const prompt = `Analyze this voting question and generate optimal answer options:
 
@@ -72,11 +72,11 @@ Also provide:
 
 Example good option sets:
 - For "Best way to learn a new skill": "Online courses", "Hands-on practice", "Find a mentor", "Read books/guides", "Join a community"
-- For "Most important in a leader": "Vision and strategy", "Communication skills", "Empathy and listening", "Decision-making ability", "Technical expertise"`;
+- For "Most important in a leader": "Vision and strategy", "Communication skills", "Empathy and listening", "Decision-making ability", "Technical expertise"`
 
     const openaiClient = createOpenAI({
       apiKey,
-    });
+    })
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
@@ -84,15 +84,15 @@ Example good option sets:
       prompt,
       temperature: 0.7, // Moderate temperature for balance of creativity and consistency
       maxTokens: 1000,
-    });
+    })
 
     return NextResponse.json({
       options: result.object.options,
       reasoning: result.object.reasoning,
       tips: result.object.tips,
-    });
+    })
   } catch (error) {
-    console.error('Error generating criteria:', error);
+    console.error('Error generating criteria:', error)
 
     // Provide more specific error messages
     if (error instanceof Error) {
@@ -100,19 +100,19 @@ Example good option sets:
         return NextResponse.json(
           { error: 'OpenAI API key is invalid or missing. Please check your API key.' },
           { status: 401 }
-        );
+        )
       }
       if (error.message.includes('quota')) {
         return NextResponse.json(
           { error: 'OpenAI API quota exceeded. Please check your OpenAI account.' },
           { status: 429 }
-        );
+        )
       }
     }
 
     return NextResponse.json(
       { error: 'Failed to generate criteria. Please try again.' },
       { status: 500 }
-    );
+    )
   }
 }

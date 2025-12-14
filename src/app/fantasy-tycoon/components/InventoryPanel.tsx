@@ -1,35 +1,35 @@
-'use client';
-import { useCallback, useState } from 'react';
-import { Item } from '../models/types';
-import { Button } from '@/app/fantasy-tycoon/components/ui/button';
-import { List } from '@/app/fantasy-tycoon/components/ui/list';
-import { useGameStore } from '../hooks/useGameStore';
+'use client'
+import { useCallback, useState } from 'react'
+import { Item } from '../models/types'
+import { Button } from '@/app/fantasy-tycoon/components/ui/button'
+import { List } from '@/app/fantasy-tycoon/components/ui/list'
+import { useGameStore } from '../hooks/useGameStore'
 
 interface InventoryPanelProps {
-  inventory: Item[];
+  inventory: Item[]
 }
 
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
-  const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
 
   const handleUse = useCallback((item: Item) => {
-    console.log('Item use not implemented in this component.', item);
-  }, []);
+    console.log('Item use not implemented in this component.', item)
+  }, [])
 
   const handleDiscard = useCallback((item: Item) => {
-    useGameStore.getState().discardItem(item.id);
-  }, []);
+    useGameStore.getState().discardItem(item.id)
+  }, [])
 
   const handleRestore = useCallback((item: Item) => {
-    useGameStore.getState().restoreItem(item.id);
-  }, []);
+    useGameStore.getState().restoreItem(item.id)
+  }, [])
 
   const itemsToDisplay = (inventory ?? []).filter(item => {
     if (activeTab === 'active') {
-      return item.status !== 'deleted';
+      return item.status !== 'deleted'
     }
-    return item.status === 'deleted';
-  });
+    return item.status === 'deleted'
+  })
 
   return (
     <div className="w-full flex flex-col h-full max-h-[calc(100vh-415px)]">
@@ -94,5 +94,5 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
         )}
       </div>
     </div>
-  );
+  )
 }

@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { Application } from '@pixi/react';
-import { Graphics } from 'pixi.js';
-import { useRingTossGame } from './useRingTossGame';
+import { Application } from '@pixi/react'
+import { Graphics } from 'pixi.js'
+import { useRingTossGame } from './useRingTossGame'
 
 const RingTossGame = () => {
   const {
@@ -20,7 +20,7 @@ const RingTossGame = () => {
     isGameOver,
     restartGame,
     handleApplicationClick,
-  } = useRingTossGame();
+  } = useRingTossGame()
 
   return (
     <>
@@ -97,7 +97,7 @@ const RingTossGame = () => {
         )}
       </div>
     </>
-  );
-};
+  )
+}
 
-export default RingTossGame;
+export default RingTossGame

@@ -1,16 +1,16 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { NextResponse } from 'next/server';
-import { CharacterFeatsSchema } from '../../types';
-import { READING_LEVEL } from '../../constants';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { NextResponse } from 'next/server'
+import { CharacterFeatsSchema } from '../../types'
+import { READING_LEVEL } from '../../constants'
 
 export async function POST(request: Request) {
   try {
-    const { name, description } = await request.json();
+    const { name, description } = await request.json()
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
@@ -34,11 +34,11 @@ Keep the writing at a ${READING_LEVEL} reading level.
 `,
       temperature: 0.8,
       maxTokens: 250,
-    });
+    })
 
-    return NextResponse.json({ feats: result.object.feats });
+    return NextResponse.json({ feats: result.object.feats })
   } catch (error) {
-    console.error('Error generating character feats:', error);
-    return NextResponse.json({ error: 'Failed to generate character feats' }, { status: 500 });
+    console.error('Error generating character feats:', error)
+    return NextResponse.json({ error: 'Failed to generate character feats' }, { status: 500 })
   }
 }

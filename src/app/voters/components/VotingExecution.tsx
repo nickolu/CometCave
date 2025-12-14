@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Play } from 'lucide-react';
-import type { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting';
-import { useCastVote } from '../api/hooks';
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Play } from 'lucide-react'
+import type { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting'
+import { useCastVote } from '../api/hooks'
 
 interface VotingExecutionProps {
-  voters: Voter[];
-  criteria: VotingCriteria;
-  onVotingComplete: (votes: Vote[]) => void;
-  onBack: () => void;
+  voters: Voter[]
+  criteria: VotingCriteria
+  onVotingComplete: (votes: Vote[]) => void
+  onBack: () => void
 }
 
 export default function VotingExecution({
@@ -20,15 +20,15 @@ export default function VotingExecution({
   onVotingComplete,
   onBack,
 }: VotingExecutionProps) {
-  const [isVoting, setIsVoting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentVoter, setCurrentVoter] = useState('');
-  const [votes, setVotes] = useState<Vote[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isVoting, setIsVoting] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [currentVoter, setCurrentVoter] = useState('')
+  const [votes, setVotes] = useState<Vote[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0);
+  const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0)
 
-  const castVoteMutation = useCastVote();
+  const castVoteMutation = useCastVote()
 
   const castVote = async (
     voter: Voter,
@@ -42,68 +42,68 @@ export default function VotingExecution({
           onSuccess: data => resolve(data),
           onError: error => reject(error),
         }
-      );
-    });
-  };
+      )
+    })
+  }
 
   const executeVoting = async () => {
-    setIsVoting(true);
-    setProgress(0);
-    setVotes([]);
-    setError(null);
+    setIsVoting(true)
+    setProgress(0)
+    setVotes([])
+    setError(null)
 
-    const allVotes: Vote[] = [];
-    let completedVotes = 0;
-    const errors: string[] = [];
+    const allVotes: Vote[] = []
+    let completedVotes = 0
+    const errors: string[] = []
 
     try {
       // Test API key with a single request first
-      await castVote(voters[0], criteria, 0);
+      await castVote(voters[0], criteria, 0)
 
       // If successful, proceed with all votes
       for (const voter of voters) {
         for (let i = 0; i < voter.count; i++) {
-          setCurrentVoter(`${voter.name} #${i + 1}`);
+          setCurrentVoter(`${voter.name} #${i + 1}`)
 
           try {
-            const vote = await castVote(voter, criteria, i);
-            allVotes.push(vote);
-            setVotes([...allVotes]);
+            const vote = await castVote(voter, criteria, i)
+            allVotes.push(vote)
+            setVotes([...allVotes])
 
-            completedVotes++;
-            setProgress((completedVotes / totalVoters) * 100);
+            completedVotes++
+            setProgress((completedVotes / totalVoters) * 100)
 
             // Small delay to show progress
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100))
           } catch (error) {
-            console.error('Error casting vote:', error);
+            console.error('Error casting vote:', error)
             errors.push(
               `${voter.name} #${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+            )
 
             // Continue with other votes even if one fails
-            completedVotes++;
-            setProgress((completedVotes / totalVoters) * 100);
+            completedVotes++
+            setProgress((completedVotes / totalVoters) * 100)
           }
         }
       }
 
       if (errors.length > 0) {
-        setError(`Completed with ${errors.length} errors. Some votes may be missing.`);
+        setError(`Completed with ${errors.length} errors. Some votes may be missing.`)
       }
     } catch (error) {
-      console.error('Critical error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to start voting process');
-      setVotes([]);
+      console.error('Critical error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to start voting process')
+      setVotes([])
     } finally {
-      setIsVoting(false);
-      setCurrentVoter('');
+      setIsVoting(false)
+      setCurrentVoter('')
     }
 
     if (allVotes.length > 0) {
-      onVotingComplete(allVotes);
+      onVotingComplete(allVotes)
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -222,5 +222,5 @@ export default function VotingExecution({
         </div>
       </div>
     </div>
-  );
+  )
 }

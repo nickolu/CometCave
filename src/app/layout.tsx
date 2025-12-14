@@ -1,24 +1,24 @@
-import type React from 'react';
-import type { Metadata } from 'next';
-import { Space_Grotesk } from 'next/font/google';
-import './globals.css';
-import Link from 'next/link';
-import { StarField } from '@/components/star-field';
-import { Footer } from '@/components/footer';
-import { ROUTE_CONSTANTS } from './route-constants';
-import { Providers } from './providers';
+import type React from 'react'
+import type { Metadata } from 'next'
+import { Space_Grotesk } from 'next/font/google'
+import './globals.css'
+import Link from 'next/link'
+import { StarField } from '@/components/star-field'
+import { Footer } from '@/components/footer'
+import { ROUTE_CONSTANTS } from './route-constants'
+import { Providers } from './providers'
 
-const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'CometCave - AI Galaxy Arcade',
   description: 'Fun games for space hermits',
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <Providers>
@@ -82,5 +82,5 @@ export default function RootLayout({
         </body>
       </html>
     </Providers>
-  );
+  )
 }

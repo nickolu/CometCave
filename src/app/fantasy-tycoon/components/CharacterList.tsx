@@ -1,41 +1,41 @@
-'use client';
-import React, { useState } from 'react';
-import { useGameStore } from '../hooks/useGameStore';
-import { FantasyCharacter } from '../models/types';
-import CharacterCreation from './CharacterCreation';
-import CharacterCard from './CharacterCard';
-import AddCharacterCard from './AddCharacterCard';
+'use client'
+import React, { useState } from 'react'
+import { useGameStore } from '../hooks/useGameStore'
+import { FantasyCharacter } from '../models/types'
+import CharacterCreation from './CharacterCreation'
+import CharacterCard from './CharacterCard'
+import AddCharacterCard from './AddCharacterCard'
 
-import type { GameStore } from '../hooks/useGameStore';
-const EMPTY_ARRAY: FantasyCharacter[] = [];
-const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY;
-const selectSelectedCharacterId = (s: GameStore) => s.gameState?.selectedCharacterId;
-const selectSelectCharacter = (s: GameStore) => s.selectCharacter;
-const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter;
+import type { GameStore } from '../hooks/useGameStore'
+const EMPTY_ARRAY: FantasyCharacter[] = []
+const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY
+const selectSelectedCharacterId = (s: GameStore) => s.gameState?.selectedCharacterId
+const selectSelectCharacter = (s: GameStore) => s.selectCharacter
+const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter
 
 export default function CharacterList() {
-  const characters = useGameStore(selectCharacters);
-  const selectedCharacterId = useGameStore(selectSelectedCharacterId);
-  const selectCharacter = useGameStore(selectSelectCharacter);
-  const deleteCharacter = useGameStore(selectDeleteCharacter);
-  const [showCreation, setShowCreation] = useState(false);
+  const characters = useGameStore(selectCharacters)
+  const selectedCharacterId = useGameStore(selectSelectedCharacterId)
+  const selectCharacter = useGameStore(selectSelectCharacter)
+  const deleteCharacter = useGameStore(selectDeleteCharacter)
+  const [showCreation, setShowCreation] = useState(false)
 
   const handleSelect = (character: FantasyCharacter) => {
-    selectCharacter(character.id);
-  };
+    selectCharacter(character.id)
+  }
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    deleteCharacter(id);
-  };
+    e.stopPropagation()
+    deleteCharacter(id)
+  }
 
   const handleNewCharacter = () => {
-    setShowCreation(true);
-  };
+    setShowCreation(true)
+  }
 
   const handleCloseCreation = () => {
-    setShowCreation(false);
-  };
+    setShowCreation(false)
+  }
 
   return (
     <div className="w-full mx-auto p-6 p-4 bg-[#161723] border border-[#3a3c56] rounded-lg mt-6">
@@ -68,5 +68,5 @@ export default function CharacterList() {
         </div>
       )}
     </div>
-  );
+  )
 }

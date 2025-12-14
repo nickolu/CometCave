@@ -1,24 +1,17 @@
-'use client';
+'use client'
 
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-} from '@mui/material';
-import { useStore } from '../../store';
-import { FormEvent, ChangeEvent } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material'
+import { useStore } from '../../store'
+import { FormEvent, ChangeEvent } from 'react'
 
 export default function CustomCharacterForm() {
-  const { isOpen, name, description } = useStore((state) => state.customCharacterForm);
-  const { toggleCustomCharacterForm, updateCustomCharacterForm, saveCustomCharacter } = useStore();
+  const { isOpen, name, description } = useStore(state => state.customCharacterForm)
+  const { toggleCustomCharacterForm, updateCustomCharacterForm, saveCustomCharacter } = useStore()
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    saveCustomCharacter();
-  };
+    e.preventDefault()
+    saveCustomCharacter()
+  }
 
   return (
     <Dialog open={isOpen} onClose={toggleCustomCharacterForm}>
@@ -31,7 +24,7 @@ export default function CustomCharacterForm() {
             label="Name"
             fullWidth
             value={name}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => 
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               updateCustomCharacterForm({ name: e.target.value })
             }
             required
@@ -43,7 +36,7 @@ export default function CustomCharacterForm() {
             multiline
             rows={4}
             value={description}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => 
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
               updateCustomCharacterForm({ description: e.target.value })
             }
             required
@@ -51,9 +44,11 @@ export default function CustomCharacterForm() {
         </DialogContent>
         <DialogActions>
           <Button onClick={toggleCustomCharacterForm}>Cancel</Button>
-          <Button type="submit" variant="contained">Save</Button>
+          <Button type="submit" variant="contained">
+            Save
+          </Button>
         </DialogActions>
       </form>
     </Dialog>
-  );
+  )
 }

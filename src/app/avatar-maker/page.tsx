@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Autocomplete } from '@/components/ui/autocomplete';
+import React, { useState, useRef, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Autocomplete } from '@/components/ui/autocomplete'
 import {
   cn,
   isImageGenerationAllowedClient,
   getImageGenerationDisableReasonClient,
-} from '@/lib/utils';
+} from '@/lib/utils'
 import {
   Square,
   RectangleHorizontal,
   RectangleVertical,
   UploadCloud,
   RefreshCcw,
-} from 'lucide-react';
-import Image from 'next/image';
+} from 'lucide-react'
+import Image from 'next/image'
 
 // Map of mediums to their available styles
 const mediumStyles: Record<string, { styles: string[] }> = {
@@ -121,7 +121,7 @@ const mediumStyles: Record<string, { styles: string[] }> = {
   'Mosaic tile': {
     styles: ['Classic', 'Modern', 'Abstract', 'Geometric', 'Photorealistic'],
   },
-} as const;
+} as const
 
 const filterOptions = [
   'Fisheye',
@@ -134,7 +134,7 @@ const filterOptions = [
   'Macro',
   'Panorama',
   'Candid',
-];
+]
 const moodOptions = [
   'Dark',
   'Mysterious',
@@ -145,7 +145,7 @@ const moodOptions = [
   'Ethereal',
   'Gloomy',
   'Dreamy',
-];
+]
 const themeOptions = [
   'Fantasy',
   'Sci-fi',
@@ -160,7 +160,7 @@ const themeOptions = [
   'Valentines',
   'Easter',
   'Thanksgiving',
-];
+]
 
 // Flatten list of all styles for default option list
 const ALL_STYLES: string[] = Array.from(
@@ -169,142 +169,142 @@ const ALL_STYLES: string[] = Array.from(
       .flatMap(m => m.styles)
       .map(s => s.trim())
   )
-);
+)
 
 export default function AvatarMakerPage() {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState<string>('');
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [size, setSize] = useState<'1024x1024' | '1024x1536' | '1536x1024'>('1024x1024');
-  const mediums = ['', ...Object.keys(mediumStyles)];
-  const [style, setStyle] = useState<string>('');
-  const [medium, setMedium] = useState<string>('');
-  const [filter, setFilter] = useState<string>('');
-  const [mood, setMood] = useState<string>('');
-  const [theme, setTheme] = useState<string>('');
-  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true);
-  const [disableReason, setDisableReason] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [prompt, setPrompt] = useState<string>('')
+  const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [size, setSize] = useState<'1024x1024' | '1024x1536' | '1536x1024'>('1024x1024')
+  const mediums = ['', ...Object.keys(mediumStyles)]
+  const [style, setStyle] = useState<string>('')
+  const [medium, setMedium] = useState<string>('')
+  const [filter, setFilter] = useState<string>('')
+  const [mood, setMood] = useState<string>('')
+  const [theme, setTheme] = useState<string>('')
+  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true)
+  const [disableReason, setDisableReason] = useState('')
 
   // Check if image generation is allowed
   useEffect(() => {
-    isImageGenerationAllowedClient().then(setImageGenerationAllowed);
-    getImageGenerationDisableReasonClient().then(setDisableReason);
-  }, []);
+    isImageGenerationAllowedClient().then(setImageGenerationAllowed)
+    getImageGenerationDisableReasonClient().then(setDisableReason)
+  }, [])
 
   // Style list becomes dependent on selected medium
-  const styleOptions = medium && mediumStyles[medium] ? mediumStyles[medium].styles : ALL_STYLES;
+  const styleOptions = medium && mediumStyles[medium] ? mediumStyles[medium].styles : ALL_STYLES
 
   // Reset style if it's not valid for the chosen medium
   useEffect(() => {
     if (medium && mediumStyles[medium] && style && !mediumStyles[medium].styles.includes(style)) {
-      setStyle('');
+      setStyle('')
     }
-  }, [medium, style]);
+  }, [medium, style])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
-      setImageFile(file);
+      setImageFile(file)
       // reset generated images when new image selected
-      setGeneratedImages([]);
+      setGeneratedImages([])
     }
-  };
+  }
 
   const convertToPng = (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
-      const img = new window.Image();
+      const img = new window.Image()
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
         if (!ctx) {
-          reject(new Error('Canvas not supported'));
-          return;
+          reject(new Error('Canvas not supported'))
+          return
         }
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0)
         canvas.toBlob(blob => {
           if (!blob) {
-            reject(new Error('Failed to convert image'));
-            return;
+            reject(new Error('Failed to convert image'))
+            return
           }
           const pngFile = new File([blob], file.name.replace(/\.[^.]+$/, '.png'), {
             type: 'image/png',
-          });
-          resolve(pngFile);
-        }, 'image/png');
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
-    });
-  };
+          })
+          resolve(pngFile)
+        }, 'image/png')
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = URL.createObjectURL(file)
+    })
+  }
 
   const createTransparentMask = (width: number, height: number): File => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
     // no drawing means fully transparent
     return new File([canvas.toDataURL('image/png')], 'mask.png', {
       type: 'image/png',
-    });
-  };
+    })
+  }
 
   const handleGenerate = async () => {
-    if (!imageFile) return;
+    if (!imageFile) return
     try {
-      setLoading(true);
+      setLoading(true)
 
       // Ensure PNG format as required by OpenAI edit endpoint
-      let uploadFile: File = imageFile;
+      let uploadFile: File = imageFile
       if (uploadFile.type !== 'image/png') {
-        uploadFile = await convertToPng(uploadFile);
+        uploadFile = await convertToPng(uploadFile)
       }
 
       // Create a fully transparent mask of same dimensions
-      const img = new window.Image();
-      img.src = URL.createObjectURL(uploadFile);
-      await new Promise(resolve => (img.onload = resolve));
-      const maskFile = createTransparentMask(img.width, img.height);
+      const img = new window.Image()
+      img.src = URL.createObjectURL(uploadFile)
+      await new Promise(resolve => (img.onload = resolve))
+      const maskFile = createTransparentMask(img.width, img.height)
 
-      const formData = new FormData();
-      formData.append('image', uploadFile);
-      formData.append('mask', maskFile);
+      const formData = new FormData()
+      formData.append('image', uploadFile)
+      formData.append('mask', maskFile)
 
       // Build enhanced prompt
-      const extra: string[] = [];
-      if (style !== 'None') extra.push(`${style} style`);
-      if (medium !== 'None') extra.push(`in ${medium}`);
-      if (filter !== 'None') extra.push(`with ${filter} filter`);
-      if (mood !== 'None') extra.push(`in ${mood} mood`);
-      if (theme !== 'None') extra.push(`in ${theme} theme`);
+      const extra: string[] = []
+      if (style !== 'None') extra.push(`${style} style`)
+      if (medium !== 'None') extra.push(`in ${medium}`)
+      if (filter !== 'None') extra.push(`with ${filter} filter`)
+      if (mood !== 'None') extra.push(`in ${mood} mood`)
+      if (theme !== 'None') extra.push(`in ${theme} theme`)
 
-      const finalPrompt = `${prompt && prompt + ', '} ${extra.length ? extra.join(', ') : ''}`;
+      const finalPrompt = `${prompt && prompt + ', '} ${extra.length ? extra.join(', ') : ''}`
 
-      formData.append('prompt', finalPrompt);
-      formData.append('n', '4');
-      formData.append('size', size);
+      formData.append('prompt', finalPrompt)
+      formData.append('n', '4')
+      formData.append('size', size)
 
       const res = await fetch('/api/v1/avatar-maker/edit', {
         method: 'POST',
         body: formData,
-      });
+      })
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to generate image');
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to generate image')
       }
 
-      const data: { images: string[] } = await res.json();
-      setGeneratedImages(prev => [...prev, ...data.images]);
+      const data: { images: string[] } = await res.json()
+      setGeneratedImages(prev => [...prev, ...data.images])
     } catch (err) {
-      console.error(err);
-      alert((err as Error).message);
+      console.error(err)
+      alert((err as Error).message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="py-12">
@@ -373,13 +373,13 @@ export default function AvatarMakerPage() {
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => {
-                  e.preventDefault();
-                  const files = e.dataTransfer.files;
+                  e.preventDefault()
+                  const files = e.dataTransfer.files
                   if (files?.length) {
-                    const fileList: FileList = files;
+                    const fileList: FileList = files
                     handleFileChange({
                       target: { files: fileList },
-                    } as unknown as React.ChangeEvent<HTMLInputElement>);
+                    } as unknown as React.ChangeEvent<HTMLInputElement>)
                   }
                 }}
                 className={cn(
@@ -555,5 +555,5 @@ export default function AvatarMakerPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

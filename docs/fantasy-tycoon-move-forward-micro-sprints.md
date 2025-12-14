@@ -5,7 +5,8 @@
 **Goal:**  
 Create a workflow to call the LLM and generate 3 structured event objects, given the story context and character state.
 
-**Tasks:**  
+**Tasks:**
+
 - Define the schema for an event (description, options, probabilities, outcomes).
 - Write a prompt for the LLM to generate events in this schema.
 - Implement a function to call the LLM, pass context, and parse the structured response.
@@ -18,7 +19,8 @@ Create a workflow to call the LLM and generate 3 structured event objects, given
 **Goal:**  
 Extend the character model to include relevant attributes (e.g., strength, intelligence, luck).
 
-**Tasks:**  
+**Tasks:**
+
 - Decide on a set of attributes relevant to event outcomes.
 - Update the character type/interface and storage.
 - Ensure attributes are accessible in event generation and resolution logic.
@@ -30,7 +32,8 @@ Extend the character model to include relevant attributes (e.g., strength, intel
 **Goal:**  
 Integrate the new event system into the move-forward API route.
 
-**Tasks:**  
+**Tasks:**
+
 - If roll = 0, return a random generic message.
 - If roll = 1, use the LLM workflow to generate and return event options.
 - Refactor the API response structure to support both cases.
@@ -42,7 +45,8 @@ Integrate the new event system into the move-forward API route.
 **Goal:**  
 Update the frontend to display generated events and allow user option selection.
 
-**Tasks:**  
+**Tasks:**
+
 - Render event descriptions and options in the UI.
 - Allow the user to select an option and trigger the resolution flow.
 - Handle generic messages for roll = 0.
@@ -54,7 +58,8 @@ Update the frontend to display generated events and allow user option selection.
 **Goal:**  
 Determine success/failure for user-chosen options, factoring in character attributes.
 
-**Tasks:**  
+**Tasks:**
+
 - Calculate the probability of success using option base probability and relevant attributes.
 - Roll to determine outcome, then apply success/failure results.
 - Update the game state and story feed accordingly.
@@ -66,7 +71,8 @@ Determine success/failure for user-chosen options, factoring in character attrib
 **Goal:**  
 Ensure code clarity, maintainability, and robustness.
 
-**Tasks:**  
+**Tasks:**
+
 - Refactor for separation of concerns (event generation, resolution, attribute management).
 - Add/Update TypeScript types and interfaces.
 - Write tests for the new logic.

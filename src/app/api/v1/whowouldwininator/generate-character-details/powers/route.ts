@@ -1,15 +1,15 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { NextResponse } from 'next/server';
-import { CharacterPowersSchema } from '../../types';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { NextResponse } from 'next/server'
+import { CharacterPowersSchema } from '../../types'
 
 export async function POST(request: Request) {
   try {
-    const { name, description } = await request.json();
+    const { name, description } = await request.json()
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
@@ -39,11 +39,11 @@ Examples of good powers:
 - "Spell Casting"`,
       temperature: 0.7,
       maxTokens: 200,
-    });
+    })
 
-    return NextResponse.json({ powers: result.object.powers });
+    return NextResponse.json({ powers: result.object.powers })
   } catch (error) {
-    console.error('Error generating character powers:', error);
-    return NextResponse.json({ error: 'Failed to generate character powers' }, { status: 500 });
+    console.error('Error generating character powers:', error)
+    return NextResponse.json({ error: 'Failed to generate character powers' }, { status: 500 })
   }
 }

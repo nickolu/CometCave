@@ -1,5 +1,5 @@
-import { act } from 'react';
-import { useStore } from '../store';
+import { act } from 'react'
+import { useStore } from '../store'
 
 describe('Store Actions & State', () => {
   beforeEach(() => {
@@ -9,29 +9,29 @@ describe('Store Actions & State', () => {
         messages: [],
         charactersRespondToEachOther: false,
       },
-    });
-  });
+    })
+  })
 
   it('toggles charactersRespondToEachOther setting', () => {
-    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(false);
+    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(false)
     act(() => {
-      useStore.getState().toggleCharactersRespondToEachOther();
-    });
-    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(true);
+      useStore.getState().toggleCharactersRespondToEachOther()
+    })
+    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(true)
     act(() => {
-      useStore.getState().toggleCharactersRespondToEachOther();
-    });
-    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(false);
-  });
+      useStore.getState().toggleCharactersRespondToEachOther()
+    })
+    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(false)
+  })
 
   it('persists toggle state after resetChat', () => {
     act(() => {
-      useStore.getState().toggleCharactersRespondToEachOther();
-      useStore.getState().resetChat();
-    });
+      useStore.getState().toggleCharactersRespondToEachOther()
+      useStore.getState().resetChat()
+    })
     // After reset, should be back to default (false)
-    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(false);
-  });
+    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(false)
+  })
 
   it('handles store hydration with missing/partial data', () => {
     // Simulate hydration with only settings present
@@ -45,11 +45,14 @@ describe('Store Actions & State', () => {
         remainingCharacterMessages: 4,
         consecutiveCharacterResponses: 0,
       },
-    });
-    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(true);
+    })
+    expect(useStore.getState().chat.charactersRespondToEachOther).toBe(true)
     // Other properties should be undefined or default
-    expect(Array.isArray(useStore.getState().chat.messages) || useStore.getState().chat.messages === undefined).toBe(true);
-  });
+    expect(
+      Array.isArray(useStore.getState().chat.messages) ||
+        useStore.getState().chat.messages === undefined
+    ).toBe(true)
+  })
 
   it('does not break with old store structure', () => {
     // Simulate old structure (no charactersRespondToEachOther)
@@ -63,8 +66,8 @@ describe('Store Actions & State', () => {
         remainingCharacterMessages: 4,
         consecutiveCharacterResponses: 0,
       },
-    });
+    })
     // Should fallback to false
-    expect(useStore.getState().chat.charactersRespondToEachOther ?? false).toBe(false);
-  });
-});
+    expect(useStore.getState().chat.charactersRespondToEachOther ?? false).toBe(false)
+  })
+})

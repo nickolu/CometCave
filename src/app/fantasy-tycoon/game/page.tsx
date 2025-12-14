@@ -1,7 +1,7 @@
-'use client';
-import GameUI from '@/app/fantasy-tycoon/components/GameUI';
-import { PageTemplate } from '@/app/fantasy-tycoon/components/ui/PageTemplate';
-import { HudBar } from '@/app/fantasy-tycoon/components/HudBar';
+'use client'
+import GameUI from '@/app/fantasy-tycoon/components/GameUI'
+import { PageTemplate } from '@/app/fantasy-tycoon/components/ui/PageTemplate'
+import { HudBar } from '@/app/fantasy-tycoon/components/HudBar'
 
 export default function FantasyTycoonPage() {
   return (
@@ -11,5 +11,5 @@ export default function FantasyTycoonPage() {
       </div>
       <GameUI />
     </PageTemplate>
-  );
+  )
 }

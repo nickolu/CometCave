@@ -1,59 +1,59 @@
-'use client';
+'use client'
 
-import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Trophy, Target, Zap, Loader2 } from 'lucide-react';
-import Image from 'next/image';
-import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils';
+import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Trophy, Target, Zap, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils'
 
 interface ContestResults {
-  winner: 'candidate1' | 'candidate2' | 'tie';
-  confidence: number;
-  reasoning: string;
+  winner: 'candidate1' | 'candidate2' | 'tie'
+  confidence: number
+  reasoning: string
 }
 
 interface ContestStory {
-  story: string;
-  intro: string;
-  climax: string;
-  ending: string;
+  story: string
+  intro: string
+  climax: string
+  ending: string
 }
 
 interface StorySectionImage {
-  imageUrl: string;
-  altText: string;
-  prompt: string;
-  sectionType: 'intro' | 'climax' | 'ending';
+  imageUrl: string
+  altText: string
+  prompt: string
+  sectionType: 'intro' | 'climax' | 'ending'
 }
 
 interface CharacterStats {
-  strength: number;
-  speed: number;
-  durability: number;
-  intelligence: number;
-  specialAbilities: number;
-  fighting: number;
+  strength: number
+  speed: number
+  durability: number
+  intelligence: number
+  specialAbilities: number
+  fighting: number
 }
 
 interface CharacterDetails {
-  backstory: string;
-  powers: string[];
-  stats: CharacterStats;
-  feats: string[];
+  backstory: string
+  powers: string[]
+  stats: CharacterStats
+  feats: string[]
   portrait: {
-    imageUrl: string;
-    altText: string;
-    prompt: string;
-  } | null;
+    imageUrl: string
+    altText: string
+    prompt: string
+  } | null
 }
 
 interface BattleScenario {
-  setting: string;
-  rules: string;
-  obstacles: string;
-  limitations: string;
-  additionalContext: string;
+  setting: string
+  rules: string
+  obstacles: string
+  limitations: string
+  additionalContext: string
 }
 
 export function Step04ViewResults({
@@ -75,88 +75,88 @@ export function Step04ViewResults({
   generateStorySectionImage,
   onPrevious,
 }: {
-  candidate1Name: string;
-  candidate2Name: string;
-  candidate1Description: string;
-  candidate2Description: string;
-  candidate1Details: Partial<CharacterDetails>;
-  candidate2Details: Partial<CharacterDetails>;
-  battleScenario: BattleScenario;
-  contestResults: ContestResults | null;
-  isGeneratingResults: boolean;
-  contestStory: ContestStory | null;
-  isGeneratingStory: boolean;
+  candidate1Name: string
+  candidate2Name: string
+  candidate1Description: string
+  candidate2Description: string
+  candidate1Details: Partial<CharacterDetails>
+  candidate2Details: Partial<CharacterDetails>
+  battleScenario: BattleScenario
+  contestResults: ContestResults | null
+  isGeneratingResults: boolean
+  contestStory: ContestStory | null
+  isGeneratingStory: boolean
   storySectionImages: {
-    intro: StorySectionImage | null;
-    climax: StorySectionImage | null;
-    ending: StorySectionImage | null;
-  };
+    intro: StorySectionImage | null
+    climax: StorySectionImage | null
+    ending: StorySectionImage | null
+  }
   isGeneratingSectionImages: {
-    intro: boolean;
-    climax: boolean;
-    ending: boolean;
-  };
-  generateContestResults: () => Promise<void>;
-  generateContestStory: () => Promise<void>;
-  generateStorySectionImage: (sectionType: 'intro' | 'climax' | 'ending') => Promise<void>;
-  onPrevious: () => void;
+    intro: boolean
+    climax: boolean
+    ending: boolean
+  }
+  generateContestResults: () => Promise<void>
+  generateContestStory: () => Promise<void>
+  generateStorySectionImage: (sectionType: 'intro' | 'climax' | 'ending') => Promise<void>
+  onPrevious: () => void
 }) {
-  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true);
-  const [disableReason, setDisableReason] = useState('');
+  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true)
+  const [disableReason, setDisableReason] = useState('')
 
   // Check if image generation is allowed
   useEffect(() => {
-    isImageGenerationAllowedClient().then(setImageGenerationAllowed);
-    getImageGenerationDisableReasonClient().then(setDisableReason);
-  }, []);
+    isImageGenerationAllowedClient().then(setImageGenerationAllowed)
+    getImageGenerationDisableReasonClient().then(setDisableReason)
+  }, [])
 
   // Use refs to track if we've already initiated generation to prevent infinite loops
-  const resultsGenerationInitiated = useRef(false);
+  const resultsGenerationInitiated = useRef(false)
 
   // Reset refs when results are cleared (e.g., when starting over)
   useEffect(() => {
     if (!contestResults) {
-      resultsGenerationInitiated.current = false;
+      resultsGenerationInitiated.current = false
     }
-  }, [contestResults]);
+  }, [contestResults])
 
   // Auto-generate results when component mounts
   useEffect(() => {
     if (!contestResults && !isGeneratingResults && !resultsGenerationInitiated.current) {
-      resultsGenerationInitiated.current = true;
-      generateContestResults();
+      resultsGenerationInitiated.current = true
+      generateContestResults()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contestResults, isGeneratingResults]);
+  }, [contestResults, isGeneratingResults])
 
   // Track if we should auto-generate images after story is created
-  const shouldGenerateImagesAfterStory = useRef(false);
+  const shouldGenerateImagesAfterStory = useRef(false)
 
   // Function to generate story and trigger image generation
   const handleGenerateStoryAndImages = async () => {
-    if (!contestResults) return;
+    if (!contestResults) return
 
     try {
       // Mark that we should generate images after story completes
-      shouldGenerateImagesAfterStory.current = true;
+      shouldGenerateImagesAfterStory.current = true
       // Generate the story
-      await generateContestStory();
+      await generateContestStory()
     } catch (error) {
-      console.error('Error generating story:', error);
+      console.error('Error generating story:', error)
     }
-  };
+  }
 
   // Auto-generate images when story becomes available (only if triggered by button and if image generation is allowed)
   useEffect(() => {
     if (contestStory && shouldGenerateImagesAfterStory.current && imageGenerationAllowed) {
-      shouldGenerateImagesAfterStory.current = false;
+      shouldGenerateImagesAfterStory.current = false
 
-      const sections: ('intro' | 'climax' | 'ending')[] = ['intro', 'climax', 'ending'];
+      const sections: ('intro' | 'climax' | 'ending')[] = ['intro', 'climax', 'ending']
       sections.forEach(section => {
         if (!storySectionImages[section] && !isGeneratingSectionImages[section]) {
-          generateStorySectionImage(section);
+          generateStorySectionImage(section)
         }
-      });
+      })
     }
   }, [
     contestStory,
@@ -164,10 +164,10 @@ export function Step04ViewResults({
     isGeneratingSectionImages,
     generateStorySectionImage,
     imageGenerationAllowed,
-  ]);
+  ])
 
   const getWinnerDisplay = () => {
-    if (!contestResults) return null;
+    if (!contestResults) return null
 
     switch (contestResults.winner) {
       case 'candidate1':
@@ -175,19 +175,19 @@ export function Step04ViewResults({
           name: candidate1Name,
           description: candidate1Description,
           details: candidate1Details,
-        };
+        }
       case 'candidate2':
         return {
           name: candidate2Name,
           description: candidate2Description,
           details: candidate2Details,
-        };
+        }
       case 'tie':
-        return null;
+        return null
     }
-  };
+  }
 
-  const winnerDisplay = getWinnerDisplay();
+  const winnerDisplay = getWinnerDisplay()
 
   return (
     <div className="space-y-6">
@@ -588,5 +588,5 @@ export function Step04ViewResults({
         </div>
       </div>
     </div>
-  );
+  )
 }

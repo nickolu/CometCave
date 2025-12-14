@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useEffect } from 'react';
+import { useEffect } from 'react'
 
-import { Button } from '@/app/fantasy-tycoon/components/ui/button';
+import { Button } from '@/app/fantasy-tycoon/components/ui/button'
 
-import { useGameStore } from '../hooks/useGameStore';
+import { useGameStore } from '../hooks/useGameStore'
 
-import { useResolveDecisionMutation } from '../hooks/useResolveDecisionMutation';
+import { useResolveDecisionMutation } from '../hooks/useResolveDecisionMutation'
 
-import { InventoryPanel } from './InventoryPanel';
-import { StoryFeed } from './StoryFeed';
-import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation';
-import { flipCoin } from '@/app/utils';
-import { getGenericTravelMessage } from '../lib/getGenericTravelMessage';
-import { LoaderCircle } from 'lucide-react';
+import { InventoryPanel } from './InventoryPanel'
+import { StoryFeed } from './StoryFeed'
+import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation'
+import { flipCoin } from '@/app/utils'
+import { getGenericTravelMessage } from '../lib/getGenericTravelMessage'
+import { LoaderCircle } from 'lucide-react'
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
   if (isLoading)
@@ -21,9 +21,9 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
       <div className="flex items-center mr-2 text-xs justify-center gap-2 w-full">
         <LoaderCircle className="animate-spin" /> Loading...
       </div>
-    );
-  if (distance === 0) return 'Start Your Adventure';
-  return 'Continue Travelling';
+    )
+  if (distance === 0) return 'Start Your Adventure'
+  return 'Continue Travelling'
 }
 export default function GameUI() {
   const {
@@ -32,45 +32,45 @@ export default function GameUI() {
     setGenericMessage,
     incrementDistance,
     setDecisionPoint,
-  } = useGameStore();
+  } = useGameStore()
 
-  const { mutate: moveForwardMutation, isPending: moveForwardPending } = useMoveForwardMutation();
+  const { mutate: moveForwardMutation, isPending: moveForwardPending } = useMoveForwardMutation()
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
-    useResolveDecisionMutation();
+    useResolveDecisionMutation()
 
   useEffect(() => {
     if (typeof window !== 'undefined' && gameState) {
     }
-  }, [gameState]);
+  }, [gameState])
 
   const handleResolveDecision = (optionId: string) => {
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
       onSuccess: () => {
-        setDecisionPoint(null);
+        setDecisionPoint(null)
       },
-    });
-  };
+    })
+  }
 
-  if (!gameState) return <div className="p-4 text-center">No game found.</div>;
+  if (!gameState) return <div className="p-4 text-center">No game found.</div>
 
-  const { selectedCharacterId, storyEvents } = gameState;
+  const { selectedCharacterId, storyEvents } = gameState
 
   if (!selectedCharacterId) {
-    return <div>please select a character</div>;
+    return <div>please select a character</div>
   }
 
   const handleMoveForward = () => {
-    const shouldDoNothing = flipCoin(0.05, 0.95);
+    const shouldDoNothing = flipCoin(0.05, 0.95)
     if (shouldDoNothing) {
-      const genericMessage = getGenericTravelMessage();
-      setGenericMessage(genericMessage);
-      incrementDistance();
+      const genericMessage = getGenericTravelMessage()
+      setGenericMessage(genericMessage)
+      incrementDistance()
     } else {
-      moveForwardMutation();
+      moveForwardMutation()
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -102,8 +102,8 @@ export default function GameUI() {
                 <div className="font-semibold mb-6">{gameState.decisionPoint.prompt}</div>
                 <div className="space-y-2 mt-2">
                   {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
-                    if (!option) return null;
-                    if (!gameState.decisionPoint) return null;
+                    if (!option) return null
+                    if (!gameState.decisionPoint) return null
                     return (
                       <Button
                         key={option.id}
@@ -111,12 +111,12 @@ export default function GameUI() {
                         style={{ userSelect: 'none' }}
                         disabled={resolveDecisionPending}
                         onClick={() => {
-                          handleResolveDecision(option.id);
+                          handleResolveDecision(option.id)
                         }}
                       >
                         {option.text}
                       </Button>
-                    );
+                    )
                   })}
                 </div>
                 {resolveDecisionPending && (
@@ -143,5 +143,5 @@ export default function GameUI() {
       </div>
       {/* Main content wrapper END */}
     </div>
-  );
+  )
 }

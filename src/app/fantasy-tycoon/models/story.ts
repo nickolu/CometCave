@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { ItemSchema } from './item';
+import { z } from 'zod'
+import { ItemSchema } from './item'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
@@ -9,9 +9,9 @@ const ResourceDeltaSchema = z.object({
   distance: z.number().optional(),
   statusChange: z.string().optional(),
   rewardItems: z.array(ItemSchema).optional(),
-});
+})
 
-export type FantasyStoryEvent = z.infer<typeof FantasyStoryEventSchema>;
+export type FantasyStoryEvent = z.infer<typeof FantasyStoryEventSchema>
 
 const EffectsSchema = z.object({
   gold: z.number().optional(),
@@ -19,7 +19,7 @@ const EffectsSchema = z.object({
   distance: z.number().optional(),
   statusChange: z.string().optional(),
   rewardItems: z.array(ItemSchema).optional(),
-});
+})
 
 export const FantasyDecisionOptionSchema = z.object({
   id: z.string(),
@@ -34,8 +34,8 @@ export const FantasyDecisionOptionSchema = z.object({
   resultDescription: z.string().optional(),
   effects: EffectsSchema.optional(),
   rewardItems: z.array(ItemSchema).optional(),
-});
-export type FantasyDecisionOption = z.infer<typeof FantasyDecisionOptionSchema>;
+})
+export type FantasyDecisionOption = z.infer<typeof FantasyDecisionOptionSchema>
 
 export const FantasyDecisionPointSchema = z.object({
   id: z.string(),
@@ -44,8 +44,8 @@ export const FantasyDecisionPointSchema = z.object({
   options: z.array(FantasyDecisionOptionSchema),
   resolved: z.boolean(),
   chosenOptionId: z.string().optional(),
-});
-export type FantasyDecisionPoint = z.infer<typeof FantasyDecisionPointSchema>;
+})
+export type FantasyDecisionPoint = z.infer<typeof FantasyDecisionPointSchema>
 
 export const FantasyStoryEventSchema = z.object({
   id: z.string(),
@@ -60,4 +60,4 @@ export const FantasyStoryEventSchema = z.object({
   resourceDelta: ResourceDeltaSchema.optional(),
   rewardItems: z.array(ItemSchema).optional(),
   decisionPoint: FantasyDecisionPointSchema.optional(),
-});
+})

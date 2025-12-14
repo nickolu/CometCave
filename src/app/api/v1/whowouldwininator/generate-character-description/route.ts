@@ -1,19 +1,19 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateText } from 'ai';
-import { NextResponse } from 'next/server';
-import { READING_LEVEL } from '../constants';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateText } from 'ai'
+import { NextResponse } from 'next/server'
+import { READING_LEVEL } from '../constants'
 
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json();
+    const { name } = await request.json()
 
     if (!name || name.trim() === '') {
-      return NextResponse.json({ error: 'Character name is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Character name is required' }, { status: 400 })
     }
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     const result = await generateText({
       model: openaiClient('gpt-4o-mini'),
@@ -28,14 +28,11 @@ The description should:
 Generate a compelling description for "${name}":`,
       temperature: 0.8,
       maxTokens: 200,
-    });
+    })
 
-    return NextResponse.json({ description: result.text });
+    return NextResponse.json({ description: result.text })
   } catch (error) {
-    console.error('Error generating character description:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate character description' },
-      { status: 500 }
-    );
+    console.error('Error generating character description:', error)
+    return NextResponse.json({ error: 'Failed to generate character description' }, { status: 500 })
   }
 }

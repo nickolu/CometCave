@@ -1,18 +1,18 @@
-'use client';
+'use client'
 
-import { ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material';
-import { Close } from '@mui/icons-material';
-import { green} from '@mui/material/colors';
-import { Character } from '../../types';
-import { useStore } from '../../store';
-import { UserListItem } from '../atoms/UserListItem';
+import { ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material'
+import { Close } from '@mui/icons-material'
+import { green } from '@mui/material/colors'
+import { Character } from '../../types'
+import { useStore } from '../../store'
+import { UserListItem } from '../atoms/UserListItem'
 
 interface Props {
-  character: Character;
+  character: Character
 }
 
 export default function CharacterUserItem({ character }: Props) {
-  const removeCharacter = useStore((state) => state.removeCharacter);
+  const removeCharacter = useStore(state => state.removeCharacter)
 
   return (
     <UserListItem
@@ -43,5 +43,5 @@ export default function CharacterUserItem({ character }: Props) {
         </Tooltip>
       </Box>
     </UserListItem>
-  );
+  )
 }

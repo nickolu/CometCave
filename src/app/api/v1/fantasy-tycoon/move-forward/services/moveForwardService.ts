@@ -1,22 +1,22 @@
-import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character';
-import { FantasyStoryEvent, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story';
-import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator';
-import { MoveForwardResponse } from '../schemas';
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import { FantasyStoryEvent, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story'
+import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator'
+import { MoveForwardResponse } from '../schemas'
 
-const BASE_DISTANCE = 1;
+const BASE_DISTANCE = 1
 
 export async function moveForwardService(
   character: FantasyCharacter
 ): Promise<MoveForwardResponse> {
-  const updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE };
+  const updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE }
 
-  let event: FantasyStoryEvent | null = null;
-  let decisionPoint: FantasyDecisionPoint | null = null;
+  let event: FantasyStoryEvent | null = null
+  let decisionPoint: FantasyDecisionPoint | null = null
 
   try {
-    const context = '';
-    const llmEvents = await generateLLMEvents(character, context);
-    const llmEvent = llmEvents[0];
+    const context = ''
+    const llmEvents = await generateLLMEvents(character, context)
+    const llmEvent = llmEvents[0]
 
     event = {
       id: llmEvent.id,
@@ -24,7 +24,7 @@ export async function moveForwardService(
       characterId: character.id,
       locationId: character.locationId,
       timestamp: new Date().toISOString(),
-    };
+    }
     decisionPoint = {
       id: `decision-${llmEvent.id}`,
       eventId: llmEvent.id,
@@ -40,16 +40,16 @@ export async function moveForwardService(
         resultDescription: opt.successDescription, // Default to success description
       })),
       resolved: false,
-    };
+    }
   } catch (err) {
-    console.error('moveForwardService failed', err);
-    event = null;
-    decisionPoint = null;
+    console.error('moveForwardService failed', err)
+    event = null
+    decisionPoint = null
   }
 
   return {
     character: updatedCharacter,
     event,
     decisionPoint,
-  };
+  }
 }
