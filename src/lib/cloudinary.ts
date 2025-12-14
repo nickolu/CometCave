@@ -1,28 +1,28 @@
-import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary'
 
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+})
 
 export interface CloudinaryUploadResult {
-  public_id: string;
-  secure_url: string;
-  width: number;
-  height: number;
-  format: string;
-  bytes: number;
-  created_at: string;
+  public_id: string
+  secure_url: string
+  width: number
+  height: number
+  format: string
+  bytes: number
+  created_at: string
 }
 
 export interface CloudinaryUploadOptions {
-  folder: string;
-  public_id?: string;
-  overwrite?: boolean;
-  resource_type?: 'image' | 'video' | 'raw' | 'auto';
-  transformation?: Record<string, unknown>;
+  folder: string
+  public_id?: string
+  overwrite?: boolean
+  resource_type?: 'image' | 'video' | 'raw' | 'auto'
+  transformation?: Record<string, unknown>
 }
 
 /**
@@ -39,7 +39,7 @@ export async function uploadBase64Image(
       overwrite: options.overwrite ?? false,
       resource_type: options.resource_type ?? 'image',
       transformation: options.transformation,
-    });
+    })
 
     return {
       public_id: result.public_id,
@@ -49,10 +49,10 @@ export async function uploadBase64Image(
       format: result.format,
       bytes: result.bytes,
       created_at: result.created_at,
-    };
+    }
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    throw new Error(`Failed to upload image to Cloudinary: ${error}`);
+    console.error('Cloudinary upload error:', error)
+    throw new Error(`Failed to upload image to Cloudinary: ${error}`)
   }
 }
 
@@ -75,13 +75,13 @@ export async function uploadImageBuffer(
             transformation: options.transformation,
           },
           (error, result) => {
-            if (error) reject(error);
-            else if (result) resolve(result);
-            else reject(new Error('No result returned from Cloudinary'));
+            if (error) reject(error)
+            else if (result) resolve(result)
+            else reject(new Error('No result returned from Cloudinary'))
           }
         )
-        .end(buffer);
-    });
+        .end(buffer)
+    })
 
     return {
       public_id: result.public_id,
@@ -91,10 +91,10 @@ export async function uploadImageBuffer(
       format: result.format,
       bytes: result.bytes,
       created_at: result.created_at,
-    };
+    }
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    throw new Error(`Failed to upload image to Cloudinary: ${error}`);
+    console.error('Cloudinary upload error:', error)
+    throw new Error(`Failed to upload image to Cloudinary: ${error}`)
   }
 }
 
@@ -103,10 +103,10 @@ export async function uploadImageBuffer(
  */
 export async function deleteImage(publicId: string): Promise<void> {
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId)
   } catch (error) {
-    console.error('Cloudinary delete error:', error);
-    throw new Error(`Failed to delete image from Cloudinary: ${error}`);
+    console.error('Cloudinary delete error:', error)
+    throw new Error(`Failed to delete image from Cloudinary: ${error}`)
   }
 }
 
@@ -114,13 +114,13 @@ export async function deleteImage(publicId: string): Promise<void> {
  * Generate a unique public ID for an image
  */
 export function generatePublicId(prefix: string, characterName?: string): string {
-  const timestamp = Date.now();
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const timestamp = Date.now()
+  const randomSuffix = Math.random().toString(36).substring(2, 8)
   const sanitizedName = characterName
     ? characterName.toLowerCase().replace(/[^a-z0-9]/g, '_')
-    : 'character';
+    : 'character'
 
-  return `${prefix}_${sanitizedName}_${timestamp}_${randomSuffix}`;
+  return `${prefix}_${sanitizedName}_${timestamp}_${randomSuffix}`
 }
 
-export default cloudinary;
+export default cloudinary

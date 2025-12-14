@@ -1,25 +1,25 @@
-import { Character } from '../../types';
+import { Character } from '../../types'
 
 export interface SafetyCheckResponse {
-  safe: boolean;
-  reason: string;
+  safe: boolean
+  reason: string
 }
 
 export interface Message {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
+  role: 'system' | 'user' | 'assistant'
+  content: string
 }
 
 export interface AIServiceConfig {
-  apiKey: string;
-  model: string;
-  temperature?: number;
-  maxTokens?: number;
+  apiKey: string
+  model: string
+  temperature?: number
+  maxTokens?: number
 }
 
 export interface AIService {
-  checkMessageSafety(message: string): Promise<SafetyCheckResponse>;
-  generateResponse(messages: Message[]): Promise<string>;
-  generateCharacterResponse(character: Character, messages: Message[]): Promise<string>;
-  selectRespondingCharacters(characters: Character[], chatMessages: Message[]): Promise<Character[]>;
+  checkMessageSafety(message: string): Promise<SafetyCheckResponse>
+  generateResponse(messages: Message[]): Promise<string>
+  generateCharacterResponse(character: Character, messages: Message[]): Promise<string>
+  selectRespondingCharacters(characters: Character[], chatMessages: Message[]): Promise<Character[]>
 }

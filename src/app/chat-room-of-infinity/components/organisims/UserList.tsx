@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { Box, List, IconButton, Typography, Tooltip, Button } from '@mui/material';
-import { ExpandLess, ExpandMore, PersonAdd, Close } from '@mui/icons-material';
-import { useStore } from '../../store';
-import CharacterUserItem from '../molecules/CharacterUserItem';
-import HumanUserItem from '../molecules/HumanUserItem';
-import UserSelector from '../molecules/UserSelector';
-import { Character } from '../../types';
+import { Box, List, IconButton, Typography, Tooltip, Button } from '@mui/material'
+import { ExpandLess, ExpandMore, PersonAdd, Close } from '@mui/icons-material'
+import { useStore } from '../../store'
+import CharacterUserItem from '../molecules/CharacterUserItem'
+import HumanUserItem from '../molecules/HumanUserItem'
+import UserSelector from '../molecules/UserSelector'
+import { Character } from '../../types'
 
 const sx = {
   container: {
@@ -68,12 +68,12 @@ const sx = {
       borderRadius: '4px',
     },
   },
-};
+}
 
 export default function UserList() {
-  const { userList, toggleUserList, toggleUserSelector, clearCharacters } = useStore();
-  const { isCollapsed, characters } = userList;
-  const { isOpen: isSelectorOpen } = useStore(state => state.userSelector);
+  const { userList, toggleUserList, toggleUserSelector, clearCharacters } = useStore()
+  const { isCollapsed, characters } = userList
+  const { isOpen: isSelectorOpen } = useStore(state => state.userSelector)
 
   return (
     <Box sx={sx.container}>
@@ -128,5 +128,5 @@ export default function UserList() {
         </Box>
       </Box>
     </Box>
-  );
+  )
 }

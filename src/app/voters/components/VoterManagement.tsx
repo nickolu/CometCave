@@ -1,33 +1,33 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Textarea } from '../../../components/ui/textarea';
+import { useState, useEffect } from 'react'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
+import { Label } from '../../../components/ui/label'
+import { Textarea } from '../../../components/ui/textarea'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../components/ui/select';
-import { Slider } from '../../../components/ui/slider';
-import { Trash2, Copy, Users, Settings, Pencil, Sparkles } from 'lucide-react';
-import { Voter } from '@/app/voters/types/voting';
-import { useGenerateRandomVoter } from '../api/hooks';
+} from '../../../components/ui/select'
+import { Slider } from '../../../components/ui/slider'
+import { Trash2, Copy, Users, Settings, Pencil, Sparkles } from 'lucide-react'
+import { Voter } from '@/app/voters/types/voting'
+import { useGenerateRandomVoter } from '../api/hooks'
 
 const models = [
   { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },
   { label: 'gpt-4-turbo', value: 'gpt-4-turbo' },
   { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
   { label: 'gpt-4o', value: 'gpt-4o' },
-];
+]
 
 interface VoterManagementProps {
-  voters: Voter[];
-  onVotersChange: (voters: Voter[]) => void;
-  onNext: () => void;
+  voters: Voter[]
+  onVotersChange: (voters: Voter[]) => void
+  onNext: () => void
 }
 
 export default function VoterManagement({ voters, onVotersChange, onNext }: VoterManagementProps) {
@@ -40,75 +40,75 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
       temperature: 0.7,
       maxTokens: 150,
     },
-  });
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [editingVoterId, setEditingVoterId] = useState<string | null>(null);
-  const [editedVoter, setEditedVoter] = useState<Voter | null>(null);
+  })
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [editingVoterId, setEditingVoterId] = useState<string | null>(null)
+  const [editedVoter, setEditedVoter] = useState<Voter | null>(null)
 
-  const generateRandomVoterMutation = useGenerateRandomVoter();
+  const generateRandomVoterMutation = useGenerateRandomVoter()
 
   useEffect(() => {
     if (editingVoterId) {
-      const voter = voters.find(v => v.id === editingVoterId);
+      const voter = voters.find(v => v.id === editingVoterId)
       if (voter) {
-        setEditedVoter({ ...voter });
+        setEditedVoter({ ...voter })
       }
     } else {
-      setEditedVoter(null);
+      setEditedVoter(null)
     }
-  }, [editingVoterId, voters]);
+  }, [editingVoterId, voters])
 
   const addVoter = () => {
     if (newVoter.name && newVoter.description) {
       const voter: Voter = {
         ...newVoter,
         id: Date.now().toString(),
-      };
-      onVotersChange([...voters, voter]);
+      }
+      onVotersChange([...voters, voter])
       // Keep the form fields populated for easy creation of similar voters
       // Only clear the name to avoid duplicate names
       setNewVoter({
         ...newVoter,
         name: '',
-      });
+      })
     }
-  };
+  }
 
   const removeVoter = (id: string) => {
-    onVotersChange(voters.filter(v => v.id !== id));
-  };
+    onVotersChange(voters.filter(v => v.id !== id))
+  }
 
   const duplicateVoter = (voter: Voter) => {
     const duplicate: Voter = {
       ...voter,
       id: Date.now().toString(),
       name: `${voter.name} (Copy)`,
-    };
-    onVotersChange([...voters, duplicate]);
-  };
+    }
+    onVotersChange([...voters, duplicate])
+  }
 
   const updateVoterCount = (id: string, count: number) => {
-    onVotersChange(voters.map(v => (v.id === id ? { ...v, count } : v)));
-  };
+    onVotersChange(voters.map(v => (v.id === id ? { ...v, count } : v)))
+  }
 
   const updateVoter = (updatedVoter: Voter) => {
-    onVotersChange(voters.map(v => (v.id === updatedVoter.id ? updatedVoter : v)));
-    setEditingVoterId(null);
-  };
+    onVotersChange(voters.map(v => (v.id === updatedVoter.id ? updatedVoter : v)))
+    setEditingVoterId(null)
+  }
 
   const handleGenerateRandomVoter = () => {
     generateRandomVoterMutation.mutate(voters, {
       onSuccess: data => {
-        onVotersChange([...voters, data.voter]);
+        onVotersChange([...voters, data.voter])
       },
       onError: error => {
-        console.error('Error generating random voter:', error);
+        console.error('Error generating random voter:', error)
         // You could add a toast notification here
       },
-    });
-  };
+    })
+  }
 
-  const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0);
+  const totalVoters = voters.reduce((sum, voter) => sum + voter.count, 0)
 
   return (
     <div className="space-y-8">
@@ -353,19 +353,19 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
         />
       )}
     </div>
-  );
+  )
 }
 
 interface EditVoterModalProps {
-  voter: Voter;
-  onUpdate: (voter: Voter) => void;
-  onCancel: () => void;
-  onRemove: (id: string) => void;
+  voter: Voter
+  onUpdate: (voter: Voter) => void
+  onCancel: () => void
+  onRemove: (id: string) => void
 }
 
 function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalProps) {
-  const [editedVoter, setEditedVoter] = useState(voter);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [editedVoter, setEditedVoter] = useState(voter)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -518,5 +518,5 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -7,4 +7,4 @@ export const ROUTE_CONSTANTS = {
   SECRET_WORD: '/secret-word',
   AVATAR_MAKER: '/avatar-maker',
   WHOWOULDWININATOR: '/whowouldwininator',
-};
+}

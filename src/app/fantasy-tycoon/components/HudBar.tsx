@@ -1,13 +1,13 @@
-'use client';
-import { useMemo } from 'react';
-import { useGameStore } from '../hooks/useGameStore';
+'use client'
+import { useMemo } from 'react'
+import { useGameStore } from '../hooks/useGameStore'
 import {
   Tooltip,
   TooltipProvider,
   TooltipTrigger,
   TooltipContent,
-} from '@/app/fantasy-tycoon/components/ui/tooltip';
-import { FantasyCharacter } from '../models/character';
+} from '@/app/fantasy-tycoon/components/ui/tooltip'
+import { FantasyCharacter } from '../models/character'
 
 type IconType =
   | 'sunIcon'
@@ -16,7 +16,7 @@ type IconType =
   | 'fireIcon'
   | 'purpleCircleIcon'
   | 'blueCircleIcon'
-  | 'yellowMoonIcon';
+  | 'yellowMoonIcon'
 
 const ICONS: Record<IconType, React.ReactNode> = {
   sunIcon: (
@@ -54,7 +54,7 @@ const ICONS: Record<IconType, React.ReactNode> = {
       <path d="M10 20C4.477 20 0 15.523 0 10S4.477 0 10 0c.34 0 .674.02 1 .058A8.001 8.001 0 0110 4a8 8 0 01-2.928 6A8.001 8.001 0 011 10c.02.326.04.66.058 1A10.004 10.004 0 0010 20z" />
     </svg>
   ),
-} as const;
+} as const
 
 const STAT_LABELS: Record<IconType, string> = {
   sunIcon: 'Gold',
@@ -64,16 +64,16 @@ const STAT_LABELS: Record<IconType, string> = {
   purpleCircleIcon: 'Strength',
   blueCircleIcon: 'Intelligence',
   yellowMoonIcon: 'Luck',
-} as const;
+} as const
 
-const STATS_LEFT: IconType[] = ['sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon'];
-const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon'];
+const STATS_LEFT: IconType[] = ['sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon']
+const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
 
 export function HudBar() {
-  const { gameState } = useGameStore();
+  const { gameState } = useGameStore()
   const character = gameState?.characters?.find(
     (char: FantasyCharacter) => char.id === gameState?.selectedCharacterId
-  );
+  )
 
   const stats = useMemo(
     () => ({
@@ -86,7 +86,7 @@ export function HudBar() {
       yellowMoonIcon: character?.luck ?? 0,
     }),
     [character]
-  ) as Record<IconType, number>;
+  ) as Record<IconType, number>
 
   return (
     <TooltipProvider>
@@ -116,5 +116,5 @@ export function HudBar() {
         </div>
       </div>
     </TooltipProvider>
-  );
+  )
 }

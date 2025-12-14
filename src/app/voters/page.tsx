@@ -1,64 +1,64 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import VoterManagement from './components/VoterManagement';
-import VotingCriteriaComponent from './components/VotingCriteria';
-import VotingExecution from './components/VotingExecution';
-import VotingResults from './components/VotingResults';
-import { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting';
+import { useState, useEffect } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import VoterManagement from './components/VoterManagement'
+import VotingCriteriaComponent from './components/VotingCriteria'
+import VotingExecution from './components/VotingExecution'
+import VotingResults from './components/VotingResults'
+import { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting'
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
-type Step = 'voters' | 'criteria' | 'voting' | 'results';
+type Step = 'voters' | 'criteria' | 'voting' | 'results'
 
-const VOTERS_STORAGE_KEY = 'voters-app-voters';
+const VOTERS_STORAGE_KEY = 'voters-app-voters'
 
 export default function VotingSimulation() {
-  const [currentStep, setCurrentStep] = useState<Step>('voters');
-  const [voters, setVoters] = useState<Voter[]>([]);
+  const [currentStep, setCurrentStep] = useState<Step>('voters')
+  const [voters, setVoters] = useState<Voter[]>([])
   const [criteria, setCriteria] = useState<VotingCriteria>({
     question: '',
     options: [],
-  });
-  const [votes, setVotes] = useState<Vote[]>([]);
+  })
+  const [votes, setVotes] = useState<Vote[]>([])
 
   // Load voters from local storage on component mount
   useEffect(() => {
     try {
-      const savedVoters = localStorage.getItem(VOTERS_STORAGE_KEY);
+      const savedVoters = localStorage.getItem(VOTERS_STORAGE_KEY)
       if (savedVoters) {
-        const parsedVoters = JSON.parse(savedVoters);
+        const parsedVoters = JSON.parse(savedVoters)
         if (Array.isArray(parsedVoters)) {
-          setVoters(parsedVoters);
+          setVoters(parsedVoters)
         }
       }
     } catch (error) {
-      console.error('Error loading voters from local storage:', error);
+      console.error('Error loading voters from local storage:', error)
     }
-  }, []);
+  }, [])
 
   // Function to update voters in both state and local storage
   const handleVotersChange = (newVoters: Voter[]) => {
-    setVoters(newVoters);
+    setVoters(newVoters)
     try {
-      localStorage.setItem(VOTERS_STORAGE_KEY, JSON.stringify(newVoters));
+      localStorage.setItem(VOTERS_STORAGE_KEY, JSON.stringify(newVoters))
     } catch (error) {
-      console.error('Error saving voters to local storage:', error);
+      console.error('Error saving voters to local storage:', error)
     }
-  };
+  }
 
   const handleVotingComplete = (completedVotes: Vote[]) => {
-    setVotes(completedVotes);
-    setCurrentStep('results');
-  };
+    setVotes(completedVotes)
+    setCurrentStep('results')
+  }
 
   // Modified restart function - only clears current session data, not stored voters
   const handleRestart = () => {
-    setCurrentStep('voters');
-    setCriteria({ question: '', options: [] });
-    setVotes([]);
-  };
+    setCurrentStep('voters')
+    setCriteria({ question: '', options: [] })
+    setVotes([])
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -137,5 +137,5 @@ export default function VotingSimulation() {
         </div>
       </div>
     </QueryClientProvider>
-  );
+  )
 }

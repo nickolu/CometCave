@@ -1,14 +1,14 @@
-'use client';
+'use client'
 
-import { Box, Typography, Avatar } from '@mui/material';
-import { ChatMessage as ChatMessageType } from '../../types';
+import { Box, Typography, Avatar } from '@mui/material'
+import { ChatMessage as ChatMessageType } from '../../types'
 
 interface Props {
-  message: ChatMessageType;
+  message: ChatMessageType
 }
 
 export default function ChatMessage({ message }: Props) {
-  const isSelf = message.character.id === 'user';
+  const isSelf = message.character.id === 'user'
 
   return (
     <Box
@@ -18,9 +18,7 @@ export default function ChatMessage({ message }: Props) {
         mb: 2,
       }}
     >
-      {!isSelf && (
-        <Avatar sx={{ mr: 1 }}>{message.character.name[0]}</Avatar>
-      )}
+      {!isSelf && <Avatar sx={{ mr: 1 }}>{message.character.name[0]}</Avatar>}
       <Box
         sx={{
           maxWidth: '70%',
@@ -37,9 +35,7 @@ export default function ChatMessage({ message }: Props) {
         )}
         <Typography variant="body1">{message.message}</Typography>
       </Box>
-      {isSelf && (
-        <Avatar sx={{ ml: 1 }}>{message.character.name[0]}</Avatar>
-      )}
+      {isSelf && <Avatar sx={{ ml: 1 }}>{message.character.name[0]}</Avatar>}
     </Box>
-  );
+  )
 }

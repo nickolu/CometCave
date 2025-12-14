@@ -7,10 +7,12 @@ This document outlines a step-by-step plan for implementing a character roster f
 ## Micro-sprint 1: Extend data model & defaults
 
 **Context**
+
 - `src/app/fantasy-tycoon/models/types.ts`
 - `src/app/fantasy-tycoon/lib/defaultGameState.ts`
 
 **Prompt**
+
 ```
 1. In models/types.ts, update GameState to add a new field:
    characters: FantasyCharacter[]
@@ -23,9 +25,11 @@ This document outlines a step-by-step plan for implementing a character roster f
 ## Micro-sprint 2: Refactor Zustand store for roster management
 
 **Context**
+
 - `src/app/fantasy-tycoon/hooks/useGameStore.ts`
 
 **Prompt**
+
 ```
 1. Change persisted state to include both `gameState.characters` and `gameState.character`.
 2. Add three actions:
@@ -40,10 +44,12 @@ This document outlines a step-by-step plan for implementing a character roster f
 ## Micro-sprint 3: Wire new store actions into character creation
 
 **Context**
+
 - `src/app/fantasy-tycoon/components/CharacterCreation.tsx`
 - `src/app/fantasy-tycoon/hooks/useCharacterCreation.ts`
 
 **Prompt**
+
 ```
 1. In CharacterCreation.tsx, import addCharacter, selectCharacter from useGameStore.
 2. After completeCreation(), call addCharacter(character) then selectCharacter(character.id).
@@ -55,9 +61,11 @@ This document outlines a step-by-step plan for implementing a character roster f
 ## Micro-sprint 4: Build CharacterList UI
 
 **Context**
+
 - new file: `src/app/fantasy-tycoon/components/CharacterList.tsx`
 
 **Prompt**
+
 ```
 Create CharacterList.tsx that:
 1. Reads characters[] and character from useGameStore.
@@ -73,9 +81,11 @@ Create CharacterList.tsx that:
 ## Micro-sprint 5: Integrate CharacterList into GameUI
 
 **Context**
+
 - `src/app/fantasy-tycoon/components/GameUI.tsx`
 
 **Prompt**
+
 ```
 1. Import and render CharacterList when characters.length>0 && no character selected.
 2. Otherwise, if no characters, show CharacterCreation.
@@ -87,9 +97,11 @@ Create CharacterList.tsx that:
 ## Micro-sprint 6: Add store tests for roster
 
 **Context**
+
 - `src/app/fantasy-tycoon/__tests__/useGameStore.test.ts` (new)
 
 **Prompt**
+
 ```
 Write Jest/unit tests for useGameStore:
 1. addCharacter up to 5, then reject 6th.

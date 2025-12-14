@@ -1,20 +1,20 @@
-'use client';
-import GameUI from './components/GameUI';
-import { PageTemplate } from './components/ui/PageTemplate';
-import { useGameStore } from './hooks/useGameStore';
+'use client'
+import GameUI from './components/GameUI'
+import { PageTemplate } from './components/ui/PageTemplate'
+import { useGameStore } from './hooks/useGameStore'
 
-import CharacterList from './components/CharacterList';
-import { HudBar } from './components/HudBar';
+import CharacterList from './components/CharacterList'
+import { HudBar } from './components/HudBar'
 
-type initialView = 'game' | 'characters';
+type initialView = 'game' | 'characters'
 
 export default function FantasyTycoonPage() {
-  const { gameState } = useGameStore();
+  const { gameState } = useGameStore()
 
-  let initialView: initialView = 'characters';
+  let initialView: initialView = 'characters'
 
   if (gameState?.selectedCharacterId) {
-    initialView = 'game';
+    initialView = 'game'
   }
 
   return (
@@ -25,5 +25,5 @@ export default function FantasyTycoonPage() {
       {initialView === 'game' && <GameUI />}
       {initialView === 'characters' && <CharacterList />}
     </PageTemplate>
-  );
+  )
 }

@@ -1,15 +1,15 @@
-'use client';
+'use client'
 
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import type { GameState, Message } from '@/app/secret-word/page';
+import { useState, useRef, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import type { GameState, Message } from '@/app/secret-word/page'
 
 interface SecretWordChatProps {
-  gameState: GameState;
-  onSendMessage: (content: string, isQuestion?: boolean) => void | Promise<void>;
-  isAIThinking?: boolean;
-  onRevealAIWord: () => void;
+  gameState: GameState
+  onSendMessage: (content: string, isQuestion?: boolean) => void | Promise<void>
+  isAIThinking?: boolean
+  onRevealAIWord: () => void
 }
 
 export function SecretWordChat({
@@ -18,28 +18,28 @@ export function SecretWordChat({
   isAIThinking: _isAIThinking = false,
   onRevealAIWord,
 }: SecretWordChatProps) {
-  const [messageInput, setMessageInput] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [messageInput, setMessageInput] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const currentPlayer = gameState.players[gameState.currentTurn];
+  const currentPlayer = gameState.players[gameState.currentTurn]
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [gameState.messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [gameState.messages])
 
   const handleSend = () => {
     if (messageInput.trim()) {
-      onSendMessage(messageInput.trim());
-      setMessageInput('');
+      onSendMessage(messageInput.trim())
+      setMessageInput('')
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -137,12 +137,12 @@ export function SecretWordChat({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function MessageBubble({ message, gameState }: { message: Message; gameState: GameState }) {
-  const player = gameState.players[message.playerId];
-  const isPlayer = message.playerId === 'player';
+  const player = gameState.players[message.playerId]
+  const isPlayer = message.playerId === 'player'
 
   return (
     <div className={`flex ${isPlayer ? 'justify-start' : 'justify-end'}`}>
@@ -167,5 +167,5 @@ function MessageBubble({ message, gameState }: { message: Message; gameState: Ga
         <p className="text-cream-white text-sm">{message.content}</p>
       </div>
     </div>
-  );
+  )
 }

@@ -1,7 +1,7 @@
-"use client";
-import { GameState } from '../models/types';
+'use client'
+import { GameState } from '../models/types'
 
-import { DEFAULT_PLAYER_ID } from '../config/gameDefaults';
+import { DEFAULT_PLAYER_ID } from '../config/gameDefaults'
 
 export const defaultGameState: GameState = {
   player: {
@@ -14,4 +14,4 @@ export const defaultGameState: GameState = {
   storyEvents: [],
   decisionPoint: null,
   genericMessage: null,
-};
+}

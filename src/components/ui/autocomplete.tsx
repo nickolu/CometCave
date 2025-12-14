@@ -1,21 +1,21 @@
-import React from 'react';
-import AutocompleteMUI from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import { cn } from '@/lib/utils';
+import React from 'react'
+import AutocompleteMUI from '@mui/material/Autocomplete'
+import TextField from '@mui/material/TextField'
+import { cn } from '@/lib/utils'
 
 interface AutocompleteProps {
   /** current value */
-  value: string;
+  value: string
   /** called with new value when changed */
-  onChange: (value: string) => void;
+  onChange: (value: string) => void
   /** list of suggested options */
-  options: string[];
+  options: string[]
   /** placeholder text */
-  placeholder?: string;
+  placeholder?: string
   /** label shown above field (optional – you can also wrap in your own Label) */
-  label?: string;
+  label?: string
   /** additional className for root */
-  className?: string;
+  className?: string
 }
 
 /**
@@ -59,5 +59,5 @@ export function Autocomplete({
         />
       )}
     />
-  );
+  )
 }

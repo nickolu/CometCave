@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 
 /** FantasyPlayerSchema is the single source of truth for both runtime validation and static typing. */
 export const FantasyPlayerSchema = z.object({
@@ -11,6 +11,6 @@ export const FantasyPlayerSchema = z.object({
   reputation: z.number(),
   distance: z.number(),
   currentCharacterId: z.string().optional(),
-});
+})
 
-export type FantasyPlayer = z.infer<typeof FantasyPlayerSchema>;
+export type FantasyPlayer = z.infer<typeof FantasyPlayerSchema>

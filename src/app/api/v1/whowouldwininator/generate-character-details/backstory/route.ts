@@ -1,15 +1,15 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateText } from 'ai';
-import { NextResponse } from 'next/server';
-import { READING_LEVEL } from '../../constants';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateText } from 'ai'
+import { NextResponse } from 'next/server'
+import { READING_LEVEL } from '../../constants'
 
 export async function POST(request: Request) {
   try {
-    const { name, description } = await request.json();
+    const { name, description } = await request.json()
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     const result = await generateText({
       model: openaiClient('gpt-4o-mini'),
@@ -23,11 +23,11 @@ The backstory should:
 - Keep the writing at a ${READING_LEVEL} reading level.`,
       temperature: 0.8,
       maxTokens: 400,
-    });
+    })
 
-    return NextResponse.json({ backstory: result.text });
+    return NextResponse.json({ backstory: result.text })
   } catch (error) {
-    console.error('Error generating character backstory:', error);
-    return NextResponse.json({ error: 'Failed to generate character backstory' }, { status: 500 });
+    console.error('Error generating character backstory:', error)
+    return NextResponse.json({ error: 'Failed to generate character backstory' }, { status: 500 })
   }
 }

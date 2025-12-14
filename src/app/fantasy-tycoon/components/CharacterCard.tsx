@@ -1,13 +1,13 @@
-'use client';
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FantasyCharacter } from '../models/types';
+'use client'
+import React from 'react'
+import { motion } from 'framer-motion'
+import { FantasyCharacter } from '../models/types'
 
 interface CharacterCardProps {
-  character: FantasyCharacter;
-  selected?: boolean;
-  onSelect?: (character: FantasyCharacter) => void;
-  onDelete?: (e: React.MouseEvent, id: string) => void;
+  character: FantasyCharacter
+  selected?: boolean
+  onSelect?: (character: FantasyCharacter) => void
+  onDelete?: (e: React.MouseEvent, id: string) => void
 }
 
 export default function CharacterCard({
@@ -43,8 +43,8 @@ export default function CharacterCard({
         <button
           type="button"
           onClick={e => {
-            e.stopPropagation();
-            onDelete(e, character.id);
+            e.stopPropagation()
+            onDelete(e, character.id)
           }}
           className="absolute top-2 right-2 text-slate-500 hover:text-red-500 transition-colors focus:outline-none text-2xl leading-none p-1"
           aria-label={`Delete ${character.name}`}
@@ -53,5 +53,5 @@ export default function CharacterCard({
         </button>
       )}
     </motion.div>
-  );
+  )
 }

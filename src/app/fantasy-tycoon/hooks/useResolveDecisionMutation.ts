@@ -1,42 +1,42 @@
-'use client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { FantasyCharacter } from '../models/types';
-import { FantasyDecisionPoint } from '../models/types';
-import { Item } from '../models/types';
-import { useGameStore, useGameStateBuilder } from './useGameStore';
+'use client'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { FantasyCharacter } from '../models/types'
+import { FantasyDecisionPoint } from '../models/types'
+import { Item } from '../models/types'
+import { useGameStore, useGameStateBuilder } from './useGameStore'
 
 export interface ResolveDecisionResponse {
-  updatedCharacter: FantasyCharacter;
-  resultDescription?: string;
-  appliedEffects?: Record<string, unknown>;
-  selectedOptionId?: string;
-  selectedOptionText?: string;
-  outcomeDescription?: string;
+  updatedCharacter: FantasyCharacter
+  resultDescription?: string
+  appliedEffects?: Record<string, unknown>
+  selectedOptionId?: string
+  selectedOptionText?: string
+  outcomeDescription?: string
   resourceDelta?: {
-    gold?: number;
-    reputation?: number;
-    distance?: number;
-    statusChange?: string;
-  };
-  rewardItems?: Item[];
+    gold?: number
+    reputation?: number
+    distance?: number
+    statusChange?: string
+  }
+  rewardItems?: Item[]
 }
 
 export function useResolveDecisionMutation() {
-  const { getSelectedCharacter } = useGameStore();
-  const { addItem, addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder();
-  const queryClient = useQueryClient();
+  const { getSelectedCharacter } = useGameStore()
+  const { addItem, addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
       decisionPoint,
       optionId,
       onSuccess,
     }: {
-      decisionPoint: FantasyDecisionPoint;
-      optionId: string;
-      onSuccess?: () => void;
+      decisionPoint: FantasyDecisionPoint
+      optionId: string
+      onSuccess?: () => void
     }) => {
-      const character = getSelectedCharacter();
-      if (!character) throw new Error('No character found');
+      const character = getSelectedCharacter()
+      if (!character) throw new Error('No character found')
 
       const res = await fetch('/api/v1/fantasy-tycoon/resolve-decision', {
         method: 'POST',
@@ -46,18 +46,18 @@ export function useResolveDecisionMutation() {
           decisionPoint,
           optionId,
         }),
-      });
+      })
 
       if (!res.ok) {
-        throw new Error('Failed to resolve decision');
+        throw new Error('Failed to resolve decision')
       }
-      const data: ResolveDecisionResponse = await res.json();
+      const data: ResolveDecisionResponse = await res.json()
 
       if (data.updatedCharacter) {
-        updateSelectedCharacter(data.updatedCharacter);
+        updateSelectedCharacter(data.updatedCharacter)
       }
 
-      const rewardItems = data.rewardItems ?? [];
+      const rewardItems = data.rewardItems ?? []
 
       for (const reward of rewardItems) {
         const item = {
@@ -65,8 +65,8 @@ export function useResolveDecisionMutation() {
           name: reward.name,
           description: reward.description,
           quantity: 1,
-        };
-        addItem(item);
+        }
+        addItem(item)
       }
 
       const newStoryEvent = {
@@ -80,14 +80,14 @@ export function useResolveDecisionMutation() {
         selectedOptionText: data.selectedOptionText,
         outcomeDescription: data.outcomeDescription,
         resourceDelta: data.resourceDelta,
-      };
+      }
 
-      addStoryEvent(newStoryEvent);
-      commit();
-      onSuccess?.();
+      addStoryEvent(newStoryEvent)
+      commit()
+      onSuccess?.()
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] });
+      queryClient.invalidateQueries({ queryKey: ['fantasy-tycoon', 'game-state'] })
     },
-  });
+  })
 }

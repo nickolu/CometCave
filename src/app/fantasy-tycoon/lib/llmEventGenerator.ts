@@ -1,7 +1,7 @@
-import { OpenAI } from 'openai';
-import { z } from 'zod';
-import { FantasyCharacter } from '../models/character';
-import { Item } from '../models/item';
+import { OpenAI } from 'openai'
+import { z } from 'zod'
+import { FantasyCharacter } from '../models/character'
+import { Item } from '../models/item'
 
 const processFallbackRewardItems = (
   items?: { id: string; name?: string; description?: string; quantity: number }[]
@@ -11,32 +11,32 @@ const processFallbackRewardItems = (
     quantity: item.quantity,
     name: item.name || 'Unknown Item',
     description: item.description || 'No description available',
-  })) || [];
+  })) || []
 
 export interface LLMEventOption {
-  id: string;
-  text: string;
-  successProbability: number;
-  successDescription: string;
+  id: string
+  text: string
+  successProbability: number
+  successDescription: string
   successEffects: {
-    gold?: number;
-    reputation?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
-  failureDescription: string;
+    gold?: number
+    reputation?: number
+    statusChange?: string
+    rewardItems?: Item[]
+  }
+  failureDescription: string
   failureEffects: {
-    gold?: number;
-    reputation?: number;
-    statusChange?: string;
-    rewardItems?: Item[];
-  };
+    gold?: number
+    reputation?: number
+    statusChange?: string
+    rewardItems?: Item[]
+  }
 }
 
 export interface LLMGeneratedEvent {
-  id: string;
-  description: string;
-  options: LLMEventOption[];
+  id: string
+  description: string
+  options: LLMEventOption[]
 }
 
 const eventOptionSchema = z.object({
@@ -75,17 +75,17 @@ const eventOptionSchema = z.object({
       )
       .optional(),
   }),
-});
+})
 
 const eventSchema = z.object({
   id: z.string(),
   description: z.string(),
   options: z.array(eventOptionSchema).min(2),
-});
+})
 
-const eventsArraySchema = z.array(eventSchema).length(3);
+const eventsArraySchema = z.array(eventSchema).length(3)
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 // Function calling schema for event generation
 const eventOptionSchemaForOpenAI = {
@@ -149,7 +149,7 @@ const eventOptionSchemaForOpenAI = {
     'failureEffects',
   ],
   additionalProperties: false,
-};
+}
 
 const eventSchemaForOpenAI = {
   type: 'object',
@@ -165,14 +165,14 @@ const eventSchemaForOpenAI = {
   },
   required: ['id', 'description', 'options'],
   additionalProperties: false,
-};
+}
 
 const eventsArraySchemaForOpenAI = {
   type: 'array',
   items: eventSchemaForOpenAI,
   minItems: 3,
   maxItems: 3,
-};
+}
 
 export async function generateLLMEvents(
   character: FantasyCharacter,
@@ -181,7 +181,7 @@ export async function generateLLMEvents(
   const { model, messages, tools, toolChoice, temperature, maxTokens } = getCompletionsConfig(
     character,
     context
-  );
+  )
   try {
     const response = await openai.chat.completions.create({
       model,
@@ -190,28 +190,28 @@ export async function generateLLMEvents(
       temperature,
       tool_choice: toolChoice,
       max_tokens: maxTokens,
-    });
+    })
     // Parse tool calls response
-    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0]
     if (toolCall && toolCall.function?.name === 'generate_events') {
-      return parseEventsFromToolCall(toolCall);
+      return parseEventsFromToolCall(toolCall)
     }
-    const raw = response.choices[0]?.message?.content?.trim();
-    return parseRawEvents(raw);
+    const raw = response.choices[0]?.message?.content?.trim()
+    return parseRawEvents(raw)
   } catch (err) {
-    console.error('LLM event generation failed', err);
-    return getDefaultEvents();
+    console.error('LLM event generation failed', err)
+    return getDefaultEvents()
   }
 }
 
 function getCompletionsConfig(character: FantasyCharacter, context: string) {
-  const model = 'gpt-4o';
+  const model = 'gpt-4o'
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
       content: `Generate 3 fantasy adventure event objects for the following character and context. Each event must match the following JSON schema and be part of a JSON array. Do not return any extra text.\n\nCharacter:\n${JSON.stringify(character, null, 2)}\n\nContext:\n${context}`,
     },
-  ];
+  ]
 
   const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
@@ -228,13 +228,13 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
         },
       },
     },
-  ];
+  ]
   const toolChoice: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption = {
     type: 'function',
     function: { name: 'generate_events' },
-  };
-  const temperature = 0.7;
-  const maxTokens = 1200;
+  }
+  const temperature = 0.7
+  const maxTokens = 1200
 
   return {
     model,
@@ -243,20 +243,20 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
     toolChoice,
     temperature,
     maxTokens,
-  };
+  }
 }
 
 function parseEventsFromToolCall(toolCall: OpenAI.Chat.Completions.ChatCompletionMessageToolCall) {
-  const toolArgs = JSON.parse(toolCall.function.arguments);
-  const events = eventsArraySchema.parse(toolArgs.events);
+  const toolArgs = JSON.parse(toolCall.function.arguments)
+  const events = eventsArraySchema.parse(toolArgs.events)
   // Ensure unique event ids
-  const seenIds = new Set<string>();
+  const seenIds = new Set<string>()
   const uniqueEvents: LLMGeneratedEvent[] = events.map(event => {
-    let newId = event.id;
+    let newId = event.id
     if (seenIds.has(event.id)) {
-      newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
     }
-    seenIds.add(newId);
+    seenIds.add(newId)
 
     // Process options with the new structure
     const processedOptions: LLMEventOption[] = event.options.map(option => ({
@@ -269,15 +269,15 @@ function parseEventsFromToolCall(toolCall: OpenAI.Chat.Completions.ChatCompletio
         ...option.failureEffects,
         rewardItems: processFallbackRewardItems(option.failureEffects.rewardItems),
       },
-    }));
+    }))
 
-    return { ...event, id: newId, options: processedOptions };
-  });
-  return uniqueEvents;
+    return { ...event, id: newId, options: processedOptions }
+  })
+  return uniqueEvents
 }
 
 function getDefaultEvents() {
-  const uniqueSuffix = `fallback-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  const uniqueSuffix = `fallback-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
   return [
     {
@@ -393,29 +393,29 @@ function getDefaultEvents() {
         },
       ],
     },
-  ];
+  ]
 }
 
 function parseRawEvents(raw?: string) {
-  if (!raw) throw new Error('No content from LLM');
-  const parsed = JSON.parse(raw);
-  let events;
+  if (!raw) throw new Error('No content from LLM')
+  const parsed = JSON.parse(raw)
+  let events
   if (Array.isArray(parsed)) {
-    events = eventsArraySchema.parse(parsed);
+    events = eventsArraySchema.parse(parsed)
   } else if (parsed && Array.isArray(parsed.events)) {
-    events = eventsArraySchema.parse(parsed.events);
+    events = eventsArraySchema.parse(parsed.events)
   } else {
-    throw new Error('LLM response is not an array or object with events array');
+    throw new Error('LLM response is not an array or object with events array')
   }
   // Ensure unique event ids
-  const seenIds = new Set<string>();
+  const seenIds = new Set<string>()
   const uniqueEvents = events.map(event => {
-    let newId = event.id;
+    let newId = event.id
     if (seenIds.has(event.id)) {
-      newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      newId = `${event.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
     }
-    seenIds.add(newId);
-    return { ...event, id: newId };
-  });
-  return uniqueEvents;
+    seenIds.add(newId)
+    return { ...event, id: newId }
+  })
+  return uniqueEvents
 }

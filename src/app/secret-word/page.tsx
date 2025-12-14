@@ -1,40 +1,40 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { SecretWordSetup } from '@/app/secret-word/components/SecretWordSetup';
-import { SecretWordChat } from '@/app/secret-word/components/SecretWordChat';
-import { SecretWordEnd } from '@/app/secret-word/components/SecretWordEnd';
-import { QueryProvider } from './providers/QueryProvider';
-import { useGenerateWord, useAIResponse } from './api/hooks';
+import { useState } from 'react'
+import { SecretWordSetup } from '@/app/secret-word/components/SecretWordSetup'
+import { SecretWordChat } from '@/app/secret-word/components/SecretWordChat'
+import { SecretWordEnd } from '@/app/secret-word/components/SecretWordEnd'
+import { QueryProvider } from './providers/QueryProvider'
+import { useGenerateWord, useAIResponse } from './api/hooks'
 
-type GamePhase = 'setup' | 'playing' | 'ended';
+type GamePhase = 'setup' | 'playing' | 'ended'
 
 export interface Player {
-  id: 'player' | 'ai';
-  name: string;
-  secretWord: string;
-  isAI?: boolean;
-  wordScore?: number;
+  id: 'player' | 'ai'
+  name: string
+  secretWord: string
+  isAI?: boolean
+  wordScore?: number
 }
 
 export interface Message {
-  id: string;
-  playerId: 'player' | 'ai';
-  content: string;
-  timestamp: number;
-  isQuestion?: boolean;
+  id: string
+  playerId: 'player' | 'ai'
+  content: string
+  timestamp: number
+  isQuestion?: boolean
 }
 
 export interface GameState {
   players: {
-    player: Player;
-    ai: Player;
-  };
-  currentTurn: 'player' | 'ai';
-  messages: Message[];
-  winner?: 'player' | 'ai';
-  winReason?: string;
-  gamePhase: GamePhase;
+    player: Player
+    ai: Player
+  }
+  currentTurn: 'player' | 'ai'
+  messages: Message[]
+  winner?: 'player' | 'ai'
+  winReason?: string
+  gamePhase: GamePhase
 }
 
 const INITIAL_GAME_STATE: GameState = {
@@ -45,27 +45,27 @@ const INITIAL_GAME_STATE: GameState = {
   currentTurn: 'player',
   messages: [],
   gamePhase: 'setup',
-};
+}
 
 function SecretWordGameContent() {
-  const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
-  const generateWord = useGenerateWord();
-  const getAIResponse = useAIResponse();
+  const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE)
+  const generateWord = useGenerateWord()
+  const getAIResponse = useAIResponse()
 
   // Check for forbidden words in messages
   const checkForForbiddenWords = (message: string, playerId: 'player' | 'ai') => {
-    const lowerMessage = message.toLowerCase();
-    const playerWord = gameState.players.player.secretWord.toLowerCase();
-    const aiWord = gameState.players.ai.secretWord.toLowerCase();
+    const lowerMessage = message.toLowerCase()
+    const playerWord = gameState.players.player.secretWord.toLowerCase()
+    const aiWord = gameState.players.ai.secretWord.toLowerCase()
 
-    const speaker = playerId;
+    const speaker = playerId
 
     // Helper to generate standard violation result
     const violationResult = (winner: 'player' | 'ai', reason: string) => ({
       hasViolation: true,
       winner,
       reason,
-    });
+    })
 
     // If message includes the player's secret word
     if (lowerMessage.includes(playerWord)) {
@@ -73,12 +73,12 @@ function SecretWordGameContent() {
         return violationResult(
           'ai',
           `You said your secret word: "${gameState.players.player.secretWord}"`
-        );
+        )
       } else {
         return violationResult(
           'player',
           `AI said your secret word: "${gameState.players.player.secretWord}"`
-        );
+        )
       }
     }
 
@@ -88,17 +88,17 @@ function SecretWordGameContent() {
         return violationResult(
           'player',
           `AI said its secret word: "${gameState.players.ai.secretWord}"`
-        );
+        )
       } else {
         return violationResult(
           'ai',
           `You said the AI's secret word: "${gameState.players.ai.secretWord}"`
-        );
+        )
       }
     }
 
-    return { hasViolation: false, winner: undefined, reason: undefined };
-  };
+    return { hasViolation: false, winner: undefined, reason: undefined }
+  }
 
   const handleSetupComplete = async (playerWord: string, playerName: string, wordScore: number) => {
     try {
@@ -106,7 +106,7 @@ function SecretWordGameContent() {
       const result = await generateWord.mutateAsync({
         difficulty: 'medium',
         avoidWords: [playerWord], // Avoid the player's word
-      });
+      })
 
       setGameState(prev => ({
         ...prev,
@@ -115,9 +115,9 @@ function SecretWordGameContent() {
           ai: { ...prev.players.ai, secretWord: result.word },
         },
         gamePhase: 'playing',
-      }));
+      }))
     } catch (error) {
-      console.error('Failed to generate AI word:', error);
+      console.error('Failed to generate AI word:', error)
       // Fallback to a random word if API fails
       const fallbackWords = [
         'butterfly',
@@ -128,8 +128,8 @@ function SecretWordGameContent() {
         'crystal',
         'rainbow',
         'treasure',
-      ];
-      const randomWord = fallbackWords[Math.floor(Math.random() * fallbackWords.length)];
+      ]
+      const randomWord = fallbackWords[Math.floor(Math.random() * fallbackWords.length)]
 
       setGameState(prev => ({
         ...prev,
@@ -138,9 +138,9 @@ function SecretWordGameContent() {
           ai: { ...prev.players.ai, secretWord: randomWord },
         },
         gamePhase: 'playing',
-      }));
+      }))
     }
-  };
+  }
 
   const handleSendMessage = async (content: string, isQuestion: boolean = false) => {
     // Create the new player message that just came in
@@ -150,16 +150,16 @@ function SecretWordGameContent() {
       content,
       timestamp: Date.now(),
       isQuestion,
-    };
+    }
 
     // Helper we will reuse to append a message to the log
     const appendMessage = (msg: Message) =>
-      setGameState(current => ({ ...current, messages: [...current.messages, msg] }));
+      setGameState(current => ({ ...current, messages: [...current.messages, msg] }))
 
     // ---------------------------
     // 1. Check for rule violations
     // ---------------------------
-    const violation = checkForForbiddenWords(content, gameState.currentTurn);
+    const violation = checkForForbiddenWords(content, gameState.currentTurn)
     if (violation.hasViolation) {
       setGameState(prev => ({
         ...prev,
@@ -167,21 +167,21 @@ function SecretWordGameContent() {
         winner: violation.winner as 'player' | 'ai',
         winReason: violation.reason,
         gamePhase: 'ended',
-      }));
-      return;
+      }))
+      return
     }
 
     // ---------------------------
     // 2. Persist the player message + advance the turn
     // ---------------------------
-    const nextTurn: 'player' | 'ai' = gameState.currentTurn === 'player' ? 'ai' : 'player';
-    const updatedMessages = [...gameState.messages, newMessage];
+    const nextTurn: 'player' | 'ai' = gameState.currentTurn === 'player' ? 'ai' : 'player'
+    const updatedMessages = [...gameState.messages, newMessage]
 
     setGameState(prev => ({
       ...prev,
       messages: updatedMessages,
       currentTurn: nextTurn,
-    }));
+    }))
 
     // ---------------------------
     // 3. If it's now the AI's turn, queue up an AI response
@@ -189,7 +189,7 @@ function SecretWordGameContent() {
     //    will only run once, even under React 18 StrictMode.
     // ---------------------------
     if (nextTurn === 'ai') {
-      const delay = 1000 + Math.random() * 2000; // 1-3 seconds delay for natural feel
+      const delay = 1000 + Math.random() * 2000 // 1-3 seconds delay for natural feel
 
       setTimeout(async () => {
         try {
@@ -202,7 +202,7 @@ function SecretWordGameContent() {
               timestamp: msg.timestamp,
             })),
             isPlayerTurn: false,
-          });
+          })
 
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
@@ -210,7 +210,7 @@ function SecretWordGameContent() {
             content: aiResponseResult.response,
             timestamp: Date.now() + 1,
             isQuestion: aiResponseResult.isQuestion,
-          };
+          }
 
           // If AI violated a rule while generating its response
           if (aiResponseResult.violation) {
@@ -220,12 +220,12 @@ function SecretWordGameContent() {
               winner: aiResponseResult.violation!.winner,
               winReason: aiResponseResult.violation!.reason,
               gamePhase: 'ended',
-            }));
-            return;
+            }))
+            return
           }
 
           // Check violations detected locally (e.g., guessing player word)
-          const aiViolation = checkForForbiddenWords(aiResponseResult.response, 'ai');
+          const aiViolation = checkForForbiddenWords(aiResponseResult.response, 'ai')
           if (aiViolation.hasViolation) {
             setGameState(current => ({
               ...current,
@@ -233,8 +233,8 @@ function SecretWordGameContent() {
               winner: aiViolation.winner as 'player' | 'ai',
               winReason: aiViolation.reason,
               gamePhase: 'ended',
-            }));
-            return;
+            }))
+            return
           }
 
           // Normal flow – append AI message and pass the turn back to the player
@@ -242,9 +242,9 @@ function SecretWordGameContent() {
             ...current,
             messages: [...current.messages, aiMessage],
             currentTurn: 'player',
-          }));
+          }))
         } catch (error) {
-          console.error('Failed to get AI response:', error);
+          console.error('Failed to get AI response:', error)
 
           const fallbackResponses = [
             "That's interesting!",
@@ -252,9 +252,9 @@ function SecretWordGameContent() {
             'I see what you mean.',
             "That's a good point.",
             'What else can you share?',
-          ];
+          ]
           const fallbackResponse =
-            fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)]
 
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
@@ -262,14 +262,14 @@ function SecretWordGameContent() {
             content: fallbackResponse,
             timestamp: Date.now() + 1,
             isQuestion: fallbackResponse.includes('?'),
-          };
+          }
 
-          appendMessage(aiMessage);
-          setGameState(current => ({ ...current, currentTurn: 'player' }));
+          appendMessage(aiMessage)
+          setGameState(current => ({ ...current, currentTurn: 'player' }))
         }
-      }, delay);
+      }, delay)
     }
-  };
+  }
 
   // Player chooses to reveal the AI's word and forfeit the game
   const handleRevealAIWord = () => {
@@ -278,12 +278,12 @@ function SecretWordGameContent() {
       winner: 'ai',
       winReason: `You revealed the AI's secret word: "${prev.players.ai.secretWord}"`,
       gamePhase: 'ended',
-    }));
-  };
+    }))
+  }
 
   const handleRestart = () => {
-    setGameState(INITIAL_GAME_STATE);
-  };
+    setGameState(INITIAL_GAME_STATE)
+  }
 
   return (
     <div className="py-12">
@@ -343,7 +343,7 @@ function SecretWordGameContent() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default function SecretWordGame() {
@@ -351,5 +351,5 @@ export default function SecretWordGame() {
     <QueryProvider>
       <SecretWordGameContent />
     </QueryProvider>
-  );
+  )
 }

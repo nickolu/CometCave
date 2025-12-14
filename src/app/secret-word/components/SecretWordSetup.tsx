@@ -1,95 +1,95 @@
-'use client';
+'use client'
 
-import { useCallback, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useGenerateWord, useScoreWord } from '../api/hooks';
-import { ScoreWordResponse } from '../api/types';
-import { Loader2 } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useGenerateWord, useScoreWord } from '../api/hooks'
+import { ScoreWordResponse } from '../api/types'
+import { Loader2 } from 'lucide-react'
 
 interface SecretWordSetupProps {
   onSetupComplete: (
     playerWord: string,
     playerName: string,
     wordScore: number
-  ) => void | Promise<void>;
-  isLoading?: boolean;
+  ) => void | Promise<void>
+  isLoading?: boolean
 }
 
 const WordScore = ({
   isScoring,
   scoreData,
 }: {
-  isScoring: boolean;
-  scoreData: ScoreWordResponse | undefined;
+  isScoring: boolean
+  scoreData: ScoreWordResponse | undefined
 }) => {
-  const score = scoreData?.score;
+  const score = scoreData?.score
 
   if (isScoring) {
-    return <div>Scoring...</div>;
+    return <div>Scoring...</div>
   }
 
   return (
     <div>
       This word is worth <span className="font-bold text-green-500">{score}</span> points
     </div>
-  );
-};
+  )
+}
 
-const MINIMUM_WORD_SCORE = 10;
+const MINIMUM_WORD_SCORE = 10
 
 export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWordSetupProps) {
-  const [playerName, setPlayerName] = useState('Player');
-  const [playerWord, setPlayerWord] = useState('');
-  const [previousRandomWords, setPreviousRandomWords] = useState<string[]>([]);
+  const [playerName, setPlayerName] = useState('Player')
+  const [playerWord, setPlayerWord] = useState('')
+  const [previousRandomWords, setPreviousRandomWords] = useState<string[]>([])
 
-  const { mutateAsync: generateWord, isPending: isGenerating } = useGenerateWord();
+  const { mutateAsync: generateWord, isPending: isGenerating } = useGenerateWord()
 
-  const { mutateAsync: scoreWord, isPending: isScoring, data: scoreData } = useScoreWord();
-  const currentWordScore = scoreData?.score ?? -1;
+  const { mutateAsync: scoreWord, isPending: isScoring, data: scoreData } = useScoreWord()
+  const currentWordScore = scoreData?.score ?? -1
   const canProceed =
     playerWord.trim() &&
     playerName.trim() &&
     scoreData?.score !== undefined &&
     scoreData?.score >= MINIMUM_WORD_SCORE &&
-    !isScoring;
+    !isScoring
 
-  const wordScoreTimeout = useRef<NodeJS.Timeout | null>(null);
+  const wordScoreTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const handleProceed = async () => {
     if (canProceed && scoreData?.score) {
-      onSetupComplete(playerWord.trim(), playerName.trim(), scoreData.score);
+      onSetupComplete(playerWord.trim(), playerName.trim(), scoreData.score)
     }
-  };
+  }
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       // replace spaces with empty string
-      const value = e.target.value.replace(/\s/g, '');
-      setPlayerWord(value);
+      const value = e.target.value.replace(/\s/g, '')
+      setPlayerWord(value)
       if (wordScoreTimeout.current) {
-        clearTimeout(wordScoreTimeout.current);
+        clearTimeout(wordScoreTimeout.current)
       }
       wordScoreTimeout.current = setTimeout(() => {
         if (value.trim()) {
-          scoreWord({ word: value.trim() });
+          scoreWord({ word: value.trim() })
         }
-      }, 1000);
+      }, 1000)
       return () => {
         if (wordScoreTimeout.current) {
-          clearTimeout(wordScoreTimeout.current);
+          clearTimeout(wordScoreTimeout.current)
         }
-      };
+      }
     },
     [scoreWord]
-  );
+  )
 
   const generateRandomWord = useCallback(async () => {
-    const { word } = await generateWord({ avoidWords: previousRandomWords });
-    setPreviousRandomWords(prev => [...prev, word]);
-    setPlayerWord(word);
-    scoreWord({ word });
-  }, [generateWord, previousRandomWords, scoreWord]);
+    const { word } = await generateWord({ avoidWords: previousRandomWords })
+    setPreviousRandomWords(prev => [...prev, word])
+    setPlayerWord(word)
+    scoreWord({ word })
+  }, [generateWord, previousRandomWords, scoreWord])
 
   return (
     <div className="space-y-8">
@@ -201,5 +201,5 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
         </div>
       </div>
     </div>
-  );
+  )
 }

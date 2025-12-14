@@ -1,8 +1,8 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
 /**
@@ -10,7 +10,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns true if image generation is allowed, false otherwise
  */
 export function isImageGenerationAllowed(): boolean {
-  return process.env.ALLOW_IMAGE_GENERATION === 'true';
+  return process.env.ALLOW_IMAGE_GENERATION === 'true'
 }
 
 /**
@@ -18,7 +18,10 @@ export function isImageGenerationAllowed(): boolean {
  * @returns string with the disable reason or a default message
  */
 export function getImageGenerationDisableReason(): string {
-  return process.env.DISABLE_IMAGE_GENERATION_REASON || 'Image generation is currently disabled. Please contact your administrator to enable this feature.';
+  return (
+    process.env.DISABLE_IMAGE_GENERATION_REASON ||
+    'Image generation is currently disabled. Please contact your administrator to enable this feature.'
+  )
 }
 
 /**
@@ -28,14 +31,14 @@ export function getImageGenerationDisableReason(): string {
  */
 export async function isImageGenerationAllowedClient(): Promise<boolean> {
   try {
-    const response = await fetch('/api/v1/image-generation-status');
+    const response = await fetch('/api/v1/image-generation-status')
     if (!response.ok) {
-      return false;
+      return false
     }
-    const data = await response.json();
-    return data.allowed === true;
+    const data = await response.json()
+    return data.allowed === true
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -45,13 +48,16 @@ export async function isImageGenerationAllowedClient(): Promise<boolean> {
  */
 export async function getImageGenerationDisableReasonClient(): Promise<string> {
   try {
-    const response = await fetch('/api/v1/image-generation-status');
+    const response = await fetch('/api/v1/image-generation-status')
     if (!response.ok) {
-      return 'Image generation is currently disabled. Please contact your administrator to enable this feature.';
+      return 'Image generation is currently disabled. Please contact your administrator to enable this feature.'
     }
-    const data = await response.json();
-    return data.disableReason || 'Image generation is currently disabled. Please contact your administrator to enable this feature.';
+    const data = await response.json()
+    return (
+      data.disableReason ||
+      'Image generation is currently disabled. Please contact your administrator to enable this feature.'
+    )
   } catch {
-    return 'Image generation is currently disabled. Please contact your administrator to enable this feature.';
+    return 'Image generation is currently disabled. Please contact your administrator to enable this feature.'
   }
 }

@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Textarea } from '../../../components/ui/textarea';
-import { Plus, Trash2, Vote, Wand2, Lightbulb, RefreshCw } from 'lucide-react';
-import { VotingCriteria } from '@/app/voters/types/voting';
-import { useGenerateRandomQuestion, useGenerateCriteria } from '../api/hooks';
+import { useState } from 'react'
+import { Button } from '../../../components/ui/button'
+import { Input } from '../../../components/ui/input'
+import { Label } from '../../../components/ui/label'
+import { Textarea } from '../../../components/ui/textarea'
+import { Plus, Trash2, Vote, Wand2, Lightbulb, RefreshCw } from 'lucide-react'
+import { VotingCriteria } from '@/app/voters/types/voting'
+import { useGenerateRandomQuestion, useGenerateCriteria } from '../api/hooks'
 
 interface VotingCriteriaProps {
-  criteria: VotingCriteria;
-  onCriteriaChange: (criteria: VotingCriteria) => void;
-  onNext: () => void;
-  onBack: () => void;
+  criteria: VotingCriteria
+  onCriteriaChange: (criteria: VotingCriteria) => void
+  onNext: () => void
+  onBack: () => void
 }
 
 export default function VotingCriteriaComponent({
@@ -22,37 +22,37 @@ export default function VotingCriteriaComponent({
   onNext,
   onBack,
 }: VotingCriteriaProps) {
-  const [newOption, setNewOption] = useState('');
-  const [generationTips, setGenerationTips] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState('')
+  const [generationTips, setGenerationTips] = useState<string[]>([])
 
-  const generateRandomQuestionMutation = useGenerateRandomQuestion();
-  const generateCriteriaMutation = useGenerateCriteria();
+  const generateRandomQuestionMutation = useGenerateRandomQuestion()
+  const generateCriteriaMutation = useGenerateCriteria()
 
   const addOption = () => {
     if (newOption.trim()) {
       onCriteriaChange({
         ...criteria,
         options: [...criteria.options, newOption.trim()],
-      });
-      setNewOption('');
+      })
+      setNewOption('')
     }
-  };
+  }
 
   const removeOption = (index: number) => {
     onCriteriaChange({
       ...criteria,
       options: criteria.options.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   const updateOption = (index: number, value: string) => {
-    const newOptions = [...criteria.options];
-    newOptions[index] = value;
+    const newOptions = [...criteria.options]
+    newOptions[index] = value
     onCriteriaChange({
       ...criteria,
       options: newOptions,
-    });
-  };
+    })
+  }
 
   const handleGenerateRandomQuestion = () => {
     generateRandomQuestionMutation.mutate(undefined, {
@@ -60,18 +60,18 @@ export default function VotingCriteriaComponent({
         onCriteriaChange({
           question: data.question,
           options: data.suggestedOptions || [],
-        });
-        setGenerationTips([]);
+        })
+        setGenerationTips([])
       },
       onError: error => {
-        console.error('Error generating random question:', error);
+        console.error('Error generating random question:', error)
       },
-    });
-  };
+    })
+  }
 
   const handleGenerateCriteria = () => {
     if (!criteria.question.trim()) {
-      return;
+      return
     }
 
     generateCriteriaMutation.mutate(
@@ -84,17 +84,17 @@ export default function VotingCriteriaComponent({
           onCriteriaChange({
             ...criteria,
             options: data.options,
-          });
-          setGenerationTips(data.tips || []);
+          })
+          setGenerationTips(data.tips || [])
         },
         onError: error => {
-          console.error('Error generating criteria:', error);
+          console.error('Error generating criteria:', error)
         },
       }
-    );
-  };
+    )
+  }
 
-  const canProceed = criteria.question.trim() && criteria.options.length >= 2;
+  const canProceed = criteria.question.trim() && criteria.options.length >= 2
 
   return (
     <div className="space-y-6">
@@ -241,5 +241,5 @@ export default function VotingCriteriaComponent({
         </Button>
       </div>
     </div>
-  );
+  )
 }

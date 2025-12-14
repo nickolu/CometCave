@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { type NextRequest, NextResponse } from 'next/server'
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { z } from 'zod'
 
 const VOTER_CATEGORIES = [
   'Dog Lovers',
@@ -54,7 +54,7 @@ const VOTER_CATEGORIES = [
   'Religious Communities',
   'Sports Fans',
   'Historians',
-];
+]
 
 const VoterSchema = z.object({
   name: z.string().describe('A unique, creative name for this voter type'),
@@ -69,41 +69,41 @@ const VoterSchema = z.object({
     temperature: z.number().min(0).max(2).describe('Temperature for AI responses (0-2)'),
     maxTokens: z.number().min(50).max(500).describe('Maximum tokens for AI responses (50-500)'),
   }),
-});
+})
 
 const VotersListSchema = z.object({
   voters: z.array(VoterSchema).length(10).describe('Array of exactly 10 different voter types'),
-});
+})
 
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
-    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
-    const headerApiKey = request.headers.get('x-openai-api-key');
+    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+    const headerApiKey = request.headers.get('x-openai-api-key')
 
     if (headerApiKey) {
-      apiKey = headerApiKey;
+      apiKey = headerApiKey
     }
 
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OpenAI API key is not configured. Please provide an API key.' },
         { status: 500 }
-      );
+      )
     }
 
     // Get existing voters from request body
-    const { existingVoters = [] } = await request.json();
+    const { existingVoters = [] } = await request.json()
 
     // Pick a random category
-    const randomCategory = VOTER_CATEGORIES[Math.floor(Math.random() * VOTER_CATEGORIES.length)];
+    const randomCategory = VOTER_CATEGORIES[Math.floor(Math.random() * VOTER_CATEGORIES.length)]
 
     // Create list of existing voter names to avoid duplicates
-    const existingVoterNames = existingVoters.map((voter: { name: string }) => voter.name);
+    const existingVoterNames = existingVoters.map((voter: { name: string }) => voter.name)
     const existingVotersText =
       existingVoters.length > 0
         ? `\n\nEXISTING VOTERS TO AVOID DUPLICATING:\n${existingVoterNames.join(', ')}\n\nMake sure the generated voters are as different as possible from the existing ones listed above.`
-        : '';
+        : ''
 
     const prompt = `Generate exactly 10 unique and diverse voter types within the category "${randomCategory}".${existingVotersText}
 
@@ -119,11 +119,11 @@ Ensure variety in:
 - Names (creative and descriptive)
 - Descriptions (different backgrounds, ages, perspectives)
 - Count numbers (mix of small and large groups)
-- Model configurations (different models, temperatures, token limits)`;
+- Model configurations (different models, temperatures, token limits)`
 
     const openaiClient = createOpenAI({
       apiKey,
-    });
+    })
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
@@ -131,24 +131,24 @@ Ensure variety in:
       prompt,
       temperature: 0.8, // Higher temperature for more creativity
       maxTokens: 4000,
-    });
+    })
 
     // Pick one random voter from the 50 generated
     const randomVoter =
-      result.object.voters[Math.floor(Math.random() * result.object.voters.length)];
+      result.object.voters[Math.floor(Math.random() * result.object.voters.length)]
 
     // Add a unique ID and return the voter
     const voterWithId = {
       ...randomVoter,
       id: Date.now().toString(),
-    };
+    }
 
     return NextResponse.json({
       voter: voterWithId,
       category: randomCategory,
-    });
+    })
   } catch (error) {
-    console.error('Error generating random voter:', error);
+    console.error('Error generating random voter:', error)
 
     // Provide more specific error messages
     if (error instanceof Error) {
@@ -156,19 +156,19 @@ Ensure variety in:
         return NextResponse.json(
           { error: 'OpenAI API key is invalid or missing. Please check your API key.' },
           { status: 401 }
-        );
+        )
       }
       if (error.message.includes('quota')) {
         return NextResponse.json(
           { error: 'OpenAI API quota exceeded. Please check your OpenAI account.' },
           { status: 429 }
-        );
+        )
       }
     }
 
     return NextResponse.json(
       { error: 'Failed to generate random voter. Please try again.' },
       { status: 500 }
-    );
+    )
   }
 }

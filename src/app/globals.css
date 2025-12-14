@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: "Space Grotesk", Arial, sans-serif;
+  font-family: 'Space Grotesk', Arial, sans-serif;
 }
 
 @layer utilities {

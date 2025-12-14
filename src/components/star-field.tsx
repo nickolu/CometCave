@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef } from 'react'
 
 export function StarField() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -9,7 +9,7 @@ export function StarField() {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext('2d')
     if (!ctx) return
 
     // Set canvas dimensions
@@ -19,7 +19,7 @@ export function StarField() {
     }
 
     resizeCanvas()
-    window.addEventListener("resize", resizeCanvas)
+    window.addEventListener('resize', resizeCanvas)
 
     // Create stars
     const stars: { x: number; y: number; radius: number; opacity: number; speed: number }[] = []
@@ -54,7 +54,7 @@ export function StarField() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Draw stars
-      stars.forEach((star) => {
+      stars.forEach(star => {
         ctx.beginPath()
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
         ctx.fillStyle = `rgba(255, 255, 240, ${star.opacity})`
@@ -72,7 +72,7 @@ export function StarField() {
     animate()
 
     return () => {
-      window.removeEventListener("resize", resizeCanvas)
+      window.removeEventListener('resize', resizeCanvas)
       cancelAnimationFrame(animationFrameId)
     }
   }, [])

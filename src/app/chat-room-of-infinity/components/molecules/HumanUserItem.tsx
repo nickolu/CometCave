@@ -1,25 +1,25 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { ListItemText, ListItemAvatar, Avatar, Box, Tooltip } from '@mui/material';
-import { green, orange, red, grey } from '@mui/material/colors';
-import { useStore } from '../../store';
-import { UserListItem } from '../atoms/UserListItem';
-import UserProfileDialog from './UserProfileDialog';
+import { useState } from 'react'
+import { ListItemText, ListItemAvatar, Avatar, Box, Tooltip } from '@mui/material'
+import { green, orange, red, grey } from '@mui/material/colors'
+import { useStore } from '../../store'
+import { UserListItem } from '../atoms/UserListItem'
+import UserProfileDialog from './UserProfileDialog'
 
 export default function HumanUserItem() {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const humanUser = useStore((state) => state.userList.humanUser);
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const humanUser = useStore(state => state.userList.humanUser)
 
   return (
     <>
-      <UserListItem 
+      <UserListItem
         onClick={() => setIsProfileOpen(true)}
         sx={{
           cursor: 'pointer',
           '&:hover': {
-            backgroundColor: 'action.hover'
-          }
+            backgroundColor: 'action.hover',
+          },
         }}
       >
         <ListItemAvatar>
@@ -36,16 +36,13 @@ export default function HumanUserItem() {
                 online: green[500],
                 away: orange[500],
                 busy: red[500],
-                offline: grey[500]
+                offline: grey[500],
               }[humanUser.status],
             }}
           />
         </Tooltip>
       </UserListItem>
-      <UserProfileDialog
-        open={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
+      <UserProfileDialog open={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>
-  );
+  )
 }

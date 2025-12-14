@@ -1,15 +1,15 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { NextResponse } from 'next/server';
-import { CharacterStatsSchema } from '../../types';
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
+import { NextResponse } from 'next/server'
+import { CharacterStatsSchema } from '../../types'
 
 export async function POST(request: Request) {
   try {
-    const { name, description } = await request.json();
+    const { name, description } = await request.json()
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-    });
+    })
 
     const result = await generateObject({
       model: openaiClient('gpt-4o-mini'),
@@ -85,11 +85,11 @@ Stats to evaluate:
 Consider the character's description carefully and rate them realistically. A normal human would typically have 21-40 in most stats, while cosmic beings might have 81-100.`,
       temperature: 0.5, // Lower temperature for more consistent stat generation
       maxTokens: 150,
-    });
+    })
 
-    return NextResponse.json({ stats: result.object });
+    return NextResponse.json({ stats: result.object })
   } catch (error) {
-    console.error('Error generating character stats:', error);
-    return NextResponse.json({ error: 'Failed to generate character stats' }, { status: 500 });
+    console.error('Error generating character stats:', error)
+    return NextResponse.json({ error: 'Failed to generate character stats' }, { status: 500 })
   }
 }

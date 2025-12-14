@@ -1,14 +1,14 @@
-'use client';
+'use client'
 
-import { useWorkflow } from './components/useWorkflow';
-import { useWhowouldwininatorState } from './components/useWhowouldwininatorState';
-import { Step01DefineCharacters } from './components/step01-define-characters';
-import { Step02ReviewCharacters } from './components/step02-review-characters';
-import { Step03DefineScenario } from './components/step03-define-scenario';
-import { Step04ViewResults } from './components/step04-view-results';
+import { useWorkflow } from './components/useWorkflow'
+import { useWhowouldwininatorState } from './components/useWhowouldwininatorState'
+import { Step01DefineCharacters } from './components/step01-define-characters'
+import { Step02ReviewCharacters } from './components/step02-review-characters'
+import { Step03DefineScenario } from './components/step03-define-scenario'
+import { Step04ViewResults } from './components/step04-view-results'
 
 export default function Whowouldwininator() {
-  const { currentStep, nextStep, previousStep } = useWorkflow();
+  const { currentStep, nextStep, previousStep } = useWorkflow()
   const {
     candidate1Name,
     candidate2Name,
@@ -41,7 +41,7 @@ export default function Whowouldwininator() {
     generateContestResults,
     generateContestStory,
     generateStorySectionImage,
-  } = useWhowouldwininatorState();
+  } = useWhowouldwininatorState()
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -116,5 +116,5 @@ export default function Whowouldwininator() {
         )}
       </div>
     </div>
-  );
+  )
 }

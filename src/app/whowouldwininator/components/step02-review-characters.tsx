@@ -1,75 +1,75 @@
-'use client';
+'use client'
 
-import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
-import { Slider } from '@/components/ui/slider';
-import { Loader2, Edit2, Save } from 'lucide-react';
-import Image from 'next/image';
-import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils';
+import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Progress } from '@/components/ui/progress'
+import { Slider } from '@/components/ui/slider'
+import { Loader2, Edit2, Save } from 'lucide-react'
+import Image from 'next/image'
+import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils'
 
 interface CharacterStats {
-  strength: number;
-  speed: number;
-  durability: number;
-  intelligence: number;
-  specialAbilities: number;
-  fighting: number;
+  strength: number
+  speed: number
+  durability: number
+  intelligence: number
+  specialAbilities: number
+  fighting: number
 }
 
 interface CharacterDetails {
-  backstory: string;
-  powers: string[];
-  stats: CharacterStats;
-  feats: string[];
+  backstory: string
+  powers: string[]
+  stats: CharacterStats
+  feats: string[]
   portrait: {
-    imageUrl: string;
-    altText: string;
-    prompt: string;
-  } | null;
+    imageUrl: string
+    altText: string
+    prompt: string
+  } | null
 }
 
 interface CharacterDetailsLoading {
-  backstory: boolean;
-  powers: boolean;
-  stats: boolean;
-  feats: boolean;
-  portrait: boolean;
+  backstory: boolean
+  powers: boolean
+  stats: boolean
+  feats: boolean
+  portrait: boolean
 }
 
 // Simple card components
 const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
   <div className={`rounded-lg border shadow-sm ${className}`}>{children}</div>
-);
+)
 
 const CardHeader = ({
   children,
   className = '',
 }: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
+  children: React.ReactNode
+  className?: string
+}) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>
 
 const CardTitle = ({
   children,
   className = '',
 }: {
-  children: React.ReactNode;
-  className?: string;
+  children: React.ReactNode
+  className?: string
 }) => (
   <div className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>
     {children}
   </div>
-);
+)
 
 const CardContent = ({
   children,
   className = '',
 }: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+  children: React.ReactNode
+  className?: string
+}) => <div className={`p-6 pt-0 ${className}`}>{children}</div>
 
 export function Step02ReviewCharacters({
   candidate1Name,
@@ -85,129 +85,129 @@ export function Step02ReviewCharacters({
   onNext,
   onPrevious,
 }: {
-  candidate1Name: string;
-  candidate2Name: string;
-  candidate1Description: string;
-  candidate2Description: string;
-  candidate1Details: Partial<CharacterDetails>;
-  candidate2Details: Partial<CharacterDetails>;
-  candidate1DetailsLoading: CharacterDetailsLoading;
-  candidate2DetailsLoading: CharacterDetailsLoading;
+  candidate1Name: string
+  candidate2Name: string
+  candidate1Description: string
+  candidate2Description: string
+  candidate1Details: Partial<CharacterDetails>
+  candidate2Details: Partial<CharacterDetails>
+  candidate1DetailsLoading: CharacterDetailsLoading
+  candidate2DetailsLoading: CharacterDetailsLoading
   generateCharacterDetail: (
     candidateNumber: 1 | 2,
     detailType: keyof CharacterDetails,
     name: string,
     description: string
-  ) => Promise<void>;
+  ) => Promise<void>
   updateCharacterDetail: (
     candidateNumber: 1 | 2,
     detailType: keyof CharacterDetails,
     value: CharacterDetails[keyof CharacterDetails]
-  ) => void;
-  onNext: () => void;
-  onPrevious: () => void;
+  ) => void
+  onNext: () => void
+  onPrevious: () => void
 }) {
-  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true);
-  const [disableReason, setDisableReason] = useState('');
+  const [imageGenerationAllowed, setImageGenerationAllowed] = useState(true)
+  const [disableReason, setDisableReason] = useState('')
 
   // Check if image generation is allowed
   useEffect(() => {
-    isImageGenerationAllowedClient().then(setImageGenerationAllowed);
-    getImageGenerationDisableReasonClient().then(setDisableReason);
-  }, []);
+    isImageGenerationAllowedClient().then(setImageGenerationAllowed)
+    getImageGenerationDisableReasonClient().then(setDisableReason)
+  }, [])
   const [editingFields, setEditingFields] = useState<{
-    candidate1: Set<keyof CharacterDetails>;
-    candidate2: Set<keyof CharacterDetails>;
+    candidate1: Set<keyof CharacterDetails>
+    candidate2: Set<keyof CharacterDetails>
   }>({
     candidate1: new Set(),
     candidate2: new Set(),
-  });
+  })
 
   const [expandedBackstories, setExpandedBackstories] = useState<{
-    candidate1: boolean;
-    candidate2: boolean;
+    candidate1: boolean
+    candidate2: boolean
   }>({
     candidate1: false,
     candidate2: false,
-  });
+  })
 
   // Track generation initiation to prevent duplicates
   const generationInitiated = useRef<{
-    candidate1: Set<keyof CharacterDetails>;
-    candidate2: Set<keyof CharacterDetails>;
+    candidate1: Set<keyof CharacterDetails>
+    candidate2: Set<keyof CharacterDetails>
   }>({
     candidate1: new Set(),
     candidate2: new Set(),
-  });
+  })
 
   // Auto-generate character details when component mounts (excluding portrait)
   useEffect(() => {
     if (candidate1Name && candidate1Description) {
-      const detailTypes: Array<keyof CharacterDetails> = ['backstory', 'powers', 'stats', 'feats'];
+      const detailTypes: Array<keyof CharacterDetails> = ['backstory', 'powers', 'stats', 'feats']
 
       detailTypes.forEach(detailType => {
         if (!generationInitiated.current.candidate1.has(detailType)) {
-          generationInitiated.current.candidate1.add(detailType);
-          generateCharacterDetail(1, detailType, candidate1Name, candidate1Description);
+          generationInitiated.current.candidate1.add(detailType)
+          generateCharacterDetail(1, detailType, candidate1Name, candidate1Description)
         }
-      });
+      })
     } else {
       // Reset generation tracking when character changes
-      generationInitiated.current.candidate1.clear();
+      generationInitiated.current.candidate1.clear()
     }
-  }, [candidate1Name, candidate1Description, generateCharacterDetail]);
+  }, [candidate1Name, candidate1Description, generateCharacterDetail])
 
   useEffect(() => {
     if (candidate2Name && candidate2Description) {
-      const detailTypes: Array<keyof CharacterDetails> = ['backstory', 'powers', 'stats', 'feats'];
+      const detailTypes: Array<keyof CharacterDetails> = ['backstory', 'powers', 'stats', 'feats']
 
       detailTypes.forEach(detailType => {
         if (!generationInitiated.current.candidate2.has(detailType)) {
-          generationInitiated.current.candidate2.add(detailType);
-          generateCharacterDetail(2, detailType, candidate2Name, candidate2Description);
+          generationInitiated.current.candidate2.add(detailType)
+          generateCharacterDetail(2, detailType, candidate2Name, candidate2Description)
         }
-      });
+      })
     } else {
       // Reset generation tracking when character changes
-      generationInitiated.current.candidate2.clear();
+      generationInitiated.current.candidate2.clear()
     }
-  }, [candidate2Name, candidate2Description, generateCharacterDetail]);
+  }, [candidate2Name, candidate2Description, generateCharacterDetail])
 
   const toggleEdit = (candidateNumber: 1 | 2, field: keyof CharacterDetails) => {
-    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2';
+    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2'
     setEditingFields(prev => {
-      const newSet = new Set(prev[candidateKey]);
+      const newSet = new Set(prev[candidateKey])
       if (newSet.has(field)) {
-        newSet.delete(field);
+        newSet.delete(field)
       } else {
-        newSet.add(field);
+        newSet.add(field)
       }
-      return { ...prev, [candidateKey]: newSet };
-    });
-  };
+      return { ...prev, [candidateKey]: newSet }
+    })
+  }
 
   const toggleBackstoryExpansion = (candidateNumber: 1 | 2) => {
-    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2';
+    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2'
     setExpandedBackstories(prev => ({
       ...prev,
       [candidateKey]: !prev[candidateKey],
-    }));
-  };
+    }))
+  }
 
   const truncateText = (text: string, maxLength: number = 150) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  }
 
   const handleGeneratePortrait = (candidateNumber: 1 | 2) => {
-    const name = candidateNumber === 1 ? candidate1Name : candidate2Name;
-    const description = candidateNumber === 1 ? candidate1Description : candidate2Description;
+    const name = candidateNumber === 1 ? candidate1Name : candidate2Name
+    const description = candidateNumber === 1 ? candidate1Description : candidate2Description
 
     if (!generationInitiated.current[`candidate${candidateNumber}`].has('portrait')) {
-      generationInitiated.current[`candidate${candidateNumber}`].add('portrait');
-      generateCharacterDetail(candidateNumber, 'portrait', name, description);
+      generationInitiated.current[`candidate${candidateNumber}`].add('portrait')
+      generateCharacterDetail(candidateNumber, 'portrait', name, description)
     }
-  };
+  }
 
   const StatBar = ({ label, value, max = 100 }: { label: string; value: number; max?: number }) => (
     <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export function Step02ReviewCharacters({
       <Progress value={(value / max) * 100} className="flex-1 text-space-purple" />
       <span className="text-sm w-8">{value}</span>
     </div>
-  );
+  )
 
   const CharacterCard = ({
     candidateNumber,
@@ -224,14 +224,14 @@ export function Step02ReviewCharacters({
     details,
     loading,
   }: {
-    candidateNumber: 1 | 2;
-    name: string;
-    description: string;
-    details: Partial<CharacterDetails>;
-    loading: CharacterDetailsLoading;
+    candidateNumber: 1 | 2
+    name: string
+    description: string
+    details: Partial<CharacterDetails>
+    loading: CharacterDetailsLoading
   }) => {
-    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2';
-    const isEditing = (field: keyof CharacterDetails) => editingFields[candidateKey].has(field);
+    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2'
+    const isEditing = (field: keyof CharacterDetails) => editingFields[candidateKey].has(field)
 
     return (
       <Card className="bg-space-dark border-space-purple/30">
@@ -412,8 +412,8 @@ export function Step02ReviewCharacters({
                           const updatedStats = {
                             ...details.stats,
                             [statName]: newValue,
-                          } as CharacterStats;
-                          updateCharacterDetail(candidateNumber, 'stats', updatedStats);
+                          } as CharacterStats
+                          updateCharacterDetail(candidateNumber, 'stats', updatedStats)
                         }}
                         max={100}
                         min={1}
@@ -483,8 +483,8 @@ export function Step02ReviewCharacters({
           </div>
         </CardContent>
       </Card>
-    );
-  };
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -551,5 +551,5 @@ export function Step02ReviewCharacters({
         </Button>
       </div>
     </div>
-  );
+  )
 }

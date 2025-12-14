@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Swords,
   MapPin,
@@ -11,14 +11,14 @@ import {
   RotateCcw,
   RefreshCcw,
   Loader2,
-} from 'lucide-react';
+} from 'lucide-react'
 
 interface BattleScenario {
-  setting: string;
-  rules: string;
-  obstacles: string;
-  limitations: string;
-  additionalContext: string;
+  setting: string
+  rules: string
+  obstacles: string
+  limitations: string
+  additionalContext: string
 }
 
 // Simple card components (reusing from step02)
@@ -26,21 +26,21 @@ const SimpleCard = ({
   children,
   className = '',
 }: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`rounded-lg border shadow-sm ${className}`}>{children}</div>;
+  children: React.ReactNode
+  className?: string
+}) => <div className={`rounded-lg border shadow-sm ${className}`}>{children}</div>
 
 const SimpleCardHeader = ({ children }: { children: React.ReactNode }) => (
   <div className="flex flex-col space-y-1.5 p-6">{children}</div>
-);
+)
 
 const SimpleCardTitle = ({ children }: { children: React.ReactNode }) => (
   <div className="text-xl font-semibold leading-none tracking-tight">{children}</div>
-);
+)
 
 const SimpleCardContent = ({ children }: { children: React.ReactNode }) => (
   <div className="p-6 pt-0">{children}</div>
-);
+)
 
 export function Step03DefineScenario({
   candidate1Name,
@@ -52,35 +52,35 @@ export function Step03DefineScenario({
   onNext,
   onPrevious,
 }: {
-  candidate1Name: string;
-  candidate2Name: string;
-  battleScenario: BattleScenario;
-  updateBattleScenario: (field: keyof BattleScenario, value: string) => void;
-  generateRandomScenario: () => Promise<void>;
-  isGeneratingScenario: boolean;
-  onNext: () => void;
-  onPrevious: () => void;
+  candidate1Name: string
+  candidate2Name: string
+  battleScenario: BattleScenario
+  updateBattleScenario: (field: keyof BattleScenario, value: string) => void
+  generateRandomScenario: () => Promise<void>
+  isGeneratingScenario: boolean
+  onNext: () => void
+  onPrevious: () => void
 }) {
   const resetToDefaults = () => {
-    updateBattleScenario('setting', 'Open field with no obstacles');
+    updateBattleScenario('setting', 'Open field with no obstacles')
     updateBattleScenario(
       'rules',
       'Standard combat, fight until one character is knocked out or unable to continue'
-    );
-    updateBattleScenario('obstacles', '');
-    updateBattleScenario('limitations', '');
+    )
+    updateBattleScenario('obstacles', '')
+    updateBattleScenario('limitations', '')
     updateBattleScenario(
       'additionalContext',
       'Both characters are at peak abilities from their respective canon'
-    );
-  };
+    )
+  }
 
   const hasCustomScenario =
     battleScenario.setting ||
     battleScenario.rules ||
     battleScenario.obstacles ||
     battleScenario.limitations ||
-    battleScenario.additionalContext;
+    battleScenario.additionalContext
 
   return (
     <div className="space-y-6">
@@ -306,5 +306,5 @@ export function Step03DefineScenario({
         </div>
       </div>
     </div>
-  );
+  )
 }

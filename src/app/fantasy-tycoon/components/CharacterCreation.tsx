@@ -1,25 +1,25 @@
-'use client';
-import React from 'react';
-import { useCharacterCreation } from '../hooks/useCharacterCreation';
-import { useCallback } from 'react';
+'use client'
+import React from 'react'
+import { useCharacterCreation } from '../hooks/useCharacterCreation'
+import { useCallback } from 'react'
 
-import { FantasyCharacter } from '../models/types';
+import { FantasyCharacter } from '../models/types'
 
 export default function CharacterCreation({
   onComplete,
 }: {
-  onComplete?: (character: Partial<FantasyCharacter>) => void;
+  onComplete?: (character: Partial<FantasyCharacter>) => void
 }) {
-  const { character, updateCharacter, completeCreation } = useCharacterCreation();
+  const { character, updateCharacter, completeCreation } = useCharacterCreation()
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      completeCreation();
-      onComplete?.(character);
+      e.preventDefault()
+      completeCreation()
+      onComplete?.(character)
     },
     [completeCreation, character, onComplete]
-  );
+  )
 
   return (
     <form className="space-y-6 p-1" onSubmit={handleSubmit}>
@@ -64,5 +64,5 @@ export default function CharacterCreation({
         Create Character
       </button>
     </form>
-  );
+  )
 }
