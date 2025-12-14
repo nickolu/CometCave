@@ -1,13 +1,15 @@
 'use client';
-import { GamePlayView } from './game-views/game-play';
+import { GamePlayView } from './game-views/gameplay';
 import { BlindSelectionView } from './game-views/blind-selection';
 import { PackOpenView } from './game-views/pack-open';
 import { ShopView } from './game-views/shop';
 import { useGameState } from './useGameState';
 import { MainMenuView } from './game-views/main-menu';
+import { useGameEvents } from './events/use-game-events';
 
 export default function DailyCardGamePage() {
   const { game } = useGameState();
+  useGameEvents();
 
   switch (game.gamePhase) {
     case 'mainMenu':

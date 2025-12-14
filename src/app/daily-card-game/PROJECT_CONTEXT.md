@@ -85,9 +85,9 @@ Minimal POC EffectContext:
 
 Effects must only interact through this context.
 
-Example Joker Effect
+Example JokerDefinition Effect
 
-Joker: +10 chips for every Heart card scored
+JokerDefinition: +10 chips for every Heart card scored
 
 Effect:
 

@@ -1,3 +1,4 @@
+import { pokerDeck } from './decks/poker-deck';
 import {
   fiveOfAKindHand,
   flushHand,
@@ -10,10 +11,10 @@ import {
   straightHand,
   threeOfAKindHand,
   twoPairHand,
-} from './constants/hands';
-import type { GameState, Hand, HandState } from './types';
+} from './hands';
+import type { GameState, PokerHand, HandState } from '@/app/daily-card-game/domain/types';
 
-const getDefaultHandState = (hand: Hand): HandState => ({
+const getDefaultHandState = (hand: PokerHand): HandState => ({
   timesPlayed: 0,
   level: 0,
   hand,
@@ -24,8 +25,8 @@ export const defaultGameState: GameState = {
   gamePlayState: {
     jokers: [],
     dealtCards: [],
-    selectedCardIndices: [],
-    remainingDeck: [],
+    selectedCardIds: [],
+    remainingDeck: pokerDeck,
     score: {
       chips: 0,
       mult: 0,
@@ -41,7 +42,7 @@ export const defaultGameState: GameState = {
   ouchersUsed: [],
   consumables: [],
   discardsPlayed: 0,
-  fullDeck: [],
+  fullDeck: pokerDeck,
   pokerHands: {
     highCard: getDefaultHandState(highCardHand),
     pair: getDefaultHandState(pairHand),

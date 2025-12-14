@@ -1,20 +1,22 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Hand } from '@/app/daily-card-game/components/gameplay/hand';
 import { useGameState } from '@/app/daily-card-game/useGameState';
+import { Button } from '@/components/ui/button';
 
-export function PackOpenView() {
+export function GamePlayView() {
   const { setGamePhase } = useGameState();
   return (
     <div>
-      <h1>Pack Open</h1>
+      <h1>Game Play</h1>
       <Button
         onClick={() => {
           setGamePhase('shop');
         }}
       >
-        Back
+        End Game
       </Button>
+      <Hand />
     </div>
   );
 }

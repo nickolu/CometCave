@@ -1,17 +1,19 @@
-import { useGameState } from '../useGameState';
+'use client';
+
+import { eventEmitter } from '@/app/daily-card-game/events/event-emitter';
+import { Button } from '@/components/ui/button';
 
 export function MainMenuView() {
-  const { setGamePhase } = useGameState();
   return (
     <div>
       <h1>Main Menu</h1>
-      <button
+      <Button
         onClick={() => {
-          setGamePhase('blindSelection');
+          eventEmitter.emit({ type: 'ROUND_START' });
         }}
       >
         Start Game
-      </button>
+      </Button>
     </div>
   );
 }

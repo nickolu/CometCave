@@ -1,7 +1,7 @@
 export interface GameState {
   consumables: Consumable[];
   discardsPlayed: number;
-  fullDeck: Card[];
+  fullDeck: PlayingCard[];
   gamePhase: GamePhase;
   gamePlayState: GamePlayState;
   handsPlayed: number;
@@ -9,31 +9,35 @@ export interface GameState {
   maxJokers: number;
   money: number;
   pokerHands: PokerHandsState;
-  rounds: RoundState[];
+  rounds: RoundDefinition[];
   shopState: ShopState;
   stake: Stake;
-  tags: Tag[];
-  ouchersUsed: Voucher[];
+  tags: TagDefinition[];
+  ouchersUsed: VoucherDefinition[];
 }
 
 export type GamePhase = 'mainMenu' | 'shop' | 'blindSelection' | 'gameplay' | 'packOpening';
 
 export type Consumable = Celestial | Arcane;
 
-export interface Card {
-  value: number; // 2-11
-  faceName?: 'Jack' | 'Queen' | 'King';
+export type CardValue = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 'J' | 'Q' | 'K' | 'A';
+
+export interface PlayingCard {
+  value: CardValue;
+  id: string;
+  baseChips: number;
   suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
   isHolographic: boolean;
   isFoil: boolean;
   modifier?: 'bonus' | 'mult' | 'gold' | 'glass';
+  faceUp: boolean;
 }
 
 export interface GamePlayState {
-  jokers: Joker[];
-  dealtCards: Card[];
-  selectedCardIndices: number[];
-  remainingDeck: Card[];
+  jokers: JokerDefinition[];
+  dealtCards: PlayingCard[];
+  selectedCardIds: string[];
+  remainingDeck: PlayingCard[];
   score: ScoreState;
   remainingHands: number;
   remainingDiscards: number;
@@ -58,16 +62,17 @@ export interface PokerHandsState {
   fiveOfAKind: HandState;
 }
 
-export interface RoundState {
+export interface RoundDefinition {
+  baseChips: number;
   smallBlind: SmallBlindState;
   bigBlind: BigBlindState;
-  bossBlind: BossBlindState;
+  bossBlind: BossBlindDefinition;
 }
 
 export interface ShopState {
   cardsForSale: BuyableCard[];
   packsForSale: Pack[];
-  vouchersForSale: Voucher[];
+  vouchersForSale: VoucherDefinition[];
   rerollsUsed: number;
   rerollPrice: number;
   modifiers: ShopStateModifiers;
@@ -84,12 +89,12 @@ export interface Stake {
 }
 
 export interface BuyableCard {
-  type: Card | Celestial | Arcane | Joker;
+  type: PlayingCard | Celestial | Arcane | JokerDefinition;
   price: number;
 }
 
 export interface Pack {
-  card: Celestial | Arcane | Joker | Card;
+  card: Celestial | Arcane | JokerDefinition | PlayingCard;
   type: 'jumbo' | 'normal' | 'mega';
   price: number;
 }
@@ -102,33 +107,42 @@ export interface ShopStateModifiers {
 
 export interface SmallBlindState {
   status: 'completed' | 'skipped' | 'notStarted' | 'inProgress';
+  anteMultiplier: 1;
 }
 
 export interface BigBlindState {
   status: 'completed' | 'skipped' | 'notStarted' | 'inProgress';
+  anteMultiplier: 1.5;
 }
 
-export interface BossBlindState {
+export interface BossBlindDefinition {
   status: 'completed' | 'notStarted' | 'inProgress'; // boss blind cannot be skipped
+  anteMultiplier: 1 | 2 | 4 | 6;
+  winnings: number;
+  name: string;
+  description: string;
+  image: string;
+  effects: Effect[];
+  minimumAnte: number;
 }
 
-export interface Hand {
+export interface PokerHand {
   baseChips: number;
   multIncreasePerLevel: number;
   chipIncreasePerLevel: number;
   baseMult: number;
   isSecret: boolean;
-  isHand(cards: Card[]): [boolean, Card[]];
+  isHand(cards: PlayingCard[]): [boolean, PlayingCard[]];
 }
 
 export interface HandState {
   timesPlayed: number;
   level: number;
-  hand: Hand;
+  hand: PokerHand;
 }
 
 export interface Celestial {
-  hand: Hand;
+  hand: PokerHand;
 }
 
 export interface Arcane {
@@ -139,7 +153,7 @@ export interface ArcaneRule {
   name: string;
 }
 
-export interface Joker {
+export interface JokerDefinition {
   effects: Effect[];
   flags: JokerFlags;
 }
@@ -153,12 +167,67 @@ export interface JokerFlags {
   isNegative: boolean;
 }
 
-export interface Tag {
+export interface TagDefinition {
   name: string;
 }
 
-export interface Voucher {
+export interface VoucherDefinition {
   name: string;
+}
+
+export type GameEvent =
+  | HandDealtEvent
+  | HandScoringStartEvent
+  | HandScoringEndEvent
+  | CardScoredEvent
+  | CardSelectedEvent
+  | CardDeselectedEvent
+  | RoundStartEvent
+  | RoundEndEvent;
+
+export type HandDealtEvent = {
+  type: 'HAND_DEALT';
+};
+
+export type HandScoringStartEvent = {
+  type: 'HAND_SCORING_START';
+};
+
+export type HandScoringEndEvent = {
+  type: 'HAND_SCORING_END';
+};
+
+export type CardScoredEvent = {
+  type: 'CARD_SCORED';
+};
+
+export type RoundStartEvent = {
+  type: 'ROUND_START';
+};
+
+export type RoundEndEvent = {
+  type: 'ROUND_END';
+};
+
+export type CardSelectedEvent = {
+  type: 'CARD_SELECTED';
+  id: string;
+};
+
+export type CardDeselectedEvent = {
+  type: 'CARD_DESELECTED';
+  id: string;
+};
+
+export interface EffectContext {
+  event: GameEvent;
+  game: GameState;
+  score: ScoreState;
+  playedCards?: PlayingCard[];
+  scoredCards?: PlayingCard[];
+  jokers?: JokerDefinition[];
+  round?: RoundDefinition;
+  bossBlind?: BossBlindDefinition;
 }
 
 export interface Effect {
@@ -166,51 +235,4 @@ export interface Effect {
   priority: number;
   condition?: (ctx: EffectContext) => boolean;
   apply: (ctx: EffectContext) => void;
-}
-
-export type GameEvent =
-  | HandScoringStartEvent
-  | CardScoredEvent
-  | HandScoringEndEvent
-  | RoundStartEvent
-  | RoundEndEvent
-  | JokerTriggeredEvent;
-
-export interface HandScoringStartEvent {
-  type: 'HAND_SCORING_START';
-  handCards: Card[];
-  score: ScoreState;
-}
-
-export interface CardScoredEvent {
-  type: 'CARD_SCORED';
-  card: Card;
-  score: ScoreState;
-}
-
-export interface HandScoringEndEvent {
-  type: 'HAND_SCORING_END';
-  score: ScoreState;
-}
-
-export interface RoundStartEvent {
-  type: 'ROUND_START';
-  round: number;
-}
-
-export interface RoundEndEvent {
-  type: 'ROUND_END';
-  round: number;
-}
-
-export interface JokerTriggeredEvent {
-  type: 'JOKER_TRIGGERED';
-  joker: Joker;
-  score: ScoreState;
-}
-
-export interface EffectContext {
-  event: GameEvent;
-  game: GameState;
-  score: ScoreState;
 }
