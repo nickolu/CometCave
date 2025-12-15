@@ -1,5 +1,3 @@
-import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-
 export interface PokerHandsState {
   highCard: HandState
   pair: HandState
