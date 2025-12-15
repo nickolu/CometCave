@@ -1,10 +1,12 @@
 'use client'
 
+import { Avatar, Box, ListItemAvatar, ListItemText, Tooltip } from '@mui/material'
+import { green, grey, orange, red } from '@mui/material/colors'
 import { useState } from 'react'
-import { ListItemText, ListItemAvatar, Avatar, Box, Tooltip } from '@mui/material'
-import { green, orange, red, grey } from '@mui/material/colors'
+
 import { useStore } from '../../store'
 import { UserListItem } from '../atoms/UserListItem'
+
 import UserProfileDialog from './UserProfileDialog'
 
 export default function HumanUserItem() {

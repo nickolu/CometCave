@@ -1,23 +1,24 @@
 'use client'
 
-import { useState, FormEvent, useEffect } from 'react'
+import { Close as CloseIcon } from '@mui/icons-material'
 import {
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   Avatar,
-  Button,
   Box,
-  TextField,
-  Typography,
+  Button,
   Collapse,
   Dialog,
-  DialogTitle,
   DialogContent,
+  DialogTitle,
   IconButton,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  TextField,
+  Typography,
 } from '@mui/material'
-import { Close as CloseIcon } from '@mui/icons-material'
+import { FormEvent, useEffect, useState } from 'react'
+
 import { useStore } from '../../store'
 import { Character } from '../../types'
 

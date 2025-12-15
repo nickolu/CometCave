@@ -1,10 +1,12 @@
 'use client'
 
+import { Play } from 'lucide-react'
 import { useState } from 'react'
+
+import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play } from 'lucide-react'
-import type { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting'
+
 import { useCastVote } from '../api/hooks'
 
 interface VotingExecutionProps {

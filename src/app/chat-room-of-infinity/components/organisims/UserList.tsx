@@ -1,12 +1,13 @@
 'use client'
 
-import { Box, List, IconButton, Typography, Tooltip, Button } from '@mui/material'
-import { ExpandLess, ExpandMore, PersonAdd, Close } from '@mui/icons-material'
+import { Close, ExpandLess, ExpandMore, PersonAdd } from '@mui/icons-material'
+import { Box, Button, IconButton, List, Tooltip, Typography } from '@mui/material'
+
 import { useStore } from '../../store'
+import { Character } from '../../types'
 import CharacterUserItem from '../molecules/CharacterUserItem'
 import HumanUserItem from '../molecules/HumanUserItem'
 import UserSelector from '../molecules/UserSelector'
-import { Character } from '../../types'
 
 const sx = {
   container: {

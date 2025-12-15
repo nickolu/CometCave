@@ -1,6 +1,8 @@
 import OpenAI from 'openai'
-import { AIService, AIServiceConfig, Message, SafetyCheckResponse } from './types'
+
 import { Character } from '../../types'
+
+import { AIService, AIServiceConfig, Message, SafetyCheckResponse } from './types'
 
 export class OpenAIService implements AIService {
   private client: OpenAI

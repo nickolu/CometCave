@@ -1,7 +1,8 @@
 'use client'
 
-import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '../models/types'
 import { useEffect, useRef, useState } from 'react'
+
+import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '../models/types'
 
 interface ResourceDeltaDisplayProps {
   resourceDelta: FantasyStoryEvent['resourceDelta']

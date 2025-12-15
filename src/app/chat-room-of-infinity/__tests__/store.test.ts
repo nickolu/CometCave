@@ -1,4 +1,5 @@
 import { act } from 'react'
+
 import { useStore } from '../store'
 
 describe('Store Actions & State', () => {

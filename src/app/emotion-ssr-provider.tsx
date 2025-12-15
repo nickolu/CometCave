@@ -1,11 +1,10 @@
 'use client'
-'use client'
-import { CacheProvider } from '@emotion/react'
 import createCache from '@emotion/cache'
+import { CacheProvider } from '@emotion/react'
+import { StyleSheet } from '@emotion/sheet'
+import { SerializedStyles } from '@emotion/utils'
 import { useServerInsertedHTML } from 'next/navigation'
 import { useState } from 'react'
-import { SerializedStyles } from '@emotion/utils'
-import { StyleSheet } from '@emotion/sheet'
 
 export function EmotionSSRProvider({ children }: { children: React.ReactNode }) {
   const [{ cache, flush }] = useState(() => {

@@ -1,14 +1,15 @@
 'use client'
 import { useState } from 'react'
-import { FantasyCharacter, FantasyAbility } from '../models/types'
+
 import {
-  DEFAULT_CHARACTER_NAME,
-  DEFAULT_ABILITY_NAME,
-  DEFAULT_ABILITY_DESCRIPTION,
-  DEFAULT_ABILITY_POWER,
   DEFAULT_ABILITY_COOLDOWN,
+  DEFAULT_ABILITY_DESCRIPTION,
+  DEFAULT_ABILITY_NAME,
+  DEFAULT_ABILITY_POWER,
+  DEFAULT_CHARACTER_NAME,
 } from '../config/gameDefaults'
 import { useGameStore } from '../hooks/useGameStore'
+import { FantasyAbility, FantasyCharacter } from '../models/types'
 
 export function useCharacterCreation() {
   const { addCharacter } = useGameStore()

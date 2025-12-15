@@ -1,12 +1,17 @@
 import type React from 'react'
 import type { Metadata } from 'next'
+
 import { Space_Grotesk } from 'next/font/google'
+
 import './globals.css'
+
 import Link from 'next/link'
-import { StarField } from '@/components/star-field'
+
 import { Footer } from '@/components/footer'
-import { ROUTE_CONSTANTS } from './route-constants'
+import { StarField } from '@/components/star-field'
+
 import { Providers } from './providers'
+import { ROUTE_CONSTANTS } from './route-constants'
 
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'] })
 

@@ -1,7 +1,8 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { Voter, VotingCriteria, Vote } from '../types/voting'
+
+import { Vote, Voter, VotingCriteria } from '../types/voting'
 
 // Types for API responses
 interface GenerateRandomVoterResponse {

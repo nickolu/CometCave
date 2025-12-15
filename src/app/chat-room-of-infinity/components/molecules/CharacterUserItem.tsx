@@ -1,10 +1,11 @@
 'use client'
 
-import { ListItemText, ListItemAvatar, Avatar, IconButton, Box, Tooltip } from '@mui/material'
 import { Close } from '@mui/icons-material'
+import { Avatar, Box, IconButton, ListItemAvatar, ListItemText, Tooltip } from '@mui/material'
 import { green } from '@mui/material/colors'
-import { Character } from '../../types'
+
 import { useStore } from '../../store'
+import { Character } from '../../types'
 import { UserListItem } from '../atoms/UserListItem'
 
 interface Props {

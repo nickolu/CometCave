@@ -1,9 +1,9 @@
 import type {
   AIResponseRequest,
   AIResponseResponse,
+  APIError,
   GenerateWordRequest,
   GenerateWordResponse,
-  APIError,
   ScoreWordRequest,
   ScoreWordResponse,
 } from './types'

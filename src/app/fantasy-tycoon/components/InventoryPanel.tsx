@@ -1,9 +1,11 @@
 'use client'
 import { useCallback, useState } from 'react'
-import { Item } from '../models/types'
+
 import { Button } from '@/app/fantasy-tycoon/components/ui/button'
 import { List } from '@/app/fantasy-tycoon/components/ui/list'
+
 import { useGameStore } from '../hooks/useGameStore'
+import { Item } from '../models/types'
 
 interface InventoryPanelProps {
   inventory: Item[]

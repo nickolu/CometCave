@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+
+import { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
+
 import VoterManagement from './components/VoterManagement'
 import VotingCriteriaComponent from './components/VotingCriteria'
 import VotingExecution from './components/VotingExecution'
 import VotingResults from './components/VotingResults'
-import { Voter, VotingCriteria, Vote } from '@/app/voters/types/voting'
+
 
 const queryClient = new QueryClient()
 

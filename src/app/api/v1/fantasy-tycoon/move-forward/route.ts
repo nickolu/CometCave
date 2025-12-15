@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { MoveForwardRequestSchema } from './schemas'
 import { moveForwardService } from './services/moveForwardService'
 

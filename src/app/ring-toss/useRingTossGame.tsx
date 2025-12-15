@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { Graphics, Container } from 'pixi.js'
 import { extend } from '@pixi/react'
+import { Container, Graphics } from 'pixi.js'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type Ring = {
   id: number

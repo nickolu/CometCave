@@ -1,6 +1,7 @@
-import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
-import { FantasyStoryEvent, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story'
 import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/fantasy-tycoon/models/story'
+
 import { MoveForwardResponse } from '../schemas'
 
 const BASE_DISTANCE = 1

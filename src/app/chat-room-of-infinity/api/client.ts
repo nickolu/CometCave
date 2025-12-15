@@ -1,10 +1,10 @@
 import type {
-  SafetyResponse,
-  CharacterResponse,
-  ConversationManagerResponse,
-  CharacterGeneratorResponse,
   Character,
+  CharacterGeneratorResponse,
+  CharacterResponse,
   ChatMessage,
+  ConversationManagerResponse,
+  SafetyResponse,
 } from './types'
 
 const API_BASE = '/api/v1/agent'

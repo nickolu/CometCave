@@ -1,6 +1,7 @@
-import React from 'react'
 import AutocompleteMUI from '@mui/material/Autocomplete'
 import TextField from '@mui/material/TextField'
+import React from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface AutocompleteProps {

@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Copy, Pencil, Settings, Sparkles, Trash2, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+import { Voter } from '@/app/voters/types/voting'
+
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
-import { Textarea } from '../../../components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -13,8 +16,7 @@ import {
   SelectValue,
 } from '../../../components/ui/select'
 import { Slider } from '../../../components/ui/slider'
-import { Trash2, Copy, Users, Settings, Pencil, Sparkles } from 'lucide-react'
-import { Voter } from '@/app/voters/types/voting'
+import { Textarea } from '../../../components/ui/textarea'
 import { useGenerateRandomVoter } from '../api/hooks'
 
 const models = [

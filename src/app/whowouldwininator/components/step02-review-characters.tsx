@@ -1,13 +1,14 @@
 'use client'
 
+import { Edit2, Loader2, Save } from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Progress } from '@/components/ui/progress'
 import { Slider } from '@/components/ui/slider'
-import { Loader2, Edit2, Save } from 'lucide-react'
-import Image from 'next/image'
-import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils'
+import { Textarea } from '@/components/ui/textarea'
+import { getImageGenerationDisableReasonClient, isImageGenerationAllowedClient } from '@/lib/utils'
 
 interface CharacterStats {
   strength: number

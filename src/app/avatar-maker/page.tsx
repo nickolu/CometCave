@@ -1,23 +1,24 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Autocomplete } from '@/components/ui/autocomplete'
 import {
-  cn,
-  isImageGenerationAllowedClient,
-  getImageGenerationDisableReasonClient,
-} from '@/lib/utils'
-import {
-  Square,
   RectangleHorizontal,
   RectangleVertical,
-  UploadCloud,
   RefreshCcw,
+  Square,
+  UploadCloud,
 } from 'lucide-react'
 import Image from 'next/image'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { Autocomplete } from '@/components/ui/autocomplete'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  cn,
+  getImageGenerationDisableReasonClient,
+  isImageGenerationAllowedClient,
+} from '@/lib/utils'
 
 // Map of mediums to their available styles
 const mediumStyles: Record<string, { styles: string[] }> = {

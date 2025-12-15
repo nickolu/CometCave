@@ -1,11 +1,13 @@
 'use client'
 
+import { Loader2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
 import { useGenerateWord, useScoreWord } from '../api/hooks'
 import { ScoreWordResponse } from '../api/types'
-import { Loader2 } from 'lucide-react'
 
 interface SecretWordSetupProps {
   onSetupComplete: (

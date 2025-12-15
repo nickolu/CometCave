@@ -1,20 +1,21 @@
-import { useState, FormEvent } from 'react'
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-} from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { CharacterStatus, HumanUser } from '../../types'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+} from '@mui/material'
+import { FormEvent, useState } from 'react'
+
 import { useStore } from '../../store'
+import { CharacterStatus, HumanUser } from '../../types'
 
 interface UserProfileDialogProps {
   open: boolean

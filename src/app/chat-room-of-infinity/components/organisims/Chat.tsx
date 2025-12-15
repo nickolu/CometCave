@@ -1,27 +1,28 @@
 'use client'
 
+import { DeleteOutline, KeyboardArrowDown, MoreVert, Send } from '@mui/icons-material'
 import {
+  Alert,
   Box,
-  TextField,
-  IconButton,
-  Typography,
   Fade,
+  FormControlLabel,
+  IconButton,
   Menu,
   MenuItem,
-  Alert,
   Switch,
-  FormControlLabel,
+  TextField,
+  Typography,
 } from '@mui/material'
-import { Send, KeyboardArrowDown, MoreVert, DeleteOutline } from '@mui/icons-material'
-import { useRef, useEffect } from 'react'
-import { useChatInput } from '../../hooks/useChatInput'
+import { useEffect, useRef } from 'react'
+
 import { useCharacterResponses } from '../../hooks/useCharacterResponses'
-import { useChatScroll } from '../../hooks/useChatScroll'
+import { useChatInput } from '../../hooks/useChatInput'
 import { useChatMenu } from '../../hooks/useChatMenu'
 import { useChatSafety } from '../../hooks/useChatSafety'
+import { useChatScroll } from '../../hooks/useChatScroll'
 import { useStore } from '../../store'
-import Message from '../molecules/ChatMessage'
 import { ChatMessage } from '../../types'
+import Message from '../molecules/ChatMessage'
 
 // Constants for timing values (in milliseconds)
 const CHARACTER_RESPONSE_INTERVAL_MS = 2000 // ms between character responses

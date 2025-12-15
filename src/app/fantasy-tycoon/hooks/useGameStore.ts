@@ -1,10 +1,11 @@
 'use client'
-import { create } from 'zustand'
 import { produce } from 'immer'
+import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { FantasyDecisionPoint, FantasyStoryEvent, GameState, Item } from '../models/types'
-import { FantasyCharacter } from '../models/character'
+
 import { defaultGameState } from '../lib/defaultGameState'
+import { FantasyCharacter } from '../models/character'
+import { FantasyDecisionPoint, FantasyStoryEvent, GameState, Item } from '../models/types'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',

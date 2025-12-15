@@ -1,12 +1,15 @@
 'use client'
 import React, { useState } from 'react'
+
 import { useGameStore } from '../hooks/useGameStore'
 import { FantasyCharacter } from '../models/types'
-import CharacterCreation from './CharacterCreation'
-import CharacterCard from './CharacterCard'
+
 import AddCharacterCard from './AddCharacterCard'
+import CharacterCard from './CharacterCard'
+import CharacterCreation from './CharacterCreation'
 
 import type { GameStore } from '../hooks/useGameStore'
+
 const EMPTY_ARRAY: FantasyCharacter[] = []
 const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY
 const selectSelectedCharacterId = (s: GameStore) => s.gameState?.selectedCharacterId

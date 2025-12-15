@@ -1,5 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
+
 import { secretWordApi } from './client'
+
 import type { AIResponseRequest, GenerateWordRequest, ScoreWordRequest } from './types'
 
 export function useAIResponse() {

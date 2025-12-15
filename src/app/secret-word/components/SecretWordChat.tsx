@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+import type { GameState, Message } from '@/app/secret-word/page'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { GameState, Message } from '@/app/secret-word/page'
 
 interface SecretWordChatProps {
   gameState: GameState

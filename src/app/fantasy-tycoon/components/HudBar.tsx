@@ -1,12 +1,14 @@
 'use client'
 import { useMemo } from 'react'
-import { useGameStore } from '../hooks/useGameStore'
+
 import {
   Tooltip,
+  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-  TooltipContent,
 } from '@/app/fantasy-tycoon/components/ui/tooltip'
+
+import { useGameStore } from '../hooks/useGameStore'
 import { FantasyCharacter } from '../models/character'
 
 type IconType =

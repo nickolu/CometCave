@@ -1,8 +1,7 @@
 'use client'
-import React from 'react'
-import { useCharacterCreation } from '../hooks/useCharacterCreation'
-import { useCallback } from 'react'
+import React, { useCallback } from 'react'
 
+import { useCharacterCreation } from '../hooks/useCharacterCreation'
 import { FantasyCharacter } from '../models/types'
 
 export default function CharacterCreation({

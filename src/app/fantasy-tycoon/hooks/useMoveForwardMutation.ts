@@ -1,7 +1,9 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useGameStateBuilder, useGameStore } from './useGameStore'
+
 import { FantasyCharacter, FantasyDecisionPoint, FantasyStoryEvent, Item } from '../models/types'
+
+import { useGameStateBuilder, useGameStore } from './useGameStore'
 
 export interface MoveForwardResponse {
   character: FantasyCharacter
