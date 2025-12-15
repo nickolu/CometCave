@@ -1,7 +1,9 @@
 'use client'
+
 import { useEffect } from 'react'
+
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { eventEmitter } from './event-emitter'
 
 export const useGameEvents = () => {
   const { setGamePhase, dealHand, selectCard, deselectCard, discardSelectedCards, refillHand } =
@@ -53,3 +55,5 @@ export const useGameEvents = () => {
     }
   }, [dealHand, selectCard, deselectCard, setGamePhase, discardSelectedCards, refillHand])
 }
+
+

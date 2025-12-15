@@ -1,9 +1,7 @@
-import { GameState } from '@/app/daily-card-game/domain/game/types'
-import { ScoreState } from '@/app/daily-card-game/domain/game/types'
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-import { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
-import { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
-import { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
+import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/types'
+import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
+import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 
 export type GameEvent =
   | HandDealtEvent

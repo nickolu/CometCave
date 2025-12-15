@@ -1,3 +1,6 @@
+import type { GameState } from '@/app/daily-card-game/domain/game/types'
+import type { HandState, PokerHand } from '@/app/daily-card-game/domain/hand/types'
+
 import { pokerDeck } from '../decks/poker-deck'
 import {
   fiveOfAKindHand,
@@ -12,8 +15,6 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '../hand/hands'
-import type { GameState } from '@/app/daily-card-game/domain/game/types'
-import type { PokerHand, HandState } from '@/app/daily-card-game/domain/hand/types'
 
 const getDefaultHandState = (hand: PokerHand): HandState => ({
   timesPlayed: 0,
@@ -40,7 +41,7 @@ export const defaultGameState: GameState = {
   maxJokers: 0,
   money: 0,
   tags: [],
-  ouchersUsed: [],
+  vouchersUsed: [],
   consumables: [],
   discardsPlayed: 0,
   fullDeck: pokerDeck,

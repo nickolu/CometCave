@@ -1,8 +1,6 @@
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-import { Celestial } from '@/app/daily-card-game/domain/consumable/types'
-import { Arcane } from '@/app/daily-card-game/domain/consumable/types'
-import { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
-import { VoucherDefinition } from '@/app/daily-card-game/domain/consumable/types'
+import type { Arcane, Celestial, VoucherDefinition } from '@/app/daily-card-game/domain/consumable/types'
+import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
+import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
 export interface ShopState {
   cardsForSale: BuyableCard[]

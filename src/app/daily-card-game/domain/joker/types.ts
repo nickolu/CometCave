@@ -1,4 +1,4 @@
-import { Effect } from '@/app/daily-card-game/domain/events/types'
+import type { Effect } from '@/app/daily-card-game/domain/events/types'
 
 export interface JokerDefinition {
   effects: Effect[]

@@ -1,11 +1,9 @@
-import { Consumable } from '@/app/daily-card-game/domain/consumable/types'
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-import { PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
-import { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
-import { ShopState } from '@/app/daily-card-game/domain/shop/types'
-import { TagDefinition } from '@/app/daily-card-game/domain/consumable/types'
-import { VoucherDefinition } from '@/app/daily-card-game/domain/consumable/types'
-import { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
+import type { Consumable, TagDefinition, VoucherDefinition } from '@/app/daily-card-game/domain/consumable/types'
+import type { PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
+import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
+import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import type { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
+import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 
 export interface GameState {
   consumables: Consumable[]
@@ -22,7 +20,7 @@ export interface GameState {
   shopState: ShopState
   stake: Stake
   tags: TagDefinition[]
-  ouchersUsed: VoucherDefinition[]
+  vouchersUsed: VoucherDefinition[]
 }
 
 export type GamePhase = 'mainMenu' | 'shop' | 'blindSelection' | 'gameplay' | 'packOpening'

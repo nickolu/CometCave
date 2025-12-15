@@ -1,4 +1,4 @@
-import { PokerHand } from '../hand/types'
+import type { PokerHand } from '../hand/types'
 
 export type Consumable = Celestial | Arcane
 
