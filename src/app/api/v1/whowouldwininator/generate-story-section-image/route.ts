@@ -2,7 +2,8 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { uploadBase64Image, generatePublicId } from '@/lib/cloudinary'
+
+import { generatePublicId, uploadBase64Image } from '@/lib/cloudinary'
 import { isImageGenerationAllowed } from '@/lib/utils'
 
 export const config = {

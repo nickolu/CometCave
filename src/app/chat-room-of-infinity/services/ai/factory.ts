@@ -1,5 +1,5 @@
-import { AIService, AIServiceConfig } from './types'
 import { OpenAIService } from './openai'
+import { AIService, AIServiceConfig } from './types'
 
 export type AIServiceType = 'openai'
 

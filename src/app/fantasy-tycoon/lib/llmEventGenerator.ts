@@ -1,5 +1,6 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
+
 import { FantasyCharacter } from '../models/character'
 import { Item } from '../models/item'
 

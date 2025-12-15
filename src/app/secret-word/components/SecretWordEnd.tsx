@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+
 import type { GameState } from '../page'
 
 interface SecretWordEndProps {

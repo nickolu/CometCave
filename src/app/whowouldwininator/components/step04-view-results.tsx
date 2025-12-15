@@ -1,11 +1,12 @@
 'use client'
 
+import { Loader2, Target, Trophy, Zap } from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Trophy, Target, Zap, Loader2 } from 'lucide-react'
-import Image from 'next/image'
-import { isImageGenerationAllowedClient, getImageGenerationDisableReasonClient } from '@/lib/utils'
+import { getImageGenerationDisableReasonClient, isImageGenerationAllowedClient } from '@/lib/utils'
 
 interface ContestResults {
   winner: 'candidate1' | 'candidate2' | 'tie'

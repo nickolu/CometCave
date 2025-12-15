@@ -1,7 +1,8 @@
-import { useRef, useCallback, useState } from 'react'
-import { Character, ChatMessage } from '../types'
+import { useCallback, useRef, useState } from 'react'
+
+import { useCharacterResponse, useConversationManager } from '../api/hooks'
 import { useStore } from '../store'
-import { useConversationManager, useCharacterResponse } from '../api/hooks'
+import { Character, ChatMessage } from '../types'
 
 const INTER_RESPONSE_DELAY_MS = 500
 const TYPING_SIMULATION_DELAY_MS = 0

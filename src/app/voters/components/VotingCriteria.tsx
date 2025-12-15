@@ -1,13 +1,15 @@
 'use client'
 
+import { Lightbulb, Plus, RefreshCw, Trash2, Vote, Wand2 } from 'lucide-react'
 import { useState } from 'react'
+
+import { VotingCriteria } from '@/app/voters/types/voting'
+
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 import { Textarea } from '../../../components/ui/textarea'
-import { Plus, Trash2, Vote, Wand2, Lightbulb, RefreshCw } from 'lucide-react'
-import { VotingCriteria } from '@/app/voters/types/voting'
-import { useGenerateRandomQuestion, useGenerateCriteria } from '../api/hooks'
+import { useGenerateCriteria, useGenerateRandomQuestion } from '../api/hooks'
 
 interface VotingCriteriaProps {
   criteria: VotingCriteria

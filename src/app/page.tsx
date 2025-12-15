@@ -1,12 +1,17 @@
-import type React from 'react'
+import { HelpCircle, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
+
+import { BallotIcon } from '@/components/ballot-icon'
 import { MoonIcon } from '@/components/moon-icon'
 import { PlanetIcon } from '@/components/planet-icon'
-import { StarIcon } from '@/components/star-icon'
-import { BallotIcon } from '@/components/ballot-icon'
-import { ROUTE_CONSTANTS } from './route-constants'
 import { SecretWordIcon } from '@/components/secret-word-icon'
-import { User as UserIcon, HelpCircle } from 'lucide-react'
+import { StarIcon } from '@/components/star-icon'
+
+import { ROUTE_CONSTANTS } from './route-constants'
+
+
+import type React from 'react'
+
 
 export default function Home() {
   return (

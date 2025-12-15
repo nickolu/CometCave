@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react'
-import { useStore } from '../store'
+import { useCallback, useRef, useState } from 'react'
+
 import { useSafetyCheck } from '../api/hooks'
+import { useStore } from '../store'
 
 const USER_TYPING_TIMEOUT_MS = 1000
 

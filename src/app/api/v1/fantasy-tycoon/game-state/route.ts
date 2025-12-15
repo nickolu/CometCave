@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { FantasyLocation } from '@/app/fantasy-tycoon/models/location'
 import { FantasyStoryEvent } from '@/app/fantasy-tycoon/models/story'

@@ -1,8 +1,9 @@
 'use client'
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material'
+import { ChangeEvent, FormEvent } from 'react'
+
 import { useStore } from '../../store'
-import { FormEvent, ChangeEvent } from 'react'
 
 export default function CustomCharacterForm() {
   const { isOpen, name, description } = useStore(state => state.customCharacterForm)

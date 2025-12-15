@@ -1,8 +1,9 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
-import { CharacterFeatsSchema } from '../../types'
+
 import { READING_LEVEL } from '../../constants'
+import { CharacterFeatsSchema } from '../../types'
 
 export async function POST(request: Request) {
   try {

@@ -1,5 +1,6 @@
-import { act } from 'react'
 import { renderHook } from '@testing-library/react'
+import { act } from 'react'
+
 import { useChatSafety } from '../hooks/useChatSafety'
 
 // Mock the useSafetyCheck hook to simulate API responses

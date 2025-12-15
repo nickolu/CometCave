@@ -1,5 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
+
 import { agentApi } from './client'
+
 import type { Character, ChatMessage } from './types'
 
 export function useSafetyCheck() {

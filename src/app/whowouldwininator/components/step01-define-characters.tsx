@@ -1,7 +1,8 @@
+import { Loader2, RefreshCcw, Sparkles } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { RefreshCcw, Loader2, Sparkles } from 'lucide-react'
 
 export function Step01DefineCharacters({
   candidate1Name,

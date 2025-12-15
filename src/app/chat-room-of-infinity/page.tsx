@@ -2,8 +2,9 @@
 
 import { Box, Divider } from '@mui/material'
 import dynamic from 'next/dynamic'
-import { QueryProvider } from './providers/QueryProvider'
 import Link from 'next/link'
+
+import { QueryProvider } from './providers/QueryProvider'
 
 const UserList = dynamic(() => import('./components/organisims/UserList'), {
   ssr: false,

@@ -1,8 +1,9 @@
 'use server'
 
 import { NextResponse } from 'next/server'
-import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory'
+
 import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/config'
+import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory'
 
 export async function POST(request: Request) {
   try {

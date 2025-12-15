@@ -1,16 +1,17 @@
 'use client'
 
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
+
+import SAMPLE_CHARACTERS from './sampleCharacters.json'
 import {
   Character,
-  UserListState,
-  UserSelectorState,
+  ChatMessage,
   CustomCharacterFormState,
   HumanUser,
-  ChatMessage,
+  UserListState,
+  UserSelectorState,
 } from './types'
-import SAMPLE_CHARACTERS from './sampleCharacters.json'
 
 interface ChatState {
   messages: ChatMessage[]

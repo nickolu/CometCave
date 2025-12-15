@@ -1,10 +1,10 @@
 'use client'
+import CharacterList from './components/CharacterList'
 import GameUI from './components/GameUI'
+import { HudBar } from './components/HudBar'
 import { PageTemplate } from './components/ui/PageTemplate'
 import { useGameStore } from './hooks/useGameStore'
 
-import CharacterList from './components/CharacterList'
-import { HudBar } from './components/HudBar'
 
 type initialView = 'game' | 'characters'
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+
 import { useSafetyCheck } from '../api/hooks'
 
 export function useChatSafety() {

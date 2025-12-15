@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
+
 import { READING_LEVEL } from '../../constants'
 
 export async function POST(request: Request) {

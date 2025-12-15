@@ -1,19 +1,18 @@
 'use client'
 
+import { LoaderCircle } from 'lucide-react'
 import { useEffect } from 'react'
 
 import { Button } from '@/app/fantasy-tycoon/components/ui/button'
+import { flipCoin } from '@/app/utils'
 
 import { useGameStore } from '../hooks/useGameStore'
-
+import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation'
 import { useResolveDecisionMutation } from '../hooks/useResolveDecisionMutation'
+import { getGenericTravelMessage } from '../lib/getGenericTravelMessage'
 
 import { InventoryPanel } from './InventoryPanel'
 import { StoryFeed } from './StoryFeed'
-import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation'
-import { flipCoin } from '@/app/utils'
-import { getGenericTravelMessage } from '../lib/getGenericTravelMessage'
-import { LoaderCircle } from 'lucide-react'
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
   if (isLoading)

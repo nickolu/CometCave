@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
-import { FantasyDecisionPoint, FantasyDecisionOption } from '@/app/fantasy-tycoon/models/story'
+
 import {
   applyEffects,
   calculateEffectiveProbability,
 } from '@/app/fantasy-tycoon/lib/eventResolution'
-
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { Item } from '@/app/fantasy-tycoon/models/item'
+import { FantasyDecisionOption, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story'
+
 
 type ResolveDecisionRequest = {
   character: FantasyCharacter

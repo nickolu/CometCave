@@ -2,6 +2,7 @@
 
 import { Application } from '@pixi/react'
 import { Graphics } from 'pixi.js'
+
 import { useRingTossGame } from './useRingTossGame'
 
 const RingTossGame = () => {

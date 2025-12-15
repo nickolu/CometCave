@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from 'next/server'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const QUESTION_CATEGORIES = [

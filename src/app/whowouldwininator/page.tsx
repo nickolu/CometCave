@@ -1,11 +1,11 @@
 'use client'
 
-import { useWorkflow } from './components/useWorkflow'
-import { useWhowouldwininatorState } from './components/useWhowouldwininatorState'
 import { Step01DefineCharacters } from './components/step01-define-characters'
 import { Step02ReviewCharacters } from './components/step02-review-characters'
 import { Step03DefineScenario } from './components/step03-define-scenario'
 import { Step04ViewResults } from './components/step04-view-results'
+import { useWhowouldwininatorState } from './components/useWhowouldwininatorState'
+import { useWorkflow } from './components/useWorkflow'
 
 export default function Whowouldwininator() {
   const { currentStep, nextStep, previousStep } = useWorkflow()

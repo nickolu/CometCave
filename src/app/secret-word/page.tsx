@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { SecretWordSetup } from '@/app/secret-word/components/SecretWordSetup'
+
 import { SecretWordChat } from '@/app/secret-word/components/SecretWordChat'
 import { SecretWordEnd } from '@/app/secret-word/components/SecretWordEnd'
+import { SecretWordSetup } from '@/app/secret-word/components/SecretWordSetup'
+
+import { useAIResponse, useGenerateWord } from './api/hooks'
 import { QueryProvider } from './providers/QueryProvider'
-import { useGenerateWord, useAIResponse } from './api/hooks'
 
 type GamePhase = 'setup' | 'playing' | 'ended'
 

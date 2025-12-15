@@ -2,6 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+
 import { READING_LEVEL } from '../constants'
 
 const RandomCharacterSchema = z.object({

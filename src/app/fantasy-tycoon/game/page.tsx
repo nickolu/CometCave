@@ -1,7 +1,7 @@
 'use client'
 import GameUI from '@/app/fantasy-tycoon/components/GameUI'
-import { PageTemplate } from '@/app/fantasy-tycoon/components/ui/PageTemplate'
 import { HudBar } from '@/app/fantasy-tycoon/components/HudBar'
+import { PageTemplate } from '@/app/fantasy-tycoon/components/ui/PageTemplate'
 
 export default function FantasyTycoonPage() {
   return (

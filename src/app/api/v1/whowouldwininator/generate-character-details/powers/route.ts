@@ -1,6 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
+
 import { CharacterPowersSchema } from '../../types'
 
 export async function POST(request: Request) {

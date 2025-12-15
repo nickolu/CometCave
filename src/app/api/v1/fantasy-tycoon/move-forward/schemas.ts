@@ -1,4 +1,5 @@
 import { z } from 'zod'
+
 import type { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 
 // Use z.custom<FantasyCharacter>() to validate the full FantasyCharacter shape
