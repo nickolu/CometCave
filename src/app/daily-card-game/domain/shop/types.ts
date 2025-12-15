@@ -1,4 +1,8 @@
-import type { Arcane, Celestial, VoucherDefinition } from '@/app/daily-card-game/domain/consumable/types'
+import type {
+  Arcane,
+  Celestial,
+  VoucherDefinition,
+} from '@/app/daily-card-game/domain/consumable/types'
 import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 

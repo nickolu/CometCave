@@ -55,5 +55,3 @@ export const useGameEvents = () => {
     }
   }, [dealHand, selectCard, deselectCard, setGamePhase, discardSelectedCards, refillHand])
 }
-
-

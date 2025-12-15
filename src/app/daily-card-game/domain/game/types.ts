@@ -1,4 +1,8 @@
-import type { Consumable, TagDefinition, VoucherDefinition } from '@/app/daily-card-game/domain/consumable/types'
+import type {
+  Consumable,
+  TagDefinition,
+  VoucherDefinition,
+} from '@/app/daily-card-game/domain/consumable/types'
 import type { PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
 import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
