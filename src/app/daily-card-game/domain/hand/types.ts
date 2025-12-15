@@ -26,5 +26,4 @@ export interface PokerHand {
   chipIncreasePerLevel: number
   baseMult: number
   isSecret: boolean
-  isHand(cards: PlayingCard[]): [boolean, PlayingCard[]]
 }

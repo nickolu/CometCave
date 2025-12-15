@@ -1,37 +1,15 @@
 import { PokerHand } from '@/app/daily-card-game/domain/hand/types'
-import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-
-const cardValuePriority: Record<CardValue, number> = {
-  2: 1,
-  3: 2,
-  4: 3,
-  5: 4,
-  6: 5,
-  7: 6,
-  8: 7,
-  9: 8,
-  10: 9,
-  J: 10,
-  Q: 11,
-  K: 12,
-  A: 13,
-}
-
-const suitPriority: Record<PlayingCard['suit'], number> = {
-  hearts: 1,
-  diamonds: 2,
-  clubs: 3,
-  spades: 4,
-}
-
-const rankCardsByValueAndSuit = (cards: PlayingCard[]): PlayingCard[] => {
-  return cards.sort((a, b) => {
-    if (cardValuePriority[a.value] !== cardValuePriority[b.value]) {
-      return cardValuePriority[a.value] - cardValuePriority[b.value]
-    }
-    return suitPriority[a.suit] - suitPriority[b.suit]
-  })
-}
+import {
+  areAllCardsSameSuit,
+  findAllPairs,
+  findAllStraights,
+  findAllThreeOfAKinds,
+  findFourOfAKind,
+  rankCardsByValueAndSuit,
+  rankPairsByValueAndSuit,
+  rankThreeOfAKindsByValueAndSuit,
+} from '@/app/daily-card-game/domain/hand/utils'
+import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
 export const highCardHand: PokerHand = {
   baseChips: 100,
@@ -39,84 +17,6 @@ export const highCardHand: PokerHand = {
   chipIncreasePerLevel: 1,
   baseMult: 1,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const rankedCards = rankCardsByValueAndSuit(cards)
-    return [true, [rankedCards[0]]]
-  },
-}
-
-const findAllPairs = (cards: PlayingCard[]): PlayingCard[][] => {
-  const pairs: PlayingCard[][] = []
-  for (let i = 0; i < cards.length; i++) {
-    for (let j = i + 1; j < cards.length; j++) {
-      if (cards[i].value === cards[j].value) {
-        pairs.push([cards[i], cards[j]])
-      }
-    }
-  }
-  return pairs
-}
-
-const rankPairsByValueAndSuit = (pairs: PlayingCard[][]): PlayingCard[][] => {
-  return pairs.sort((a, b) => {
-    if (cardValuePriority[a[0].value] !== cardValuePriority[b[0].value]) {
-      return cardValuePriority[a[0].value] - cardValuePriority[b[0].value]
-    }
-    return suitPriority[a[0].suit] - suitPriority[b[0].suit]
-  })
-}
-
-const findAllThreeOfAKinds = (cards: PlayingCard[]): PlayingCard[][] => {
-  const threeOfAKinds: PlayingCard[][] = []
-  for (let i = 0; i < cards.length; i++) {
-    for (let j = i + 1; j < cards.length; j++) {
-      for (let k = j + 1; k < cards.length; k++) {
-        if (cards[i].value === cards[j].value && cards[j].value === cards[k].value) {
-          threeOfAKinds.push([cards[i], cards[j], cards[k]])
-        }
-      }
-    }
-  }
-  return threeOfAKinds
-}
-
-const findAllStraights = (cards: PlayingCard[]): PlayingCard[][] => {
-  const straights: PlayingCard[][] = []
-  for (let i = 0; i < cards.length; i++) {
-    for (let j = i + 1; j < cards.length; j++) {
-      if (cardValuePriority[cards[i].value] + 1 === cardValuePriority[cards[j].value]) {
-        straights.push([cards[i], cards[j]])
-      }
-    }
-  }
-  return straights
-}
-
-const rankThreeOfAKindsByValueAndSuit = (threeOfAKinds: PlayingCard[][]): PlayingCard[][] => {
-  return threeOfAKinds.sort((a, b) => {
-    if (cardValuePriority[a[0].value] !== cardValuePriority[b[0].value]) {
-      return cardValuePriority[a[0].value] - cardValuePriority[b[0].value]
-    }
-    return suitPriority[a[0].suit] - suitPriority[b[0].suit]
-  })
-}
-
-// only poassible to have one four of a kind in a hand
-const findFourOfAKind = (cards: PlayingCard[]): PlayingCard[] => {
-  let fourOfAKind: PlayingCard[] = []
-  const cardValues = cards.map(card => card.value)
-  for (const cardValue of cardValues) {
-    const filteredCards = cards.filter(card => card.value === cardValue)
-    if (filteredCards.length === 4) {
-      fourOfAKind = filteredCards
-      break
-    }
-  }
-  return fourOfAKind
-}
-
-const areAllCardsSameSuit = (cards: PlayingCard[]): boolean => {
-  return cards.every(card => card.suit === cards[0].suit)
 }
 
 export const pairHand: PokerHand = {
@@ -125,14 +25,6 @@ export const pairHand: PokerHand = {
   chipIncreasePerLevel: 2,
   baseMult: 2,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const pairs = findAllPairs(cards)
-    if (pairs.length > 0) {
-      const rankedPairs = rankPairsByValueAndSuit(pairs)
-      return [true, rankedPairs[0]]
-    }
-    return [false, []]
-  },
 }
 
 export const twoPairHand: PokerHand = {
@@ -141,14 +33,6 @@ export const twoPairHand: PokerHand = {
   chipIncreasePerLevel: 3,
   baseMult: 3,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const pairs = findAllPairs(cards)
-    if (pairs.length >= 2) {
-      const rankedPairs = rankPairsByValueAndSuit(pairs)
-      return [true, rankedPairs[0].concat(rankedPairs[1])]
-    }
-    return [false, []]
-  },
 }
 
 export const threeOfAKindHand: PokerHand = {
@@ -157,14 +41,6 @@ export const threeOfAKindHand: PokerHand = {
   chipIncreasePerLevel: 4,
   baseMult: 4,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const threeOfAKinds = findAllThreeOfAKinds(cards)
-    if (threeOfAKinds.length > 0) {
-      const rankedThreeOfAKinds = rankThreeOfAKindsByValueAndSuit(threeOfAKinds)
-      return [true, rankedThreeOfAKinds[0]]
-    }
-    return [false, []]
-  },
 }
 
 export const straightHand: PokerHand = {
@@ -173,13 +49,6 @@ export const straightHand: PokerHand = {
   chipIncreasePerLevel: 5,
   baseMult: 5,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const straights = findAllStraights(cards)
-    if (straights.length > 0) {
-      return [true, straights[0]] // impossible for a hand to have more than one straight
-    }
-    return [false, []]
-  },
 }
 
 export const flushHand: PokerHand = {
@@ -188,14 +57,6 @@ export const flushHand: PokerHand = {
   chipIncreasePerLevel: 6,
   baseMult: 6,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const rankedCards = rankCardsByValueAndSuit(cards)
-    const flush = rankedCards.filter(card => card.suit === rankedCards[0].suit)
-    if (flush.length >= 5) {
-      return [true, flush.slice(0, 5)]
-    }
-    return [false, []]
-  },
 }
 
 export const fullHouseHand: PokerHand = {
@@ -204,25 +65,6 @@ export const fullHouseHand: PokerHand = {
   chipIncreasePerLevel: 7,
   baseMult: 7,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const threeOfAKinds = findAllThreeOfAKinds(cards)
-    if (threeOfAKinds.length > 0) {
-      const rankedThreeOfAKinds = rankThreeOfAKindsByValueAndSuit(threeOfAKinds)
-      const pairs = findAllPairs(
-        cards.filter(
-          card =>
-            card !== rankedThreeOfAKinds[0][0] &&
-            card !== rankedThreeOfAKinds[0][1] &&
-            card !== rankedThreeOfAKinds[0][2]
-        )
-      )
-      if (pairs.length > 0) {
-        const rankedPairs = rankPairsByValueAndSuit(pairs)
-        return [true, rankedThreeOfAKinds[0].concat(rankedPairs[0])]
-      }
-    }
-    return [false, []]
-  },
 }
 
 export const fourOfAKindHand: PokerHand = {
@@ -231,13 +73,6 @@ export const fourOfAKindHand: PokerHand = {
   chipIncreasePerLevel: 8,
   baseMult: 8,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const fourOfAKind = findFourOfAKind(cards)
-    if (fourOfAKind.length > 0) {
-      return [true, fourOfAKind]
-    }
-    return [false, []]
-  },
 }
 
 export const straightFlushHand: PokerHand = {
@@ -246,13 +81,6 @@ export const straightFlushHand: PokerHand = {
   chipIncreasePerLevel: 9,
   baseMult: 9,
   isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    const straights = findAllStraights(cards)
-    if (straights.length > 0 && areAllCardsSameSuit(cards)) {
-      return [true, straights[0]]
-    }
-    return [false, []]
-  },
 }
 
 export const flushHouseHand: PokerHand = {
@@ -260,10 +88,7 @@ export const flushHouseHand: PokerHand = {
   multIncreasePerLevel: 10,
   chipIncreasePerLevel: 10,
   baseMult: 10,
-  isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
-    return [true, cards]
-  },
+  isSecret: true,
 }
 
 export const fiveOfAKindHand: PokerHand = {
@@ -271,8 +96,127 @@ export const fiveOfAKindHand: PokerHand = {
   multIncreasePerLevel: 11,
   chipIncreasePerLevel: 11,
   baseMult: 11,
-  isSecret: false,
-  isHand: (cards: PlayingCard[]) => {
+  isSecret: true,
+}
+
+export const flushFiveHand: PokerHand = {
+  baseChips: 1200,
+  multIncreasePerLevel: 12,
+  chipIncreasePerLevel: 12,
+  baseMult: 12,
+  isSecret: true,
+}
+
+// returns if the card series contains target hand and the highest value matching cards for the hand
+type HandCheckFunction<Args extends unknown[] = []> = (
+  cards: PlayingCard[],
+  ...args: Args
+) => [boolean, PlayingCard[]]
+
+export const checkHandForHighCard: HandCheckFunction = cards => {
+  const rankedCards = rankCardsByValueAndSuit(cards)
+  return [true, [rankedCards[0]]]
+}
+
+export const checkHandForPair: HandCheckFunction = cards => {
+  const pairs = findAllPairs(cards)
+  if (pairs.length > 0) {
+    const rankedPairs = rankPairsByValueAndSuit(pairs)
+    return [true, rankedPairs[0]]
+  }
+  return [false, []]
+}
+
+export const checkHandForTwoPair: HandCheckFunction = cards => {
+  const pairs = findAllPairs(cards)
+  if (pairs.length >= 2) {
+    const rankedPairs = rankPairsByValueAndSuit(pairs)
+    return [true, rankedPairs[0].concat(rankedPairs[1])]
+  }
+  return [false, []]
+}
+export const checkHandForThreeOfAKind: HandCheckFunction = cards => {
+  const threeOfAKinds = findAllThreeOfAKinds(cards)
+  if (threeOfAKinds.length > 0) {
+    const rankedThreeOfAKinds = rankThreeOfAKindsByValueAndSuit(threeOfAKinds)
+    return [true, rankedThreeOfAKinds[0]]
+  }
+  return [false, []]
+}
+
+export const checkHandForStraight: HandCheckFunction<[number]> = (cards, minLength) => {
+  const straights = findAllStraights(cards, minLength)
+  if (straights.length > 0) {
+    return [true, straights[0]]
+  }
+  return [false, []]
+}
+
+export const checkHandForFlush: HandCheckFunction<[number]> = (cards, minLength) => {
+  const rankedCards = rankCardsByValueAndSuit(cards)
+  const flush = rankedCards.filter(card => card.suit === rankedCards[0].suit)
+  if (flush.length >= minLength) {
+    return [true, flush.slice(0, minLength)]
+  }
+  return [false, []]
+}
+
+export const checkHandForFullHouse: HandCheckFunction = cards => {
+  const threeOfAKinds = findAllThreeOfAKinds(cards)
+  if (threeOfAKinds.length > 0) {
+    const rankedThreeOfAKinds = rankThreeOfAKindsByValueAndSuit(threeOfAKinds)
+    const pairs = findAllPairs(
+      cards.filter(
+        card =>
+          card !== rankedThreeOfAKinds[0][0] &&
+          card !== rankedThreeOfAKinds[0][1] &&
+          card !== rankedThreeOfAKinds[0][2]
+      )
+    )
+    if (pairs.length > 0) {
+      return [true, rankedThreeOfAKinds[0].concat(pairs[0])]
+    }
+  }
+  return [false, []]
+}
+
+export const checkHandForFourOfAKind: HandCheckFunction = cards => {
+  const fourOfAKind = findFourOfAKind(cards)
+  if (fourOfAKind.length > 0) {
+    return [true, fourOfAKind]
+  }
+  return [false, []]
+}
+
+export const checkHandForStraightFlush: HandCheckFunction<[number]> = (cards, minLength) => {
+  const straights = findAllStraights(cards, minLength)
+  if (straights.length > 0) {
+    return [true, straights[0]]
+  }
+  return [false, []]
+}
+
+export const checkHandForFlushHouse: HandCheckFunction<[number]> = (cards, minLength) => {
+  const straights = findAllStraights(cards, minLength)
+  if (straights.length > 0) {
+    const flush = areAllCardsSameSuit(straights[0])
+    if (flush) {
+      return [true, straights[0]]
+    }
+  }
+  return [false, []]
+}
+
+export const checkHandForFiveOfAKind: HandCheckFunction<[number]> = cards => {
+  if (cards.every(card => card.value === cards[0].value)) {
     return [true, cards]
-  },
+  }
+  return [false, []]
+}
+
+export const checkHandForFlushFive: HandCheckFunction = cards => {
+  if (cards.every(card => card.value === cards[0].value && card.suit === cards[0].suit)) {
+    return [true, cards]
+  }
+  return [false, []]
 }
