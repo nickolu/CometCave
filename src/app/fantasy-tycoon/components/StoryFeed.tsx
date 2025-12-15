@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/fantasy-tycoon/models/story'
+import {
+  FantasyDecisionOption,
+  FantasyDecisionPoint,
+  FantasyStoryEvent,
+} from '@/app/fantasy-tycoon/models/story'
 
 interface ResourceDeltaDisplayProps {
   resourceDelta: FantasyStoryEvent['resourceDelta']
