@@ -1,5 +1,5 @@
-import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { PokerHand } from '@/app/daily-card-game/domain/hand/types'
+import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
 const cardValuePriority: Record<CardValue, number> = {
   2: 1,

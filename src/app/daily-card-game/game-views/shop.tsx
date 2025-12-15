@@ -1,7 +1,7 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { useGameState } from '@/app/daily-card-game/useGameState'
+import { Button } from '@/components/ui/button'
 
 export function ShopView() {
   const { setGamePhase } = useGameState()

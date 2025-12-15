@@ -1,6 +1,6 @@
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { Card as CardUI } from '@/components/ui/card'
-import { eventEmitter } from '../../domain/events/event-emitter'
 import { cn } from '@/lib/utils'
 
 const FaceUpCard = ({ playingCard }: { playingCard: PlayingCard }) => {

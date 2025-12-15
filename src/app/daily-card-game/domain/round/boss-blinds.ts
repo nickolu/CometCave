@@ -1,5 +1,5 @@
-import { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
 const theHook: BossBlindDefinition = {
   status: 'notStarted',

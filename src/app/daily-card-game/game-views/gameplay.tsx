@@ -1,11 +1,12 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
+import { Deck } from '@/app/daily-card-game/components/global/deck'
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { useEffect, useState } from 'react'
-import { Deck } from '@/app/daily-card-game/components/global/deck'
 
 export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)

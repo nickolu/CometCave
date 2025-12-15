@@ -1,8 +1,9 @@
 'use client'
 
-import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Card } from './card'
 import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { useGameState } from '@/app/daily-card-game/useGameState'
+
+import { Card } from './card'
 
 export const Hand = () => {
   const { game } = useGameState()

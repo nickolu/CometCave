@@ -1,4 +1,4 @@
-import type { PokerHand } from '../hand/types'
+import type { PokerHand } from '@/app/daily-card-game/domain/hand/types'
 
 export type Consumable = Celestial | Arcane
 
