@@ -1,7 +1,7 @@
 import { act } from 'react'
 
-import { useStore } from '../store'
-import { Character } from '../types'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { Character } from '@/app/chat-room-of-infinity/types'
 
 describe('Character Response Logic', () => {
   const character: Character = {

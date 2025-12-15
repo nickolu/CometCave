@@ -3,9 +3,8 @@ import { useCallback, useState } from 'react'
 
 import { Button } from '@/app/fantasy-tycoon/components/ui/button'
 import { List } from '@/app/fantasy-tycoon/components/ui/list'
-
-import { useGameStore } from '../hooks/useGameStore'
-import { Item } from '../models/types'
+import { useGameStore } from '@/app/fantasy-tycoon/hooks/useGameStore'
+import { Item } from '@/app/fantasy-tycoon/models/types'
 
 interface InventoryPanelProps {
   inventory: Item[]

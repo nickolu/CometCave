@@ -11,6 +11,9 @@ const compat = new FlatCompat({
 })
 
 const eslintConfig = [
+  {
+    ignores: ['.next/**', 'node_modules/**'],
+  },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
@@ -58,6 +61,20 @@ const eslintConfig = [
 
       'import/newline-after-import': 'error',
       'import/no-duplicates': 'error',
+
+      // Prefer TS path aliases (`@/…`) over parent relative imports (`../…`).
+      // This keeps imports stable when files move and avoids deep relative chains.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*'],
+              message: 'Avoid parent relative imports. Use the `@/` path alias instead.',
+            },
+          ],
+        },
+      ],
     },
   },
 ]

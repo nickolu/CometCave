@@ -1,7 +1,7 @@
 'use client'
-import CharacterList from '../components/CharacterList'
-import { HudBar } from '../components/HudBar'
-import { PageTemplate } from '../components/ui/PageTemplate'
+import CharacterList from '@/app/fantasy-tycoon/components/CharacterList'
+import { HudBar } from '@/app/fantasy-tycoon/components/HudBar'
+import { PageTemplate } from '@/app/fantasy-tycoon/components/ui/PageTemplate'
 
 export default function FantasyTycoonPageCharacters() {
   return (

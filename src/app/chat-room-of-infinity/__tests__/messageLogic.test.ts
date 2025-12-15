@@ -1,7 +1,7 @@
 import { act } from 'react'
 
-import { useStore } from '../store'
-import { ChatMessage } from '../types'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { ChatMessage } from '@/app/chat-room-of-infinity/types'
 
 describe('Message Sending Logic', () => {
   beforeEach(() => {

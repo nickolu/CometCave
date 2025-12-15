@@ -1,4 +1,4 @@
-import { Character } from '../../types'
+import { Character } from '@/app/chat-room-of-infinity/types'
 
 export interface SafetyCheckResponse {
   safe: boolean

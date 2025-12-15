@@ -3,9 +3,14 @@ import { produce } from 'immer'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-import { defaultGameState } from '../lib/defaultGameState'
-import { FantasyCharacter } from '../models/character'
-import { FantasyDecisionPoint, FantasyStoryEvent, GameState, Item } from '../models/types'
+import { defaultGameState } from '@/app/fantasy-tycoon/lib/defaultGameState'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import {
+  FantasyDecisionPoint,
+  FantasyStoryEvent,
+  GameState,
+  Item,
+} from '@/app/fantasy-tycoon/models/types'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',

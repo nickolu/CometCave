@@ -3,7 +3,7 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { READING_LEVEL } from '../constants'
+import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
 
 const RandomScenarioSchema = z.object({
   setting: z.string().describe('The battle setting and environment'),

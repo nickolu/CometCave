@@ -1,8 +1,8 @@
 'use client'
 import React, { useCallback } from 'react'
 
-import { useCharacterCreation } from '../hooks/useCharacterCreation'
-import { FantasyCharacter } from '../models/types'
+import { useCharacterCreation } from '@/app/fantasy-tycoon/hooks/useCharacterCreation'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/types'
 
 export default function CharacterCreation({
   onComplete,

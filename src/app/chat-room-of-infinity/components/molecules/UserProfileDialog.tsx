@@ -14,8 +14,8 @@ import {
 } from '@mui/material'
 import { FormEvent, useState } from 'react'
 
-import { useStore } from '../../store'
-import { CharacterStatus, HumanUser } from '../../types'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { CharacterStatus, HumanUser } from '@/app/chat-room-of-infinity/types'
 
 interface UserProfileDialogProps {
   open: boolean

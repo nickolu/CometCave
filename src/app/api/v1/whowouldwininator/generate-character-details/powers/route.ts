@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 
-import { CharacterPowersSchema } from '../../types'
+import { CharacterPowersSchema } from '@/app/api/v1/whowouldwininator/types'
 
 export async function POST(request: Request) {
   try {

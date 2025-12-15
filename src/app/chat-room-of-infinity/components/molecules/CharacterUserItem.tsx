@@ -4,9 +4,9 @@ import { Close } from '@mui/icons-material'
 import { Avatar, Box, IconButton, ListItemAvatar, ListItemText, Tooltip } from '@mui/material'
 import { green } from '@mui/material/colors'
 
-import { useStore } from '../../store'
-import { Character } from '../../types'
-import { UserListItem } from '../atoms/UserListItem'
+import { UserListItem } from '@/app/chat-room-of-infinity/components/atoms/UserListItem'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { Character } from '@/app/chat-room-of-infinity/types'
 
 interface Props {
   character: Character

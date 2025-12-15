@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FantasyCharacter } from '../models/character'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 
 describe('Character Attribute Management', () => {
   it('should create a character with correct attributes', () => {

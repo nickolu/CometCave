@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
 
-import { READING_LEVEL } from '../../constants'
+import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
 
 export async function POST(request: Request) {
   try {

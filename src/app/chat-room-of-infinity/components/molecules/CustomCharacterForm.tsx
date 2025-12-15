@@ -3,7 +3,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material'
 import { ChangeEvent, FormEvent } from 'react'
 
-import { useStore } from '../../store'
+import { useStore } from '@/app/chat-room-of-infinity/store'
 
 export default function CustomCharacterForm() {
   const { isOpen, name, description } = useStore(state => state.customCharacterForm)

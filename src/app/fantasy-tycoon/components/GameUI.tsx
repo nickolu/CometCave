@@ -4,12 +4,11 @@ import { LoaderCircle } from 'lucide-react'
 import { useEffect } from 'react'
 
 import { Button } from '@/app/fantasy-tycoon/components/ui/button'
+import { useGameStore } from '@/app/fantasy-tycoon/hooks/useGameStore'
+import { useMoveForwardMutation } from '@/app/fantasy-tycoon/hooks/useMoveForwardMutation'
+import { useResolveDecisionMutation } from '@/app/fantasy-tycoon/hooks/useResolveDecisionMutation'
+import { getGenericTravelMessage } from '@/app/fantasy-tycoon/lib/getGenericTravelMessage'
 import { flipCoin } from '@/app/utils'
-
-import { useGameStore } from '../hooks/useGameStore'
-import { useMoveForwardMutation } from '../hooks/useMoveForwardMutation'
-import { useResolveDecisionMutation } from '../hooks/useResolveDecisionMutation'
-import { getGenericTravelMessage } from '../lib/getGenericTravelMessage'
 
 import { InventoryPanel } from './InventoryPanel'
 import { StoryFeed } from './StoryFeed'

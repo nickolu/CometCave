@@ -1,4 +1,4 @@
-import { Item } from '../../models/types'
+import { Item } from '@/app/fantasy-tycoon/models/types'
 
 import { extractRewardItemsWithRegex, fallbackExtractSimple } from './textParser'
 

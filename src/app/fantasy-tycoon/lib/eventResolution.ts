@@ -1,5 +1,5 @@
-import { FantasyCharacter } from '../models/character'
-import { FantasyDecisionOption } from '../models/story'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import { FantasyDecisionOption } from '@/app/fantasy-tycoon/models/story'
 
 export function applyEffects(
   character: FantasyCharacter,
