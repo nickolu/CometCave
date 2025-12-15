@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 
-import { Character } from '../../types'
+import { Character } from '@/app/chat-room-of-infinity/types'
 
 import { AIService, AIServiceConfig, Message, SafetyCheckResponse } from './types'
 

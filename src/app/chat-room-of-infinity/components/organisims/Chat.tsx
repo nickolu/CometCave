@@ -15,14 +15,14 @@ import {
 } from '@mui/material'
 import { useEffect, useRef } from 'react'
 
-import { useCharacterResponses } from '../../hooks/useCharacterResponses'
-import { useChatInput } from '../../hooks/useChatInput'
-import { useChatMenu } from '../../hooks/useChatMenu'
-import { useChatSafety } from '../../hooks/useChatSafety'
-import { useChatScroll } from '../../hooks/useChatScroll'
-import { useStore } from '../../store'
-import { ChatMessage } from '../../types'
-import Message from '../molecules/ChatMessage'
+import Message from '@/app/chat-room-of-infinity/components/molecules/ChatMessage'
+import { useCharacterResponses } from '@/app/chat-room-of-infinity/hooks/useCharacterResponses'
+import { useChatInput } from '@/app/chat-room-of-infinity/hooks/useChatInput'
+import { useChatMenu } from '@/app/chat-room-of-infinity/hooks/useChatMenu'
+import { useChatSafety } from '@/app/chat-room-of-infinity/hooks/useChatSafety'
+import { useChatScroll } from '@/app/chat-room-of-infinity/hooks/useChatScroll'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { ChatMessage } from '@/app/chat-room-of-infinity/types'
 
 // Constants for timing values (in milliseconds)
 const CHARACTER_RESPONSE_INTERVAL_MS = 2000 // ms between character responses

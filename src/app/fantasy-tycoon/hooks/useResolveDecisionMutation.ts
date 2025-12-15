@@ -1,7 +1,7 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { FantasyCharacter , FantasyDecisionPoint , Item } from '../models/types'
+import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/fantasy-tycoon/models/types'
 
 import { useGameStateBuilder, useGameStore } from './useGameStore'
 

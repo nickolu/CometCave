@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useStore } from '../store'
+import { useStore } from '@/app/chat-room-of-infinity/store'
 
 export function useChatMenu({
   characterResponseTimerRef,

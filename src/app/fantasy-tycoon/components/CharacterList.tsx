@@ -1,14 +1,13 @@
 'use client'
 import React, { useState } from 'react'
 
-import { useGameStore } from '../hooks/useGameStore'
-import { FantasyCharacter } from '../models/types'
+import { useGameStore } from '@/app/fantasy-tycoon/hooks/useGameStore'
+import type { GameStore } from '@/app/fantasy-tycoon/hooks/useGameStore'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/types'
 
 import AddCharacterCard from './AddCharacterCard'
 import CharacterCard from './CharacterCard'
 import CharacterCreation from './CharacterCreation'
-
-import type { GameStore } from '../hooks/useGameStore'
 
 const EMPTY_ARRAY: FantasyCharacter[] = []
 const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY

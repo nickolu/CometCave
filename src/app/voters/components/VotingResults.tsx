@@ -14,11 +14,10 @@ import {
   YAxis,
 } from 'recharts'
 
+import { useGenerateSummary } from '@/app/voters/api/hooks'
 import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-import { useGenerateSummary } from '../api/hooks'
 
 interface VotingResultsProps {
   votes: Vote[]

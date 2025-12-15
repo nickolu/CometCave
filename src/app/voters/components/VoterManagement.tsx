@@ -3,21 +3,20 @@
 import { Copy, Pencil, Settings, Sparkles, Trash2, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { useGenerateRandomVoter } from '@/app/voters/api/hooks'
 import { Voter } from '@/app/voters/types/voting'
-
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
-import { Label } from '../../../components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../../components/ui/select'
-import { Slider } from '../../../components/ui/slider'
-import { Textarea } from '../../../components/ui/textarea'
-import { useGenerateRandomVoter } from '../api/hooks'
+} from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
+import { Textarea } from '@/components/ui/textarea'
 
 const models = [
   { label: 'gpt-3.5-turbo', value: 'gpt-3.5-turbo' },

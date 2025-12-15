@@ -1,8 +1,8 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
 
-import { FantasyCharacter } from '../models/character'
-import { Item } from '../models/item'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import { Item } from '@/app/fantasy-tycoon/models/item'
 
 const processFallbackRewardItems = (
   items?: { id: string; name?: string; description?: string; quantity: number }[]

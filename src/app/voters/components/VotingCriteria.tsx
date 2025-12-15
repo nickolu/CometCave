@@ -3,13 +3,12 @@
 import { Lightbulb, Plus, RefreshCw, Trash2, Vote, Wand2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { useGenerateCriteria, useGenerateRandomQuestion } from '@/app/voters/api/hooks'
 import { VotingCriteria } from '@/app/voters/types/voting'
-
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
-import { Label } from '../../../components/ui/label'
-import { Textarea } from '../../../components/ui/textarea'
-import { useGenerateCriteria, useGenerateRandomQuestion } from '../api/hooks'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 interface VotingCriteriaProps {
   criteria: VotingCriteria

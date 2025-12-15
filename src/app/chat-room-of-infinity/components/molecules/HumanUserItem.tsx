@@ -4,8 +4,8 @@ import { Avatar, Box, ListItemAvatar, ListItemText, Tooltip } from '@mui/materia
 import { green, grey, orange, red } from '@mui/material/colors'
 import { useState } from 'react'
 
-import { useStore } from '../../store'
-import { UserListItem } from '../atoms/UserListItem'
+import { UserListItem } from '@/app/chat-room-of-infinity/components/atoms/UserListItem'
+import { useStore } from '@/app/chat-room-of-infinity/store'
 
 import UserProfileDialog from './UserProfileDialog'
 

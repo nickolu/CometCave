@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion'
 import React from 'react'
 
-import { FantasyCharacter } from '../models/types'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/types'
 
 interface CharacterCardProps {
   character: FantasyCharacter

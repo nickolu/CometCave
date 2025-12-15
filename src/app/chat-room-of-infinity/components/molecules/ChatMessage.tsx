@@ -2,7 +2,7 @@
 
 import { Avatar, Box, Typography } from '@mui/material'
 
-import { ChatMessage as ChatMessageType } from '../../types'
+import { ChatMessage as ChatMessageType } from '@/app/chat-room-of-infinity/types'
 
 interface Props {
   message: ChatMessageType

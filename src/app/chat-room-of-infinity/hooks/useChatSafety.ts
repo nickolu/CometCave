@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useSafetyCheck } from '../api/hooks'
+import { useSafetyCheck } from '@/app/chat-room-of-infinity/api/hooks'
 
 export function useChatSafety() {
   const [error, setError] = useState<string | null>(null)

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyEffects, calculateEffectiveProbability } from '../lib/eventResolution'
-import { FantasyCharacter } from '../models/character'
-import { FantasyDecisionOption } from '../models/story'
+import {
+  applyEffects,
+  calculateEffectiveProbability,
+} from '@/app/fantasy-tycoon/lib/eventResolution'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import { FantasyDecisionOption } from '@/app/fantasy-tycoon/models/story'
 
 describe('Decision Resolution', () => {
   const baseChar: FantasyCharacter = {

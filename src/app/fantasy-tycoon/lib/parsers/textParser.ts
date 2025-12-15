@@ -1,6 +1,6 @@
 // Regex/text utilities for reward extraction
 
-import { Item } from '../../models/types'
+import { Item } from '@/app/fantasy-tycoon/models/types'
 
 export function extractRewardItemsWithRegex(text: string): Item[] {
   const regex =

@@ -1,6 +1,6 @@
 import { act } from 'react'
 
-import { useStore } from '../store'
+import { useStore } from '@/app/chat-room-of-infinity/store'
 
 describe('Store Actions & State', () => {
   beforeEach(() => {

@@ -7,9 +7,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/app/fantasy-tycoon/components/ui/tooltip'
-
-import { useGameStore } from '../hooks/useGameStore'
-import { FantasyCharacter } from '../models/character'
+import { useGameStore } from '@/app/fantasy-tycoon/hooks/useGameStore'
+import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 
 type IconType =
   | 'sunIcon'

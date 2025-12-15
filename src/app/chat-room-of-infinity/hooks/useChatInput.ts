@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 
-import { useSafetyCheck } from '../api/hooks'
-import { useStore } from '../store'
+import { useSafetyCheck } from '@/app/chat-room-of-infinity/api/hooks'
+import { useStore } from '@/app/chat-room-of-infinity/store'
 
 const USER_TYPING_TIMEOUT_MS = 1000
 

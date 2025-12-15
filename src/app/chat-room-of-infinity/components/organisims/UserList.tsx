@@ -3,11 +3,11 @@
 import { Close, ExpandLess, ExpandMore, PersonAdd } from '@mui/icons-material'
 import { Box, Button, IconButton, List, Tooltip, Typography } from '@mui/material'
 
-import { useStore } from '../../store'
-import { Character } from '../../types'
-import CharacterUserItem from '../molecules/CharacterUserItem'
-import HumanUserItem from '../molecules/HumanUserItem'
-import UserSelector from '../molecules/UserSelector'
+import CharacterUserItem from '@/app/chat-room-of-infinity/components/molecules/CharacterUserItem'
+import HumanUserItem from '@/app/chat-room-of-infinity/components/molecules/HumanUserItem'
+import UserSelector from '@/app/chat-room-of-infinity/components/molecules/UserSelector'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { Character } from '@/app/chat-room-of-infinity/types'
 
 const sx = {
   container: {

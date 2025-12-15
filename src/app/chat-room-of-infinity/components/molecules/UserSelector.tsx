@@ -19,8 +19,8 @@ import {
 } from '@mui/material'
 import { FormEvent, useEffect, useState } from 'react'
 
-import { useStore } from '../../store'
-import { Character } from '../../types'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { Character } from '@/app/chat-room-of-infinity/types'
 
 export default function UserSelector() {
   const { isOpen, availableCharacters } = useStore(state => state.userSelector)

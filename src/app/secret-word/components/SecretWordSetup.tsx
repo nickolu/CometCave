@@ -3,11 +3,10 @@
 import { Loader2 } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 
+import { useGenerateWord, useScoreWord } from '@/app/secret-word/api/hooks'
+import { ScoreWordResponse } from '@/app/secret-word/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
-import { useGenerateWord, useScoreWord } from '../api/hooks'
-import { ScoreWordResponse } from '../api/types'
 
 interface SecretWordSetupProps {
   onSetupComplete: (

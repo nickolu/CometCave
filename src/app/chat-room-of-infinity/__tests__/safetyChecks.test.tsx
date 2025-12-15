@@ -1,10 +1,10 @@
 import { renderHook } from '@testing-library/react'
 import { act } from 'react'
 
-import { useChatSafety } from '../hooks/useChatSafety'
+import { useChatSafety } from '@/app/chat-room-of-infinity/hooks/useChatSafety'
 
 // Mock the useSafetyCheck hook to simulate API responses
-jest.mock('../api/hooks', () => ({
+jest.mock('@/app/chat-room-of-infinity/api/hooks', () => ({
   useSafetyCheck: () => ({
     mutateAsync: jest.fn((msg: string) => {
       if (msg === 'safe') return Promise.resolve({ safe: true })

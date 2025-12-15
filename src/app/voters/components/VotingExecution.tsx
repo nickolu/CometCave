@@ -3,11 +3,10 @@
 import { Play } from 'lucide-react'
 import { useState } from 'react'
 
+import { useCastVote } from '@/app/voters/api/hooks'
 import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-
-import { useCastVote } from '../api/hooks'
 
 interface VotingExecutionProps {
   voters: Voter[]

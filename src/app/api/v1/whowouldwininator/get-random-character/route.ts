@@ -3,7 +3,7 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { READING_LEVEL } from '../constants'
+import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
 
 const RandomCharacterSchema = z.object({
   name: z.string().describe('The name of the character'),

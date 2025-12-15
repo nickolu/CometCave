@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 
-import { useCharacterResponse, useConversationManager } from '../api/hooks'
-import { useStore } from '../store'
-import { Character, ChatMessage } from '../types'
+import { useCharacterResponse, useConversationManager } from '@/app/chat-room-of-infinity/api/hooks'
+import { useStore } from '@/app/chat-room-of-infinity/store'
+import { Character, ChatMessage } from '@/app/chat-room-of-infinity/types'
 
 const INTER_RESPONSE_DELAY_MS = 500
 const TYPING_SIMULATION_DELAY_MS = 0
