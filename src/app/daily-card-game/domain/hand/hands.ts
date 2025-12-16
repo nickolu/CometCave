@@ -1,4 +1,4 @@
-import { PokerHand } from '@/app/daily-card-game/domain/hand/types'
+import { PokerHand, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
 import {
   areAllCardsSameSuit,
   findAllPairs,
@@ -11,100 +11,129 @@ import {
 } from '@/app/daily-card-game/domain/hand/utils'
 import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
+import { handPriority } from './constants'
+
 export const highCardHand: PokerHand = {
+  name: 'High Card',
   baseChips: 100,
   multIncreasePerLevel: 1,
-  chipIncreasePerLevel: 1,
+  chipIncreasePerLevel: 10,
   baseMult: 1,
   isSecret: false,
 }
 
 export const pairHand: PokerHand = {
+  name: 'Pair',
   baseChips: 200,
-  multIncreasePerLevel: 2,
-  chipIncreasePerLevel: 2,
+  multIncreasePerLevel: 1,
+  chipIncreasePerLevel: 15,
   baseMult: 2,
   isSecret: false,
 }
 
 export const twoPairHand: PokerHand = {
+  name: 'Two Pair',
   baseChips: 300,
-  multIncreasePerLevel: 3,
-  chipIncreasePerLevel: 3,
+  multIncreasePerLevel: 1,
+  chipIncreasePerLevel: 20,
   baseMult: 3,
   isSecret: false,
 }
 
 export const threeOfAKindHand: PokerHand = {
+  name: 'Three of a Kind',
   baseChips: 400,
-  multIncreasePerLevel: 4,
-  chipIncreasePerLevel: 4,
+  multIncreasePerLevel: 2,
+  chipIncreasePerLevel: 20,
   baseMult: 4,
   isSecret: false,
 }
 
 export const straightHand: PokerHand = {
+  name: 'Straight',
   baseChips: 500,
-  multIncreasePerLevel: 5,
-  chipIncreasePerLevel: 5,
+  multIncreasePerLevel: 3,
+  chipIncreasePerLevel: 30,
   baseMult: 5,
   isSecret: false,
 }
 
 export const flushHand: PokerHand = {
+  name: 'Flush',
   baseChips: 600,
-  multIncreasePerLevel: 6,
-  chipIncreasePerLevel: 6,
+  multIncreasePerLevel: 2,
+  chipIncreasePerLevel: 15,
   baseMult: 6,
   isSecret: false,
 }
 
 export const fullHouseHand: PokerHand = {
+  name: 'Full House',
   baseChips: 700,
-  multIncreasePerLevel: 7,
-  chipIncreasePerLevel: 7,
+  multIncreasePerLevel: 2,
+  chipIncreasePerLevel: 25,
   baseMult: 7,
   isSecret: false,
 }
 
 export const fourOfAKindHand: PokerHand = {
+  name: 'Four of a Kind',
   baseChips: 800,
-  multIncreasePerLevel: 8,
-  chipIncreasePerLevel: 8,
+  multIncreasePerLevel: 3,
+  chipIncreasePerLevel: 30,
   baseMult: 8,
   isSecret: false,
 }
 
 export const straightFlushHand: PokerHand = {
+  name: 'Straight Flush',
   baseChips: 900,
-  multIncreasePerLevel: 9,
-  chipIncreasePerLevel: 9,
+  multIncreasePerLevel: 4,
+  chipIncreasePerLevel: 40,
   baseMult: 9,
   isSecret: false,
 }
 
 export const flushHouseHand: PokerHand = {
+  name: 'Flush House',
   baseChips: 1000,
-  multIncreasePerLevel: 10,
-  chipIncreasePerLevel: 10,
+  multIncreasePerLevel: 4,
+  chipIncreasePerLevel: 40,
   baseMult: 10,
   isSecret: true,
 }
 
 export const fiveOfAKindHand: PokerHand = {
+  name: 'Five of a Kind',
   baseChips: 1100,
-  multIncreasePerLevel: 11,
-  chipIncreasePerLevel: 11,
+  multIncreasePerLevel: 3,
+  chipIncreasePerLevel: 35,
   baseMult: 11,
   isSecret: true,
 }
 
 export const flushFiveHand: PokerHand = {
+  name: 'Flush Five',
   baseChips: 1200,
-  multIncreasePerLevel: 12,
-  chipIncreasePerLevel: 12,
+  multIncreasePerLevel: 3,
+  chipIncreasePerLevel: 50,
   baseMult: 12,
   isSecret: true,
+}
+
+export const hands: Record<keyof PokerHandsState, PokerHand> = {
+  highCard: highCardHand,
+  pair: pairHand,
+  twoPair: twoPairHand,
+  threeOfAKind: threeOfAKindHand,
+  straight: straightHand,
+  flush: flushHand,
+  fullHouse: fullHouseHand,
+  fourOfAKind: fourOfAKindHand,
+  straightFlush: straightFlushHand,
+  flushHouse: flushHouseHand,
+  fiveOfAKind: fiveOfAKindHand,
+  flushFive: flushFiveHand,
 }
 
 // returns if the card series contains target hand and the highest value matching cards for the hand
@@ -208,15 +237,65 @@ export const checkHandForFlushHouse: HandCheckFunction<[number]> = (cards, minLe
 }
 
 export const checkHandForFiveOfAKind: HandCheckFunction<[number]> = cards => {
-  if (cards.every(card => card.value === cards[0].value)) {
+  if (cards.length === 5 && cards.every(card => card.value === cards[0].value)) {
     return [true, cards]
   }
   return [false, []]
 }
 
 export const checkHandForFlushFive: HandCheckFunction = cards => {
-  if (cards.every(card => card.value === cards[0].value && card.suit === cards[0].suit)) {
+  if (
+    cards.length === 5 &&
+    cards.every(card => card.value === cards[0].value && card.suit === cards[0].suit)
+  ) {
     return [true, cards]
   }
   return [false, []]
+}
+
+const handCheckFunctions: Record<
+  keyof PokerHandsState,
+  HandCheckFunction | HandCheckFunction<[number]>
+> = {
+  highCard: checkHandForHighCard,
+  pair: checkHandForPair,
+  twoPair: checkHandForTwoPair,
+  threeOfAKind: checkHandForThreeOfAKind,
+  straight: checkHandForStraight,
+  flush: checkHandForFlush,
+  fullHouse: checkHandForFullHouse,
+  fourOfAKind: checkHandForFourOfAKind,
+  straightFlush: checkHandForStraightFlush,
+  flushHouse: checkHandForFlushHouse,
+  fiveOfAKind: checkHandForFiveOfAKind,
+  flushFive: checkHandForFlushFive,
+}
+
+// type guard to check if a string is a valid poker hand name
+const isPokerHandName = (name: string): name is keyof PokerHandsState => {
+  return name in handCheckFunctions
+}
+
+export const findHighestPriorityHand = (
+  cards: PlayingCard[],
+  minLengthForFlushAndStraight: number = 5
+) => {
+  console.log('cards', cards)
+  let bestHand: keyof PokerHandsState = 'highCard'
+  let bestHandCards: PlayingCard[] = checkHandForHighCard(cards)[1]
+  for (const hand of Object.keys(handCheckFunctions)) {
+    if (!isPokerHandName(hand)) continue
+
+    const [isHand, handCards] = handCheckFunctions[hand](cards, minLengthForFlushAndStraight)
+    console.log('isHand', isHand)
+    console.log('handCards', handCards)
+
+    if (isHand && handPriority[hand] > handPriority[bestHand]) {
+      console.log('bestHand', bestHand)
+      console.log('hand', hand)
+      bestHand = hand
+      bestHandCards = handCards
+    }
+  }
+  return { hand: bestHand, handCards: bestHandCards }
 }
