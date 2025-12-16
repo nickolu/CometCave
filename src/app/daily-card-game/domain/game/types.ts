@@ -3,7 +3,7 @@ import type {
   TagDefinition,
   VoucherDefinition,
 } from '@/app/daily-card-game/domain/consumable/types'
-import type { PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
+import type { PokerHand, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
 import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import type { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
@@ -21,18 +21,27 @@ export interface GameState {
   money: number
   pokerHands: PokerHandsState
   rounds: RoundDefinition[]
+  roundIndex: number
   shopState: ShopState
   stake: Stake
   tags: TagDefinition[]
   vouchersUsed: VoucherDefinition[]
+  totalScore: number
 }
 
-export type GamePhase = 'mainMenu' | 'shop' | 'blindSelection' | 'gameplay' | 'packOpening'
+export type GamePhase =
+  | 'mainMenu'
+  | 'shop'
+  | 'blindSelection'
+  | 'gameplay'
+  | 'packOpening'
+  | 'gameOver'
 
 export interface GamePlayState {
   jokers: JokerDefinition[]
   dealtCards: PlayingCard[]
   selectedCardIds: string[]
+  selectedHand?: [PokerHand, PlayingCard[]]
   remainingDeck: PlayingCard[]
   score: ScoreState
   remainingHands: number

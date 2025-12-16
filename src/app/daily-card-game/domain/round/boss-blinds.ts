@@ -2,13 +2,15 @@ import { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
 const theHook: BossBlindDefinition = {
+  type: 'bossBlind',
   status: 'notStarted',
   anteMultiplier: 2,
   name: 'The Hook',
   description: 'Discards 2 random cards held in hand after every played hand.',
   image: 'the-hook.png',
   minimumAnte: 1,
-  winnings: 5,
+  baseReward: 5,
+  additionalRewards: [],
   effects: [
     {
       event: { type: 'HAND_SCORING_END' },
@@ -25,13 +27,15 @@ const theHook: BossBlindDefinition = {
 }
 
 const theOx: BossBlindDefinition = {
+  type: 'bossBlind',
   status: 'notStarted',
   anteMultiplier: 2,
   name: 'The Ox',
   description: 'Playing your most played hand this run sets money to $0',
   image: 'the-ox.png',
   minimumAnte: 6,
-  winnings: 5,
+  baseReward: 5,
+  additionalRewards: [],
   effects: [
     {
       event: { type: 'HAND_SCORING_END' },

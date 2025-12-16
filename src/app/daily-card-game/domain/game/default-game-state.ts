@@ -2,6 +2,7 @@ import { pokerDeck } from '@/app/daily-card-game/domain/decks/poker-deck'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import {
   fiveOfAKindHand,
+  flushFiveHand,
   flushHand,
   flushHouseHand,
   fourOfAKindHand,
@@ -14,10 +15,11 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import type { HandState, PokerHand } from '@/app/daily-card-game/domain/hand/types'
+import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
 const getDefaultHandState = (hand: PokerHand): HandState => ({
   timesPlayed: 0,
-  level: 0,
+  level: 1,
   hand,
 })
 
@@ -56,8 +58,10 @@ export const defaultGameState: GameState = {
     straightFlush: getDefaultHandState(straightFlushHand),
     flushHouse: getDefaultHandState(flushHouseHand),
     fiveOfAKind: getDefaultHandState(fiveOfAKindHand),
+    flushFive: getDefaultHandState(flushFiveHand),
   },
-  rounds: [],
+  rounds,
+  roundIndex: 0,
   shopState: {
     cardsForSale: [],
     packsForSale: [],
@@ -79,4 +83,5 @@ export const defaultGameState: GameState = {
     enablePerishableJokers: false,
     enableRentableJokers: false,
   },
+  totalScore: 0,
 }

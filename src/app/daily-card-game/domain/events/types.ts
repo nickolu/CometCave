@@ -13,6 +13,21 @@ export type GameEvent =
   | RoundStartEvent
   | RoundEndEvent
   | DiscardSelectedCardsEvent
+  | SmallBlindSelectedEvent
+  | BigBlindSelectedEvent
+  | BossBlindSelectedEvent
+
+export type SmallBlindSelectedEvent = {
+  type: 'SMALL_BLIND_SELECTED'
+}
+
+export type BigBlindSelectedEvent = {
+  type: 'BIG_BLIND_SELECTED'
+}
+
+export type BossBlindSelectedEvent = {
+  type: 'BOSS_BLIND_SELECTED'
+}
 
 export type HandDealtEvent = {
   type: 'HAND_DEALT'
@@ -28,6 +43,7 @@ export type HandScoringEndEvent = {
 
 export type CardScoredEvent = {
   type: 'CARD_SCORED'
+  id: string
 }
 
 export type RoundStartEvent = {

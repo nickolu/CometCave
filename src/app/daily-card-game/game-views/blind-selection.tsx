@@ -1,19 +1,45 @@
 'use client'
 
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 export function BlindSelectionView() {
-  const { setGamePhase } = useGameState()
+  const { game, setGamePhase } = useGameState()
+  const currentRound = game.rounds[game.roundIndex]
+  const blindsInCurrentRound = [
+    currentRound.smallBlind,
+    currentRound.bigBlind,
+    currentRound.bossBlind,
+  ]
+  const nextBlind = blindsInCurrentRound.find(blind => blind.status === 'notStarted')
+
   return (
     <div>
       <h1>Blind Selection</h1>
       <Button
+        disabled={nextBlind?.type !== 'smallBlind'}
         onClick={() => {
-          setGamePhase('gameplay')
+          eventEmitter.emit({ type: 'SMALL_BLIND_SELECTED' })
         }}
       >
-        Start Game
+        Start Small Blind
+      </Button>
+      <Button
+        disabled={nextBlind?.type !== 'bigBlind'}
+        onClick={() => {
+          eventEmitter.emit({ type: 'BIG_BLIND_SELECTED' })
+        }}
+      >
+        Start Big Blind
+      </Button>
+      <Button
+        disabled={nextBlind?.type !== 'bossBlind'}
+        onClick={() => {
+          eventEmitter.emit({ type: 'BOSS_BLIND_SELECTED' })
+        }}
+      >
+        Start Boss Blind
       </Button>
       <Button
         onClick={() => {

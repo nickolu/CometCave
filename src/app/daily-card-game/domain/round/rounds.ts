@@ -2,17 +2,25 @@ import { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 
 import { bossBlinds } from './boss-blinds'
 
-const getDefaultRoundState = (baseChips: number, ante: number): RoundDefinition => {
+const getDefaultRoundState = (baseAnte: number, ante: number): RoundDefinition => {
   console.log('ante', ante) // this will be used to determine the boss blind eventually
   return {
-    baseChips: baseChips,
+    baseAnte: baseAnte,
     smallBlind: {
+      type: 'smallBlind',
+      name: 'Small Blind',
       status: 'notStarted',
       anteMultiplier: 1,
+      baseReward: 3,
+      additionalRewards: [],
     },
     bigBlind: {
+      type: 'bigBlind',
+      name: 'Big Blind',
       status: 'notStarted',
       anteMultiplier: 1.5,
+      baseReward: 4,
+      additionalRewards: [],
     },
     bossBlind: bossBlinds[0],
   }

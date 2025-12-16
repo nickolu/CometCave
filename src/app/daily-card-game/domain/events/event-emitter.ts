@@ -11,6 +11,9 @@ class EventEmitter {
     CARD_SELECTED: [],
     CARD_DESELECTED: [],
     DISCARD_SELECTED_CARDS: [],
+    SMALL_BLIND_SELECTED: [],
+    BIG_BLIND_SELECTED: [],
+    BOSS_BLIND_SELECTED: [],
   }
 
   on<TType extends GameEvent['type']>(

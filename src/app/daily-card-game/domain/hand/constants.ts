@@ -1,5 +1,7 @@
 import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 
+import { PokerHandsState } from './types'
+
 export const cardValuePriority: Record<CardValue, number> = {
   2: 1,
   3: 2,
@@ -21,4 +23,19 @@ export const suitPriority: Record<PlayingCard['suit'], number> = {
   diamonds: 2,
   clubs: 3,
   spades: 4,
+}
+
+export const handPriority: Record<keyof PokerHandsState, number> = {
+  highCard: 1,
+  pair: 2,
+  twoPair: 3,
+  threeOfAKind: 4,
+  straight: 5,
+  flush: 6,
+  fullHouse: 7,
+  fourOfAKind: 8,
+  straightFlush: 9,
+  flushHouse: 10,
+  fiveOfAKind: 11,
+  flushFive: 12,
 }

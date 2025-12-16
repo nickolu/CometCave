@@ -5,6 +5,10 @@ import { create } from 'zustand'
 import type { GamePhase, GameState } from '@/app/daily-card-game/domain/game/types'
 
 import { defaultGameState } from './domain/game/default-game-state'
+import { findHighestPriorityHand, hands } from './domain/hand/hands'
+import { PokerHand } from './domain/hand/types'
+import { PlayingCard } from './domain/playing-card/types'
+import { getInProgressBlind } from './domain/round/blinds'
 
 const HAND_SIZE = 7
 
@@ -19,6 +23,12 @@ export interface DailyCardGameStore {
   discardSelectedCards: () => void
   dealCards: (count: number) => void
   refillHand: () => void
+  handScoringStart: () => void
+  handScoringEnd: () => void
+  cardScored: (cardId: string) => void
+  selectSmallBlind: () => void
+  selectBigBlind: () => void
+  selectBossBlind: () => void
 }
 
 export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
@@ -26,6 +36,57 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
   setGame: game => set({ game }),
   clearGame: () => set({ game: defaultGameState }),
   setGamePhase: (gamePhase: GamePhase) => set(state => ({ game: { ...state.game, gamePhase } })),
+  selectSmallBlind: () =>
+    set(state => {
+      const currentRoundIndex = state.game.roundIndex
+      const currentRound = state.game.rounds[currentRoundIndex]
+      const newRounds = [...state.game.rounds]
+      newRounds[currentRoundIndex] = {
+        ...currentRound,
+        smallBlind: { ...currentRound.smallBlind, status: 'inProgress' },
+      }
+      return {
+        game: {
+          ...state.game,
+          rounds: newRounds,
+          gamePhase: 'gameplay',
+        },
+      }
+    }),
+  selectBigBlind: () =>
+    set(state => {
+      const currentRoundIndex = state.game.roundIndex
+      const currentRound = state.game.rounds[currentRoundIndex]
+      const newRounds = [...state.game.rounds]
+      newRounds[currentRoundIndex] = {
+        ...currentRound,
+        bigBlind: { ...currentRound.bigBlind, status: 'inProgress' },
+      }
+      return {
+        game: {
+          ...state.game,
+          rounds: newRounds,
+          gamePhase: 'gameplay',
+        },
+      }
+    }),
+  selectBossBlind: () =>
+    set(state => {
+      const currentRoundIndex = state.game.roundIndex
+      const currentRound = state.game.rounds[currentRoundIndex]
+      const newRounds = [...state.game.rounds]
+      newRounds[currentRoundIndex] = {
+        ...currentRound,
+        bossBlind: { ...currentRound.bossBlind, status: 'inProgress' },
+      }
+      return {
+        game: {
+          ...state.game,
+          rounds: newRounds,
+          gamePhase: 'gameplay',
+        },
+      }
+    }),
   dealHand: () =>
     set(state => {
       if (state.game.gamePlayState.dealtCards.length) {
@@ -84,25 +145,59 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
       }
     }),
   selectCard: (id: string) =>
-    set(state => ({
-      game: {
-        ...state.game,
-        gamePlayState: {
-          ...state.game.gamePlayState,
-          selectedCardIds: [...state.game.gamePlayState.selectedCardIds, id],
+    set(state => {
+      const gamePlayState = state.game.gamePlayState
+      const selectedCardIds = [...gamePlayState.selectedCardIds, id]
+      const selectedCards = gamePlayState.dealtCards.filter(card =>
+        selectedCardIds.includes(card.id)
+      )
+      console.log('selectedCards', selectedCards)
+      const selectedHandId = findHighestPriorityHand(selectedCards).hand
+      console.log('selectedHandId', selectedHandId)
+      const selectedHand = hands[selectedHandId]
+      console.log('selectedHand', selectedHand)
+      return {
+        game: {
+          ...state.game,
+          gamePlayState: {
+            ...state.game.gamePlayState,
+            selectedCardIds: [...state.game.gamePlayState.selectedCardIds, id],
+            selectedHand: [
+              selectedHand,
+              gamePlayState.dealtCards.filter(card => selectedCardIds.includes(card.id)),
+            ],
+          },
         },
-      },
-    })),
+      }
+    }),
   deselectCard: (id: string) =>
-    set(state => ({
-      game: {
-        ...state.game,
-        gamePlayState: {
-          ...state.game.gamePlayState,
-          selectedCardIds: state.game.gamePlayState.selectedCardIds.filter(cardId => cardId !== id),
+    set(state => {
+      const gamePlayState = state.game.gamePlayState
+      const selectedCardIds = gamePlayState.selectedCardIds.filter(cardId => cardId !== id)
+      const selectedCards = gamePlayState.dealtCards.filter(card =>
+        selectedCardIds.includes(card.id)
+      )
+      let selectedHand: [PokerHand, PlayingCard[]] | undefined = undefined
+      if (selectedCards.length === 0) {
+        selectedHand = undefined
+      } else {
+        const selectedHandId = findHighestPriorityHand(selectedCards).hand
+        selectedHand = [hands[selectedHandId], selectedCards]
+      }
+      console.log('selectedHand', selectedHand)
+      return {
+        game: {
+          ...state.game,
+          gamePlayState: {
+            ...state.game.gamePlayState,
+            selectedCardIds: state.game.gamePlayState.selectedCardIds.filter(
+              cardId => cardId !== id
+            ),
+            selectedHand,
+          },
         },
-      },
-    })),
+      }
+    }),
   discardSelectedCards: () =>
     set(state => {
       const gameState = state.game
@@ -128,4 +223,179 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
         },
       }
     }),
+  cardScored: (cardId: string) => {
+    set(state => {
+      const gamePlayState = state.game.gamePlayState
+      const currentCardToScoreId = cardId
+      const currentCardToScore = gamePlayState.dealtCards.find(
+        card => card.id === currentCardToScoreId
+      )
+      if (!currentCardToScore) {
+        return state
+      }
+      const scoreState = gamePlayState.score
+      const additionalRewards: [string, number][] = []
+
+      let cardChips = currentCardToScore.baseChips
+      let cardMult = 1
+      if (currentCardToScore.modifier === 'bonus') {
+        cardChips += 10
+      }
+      if (currentCardToScore.modifier === 'mult') {
+        cardMult += 5
+      }
+      if (currentCardToScore.isFoil) {
+        cardMult += 5
+      }
+      if (currentCardToScore.isHolographic) {
+        cardMult += 50
+      }
+      const newScore = {
+        chips: scoreState.chips + cardChips,
+        mult: scoreState.mult + cardMult,
+      }
+
+      if (currentCardToScore.stamp === 'gold') {
+        additionalRewards.push(['goldStamp', 3])
+      }
+
+      const currentRoundIndex = state.game.roundIndex
+
+      const currentBlind = getInProgressBlind(state.game)
+      if (!currentBlind) {
+        return state
+      }
+
+      const currentRound = state.game.rounds[currentRoundIndex]
+      const updatedBlind = {
+        ...currentBlind,
+        additionalRewards: [...currentBlind.additionalRewards, ...additionalRewards],
+      }
+      const updatedRound = {
+        ...currentRound,
+        [updatedBlind.type]: updatedBlind,
+      }
+      const newRounds = [...state.game.rounds]
+      newRounds[currentRoundIndex] = updatedRound
+
+      const nextSelectedCardIds = gamePlayState.selectedCardIds.filter(
+        idToKeep => idToKeep !== currentCardToScoreId
+      )
+      const nextSelectedHand: [PokerHand, PlayingCard[]] | undefined = gamePlayState.selectedHand
+        ? [
+            gamePlayState.selectedHand[0],
+            gamePlayState.selectedHand[1].filter(card => card.id !== currentCardToScoreId),
+          ]
+        : undefined
+
+      return {
+        game: {
+          ...state.game,
+          rounds: newRounds,
+          gamePlayState: {
+            ...state.game.gamePlayState,
+            score: newScore,
+            selectedCardIds: nextSelectedCardIds,
+            selectedHand: nextSelectedHand,
+            dealtCards: gamePlayState.dealtCards.filter(card => card.id !== currentCardToScoreId),
+          },
+        },
+      }
+    })
+  },
+  handScoringStart: () => {
+    set(state => {
+      const gamePlayState = state.game.gamePlayState
+      const selectedCards = gamePlayState.dealtCards.filter(card =>
+        gamePlayState.selectedCardIds.includes(card.id)
+      )
+      const playedHand = findHighestPriorityHand(selectedCards).hand
+      console.log('playedHand', playedHand)
+      const playedHandLevel = state.game.pokerHands[playedHand].level
+      const handMult = hands[playedHand].baseMult * playedHandLevel
+      const handChips = hands[playedHand].baseChips * playedHandLevel
+      console.log('handChips', handChips)
+      console.log('handMult', handMult)
+
+      return {
+        game: {
+          ...state.game,
+          gamePlayState: {
+            ...gamePlayState,
+            score: {
+              chips: handChips,
+              mult: handMult,
+            },
+            selectedHand: [hands[playedHand], selectedCards],
+          },
+        },
+      }
+    })
+  },
+  handScoringEnd: () => {
+    set(state => {
+      const gamePlayState = state.game.gamePlayState
+
+      const totalScore = state.game.gamePlayState.score.chips * state.game.gamePlayState.score.mult
+      // if score is less than the ante, the game is over (player lost)
+      // if score is greater or equal to the ante, proceed to the shop
+      // add score from blind to total score either way
+      const newTotalScore = state.game.totalScore + totalScore
+      const currentRoundIndex = state.game.roundIndex
+      const currentBlind = getInProgressBlind(state.game)
+      if (!currentBlind) {
+        return state
+      }
+      const currentAnte =
+        currentBlind.anteMultiplier * state.game.rounds[currentRoundIndex].baseAnte
+
+      let newGamePhase: GamePhase = 'gameplay'
+
+      if (totalScore < currentAnte && gamePlayState.remainingHands === 0) {
+        newGamePhase = 'gameOver'
+        return {
+          game: {
+            ...state.game,
+            gamePhase: newGamePhase,
+            totalScore: newTotalScore,
+          },
+        }
+      }
+
+      const currentRound = state.game.rounds[currentRoundIndex]
+      const newRounds = [...state.game.rounds]
+      newRounds[currentRoundIndex] = {
+        ...currentRound,
+        [currentBlind.type]: { ...currentBlind, status: 'completed' },
+      }
+
+      if (totalScore >= currentAnte) {
+        newGamePhase = 'shop'
+      }
+
+      // refill hand
+      const cardsToRefill = gamePlayState.remainingDeck.slice(
+        0,
+        HAND_SIZE - gamePlayState.dealtCards.length
+      )
+
+      return {
+        game: {
+          ...state.game,
+          totalScore: newTotalScore,
+          gamePhase: newGamePhase,
+          gamePlayState: {
+            ...gamePlayState,
+            remainingHands: gamePlayState.remainingHands - 1,
+            dealtCards: gamePlayState.dealtCards.concat(cardsToRefill),
+            remainingDeck: gamePlayState.remainingDeck.slice(cardsToRefill.length),
+            score: {
+              chips: 0,
+              mult: 0,
+            },
+          },
+        },
+      }
+    })
+  },
 }))

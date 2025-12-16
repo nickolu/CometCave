@@ -6,8 +6,20 @@ import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 
 export const useGameEvents = () => {
-  const { setGamePhase, dealHand, selectCard, deselectCard, discardSelectedCards, refillHand } =
-    useGameState()
+  const {
+    setGamePhase,
+    dealHand,
+    selectCard,
+    deselectCard,
+    discardSelectedCards,
+    refillHand,
+    cardScored,
+    handScoringStart,
+    handScoringEnd,
+    selectSmallBlind,
+    selectBigBlind,
+    selectBossBlind,
+  } = useGameState()
 
   useEffect(() => {
     const unsubRoundStart = eventEmitter.on('ROUND_START', () => {
@@ -15,12 +27,27 @@ export const useGameEvents = () => {
       setGamePhase('blindSelection')
     })
 
+    const unsubSmallBlindSelected = eventEmitter.on('SMALL_BLIND_SELECTED', () => {
+      console.log('SMALL_BLIND_SELECTED')
+      selectSmallBlind()
+    })
+
+    const unsubBigBlindSelected = eventEmitter.on('BIG_BLIND_SELECTED', () => {
+      console.log('BIG_BLIND_SELECTED')
+      selectBigBlind()
+    })
+    const unsubBossBlindSelected = eventEmitter.on('BOSS_BLIND_SELECTED', () => {
+      console.log('BOSS_BLIND_SELECTED')
+      selectBossBlind()
+    })
+
     const unsubRoundEnd = eventEmitter.on('ROUND_END', () => {
       console.log('ROUND_END')
     })
 
-    const unsubCardScored = eventEmitter.on('CARD_SCORED', () => {
-      console.log('CARD_SCORED')
+    const unsubCardScored = eventEmitter.on('CARD_SCORED', event => {
+      console.log('CARD_SCORED', event.id)
+      cardScored(event.id)
     })
 
     const unsubHandDealt = eventEmitter.on('HAND_DEALT', () => {
@@ -44,6 +71,16 @@ export const useGameEvents = () => {
       refillHand()
     })
 
+    const unsubHandScoringStart = eventEmitter.on('HAND_SCORING_START', () => {
+      console.log('HAND_SCORING_START')
+      handScoringStart()
+    })
+
+    const unsubHandScoringEnd = eventEmitter.on('HAND_SCORING_END', () => {
+      console.log('HAND_SCORING_END')
+      handScoringEnd()
+    })
+
     return () => {
       unsubRoundStart()
       unsubRoundEnd()
@@ -52,6 +89,24 @@ export const useGameEvents = () => {
       unsubCardSelected()
       unsubCardDeselected()
       unsubDiscardSelectedCards()
+      unsubHandScoringStart()
+      unsubHandScoringEnd()
+      unsubSmallBlindSelected()
+      unsubBigBlindSelected()
+      unsubBossBlindSelected()
     }
-  }, [dealHand, selectCard, deselectCard, setGamePhase, discardSelectedCards, refillHand])
+  }, [
+    dealHand,
+    selectCard,
+    deselectCard,
+    setGamePhase,
+    discardSelectedCards,
+    refillHand,
+    cardScored,
+    handScoringEnd,
+    selectSmallBlind,
+    selectBigBlind,
+    selectBossBlind,
+    handScoringStart,
+  ])
 }

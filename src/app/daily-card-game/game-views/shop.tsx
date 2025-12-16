@@ -10,10 +10,10 @@ export function ShopView() {
       <h1>Shop</h1>
       <Button
         onClick={() => {
-          setGamePhase('gameplay')
+          setGamePhase('blindSelection')
         }}
       >
-        Start Round
+        Select Blind
       </Button>
       <Button
         onClick={() => {

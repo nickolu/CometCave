@@ -10,6 +10,7 @@ export interface PokerHandsState {
   straightFlush: HandState
   flushHouse: HandState
   fiveOfAKind: HandState
+  flushFive: HandState
 }
 
 export interface HandState {
@@ -19,6 +20,7 @@ export interface HandState {
 }
 
 export interface PokerHand {
+  name: string
   baseChips: number
   multIncreasePerLevel: number
   chipIncreasePerLevel: number

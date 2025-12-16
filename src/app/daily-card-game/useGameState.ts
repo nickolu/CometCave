@@ -11,6 +11,12 @@ export function useGameState() {
   const discardSelectedCards = useDailyCardGameStore(state => state.discardSelectedCards)
   const dealCards = useDailyCardGameStore(state => state.dealCards)
   const refillHand = useDailyCardGameStore(state => state.refillHand)
+  const handScoringStart = useDailyCardGameStore(state => state.handScoringStart)
+  const handScoringEnd = useDailyCardGameStore(state => state.handScoringEnd)
+  const cardScored = useDailyCardGameStore(state => state.cardScored)
+  const selectSmallBlind = useDailyCardGameStore(state => state.selectSmallBlind)
+  const selectBigBlind = useDailyCardGameStore(state => state.selectBigBlind)
+  const selectBossBlind = useDailyCardGameStore(state => state.selectBossBlind)
 
   return {
     game,
@@ -21,5 +27,11 @@ export function useGameState() {
     discardSelectedCards,
     dealCards,
     refillHand,
+    handScoringStart,
+    handScoringEnd,
+    cardScored,
+    selectSmallBlind,
+    selectBigBlind,
+    selectBossBlind,
   }
 }

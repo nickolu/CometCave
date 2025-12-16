@@ -1,5 +1,6 @@
 'use client'
 import { BlindSelectionView } from './game-views/blind-selection'
+import { GameOverView } from './game-views/game-over'
 import { GamePlayView } from './game-views/gameplay'
 import { MainMenuView } from './game-views/main-menu'
 import { PackOpenView } from './game-views/pack-open'
@@ -22,6 +23,8 @@ export default function DailyCardGamePage() {
       return <GamePlayView />
     case 'packOpening':
       return <PackOpenView />
+    case 'gameOver':
+      return <GameOverView />
     default:
       return <div>Error: Unknown game phase {game.gamePhase}</div>
   }
