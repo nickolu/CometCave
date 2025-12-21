@@ -5,6 +5,7 @@ import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game
 
 export type GameEvent =
   | BigBlindSelectedEvent
+  | BigBlindSkippedEvent
   | BlindRewardsEndEvent
   | BlindRewardsStartEvent
   | BlindSelectionBackToMenuEvent
@@ -22,13 +23,22 @@ export type GameEvent =
   | ShopOpenPackEvent
   | ShopSelectBlindEvent
   | SmallBlindSelectedEvent
+  | SmallBlindSkippedEvent
 
 export type SmallBlindSelectedEvent = {
   type: 'SMALL_BLIND_SELECTED'
 }
 
+export type SmallBlindSkippedEvent = {
+  type: 'SMALL_BLIND_SKIPPED'
+}
+
 export type BigBlindSelectedEvent = {
   type: 'BIG_BLIND_SELECTED'
+}
+
+export type BigBlindSkippedEvent = {
+  type: 'BIG_BLIND_SKIPPED'
 }
 
 export type BossBlindSelectedEvent = {

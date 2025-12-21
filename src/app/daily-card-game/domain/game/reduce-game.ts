@@ -80,7 +80,7 @@ function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>) {
 }
 
 function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) {
-  const currentBlind = getInProgressBlind(draft as unknown as GameState)
+  const currentBlind = getInProgressBlind(draft)
   if (!currentBlind) return
 
   const computed = computeBlindScoreAndAnte(draft, currentBlind)
@@ -105,14 +105,16 @@ function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) {
     return
   }
 
-  // Both win + continue consume a hand in current rules
-  draft.gamePlayState.remainingHands -= 1
-
   if (outcome === 'blindRewards') {
     draft.gamePhase = 'blindRewards'
     draft.gamePlayState.dealtCards = []
-    draft.gamePlayState.remainingDeck = draft.fullDeck
+
+    if (draft.gamePlayState.remainingHands > 0) {
+      currentBlind.additionalRewards.push(['Remaining Hands', 3])
+    }
+
     resetScoreForNextHand(draft.gamePlayState)
+
     return
   }
 
@@ -224,6 +226,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         )
         const playedHand = findHighestPriorityHand(selectedCards).hand
 
+        gamePlayState.remainingHands -= 1
+
         const playedHandLevel = draft.pokerHands[playedHand].level
         const handMult = hands[playedHand].baseMult * playedHandLevel
         const handChips = hands[playedHand].baseChips * playedHandLevel
@@ -263,8 +267,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           mult: gamePlayState.score.mult + cardMult,
         }
 
-        if (currentCardToScore.stamp === 'gold') {
-          additionalRewards.push(['goldStamp', 3])
+        if (currentCardToScore.chip === 'gold') {
+          additionalRewards.push(['Gold Chip', 3])
         }
 
         const currentBlind = getInProgressBlind(draft as unknown as GameState)
@@ -304,7 +308,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'BLIND_REWARDS_END': {
-        const currentBlind = getInProgressBlind(draft as unknown as GameState)
+        const currentBlind = getInProgressBlind(draft)
         if (!currentBlind) return
         const totalReward =
           currentBlind.baseReward +
@@ -312,6 +316,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.money += totalReward
         currentBlind.status = 'completed'
         draft.gamePhase = 'shop'
+        draft.gamePlayState.remainingDeck = draft.fullDeck
+        draft.gamePlayState.remainingHands = draft.defaultNumberOfHands
+        if (currentBlind.type === 'bossBlind') {
+          draft.roundIndex += 1
+        }
         return
       }
       case 'SHOP_SELECT_BLIND': {
@@ -332,8 +341,20 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
 
       // no-ops for now
-      case 'BLIND_REWARDS_START':
+      case 'BLIND_REWARDS_START': {
+        return
+      }
       case 'ROUND_END': {
+        return
+      }
+      case 'BIG_BLIND_SKIPPED': {
+        const round = draft.rounds[draft.roundIndex]
+        round.bigBlind.status = 'skipped'
+        return
+      }
+      case 'SMALL_BLIND_SKIPPED': {
+        const round = draft.rounds[draft.roundIndex]
+        round.smallBlind.status = 'skipped'
         return
       }
       default: {

@@ -1,8 +1,7 @@
 'use client'
 
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { BlindCard } from '@/app/daily-card-game/components/blind-selection/blind-card'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
 
@@ -18,38 +17,34 @@ export function BlindSelectionView() {
 
   return (
     <ViewTemplate>
-      <h2>Blind Selection</h2>
-      <Button
-        disabled={nextBlind?.type !== 'smallBlind'}
-        onClick={() => {
-          eventEmitter.emit({ type: 'SMALL_BLIND_SELECTED' })
-        }}
-      >
-        Start Small Blind
-      </Button>
-      <Button
-        disabled={nextBlind?.type !== 'bigBlind'}
-        onClick={() => {
-          eventEmitter.emit({ type: 'BIG_BLIND_SELECTED' })
-        }}
-      >
-        Start Big Blind
-      </Button>
-      <Button
-        disabled={nextBlind?.type !== 'bossBlind'}
-        onClick={() => {
-          eventEmitter.emit({ type: 'BOSS_BLIND_SELECTED' })
-        }}
-      >
-        Start Boss Blind
-      </Button>
-      <Button
-        onClick={() => {
-          eventEmitter.emit({ type: 'BLIND_SELECTION_BACK_TO_MENU' })
-        }}
-      >
-        Back
-      </Button>
+      <div className="flex gap-2">
+        <BlindCard
+          name="Small Blind"
+          minimumScore={
+            game.rounds[game.roundIndex].baseAnte * (currentRound.smallBlind.anteMultiplier || 1)
+          }
+          disabled={nextBlind?.type !== 'smallBlind'}
+          selectEventName="SMALL_BLIND_SELECTED"
+          skipEventName="SMALL_BLIND_SKIPPED"
+        />
+        <BlindCard
+          name="Big Blind"
+          minimumScore={
+            game.rounds[game.roundIndex].baseAnte * (currentRound.bigBlind.anteMultiplier || 1)
+          }
+          disabled={nextBlind?.type !== 'bigBlind'}
+          selectEventName="BIG_BLIND_SELECTED"
+          skipEventName="BIG_BLIND_SKIPPED"
+        />
+        <BlindCard
+          name={'Boss Blind: ' + currentRound.bossBlind.name}
+          minimumScore={
+            game.rounds[game.roundIndex].baseAnte * (currentRound.bossBlind.anteMultiplier || 1)
+          }
+          disabled={nextBlind?.type !== 'bossBlind'}
+          selectEventName="BOSS_BLIND_SELECTED"
+        />
+      </div>
     </ViewTemplate>
   )
 }

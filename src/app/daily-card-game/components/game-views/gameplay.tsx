@@ -30,11 +30,11 @@ const useScoreHand = () => {
       eventEmitter.emit({ type: 'HAND_SCORING_START' })
 
       for (const cardId of cardIdsToScore) {
-        await sleep(1000)
+        await sleep(250)
         eventEmitter.emit({ type: 'CARD_SCORED', id: cardId })
       }
 
-      await sleep(1000)
+      await sleep(750)
       eventEmitter.emit({ type: 'HAND_SCORING_END' })
     } finally {
       isScoringRef.current = false
@@ -61,7 +61,7 @@ export function GamePlayView() {
         <div className="mt-4">
           <Hand />
         </div>
-        <div className="flex mt-4">
+        <div className="flex mt-4 gap-2">
           <Button
             disabled={remainingDiscards === 0 || isScoring}
             onClick={() => {

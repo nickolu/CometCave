@@ -1,6 +1,6 @@
 import type { Effect } from '@/app/daily-card-game/domain/events/types'
 
-interface BlindState {
+export interface BlindState {
   type: 'smallBlind' | 'bigBlind' | 'bossBlind'
   status: 'completed' | 'skipped' | 'notStarted' | 'inProgress'
   anteMultiplier: 1 | 1.5 | 2 | 4 | 6

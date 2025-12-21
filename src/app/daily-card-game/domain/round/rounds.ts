@@ -37,5 +37,4 @@ export const rounds: RoundDefinition[] = [
   getDefaultRoundState(11000, 5),
   getDefaultRoundState(20000, 6),
   getDefaultRoundState(35000, 7),
-  getDefaultRoundState(80000, 8),
 ]

@@ -12,7 +12,7 @@ export const Hand = () => {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 w-full">
         {dealtCards.map((card: PlayingCard, index: number) => (
           <Card
             key={card.id}

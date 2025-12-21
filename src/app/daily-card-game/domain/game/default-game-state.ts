@@ -25,6 +25,7 @@ const getDefaultHandState = (hand: PokerHand): HandState => ({
 })
 
 export const defaultGameState: GameState = {
+  defaultNumberOfHands: 4,
   gamePhase: 'mainMenu',
   gamePlayState: {
     isScoring: false,

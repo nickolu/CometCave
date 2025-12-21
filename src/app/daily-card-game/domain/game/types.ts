@@ -10,6 +10,7 @@ import type { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 
 export interface GameState {
+  defaultNumberOfHands: number
   consumables: Consumable[]
   discardsPlayed: number
   fullDeck: PlayingCard[]

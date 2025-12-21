@@ -9,6 +9,6 @@ export interface PlayingCard {
   isFoil: boolean
   modifier?: 'bonus' | 'mult' | 'gold' | 'glass'
   faceUp: boolean
-  stamp?: 'blue' | 'purple' | 'gold'
+  chip?: 'blue' | 'purple' | 'gold' | 'red'
   isFaceCard: boolean
 }
