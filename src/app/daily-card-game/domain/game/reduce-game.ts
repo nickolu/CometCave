@@ -235,6 +235,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.isScoring = true
         gamePlayState.score = { chips: handChips, mult: handMult }
         gamePlayState.selectedHand = [hands[playedHand], selectedCards]
+        draft.handsPlayed += 1
 
         const ctx: EffectContext = {
           event,
