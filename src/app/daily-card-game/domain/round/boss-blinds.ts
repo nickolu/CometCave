@@ -8,7 +8,7 @@ const theHook: BossBlindDefinition = {
   name: 'The Hook',
   description: 'Discards 2 random cards held in hand after every played hand.',
   image: 'the-hook.png',
-  minimumAnte: 1,
+  minimumAnte: 0,
   baseReward: 5,
   additionalRewards: [],
   effects: [

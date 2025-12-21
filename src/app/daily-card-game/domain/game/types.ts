@@ -11,6 +11,7 @@ import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 
 export interface GameState {
   defaultNumberOfHands: number
+  gameSeed: string
   consumables: Consumable[]
   discardsPlayed: number
   fullDeck: PlayingCard[]

@@ -21,6 +21,7 @@ export interface HandState {
 }
 
 export interface PokerHand {
+  id: keyof PokerHandsState
   name: string
   baseChips: number
   multIncreasePerLevel: number

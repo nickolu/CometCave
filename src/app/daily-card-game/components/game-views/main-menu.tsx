@@ -9,7 +9,7 @@ export function MainMenuView() {
       <h1>Main Menu</h1>
       <Button
         onClick={() => {
-          eventEmitter.emit({ type: 'ROUND_START' })
+          eventEmitter.emit({ type: 'GAME_START' })
         }}
       >
         Start Game

@@ -14,6 +14,7 @@ import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { handPriority } from './constants'
 
 export const highCardHand: PokerHand = {
+  id: 'highCard',
   baseChips: 5,
   baseMult: 1,
   chipIncreasePerLevel: 10,
@@ -23,6 +24,7 @@ export const highCardHand: PokerHand = {
 }
 
 export const pairHand: PokerHand = {
+  id: 'pair',
   baseChips: 10,
   baseMult: 2,
   chipIncreasePerLevel: 15,
@@ -32,6 +34,7 @@ export const pairHand: PokerHand = {
 }
 
 export const twoPairHand: PokerHand = {
+  id: 'twoPair',
   baseChips: 20,
   baseMult: 2,
   chipIncreasePerLevel: 20,
@@ -41,6 +44,7 @@ export const twoPairHand: PokerHand = {
 }
 
 export const threeOfAKindHand: PokerHand = {
+  id: 'threeOfAKind',
   baseChips: 30,
   baseMult: 3,
   chipIncreasePerLevel: 20,
@@ -50,6 +54,7 @@ export const threeOfAKindHand: PokerHand = {
 }
 
 export const straightHand: PokerHand = {
+  id: 'straight',
   baseChips: 30,
   baseMult: 4,
   chipIncreasePerLevel: 30,
@@ -59,6 +64,7 @@ export const straightHand: PokerHand = {
 }
 
 export const flushHand: PokerHand = {
+  id: 'flush',
   baseChips: 35,
   baseMult: 4,
   chipIncreasePerLevel: 15,
@@ -68,6 +74,7 @@ export const flushHand: PokerHand = {
 }
 
 export const fullHouseHand: PokerHand = {
+  id: 'fullHouse',
   baseChips: 40,
   baseMult: 4,
   chipIncreasePerLevel: 25,
@@ -77,6 +84,7 @@ export const fullHouseHand: PokerHand = {
 }
 
 export const fourOfAKindHand: PokerHand = {
+  id: 'fourOfAKind',
   baseChips: 60,
   baseMult: 7,
   chipIncreasePerLevel: 30,
@@ -86,6 +94,7 @@ export const fourOfAKindHand: PokerHand = {
 }
 
 export const straightFlushHand: PokerHand = {
+  id: 'straightFlush',
   baseChips: 100,
   baseMult: 8,
   chipIncreasePerLevel: 40,
@@ -95,6 +104,7 @@ export const straightFlushHand: PokerHand = {
 }
 
 export const royalFlushHand: PokerHand = {
+  id: 'royalFlush',
   baseChips: 100,
   baseMult: 8,
   chipIncreasePerLevel: 40, // TODO: Add correct value
@@ -104,6 +114,7 @@ export const royalFlushHand: PokerHand = {
 }
 
 export const fiveOfAKindHand: PokerHand = {
+  id: 'fiveOfAKind',
   baseChips: 120,
   baseMult: 12,
   chipIncreasePerLevel: 40, // TODO: Add correct value
@@ -113,6 +124,7 @@ export const fiveOfAKindHand: PokerHand = {
 }
 
 export const flushHouseHand: PokerHand = {
+  id: 'flushHouse',
   baseChips: 140,
   baseMult: 14,
   chipIncreasePerLevel: 40,
@@ -122,6 +134,7 @@ export const flushHouseHand: PokerHand = {
 }
 
 export const flushFiveHand: PokerHand = {
+  id: 'flushFive',
   baseChips: 160,
   baseMult: 16,
   chipIncreasePerLevel: 50,

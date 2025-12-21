@@ -63,7 +63,7 @@ export type CardScoredEvent = {
 }
 
 export type RoundStartEvent = {
-  type: 'ROUND_START'
+  type: 'GAME_START'
 }
 
 export type RoundEndEvent = {

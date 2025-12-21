@@ -20,7 +20,7 @@ import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
 const getDefaultHandState = (hand: PokerHand): HandState => ({
   timesPlayed: 0,
-  level: 1,
+  level: 0,
   hand,
 })
 
@@ -66,6 +66,7 @@ export const defaultGameState: GameState = {
   },
   rounds,
   roundIndex: 0,
+  gameSeed: 'default',
   shopState: {
     cardsForSale: [],
     packsForSale: [],

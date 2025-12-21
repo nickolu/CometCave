@@ -41,7 +41,7 @@ GameEvent is a discriminated union with:
 - HAND_SCORING_START (handCards, score)
 - CARD_SCORED (card, index, score)
 - HAND_SCORING_END (handCards, score)
-- ROUND_START (round)
+- GAME_START (round)
 - ROUND_END (round)
 - JOKER_TRIGGERED (jokerId, sourceEvent)
 

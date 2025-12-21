@@ -6,7 +6,7 @@ class EventEmitter {
     CARD_SCORED: [],
     HAND_SCORING_END: [],
     HAND_DEALT: [],
-    ROUND_START: [],
+    GAME_START: [],
     ROUND_END: [],
     CARD_SELECTED: [],
     CARD_DESELECTED: [],

@@ -1,9 +1,16 @@
-import { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
+import { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 
 import { bossBlinds } from './boss-blinds'
 
+const getBossBlind = (ante: number): BossBlindDefinition => {
+  const bossBlindsForAnte = bossBlinds.filter(blind => blind.minimumAnte <= ante)
+  if (bossBlindsForAnte.length === 0) {
+    throw new Error(`No boss blind found for ante ${ante}`)
+  }
+  return bossBlindsForAnte[0]
+}
+
 const getDefaultRoundState = (baseAnte: number, ante: number): RoundDefinition => {
-  console.log('ante', ante) // this will be used to determine the boss blind eventually
   return {
     baseAnte: baseAnte,
     smallBlind: {
@@ -24,7 +31,7 @@ const getDefaultRoundState = (baseAnte: number, ante: number): RoundDefinition =
       additionalRewards: [],
       score: 0,
     },
-    bossBlind: bossBlinds[0],
+    bossBlind: getBossBlind(ante),
   }
 }
 

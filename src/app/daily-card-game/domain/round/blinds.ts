@@ -12,6 +12,5 @@ export function getInProgressBlind(
     currentRound.bigBlind,
     currentRound.bossBlind,
   ]
-  console.log('blindsInCurrentRound', blindsInCurrentRound)
   return blindsInCurrentRound.find(blind => blind.status === 'inProgress')
 }

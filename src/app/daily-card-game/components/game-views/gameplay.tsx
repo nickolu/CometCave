@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { HandState } from '@/app/daily-card-game/domain/hand/types'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,16 @@ const useScoreHand = () => {
     }
   }, [selectedCardIds])
   return { scoreHand }
+}
+
+const SelectedHandScore = ({ hand }: { hand: HandState }) => {
+  const currentHandChips = hand.hand.baseChips + hand.hand.chipIncreasePerLevel * hand.level
+  const currentHandMult = hand.hand.baseMult + hand.hand.multIncreasePerLevel * hand.level
+  return (
+    <div>
+      Selected Hand: {hand.hand.name} ({currentHandChips}x{currentHandMult})
+    </div>
+  )
 }
 
 export function GamePlayView() {
@@ -85,7 +96,9 @@ export function GamePlayView() {
           Blind Score: {score.chips} x {score.mult}
         </div>
         <div>Your Score: {currentBlind?.score}</div>
-        <div>Selected Hand: {selectedHand?.[0]?.name || 'None'}</div>
+        {selectedHand?.[0]?.name && (
+          <SelectedHandScore hand={game.pokerHands[selectedHand[0].id]} />
+        )}
       </div>
     </ViewTemplate>
   )
