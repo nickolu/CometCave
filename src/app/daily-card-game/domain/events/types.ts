@@ -7,6 +7,7 @@ export type GameEvent =
   | BigBlindSelectedEvent
   | BlindRewardsEndEvent
   | BlindRewardsStartEvent
+  | BlindSelectionBackToMenuEvent
   | BossBlindSelectedEvent
   | CardDeselectedEvent
   | CardScoredEvent
@@ -15,8 +16,11 @@ export type GameEvent =
   | HandDealtEvent
   | HandScoringEndEvent
   | HandScoringStartEvent
+  | PackOpenBackToShopEvent
   | RoundEndEvent
   | RoundStartEvent
+  | ShopOpenPackEvent
+  | ShopSelectBlindEvent
   | SmallBlindSelectedEvent
 
 export type SmallBlindSelectedEvent = {
@@ -76,6 +80,22 @@ export type BlindRewardsStartEvent = {
 
 export type BlindRewardsEndEvent = {
   type: 'BLIND_REWARDS_END'
+}
+
+export type ShopSelectBlindEvent = {
+  type: 'SHOP_SELECT_BLIND'
+}
+
+export type ShopOpenPackEvent = {
+  type: 'SHOP_OPEN_PACK'
+}
+
+export type PackOpenBackToShopEvent = {
+  type: 'PACK_OPEN_BACK_TO_SHOP'
+}
+
+export type BlindSelectionBackToMenuEvent = {
+  type: 'BLIND_SELECTION_BACK_TO_MENU'
 }
 
 export interface EffectContext {

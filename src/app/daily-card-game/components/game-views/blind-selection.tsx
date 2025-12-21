@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ViewTemplate } from './view-template'
 
 export function BlindSelectionView() {
-  const { game, setGamePhase } = useGameState()
+  const { game } = useGameState()
   const currentRound = game.rounds[game.roundIndex]
   const blindsInCurrentRound = [
     currentRound.smallBlind,
@@ -45,7 +45,7 @@ export function BlindSelectionView() {
       </Button>
       <Button
         onClick={() => {
-          setGamePhase('mainMenu')
+          eventEmitter.emit({ type: 'BLIND_SELECTION_BACK_TO_MENU' })
         }}
       >
         Back

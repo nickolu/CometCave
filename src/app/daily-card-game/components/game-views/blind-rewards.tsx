@@ -14,7 +14,7 @@ const DollarSigns = ({ count }: { count: number }) => {
 }
 
 export function BlindRewardsView() {
-  const { game, addMoney } = useGameState()
+  const { game } = useGameState()
   const [hasCashedOut, setHasCashedOut] = useState(false)
   useEffect(() => {
     eventEmitter.emit({ type: 'BLIND_REWARDS_START' })
@@ -23,7 +23,6 @@ export function BlindRewardsView() {
   const currentBlind = getInProgressBlind(game)
   const baseReward = currentBlind?.baseReward ?? 0
   const additionalRewards = currentBlind?.additionalRewards ?? []
-  const totalReward = baseReward + additionalRewards.reduce((acc, reward) => acc + reward[1], 0)
 
   return (
     <ViewTemplate>
@@ -47,7 +46,6 @@ export function BlindRewardsView() {
         disabled={hasCashedOut}
         onClick={() => {
           setHasCashedOut(true)
-          addMoney(totalReward)
           eventEmitter.emit({ type: 'BLIND_REWARDS_END' })
         }}
       >

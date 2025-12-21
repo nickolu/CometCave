@@ -262,8 +262,28 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'BLIND_REWARDS_END': {
         const currentBlind = getInProgressBlind(draft as unknown as GameState)
         if (!currentBlind) return
+        const totalReward =
+          currentBlind.baseReward +
+          currentBlind.additionalRewards.reduce((acc, reward) => acc + reward[1], 0)
+        draft.money += totalReward
         currentBlind.status = 'completed'
         draft.gamePhase = 'shop'
+        return
+      }
+      case 'SHOP_SELECT_BLIND': {
+        draft.gamePhase = 'blindSelection'
+        return
+      }
+      case 'SHOP_OPEN_PACK': {
+        draft.gamePhase = 'packOpening'
+        return
+      }
+      case 'PACK_OPEN_BACK_TO_SHOP': {
+        draft.gamePhase = 'shop'
+        return
+      }
+      case 'BLIND_SELECTION_BACK_TO_MENU': {
+        draft.gamePhase = 'mainMenu'
         return
       }
 

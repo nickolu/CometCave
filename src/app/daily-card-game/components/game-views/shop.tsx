@@ -1,26 +1,25 @@
 'use client'
 
-import { useGameState } from '@/app/daily-card-game/useGameState'
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
 
 export function ShopView() {
-  const { setGamePhase } = useGameState()
   return (
     <ViewTemplate>
       <h2>Shop</h2>
       <div className="flex gap-2">
         <Button
           onClick={() => {
-            setGamePhase('blindSelection')
+            eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })
           }}
         >
           Select Blind
         </Button>
         <Button
           onClick={() => {
-            setGamePhase('packOpening')
+            eventEmitter.emit({ type: 'SHOP_OPEN_PACK' })
           }}
         >
           Open Pack

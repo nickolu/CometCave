@@ -16,7 +16,13 @@ class EventEmitter {
     BOSS_BLIND_SELECTED: [],
     BLIND_REWARDS_START: [],
     BLIND_REWARDS_END: [],
+    SHOP_SELECT_BLIND: [],
+    SHOP_OPEN_PACK: [],
+    PACK_OPEN_BACK_TO_SHOP: [],
+    BLIND_SELECTION_BACK_TO_MENU: [],
   }
+
+  private anyListeners: Array<(event: GameEvent) => void> = []
 
   on<TType extends GameEvent['type']>(
     eventType: TType,
@@ -31,7 +37,16 @@ class EventEmitter {
     }
   }
 
+  onAny(callback: (event: GameEvent) => void) {
+    this.anyListeners.push(callback)
+    return () => {
+      const idx = this.anyListeners.indexOf(callback)
+      if (idx >= 0) this.anyListeners.splice(idx, 1)
+    }
+  }
+
   emit(event: GameEvent) {
+    this.anyListeners.forEach(callback => callback(event))
     const callbacks = this.events[event.type] || []
     callbacks.forEach(callback => callback(event))
   }
