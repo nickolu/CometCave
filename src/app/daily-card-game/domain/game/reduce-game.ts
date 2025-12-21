@@ -6,8 +6,10 @@ import { findHighestPriorityHand, hands } from '@/app/daily-card-game/domain/han
 import type { PokerHand } from '@/app/daily-card-game/domain/hand/types'
 import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 
-import type { GameState } from './types'
+import type { GamePlayState, GameState } from './types'
+import type { Draft } from 'immer'
 
 const HAND_SIZE = 7
 
@@ -22,6 +24,107 @@ function collectEffects(game: GameState): Effect[] {
   effects.push(...game.gamePlayState.jokers.flatMap(j => j.effects || []))
 
   return effects
+}
+
+type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
+
+function computeBlindScoreAndAnte(
+  draft: Draft<GameState>,
+  currentBlind: ReturnType<typeof getInProgressBlind>
+) {
+  if (!currentBlind) return null
+
+  const round = draft.rounds[draft.roundIndex]
+  const blindScore =
+    currentBlind.score + draft.gamePlayState.score.chips * draft.gamePlayState.score.mult
+  const ante = currentBlind.anteMultiplier * round.baseAnte
+  const newTotalScore = draft.totalScore + blindScore
+
+  // Persist computed blind score onto the round
+  round[currentBlind.type].score = blindScore
+
+  return { round, blindScore, ante, newTotalScore }
+}
+
+function applyHandScoringEndEffects(
+  draft: Draft<GameState>,
+  event: GameEvent,
+  round: Draft<GameState>['rounds'][number]
+) {
+  const ctx: EffectContext = {
+    event,
+    game: draft as unknown as GameState,
+    score: draft.gamePlayState.score,
+    playedCards: draft.gamePlayState.selectedHand?.[1],
+    round: round as unknown as RoundDefinition,
+    bossBlind: round.bossBlind as unknown as BossBlindDefinition,
+    jokers: draft.gamePlayState.jokers,
+  }
+  dispatchEffects(event, ctx, collectEffects(ctx.game))
+}
+
+function decideHandEndOutcome(args: {
+  blindScore: number
+  ante: number
+  remainingHands: number
+}): HandEndOutcome {
+  const { blindScore, ante, remainingHands } = args
+  if (blindScore < ante && remainingHands === 0) return 'gameOver'
+  if (blindScore >= ante) return 'blindRewards'
+  return 'continue'
+}
+
+function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>) {
+  gamePlayState.isScoring = false
+  gamePlayState.score = { chips: 0, mult: 0 }
+}
+
+function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) {
+  const currentBlind = getInProgressBlind(draft as unknown as GameState)
+  if (!currentBlind) return
+
+  const computed = computeBlindScoreAndAnte(draft, currentBlind)
+  if (!computed) return
+
+  const { round, blindScore, ante, newTotalScore } = computed
+
+  // Effects (boss blinds / jokers) react BEFORE cleanup/phase transitions
+  applyHandScoringEndEffects(draft, event, round)
+
+  const outcome = decideHandEndOutcome({
+    blindScore,
+    ante,
+    remainingHands: draft.gamePlayState.remainingHands,
+  })
+
+  draft.totalScore = newTotalScore
+
+  if (outcome === 'gameOver') {
+    draft.gamePhase = 'gameOver'
+    draft.gamePlayState.isScoring = false
+    return
+  }
+
+  // Both win + continue consume a hand in current rules
+  draft.gamePlayState.remainingHands -= 1
+
+  if (outcome === 'blindRewards') {
+    draft.gamePhase = 'blindRewards'
+    draft.gamePlayState.dealtCards = []
+    draft.gamePlayState.remainingDeck = draft.fullDeck
+    resetScoreForNextHand(draft.gamePlayState)
+    return
+  }
+
+  // Continue gameplay: refill + reset score
+  const cardsToRefill = draft.gamePlayState.remainingDeck.slice(
+    0,
+    HAND_SIZE - draft.gamePlayState.dealtCards.length
+  )
+  draft.gamePhase = 'gameplay'
+  draft.gamePlayState.dealtCards = draft.gamePlayState.dealtCards.concat(cardsToRefill)
+  draft.gamePlayState.remainingDeck = draft.gamePlayState.remainingDeck.slice(cardsToRefill.length)
+  resetScoreForNextHand(draft.gamePlayState)
 }
 
 export function reduceGame(game: GameState, event: GameEvent): GameState {
@@ -197,66 +300,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'HAND_SCORING_END': {
-        const gamePlayState = draft.gamePlayState
-        const currentBlind = getInProgressBlind(draft as unknown as GameState)
-        if (!currentBlind) return
-
-        const currentRoundIndex = draft.roundIndex
-        const currentRound = draft.rounds[currentRoundIndex]
-
-        const blindScore = currentBlind.score + gamePlayState.score.chips * gamePlayState.score.mult
-        const newTotalScore = draft.totalScore + blindScore
-
-        // Update the blind score
-        currentRound[currentBlind.type].score = blindScore
-
-        // Allow effects (boss blinds / jokers) to react BEFORE we do cleanup/phase transitions
-        const ctx: EffectContext = {
-          event,
-          game: draft as unknown as GameState,
-          score: gamePlayState.score,
-          playedCards: gamePlayState.selectedHand?.[1],
-          round: currentRound,
-          bossBlind: currentRound.bossBlind,
-          jokers: gamePlayState.jokers,
-        }
-        dispatchEffects(event, ctx, collectEffects(ctx.game))
-
-        const currentAnte = currentBlind.anteMultiplier * currentRound.baseAnte
-
-        // Player is out of hands and didn't beat the ante => game over
-        if (blindScore < currentAnte && gamePlayState.remainingHands === 0) {
-          gamePlayState.isScoring = false
-          draft.gamePhase = 'gameOver'
-          draft.totalScore = newTotalScore
-          return
-        }
-
-        // Player beat the ante => go to rewards and reset for next blind
-        if (blindScore >= currentAnte) {
-          draft.totalScore = newTotalScore
-          draft.gamePhase = 'blindRewards'
-          gamePlayState.isScoring = false
-          gamePlayState.remainingHands = gamePlayState.remainingHands - 1
-          gamePlayState.dealtCards = []
-          gamePlayState.remainingDeck = draft.fullDeck
-          gamePlayState.score = { chips: 0, mult: 0 }
-          return
-        }
-
-        // Didn't beat ante but still has hands left => refill and continue
-        const cardsToRefill = gamePlayState.remainingDeck.slice(
-          0,
-          HAND_SIZE - gamePlayState.dealtCards.length
-        )
-
-        draft.totalScore = newTotalScore
-        draft.gamePhase = 'gameplay'
-        gamePlayState.isScoring = false
-        gamePlayState.remainingHands = gamePlayState.remainingHands - 1
-        gamePlayState.dealtCards = gamePlayState.dealtCards.concat(cardsToRefill)
-        gamePlayState.remainingDeck = gamePlayState.remainingDeck.slice(cardsToRefill.length)
-        gamePlayState.score = { chips: 0, mult: 0 }
+        handleHandScoringEnd(draft, event)
         return
       }
       case 'BLIND_REWARDS_END': {
