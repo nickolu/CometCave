@@ -71,7 +71,7 @@ export function GamePlayView() {
             Discard
           </Button>
           <Button disabled={isScoring} onClick={scoreHand}>
-            Score Hand
+            Play Hand
           </Button>
           <Button onClick={() => setShowDeck(!showDeck)}>
             {showDeck ? 'Hide Deck' : 'Show Deck'}
