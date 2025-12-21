@@ -9,6 +9,7 @@ import {
   fullHouseHand,
   highCardHand,
   pairHand,
+  royalFlushHand,
   straightFlushHand,
   straightHand,
   threeOfAKindHand,
@@ -26,6 +27,7 @@ const getDefaultHandState = (hand: PokerHand): HandState => ({
 export const defaultGameState: GameState = {
   gamePhase: 'mainMenu',
   gamePlayState: {
+    isScoring: false,
     jokers: [],
     dealtCards: [],
     selectedCardIds: [],
@@ -56,6 +58,7 @@ export const defaultGameState: GameState = {
     fullHouse: getDefaultHandState(fullHouseHand),
     fourOfAKind: getDefaultHandState(fourOfAKindHand),
     straightFlush: getDefaultHandState(straightFlushHand),
+    royalFlush: getDefaultHandState(royalFlushHand),
     flushHouse: getDefaultHandState(flushHouseHand),
     fiveOfAKind: getDefaultHandState(fiveOfAKindHand),
     flushFive: getDefaultHandState(flushFiveHand),

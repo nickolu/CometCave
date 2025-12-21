@@ -19,6 +19,7 @@ export const useGameEvents = () => {
     selectSmallBlind,
     selectBigBlind,
     selectBossBlind,
+    setBlindCompleted,
   } = useGameState()
 
   useEffect(() => {
@@ -81,6 +82,15 @@ export const useGameEvents = () => {
       handScoringEnd()
     })
 
+    const unsubBlindRewardsStart = eventEmitter.on('BLIND_REWARDS_START', () => {
+      console.log('BLIND_REWARDS_START')
+    })
+
+    const unsubBlindRewardsEnd = eventEmitter.on('BLIND_REWARDS_END', () => {
+      setBlindCompleted()
+      setGamePhase('shop')
+    })
+
     return () => {
       unsubRoundStart()
       unsubRoundEnd()
@@ -94,6 +104,8 @@ export const useGameEvents = () => {
       unsubSmallBlindSelected()
       unsubBigBlindSelected()
       unsubBossBlindSelected()
+      unsubBlindRewardsStart()
+      unsubBlindRewardsEnd()
     }
   }, [
     dealHand,
@@ -108,5 +120,6 @@ export const useGameEvents = () => {
     selectBigBlind,
     selectBossBlind,
     handScoringStart,
+    setBlindCompleted,
   ])
 }

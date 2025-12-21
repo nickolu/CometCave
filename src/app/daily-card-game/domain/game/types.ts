@@ -36,8 +36,9 @@ export type GamePhase =
   | 'gameplay'
   | 'packOpening'
   | 'gameOver'
-
+  | 'blindRewards'
 export interface GamePlayState {
+  isScoring: boolean
   jokers: JokerDefinition[]
   dealtCards: PlayingCard[]
   selectedCardIds: string[]

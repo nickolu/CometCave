@@ -28,6 +28,7 @@ const getDefaultCard = (
     isHolographic: false,
     isFoil: false,
     faceUp: true,
+    isFaceCard: value === 'J' || value === 'Q' || value === 'K' || value === 'A',
   }
 }
 

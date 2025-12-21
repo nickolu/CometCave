@@ -24,6 +24,7 @@ const theHook: BossBlindDefinition = {
       },
     },
   ],
+  score: 0,
 }
 
 const theOx: BossBlindDefinition = {
@@ -46,6 +47,7 @@ const theOx: BossBlindDefinition = {
       },
     },
   ],
+  score: 0,
 }
 
 export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]

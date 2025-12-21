@@ -8,6 +8,7 @@ export interface PokerHandsState {
   fullHouse: HandState
   fourOfAKind: HandState
   straightFlush: HandState
+  royalFlush: HandState
   flushHouse: HandState
   fiveOfAKind: HandState
   flushFive: HandState

@@ -35,7 +35,8 @@ export const handPriority: Record<keyof PokerHandsState, number> = {
   fullHouse: 7,
   fourOfAKind: 8,
   straightFlush: 9,
-  flushHouse: 10,
-  fiveOfAKind: 11,
-  flushFive: 12,
+  royalFlush: 10,
+  flushFive: 11,
+  flushHouse: 12,
+  fiveOfAKind: 13,
 }

@@ -24,6 +24,7 @@ const c = (value: CardValue, suit: PlayingCard['suit'], id: string): PlayingCard
   isHolographic: false,
   isFoil: false,
   faceUp: true,
+  isFaceCard: value === 'J' || value === 'Q' || value === 'K' || value === 'A',
 })
 
 describe('daily-card-game hand checkers', () => {

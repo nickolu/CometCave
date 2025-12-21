@@ -3,11 +3,13 @@
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
+import { ViewTemplate } from './view-template'
+
 export function PackOpenView() {
   const { setGamePhase } = useGameState()
   return (
-    <div>
-      <h1>Pack Open</h1>
+    <ViewTemplate>
+      <h2>Pack Open</h2>
       <Button
         onClick={() => {
           setGamePhase('shop')
@@ -15,6 +17,6 @@ export function PackOpenView() {
       >
         Back
       </Button>
-    </div>
+    </ViewTemplate>
   )
 }

@@ -14,6 +14,8 @@ class EventEmitter {
     SMALL_BLIND_SELECTED: [],
     BIG_BLIND_SELECTED: [],
     BOSS_BLIND_SELECTED: [],
+    BLIND_REWARDS_START: [],
+    BLIND_REWARDS_END: [],
   }
 
   on<TType extends GameEvent['type']>(

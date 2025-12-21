@@ -4,6 +4,8 @@ import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
+import { ViewTemplate } from './view-template'
+
 export function BlindSelectionView() {
   const { game, setGamePhase } = useGameState()
   const currentRound = game.rounds[game.roundIndex]
@@ -15,8 +17,8 @@ export function BlindSelectionView() {
   const nextBlind = blindsInCurrentRound.find(blind => blind.status === 'notStarted')
 
   return (
-    <div>
-      <h1>Blind Selection</h1>
+    <ViewTemplate>
+      <h2>Blind Selection</h2>
       <Button
         disabled={nextBlind?.type !== 'smallBlind'}
         onClick={() => {
@@ -48,6 +50,6 @@ export function BlindSelectionView() {
       >
         Back
       </Button>
-    </div>
+    </ViewTemplate>
   )
 }

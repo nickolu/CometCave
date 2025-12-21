@@ -13,6 +13,7 @@ const getDefaultRoundState = (baseAnte: number, ante: number): RoundDefinition =
       anteMultiplier: 1,
       baseReward: 3,
       additionalRewards: [],
+      score: 0,
     },
     bigBlind: {
       type: 'bigBlind',
@@ -21,6 +22,7 @@ const getDefaultRoundState = (baseAnte: number, ante: number): RoundDefinition =
       anteMultiplier: 1.5,
       baseReward: 4,
       additionalRewards: [],
+      score: 0,
     },
     bossBlind: bossBlinds[0],
   }

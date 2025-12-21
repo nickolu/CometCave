@@ -17,10 +17,13 @@ export function useGameState() {
   const selectSmallBlind = useDailyCardGameStore(state => state.selectSmallBlind)
   const selectBigBlind = useDailyCardGameStore(state => state.selectBigBlind)
   const selectBossBlind = useDailyCardGameStore(state => state.selectBossBlind)
+  const addMoney = useDailyCardGameStore(state => state.addMoney)
+  const setBlindCompleted = useDailyCardGameStore(state => state.setBlindCompleted)
 
   return {
     game,
     setGamePhase,
+    addMoney,
     dealHand,
     selectCard,
     deselectCard,
@@ -33,5 +36,6 @@ export function useGameState() {
     selectSmallBlind,
     selectBigBlind,
     selectBossBlind,
+    setBlindCompleted,
   }
 }

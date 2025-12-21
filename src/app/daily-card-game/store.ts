@@ -29,6 +29,8 @@ export interface DailyCardGameStore {
   selectSmallBlind: () => void
   selectBigBlind: () => void
   selectBossBlind: () => void
+  addMoney: (amount: number) => void
+  setBlindCompleted: () => void
 }
 
 export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
@@ -36,6 +38,8 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
   setGame: game => set({ game }),
   clearGame: () => set({ game: defaultGameState }),
   setGamePhase: (gamePhase: GamePhase) => set(state => ({ game: { ...state.game, gamePhase } })),
+  addMoney: (amount: number) =>
+    set(state => ({ game: { ...state.game, money: state.game.money + amount } })),
   selectSmallBlind: () =>
     set(state => {
       const currentRoundIndex = state.game.roundIndex
@@ -310,18 +314,17 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
         gamePlayState.selectedCardIds.includes(card.id)
       )
       const playedHand = findHighestPriorityHand(selectedCards).hand
-      console.log('playedHand', playedHand)
+
       const playedHandLevel = state.game.pokerHands[playedHand].level
       const handMult = hands[playedHand].baseMult * playedHandLevel
       const handChips = hands[playedHand].baseChips * playedHandLevel
-      console.log('handChips', handChips)
-      console.log('handMult', handMult)
 
       return {
         game: {
           ...state.game,
           gamePlayState: {
             ...gamePlayState,
+            isScoring: true,
             score: {
               chips: handChips,
               mult: handMult,
@@ -332,48 +335,166 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
       }
     })
   },
+  setBlindCompleted: () => {
+    set(state => {
+      const currentBlind = getInProgressBlind(state.game)
+      if (!currentBlind) {
+        throw new Error('No current blind found')
+      }
+      const newRounds = [...state.game.rounds]
+      newRounds[state.game.roundIndex] = {
+        ...state.game.rounds[state.game.roundIndex],
+        [currentBlind.type]: { ...currentBlind, status: 'completed' },
+      }
+      return {
+        game: {
+          ...state.game,
+          rounds: newRounds,
+        },
+      }
+    })
+  },
+  setGameOver: () => {
+    set(state => {
+      return {
+        game: {
+          ...state.game,
+        },
+      }
+    })
+  },
+  updateBlindScore: (
+    roundIndex: number,
+    blindType: 'smallBlind' | 'bigBlind' | 'bossBlind',
+    score: number
+  ) => {
+    set(state => {
+      const newRounds = [...state.game.rounds]
+      newRounds[roundIndex] = {
+        ...state.game.rounds[roundIndex],
+        [blindType]: { ...state.game.rounds[roundIndex][blindType], score },
+      }
+      return {
+        game: {
+          ...state.game,
+          rounds: newRounds,
+        },
+      }
+    })
+  },
+  setBlindWon: () => {
+    set(state => {
+      return {
+        game: {
+          ...state.game,
+          gamePhase: 'blindRewards',
+          gamePlayState: {
+            ...state.game.gamePlayState,
+            isScoring: false,
+          },
+        },
+      }
+    })
+  },
+  playNextHandInBlind: () => {
+    set(state => {
+      const cardsToRefill = state.game.gamePlayState.remainingDeck.slice(
+        0,
+        HAND_SIZE - state.game.gamePlayState.dealtCards.length
+      )
+      return {
+        game: {
+          ...state.game,
+          gamePhase: 'gameplay',
+          gamePlayState: {
+            ...state.game.gamePlayState,
+            isScoring: false,
+            remainingHands: state.game.gamePlayState.remainingHands - 1,
+            dealtCards: state.game.gamePlayState.dealtCards.concat(cardsToRefill),
+            remainingDeck: state.game.gamePlayState.remainingDeck.slice(cardsToRefill.length),
+            score: {
+              chips: 0,
+              mult: 0,
+            },
+          },
+        },
+      }
+    })
+  },
   handScoringEnd: () => {
     set(state => {
       const gamePlayState = state.game.gamePlayState
 
-      const totalScore = state.game.gamePlayState.score.chips * state.game.gamePlayState.score.mult
       // if score is less than the ante, the game is over (player lost)
       // if score is greater or equal to the ante, proceed to the shop
       // add score from blind to total score either way
-      const newTotalScore = state.game.totalScore + totalScore
+
       const currentRoundIndex = state.game.roundIndex
       const currentBlind = getInProgressBlind(state.game)
+
       if (!currentBlind) {
         return state
       }
+      const blindScore =
+        currentBlind.score +
+        state.game.gamePlayState.score.chips * state.game.gamePlayState.score.mult
+
+      const newTotalScore = state.game.totalScore + blindScore
+
+      if (!currentBlind) {
+        throw new Error('No current blind found')
+      }
+
       const currentAnte =
         currentBlind.anteMultiplier * state.game.rounds[currentRoundIndex].baseAnte
+      const currentRound = state.game.rounds[currentRoundIndex]
+      const newRounds = [...state.game.rounds]
 
-      let newGamePhase: GamePhase = 'gameplay'
+      // Update the blind score
+      newRounds[currentRoundIndex] = {
+        ...currentRound,
+        [currentBlind.type]: { ...currentBlind, score: blindScore },
+      }
 
-      if (totalScore < currentAnte && gamePlayState.remainingHands === 0) {
-        newGamePhase = 'gameOver'
+      // The player is out of hands and didn't beat the ante, game over
+      if (blindScore < currentAnte && gamePlayState.remainingHands === 0) {
         return {
           game: {
             ...state.game,
-            gamePhase: newGamePhase,
+            gamePlayState: {
+              ...gamePlayState,
+              isScoring: false,
+            },
+            gamePhase: 'gameOver',
             totalScore: newTotalScore,
           },
         }
       }
 
-      const currentRound = state.game.rounds[currentRoundIndex]
-      const newRounds = [...state.game.rounds]
-      newRounds[currentRoundIndex] = {
-        ...currentRound,
-        [currentBlind.type]: { ...currentBlind, status: 'completed' },
+      // The player beat the ante, proceed to the blind won screen
+      if (blindScore >= currentAnte) {
+        return {
+          game: {
+            ...state.game,
+            rounds: newRounds,
+            totalScore: newTotalScore,
+            gamePhase: 'blindRewards',
+            gamePlayState: {
+              ...gamePlayState,
+              isScoring: false,
+              remainingHands: gamePlayState.remainingHands - 1,
+              dealtCards: [],
+              remainingDeck: state.game.fullDeck,
+              score: {
+                chips: 0,
+                mult: 0,
+              },
+            },
+          },
+        }
       }
 
-      if (totalScore >= currentAnte) {
-        newGamePhase = 'shop'
-      }
-
-      // refill hand
+      // The player didn't beat the ante, but still has hands left, refill hand and proceed to the next round
       const cardsToRefill = gamePlayState.remainingDeck.slice(
         0,
         HAND_SIZE - gamePlayState.dealtCards.length
@@ -382,10 +503,12 @@ export const useDailyCardGameStore = create<DailyCardGameStore>()(set => ({
       return {
         game: {
           ...state.game,
+          rounds: newRounds,
           totalScore: newTotalScore,
-          gamePhase: newGamePhase,
+          gamePhase: 'gameplay',
           gamePlayState: {
             ...gamePlayState,
+            isScoring: false,
             remainingHands: gamePlayState.remainingHands - 1,
             dealtCards: gamePlayState.dealtCards.concat(cardsToRefill),
             remainingDeck: gamePlayState.remainingDeck.slice(cardsToRefill.length),

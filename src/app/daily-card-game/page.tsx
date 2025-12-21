@@ -1,10 +1,11 @@
 'use client'
-import { BlindSelectionView } from './game-views/blind-selection'
-import { GameOverView } from './game-views/game-over'
-import { GamePlayView } from './game-views/gameplay'
-import { MainMenuView } from './game-views/main-menu'
-import { PackOpenView } from './game-views/pack-open'
-import { ShopView } from './game-views/shop'
+import { BlindRewardsView } from './components/game-views/blind-rewards'
+import { BlindSelectionView } from './components/game-views/blind-selection'
+import { GameOverView } from './components/game-views/game-over'
+import { GamePlayView } from './components/game-views/gameplay'
+import { MainMenuView } from './components/game-views/main-menu'
+import { PackOpenView } from './components/game-views/pack-open'
+import { ShopView } from './components/game-views/shop'
 import { useGameEvents } from './useGameEvents'
 import { useGameState } from './useGameState'
 
@@ -25,6 +26,8 @@ export default function DailyCardGamePage() {
       return <PackOpenView />
     case 'gameOver':
       return <GameOverView />
+    case 'blindRewards':
+      return <BlindRewardsView />
     default:
       return <div>Error: Unknown game phase {game.gamePhase}</div>
   }

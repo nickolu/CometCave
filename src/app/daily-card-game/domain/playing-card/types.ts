@@ -10,4 +10,5 @@ export interface PlayingCard {
   modifier?: 'bonus' | 'mult' | 'gold' | 'glass'
   faceUp: boolean
   stamp?: 'blue' | 'purple' | 'gold'
+  isFaceCard: boolean
 }

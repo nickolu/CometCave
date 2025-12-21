@@ -4,18 +4,20 @@ import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/type
 import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 
 export type GameEvent =
-  | HandDealtEvent
-  | HandScoringStartEvent
-  | HandScoringEndEvent
+  | BigBlindSelectedEvent
+  | BlindRewardsEndEvent
+  | BlindRewardsStartEvent
+  | BossBlindSelectedEvent
+  | CardDeselectedEvent
   | CardScoredEvent
   | CardSelectedEvent
-  | CardDeselectedEvent
-  | RoundStartEvent
-  | RoundEndEvent
   | DiscardSelectedCardsEvent
+  | HandDealtEvent
+  | HandScoringEndEvent
+  | HandScoringStartEvent
+  | RoundEndEvent
+  | RoundStartEvent
   | SmallBlindSelectedEvent
-  | BigBlindSelectedEvent
-  | BossBlindSelectedEvent
 
 export type SmallBlindSelectedEvent = {
   type: 'SMALL_BLIND_SELECTED'
@@ -67,6 +69,15 @@ export type CardDeselectedEvent = {
 export type DiscardSelectedCardsEvent = {
   type: 'DISCARD_SELECTED_CARDS'
 }
+
+export type BlindRewardsStartEvent = {
+  type: 'BLIND_REWARDS_START'
+}
+
+export type BlindRewardsEndEvent = {
+  type: 'BLIND_REWARDS_END'
+}
+
 export interface EffectContext {
   event: GameEvent
   game: GameState

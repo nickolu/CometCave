@@ -9,6 +9,8 @@ import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
+import { ViewTemplate } from './view-template'
+
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
 const useScoreHand = () => {
@@ -29,12 +31,10 @@ const useScoreHand = () => {
 
       for (const cardId of cardIdsToScore) {
         await sleep(1000)
-        console.log('CARD_SCORED', cardId)
         eventEmitter.emit({ type: 'CARD_SCORED', id: cardId })
       }
 
       await sleep(1000)
-      console.log('HAND_SCORING_END')
       eventEmitter.emit({ type: 'HAND_SCORING_END' })
     } finally {
       isScoringRef.current = false
@@ -47,49 +47,46 @@ export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)
   const { game } = useGameState()
   const { gamePlayState } = game
-
+  const { isScoring, remainingDiscards, score, selectedHand } = gamePlayState
   const { scoreHand } = useScoreHand()
+  const currentBlind = getInProgressBlind(game)
 
   useEffect(() => {
     eventEmitter.emit({ type: 'HAND_DEALT' })
   }, [])
 
   return (
-    <div>
-      <h1>Game Play</h1>
-      <div className="mt-4">Discards: {gamePlayState.remainingDiscards}</div>
-      <div>Remaining Hands: {gamePlayState.remainingHands}</div>
-      <div>Current Blind: {getInProgressBlind(game)?.name}</div>
+    <ViewTemplate>
       <div>
-        Ante:{' '}
-        {game.rounds[game.roundIndex].baseAnte * (getInProgressBlind(game)?.anteMultiplier || 1)}
-      </div>
-      <div className="mt-4">
-        <div className="flex justify-end">
+        <div className="mt-4">
+          <Hand />
+        </div>
+        <div className="flex mt-4">
           <Button
-            disabled={gamePlayState.remainingDiscards === 0}
+            disabled={remainingDiscards === 0 || isScoring}
             onClick={() => {
               eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
             }}
           >
             Discard
           </Button>
-          <Button onClick={scoreHand}>Score Hand</Button>
+          <Button disabled={isScoring} onClick={scoreHand}>
+            Score Hand
+          </Button>
           <Button onClick={() => setShowDeck(!showDeck)}>
             {showDeck ? 'Hide Deck' : 'Show Deck'}
           </Button>
         </div>
-        <div className="mt-4">
-          <Hand />
-        </div>
       </div>
-      {showDeck && <Deck />}
 
-      <div>
-        Blind Score: {gamePlayState.score.chips} x {gamePlayState.score.mult}
+      {showDeck && <Deck />}
+      <div className="mt-4">
+        <div>
+          Blind Score: {score.chips} x {score.mult}
+        </div>
+        <div>Your Score: {currentBlind?.score}</div>
+        <div>Selected Hand: {selectedHand?.[0]?.name || 'None'}</div>
       </div>
-      <div>Total Score: {game.totalScore}</div>
-      <div>Selected Hand: {gamePlayState.selectedHand?.[0]?.name || 'None'}</div>
-    </div>
+    </ViewTemplate>
   )
 }
