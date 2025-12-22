@@ -16,4 +16,5 @@ export interface JokerFlags {
   isHolographic: boolean
   isFoil: boolean
   isNegative: boolean
+  faceUp: boolean
 }

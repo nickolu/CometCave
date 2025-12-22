@@ -42,7 +42,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const round = draft.rounds[draft.roundIndex]
         round.bigBlind.status = 'inProgress'
         draft.gamePhase = 'gameplay'
-        draft.fullDeck = randomizeDeck({
+        draft.gamePlayState.remainingDeck = randomizeDeck({
           deck: draft.fullDeck,
           seed: draft.gameSeed,
           iteration: draft.roundIndex + blindIndices['bigBlind'],
@@ -53,7 +53,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const round = draft.rounds[draft.roundIndex]
         round.bossBlind.status = 'inProgress'
         draft.gamePhase = 'gameplay'
-        draft.fullDeck = randomizeDeck({
+        draft.gamePlayState.remainingDeck = randomizeDeck({
           deck: draft.fullDeck,
           seed: draft.gameSeed,
           iteration: draft.roundIndex + blindIndices['bossBlind'],
@@ -144,6 +144,24 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const handChips =
           hands[playedHand].baseChips + hands[playedHand].chipIncreasePerLevel * playedHandLevel
 
+        if (handChips > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: crypto.randomUUID(),
+            type: 'chips',
+            value: handChips,
+            source: 'hand',
+          })
+        }
+
+        if (handMult > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: crypto.randomUUID(),
+            type: 'mult',
+            value: handMult,
+            source: 'hand',
+          })
+        }
+
         gamePlayState.isScoring = true
         gamePlayState.score = { chips: handChips, mult: handMult }
         gamePlayState.selectedHand = [hands[playedHand], selectedCards]
@@ -156,7 +174,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           playedCards: selectedCards,
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: gamePlayState.jokers,
+          jokers: draft.jokers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -176,6 +194,24 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (currentCardToScore.modifier === 'mult') cardMult += 5
         if (currentCardToScore.isFoil) cardMult += 5
         if (currentCardToScore.isHolographic) cardMult += 50
+
+        if (cardChips > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: crypto.randomUUID(),
+            type: 'chips',
+            value: cardChips,
+            source: currentCardToScore.value,
+          })
+        }
+
+        if (cardMult > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: crypto.randomUUID(),
+            type: 'mult',
+            value: cardMult,
+            source: currentCardToScore.value,
+          })
+        }
 
         gamePlayState.score = {
           chips: gamePlayState.score.chips + cardChips,
@@ -215,7 +251,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           scoredCards: [currentCardToScore],
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: gamePlayState.jokers,
+          jokers: draft.jokers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -234,10 +270,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         currentBlind.status = 'completed'
         draft.gamePhase = 'shop'
         draft.gamePlayState.remainingDeck = draft.fullDeck
-        draft.gamePlayState.remainingHands = draft.defaultNumberOfHands
+        draft.gamePlayState.remainingHands = draft.maxHands
         if (currentBlind.type === 'bossBlind') {
           draft.roundIndex += 1
         }
+        draft.gamePlayState.scoringEvents = []
+        draft.gamePlayState.remainingDiscards = draft.maxDiscards
         return
       }
       case 'SHOP_SELECT_BLIND': {

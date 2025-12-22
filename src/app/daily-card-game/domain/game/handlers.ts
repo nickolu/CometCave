@@ -11,13 +11,17 @@ import type { Draft } from 'immer'
 
 type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
 
+function getCurrentRound(draft: Draft<GameState>): RoundDefinition {
+  return draft.rounds[draft.roundIndex]
+}
+
 function computeBlindScoreAndAnte(
   draft: Draft<GameState>,
-  currentBlind: ReturnType<typeof getInProgressBlind>
+  currentBlind: ReturnType<typeof getInProgressBlind>,
+  round: RoundDefinition
 ) {
   if (!currentBlind) return null
 
-  const round = draft.rounds[draft.roundIndex]
   const blindScore =
     currentBlind.score + draft.gamePlayState.score.chips * draft.gamePlayState.score.mult
   const ante = currentBlind.anteMultiplier * round.baseAnte
@@ -41,7 +45,7 @@ function applyHandScoringEndEffects(
     playedCards: draft.gamePlayState.selectedHand?.[1],
     round: round as unknown as RoundDefinition,
     bossBlind: round.bossBlind as unknown as BossBlindDefinition,
-    jokers: draft.gamePlayState.jokers,
+    jokers: draft.jokers,
   }
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
@@ -66,13 +70,15 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   const currentBlind = getInProgressBlind(draft)
   if (!currentBlind) return
 
-  const computed = computeBlindScoreAndAnte(draft, currentBlind)
-  if (!computed) return
-
-  const { round, blindScore, ante, newTotalScore } = computed
-
+  const round = getCurrentRound(draft)
   // Effects (boss blinds / jokers) react BEFORE cleanup/phase transitions
   applyHandScoringEndEffects(draft, event, round)
+  console.log('hand scoring end effects applied', draft.gamePlayState.score.mult)
+
+  const computed = computeBlindScoreAndAnte(draft, currentBlind, round)
+  if (!computed) return
+
+  const { blindScore, ante, newTotalScore } = computed
 
   // After effects have reacted, discard ALL played cards (even ones that didn't score)
   const playedIds = new Set(draft.gamePlayState.playedCardIds)

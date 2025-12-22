@@ -16,6 +16,7 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import type { HandState, PokerHand } from '@/app/daily-card-game/domain/hand/types'
+import { greedyJoker, jokerJoker } from '@/app/daily-card-game/domain/joker/jokers'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
 const getDefaultHandState = (hand: PokerHand): HandState => ({
@@ -25,32 +26,33 @@ const getDefaultHandState = (hand: PokerHand): HandState => ({
 })
 
 export const defaultGameState: GameState = {
-  defaultNumberOfHands: 4,
+  consumables: [],
+  discardsPlayed: 0,
+  fullDeck: pokerDeck,
   gamePhase: 'mainMenu',
   gamePlayState: {
     cardsToScore: [],
-    playedCardIds: [],
-    isScoring: false,
-    jokers: [],
     dealtCards: [],
-    selectedCardIds: [],
+    isScoring: false,
+    playedCardIds: [],
     remainingDeck: pokerDeck,
+    remainingHands: 4,
+    remainingDiscards: 3,
+    selectedCardIds: [],
     score: {
       chips: 0,
       mult: 0,
     },
-    remainingHands: 4,
-    remainingDiscards: 3,
+    scoringEvents: [],
   },
+  gameSeed: 'default',
   handsPlayed: 0,
-  maxConsumables: 0,
-  maxJokers: 0,
+  jokers: [jokerJoker, greedyJoker],
+  maxConsumables: 2,
+  maxJokers: 5,
+  maxHands: 4,
+  maxDiscards: 3,
   money: 0,
-  tags: [],
-  vouchersUsed: [],
-  consumables: [],
-  discardsPlayed: 0,
-  fullDeck: pokerDeck,
   pokerHands: {
     highCard: getDefaultHandState(highCardHand),
     pair: getDefaultHandState(pairHand),
@@ -68,7 +70,6 @@ export const defaultGameState: GameState = {
   },
   rounds,
   roundIndex: 0,
-  gameSeed: 'default',
   shopState: {
     cardsForSale: [],
     packsForSale: [],
@@ -90,5 +91,7 @@ export const defaultGameState: GameState = {
     enablePerishableJokers: false,
     enableRentableJokers: false,
   },
+  tags: [],
   totalScore: 0,
+  vouchersUsed: [],
 }

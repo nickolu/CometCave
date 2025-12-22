@@ -26,6 +26,19 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           )}
+          <hr />
+          <div>
+            {game.gamePlayState.scoringEvents.length > 0 && (
+              <>
+                <h2>Scoring Events Log</h2>
+                {game.gamePlayState.scoringEvents.map(event => (
+                  <div key={event.id}>
+                    {event.source}: {event.type} + {event.value}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
         </div>
         <div id="game-content" className="w-3/4 p-4">
           {children}

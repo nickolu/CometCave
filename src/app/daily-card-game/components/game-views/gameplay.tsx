@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
+import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { HandState } from '@/app/daily-card-game/domain/hand/types'
@@ -72,6 +73,11 @@ export function GamePlayView() {
   return (
     <ViewTemplate>
       <div>
+        <div className="mt-4 flex gap-2">
+          {game.jokers.map(joker => (
+            <Joker key={joker.id} joker={joker} />
+          ))}
+        </div>
         <div className="mt-4">
           <Hand />
         </div>

@@ -2,6 +2,16 @@ import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 
 import { JokerDefinition } from './types'
 
+const defaultFlags = {
+  faceUp: true,
+  isRentable: false,
+  isPerishable: false,
+  isEternal: false,
+  isHolographic: false,
+  isFoil: false,
+  isNegative: false,
+}
+
 export const jokerJoker: JokerDefinition = {
   id: 'jokerJoker',
   name: 'Joker',
@@ -11,18 +21,17 @@ export const jokerJoker: JokerDefinition = {
       event: { type: 'HAND_SCORING_END' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: crypto.randomUUID(),
+          type: 'mult',
+          value: 4,
+          source: 'Joker',
+        })
         ctx.game.gamePlayState.score.mult += 4
       },
     },
   ],
-  flags: {
-    isRentable: false,
-    isPerishable: false,
-    isEternal: false,
-    isHolographic: false,
-    isFoil: false,
-    isNegative: false,
-  },
+  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -37,18 +46,17 @@ export const greedyJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const scoredCard = ctx.scoredCards?.[0]
         if (scoredCard?.suit === 'diamonds') {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: crypto.randomUUID(),
+            type: 'mult',
+            value: 3,
+            source: 'Greedy Joker',
+          })
           ctx.game.gamePlayState.score.mult += 3
         }
       },
     },
   ],
-  flags: {
-    isRentable: false,
-    isPerishable: false,
-    isEternal: false,
-    isHolographic: false,
-    isFoil: false,
-    isNegative: false,
-  },
+  flags: defaultFlags,
   rarity: 'common',
 }

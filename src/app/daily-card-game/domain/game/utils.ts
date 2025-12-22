@@ -13,7 +13,7 @@ export function collectEffects(game: GameState): Effect[] {
     effects.push(...blind.effects)
   }
 
-  effects.push(...game.gamePlayState.jokers.flatMap(j => j.effects || []))
+  effects.push(...game.jokers.flatMap(j => j.effects || []))
 
   return effects
 }

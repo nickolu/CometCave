@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
+import { cardValuePriority } from '@/app/daily-card-game/domain/decks/poker-deck'
 import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ export const Hand = () => {
     return (
       [...dealtCards].sort((a, b) => {
         if (sortKey === 'value') {
-          return a.value.localeCompare(b.value)
+          return cardValuePriority[b.value] - cardValuePriority[a.value]
         }
         return a.suit.localeCompare(b.suit)
       }) ?? []

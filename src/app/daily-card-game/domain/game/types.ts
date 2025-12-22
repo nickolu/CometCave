@@ -10,25 +10,27 @@ import type { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 
 export interface GameState {
-  defaultNumberOfHands: number
-  gameSeed: string
   consumables: Consumable[]
   discardsPlayed: number
   fullDeck: PlayingCard[]
   gamePhase: GamePhase
-  gamePlayState: GamePlayState
+  gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
+  gameSeed: string
   handsPlayed: number
+  jokers: JokerDefinition[]
   maxConsumables: number
+  maxDiscards: number
+  maxHands: number
   maxJokers: number
   money: number
   pokerHands: PokerHandsState
-  rounds: RoundDefinition[]
   roundIndex: number
+  rounds: RoundDefinition[]
   shopState: ShopState
   stake: Stake
   tags: TagDefinition[]
-  vouchersUsed: VoucherDefinition[]
   totalScore: number
+  vouchersUsed: VoucherDefinition[]
 }
 
 export type GamePhase =
@@ -39,20 +41,27 @@ export type GamePhase =
   | 'packOpening'
   | 'gameOver'
   | 'blindRewards'
+
 export interface GamePlayState {
   cardsToScore: PlayingCard[]
-  playedCardIds: string[]
-  isScoring: boolean
-  jokers: JokerDefinition[]
   dealtCards: PlayingCard[]
+  isScoring: boolean
+  playedCardIds: string[]
+  remainingDeck: PlayingCard[]
+  remainingDiscards: number
+  remainingHands: number
+  score: ScoreState
+  scoringEvents: ScoringEvent[]
   selectedCardIds: string[]
   selectedHand?: [PokerHand, PlayingCard[]]
-  remainingDeck: PlayingCard[]
-  score: ScoreState
-  remainingHands: number
-  remainingDiscards: number
 }
 
+export interface ScoringEvent {
+  id: string
+  type: 'mult' | 'chips'
+  value: number
+  source: string
+}
 export interface ScoreState {
   chips: number
   mult: number
