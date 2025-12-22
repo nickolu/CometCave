@@ -7,6 +7,7 @@ import { Deck } from '@/app/daily-card-game/components/global/deck'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { HandState } from '@/app/daily-card-game/domain/hand/types'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
@@ -23,16 +24,18 @@ const useScoreHand = () => {
   const scoreHand = useCallback(async () => {
     if (isScoringRef.current) return
 
-    const cardIdsToScore = [...selectedCardIds]
-    if (cardIdsToScore.length === 0) return
+    if (selectedCardIds.length === 0) return
 
     isScoringRef.current = true
     try {
       eventEmitter.emit({ type: 'HAND_SCORING_START' })
 
-      for (const cardId of cardIdsToScore) {
+      const cardsToScoreCount =
+        useDailyCardGameStore.getState().game.gamePlayState.cardsToScore.length
+
+      for (let i = 0; i < cardsToScoreCount; i++) {
         await sleep(250)
-        eventEmitter.emit({ type: 'CARD_SCORED', id: cardId })
+        eventEmitter.emit({ type: 'CARD_SCORED' })
       }
 
       await sleep(750)

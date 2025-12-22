@@ -1,8 +1,12 @@
 import type { Effect } from '@/app/daily-card-game/domain/events/types'
 
 export interface JokerDefinition {
+  id: string
+  name: string
+  description: string
   effects: Effect[]
   flags: JokerFlags
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary'
 }
 
 export interface JokerFlags {

@@ -28,6 +28,8 @@ export const defaultGameState: GameState = {
   defaultNumberOfHands: 4,
   gamePhase: 'mainMenu',
   gamePlayState: {
+    cardsToScore: [],
+    playedCardIds: [],
     isScoring: false,
     jokers: [],
     dealtCards: [],

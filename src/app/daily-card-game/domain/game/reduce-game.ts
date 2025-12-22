@@ -112,6 +112,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.discardsPlayed += 1
         gamePlayState.selectedCardIds = []
         gamePlayState.selectedHand = undefined
+        gamePlayState.cardsToScore = []
+        gamePlayState.playedCardIds = []
         gamePlayState.dealtCards = cardsToKeep
         gamePlayState.remainingDiscards -= 1
 
@@ -130,7 +132,9 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const selectedCards = gamePlayState.dealtCards.filter(card =>
           gamePlayState.selectedCardIds.includes(card.id)
         )
-        const playedHand = findHighestPriorityHand(selectedCards).hand
+        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(selectedCards)
+        gamePlayState.cardsToScore = cardsToScore
+        gamePlayState.playedCardIds = selectedCards.map(card => card.id)
 
         gamePlayState.remainingHands -= 1
 
@@ -144,10 +148,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.score = { chips: handChips, mult: handMult }
         gamePlayState.selectedHand = [hands[playedHand], selectedCards]
         draft.handsPlayed += 1
-
-        console.log('score', gamePlayState.score.chips, gamePlayState.score.mult)
-        console.log('handChips', handChips)
-        console.log('handMult', handMult)
 
         const ctx: EffectContext = {
           event,
@@ -163,13 +163,15 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'CARD_SCORED': {
         const gamePlayState = draft.gamePlayState
-        const currentCardToScore = gamePlayState.dealtCards.find(card => card.id === event.id)
+        const currentCardToScore = gamePlayState.cardsToScore.shift()
         if (!currentCardToScore) return
+        const scoredCardId = currentCardToScore.id
 
         const additionalRewards: [string, number][] = []
 
         let cardChips = currentCardToScore.baseChips
         let cardMult = 0
+
         if (currentCardToScore.modifier === 'bonus') cardChips += 10
         if (currentCardToScore.modifier === 'mult') cardMult += 5
         if (currentCardToScore.isFoil) cardMult += 5
@@ -191,16 +193,18 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         currentBlind.additionalRewards.push(...additionalRewards)
 
         // remove card from selection & hand UI
-        gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(id => id !== event.id)
+        gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(
+          id => id !== scoredCardId
+        )
         if (gamePlayState.selectedHand) {
           gamePlayState.selectedHand = [
             gamePlayState.selectedHand[0],
-            gamePlayState.selectedHand[1].filter(card => card.id !== event.id),
+            gamePlayState.selectedHand[1].filter(card => card.id !== scoredCardId),
           ]
         }
 
         // remove scored card from dealt cards
-        gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== event.id)
+        gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== scoredCardId)
 
         const playedCards = draft.gamePlayState.selectedHand?.[1]
         const ctx: EffectContext = {

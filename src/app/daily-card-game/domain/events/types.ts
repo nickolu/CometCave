@@ -59,7 +59,6 @@ export type HandScoringEndEvent = {
 
 export type CardScoredEvent = {
   type: 'CARD_SCORED'
-  id: string
 }
 
 export type RoundStartEvent = {
@@ -120,7 +119,7 @@ export interface EffectContext {
 }
 
 export interface Effect {
-  event: GameEvent
+  event: { type: GameEvent['type'] }
   priority: number
   condition?: (ctx: EffectContext) => boolean
   apply: (ctx: EffectContext) => void

@@ -40,6 +40,8 @@ export type GamePhase =
   | 'gameOver'
   | 'blindRewards'
 export interface GamePlayState {
+  cardsToScore: PlayingCard[]
+  playedCardIds: string[]
   isScoring: boolean
   jokers: JokerDefinition[]
   dealtCards: PlayingCard[]

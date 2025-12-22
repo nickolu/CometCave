@@ -74,6 +74,18 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   // Effects (boss blinds / jokers) react BEFORE cleanup/phase transitions
   applyHandScoringEndEffects(draft, event, round)
 
+  // After effects have reacted, discard ALL played cards (even ones that didn't score)
+  const playedIds = new Set(draft.gamePlayState.playedCardIds)
+  if (playedIds.size > 0) {
+    draft.gamePlayState.dealtCards = draft.gamePlayState.dealtCards.filter(
+      card => !playedIds.has(card.id)
+    )
+  }
+  draft.gamePlayState.selectedCardIds = []
+  draft.gamePlayState.selectedHand = undefined
+  draft.gamePlayState.cardsToScore = []
+  draft.gamePlayState.playedCardIds = []
+
   const outcome = decideHandEndOutcome({
     blindScore,
     ante,
