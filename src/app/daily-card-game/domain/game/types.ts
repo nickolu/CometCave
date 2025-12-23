@@ -35,6 +35,7 @@ export interface GameState {
 
 export type GamePhase =
   | 'mainMenu'
+  | 'jokers'
   | 'shop'
   | 'blindSelection'
   | 'gameplay'

@@ -4,6 +4,7 @@ export interface JokerDefinition {
   id: string
   name: string
   description: string
+  price: number
   effects: Effect[]
   flags: JokerFlags
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary'

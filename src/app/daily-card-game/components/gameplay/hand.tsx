@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { cardValuePriority } from '@/app/daily-card-game/domain/decks/poker-deck'
 import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 import { Card } from './card'
 
@@ -28,7 +28,7 @@ export const Hand = () => {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 w-full">
+      <div className="flex flex-wrap gap-2 w-full justify-center">
         {sortedCards.map((card: PlayingCard, index: number) => (
           <Card
             key={card.id}
@@ -38,19 +38,26 @@ export const Hand = () => {
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-2 w-full">
-        <Button
-          className={sortKey === 'value' ? 'border-white border-2' : ''}
+      <div className="flex flex-wrap gap-2 w-full justify-center mt-2">
+        Sort By:{' '}
+        <span
+          className={cn(
+            'cursor-pointer text-underline inline-block',
+            sortKey === 'value' ? 'text-white font-bold' : 'text-space-gray'
+          )}
           onClick={() => setSortKey('value')}
         >
-          Sort by Value
-        </Button>
-        <Button
-          className={sortKey === 'suit' ? 'border-white border-2' : ''}
+          Value
+        </span>
+        <span
+          className={cn(
+            'cursor-pointer text-underline inline-block',
+            sortKey === 'suit' ? 'text-white font-bold' : 'text-space-gray'
+          )}
           onClick={() => setSortKey('suit')}
         >
-          Sort by Suit
-        </Button>
+          Suit
+        </span>
       </div>
     </div>
   )

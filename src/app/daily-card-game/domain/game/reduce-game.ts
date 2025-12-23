@@ -294,7 +294,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePhase = 'mainMenu'
         return
       }
-
+      case 'DISPLAY_JOKERS': {
+        draft.gamePhase = 'jokers'
+        return
+      }
       // no-ops for now
       case 'BLIND_REWARDS_START': {
         return

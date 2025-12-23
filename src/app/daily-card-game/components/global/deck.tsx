@@ -6,6 +6,7 @@ import { Card } from '@/app/daily-card-game/components/gameplay/card'
 import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const CardRow = ({ cards }: { cards: PlayingCard[] }) => {
   return (
@@ -33,9 +34,21 @@ export const Deck = () => {
 
   return (
     <div>
-      <Button onClick={() => setDeckType(deckType === 'remaining' ? 'full' : 'remaining')}>
-        Show {deckType === 'remaining' ? 'Full' : 'Remaining'} Deck
-      </Button>
+      <div className="mb-2">
+        {' '}
+        <Button
+          className={cn(deckType === 'remaining' ? 'bg-space-blue' : 'bg-space-grey')}
+          onClick={() => setDeckType('remaining')}
+        >
+          Remaining Deck
+        </Button>
+        <Button
+          className={cn(deckType === 'full' ? 'bg-space-blue' : 'bg-space-grey')}
+          onClick={() => setDeckType('full')}
+        >
+          Full Deck
+        </Button>
+      </div>
 
       <CardRow cards={spades} />
       <CardRow cards={hearts} />

@@ -4,6 +4,7 @@ import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/type
 import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
 
 export type GameEvent =
+  | DisplayJokersEvent
   | BigBlindSelectedEvent
   | BigBlindSkippedEvent
   | BlindRewardsEndEvent
@@ -24,6 +25,10 @@ export type GameEvent =
   | ShopSelectBlindEvent
   | SmallBlindSelectedEvent
   | SmallBlindSkippedEvent
+
+export type DisplayJokersEvent = {
+  type: 'DISPLAY_JOKERS'
+}
 
 export type SmallBlindSelectedEvent = {
   type: 'SMALL_BLIND_SELECTED'

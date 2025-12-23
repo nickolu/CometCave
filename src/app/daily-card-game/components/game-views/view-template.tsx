@@ -1,5 +1,7 @@
+import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
+import { Button } from '@/components/ui/button'
 
 export function ViewTemplate({ children }: { children: React.ReactNode }) {
   const { game } = useGameState()
@@ -7,27 +9,53 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <div className="flex">
-        <div id="game-sidebar" className="w-1/4 p-4">
-          <div>Total Score: {game.totalScore}</div>
-          <div>
-            Round {game.roundIndex + 1}/{game.rounds.length}
-          </div>
-          <div>Current Money: {game.money}</div>
-          <div>Hands Played: {game.handsPlayed}</div>
-          <div>Remaining Hands: {game.gamePlayState.remainingHands}</div>
-          <div>Remaining Discards: {game.gamePlayState.remainingDiscards}</div>
-          {currentBlind && (
+        {/* Sidebar */}
+        <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
+          <Button
+            onClick={() => {
+              eventEmitter.emit({ type: 'BLIND_SELECTION_BACK_TO_MENU' })
+            }}
+          >
+            Back to Main Menu
+          </Button>
+          <hr />
+          <div className="flex flex-col gap-2 pl-2">
             <div>
-              <div>Current Blind: {currentBlind?.name}</div>
-              <div>
-                Score at Least:{' '}
-                {game.rounds[game.roundIndex].baseAnte *
-                  (getInProgressBlind(game)?.anteMultiplier || 1)}
-              </div>
+              <strong>Total Score:</strong> {game.totalScore}
             </div>
+            <div>
+              <strong>Round:</strong> {game.roundIndex + 1}/{game.rounds.length}
+            </div>
+            <div>
+              <strong>Current Money:</strong> {game.money}
+            </div>
+            <div>
+              <strong>Hands Played:</strong> {game.handsPlayed}
+            </div>
+          </div>
+          {currentBlind && (
+            <>
+              <hr />
+              <div className="pl-2 flex flex-col gap-2">
+                <div>
+                  <strong>Current Blind:</strong> {currentBlind?.name}
+                </div>
+                <div>
+                  <strong>Score at Least:</strong>{' '}
+                  {game.rounds[game.roundIndex].baseAnte *
+                    (getInProgressBlind(game)?.anteMultiplier || 1)}
+                </div>
+                <div>
+                  <strong>Remaining Hands:</strong> {game.gamePlayState.remainingHands}
+                </div>
+                <div>
+                  <strong>Remaining Discards:</strong> {game.gamePlayState.remainingDiscards}
+                </div>
+              </div>
+            </>
           )}
           <hr />
-          <div>
+          <div className="pl-2 flex flex-col gap-2">
             {game.gamePlayState.scoringEvents.length > 0 && (
               <>
                 <h2>Scoring Events Log</h2>
@@ -40,6 +68,8 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+
+        {/* Main Content */}
         <div id="game-content" className="w-3/4 p-4">
           {children}
         </div>

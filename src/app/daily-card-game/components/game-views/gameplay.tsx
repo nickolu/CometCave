@@ -73,7 +73,7 @@ export function GamePlayView() {
   return (
     <ViewTemplate>
       <div>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-2 justify-center">
           {game.jokers.map(joker => (
             <Joker key={joker.id} joker={joker} />
           ))}
@@ -81,25 +81,33 @@ export function GamePlayView() {
         <div className="mt-4">
           <Hand />
         </div>
-        <div className="flex mt-4 gap-2">
+        <div className="flex mt-4 gap-2 justify-center">
           <Button
             disabled={remainingDiscards === 0 || isScoring}
+            className="bg-red-500"
             onClick={() => {
               eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
             }}
           >
             Discard
           </Button>
-          <Button disabled={isScoring} onClick={scoreHand}>
+          <Button disabled={isScoring} className="bg-green-500" onClick={scoreHand}>
             Play Hand
           </Button>
-          <Button onClick={() => setShowDeck(!showDeck)}>
-            {showDeck ? 'Hide Deck' : 'Show Deck'}
+          <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
+            Show Deck
           </Button>
         </div>
       </div>
 
-      {showDeck && <Deck />}
+      {showDeck && (
+        <div className="absolute top-0 right-1/8 w-3/4 h-full bg-black/90 flex flex-col items-center justify-center p-4 rounded-l-lg border-2 border-space-white">
+          <div className="flex justify-end w-3/4">
+            <Button onClick={() => setShowDeck(false)}>Close</Button>
+          </div>
+          <Deck />
+        </div>
+      )}
       <div className="mt-4">
         <div>
           Blind Score: {score.chips} x {score.mult}
