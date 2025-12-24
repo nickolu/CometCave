@@ -52,7 +52,7 @@ export interface GamePlayState {
   remainingDiscards: number
   remainingHands: number
   score: ScoreState
-  scoringEvents: ScoringEvent[]
+  scoringEvents: (ScoringEvent | CustomScoringEvent)[]
   selectedCardIds: string[]
   selectedHand?: [PokerHand, PlayingCard[]]
 }
@@ -60,9 +60,22 @@ export interface GamePlayState {
 export interface ScoringEvent {
   id: string
   type: 'mult' | 'chips'
+  operator?: 'x' | '+'
   value: number
   source: string
 }
+
+export interface CustomScoringEvent {
+  id: string
+  message: string
+}
+
+export function isCustomScoringEvent(
+  event: ScoringEvent | CustomScoringEvent
+): event is CustomScoringEvent {
+  return 'message' in event
+}
+
 export interface ScoreState {
   chips: number
   mult: number

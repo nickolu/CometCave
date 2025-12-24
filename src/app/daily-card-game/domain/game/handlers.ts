@@ -63,6 +63,10 @@ function decideHandEndOutcome(args: {
 
 function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>) {
   gamePlayState.isScoring = false
+  gamePlayState.scoringEvents.push({
+    id: crypto.randomUUID(),
+    message: `Hand Score: ${gamePlayState.score.chips} x ${gamePlayState.score.mult}`,
+  })
   gamePlayState.score = { chips: 0, mult: 0 }
 }
 

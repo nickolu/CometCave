@@ -413,13 +413,17 @@ export const jokerStencil: JokerDefinition = {
   price: 8,
   effects: [
     {
-      event: { type: 'HAND_SCORING_START' },
+      event: { type: 'HAND_SCORING_END' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        ctx.game.gamePlayState.score.mult += ctx.game.maxJokers - ctx.game.jokers.length
+        ctx.game.gamePlayState.score.mult *= Math.max(
+          1,
+          ctx.game.maxJokers - ctx.game.jokers.length
+        )
         ctx.game.gamePlayState.scoringEvents.push({
           id: crypto.randomUUID(),
           type: 'mult',
+          operator: 'x',
           value: ctx.game.maxJokers - ctx.game.jokers.length,
           source: 'Joker Stencil',
         })
@@ -448,10 +452,8 @@ export const jokers: JokerDefinition[] = [
 ]
 
 /***
- * JOKERS TO PROGRAM:
- * 17	Joker Stencil
-Joker Stencil	X1 Mult for each empty Joker slot. Joker Stencil included
-(Currently X1)	$8	Uncommon	Available from start.	Xm	Indep.
+ * JOKERS LEFT TO PROGRAM:
+ 
 18	Four Fingers
 Four Fingers	All Flushes and Straights can be made with 4 cards	$7	Uncommon	Available from start.	!!	N/A
 19	Mime

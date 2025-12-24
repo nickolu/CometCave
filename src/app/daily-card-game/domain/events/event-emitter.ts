@@ -22,6 +22,7 @@ class EventEmitter {
     SHOP_OPEN_PACK: [],
     PACK_OPEN_BACK_TO_SHOP: [],
     BLIND_SELECTION_BACK_TO_MENU: [],
+    DISPLAY_JOKERS: [],
   }
 
   private anyListeners: Array<(event: GameEvent) => void> = []

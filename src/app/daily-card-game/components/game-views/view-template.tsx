@@ -1,4 +1,5 @@
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
@@ -58,12 +59,18 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
           <div className="pl-2 flex flex-col gap-2">
             {game.gamePlayState.scoringEvents.length > 0 && (
               <>
-                <h2>Scoring Events Log</h2>
-                {game.gamePlayState.scoringEvents.map(event => (
-                  <div key={event.id}>
-                    {event.source}: {event.type} + {event.value}
-                  </div>
-                ))}
+                <h2 className="text-lg font-bold">Scoring Events Log</h2>
+                <div className="flex flex-col gap-0.5 pl-1 max-h-[300px] overflow-y-auto">
+                  {game.gamePlayState.scoringEvents.map(event =>
+                    isCustomScoringEvent(event) ? (
+                      <div key={event.id}>{event.message}</div>
+                    ) : (
+                      <div key={event.id}>
+                        {event.source}: {event.type} {event.operator ?? '+'} {event.value}
+                      </div>
+                    )
+                  )}
+                </div>
               </>
             )}
           </div>

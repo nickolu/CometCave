@@ -16,13 +16,7 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import type { HandState, PokerHand } from '@/app/daily-card-game/domain/hand/types'
-import {
-  gluttonousJoker,
-  greedyJoker,
-  jokerJoker,
-  jollyJoker,
-  wrathfulJoker,
-} from '@/app/daily-card-game/domain/joker/jokers'
+import { jokerStencil } from '@/app/daily-card-game/domain/joker/jokers'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
 const getDefaultHandState = (hand: PokerHand): HandState => ({
@@ -53,7 +47,7 @@ export const defaultGameState: GameState = {
   },
   gameSeed: 'default',
   handsPlayed: 0,
-  jokers: [jokerJoker, greedyJoker, jollyJoker, gluttonousJoker, wrathfulJoker],
+  jokers: [jokerStencil],
   maxConsumables: 2,
   maxJokers: 5,
   maxHands: 4,
