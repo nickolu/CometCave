@@ -7,8 +7,8 @@ const FaceUpJoker = ({ joker }: { joker: JokerDefinition }) => {
   return (
     <div className={'px-1 h-full '}>
       <div>
-        <h3 className="text-sm font-bold">{joker.name}</h3>
-        <p className="text-xs text-muted-foreground">{joker.description}</p>
+        <h3 className="text-sm font-bold">{joker?.name}</h3>
+        <p className="text-xs text-muted-foreground">{joker?.description}</p>
       </div>
     </div>
   )

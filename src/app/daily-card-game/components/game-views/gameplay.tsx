@@ -6,7 +6,9 @@ import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
 import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { HandState } from '@/app/daily-card-game/domain/hand/types'
+import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
+import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
@@ -48,12 +50,14 @@ const useScoreHand = () => {
   return { scoreHand }
 }
 
-const SelectedHandScore = ({ hand }: { hand: HandState }) => {
-  const currentHandChips = hand.hand.baseChips + hand.hand.chipIncreasePerLevel * hand.level
-  const currentHandMult = hand.hand.baseMult + hand.hand.multIncreasePerLevel * hand.level
+const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
+  const currentHandChips =
+    pokerHands[hand.handId].baseChips + pokerHands[hand.handId].chipIncreasePerLevel * hand.level
+  const currentHandMult =
+    pokerHands[hand.handId].baseMult + pokerHands[hand.handId].multIncreasePerLevel * hand.level
   return (
     <div>
-      Selected Hand: {hand.hand.name} ({currentHandChips}x{currentHandMult})
+      Selected Hand: {pokerHands[hand.handId].name} ({currentHandChips}x{currentHandMult})
     </div>
   )
 }
@@ -75,7 +79,7 @@ export function GamePlayView() {
       <div>
         <div className="mt-4 flex gap-2 justify-center">
           {game.jokers.map(joker => (
-            <Joker key={joker.id} joker={joker} />
+            <Joker key={joker.jokerId} joker={jokers[joker.jokerId]} />
           ))}
         </div>
         <div className="mt-4">
@@ -113,9 +117,7 @@ export function GamePlayView() {
           Blind Score: {score.chips} x {score.mult}
         </div>
         <div>Your Score: {currentBlind?.score}</div>
-        {selectedHand?.[0]?.name && (
-          <SelectedHandScore hand={game.pokerHands[selectedHand[0].id]} />
-        )}
+        {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
       </div>
     </ViewTemplate>
   )

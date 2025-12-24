@@ -9,6 +9,12 @@ export interface JokerDefinition {
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary'
 }
 
+export interface JokerState {
+  id: string
+  jokerId: JokerDefinition['id']
+  flags: JokerFlags
+}
+
 export interface JokerFlags {
   isRentable: boolean
   isPerishable: boolean

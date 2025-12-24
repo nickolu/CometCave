@@ -1,5 +1,7 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
-import type { PokerHand } from '@/app/daily-card-game/domain/hand/types'
+import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 export const bonusOnCardScored = ({
   ctx,
@@ -15,9 +17,9 @@ export const bonusOnCardScored = ({
   source: string
 }) => {
   const scoredCard = ctx.scoredCards?.[0]
-  if (scoredCard?.suit === suit) {
+  if (scoredCard && playingCards[scoredCard.playingCardId].suit === suit) {
     ctx.game.gamePlayState.scoringEvents.push({
-      id: crypto.randomUUID(),
+      id: uuid(),
       type,
       value,
       source,
@@ -34,15 +36,18 @@ export const bonusOnHandPlayed = ({
   source,
 }: {
   ctx: EffectContext
-  hand: PokerHand
+  hand: PokerHandDefinition
   type: 'mult' | 'chips'
   value: number
   source: string
 }) => {
-  const scoredHand = ctx.game.gamePlayState.selectedHand?.[0]
-  if (scoredHand?.id === hand.id) {
+  const scoredHand = ctx.game.gamePlayState.selectedHand?.[1]
+  if (
+    scoredHand &&
+    scoredHand.every(card => playingCards[card.playingCardId].suit === playingCards[hand.id].suit)
+  ) {
     ctx.game.gamePlayState.scoringEvents.push({
-      id: crypto.randomUUID(),
+      id: uuid(),
       type,
       value,
       source,

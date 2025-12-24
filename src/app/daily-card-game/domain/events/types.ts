@@ -1,7 +1,7 @@
 import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/types'
-import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
-import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
+import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
+import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
 
 export type GameEvent =
   | BigBlindSelectedEvent
@@ -104,11 +104,11 @@ export interface EffectContext {
   event: GameEvent
   game: GameState
   score: ScoreState
-  playedCards?: PlayingCard[]
-  scoredCards?: PlayingCard[]
-  jokers?: JokerDefinition[]
-  round?: RoundDefinition
-  bossBlind?: BossBlindDefinition
+  playedCards?: PlayingCardState[]
+  scoredCards?: PlayingCardState[]
+  jokers?: JokerState[]
+  round?: RoundState
+  bossBlind?: BlindState
 }
 
 export interface Effect {

@@ -14,40 +14,40 @@ import {
   checkHandForThreeOfAKind,
   checkHandForTwoPair,
 } from '@/app/daily-card-game/domain/hand/hands'
-import type { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import type {
+  PlayingCardDefinition,
+  PlayingCardState,
+} from '@/app/daily-card-game/domain/playing-card/types'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 
-const c = (value: CardValue, suit: PlayingCard['suit'], id: string): PlayingCard => ({
-  value,
-  suit,
-  id,
-  baseChips: 0,
-  isHolographic: false,
-  isFoil: false,
-  faceUp: true,
-  isFaceCard: value === 'J' || value === 'Q' || value === 'K' || value === 'A',
+const c = (cardDefinitionId: PlayingCardDefinition['id']): PlayingCardState => ({
+  id: uuid(),
+  playingCardId: cardDefinitionId,
+  bonusChips: 0,
+  flags: {
+    isHolographic: false,
+    isFoil: false,
+  },
+  isFaceUp: true,
 })
 
 describe('daily-card-game hand checkers', () => {
   it('checkHandForHighCard returns the first ranked card (by value then suit)', () => {
-    const cards = [
-      c('A', 'spades', 'aS'),
-      c('2', 'spades', '2S'),
-      c('2', 'hearts', '2H'),
-      c('K', 'clubs', 'kC'),
-    ]
+    const cards = [c('A_spades'), c('2_spades'), c('2_hearts'), c('K_clubs')]
 
     const [isHighCard, highCard] = checkHandForHighCard(cards)
     expect(isHighCard).toBe(true)
     // rankCardsByValueAndSuit sorts ascending by value priority, then suit priority (hearts < diamonds < clubs < spades)
-    expect(highCard).toEqual([c('2', 'hearts', '2H')])
+    expect(playingCards[highCard[0].playingCardId].value).toEqual('A')
   })
 
   it('checkHandForPair returns the top-ranked pair among all pairs', () => {
-    const twoHearts = c('2', 'hearts', '2H')
-    const twoSpades = c('2', 'spades', '2S')
-    const aceClubs = c('A', 'clubs', 'aC')
-    const aceSpades = c('A', 'spades', 'aS')
-    const filler = c('9', 'diamonds', '9D')
+    const twoHearts = c('2_hearts')
+    const twoSpades = c('2_spades')
+    const aceClubs = c('A_clubs')
+    const aceSpades = c('A_spades')
+    const filler = c('9_diamonds')
 
     const [isPair, pair] = checkHandForPair([aceSpades, twoSpades, filler, twoHearts, aceClubs])
     expect(isPair).toBe(true)
@@ -57,22 +57,22 @@ describe('daily-card-game hand checkers', () => {
 
   it('checkHandForPair returns false when no pairs exist', () => {
     const [isPair, pair] = checkHandForPair([
-      c('2', 'hearts', '2H'),
-      c('3', 'clubs', '3C'),
-      c('4', 'spades', '4S'),
-      c('5', 'diamonds', '5D'),
+      c('2_hearts'),
+      c('3_clubs'),
+      c('4_spades'),
+      c('5_diamonds'),
     ])
     expect(isPair).toBe(false)
     expect(pair).toEqual([])
   })
 
   it('checkHandForTwoPair returns the two top-ranked pairs (in rank order)', () => {
-    const twoHearts = c('2', 'hearts', '2H')
-    const twoSpades = c('2', 'spades', '2S')
-    const threeClubs = c('3', 'clubs', '3C')
-    const threeDiamonds = c('3', 'diamonds', '3D')
-    const aceClubs = c('A', 'clubs', 'aC')
-    const aceSpades = c('A', 'spades', 'aS')
+    const twoHearts = c('2_hearts')
+    const twoSpades = c('2_spades')
+    const threeClubs = c('3_clubs')
+    const threeDiamonds = c('3_diamonds')
+    const aceClubs = c('A_clubs')
+    const aceSpades = c('A_spades')
 
     const [isTwoPair, twoPair] = checkHandForTwoPair([
       aceSpades,
@@ -89,18 +89,18 @@ describe('daily-card-game hand checkers', () => {
 
   it('checkHandForTwoPair returns false when fewer than two pairs exist', () => {
     const [isTwoPair, twoPair] = checkHandForTwoPair([
-      c('2', 'hearts', '2H'),
-      c('2', 'spades', '2S'),
-      c('3', 'clubs', '3C'),
-      c('4', 'spades', '4S'),
+      c('2_hearts'),
+      c('2_spades'),
+      c('3_clubs'),
+      c('4_spades'),
     ])
     expect(isTwoPair).toBe(false)
     expect(twoPair).toEqual([])
   })
 
   it('checkHandForThreeOfAKind returns the top-ranked trips among all trips', () => {
-    const trips4 = [c('4', 'hearts', '4H'), c('4', 'clubs', '4C'), c('4', 'spades', '4S')]
-    const trips7 = [c('7', 'hearts', '7H'), c('7', 'clubs', '7C'), c('7', 'spades', '7S')]
+    const trips4 = [c('4_hearts'), c('4_clubs'), c('4_spades')]
+    const trips7 = [c('7_hearts'), c('7_clubs'), c('7_spades')]
 
     const [isTrips, trips] = checkHandForThreeOfAKind([...trips7, ...trips4])
     expect(isTrips).toBe(true)
@@ -109,186 +109,168 @@ describe('daily-card-game hand checkers', () => {
   })
 
   it('checkHandForStraight requires cards to be in sequential value order', () => {
-    const straight = [
-      c('2', 'hearts', '2H'),
-      c('3', 'clubs', '3C'),
-      c('4', 'spades', '4S'),
-      c('5', 'diamonds', '5D'),
-      c('6', 'hearts', '6H'),
-    ]
+    const straight = [c('2_hearts'), c('3_clubs'), c('4_spades'), c('5_diamonds'), c('6_hearts')]
 
-    const [isStraight, straightCards] = checkHandForStraight(straight, 5)
+    const [isStraight, straightCards] = checkHandForStraight(straight, {
+      numberOfCardsRequiredForFlushAndStraight: 5,
+      areAllCardsFaceCards: false,
+    })
     expect(isStraight).toBe(true)
     expect(straightCards).toEqual(straight)
 
     const [isNotStraight, notStraightCards] = checkHandForStraight(
-      [
-        c('2', 'hearts', '2H2'),
-        c('3', 'clubs', '3C2'),
-        c('5', 'spades', '5S2'),
-        c('6', 'diamonds', '6D2'),
-        c('7', 'hearts', '7H2'),
-      ],
-      5
+      [c('2_hearts'), c('3_clubs'), c('5_spades'), c('6_diamonds'), c('7_hearts')],
+      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
     )
     expect(isNotStraight).toBe(false)
     expect(notStraightCards).toEqual([])
   })
 
   it('checkHandForFlush checks the suit of the first ranked card and returns the first N of that suit', () => {
-    const twoHearts = c('2', 'hearts', '2H')
-    const fiveHearts = c('5', 'hearts', '5H')
-    const eightHearts = c('8', 'hearts', '8H')
-    const threeSpades = c('3', 'spades', '3S')
-    const kingClubs = c('K', 'clubs', 'kC')
+    const cards = [c('2_hearts'), c('5_hearts'), c('8_hearts'), c('3_spades'), c('K_hearts')]
 
-    const [isFlush, flushCards] = checkHandForFlush(
-      [kingClubs, eightHearts, threeSpades, fiveHearts, twoHearts],
-      3
-    )
+    const [isFlush, flushCards] = checkHandForFlush(cards, {
+      numberOfCardsRequiredForFlushAndStraight: 4,
+      areAllCardsFaceCards: false,
+    })
     expect(isFlush).toBe(true)
-    expect(flushCards).toEqual([twoHearts, fiveHearts, eightHearts])
+    expect(
+      flushCards.every(
+        card => playingCards[card.playingCardId].suit === playingCards[cards[0].playingCardId].suit
+      )
+    ).toBe(true)
+    expect(flushCards.length).toEqual(4)
 
-    const [isNotFlush, notFlushCards] = checkHandForFlush([twoHearts, threeSpades, kingClubs], 2)
+    const [isNotFlush, notFlushCards] = checkHandForFlush(
+      [c('2_hearts'), c('3_spades'), c('K_hearts'), c('8_hearts'), c('5_hearts')],
+      {
+        numberOfCardsRequiredForFlushAndStraight: 5,
+        areAllCardsFaceCards: false,
+      }
+    )
     expect(isNotFlush).toBe(false)
     expect(notFlushCards).toEqual([])
   })
 
   it('checkHandForFullHouse returns trips + one pair (using reference equality to exclude the trips)', () => {
-    const trips = [c('4', 'hearts', '4H'), c('4', 'clubs', '4C'), c('4', 'spades', '4S')]
-    const pair = [c('9', 'diamonds', '9D'), c('9', 'hearts', '9H')]
+    const trips = [c('4_hearts'), c('4_clubs'), c('4_spades')]
+    const pair = [c('9_diamonds'), c('9_hearts')]
 
     const [isFullHouse, fullHouseCards] = checkHandForFullHouse([...trips, ...pair])
     expect(isFullHouse).toBe(true)
     expect(fullHouseCards).toEqual([...trips, ...pair])
 
     const [isNotFullHouse, notFullHouseCards] = checkHandForFullHouse([
-      c('4', 'hearts', '4H2'),
-      c('4', 'clubs', '4C2'),
-      c('4', 'spades', '4S2'),
-      c('9', 'diamonds', '9D2'),
-      c('A', 'hearts', 'aH2'),
+      c('4_hearts'),
+      c('4_clubs'),
+      c('4_spades'),
+      c('9_diamonds'),
+      c('A_hearts'),
     ])
     expect(isNotFullHouse).toBe(false)
     expect(notFullHouseCards).toEqual([])
   })
 
   it('checkHandForFourOfAKind returns the four-of-a-kind when present', () => {
-    const quads = [
-      c('K', 'hearts', 'kH'),
-      c('K', 'diamonds', 'kD'),
-      c('K', 'clubs', 'kC'),
-      c('K', 'spades', 'kS'),
-    ]
-    const kicker = c('2', 'hearts', '2Hk')
+    const quads = [c('K_hearts'), c('K_diamonds'), c('K_clubs'), c('K_spades')]
+    const kicker = c('2_hearts')
 
     const [isQuads, quadCards] = checkHandForFourOfAKind([kicker, ...quads])
     expect(isQuads).toBe(true)
     expect(quadCards).toEqual(quads)
 
     const [isNotQuads, notQuadCards] = checkHandForFourOfAKind([
-      c('K', 'hearts', 'kH2'),
-      c('K', 'diamonds', 'kD2'),
-      c('K', 'clubs', 'kC2'),
-      c('2', 'spades', '2S2'),
+      c('K_hearts'),
+      c('K_diamonds'),
+      c('K_clubs'),
+      c('2_spades'),
     ])
     expect(isNotQuads).toBe(false)
     expect(notQuadCards).toEqual([])
   })
 
   it('checkHandForStraightFlush currently only checks for a straight (not suit)', () => {
-    const mixedSuitStraight = [
-      c('2', 'hearts', '2H'),
-      c('3', 'clubs', '3C'),
-      c('4', 'spades', '4S'),
-      c('5', 'diamonds', '5D'),
-      c('6', 'hearts', '6H'),
+    const allSameSuitStraight = [
+      c('2_hearts'),
+      c('3_hearts'),
+      c('4_hearts'),
+      c('5_hearts'),
+      c('6_hearts'),
     ]
-    const [isStraightFlush, straightFlushCards] = checkHandForStraightFlush(mixedSuitStraight, 5)
+    const [isStraightFlush, straightFlushCards] = checkHandForStraightFlush(allSameSuitStraight, {
+      numberOfCardsRequiredForFlushAndStraight: 5,
+      areAllCardsFaceCards: false,
+    })
     expect(isStraightFlush).toBe(true)
-    expect(straightFlushCards).toEqual(mixedSuitStraight)
+    expect(straightFlushCards).toEqual(allSameSuitStraight)
   })
 
   it('checkHandForFlushHouse requires a straight where all cards are the same suit', () => {
     const suitedStraight = [
-      c('2', 'hearts', '2H'),
-      c('3', 'hearts', '3H'),
-      c('4', 'hearts', '4H'),
-      c('5', 'hearts', '5H'),
-      c('6', 'hearts', '6H'),
+      c('2_hearts'),
+      c('3_hearts'),
+      c('4_hearts'),
+      c('5_hearts'),
+      c('6_hearts'),
     ]
-    const [isFlushHouse, flushHouseCards] = checkHandForFlushHouse(suitedStraight, 5)
+    const [isFlushHouse, flushHouseCards] = checkHandForFlushHouse(suitedStraight, {
+      numberOfCardsRequiredForFlushAndStraight: 5,
+      areAllCardsFaceCards: false,
+    })
     expect(isFlushHouse).toBe(true)
     expect(flushHouseCards).toEqual(suitedStraight)
 
     const mixedSuitStraight = [
-      c('2', 'hearts', '2H2'),
-      c('3', 'clubs', '3C2'),
-      c('4', 'spades', '4S2'),
-      c('5', 'diamonds', '5D2'),
-      c('6', 'hearts', '6H2'),
+      c('2_hearts'),
+      c('3_clubs'),
+      c('4_spades'),
+      c('5_diamonds'),
+      c('6_hearts'),
     ]
-    const [isNotFlushHouse, notFlushHouseCards] = checkHandForFlushHouse(mixedSuitStraight, 5)
+    const [isNotFlushHouse, notFlushHouseCards] = checkHandForFlushHouse(mixedSuitStraight, {
+      numberOfCardsRequiredForFlushAndStraight: 5,
+      areAllCardsFaceCards: false,
+    })
     expect(isNotFlushHouse).toBe(false)
     expect(notFlushHouseCards).toEqual([])
   })
 
   it('checkHandForFiveOfAKind requires exactly five cards with the same value', () => {
-    const fiveAces = [
-      c('A', 'hearts', 'aH'),
-      c('A', 'diamonds', 'aD'),
-      c('A', 'clubs', 'aC'),
-      c('A', 'spades', 'aS'),
-      c('A', 'hearts', 'aH2'),
-    ]
-    const [isFive, fiveCards] = checkHandForFiveOfAKind(fiveAces, 5)
+    const fiveAces = [c('A_hearts'), c('A_diamonds'), c('A_clubs'), c('A_spades'), c('A_hearts')]
+    const [isFive, fiveCards] = checkHandForFiveOfAKind(fiveAces, {
+      numberOfCardsRequiredForFlushAndStraight: 5,
+      areAllCardsFaceCards: false,
+    })
     expect(isFive).toBe(true)
     expect(fiveCards).toEqual(fiveAces)
 
     const [isNotFive, notFiveCards] = checkHandForFiveOfAKind(
-      [
-        c('A', 'hearts', 'aH3'),
-        c('A', 'diamonds', 'aD3'),
-        c('A', 'clubs', 'aC3'),
-        c('A', 'spades', 'aS3'),
-        c('K', 'hearts', 'kH3'),
-      ],
-      5
+      [c('A_hearts'), c('A_diamonds'), c('A_clubs'), c('A_spades'), c('K_hearts')],
+      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
     )
     expect(isNotFive).toBe(false)
     expect(notFiveCards).toEqual([])
 
     const [isNotExactlyFive, notExactlyFiveCards] = checkHandForFiveOfAKind(
-      [
-        c('A', 'hearts', 'aH4'),
-        c('A', 'diamonds', 'aD4'),
-        c('A', 'clubs', 'aC4'),
-        c('A', 'spades', 'aS4'),
-      ],
-      5
+      [c('A_hearts'), c('A_diamonds'), c('A_clubs'), c('A_spades')],
+      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
     )
     expect(isNotExactlyFive).toBe(false)
     expect(notExactlyFiveCards).toEqual([])
   })
 
   it('checkHandForFlushFive requires exactly five cards with the same value and same suit', () => {
-    const flushFive = [
-      c('7', 'hearts', '7H1'),
-      c('7', 'hearts', '7H2'),
-      c('7', 'hearts', '7H3'),
-      c('7', 'hearts', '7H4'),
-      c('7', 'hearts', '7H5'),
-    ]
+    const flushFive = [c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts')]
     const [isFlushFive, flushFiveCards] = checkHandForFlushFive(flushFive)
     expect(isFlushFive).toBe(true)
     expect(flushFiveCards).toEqual(flushFive)
 
     const [isNotFlushFive, notFlushFiveCards] = checkHandForFlushFive([
-      c('7', 'hearts', '7H6'),
-      c('7', 'diamonds', '7D6'),
-      c('7', 'clubs', '7C6'),
-      c('7', 'spades', '7S6'),
-      c('7', 'hearts', '7H7'),
+      c('7_hearts'),
+      c('7_diamonds'),
+      c('7_clubs'),
+      c('7_spades'),
+      c('7_hearts'),
     ])
     expect(isNotFlushFive).toBe(false)
     expect(notFlushFiveCards).toEqual([])

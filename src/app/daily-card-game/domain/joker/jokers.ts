@@ -6,6 +6,7 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { JokerDefinition } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed } from './utils'
@@ -21,7 +22,7 @@ export const jokerJoker: JokerDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.gamePlayState.scoringEvents.push({
-          id: crypto.randomUUID(),
+          id: uuid(),
           type: 'mult',
           value: 4,
           source: 'Joker',
@@ -368,7 +369,7 @@ export const halfJoker: JokerDefinition = {
         if (ctx.game.gamePlayState.cardsToScore?.length <= 3) {
           ctx.game.gamePlayState.score.mult += 20
           ctx.game.gamePlayState.scoringEvents.push({
-            id: crypto.randomUUID(),
+            id: uuid(),
             type: 'mult',
             value: 20,
             source: 'Half Joker',
@@ -395,7 +396,7 @@ export const jokerStencil: JokerDefinition = {
           ctx.game.maxJokers - ctx.game.jokers.length
         )
         ctx.game.gamePlayState.scoringEvents.push({
-          id: crypto.randomUUID(),
+          id: uuid(),
           type: 'mult',
           operator: 'x',
           value: ctx.game.maxJokers - ctx.game.jokers.length,
@@ -432,7 +433,7 @@ export const fourFingersJoker: JokerDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         // don't modify if there's another four fingers joker in play
-        if (!ctx.game.jokers.includes(fourFingersJoker)) {
+        if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
         }
       },
@@ -441,7 +442,7 @@ export const fourFingersJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
-export const jokers: JokerDefinition[] = [
+export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
   jollyJoker,
@@ -456,7 +457,8 @@ export const jokers: JokerDefinition[] = [
   craftyJoker,
   halfJoker,
   jokerStencil,
-]
+  fourFingersJoker,
+}
 
 /***
  * JOKERS LEFT TO PROGRAM:

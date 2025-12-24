@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react'
 
-import { cardValuePriority } from '@/app/daily-card-game/domain/decks/poker-deck'
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { cardValuePriority } from '@/app/daily-card-game/domain/hand/constants'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { cn } from '@/lib/utils'
 
@@ -15,21 +16,26 @@ export const Hand = () => {
   const { gamePlayState } = game
   const { dealtCards, selectedCardIds } = gamePlayState
 
-  const sortedCards = useMemo(() => {
+  const sortedCards: PlayingCardState[] | undefined = useMemo(() => {
     return (
       [...dealtCards].sort((a, b) => {
         if (sortKey === 'value') {
-          return cardValuePriority[b.value] - cardValuePriority[a.value]
+          return (
+            cardValuePriority[playingCards[b.playingCardId]?.value] -
+            cardValuePriority[playingCards[a.playingCardId]?.value]
+          )
         }
-        return a.suit.localeCompare(b.suit)
-      }) ?? []
+        return playingCards[a.playingCardId]?.suit.localeCompare(
+          playingCards[b.playingCardId]?.suit
+        )
+      }) ?? undefined
     )
   }, [dealtCards, sortKey])
 
   return (
     <div>
       <div className="flex flex-wrap gap-2 w-full justify-center">
-        {sortedCards.map((card: PlayingCard, index: number) => (
+        {sortedCards?.map((card: PlayingCardState, index: number) => (
           <Card
             key={card.id}
             playingCard={card}

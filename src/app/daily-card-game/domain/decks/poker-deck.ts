@@ -1,54 +1,12 @@
-import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { getDefaultCard } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import {
+  PlayingCardDefinition,
+  PlayingCardState,
+} from '@/app/daily-card-game/domain/playing-card/types'
 
-const cardValueBaseChips: Record<CardValue, number> = {
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-  6: 6,
-  7: 7,
-  8: 8,
-  9: 9,
-  10: 10,
-  J: 10,
-  Q: 10,
-  K: 10,
-  A: 11,
-}
+import { uuid } from '../randomness'
 
-export const cardValuePriority: Record<CardValue, number> = {
-  2: 1,
-  3: 2,
-  4: 3,
-  5: 4,
-  6: 5,
-  7: 6,
-  8: 7,
-  9: 8,
-  10: 9,
-  J: 10,
-  Q: 11,
-  K: 12,
-  A: 13,
-}
-
-const getDefaultCard = (
-  value: CardValue,
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades'
-): PlayingCard => {
-  return {
-    value: value,
-    id: `${value}${suit}`,
-    baseChips: cardValueBaseChips[value],
-    suit: suit,
-    isHolographic: false,
-    isFoil: false,
-    faceUp: true,
-    isFaceCard: value === 'J' || value === 'Q' || value === 'K' || value === 'A',
-  }
-}
-
-export const pokerDeck: PlayingCard[] = [
+export const pokerDeckDefinition: PlayingCardDefinition[] = [
   getDefaultCard('2', 'hearts'),
   getDefaultCard('2', 'diamonds'),
   getDefaultCard('2', 'clubs'),
@@ -102,3 +60,14 @@ export const pokerDeck: PlayingCard[] = [
   getDefaultCard('A', 'clubs'),
   getDefaultCard('A', 'spades'),
 ]
+
+export const initialPokerDeckState: PlayingCardState[] = pokerDeckDefinition.map(card => ({
+  id: uuid(),
+  playingCardId: card.id,
+  bonusChips: 0,
+  flags: {
+    isHolographic: false,
+    isFoil: false,
+  },
+  isFaceUp: true,
+}))

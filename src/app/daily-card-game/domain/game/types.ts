@@ -3,21 +3,21 @@ import type {
   TagDefinition,
   VoucherDefinition,
 } from '@/app/daily-card-game/domain/consumable/types'
-import type { PokerHand, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
-import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
-import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
-import type { RoundDefinition } from '@/app/daily-card-game/domain/round/types'
+import type { PokerHandDefinition, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
+import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
+import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 
 export interface GameState {
   consumables: Consumable[]
   discardsPlayed: number
-  fullDeck: PlayingCard[]
+  fullDeck: PlayingCardState[]
   gamePhase: GamePhase
   gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
   gameSeed: string
   handsPlayed: number
-  jokers: JokerDefinition[]
+  jokers: JokerState[]
   maxConsumables: number
   maxDiscards: number
   maxHands: number
@@ -25,7 +25,7 @@ export interface GameState {
   money: number
   pokerHands: PokerHandsState
   roundIndex: number
-  rounds: RoundDefinition[]
+  rounds: RoundState[]
   shopState: ShopState
   stake: Stake
   staticRules: StaticRulesState
@@ -36,6 +36,7 @@ export interface GameState {
 
 export interface StaticRulesState {
   numberOfCardsRequiredForFlushAndStraight: number
+  areAllCardsFaceCards: boolean
 }
 
 export type GamePhase =
@@ -49,17 +50,17 @@ export type GamePhase =
   | 'blindRewards'
 
 export interface GamePlayState {
-  cardsToScore: PlayingCard[]
-  dealtCards: PlayingCard[]
+  cardsToScore: PlayingCardState[]
+  dealtCards: PlayingCardState[]
   isScoring: boolean
   playedCardIds: string[]
-  remainingDeck: PlayingCard[]
+  remainingDeck: PlayingCardState[]
   remainingDiscards: number
   remainingHands: number
   score: ScoreState
   scoringEvents: (ScoringEvent | CustomScoringEvent)[]
   selectedCardIds: string[]
-  selectedHand?: [PokerHand, PlayingCard[]]
+  selectedHand?: [PokerHandDefinition['id'], PlayingCardState[]]
 }
 
 export interface ScoringEvent {

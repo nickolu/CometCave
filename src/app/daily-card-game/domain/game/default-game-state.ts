@@ -1,4 +1,4 @@
-import { pokerDeck } from '@/app/daily-card-game/domain/decks/poker-deck'
+import { initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import {
   fiveOfAKindHand,
@@ -15,27 +15,43 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
-import type { HandState, PokerHand } from '@/app/daily-card-game/domain/hand/types'
-import { fourFingersJoker, jokerStencil } from '@/app/daily-card-game/domain/joker/jokers'
+import type { PokerHandDefinition, PokerHandState } from '@/app/daily-card-game/domain/hand/types'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import type { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
-const getDefaultHandState = (hand: PokerHand): HandState => ({
+const getDefaultHandState = (hand: PokerHandDefinition): PokerHandState => ({
   timesPlayed: 0,
   level: 0,
-  hand,
+  handId: hand.id,
+})
+
+const getDefaultJokerState = (joker: JokerDefinition): JokerState => ({
+  id: uuid(),
+  jokerId: joker.id,
+  flags: {
+    isRentable: false,
+    isPerishable: false,
+    isEternal: false,
+    isHolographic: false,
+    isFoil: false,
+    isNegative: false,
+    faceUp: false,
+  },
 })
 
 export const defaultGameState: GameState = {
   consumables: [],
   discardsPlayed: 0,
-  fullDeck: pokerDeck,
+  fullDeck: initialDeckStates.pokerDeck,
   gamePhase: 'mainMenu',
   gamePlayState: {
     cardsToScore: [],
     dealtCards: [],
     isScoring: false,
     playedCardIds: [],
-    remainingDeck: pokerDeck,
+    remainingDeck: [],
     remainingHands: 4,
     remainingDiscards: 3,
     selectedCardIds: [],
@@ -47,7 +63,10 @@ export const defaultGameState: GameState = {
   },
   gameSeed: 'default',
   handsPlayed: 0,
-  jokers: [jokerStencil, fourFingersJoker],
+  jokers: [
+    getDefaultJokerState(jokers['jokerStencil']),
+    getDefaultJokerState(jokers['fourFingersJoker']),
+  ],
   maxConsumables: 2,
   maxJokers: 5,
   maxHands: 4,
@@ -69,7 +88,7 @@ export const defaultGameState: GameState = {
     flushFive: getDefaultHandState(flushFiveHand),
   },
   rounds,
-  roundIndex: 0,
+  roundIndex: 1,
   shopState: {
     cardsForSale: [],
     packsForSale: [],
@@ -93,6 +112,7 @@ export const defaultGameState: GameState = {
   },
   staticRules: {
     numberOfCardsRequiredForFlushAndStraight: 5,
+    areAllCardsFaceCards: false,
   },
   tags: [],
   totalScore: 0,

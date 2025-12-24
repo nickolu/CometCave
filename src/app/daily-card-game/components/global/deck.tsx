@@ -3,12 +3,13 @@
 import { useState } from 'react'
 
 import { Card } from '@/app/daily-card-game/components/gameplay/card'
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const CardRow = ({ cards }: { cards: PlayingCard[] }) => {
+const CardRow = ({ cards }: { cards: PlayingCardState[] }) => {
   return (
     <div className="flex flex-wrap gap-2">
       {cards.map((card, index) => (
@@ -27,10 +28,10 @@ export const Deck = () => {
   const [deckType, setDeckType] = useState<'remaining' | 'full'>('remaining')
 
   const deck = deckType === 'remaining' ? remainingDeck : fullDeck
-  const spades = deck.filter(card => card.suit === 'spades')
-  const hearts = deck.filter(card => card.suit === 'hearts')
-  const clubs = deck.filter(card => card.suit === 'clubs')
-  const diamonds = deck.filter(card => card.suit === 'diamonds')
+  const spades = deck.filter(card => playingCards[card.playingCardId].suit === 'spades')
+  const hearts = deck.filter(card => playingCards[card.playingCardId].suit === 'hearts')
+  const clubs = deck.filter(card => playingCards[card.playingCardId].suit === 'clubs')
+  const diamonds = deck.filter(card => playingCards[card.playingCardId].suit === 'diamonds')
 
   return (
     <div>

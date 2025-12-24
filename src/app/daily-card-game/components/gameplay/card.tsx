@@ -1,5 +1,6 @@
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { Card as CardUI } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -17,19 +18,23 @@ const cardColors = {
   spades: 'text-blue-500',
 }
 
-const FaceUpCard = ({ playingCard }: { playingCard: PlayingCard }) => {
+const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
   return (
-    <div className={'flex flex-col px-1 h-full ' + cardColors[playingCard.suit]}>
+    <div
+      className={
+        'flex flex-col px-1 h-full ' + cardColors[playingCards[playingCard.playingCardId]?.suit]
+      }
+    >
       <div data-name="top-row" className="flex justify-between">
-        <div>{playingCard.value}</div>
-        <div>{cardSymbols[playingCard.suit]}</div>
+        <div>{playingCards[playingCard.playingCardId]?.value}</div>
+        <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
       </div>
       <div data-name="image-row" className="flex justify-center grow items-center">
-        <div>{cardSymbols[playingCard.suit]}</div>
+        <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
       </div>
       <div data-name="bottom-row" className="flex justify-between">
-        <div>{cardSymbols[playingCard.suit]}</div>
-        <div>{playingCard.value}</div>
+        <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+        <div>{playingCards[playingCard.playingCardId].value}</div>
       </div>
     </div>
   )
@@ -53,10 +58,11 @@ export const Card = ({
   handIndex,
   isSelected,
 }: {
-  playingCard: PlayingCard
+  playingCard: PlayingCardState
   handIndex?: number
   isSelected?: boolean
 }) => {
+  console.log('playingCard', playingCard)
   return (
     <CardUI
       className={cn(
@@ -73,7 +79,7 @@ export const Card = ({
         }
       }}
     >
-      {playingCard.faceUp ? <FaceUpCard playingCard={playingCard} /> : <FaceDownCard />}
+      {playingCard.isFaceUp ? <FaceUpCard playingCard={playingCard} /> : <FaceDownCard />}
     </CardUI>
   )
 }

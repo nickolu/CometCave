@@ -3,25 +3,31 @@ import type { Effect } from '@/app/daily-card-game/domain/events/types'
 export interface BlindState {
   type: 'smallBlind' | 'bigBlind' | 'bossBlind'
   status: 'completed' | 'skipped' | 'notStarted' | 'inProgress'
-  anteMultiplier: 1 | 1.5 | 2 | 4 | 6
-  baseReward: number
   additionalRewards: [string, number][] // [rewardName, rewardAmount]
   score: number
 }
 
-export interface SmallBlindState extends BlindState {
+export interface BlindDefinition {
+  type: 'smallBlind' | 'bigBlind' | 'bossBlind'
+  name: string
+  anteMultiplier: 1 | 1.5 | 2 | 4 | 6
+  baseReward: number
+  effects: Effect[]
+}
+
+export interface SmallBlindDefinition extends BlindDefinition {
   type: 'smallBlind'
   name: 'Small Blind'
   anteMultiplier: 1
 }
 
-export interface BigBlindState extends BlindState {
+export interface BigBlindDefinition extends BlindDefinition {
   type: 'bigBlind'
   name: 'Big Blind'
   anteMultiplier: 1.5
 }
 
-export interface BossBlindDefinition extends BlindState {
+export interface BossBlindDefinition extends BlindDefinition {
   type: 'bossBlind'
   status: 'completed' | 'notStarted' | 'inProgress' // boss blind cannot be skipped
   anteMultiplier: 1 | 2 | 4 | 6
@@ -60,9 +66,10 @@ export interface BossBlindDefinition extends BlindState {
   minimumAnte: number
 }
 
-export interface RoundDefinition {
+export interface RoundState {
   baseAnte: number
-  smallBlind: SmallBlindState
-  bigBlind: BigBlindState
-  bossBlind: BossBlindDefinition
+  bossBlindName: string
+  smallBlind: BlindState
+  bigBlind: BlindState
+  bossBlind: BlindState
 }

@@ -1,5 +1,5 @@
 import { StaticRulesState } from '@/app/daily-card-game/domain/game/types'
-import { PokerHand, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
+import { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
 import {
   areAllCardsSameSuit,
   findAllPairs,
@@ -10,11 +10,15 @@ import {
   rankPairsByValueAndSuit,
   rankThreeOfAKindsByValueAndSuit,
 } from '@/app/daily-card-game/domain/hand/utils'
-import { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import {
+  PlayingCardDefinition,
+  PlayingCardState,
+} from '@/app/daily-card-game/domain/playing-card/types'
 
 import { handPriority } from './constants'
 
-export const highCardHand: PokerHand = {
+export const highCardHand: PokerHandDefinition = {
   id: 'highCard',
   baseChips: 5,
   baseMult: 1,
@@ -24,7 +28,7 @@ export const highCardHand: PokerHand = {
   name: 'High Card',
 }
 
-export const pairHand: PokerHand = {
+export const pairHand: PokerHandDefinition = {
   id: 'pair',
   baseChips: 10,
   baseMult: 2,
@@ -34,7 +38,7 @@ export const pairHand: PokerHand = {
   name: 'Pair',
 }
 
-export const twoPairHand: PokerHand = {
+export const twoPairHand: PokerHandDefinition = {
   id: 'twoPair',
   baseChips: 20,
   baseMult: 2,
@@ -44,7 +48,7 @@ export const twoPairHand: PokerHand = {
   name: 'Two Pair',
 }
 
-export const threeOfAKindHand: PokerHand = {
+export const threeOfAKindHand: PokerHandDefinition = {
   id: 'threeOfAKind',
   baseChips: 30,
   baseMult: 3,
@@ -54,7 +58,7 @@ export const threeOfAKindHand: PokerHand = {
   name: 'Three of a Kind',
 }
 
-export const straightHand: PokerHand = {
+export const straightHand: PokerHandDefinition = {
   id: 'straight',
   baseChips: 30,
   baseMult: 4,
@@ -64,7 +68,7 @@ export const straightHand: PokerHand = {
   name: 'Straight',
 }
 
-export const flushHand: PokerHand = {
+export const flushHand: PokerHandDefinition = {
   id: 'flush',
   baseChips: 35,
   baseMult: 4,
@@ -74,7 +78,7 @@ export const flushHand: PokerHand = {
   name: 'Flush',
 }
 
-export const fullHouseHand: PokerHand = {
+export const fullHouseHand: PokerHandDefinition = {
   id: 'fullHouse',
   baseChips: 40,
   baseMult: 4,
@@ -84,7 +88,7 @@ export const fullHouseHand: PokerHand = {
   name: 'Full House',
 }
 
-export const fourOfAKindHand: PokerHand = {
+export const fourOfAKindHand: PokerHandDefinition = {
   id: 'fourOfAKind',
   baseChips: 60,
   baseMult: 7,
@@ -94,7 +98,7 @@ export const fourOfAKindHand: PokerHand = {
   name: 'Four of a Kind',
 }
 
-export const straightFlushHand: PokerHand = {
+export const straightFlushHand: PokerHandDefinition = {
   id: 'straightFlush',
   baseChips: 100,
   baseMult: 8,
@@ -104,7 +108,7 @@ export const straightFlushHand: PokerHand = {
   name: 'Straight Flush',
 }
 
-export const royalFlushHand: PokerHand = {
+export const royalFlushHand: PokerHandDefinition = {
   id: 'royalFlush',
   baseChips: 100,
   baseMult: 8,
@@ -114,7 +118,7 @@ export const royalFlushHand: PokerHand = {
   name: 'Flush House',
 }
 
-export const fiveOfAKindHand: PokerHand = {
+export const fiveOfAKindHand: PokerHandDefinition = {
   id: 'fiveOfAKind',
   baseChips: 120,
   baseMult: 12,
@@ -124,7 +128,7 @@ export const fiveOfAKindHand: PokerHand = {
   name: 'Five of a Kind',
 }
 
-export const flushHouseHand: PokerHand = {
+export const flushHouseHand: PokerHandDefinition = {
   id: 'flushHouse',
   baseChips: 140,
   baseMult: 14,
@@ -134,7 +138,7 @@ export const flushHouseHand: PokerHand = {
   name: 'Flush House',
 }
 
-export const flushFiveHand: PokerHand = {
+export const flushFiveHand: PokerHandDefinition = {
   id: 'flushFive',
   baseChips: 160,
   baseMult: 16,
@@ -144,7 +148,7 @@ export const flushFiveHand: PokerHand = {
   name: 'Flush Five',
 }
 
-export const hands: Record<keyof PokerHandsState, PokerHand> = {
+export const pokerHands: Record<PokerHandDefinition['id'], PokerHandDefinition> = {
   highCard: highCardHand,
   pair: pairHand,
   twoPair: twoPairHand,
@@ -162,9 +166,9 @@ export const hands: Record<keyof PokerHandsState, PokerHand> = {
 
 // returns if the card series contains target hand and the highest value matching cards for the hand
 type HandCheckFunction<Args extends unknown[] = []> = (
-  cards: PlayingCard[],
+  cards: PlayingCardState[],
   ...args: Args
-) => [boolean, PlayingCard[]]
+) => [boolean, PlayingCardState[]]
 
 export const checkHandForHighCard: HandCheckFunction = cards => {
   const rankedCards = rankCardsByValueAndSuit(cards)
@@ -198,19 +202,22 @@ export const checkHandForThreeOfAKind: HandCheckFunction = cards => {
   return [false, []]
 }
 
-export const checkHandForStraight: HandCheckFunction<[number]> = (cards, minLength) => {
-  const straights = findAllStraights(cards, minLength)
+export const checkHandForStraight: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
   if (straights.length > 0) {
     return [true, straights[0]]
   }
   return [false, []]
 }
 
-export const checkHandForFlush: HandCheckFunction<[number]> = (cards, minLength) => {
+export const checkHandForFlush: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
   const rankedCards = rankCardsByValueAndSuit(cards)
-  const flush = rankedCards.filter(card => card.suit === rankedCards[0].suit)
-  if (flush.length >= minLength) {
-    return [true, flush.slice(0, minLength)]
+  const flush = rankedCards.filter(
+    card =>
+      playingCards[card.playingCardId].suit === playingCards[rankedCards[0].playingCardId].suit
+  )
+  if (flush.length >= staticRules.numberOfCardsRequiredForFlushAndStraight) {
+    return [true, flush.slice(0, staticRules.numberOfCardsRequiredForFlushAndStraight)]
   }
   return [false, []]
 }
@@ -242,8 +249,11 @@ export const checkHandForFourOfAKind: HandCheckFunction = cards => {
   return [false, []]
 }
 
-export const checkHandForStraightFlush: HandCheckFunction<[number]> = (cards, minLength) => {
-  const straights = findAllStraights(cards, minLength)
+export const checkHandForStraightFlush: HandCheckFunction<[StaticRulesState]> = (
+  cards,
+  staticRules
+) => {
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
   if (straights.length > 0) {
     const flush = areAllCardsSameSuit(straights[0])
     if (flush) {
@@ -253,11 +263,21 @@ export const checkHandForStraightFlush: HandCheckFunction<[number]> = (cards, mi
   return [false, []]
 }
 
-export const checkHandForRoyalFlush: HandCheckFunction<[number]> = (cards, minLength) => {
-  const straights = findAllStraights(cards, minLength)
+const faceCardValues = ['J', 'Q', 'K']
+const isFaceCard = (card: PlayingCardDefinition): boolean => {
+  return faceCardValues.includes(card.value)
+}
+
+export const checkHandForRoyalFlush: HandCheckFunction<[StaticRulesState]> = (
+  cards,
+  staticRules
+) => {
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
   if (straights.length > 0) {
     const flush = areAllCardsSameSuit(straights[0])
-    const isRoyalFlush = straights[0].every(card => card.isFaceCard)
+    const isRoyalFlush =
+      staticRules.areAllCardsFaceCards ||
+      straights[0].every(card => isFaceCard(playingCards[card.playingCardId]))
     if (flush && isRoyalFlush) {
       return [true, straights[0]]
     }
@@ -265,8 +285,11 @@ export const checkHandForRoyalFlush: HandCheckFunction<[number]> = (cards, minLe
   return [false, []]
 }
 
-export const checkHandForFlushHouse: HandCheckFunction<[number]> = (cards, minLength) => {
-  const straights = findAllStraights(cards, minLength)
+export const checkHandForFlushHouse: HandCheckFunction<[StaticRulesState]> = (
+  cards,
+  staticRules
+) => {
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
   if (straights.length > 0) {
     const flush = areAllCardsSameSuit(straights[0])
     if (flush) {
@@ -276,8 +299,13 @@ export const checkHandForFlushHouse: HandCheckFunction<[number]> = (cards, minLe
   return [false, []]
 }
 
-export const checkHandForFiveOfAKind: HandCheckFunction<[number]> = cards => {
-  if (cards.length === 5 && cards.every(card => card.value === cards[0].value)) {
+export const checkHandForFiveOfAKind: HandCheckFunction<[StaticRulesState]> = cards => {
+  if (
+    cards.length === 5 &&
+    cards.every(
+      card => playingCards[card.playingCardId].value === playingCards[cards[0].playingCardId].value
+    )
+  ) {
     return [true, cards]
   }
   return [false, []]
@@ -286,7 +314,11 @@ export const checkHandForFiveOfAKind: HandCheckFunction<[number]> = cards => {
 export const checkHandForFlushFive: HandCheckFunction = cards => {
   if (
     cards.length === 5 &&
-    cards.every(card => card.value === cards[0].value && card.suit === cards[0].suit)
+    cards.every(
+      card =>
+        playingCards[card.playingCardId].value === playingCards[cards[0].playingCardId].value &&
+        playingCards[card.playingCardId].suit === playingCards[cards[0].playingCardId].suit
+    )
   ) {
     return [true, cards]
   }
@@ -294,8 +326,8 @@ export const checkHandForFlushFive: HandCheckFunction = cards => {
 }
 
 const handCheckFunctions: Record<
-  keyof PokerHandsState,
-  HandCheckFunction | HandCheckFunction<[number]>
+  PokerHandDefinition['id'],
+  HandCheckFunction | HandCheckFunction<[StaticRulesState]>
 > = {
   highCard: checkHandForHighCard,
   pair: checkHandForPair,
@@ -313,20 +345,20 @@ const handCheckFunctions: Record<
 }
 
 // type guard to check if a string is a valid poker hand name
-const isPokerHandName = (name: string): name is keyof PokerHandsState => {
+const isPokerHandName = (name: string): name is PokerHandDefinition['id'] => {
   return name in handCheckFunctions
 }
 
-export const findHighestPriorityHand = (cards: PlayingCard[], staticRules: StaticRulesState) => {
-  let bestHand: keyof PokerHandsState = 'highCard'
-  let bestHandCards: PlayingCard[] = checkHandForHighCard(cards)[1]
+export const findHighestPriorityHand = (
+  cards: PlayingCardState[],
+  staticRules: StaticRulesState
+): { hand: PokerHandDefinition['id']; handCards: PlayingCardState[] } => {
+  let bestHand: PokerHandDefinition['id'] = 'highCard'
+  let bestHandCards: PlayingCardState[] = checkHandForHighCard(cards)[1]
   for (const hand of Object.keys(handCheckFunctions)) {
     if (!isPokerHandName(hand)) continue
 
-    const [isHand, handCards] = handCheckFunctions[hand](
-      cards,
-      staticRules.numberOfCardsRequiredForFlushAndStraight
-    )
+    const [isHand, handCards] = handCheckFunctions[hand](cards, staticRules)
 
     if (isHand && handPriority[hand] > handPriority[bestHand]) {
       bestHand = hand

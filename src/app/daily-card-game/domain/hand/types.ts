@@ -1,29 +1,29 @@
 export interface PokerHandsState {
-  highCard: HandState
-  pair: HandState
-  twoPair: HandState
-  threeOfAKind: HandState
-  straight: HandState
-  flush: HandState
-  fullHouse: HandState
-  fourOfAKind: HandState
-  straightFlush: HandState
-  royalFlush: HandState
-  flushHouse: HandState
-  fiveOfAKind: HandState
-  flushFive: HandState
+  highCard: PokerHandState
+  pair: PokerHandState
+  twoPair: PokerHandState
+  threeOfAKind: PokerHandState
+  straight: PokerHandState
+  flush: PokerHandState
+  fullHouse: PokerHandState
+  fourOfAKind: PokerHandState
+  straightFlush: PokerHandState
+  royalFlush: PokerHandState
+  flushHouse: PokerHandState
+  fiveOfAKind: PokerHandState
+  flushFive: PokerHandState
 }
 
-export interface HandState {
+export interface PokerHandState {
   timesPlayed: number
   level: number
-  hand: PokerHand
+  handId: keyof PokerHandsState
 }
 
-export interface PokerHand {
+export interface PokerHandDefinition {
   id: keyof PokerHandsState
   name: string
-  baseChips: number
+  baseChips: number 
   multIncreasePerLevel: number
   chipIncreasePerLevel: number
   baseMult: number

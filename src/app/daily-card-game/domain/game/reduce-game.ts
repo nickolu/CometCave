@@ -2,15 +2,17 @@ import { produce } from 'immer'
 
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
-import { findHighestPriorityHand, hands } from '@/app/daily-card-game/domain/hand/hands'
-import type { PokerHand } from '@/app/daily-card-game/domain/hand/types'
-import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { findHighestPriorityHand, pokerHands } from '@/app/daily-card-game/domain/hand/hands'
+import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 
 import { HAND_SIZE } from './constants'
 import { handleHandScoringEnd } from './handlers'
-import { collectEffects, randomizeDeck } from './utils'
+import { collectEffects, getBlindDefinition, randomizeDeck } from './utils'
 
 import type { GameState } from './types'
 
@@ -82,14 +84,13 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (gamePlayState.selectedCardIds.includes(id)) return
 
         const selectedCardIds = [...gamePlayState.selectedCardIds, id]
-        const selectedCards = gamePlayState.dealtCards.filter(card =>
+        const selectedCards: PlayingCardState[] = gamePlayState.dealtCards.filter(card =>
           selectedCardIds.includes(card.id)
         )
         const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
-        const selectedHand = hands[selectedHandId]
 
         gamePlayState.selectedCardIds = selectedCardIds
-        gamePlayState.selectedHand = [selectedHand, selectedCards]
+        gamePlayState.selectedHand = [selectedHandId, selectedCards]
         return
       }
       case 'CARD_DESELECTED': {
@@ -102,10 +103,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           selectedCardIds.includes(card.id)
         )
 
-        let selectedHand: [PokerHand, PlayingCard[]] | undefined = undefined
+        let selectedHand: [PokerHandDefinition['id'], PlayingCardState[]] | undefined = undefined
         if (selectedCards.length > 0) {
           const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
-          selectedHand = [hands[selectedHandId], selectedCards]
+          selectedHand = [selectedHandId, selectedCards]
         }
 
         gamePlayState.selectedCardIds = selectedCardIds
@@ -153,13 +154,15 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         const playedHandLevel = draft.pokerHands[playedHand].level
         const handMult =
-          hands[playedHand].baseMult + hands[playedHand].multIncreasePerLevel * playedHandLevel
+          pokerHands[playedHand].baseMult +
+          pokerHands[playedHand].multIncreasePerLevel * playedHandLevel
         const handChips =
-          hands[playedHand].baseChips + hands[playedHand].chipIncreasePerLevel * playedHandLevel
+          pokerHands[playedHand].baseChips +
+          pokerHands[playedHand].chipIncreasePerLevel * playedHandLevel
 
         if (handChips > 0) {
           draft.gamePlayState.scoringEvents.push({
-            id: crypto.randomUUID(),
+            id: uuid(),
             type: 'chips',
             value: handChips,
             source: 'hand',
@@ -168,7 +171,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         if (handMult > 0) {
           draft.gamePlayState.scoringEvents.push({
-            id: crypto.randomUUID(),
+            id: uuid(),
             type: 'mult',
             value: handMult,
             source: 'hand',
@@ -177,7 +180,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         gamePlayState.isScoring = true
         gamePlayState.score = { chips: handChips, mult: handMult }
-        gamePlayState.selectedHand = [hands[playedHand], selectedCards]
+        gamePlayState.selectedHand = [pokerHands[playedHand].id, selectedCards]
         draft.handsPlayed += 1
 
         const ctx: EffectContext = {
@@ -200,29 +203,29 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         const additionalRewards: [string, number][] = []
 
-        let cardChips = currentCardToScore.baseChips
+        let cardChips = playingCards[currentCardToScore.playingCardId].baseChips
         let cardMult = 0
 
-        if (currentCardToScore.modifier === 'bonus') cardChips += 10
-        if (currentCardToScore.modifier === 'mult') cardMult += 5
-        if (currentCardToScore.isFoil) cardMult += 5
-        if (currentCardToScore.isHolographic) cardMult += 50
+        if (currentCardToScore.flags.enchantment === 'bonus') cardChips += 10
+        if (currentCardToScore.flags.enchantment === 'mult') cardMult += 5
+        if (currentCardToScore.flags.isFoil) cardMult += 5
+        if (currentCardToScore.flags.isHolographic) cardMult += 50
 
         if (cardChips > 0) {
           draft.gamePlayState.scoringEvents.push({
-            id: crypto.randomUUID(),
+            id: uuid(),
             type: 'chips',
             value: cardChips,
-            source: currentCardToScore.value,
+            source: playingCards[currentCardToScore.playingCardId].value,
           })
         }
 
         if (cardMult > 0) {
           draft.gamePlayState.scoringEvents.push({
-            id: crypto.randomUUID(),
+            id: uuid(),
             type: 'mult',
             value: cardMult,
-            source: currentCardToScore.value,
+            source: playingCards[currentCardToScore.playingCardId].value,
           })
         }
 
@@ -231,7 +234,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           mult: gamePlayState.score.mult + cardMult,
         }
 
-        if (currentCardToScore.chip === 'gold') {
+        if (currentCardToScore.flags.chip === 'gold') {
           additionalRewards.push(['Gold Chip', 3])
         }
 
@@ -277,7 +280,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const currentBlind = getInProgressBlind(draft)
         if (!currentBlind) return
         const totalReward =
-          currentBlind.baseReward +
+          getBlindDefinition(currentBlind.type, draft.rounds[draft.roundIndex]).baseReward +
           currentBlind.additionalRewards.reduce((acc, reward) => acc + reward[1], 0)
         draft.money += totalReward
         currentBlind.status = 'completed'

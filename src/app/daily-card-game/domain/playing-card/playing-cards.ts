@@ -1,0 +1,102 @@
+import { uuid } from '@/app/daily-card-game/domain/randomness'
+
+import { CardValue, PlayingCardDefinition } from './types'
+
+const cardValueBaseChips: Record<CardValue, number> = {
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  10: 10,
+  J: 10,
+  Q: 10,
+  K: 10,
+  A: 11,
+}
+
+export const cardValuePriority: Record<CardValue, number> = {
+  2: 1,
+  3: 2,
+  4: 3,
+  5: 4,
+  6: 5,
+  7: 6,
+  8: 7,
+  9: 8,
+  10: 9,
+  J: 10,
+  Q: 11,
+  K: 12,
+  A: 13,
+}
+
+export const getDefaultCard = (
+  value: CardValue,
+  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades'
+): PlayingCardDefinition => {
+  return {
+    value: value,
+    id: `${value}_${suit}`,
+    baseChips: cardValueBaseChips[value],
+    suit: suit,
+  }
+}
+
+export const playingCards: Record<PlayingCardDefinition['id'], PlayingCardDefinition> = {
+  '2_hearts': getDefaultCard('2', 'hearts'),
+  '2_diamonds': getDefaultCard('2', 'diamonds'),
+  '2_clubs': getDefaultCard('2', 'clubs'),
+  '2_spades': getDefaultCard('2', 'spades'),
+  '3_hearts': getDefaultCard('3', 'hearts'),
+  '3_diamonds': getDefaultCard('3', 'diamonds'),
+  '3_clubs': getDefaultCard('3', 'clubs'),
+  '3_spades': getDefaultCard('3', 'spades'),
+  '4_hearts': getDefaultCard('4', 'hearts'),
+  '4_diamonds': getDefaultCard('4', 'diamonds'),
+  '4_clubs': getDefaultCard('4', 'clubs'),
+  '4_spades': getDefaultCard('4', 'spades'),
+  '5_hearts': getDefaultCard('5', 'hearts'),
+  '5_diamonds': getDefaultCard('5', 'diamonds'),
+  '5_clubs': getDefaultCard('5', 'clubs'),
+  '5_spades': getDefaultCard('5', 'spades'),
+  '6_hearts': getDefaultCard('6', 'hearts'),
+  '6_diamonds': getDefaultCard('6', 'diamonds'),
+  '6_clubs': getDefaultCard('6', 'clubs'),
+  '6_spades': getDefaultCard('6', 'spades'),
+  '7_hearts': getDefaultCard('7', 'hearts'),
+  '7_diamonds': getDefaultCard('7', 'diamonds'),
+  '7_clubs': getDefaultCard('7', 'clubs'),
+  '7_spades': getDefaultCard('7', 'spades'),
+  '8_hearts': getDefaultCard('8', 'hearts'),
+  '8_diamonds': getDefaultCard('8', 'diamonds'),
+  '8_clubs': getDefaultCard('8', 'clubs'),
+  '8_spades': getDefaultCard('8', 'spades'),
+  '9_hearts': getDefaultCard('9', 'hearts'),
+  '9_diamonds': getDefaultCard('9', 'diamonds'),
+  '9_clubs': getDefaultCard('9', 'clubs'),
+  '9_spades': getDefaultCard('9', 'spades'),
+  '10_hearts': getDefaultCard('10', 'hearts'),
+  '10_diamonds': getDefaultCard('10', 'diamonds'),
+  '10_clubs': getDefaultCard('10', 'clubs'),
+  '10_spades': getDefaultCard('10', 'spades'),
+  J_hearts: getDefaultCard('J', 'hearts'),
+  J_diamonds: getDefaultCard('J', 'diamonds'),
+  J_clubs: getDefaultCard('J', 'clubs'),
+  J_spades: getDefaultCard('J', 'spades'),
+  Q_hearts: getDefaultCard('Q', 'hearts'),
+  Q_diamonds: getDefaultCard('Q', 'diamonds'),
+  Q_clubs: getDefaultCard('Q', 'clubs'),
+  Q_spades: getDefaultCard('Q', 'spades'),
+  K_hearts: getDefaultCard('K', 'hearts'),
+  K_diamonds: getDefaultCard('K', 'diamonds'),
+  K_clubs: getDefaultCard('K', 'clubs'),
+  K_spades: getDefaultCard('K', 'spades'),
+  A_hearts: getDefaultCard('A', 'hearts'),
+  A_diamonds: getDefaultCard('A', 'diamonds'),
+  A_clubs: getDefaultCard('A', 'clubs'),
+  A_spades: getDefaultCard('A', 'spades'),
+}

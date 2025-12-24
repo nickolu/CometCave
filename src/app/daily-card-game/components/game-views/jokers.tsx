@@ -8,7 +8,7 @@ const JokersView = () => {
     <div className="flex flex-col items-center mt-10 h-screen w-3/4 mx-auto">
       <h1 className="text-2xl font-bold">Jokers</h1>
       <div className="flex flex-wrap gap-2 mt-4">
-        {jokers.map(joker => (
+        {Object.values(jokers).map(joker => (
           <Joker key={joker.id} joker={joker} />
         ))}
       </div>

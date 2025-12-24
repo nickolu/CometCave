@@ -1,4 +1,4 @@
-import { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
+import { BossBlindDefinition, RoundState } from '@/app/daily-card-game/domain/round/types'
 
 import { bossBlinds } from './boss-blinds'
 
@@ -10,32 +10,32 @@ const getBossBlind = (ante: number): BossBlindDefinition => {
   return bossBlindsForAnte[0]
 }
 
-const getDefaultRoundState = (baseAnte: number, ante: number): RoundDefinition => {
+const getDefaultRoundState = (baseAnte: number, ante: number): RoundState => {
   return {
     baseAnte: baseAnte,
+    bossBlindName: getBossBlind(ante).name,
     smallBlind: {
       type: 'smallBlind',
-      name: 'Small Blind',
       status: 'notStarted',
-      anteMultiplier: 1,
-      baseReward: 3,
       additionalRewards: [],
       score: 0,
     },
     bigBlind: {
       type: 'bigBlind',
-      name: 'Big Blind',
       status: 'notStarted',
-      anteMultiplier: 1.5,
-      baseReward: 4,
       additionalRewards: [],
       score: 0,
     },
-    bossBlind: getBossBlind(ante),
+    bossBlind: {
+      type: 'bossBlind',
+      status: 'notStarted',
+      additionalRewards: [],
+      score: 0,
+    },
   }
 }
 
-export const rounds: RoundDefinition[] = [
+export const rounds: RoundState[] = [
   getDefaultRoundState(100, 0), // can only go here due to voucher
   getDefaultRoundState(300, 1), // starting ante
   getDefaultRoundState(800, 2),

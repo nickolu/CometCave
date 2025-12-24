@@ -4,7 +4,7 @@ import type {
   VoucherDefinition,
 } from '@/app/daily-card-game/domain/consumable/types'
 import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
-import type { PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import type { PlayingCardDefinition } from '@/app/daily-card-game/domain/playing-card/types'
 
 export interface ShopState {
   cardsForSale: BuyableCard[]
@@ -16,12 +16,12 @@ export interface ShopState {
 }
 
 export interface BuyableCard {
-  type: PlayingCard | Celestial | Arcane | JokerDefinition
+  type: PlayingCardDefinition | Celestial | Arcane | JokerDefinition
   price: number
 }
 
 export interface Pack {
-  card: Celestial | Arcane | JokerDefinition | PlayingCard
+  card: Celestial | Arcane | JokerDefinition | PlayingCardDefinition
   type: 'jumbo' | 'normal' | 'mega'
   price: number
 }

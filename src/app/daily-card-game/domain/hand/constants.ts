@@ -1,4 +1,4 @@
-import { CardValue, PlayingCard } from '@/app/daily-card-game/domain/playing-card/types'
+import { CardValue, PlayingCardDefinition } from '@/app/daily-card-game/domain/playing-card/types'
 
 import { PokerHandsState } from './types'
 
@@ -18,7 +18,7 @@ export const cardValuePriority: Record<CardValue, number> = {
   A: 13,
 }
 
-export const suitPriority: Record<PlayingCard['suit'], number> = {
+export const suitPriority: Record<PlayingCardDefinition['suit'], number> = {
   hearts: 1,
   diamonds: 2,
   clubs: 3,

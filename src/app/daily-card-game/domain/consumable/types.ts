@@ -1,9 +1,9 @@
-import type { PokerHand } from '@/app/daily-card-game/domain/hand/types'
+import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
 
 export type Consumable = Celestial | Arcane
 
 export interface Celestial {
-  hand: PokerHand
+  handId: PokerHandDefinition['id']
 }
 
 export interface Arcane {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,9 @@ export function BlindRewardsView() {
   }, [])
 
   const currentBlind = getInProgressBlind(game)
-  const baseReward = currentBlind?.baseReward ?? 0
+  const baseReward =
+    getBlindDefinition(currentBlind?.type ?? 'smallBlind', game.rounds[game.roundIndex])
+      .baseReward ?? 0
   const additionalRewards = currentBlind?.additionalRewards ?? []
 
   return (

@@ -1,30 +1,32 @@
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
-import type { BossBlindDefinition, RoundDefinition } from '@/app/daily-card-game/domain/round/types'
+import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 
 import { HAND_SIZE } from './constants'
-import { collectEffects } from './utils'
+import { collectEffects, getBlindDefinition } from './utils'
 
 import type { GamePlayState, GameState } from './types'
 import type { Draft } from 'immer'
 
 type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
 
-function getCurrentRound(draft: Draft<GameState>): RoundDefinition {
+function getCurrentRound(draft: Draft<GameState>): RoundState {
   return draft.rounds[draft.roundIndex]
 }
 
 function computeBlindScoreAndAnte(
   draft: Draft<GameState>,
   currentBlind: ReturnType<typeof getInProgressBlind>,
-  round: RoundDefinition
+  round: RoundState
 ) {
   if (!currentBlind) return null
 
   const blindScore =
     currentBlind.score + draft.gamePlayState.score.chips * draft.gamePlayState.score.mult
-  const ante = currentBlind.anteMultiplier * round.baseAnte
+  const blindDefinition = getBlindDefinition(currentBlind.type, round)
+  const ante = blindDefinition.anteMultiplier * round.baseAnte
   const newTotalScore = draft.totalScore + blindScore
 
   // Persist computed blind score onto the round
@@ -40,11 +42,11 @@ function applyHandScoringEndEffects(
 ) {
   const ctx: EffectContext = {
     event,
-    game: draft as unknown as GameState,
+    game: draft,
     score: draft.gamePlayState.score,
     playedCards: draft.gamePlayState.selectedHand?.[1],
-    round: round as unknown as RoundDefinition,
-    bossBlind: round.bossBlind as unknown as BossBlindDefinition,
+    round: round,
+    bossBlind: round.bossBlind,
     jokers: draft.jokers,
   }
   dispatchEffects(event, ctx, collectEffects(ctx.game))
@@ -64,7 +66,7 @@ function decideHandEndOutcome(args: {
 function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>) {
   gamePlayState.isScoring = false
   gamePlayState.scoringEvents.push({
-    id: crypto.randomUUID(),
+    id: uuid(),
     message: `Hand Score: ${gamePlayState.score.chips} x ${gamePlayState.score.mult}`,
   })
   gamePlayState.score = { chips: 0, mult: 0 }

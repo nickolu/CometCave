@@ -1,5 +1,5 @@
-import { EffectContext } from '@/app/daily-card-game/domain/events/types'
-import { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
+import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import type { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
 const theHook: BossBlindDefinition = {
   type: 'bossBlind',
@@ -10,7 +10,6 @@ const theHook: BossBlindDefinition = {
   image: 'the-hook.png',
   minimumAnte: 0,
   baseReward: 5,
-  additionalRewards: [],
   effects: [
     {
       event: { type: 'HAND_SCORING_END' },
@@ -24,7 +23,6 @@ const theHook: BossBlindDefinition = {
       },
     },
   ],
-  score: 0,
 }
 
 const theOx: BossBlindDefinition = {
@@ -36,7 +34,6 @@ const theOx: BossBlindDefinition = {
   image: 'the-ox.png',
   minimumAnte: 6,
   baseReward: 5,
-  additionalRewards: [],
   effects: [
     {
       event: { type: 'HAND_SCORING_END' },
@@ -47,7 +44,6 @@ const theOx: BossBlindDefinition = {
       },
     },
   ],
-  score: 0,
 }
 
 export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
