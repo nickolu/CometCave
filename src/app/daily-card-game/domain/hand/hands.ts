@@ -1,3 +1,4 @@
+import { StaticRulesState } from '@/app/daily-card-game/domain/game/types'
 import { PokerHand, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
 import {
   areAllCardsSameSuit,
@@ -187,6 +188,7 @@ export const checkHandForTwoPair: HandCheckFunction = cards => {
   }
   return [false, []]
 }
+
 export const checkHandForThreeOfAKind: HandCheckFunction = cards => {
   const threeOfAKinds = findAllThreeOfAKinds(cards)
   if (threeOfAKinds.length > 0) {
@@ -315,23 +317,18 @@ const isPokerHandName = (name: string): name is keyof PokerHandsState => {
   return name in handCheckFunctions
 }
 
-export const findHighestPriorityHand = (
-  cards: PlayingCard[],
-  minLengthForFlushAndStraight: number = 5
-) => {
-  console.log('cards', cards)
+export const findHighestPriorityHand = (cards: PlayingCard[], staticRules: StaticRulesState) => {
   let bestHand: keyof PokerHandsState = 'highCard'
   let bestHandCards: PlayingCard[] = checkHandForHighCard(cards)[1]
   for (const hand of Object.keys(handCheckFunctions)) {
     if (!isPokerHandName(hand)) continue
 
-    const [isHand, handCards] = handCheckFunctions[hand](cards, minLengthForFlushAndStraight)
-    console.log('isHand', isHand)
-    console.log('handCards', handCards)
+    const [isHand, handCards] = handCheckFunctions[hand](
+      cards,
+      staticRules.numberOfCardsRequiredForFlushAndStraight
+    )
 
     if (isHand && handPriority[hand] > handPriority[bestHand]) {
-      console.log('bestHand', bestHand)
-      console.log('hand', hand)
       bestHand = hand
       bestHandCards = handCards
     }

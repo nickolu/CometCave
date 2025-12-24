@@ -10,16 +10,6 @@ import {
 import { JokerDefinition } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed } from './utils'
 
-const defaultFlags = {
-  faceUp: true,
-  isRentable: false,
-  isPerishable: false,
-  isEternal: false,
-  isHolographic: false,
-  isFoil: false,
-  isNegative: false,
-}
-
 export const jokerJoker: JokerDefinition = {
   id: 'jokerJoker',
   name: 'Joker',
@@ -40,7 +30,6 @@ export const jokerJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -64,7 +53,6 @@ export const greedyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -88,7 +76,6 @@ export const lustyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -112,7 +99,6 @@ export const wrathfulJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -136,7 +122,6 @@ export const gluttonousJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -160,7 +145,6 @@ export const jollyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -184,7 +168,6 @@ export const zanyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -208,7 +191,6 @@ export const madJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -232,7 +214,6 @@ export const crazyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -256,7 +237,6 @@ export const drollJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -280,7 +260,6 @@ export const slyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -304,7 +283,6 @@ export const wilyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -328,7 +306,6 @@ export const cleverJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -352,7 +329,6 @@ export const deviousJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -376,7 +352,6 @@ export const craftyJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -402,7 +377,6 @@ export const halfJoker: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
   rarity: 'common',
 }
 
@@ -430,7 +404,40 @@ export const jokerStencil: JokerDefinition = {
       },
     },
   ],
-  flags: defaultFlags,
+  rarity: 'uncommon',
+}
+
+export const fourFingersJoker: JokerDefinition = {
+  id: 'fourFingersJoker',
+  name: 'Four Fingers',
+  description: 'All Flushes and Straights can be made with 4 cards.',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'GAME_START' }, // handle game start in case the game starts with jokers
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' }, // handle game start in case the game starts with jokers
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' }, // handle game start in case the game starts with jokers
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // don't modify if there's another four fingers joker in play
+        if (!ctx.game.jokers.includes(fourFingersJoker)) {
+          ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
+        }
+      },
+    },
+  ],
   rarity: 'uncommon',
 }
 

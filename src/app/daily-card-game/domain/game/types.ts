@@ -28,9 +28,14 @@ export interface GameState {
   rounds: RoundDefinition[]
   shopState: ShopState
   stake: Stake
+  staticRules: StaticRulesState
   tags: TagDefinition[]
   totalScore: number
   vouchersUsed: VoucherDefinition[]
+}
+
+export interface StaticRulesState {
+  numberOfCardsRequiredForFlushAndStraight: number
 }
 
 export type GamePhase =

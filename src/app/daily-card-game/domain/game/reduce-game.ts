@@ -25,6 +25,16 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
     switch (event.type) {
       case 'GAME_START': {
         draft.gamePhase = 'blindSelection'
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
       case 'SMALL_BLIND_SELECTED': {
@@ -75,7 +85,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const selectedCards = gamePlayState.dealtCards.filter(card =>
           selectedCardIds.includes(card.id)
         )
-        const selectedHandId = findHighestPriorityHand(selectedCards).hand
+        const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
         const selectedHand = hands[selectedHandId]
 
         gamePlayState.selectedCardIds = selectedCardIds
@@ -94,7 +104,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         let selectedHand: [PokerHand, PlayingCard[]] | undefined = undefined
         if (selectedCards.length > 0) {
-          const selectedHandId = findHighestPriorityHand(selectedCards).hand
+          const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
           selectedHand = [hands[selectedHandId], selectedCards]
         }
 
@@ -132,7 +142,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const selectedCards = gamePlayState.dealtCards.filter(card =>
           gamePlayState.selectedCardIds.includes(card.id)
         )
-        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(selectedCards)
+        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
+          selectedCards,
+          draft.staticRules
+        )
         gamePlayState.cardsToScore = cardsToScore
         gamePlayState.playedCardIds = selectedCards.map(card => card.id)
 
@@ -313,6 +326,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'SMALL_BLIND_SKIPPED': {
         const round = draft.rounds[draft.roundIndex]
         round.smallBlind.status = 'skipped'
+        return
+      }
+      case 'JOKER_ADDED': {
+        return
+      }
+      case 'JOKER_REMOVED': {
         return
       }
       default: {

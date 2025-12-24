@@ -47,6 +47,7 @@ export const findAllThreeOfAKinds = (cards: PlayingCard[]): PlayingCard[][] => {
 
 export const findAllStraights = (cards: PlayingCard[], minLength = 5): PlayingCard[][] => {
   const straights: PlayingCard[][] = []
+
   for (let i = 0; i < cards.length - minLength + 1; i++) {
     let isStraight = true
     for (let j = i; j < i + minLength - 1; j++) {

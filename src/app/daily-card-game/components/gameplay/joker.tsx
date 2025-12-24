@@ -52,7 +52,7 @@ export const Joker = ({
         }
       }}
     >
-      {joker.flags.faceUp ? <FaceUpJoker joker={joker} /> : <FaceDownJoker />}
+      <FaceUpJoker joker={joker} />
     </Card>
   )
 }
