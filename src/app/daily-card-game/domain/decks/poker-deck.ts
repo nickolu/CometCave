@@ -3,8 +3,7 @@ import {
   PlayingCardDefinition,
   PlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/types'
-
-import { uuid } from '../randomness'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 export const pokerDeckDefinition: PlayingCardDefinition[] = [
   getDefaultCard('2', 'hearts'),
