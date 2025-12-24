@@ -1,5 +1,3 @@
-import { uuid } from '@/app/daily-card-game/domain/randomness'
-
 import { CardValue, PlayingCardDefinition } from './types'
 
 const cardValueBaseChips: Record<CardValue, number> = {
