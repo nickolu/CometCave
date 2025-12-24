@@ -14,18 +14,18 @@ const FaceUpJoker = ({ joker }: { joker: JokerDefinition }) => {
   )
 }
 
-const FaceDownJoker = () => {
-  return (
-    <div className="flex flex-col px-1 h-full bg-space-grey">
-      <div data-name="top-row" className="flex justify-between">
-        <div>?</div>
-      </div>
-      <div data-name="image-row" className="flex justify-center grow items-center">
-        <div>?</div>
-      </div>
-    </div>
-  )
-}
+// const FaceDownJoker = () => {
+//   return (
+//     <div className="flex flex-col px-1 h-full bg-space-grey">
+//       <div data-name="top-row" className="flex justify-between">
+//         <div>?</div>
+//       </div>
+//       <div data-name="image-row" className="flex justify-center grow items-center">
+//         <div>?</div>
+//       </div>
+//     </div>
+//   )
+// }
 
 export const Joker = ({
   joker,
