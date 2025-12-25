@@ -1,9 +1,10 @@
+import { uuid } from '@/app/daily-card-game/domain/randomness'
+
 import { celestialCards } from './celestial-cards'
 import { tarotCards } from './tarot-cards'
 import {
   CelestialCardDefinition,
   CelestialCardState,
-  ConsumableDefinition,
   TarotCardDefinition,
   TarotCardState,
 } from './types'
@@ -24,3 +25,17 @@ export const findLastTarotOrCelestialCard = (
       consumable.consumableType === 'tarotCard' || consumable.consumableType === 'celestialCard'
   )
 }
+
+export const getDefaultCelestialCardState = (
+  consumable: CelestialCardDefinition
+): CelestialCardState => ({
+  id: uuid(),
+  consumableType: 'celestialCard',
+  handId: consumable.handId,
+})
+
+export const getDefaultTarotCardState = (consumable: TarotCardDefinition): TarotCardState => ({
+  id: uuid(),
+  consumableType: 'tarotCard',
+  tarotType: consumable.tarotType,
+})

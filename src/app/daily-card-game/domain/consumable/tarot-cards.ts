@@ -1,5 +1,6 @@
-import { EffectContext } from '../events/types'
-import { GameState } from '@/app/daily-card-game/domain/game/types'
+import { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import type { GameState } from '@/app/daily-card-game/domain/game/types'
+
 import { TarotCardDefinition } from './types'
 import { findLastTarotOrCelestialCard } from './utils'
 

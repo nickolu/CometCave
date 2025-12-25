@@ -1,8 +1,8 @@
-import { cn } from '@/lib/utils'
-import { Card } from '@/components/ui/card'
+import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 export const TarotCard = ({
   tarotCard,

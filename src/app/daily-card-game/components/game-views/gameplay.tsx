@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { CelestialCard } from '@/app/daily-card-game/components/gameplay/celestial-card'
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
 import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
+import { TarotCard } from '@/app/daily-card-game/components/gameplay/tarot-card'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
+import { getConsumableDefinition } from '@/app/daily-card-game/domain/consumable/utils'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
@@ -15,9 +18,6 @@ import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
-import { TarotCard } from '../gameplay/tarot-card'
-import { getConsumableDefinition } from '../../domain/consumable/utils'
-import { CelestialCard } from '../gameplay/celestial-card'
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 

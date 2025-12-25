@@ -1,6 +1,6 @@
-import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
 import { Effect } from '@/app/daily-card-game/domain/events/types'
 import { GameState } from '@/app/daily-card-game/domain/game/types'
+import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
 
 export type Consumable = CelestialCardDefinition | TarotCardDefinition
 

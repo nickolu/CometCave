@@ -1,5 +1,6 @@
+import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
+import { getDefaultCelestialCardState } from '@/app/daily-card-game/domain/consumable/utils'
 import { initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
-import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import {
   fiveOfAKindHand,
   flushFiveHand,
@@ -20,16 +21,8 @@ import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import type { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
-import {
-  CelestialCardDefinition,
-  CelestialCardState,
-  ConsumableDefinition,
-  ConsumableState,
-  TarotCardDefinition,
-  TarotCardState,
-} from '../consumable/types'
-import { celestialCards } from '../consumable/celestial-cards'
-import { tarotCards } from '../consumable/tarot-cards'
+
+import { GameState } from './types'
 
 const getDefaultHandState = (hand: PokerHandDefinition): PokerHandState => ({
   timesPlayed: 0,
@@ -49,18 +42,6 @@ const getDefaultJokerState = (joker: JokerDefinition): JokerState => ({
     isNegative: false,
     faceUp: false,
   },
-})
-
-const getDefaultCelestialCardState = (consumable: CelestialCardDefinition): CelestialCardState => ({
-  id: uuid(),
-  consumableType: 'celestialCard',
-  handId: consumable.handId,
-})
-
-const getDefaultTarotCardState = (consumable: TarotCardDefinition): TarotCardState => ({
-  id: uuid(),
-  consumableType: 'tarotCard',
-  tarotType: consumable.tarotType,
 })
 
 export const defaultGameState: GameState = {

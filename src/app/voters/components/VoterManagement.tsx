@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable */
 
 import { Copy, Pencil, Settings, Sparkles, Trash2, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'

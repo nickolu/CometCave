@@ -1,9 +1,8 @@
-import { cn } from '@/lib/utils'
-import { Card } from '@/components/ui/card'
-import { CelestialCardState, TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
+import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
+import { CelestialCardState } from '@/app/daily-card-game/domain/consumable/types'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
-import { celestialCards } from '../../domain/consumable/celestial-cards'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 export const CelestialCard = ({
   celestialCard,

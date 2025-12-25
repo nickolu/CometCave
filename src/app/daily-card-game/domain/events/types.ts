@@ -1,8 +1,8 @@
+import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
 import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/types'
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
-import { ConsumableDefinition, TarotCardState } from '../consumable/types'
 
 export type GameEvent =
   | BigBlindSelectedEvent

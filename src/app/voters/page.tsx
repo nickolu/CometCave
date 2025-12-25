@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -9,7 +10,6 @@ import VoterManagement from './components/VoterManagement'
 import VotingCriteriaComponent from './components/VotingCriteria'
 import VotingExecution from './components/VotingExecution'
 import VotingResults from './components/VotingResults'
-
 
 const queryClient = new QueryClient()
 

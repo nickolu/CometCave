@@ -1,5 +1,6 @@
-import { EffectContext } from '../events/types'
-import { PokerHandDefinition } from '../hand/types'
+import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
+
 import { CelestialCardDefinition } from './types'
 
 const handIdToName: Record<PokerHandDefinition['id'], string> = {

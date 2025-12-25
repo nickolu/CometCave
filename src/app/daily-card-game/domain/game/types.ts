@@ -1,8 +1,5 @@
 import type {
   CelestialCardState,
-  Consumable,
-  ConsumableDefinition,
-  ConsumableState,
   TarotCardState,
 } from '@/app/daily-card-game/domain/consumable/types'
 import type { PokerHandDefinition, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
