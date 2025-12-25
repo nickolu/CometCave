@@ -65,8 +65,8 @@ const getDefaultTarotCardState = (consumable: TarotCardDefinition): TarotCardSta
 
 export const defaultGameState: GameState = {
   consumables: [
-    getDefaultTarotCardState(tarotCards['theFool']),
-    getDefaultTarotCardState(tarotCards['theMagician']),
+    getDefaultCelestialCardState(celestialCards['highCard']),
+    getDefaultCelestialCardState(celestialCards['pair']),
   ],
   consumablesUsed: [],
   discardsPlayed: 0,

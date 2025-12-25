@@ -14,6 +14,9 @@ export type GameEvent =
   | CardDeselectedEvent
   | CardScoredEvent
   | CardSelectedEvent
+  | CelestialCardUsedEvent
+  | ConsumableDeselectedEvent
+  | ConsumableSelectedEvent
   | DiscardSelectedCardsEvent
   | DisplayJokersEvent
   | HandDealtEvent
@@ -29,8 +32,6 @@ export type GameEvent =
   | SmallBlindSelectedEvent
   | SmallBlindSkippedEvent
   | TarotCardUsedEvent
-  | ConsumableSelectedEvent
-  | ConsumableDeselectedEvent
 
 export type BigBlindSelectedEvent = {
   type: 'BIG_BLIND_SELECTED'
@@ -60,6 +61,9 @@ export type CardScoredEvent = {
 export type CardSelectedEvent = {
   type: 'CARD_SELECTED'
   id: string
+}
+export type CelestialCardUsedEvent = {
+  type: 'CELESTIAL_CARD_USED'
 }
 export type ConsumableSelectedEvent = {
   type: 'CONSUMABLE_SELECTED'

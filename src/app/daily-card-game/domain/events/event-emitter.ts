@@ -13,6 +13,7 @@ class EventEmitter {
     CARD_SCORED: [],
     CARD_SELECTED: [],
     CARD_DESELECTED: [],
+    CELESTIAL_CARD_USED: [],
     DISCARD_SELECTED_CARDS: [],
     DISPLAY_JOKERS: [],
     GAME_START: [],

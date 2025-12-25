@@ -16,6 +16,7 @@ import { collectEffects, getBlindDefinition, randomizeDeck } from './utils'
 
 import type { GameState } from './types'
 import { tarotCards } from '../consumable/tarot-cards'
+import { celestialCards } from '../consumable/celestial-cards'
 
 const blindIndices: Record<BlindState['type'], number> = {
   smallBlind: 0,
@@ -356,15 +357,43 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.selectedConsumable = undefined
         return
       }
+      case 'CELESTIAL_CARD_USED': {
+        const celestialCard = draft.gamePlayState.selectedConsumable
+        if (!celestialCard) return
+        if (celestialCard.consumableType !== 'celestialCard') return
+        draft.consumablesUsed.push(celestialCard)
+        draft.gamePlayState.selectedConsumable = undefined
+        // remove tarot card from consumables
+        draft.consumables = draft.consumables.filter(
+          consumable => consumable.id !== celestialCard.id
+        )
+        // remove tarot card from pack
+        if (draft.shopState.openPackState) {
+          draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+            card => card.card.id !== celestialCard.id
+          )
+        }
+        dispatchEffects(
+          event,
+          {
+            event,
+            game: draft as unknown as GameState,
+            score: draft.gamePlayState.score,
+            playedCards: [],
+            round: draft.rounds[draft.roundIndex],
+            bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+            jokers: draft.jokers,
+          },
+          celestialCards[celestialCard.handId].effects
+        )
+        return
+      }
       case 'TAROT_CARD_USED': {
-        console.log('TAROT_CARD_USED', event)
         const tarotCard = draft.gamePlayState.selectedConsumable
-        console.log('tarotCard', tarotCard?.id, tarotCard?.consumableType)
         if (!tarotCard) return
         if (tarotCard.consumableType !== 'tarotCard') return
         if (tarotCard.tarotType === 'notImplemented') return
         draft.consumablesUsed.push(tarotCard)
-        console.log('draft.consumablesUsed', draft.consumablesUsed)
         draft.gamePlayState.selectedConsumable = undefined
         // remove tarot card from consumables
         draft.consumables = draft.consumables.filter(consumable => consumable.id !== tarotCard.id)

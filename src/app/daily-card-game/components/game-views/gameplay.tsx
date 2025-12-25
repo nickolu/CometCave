@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { ViewTemplate } from './view-template'
 import { TarotCard } from '../gameplay/tarot-card'
 import { getConsumableDefinition } from '../../domain/consumable/utils'
+import { CelestialCard } from '../gameplay/celestial-card'
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
@@ -59,7 +60,8 @@ const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
     pokerHands[hand.handId].baseMult + pokerHands[hand.handId].multIncreasePerLevel * hand.level
   return (
     <div>
-      Selected Hand: {pokerHands[hand.handId].name} ({currentHandChips}x{currentHandMult})
+      Selected Hand: {pokerHands[hand.handId].name} (Lvl {hand.level + 1}) ({currentHandChips}x
+      {currentHandMult})
     </div>
   )
 }
@@ -98,12 +100,24 @@ export function GamePlayView() {
                   tarotCard={consumable}
                   isSelected={selectedConsumable?.id === consumable.id}
                 />
-              ) : null
+              ) : (
+                <CelestialCard
+                  key={consumable.id}
+                  celestialCard={consumable}
+                  isSelected={selectedConsumable?.id === consumable.id}
+                />
+              )
             )}
             {selectedConsumable && (
               <Button
                 disabled={!selectedConsumableDefinition?.isPlayable(game)}
-                onClick={() => eventEmitter.emit({ type: 'TAROT_CARD_USED' })}
+                onClick={() => {
+                  if (selectedConsumable.consumableType === 'tarotCard') {
+                    eventEmitter.emit({ type: 'TAROT_CARD_USED' })
+                  } else if (selectedConsumable.consumableType === 'celestialCard') {
+                    eventEmitter.emit({ type: 'CELESTIAL_CARD_USED' })
+                  }
+                }}
               >
                 Use
               </Button>
