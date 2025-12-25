@@ -2,6 +2,7 @@ import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/ty
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
+import { ConsumableDefinition, TarotCardState } from '../consumable/types'
 
 export type GameEvent =
   | BigBlindSelectedEvent
@@ -27,6 +28,9 @@ export type GameEvent =
   | ShopSelectBlindEvent
   | SmallBlindSelectedEvent
   | SmallBlindSkippedEvent
+  | TarotCardUsedEvent
+  | ConsumableSelectedEvent
+  | ConsumableDeselectedEvent
 
 export type BigBlindSelectedEvent = {
   type: 'BIG_BLIND_SELECTED'
@@ -55,6 +59,14 @@ export type CardScoredEvent = {
 }
 export type CardSelectedEvent = {
   type: 'CARD_SELECTED'
+  id: string
+}
+export type ConsumableSelectedEvent = {
+  type: 'CONSUMABLE_SELECTED'
+  id: string
+}
+export type ConsumableDeselectedEvent = {
+  type: 'CONSUMABLE_DESELECTED'
   id: string
 }
 export type DiscardSelectedCardsEvent = {
@@ -99,16 +111,20 @@ export type SmallBlindSelectedEvent = {
 export type SmallBlindSkippedEvent = {
   type: 'SMALL_BLIND_SKIPPED'
 }
+export type TarotCardUsedEvent = {
+  type: 'TAROT_CARD_USED'
+}
 
 export interface EffectContext {
+  bossBlind?: BlindState
   event: GameEvent
   game: GameState
-  score: ScoreState
-  playedCards?: PlayingCardState[]
-  scoredCards?: PlayingCardState[]
   jokers?: JokerState[]
+  playedCards?: PlayingCardState[]
   round?: RoundState
-  bossBlind?: BlindState
+  score: ScoreState
+  scoredCards?: PlayingCardState[]
+  tarotCards?: TarotCardState[]
 }
 
 export interface Effect {

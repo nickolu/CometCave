@@ -15,6 +15,8 @@ import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
+import { TarotCard } from '../gameplay/tarot-card'
+import { getConsumableDefinition } from '../../domain/consumable/utils'
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
@@ -74,13 +76,39 @@ export function GamePlayView() {
     eventEmitter.emit({ type: 'HAND_DEALT' })
   }, [])
 
+  const selectedConsumable = game.gamePlayState.selectedConsumable
+  const selectedConsumableDefinition = selectedConsumable
+    ? getConsumableDefinition(selectedConsumable)
+    : undefined
+
   return (
     <ViewTemplate>
       <div>
-        <div className="mt-4 flex gap-2 justify-center">
-          {game.jokers.map(joker => (
-            <Joker key={joker.jokerId} joker={jokers[joker.jokerId]} />
-          ))}
+        <div className="flex flex-wrap justify-between">
+          <div className="mt-4 flex gap-2 justify-center w-1/2">
+            {game.jokers.map(joker => (
+              <Joker key={joker.jokerId} joker={jokers[joker.jokerId]} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 justify-end w-1/2">
+            {game.consumables.map(consumable =>
+              consumable.consumableType === 'tarotCard' ? (
+                <TarotCard
+                  key={consumable.id}
+                  tarotCard={consumable}
+                  isSelected={selectedConsumable?.id === consumable.id}
+                />
+              ) : null
+            )}
+            {selectedConsumable && (
+              <Button
+                disabled={!selectedConsumableDefinition?.isPlayable(game)}
+                onClick={() => eventEmitter.emit({ type: 'TAROT_CARD_USED' })}
+              >
+                Use
+              </Button>
+            )}
+          </div>
         </div>
         <div className="mt-4">
           <Hand />

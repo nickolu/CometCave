@@ -15,6 +15,7 @@ import { handleHandScoringEnd } from './handlers'
 import { collectEffects, getBlindDefinition, randomizeDeck } from './utils'
 
 import type { GameState } from './types'
+import { tarotCards } from '../consumable/tarot-cards'
 
 const blindIndices: Record<BlindState['type'], number> = {
   smallBlind: 0,
@@ -335,6 +336,58 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'JOKER_REMOVED': {
+        return
+      }
+      case 'CONSUMABLE_SELECTED': {
+        console.log('CONSUMABLE_SELECTED', event)
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedConsumable?.id === id) return
+        gamePlayState.selectedConsumable = draft.consumables.find(
+          consumable => consumable.id === id
+        )
+        return
+      }
+      case 'CONSUMABLE_DESELECTED': {
+        console.log('CONSUMABLE_DESELECTED', event)
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedConsumable?.id !== id) return
+        gamePlayState.selectedConsumable = undefined
+        return
+      }
+      case 'TAROT_CARD_USED': {
+        console.log('TAROT_CARD_USED', event)
+        const tarotCard = draft.gamePlayState.selectedConsumable
+        console.log('tarotCard', tarotCard?.id, tarotCard?.consumableType)
+        if (!tarotCard) return
+        if (tarotCard.consumableType !== 'tarotCard') return
+        if (tarotCard.tarotType === 'notImplemented') return
+        draft.consumablesUsed.push(tarotCard)
+        console.log('draft.consumablesUsed', draft.consumablesUsed)
+        draft.gamePlayState.selectedConsumable = undefined
+        // remove tarot card from consumables
+        draft.consumables = draft.consumables.filter(consumable => consumable.id !== tarotCard.id)
+        // remove tarot card from pack
+        if (draft.shopState.openPackState) {
+          draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+            card => card.card.id !== tarotCard.id
+          )
+        }
+
+        dispatchEffects(
+          event,
+          {
+            event,
+            game: draft as unknown as GameState,
+            score: draft.gamePlayState.score,
+            playedCards: [],
+            round: draft.rounds[draft.roundIndex],
+            bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+            jokers: draft.jokers,
+          },
+          tarotCards[tarotCard.tarotType].effects
+        )
         return
       }
       default: {

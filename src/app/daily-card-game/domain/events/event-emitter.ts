@@ -8,9 +8,11 @@ class EventEmitter {
     BLIND_REWARDS_START: [],
     BLIND_SELECTION_BACK_TO_MENU: [],
     BOSS_BLIND_SELECTED: [],
-    CARD_DESELECTED: [],
+    CONSUMABLE_DESELECTED: [],
+    CONSUMABLE_SELECTED: [],
     CARD_SCORED: [],
     CARD_SELECTED: [],
+    CARD_DESELECTED: [],
     DISCARD_SELECTED_CARDS: [],
     DISPLAY_JOKERS: [],
     GAME_START: [],
@@ -25,6 +27,7 @@ class EventEmitter {
     SHOP_SELECT_BLIND: [],
     SMALL_BLIND_SELECTED: [],
     SMALL_BLIND_SKIPPED: [],
+    TAROT_CARD_USED: [],
   }
 
   private anyListeners: Array<(event: GameEvent) => void> = []

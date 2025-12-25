@@ -18,6 +18,6 @@ export interface PlayingCardState {
 export interface PlayingCardFlags {
   isHolographic: boolean
   isFoil: boolean
-  enchantment?: 'bonus' | 'mult' | 'gold' | 'glass'
+  enchantment?: 'bonus' | 'mult' | 'gold' | 'glass' | 'lucky'
   chip?: 'blue' | 'purple' | 'gold' | 'red'
 }

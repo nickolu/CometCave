@@ -20,6 +20,16 @@ import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import type { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
+import {
+  CelestialCardDefinition,
+  CelestialCardState,
+  ConsumableDefinition,
+  ConsumableState,
+  TarotCardDefinition,
+  TarotCardState,
+} from '../consumable/types'
+import { celestialCards } from '../consumable/celestial-cards'
+import { tarotCards } from '../consumable/tarot-cards'
 
 const getDefaultHandState = (hand: PokerHandDefinition): PokerHandState => ({
   timesPlayed: 0,
@@ -41,8 +51,24 @@ const getDefaultJokerState = (joker: JokerDefinition): JokerState => ({
   },
 })
 
+const getDefaultCelestialCardState = (consumable: CelestialCardDefinition): CelestialCardState => ({
+  id: uuid(),
+  consumableType: 'celestialCard',
+  handId: consumable.handId,
+})
+
+const getDefaultTarotCardState = (consumable: TarotCardDefinition): TarotCardState => ({
+  id: uuid(),
+  consumableType: 'tarotCard',
+  tarotType: consumable.tarotType,
+})
+
 export const defaultGameState: GameState = {
-  consumables: [],
+  consumables: [
+    getDefaultTarotCardState(tarotCards['theFool']),
+    getDefaultTarotCardState(tarotCards['theMagician']),
+  ],
+  consumablesUsed: [],
   discardsPlayed: 0,
   fullDeck: initialDeckStates.pokerDeck,
   gamePhase: 'mainMenu',
@@ -90,9 +116,9 @@ export const defaultGameState: GameState = {
   rounds,
   roundIndex: 1,
   shopState: {
+    openPackState: null,
     cardsForSale: [],
     packsForSale: [],
-    vouchersForSale: [],
     rerollsUsed: 0,
     rerollPrice: 0,
     modifiers: {
@@ -114,7 +140,5 @@ export const defaultGameState: GameState = {
     numberOfCardsRequiredForFlushAndStraight: 5,
     areAllCardsFaceCards: false,
   },
-  tags: [],
   totalScore: 0,
-  vouchersUsed: [],
 }
