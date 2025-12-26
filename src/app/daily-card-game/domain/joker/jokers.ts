@@ -422,18 +422,31 @@ export const fourFingersJoker: JokerDefinition = {
       },
     },
     {
-      event: { type: 'JOKER_ADDED' }, // handle game start in case the game starts with jokers
+      event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
       },
     },
     {
-      event: { type: 'JOKER_REMOVED' }, // handle game start in case the game starts with jokers
+      event: { type: 'JOKER_SOLD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        console.log('JOKER_SOLD EFFECT CALLED')
         // don't modify if there's another four fingers joker in play
         if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
+          console.log('removing four fingers joker effect')
+          ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        console.log('JOKER_REMOVED EFFECT CALLED')
+        if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
+          console.log('removing four fingers joker effect')
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
         }
       },

@@ -25,6 +25,9 @@ export type GameEvent =
   | HandScoringStartEvent
   | JokerAddedEvent
   | JokerRemovedEvent
+  | JokerSelectedEvent
+  | JokerDeselectedEvent
+  | JokerSoldEvent
   | PackOpenBackToShopEvent
   | RoundEndEvent
   | RoundStartEvent
@@ -108,6 +111,17 @@ export type JokerAddedEvent = {
 }
 export type JokerRemovedEvent = {
   type: 'JOKER_REMOVED'
+}
+export type JokerSelectedEvent = {
+  type: 'JOKER_SELECTED'
+  id: string
+}
+export type JokerDeselectedEvent = {
+  type: 'JOKER_DESELECTED'
+  id: string
+}
+export type JokerSoldEvent = {
+  type: 'JOKER_SOLD'
 }
 export type PackOpenBackToShopEvent = {
   type: 'PACK_OPEN_BACK_TO_SHOP'

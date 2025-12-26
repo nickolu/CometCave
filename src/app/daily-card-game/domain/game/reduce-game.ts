@@ -10,6 +10,8 @@ import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-ef
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { findHighestPriorityHand, pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
@@ -35,6 +37,28 @@ const blindIndices: Record<BlindState['type'], number> = {
   smallBlind: 0,
   bigBlind: 1,
   bossBlind: 2,
+}
+
+function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerState) {
+  console.log('removeJoker reducer', selectedJoker)
+
+  draft.gamePlayState.selectedJokerId = undefined
+  const ctx: EffectContext = {
+    event,
+    game: draft as unknown as GameState,
+    score: draft.gamePlayState.score,
+    playedCards: [],
+    round: draft.rounds[draft.roundIndex],
+    bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+    jokers: draft.jokers,
+  }
+  // Collect effects *before* removing the joker so "on sold/removed" effects that live on the
+  // removed joker itself still get a chance to run. Then dispatch *after* removal so effects
+  // can observe the post-removal game state.
+  const effectsBeforeRemoval = collectEffects(ctx.game)
+  draft.jokers = draft.jokers.filter(joker => joker.id !== selectedJoker.id)
+  ctx.jokers = draft.jokers
+  dispatchEffects(event, ctx, effectsBeforeRemoval)
 }
 
 export function reduceGame(game: GameState, event: GameEvent): GameState {
@@ -458,6 +482,48 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePlayState.selectedConsumable = undefined
         return
       }
+
+      /*
+       * JOKER EVENTS
+       */
+      case 'JOKER_SELECTED': {
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedJokerId === id) return
+        gamePlayState.selectedJokerId = id
+        return
+      }
+      case 'JOKER_DESELECTED': {
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedJokerId !== id) return
+        gamePlayState.selectedJokerId = undefined
+        return
+      }
+      case 'JOKER_SOLD': {
+        console.log('JOKER_SOLD EVENT reducer')
+        const selectedJoker = draft.jokers.find(
+          joker => joker.id === draft.gamePlayState.selectedJokerId
+        )
+        if (!selectedJoker) return
+        draft.money += jokers[selectedJoker.jokerId].price
+        removeJoker(draft, event, selectedJoker)
+        return
+      }
+
+      case 'JOKER_ADDED': {
+        return
+      }
+      case 'JOKER_REMOVED': {
+        console.log('JOKER_REMOVED EVENT reducer')
+        const selectedJoker = draft.jokers.find(
+          joker => joker.id === draft.gamePlayState.selectedJokerId
+        )
+        if (!selectedJoker) return
+        removeJoker(draft, event, selectedJoker)
+        return
+      }
+
       /*
        * NO-OP EVENTS
        */
@@ -466,12 +532,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'ROUND_END': {
-        return
-      }
-      case 'JOKER_ADDED': {
-        return
-      }
-      case 'JOKER_REMOVED': {
         return
       }
 
