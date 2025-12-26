@@ -49,3 +49,7 @@ export function getRandomNumbersWithSeed({
   const rng = mulberry32(seedFn())
   return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
 }
+
+export function getCurrentDayAsSeedString() {
+  return new Date().toISOString().split('T')[0]
+}

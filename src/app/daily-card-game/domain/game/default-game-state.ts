@@ -17,6 +17,8 @@ import {
 import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
+import { getCurrentDayAsSeedString } from '../randomness'
+
 import { GameState } from './types'
 
 export const defaultGameState: GameState = {
@@ -41,7 +43,7 @@ export const defaultGameState: GameState = {
     },
     scoringEvents: [],
   },
-  gameSeed: 'default',
+  gameSeed: getCurrentDayAsSeedString(),
   handsPlayed: 0,
   jokers: [],
   maxConsumables: 2,
