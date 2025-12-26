@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Card } from '@/app/daily-card-game/components/gameplay/card'
+import { PlayingCard } from '@/app/daily-card-game/components/gameplay/card'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
@@ -14,7 +14,7 @@ const CardRow = ({ cards }: { cards: PlayingCardState[] }) => {
     <div className="flex flex-wrap gap-2">
       {cards.map((card, index) => (
         <div key={card.id} className={index !== 0 ? '-ml-16' : ''}>
-          <Card playingCard={card} />
+          <PlayingCard playingCard={card} />
         </div>
       ))}
     </div>

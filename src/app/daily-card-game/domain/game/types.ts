@@ -60,6 +60,7 @@ export interface GamePlayState {
   selectedCardIds: string[]
   selectedHand?: [PokerHandDefinition['id'], PlayingCardState[]]
   selectedConsumable?: CelestialCardState | TarotCardState
+  timesRerolled: number
 }
 
 export interface ScoringEvent {

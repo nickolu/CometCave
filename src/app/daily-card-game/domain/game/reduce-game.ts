@@ -11,9 +11,9 @@ import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
+import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 
-
-import { HAND_SIZE } from './constants'
+import { HAND_SIZE, MAX_SELECTED_CARDS } from './constants'
 import { handleHandScoringEnd } from './handlers'
 import { collectEffects, getBlindDefinition, randomizeDeck } from './utils'
 
@@ -85,6 +85,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const id = event.id
         const gamePlayState = draft.gamePlayState
         if (gamePlayState.selectedCardIds.includes(id)) return
+        if (gamePlayState.selectedCardIds.length >= MAX_SELECTED_CARDS) return
 
         const selectedCardIds = [...gamePlayState.selectedCardIds, id]
         const selectedCards: PlayingCardState[] = gamePlayState.dealtCards.filter(card =>
@@ -297,6 +298,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePlayState.remainingDiscards = draft.maxDiscards
         return
       }
+      case 'SHOP_OPEN': {
+        draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
+        return
+      }
       case 'SHOP_SELECT_BLIND': {
         draft.gamePhase = 'blindSelection'
         return
@@ -309,7 +314,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePhase = 'shop'
         return
       }
-      case 'BLIND_SELECTION_BACK_TO_MENU': {
+      case 'BACK_TO_MAIN_MENU': {
         draft.gamePhase = 'mainMenu'
         return
       }
@@ -340,8 +345,35 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'JOKER_REMOVED': {
         return
       }
+      case 'SHOP_BUY_CARD': {
+        const selectedCard = draft.shopState.cardsForSale.find(
+          card => card.card.id === draft.shopState.selectedCardId
+        )
+        if (!selectedCard) return
+        draft.money -= selectedCard.price
+        return
+      }
+      case 'SHOP_BUY_AND_USE_CARD': {
+        const selectedCard = draft.shopState.cardsForSale.find(
+          card => card.card.id === draft.shopState.selectedCardId
+        )
+        if (!selectedCard) return
+        draft.money -= selectedCard.price
+        return
+      }
+      case 'SHOP_SELECT_CARD': {
+        const id = event.id
+        if (draft.shopState.selectedCardId === id) return
+        draft.shopState.selectedCardId = id
+        return
+      }
+      case 'SHOP_DESELECT_CARD': {
+        const id = event.id
+        if (draft.shopState.selectedCardId !== id) return
+        draft.shopState.selectedCardId = null
+        return
+      }
       case 'CONSUMABLE_SELECTED': {
-        console.log('CONSUMABLE_SELECTED', event)
         const id = event.id
         const gamePlayState = draft.gamePlayState
         if (gamePlayState.selectedConsumable?.id === id) return
@@ -351,7 +383,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'CONSUMABLE_DESELECTED': {
-        console.log('CONSUMABLE_DESELECTED', event)
         const id = event.id
         const gamePlayState = draft.gamePlayState
         if (gamePlayState.selectedConsumable?.id !== id) return

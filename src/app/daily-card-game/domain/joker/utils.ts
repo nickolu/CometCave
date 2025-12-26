@@ -3,6 +3,8 @@ import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/type
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 
+import { JokerDefinition, JokerState } from './types'
+
 export const bonusOnCardScored = ({
   ctx,
   suit,
@@ -55,3 +57,25 @@ export const bonusOnHandPlayed = ({
     ctx.game.gamePlayState.score[type] += value
   }
 }
+
+export const isJokerState = (card: unknown): card is JokerState => {
+  return typeof card === 'object' && card !== null && 'id' in card
+}
+
+export const isJokerDefinition = (card: unknown): card is JokerDefinition => {
+  return typeof card === 'object' && card !== null && 'id' in card
+}
+
+export const initializeJoker = (joker: JokerDefinition): JokerState => ({
+  id: uuid(),
+  jokerId: joker.id,
+  flags: {
+    isRentable: false,
+    isPerishable: false,
+    isEternal: false,
+    isHolographic: false,
+    isFoil: false,
+    isNegative: false,
+    faceUp: false,
+  },
+})

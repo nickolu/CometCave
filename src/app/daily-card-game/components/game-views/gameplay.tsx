@@ -1,57 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { CelestialCard } from '@/app/daily-card-game/components/gameplay/celestial-card'
+import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
-import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
-import { TarotCard } from '@/app/daily-card-game/components/gameplay/tarot-card'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
-import { getConsumableDefinition } from '@/app/daily-card-game/domain/consumable/utils'
+import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
-import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
-import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
-
-const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
-
-const useScoreHand = () => {
-  const { game } = useGameState()
-  const { gamePlayState } = game
-  const selectedCardIds = gamePlayState.selectedCardIds
-  const isScoringRef = useRef(false)
-
-  const scoreHand = useCallback(async () => {
-    if (isScoringRef.current) return
-
-    if (selectedCardIds.length === 0) return
-
-    isScoringRef.current = true
-    try {
-      eventEmitter.emit({ type: 'HAND_SCORING_START' })
-
-      const cardsToScoreCount =
-        useDailyCardGameStore.getState().game.gamePlayState.cardsToScore.length
-
-      for (let i = 0; i < cardsToScoreCount; i++) {
-        await sleep(250)
-        eventEmitter.emit({ type: 'CARD_SCORED' })
-      }
-
-      await sleep(750)
-      eventEmitter.emit({ type: 'HAND_SCORING_END' })
-    } finally {
-      isScoringRef.current = false
-    }
-  }, [selectedCardIds])
-  return { scoreHand }
-}
 
 const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
   const currentHandChips =
@@ -70,81 +32,32 @@ export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)
   const { game } = useGameState()
   const { gamePlayState } = game
-  const { isScoring, remainingDiscards, score, selectedHand } = gamePlayState
-  const { scoreHand } = useScoreHand()
+  const { score, selectedHand } = gamePlayState
   const currentBlind = getInProgressBlind(game)
 
   useEffect(() => {
     eventEmitter.emit({ type: 'HAND_DEALT' })
   }, [])
 
-  const selectedConsumable = game.gamePlayState.selectedConsumable
-  const selectedConsumableDefinition = selectedConsumable
-    ? getConsumableDefinition(selectedConsumable)
-    : undefined
-
   return (
     <ViewTemplate>
       <div>
-        <div className="flex flex-wrap justify-between">
+        <div className="flex flex-wrap justify-between ">
           <div className="mt-4 flex gap-2 justify-center w-1/2">
-            {game.jokers.map(joker => (
-              <Joker key={joker.jokerId} joker={jokers[joker.jokerId]} />
-            ))}
+            <CurrentJokers />
           </div>
+
           <div className="flex flex-wrap gap-2 justify-end w-1/2">
-            {game.consumables.map(consumable =>
-              consumable.consumableType === 'tarotCard' ? (
-                <TarotCard
-                  key={consumable.id}
-                  tarotCard={consumable}
-                  isSelected={selectedConsumable?.id === consumable.id}
-                />
-              ) : (
-                <CelestialCard
-                  key={consumable.id}
-                  celestialCard={consumable}
-                  isSelected={selectedConsumable?.id === consumable.id}
-                />
-              )
-            )}
-            {selectedConsumable && (
-              <Button
-                disabled={!selectedConsumableDefinition?.isPlayable(game)}
-                onClick={() => {
-                  if (selectedConsumable.consumableType === 'tarotCard') {
-                    eventEmitter.emit({ type: 'TAROT_CARD_USED' })
-                  } else if (selectedConsumable.consumableType === 'celestialCard') {
-                    eventEmitter.emit({ type: 'CELESTIAL_CARD_USED' })
-                  }
-                }}
-              >
-                Use
-              </Button>
-            )}
+            <CurrentConsumables />
           </div>
-        </div>
-        <div className="mt-4">
-          <Hand />
-        </div>
-        <div className="flex mt-4 gap-2 justify-center">
-          <Button
-            disabled={remainingDiscards === 0 || isScoring}
-            className="bg-red-500"
-            onClick={() => {
-              eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
-            }}
-          >
-            Discard
-          </Button>
-          <Button disabled={isScoring} className="bg-green-500" onClick={scoreHand}>
-            Play Hand
-          </Button>
-          <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
-            Show Deck
-          </Button>
         </div>
       </div>
+      <div className="mt-4">
+        <Hand />
+      </div>
+      <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
+        Show Deck
+      </Button>
 
       {showDeck && (
         <div className="absolute top-0 right-1/8 w-3/4 h-full bg-black/90 flex flex-col items-center justify-center p-4 rounded-l-lg border-2 border-space-white">

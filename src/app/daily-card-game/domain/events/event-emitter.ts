@@ -6,7 +6,7 @@ class EventEmitter {
     BIG_BLIND_SKIPPED: [],
     BLIND_REWARDS_END: [],
     BLIND_REWARDS_START: [],
-    BLIND_SELECTION_BACK_TO_MENU: [],
+    BACK_TO_MAIN_MENU: [],
     BOSS_BLIND_SELECTED: [],
     CONSUMABLE_DESELECTED: [],
     CONSUMABLE_SELECTED: [],
@@ -24,11 +24,16 @@ class EventEmitter {
     JOKER_REMOVED: [],
     PACK_OPEN_BACK_TO_SHOP: [],
     ROUND_END: [],
+    SHOP_OPEN: [],
     SHOP_OPEN_PACK: [],
+    SHOP_SELECT_CARD: [],
+    SHOP_DESELECT_CARD: [],
     SHOP_SELECT_BLIND: [],
     SMALL_BLIND_SELECTED: [],
     SMALL_BLIND_SKIPPED: [],
     TAROT_CARD_USED: [],
+    SHOP_BUY_CARD: [],
+    SHOP_BUY_AND_USE_CARD: [],
   }
 
   private anyListeners: Array<(event: GameEvent) => void> = []

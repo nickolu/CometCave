@@ -66,14 +66,14 @@ const FaceDownCard = () => {
   )
 }
 
-export const Card = ({
+export const PlayingCard = ({
   playingCard,
-  handIndex,
   isSelected,
+  onClick,
 }: {
   playingCard: PlayingCardState
-  handIndex?: number
   isSelected?: boolean
+  onClick?: (isSelected: boolean, id: string) => void
 }) => {
   return (
     <CardUI
@@ -82,13 +82,7 @@ export const Card = ({
         'h-36 w-24 transform transition-all duration-300 cursor-pointer text-xl'
       )}
       onClick={() => {
-        if (handIndex !== undefined) {
-          if (isSelected) {
-            eventEmitter.emit({ type: 'CARD_DESELECTED', id: playingCard.id })
-          } else {
-            eventEmitter.emit({ type: 'CARD_SELECTED', id: playingCard.id })
-          }
-        }
+        onClick?.(isSelected ?? false, playingCard.id)
       }}
     >
       {playingCard.isFaceUp ? <FaceUpCard playingCard={playingCard} /> : <FaceDownCard />}

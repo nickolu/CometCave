@@ -9,7 +9,7 @@ export type GameEvent =
   | BigBlindSkippedEvent
   | BlindRewardsEndEvent
   | BlindRewardsStartEvent
-  | BlindSelectionBackToMenuEvent
+  | BackToMenuEvent
   | BossBlindSelectedEvent
   | CardDeselectedEvent
   | CardScoredEvent
@@ -29,10 +29,21 @@ export type GameEvent =
   | RoundStartEvent
   | ShopOpenPackEvent
   | ShopSelectBlindEvent
+  | ShopSelectCardEvent
+  | ShopDeselectCardEvent
   | SmallBlindSelectedEvent
   | SmallBlindSkippedEvent
   | TarotCardUsedEvent
+  | ShopOpenEvent
+  | ShopBuyCardEvent
+  | ShopBuyAndUseCardEvent
 
+export type ShopBuyCardEvent = {
+  type: 'SHOP_BUY_CARD'
+}
+export type ShopBuyAndUseCardEvent = {
+  type: 'SHOP_BUY_AND_USE_CARD'
+}
 export type BigBlindSelectedEvent = {
   type: 'BIG_BLIND_SELECTED'
 }
@@ -45,8 +56,8 @@ export type BlindRewardsEndEvent = {
 export type BlindRewardsStartEvent = {
   type: 'BLIND_REWARDS_START'
 }
-export type BlindSelectionBackToMenuEvent = {
-  type: 'BLIND_SELECTION_BACK_TO_MENU'
+export type BackToMenuEvent = {
+  type: 'BACK_TO_MAIN_MENU'
 }
 export type BossBlindSelectedEvent = {
   type: 'BOSS_BLIND_SELECTED'
@@ -106,8 +117,19 @@ export type RoundStartEvent = {
 export type ShopOpenPackEvent = {
   type: 'SHOP_OPEN_PACK'
 }
+export type ShopOpenEvent = {
+  type: 'SHOP_OPEN'
+}
 export type ShopSelectBlindEvent = {
   type: 'SHOP_SELECT_BLIND'
+}
+export type ShopSelectCardEvent = {
+  type: 'SHOP_SELECT_CARD'
+  id: string
+}
+export type ShopDeselectCardEvent = {
+  type: 'SHOP_DESELECT_CARD'
+  id: string
 }
 export type SmallBlindSelectedEvent = {
   type: 'SMALL_BLIND_SELECTED'

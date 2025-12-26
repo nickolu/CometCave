@@ -27,3 +27,25 @@ export function uuid() {
     .toString(36)
     .slice(2, 10)}`
 }
+
+export function getRandomNumberWithSeed(seed: string, min: number, max: number) {
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  return Math.floor(rng() * (max - min + 1)) + min
+}
+
+export function getRandomNumbersWithSeed({
+  seed,
+  min,
+  max,
+  numberOfNumbers,
+}: {
+  seed: string
+  min: number
+  max: number
+  numberOfNumbers: number
+}) {
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
+}

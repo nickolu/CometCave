@@ -26,7 +26,7 @@ export const findLastTarotOrCelestialCard = (
   )
 }
 
-export const getDefaultCelestialCardState = (
+export const initializeCelestialCard = (
   consumable: CelestialCardDefinition
 ): CelestialCardState => ({
   id: uuid(),
@@ -34,8 +34,34 @@ export const getDefaultCelestialCardState = (
   handId: consumable.handId,
 })
 
-export const getDefaultTarotCardState = (consumable: TarotCardDefinition): TarotCardState => ({
+export const initializeTarotCard = (consumable: TarotCardDefinition): TarotCardState => ({
   id: uuid(),
   consumableType: 'tarotCard',
   tarotType: consumable.tarotType,
 })
+
+export const isCelestialCardState = (card: unknown): card is CelestialCardState => {
+  return (
+    typeof card === 'object' &&
+    card !== null &&
+    'consumableType' in card &&
+    card.consumableType === 'celestialCard'
+  )
+}
+
+export const isTarotCardState = (card: unknown): card is TarotCardState => {
+  return (
+    typeof card === 'object' &&
+    card !== null &&
+    'consumableType' in card &&
+    card.consumableType === 'tarotCard'
+  )
+}
+
+export const isTarotCardDefinition = (card: unknown): card is TarotCardDefinition => {
+  return typeof card === 'object' && card !== null && 'tarotType' in card
+}
+
+export const isCelestialCardDefinition = (card: unknown): card is CelestialCardDefinition => {
+  return typeof card === 'object' && card !== null && 'handId' in card
+}

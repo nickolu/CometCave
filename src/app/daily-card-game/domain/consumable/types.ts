@@ -10,6 +10,7 @@ export interface ConsumableDefinition {
   description: string
   isPlayable: (game: GameState) => boolean
   effects: Effect[]
+  price: number
 }
 export interface CelestialCardDefinition extends ConsumableDefinition {
   type: 'celestialCard'

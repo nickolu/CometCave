@@ -1,5 +1,5 @@
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { getDefaultCelestialCardState } from '@/app/daily-card-game/domain/consumable/utils'
+import { initializeCelestialCard } from '@/app/daily-card-game/domain/consumable/utils'
 import { initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
 import {
   fiveOfAKindHand,
@@ -16,44 +16,24 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
-import type { PokerHandDefinition, PokerHandState } from '@/app/daily-card-game/domain/hand/types'
+import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
-import type { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
 import { GameState } from './types'
 
-const getDefaultHandState = (hand: PokerHandDefinition): PokerHandState => ({
-  timesPlayed: 0,
-  level: 0,
-  handId: hand.id,
-})
-
-const getDefaultJokerState = (joker: JokerDefinition): JokerState => ({
-  id: uuid(),
-  jokerId: joker.id,
-  flags: {
-    isRentable: false,
-    isPerishable: false,
-    isEternal: false,
-    isHolographic: false,
-    isFoil: false,
-    isNegative: false,
-    faceUp: false,
-  },
-})
-
 export const defaultGameState: GameState = {
   consumables: [
-    getDefaultCelestialCardState(celestialCards['highCard']),
-    getDefaultCelestialCardState(celestialCards['pair']),
+    initializeCelestialCard(celestialCards['highCard']),
+    initializeCelestialCard(celestialCards['pair']),
   ],
   consumablesUsed: [],
   discardsPlayed: 0,
   fullDeck: initialDeckStates.pokerDeck,
   gamePhase: 'mainMenu',
   gamePlayState: {
+    timesRerolled: 0,
     cardsToScore: [],
     dealtCards: [],
     isScoring: false,
@@ -70,38 +50,39 @@ export const defaultGameState: GameState = {
   },
   gameSeed: 'default',
   handsPlayed: 0,
-  jokers: [
-    getDefaultJokerState(jokers['jokerStencil']),
-    getDefaultJokerState(jokers['fourFingersJoker']),
-  ],
+  jokers: [initializeJoker(jokers['jokerStencil']), initializeJoker(jokers['fourFingersJoker'])],
   maxConsumables: 2,
   maxJokers: 5,
   maxHands: 4,
   maxDiscards: 3,
   money: 0,
   pokerHands: {
-    highCard: getDefaultHandState(highCardHand),
-    pair: getDefaultHandState(pairHand),
-    twoPair: getDefaultHandState(twoPairHand),
-    threeOfAKind: getDefaultHandState(threeOfAKindHand),
-    straight: getDefaultHandState(straightHand),
-    flush: getDefaultHandState(flushHand),
-    fullHouse: getDefaultHandState(fullHouseHand),
-    fourOfAKind: getDefaultHandState(fourOfAKindHand),
-    straightFlush: getDefaultHandState(straightFlushHand),
-    royalFlush: getDefaultHandState(royalFlushHand),
-    flushHouse: getDefaultHandState(flushHouseHand),
-    fiveOfAKind: getDefaultHandState(fiveOfAKindHand),
-    flushFive: getDefaultHandState(flushFiveHand),
+    highCard: initializeHand(highCardHand),
+    pair: initializeHand(pairHand),
+    twoPair: initializeHand(twoPairHand),
+    threeOfAKind: initializeHand(threeOfAKindHand),
+    straight: initializeHand(straightHand),
+    flush: initializeHand(flushHand),
+    fullHouse: initializeHand(fullHouseHand),
+    fourOfAKind: initializeHand(fourOfAKindHand),
+    straightFlush: initializeHand(straightFlushHand),
+    royalFlush: initializeHand(royalFlushHand),
+    flushHouse: initializeHand(flushHouseHand),
+    fiveOfAKind: initializeHand(fiveOfAKindHand),
+    flushFive: initializeHand(flushFiveHand),
   },
   rounds,
   roundIndex: 1,
   shopState: {
+    selectedCardId: null,
     openPackState: null,
     cardsForSale: [],
     packsForSale: [],
     rerollsUsed: 0,
     rerollPrice: 0,
+    celestialMultiplier: 1,
+    playingCardMultiplier: 0,
+    tarotCardMultiplier: 1,
     modifiers: {
       maxCardsForSale: 0,
       maxVouchersForSale: 0,

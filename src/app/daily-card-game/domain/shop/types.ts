@@ -7,11 +7,15 @@ import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card
 
 export interface ShopState {
   cardsForSale: BuyableCard[]
-  packsForSale: Pack[]
-  openPackState: OpenPackState | null
-  rerollsUsed: number
-  rerollPrice: number
   modifiers: ShopStateModifiers
+  openPackState: OpenPackState | null
+  packsForSale: Pack[]
+  rerollPrice: number
+  rerollsUsed: number
+  selectedCardId: string | null
+  celestialMultiplier: number
+  playingCardMultiplier: number
+  tarotCardMultiplier: number
 }
 
 export interface OpenPackState {

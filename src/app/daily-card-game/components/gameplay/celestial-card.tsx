@@ -1,28 +1,25 @@
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
 import { CelestialCardState } from '@/app/daily-card-game/domain/consumable/types'
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 export const CelestialCard = ({
   celestialCard,
   isSelected,
+  onClick,
 }: {
   celestialCard: CelestialCardState
   isSelected?: boolean
+  onClick?: (isSelected: boolean, id: string) => void
 }) => {
   return (
     <Card
       className={cn(
-        isSelected ? 'ring-2 ring-space-purple -mt-2' : '',
+        isSelected ? 'ring-2 ring-space-purple transform -translate-y-2' : '',
         'h-36 w-24 transform transition-all duration-300 cursor-pointer'
       )}
       onClick={() => {
-        if (isSelected) {
-          eventEmitter.emit({ type: 'CONSUMABLE_DESELECTED', id: celestialCard.id })
-        } else {
-          eventEmitter.emit({ type: 'CONSUMABLE_SELECTED', id: celestialCard.id })
-        }
+        onClick?.(isSelected ?? false, celestialCard.id)
       }}
     >
       <div className={'px-1 h-full '}>

@@ -6,6 +6,7 @@ import { findLastTarotOrCelestialCard } from './utils'
 
 const theFool: TarotCardDefinition = {
   type: 'tarotCard',
+  price: 2,
   tarotType: 'theFool',
   name: 'The Fool',
   description: 'Creates a copy of the last Tarot or Planet card used.',
@@ -45,6 +46,7 @@ const theMagician: TarotCardDefinition = {
   type: 'tarotCard',
   tarotType: 'theMagician',
   name: 'The Magician',
+  price: 2,
   description: 'Enhances 2 selected cards to Lucky Cards',
   isPlayable: (game: GameState) => {
     const numberOfSelectedCards = game.gamePlayState.selectedCardIds.length
@@ -86,6 +88,7 @@ const theMagician: TarotCardDefinition = {
 }
 
 const notImplemented: TarotCardDefinition = {
+  price: 2,
   type: 'tarotCard',
   tarotType: 'notImplemented',
   name: 'Not Implemented',

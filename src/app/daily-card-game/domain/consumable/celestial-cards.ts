@@ -23,6 +23,7 @@ const getDefaultCelestialCardDefinition = (
   handId: CelestialCardDefinition['handId']
 ): CelestialCardDefinition => {
   return {
+    price: 2,
     type: 'celestialCard',
     handId,
     name: handIdToName[handId],

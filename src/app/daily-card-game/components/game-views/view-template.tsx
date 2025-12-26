@@ -5,7 +5,13 @@ import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
-export function ViewTemplate({ children }: { children: React.ReactNode }) {
+export function ViewTemplate({
+  sidebarContent,
+  children,
+}: {
+  sidebarContent?: React.ReactNode
+  children: React.ReactNode
+}) {
   const { game } = useGameState()
   const currentBlind = getInProgressBlind(game)
   return (
@@ -13,9 +19,10 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
       <div className="flex">
         {/* Sidebar */}
         <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
+          {sidebarContent}
           <Button
             onClick={() => {
-              eventEmitter.emit({ type: 'BLIND_SELECTION_BACK_TO_MENU' })
+              eventEmitter.emit({ type: 'BACK_TO_MAIN_MENU' })
             }}
           >
             Back to Main Menu
