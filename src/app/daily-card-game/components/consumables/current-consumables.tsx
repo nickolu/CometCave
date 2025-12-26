@@ -58,8 +58,9 @@ export const CurrentConsumables = () => {
           )
         )}
       </div>
-      <div>
-        {selectedConsumable && (
+
+      {selectedConsumable && (
+        <div className="flex gap-2">
           <Button
             disabled={!selectedConsumableDefinition?.isPlayable(game)}
             onClick={() => {
@@ -72,8 +73,15 @@ export const CurrentConsumables = () => {
           >
             Use
           </Button>
-        )}
-      </div>
+          <Button
+            onClick={() => {
+              eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })
+            }}
+          >
+            Sell (${selectedConsumableDefinition?.price})
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

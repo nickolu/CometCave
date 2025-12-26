@@ -17,6 +17,7 @@ export type GameEvent =
   | CelestialCardUsedEvent
   | ConsumableDeselectedEvent
   | ConsumableSelectedEvent
+  | ConsumableSoldEvent
   | DiscardSelectedCardsEvent
   | DisplayJokersEvent
   | HandDealtEvent
@@ -83,6 +84,9 @@ export type ConsumableSelectedEvent = {
 export type ConsumableDeselectedEvent = {
   type: 'CONSUMABLE_DESELECTED'
   id: string
+}
+export type ConsumableSoldEvent = {
+  type: 'CONSUMABLE_SOLD'
 }
 export type DiscardSelectedCardsEvent = {
   type: 'DISCARD_SELECTED_CARDS'

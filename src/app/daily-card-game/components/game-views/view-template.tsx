@@ -36,7 +36,7 @@ export function ViewTemplate({
               <strong>Round:</strong> {game.roundIndex}/{game.rounds.length}
             </div>
             <div>
-              <strong>Current Money:</strong> {game.money}
+              <strong>Current Money:</strong> ${game.money}
             </div>
             <div>
               <strong>Hands Played:</strong> {game.handsPlayed}

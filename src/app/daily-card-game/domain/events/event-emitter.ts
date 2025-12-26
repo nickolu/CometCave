@@ -10,6 +10,7 @@ class EventEmitter {
     BOSS_BLIND_SELECTED: [],
     CONSUMABLE_DESELECTED: [],
     CONSUMABLE_SELECTED: [],
+    CONSUMABLE_SOLD: [],
     CARD_SCORED: [],
     CARD_SELECTED: [],
     CARD_DESELECTED: [],

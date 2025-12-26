@@ -1,5 +1,7 @@
 import { produce } from 'immer'
 
+import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
+import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
   isCelestialCardState,
   isTarotCardState,
@@ -441,7 +443,21 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         useTarotCard(draft, event)
         return
       }
-
+      case 'CONSUMABLE_SOLD': {
+        const selectedConsumable = game.gamePlayState.selectedConsumable
+        const selectedConsumableDefinition = isCelestialCardState(selectedConsumable)
+          ? celestialCards[selectedConsumable.handId]
+          : isTarotCardState(selectedConsumable)
+            ? tarotCards[selectedConsumable.tarotType]
+            : undefined
+        if (!selectedConsumableDefinition) return
+        draft.consumables = draft.consumables.filter(
+          consumable => consumable.id !== selectedConsumable?.id
+        )
+        draft.money += selectedConsumableDefinition.price
+        draft.gamePlayState.selectedConsumable = undefined
+        return
+      }
       /*
        * NO-OP EVENTS
        */
