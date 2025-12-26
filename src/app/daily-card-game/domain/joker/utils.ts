@@ -59,7 +59,7 @@ export const bonusOnHandPlayed = ({
 }
 
 export const isJokerState = (card: unknown): card is JokerState => {
-  return typeof card === 'object' && card !== null && 'id' in card
+  return typeof card === 'object' && card !== null && 'jokerId' in card
 }
 
 export const isJokerDefinition = (card: unknown): card is JokerDefinition => {

@@ -1,4 +1,9 @@
-import type { Effect } from '@/app/daily-card-game/domain/events/types'
+import { Draft } from 'immer'
+
+import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
+import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
+import type { Effect, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { mulberry32, xmur3 } from '@/app/daily-card-game/domain/randomness'
@@ -59,4 +64,64 @@ export function randomizeDeck({
   const rng = mulberry32(seedFn())
 
   return shuffleDeck(deck, rng)
+}
+
+export function useCelestialCard(draft: Draft<GameState>, event: GameEvent): void {
+  const celestialCard = draft.gamePlayState.selectedConsumable
+  if (!celestialCard) return
+  if (celestialCard.consumableType !== 'celestialCard') return
+  draft.consumablesUsed.push(celestialCard)
+  draft.gamePlayState.selectedConsumable = undefined
+  // remove tarot card from consumables
+  draft.consumables = draft.consumables.filter(consumable => consumable.id !== celestialCard.id)
+  // remove tarot card from pack
+  if (draft.shopState.openPackState) {
+    draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+      card => card.card.id !== celestialCard.id
+    )
+  }
+  dispatchEffects(
+    event,
+    {
+      event,
+      game: draft as unknown as GameState,
+      score: draft.gamePlayState.score,
+      playedCards: [],
+      round: draft.rounds[draft.roundIndex],
+      bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+      jokers: draft.jokers,
+    },
+    celestialCards[celestialCard.handId].effects
+  )
+}
+
+export function useTarotCard(draft: Draft<GameState>, event: GameEvent): void {
+  const tarotCard = draft.gamePlayState.selectedConsumable
+  if (!tarotCard) return
+  if (tarotCard.consumableType !== 'tarotCard') return
+  if (tarotCard.tarotType === 'notImplemented') return
+  draft.consumablesUsed.push(tarotCard)
+  draft.gamePlayState.selectedConsumable = undefined
+  // remove tarot card from consumables
+  draft.consumables = draft.consumables.filter(consumable => consumable.id !== tarotCard.id)
+  // remove tarot card from pack
+  if (draft.shopState.openPackState) {
+    draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+      card => card.card.id !== tarotCard.id
+    )
+  }
+
+  dispatchEffects(
+    event,
+    {
+      event,
+      game: draft as unknown as GameState,
+      score: draft.gamePlayState.score,
+      playedCards: [],
+      round: draft.rounds[draft.roundIndex],
+      bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+      jokers: draft.jokers,
+    },
+    tarotCards[tarotCard.tarotType].effects
+  )
 }

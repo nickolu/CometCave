@@ -1,13 +1,17 @@
 import { produce } from 'immer'
 
-import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import {
+  isCelestialCardState,
+  isTarotCardState,
+} from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { findHighestPriorityHand, pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
+import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
@@ -15,7 +19,13 @@ import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 
 import { HAND_SIZE, MAX_SELECTED_CARDS } from './constants'
 import { handleHandScoringEnd } from './handlers'
-import { collectEffects, getBlindDefinition, randomizeDeck } from './utils'
+import {
+  collectEffects,
+  getBlindDefinition,
+  randomizeDeck,
+  useCelestialCard,
+  useTarotCard,
+} from './utils'
 
 import type { GameState } from './types'
 
@@ -28,6 +38,10 @@ const blindIndices: Record<BlindState['type'], number> = {
 export function reduceGame(game: GameState, event: GameEvent): GameState {
   return produce(game, draft => {
     switch (event.type) {
+      /*
+       * NAVIGATION EVENTS
+       */
+
       case 'GAME_START': {
         draft.gamePhase = 'blindSelection'
         const ctx: EffectContext = {
@@ -42,6 +56,19 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
+      case 'BACK_TO_MAIN_MENU': {
+        draft.gamePhase = 'mainMenu'
+        return
+      }
+      case 'DISPLAY_JOKERS': {
+        draft.gamePhase = 'jokers'
+        return
+      }
+
+      /*
+       * BLIND SELECTION EVENTS
+       */
+
       case 'SMALL_BLIND_SELECTED': {
         const round = draft.rounds[draft.roundIndex]
         round.smallBlind.status = 'inProgress'
@@ -75,6 +102,21 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         })
         return
       }
+      case 'BIG_BLIND_SKIPPED': {
+        const round = draft.rounds[draft.roundIndex]
+        round.bigBlind.status = 'skipped'
+        return
+      }
+      case 'SMALL_BLIND_SKIPPED': {
+        const round = draft.rounds[draft.roundIndex]
+        round.smallBlind.status = 'skipped'
+        return
+      }
+
+      /*
+       * GAMEPLAY EVENTS
+       */
+
       case 'HAND_DEALT': {
         if (draft.gamePlayState.dealtCards.length) return
         draft.gamePlayState.dealtCards = draft.gamePlayState.remainingDeck.slice(0, HAND_SIZE)
@@ -298,6 +340,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePlayState.remainingDiscards = draft.maxDiscards
         return
       }
+
+      /*
+       * SHOP EVENTS
+       */
+
       case 'SHOP_OPEN': {
         draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
         return
@@ -314,43 +361,27 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePhase = 'shop'
         return
       }
-      case 'BACK_TO_MAIN_MENU': {
-        draft.gamePhase = 'mainMenu'
-        return
-      }
-      case 'DISPLAY_JOKERS': {
-        draft.gamePhase = 'jokers'
-        return
-      }
-      // no-ops for now
-      case 'BLIND_REWARDS_START': {
-        return
-      }
-      case 'ROUND_END': {
-        return
-      }
-      case 'BIG_BLIND_SKIPPED': {
-        const round = draft.rounds[draft.roundIndex]
-        round.bigBlind.status = 'skipped'
-        return
-      }
-      case 'SMALL_BLIND_SKIPPED': {
-        const round = draft.rounds[draft.roundIndex]
-        round.smallBlind.status = 'skipped'
-        return
-      }
-      case 'JOKER_ADDED': {
-        return
-      }
-      case 'JOKER_REMOVED': {
-        return
-      }
       case 'SHOP_BUY_CARD': {
         const selectedCard = draft.shopState.cardsForSale.find(
           card => card.card.id === draft.shopState.selectedCardId
         )
+
         if (!selectedCard) return
         draft.money -= selectedCard.price
+        if (isJokerState(selectedCard.card)) {
+          draft.jokers.push(selectedCard.card)
+        } else if (isPlayingCardState(selectedCard.card)) {
+          draft.gamePlayState.dealtCards.push(selectedCard.card)
+        } else if (isCelestialCardState(selectedCard.card)) {
+          draft.consumables.push(selectedCard.card)
+        } else if (isTarotCardState(selectedCard.card)) {
+          draft.consumables.push(selectedCard.card)
+        } else {
+          throw new Error(`Unknown card type: ${selectedCard.card}`)
+        }
+        draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
+          card => card.card.id !== selectedCard.card.id
+        )
         return
       }
       case 'SHOP_BUY_AND_USE_CARD': {
@@ -359,6 +390,14 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         )
         if (!selectedCard) return
         draft.money -= selectedCard.price
+        if (isTarotCardState(selectedCard.card)) {
+          useTarotCard(draft, event)
+        } else if (isCelestialCardState(selectedCard.card)) {
+          useCelestialCard(draft, event)
+        }
+        draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
+          card => card.card.id !== selectedCard.card.id
+        )
         return
       }
       case 'SHOP_SELECT_CARD': {
@@ -373,6 +412,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.shopState.selectedCardId = null
         return
       }
+
+      /*
+       * CONSUMABLE EVENTS
+       */
+
       case 'CONSUMABLE_SELECTED': {
         const id = event.id
         const gamePlayState = draft.gamePlayState
@@ -390,67 +434,31 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'CELESTIAL_CARD_USED': {
-        const celestialCard = draft.gamePlayState.selectedConsumable
-        if (!celestialCard) return
-        if (celestialCard.consumableType !== 'celestialCard') return
-        draft.consumablesUsed.push(celestialCard)
-        draft.gamePlayState.selectedConsumable = undefined
-        // remove tarot card from consumables
-        draft.consumables = draft.consumables.filter(
-          consumable => consumable.id !== celestialCard.id
-        )
-        // remove tarot card from pack
-        if (draft.shopState.openPackState) {
-          draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-            card => card.card.id !== celestialCard.id
-          )
-        }
-        dispatchEffects(
-          event,
-          {
-            event,
-            game: draft as unknown as GameState,
-            score: draft.gamePlayState.score,
-            playedCards: [],
-            round: draft.rounds[draft.roundIndex],
-            bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-            jokers: draft.jokers,
-          },
-          celestialCards[celestialCard.handId].effects
-        )
+        useCelestialCard(draft, event)
         return
       }
       case 'TAROT_CARD_USED': {
-        const tarotCard = draft.gamePlayState.selectedConsumable
-        if (!tarotCard) return
-        if (tarotCard.consumableType !== 'tarotCard') return
-        if (tarotCard.tarotType === 'notImplemented') return
-        draft.consumablesUsed.push(tarotCard)
-        draft.gamePlayState.selectedConsumable = undefined
-        // remove tarot card from consumables
-        draft.consumables = draft.consumables.filter(consumable => consumable.id !== tarotCard.id)
-        // remove tarot card from pack
-        if (draft.shopState.openPackState) {
-          draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-            card => card.card.id !== tarotCard.id
-          )
-        }
-
-        dispatchEffects(
-          event,
-          {
-            event,
-            game: draft as unknown as GameState,
-            score: draft.gamePlayState.score,
-            playedCards: [],
-            round: draft.rounds[draft.roundIndex],
-            bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-            jokers: draft.jokers,
-          },
-          tarotCards[tarotCard.tarotType].effects
-        )
+        useTarotCard(draft, event)
         return
       }
+
+      /*
+       * NO-OP EVENTS
+       */
+
+      case 'BLIND_REWARDS_START': {
+        return
+      }
+      case 'ROUND_END': {
+        return
+      }
+      case 'JOKER_ADDED': {
+        return
+      }
+      case 'JOKER_REMOVED': {
+        return
+      }
+
       default: {
         // Exhaustiveness guard in case GameEvent grows
         const _exhaustive: never = event
