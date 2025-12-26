@@ -394,6 +394,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         if (!selectedCard) return
         draft.money -= selectedCard.price
+        const didAddJoker = isJokerState(selectedCard.card)
         if (isJokerState(selectedCard.card)) {
           draft.jokers.push(selectedCard.card)
         } else if (isPlayingCardState(selectedCard.card)) {
@@ -405,6 +406,31 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         } else {
           throw new Error(`Unknown card type: ${selectedCard.card}`)
         }
+
+        // Run effects before removing the card from `cardsForSale` so effects can inspect the
+        // selected shop card via `selectedCardId` + `cardsForSale`.
+        const ctx: EffectContext = {
+          event,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
+
+        // When a joker is purchased, also emit a more semantic lifecycle event so jokers can
+        // react without needing to inspect shop selection state.
+        if (didAddJoker) {
+          const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
+          dispatchEffects(
+            jokerAddedEvent,
+            { ...ctx, event: jokerAddedEvent },
+            collectEffects(ctx.game)
+          )
+        }
+
         draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
           card => card.card.id !== selectedCard.card.id
         )

@@ -9,7 +9,7 @@ import {
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { JokerDefinition } from './types'
-import { bonusOnCardScored, bonusOnHandPlayed } from './utils'
+import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
 
 export const jokerJoker: JokerDefinition = {
   id: 'jokerJoker',
@@ -429,10 +429,34 @@ export const fourFingersJoker: JokerDefinition = {
       },
     },
     {
+      event: { type: 'SHOP_BUY_CARD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        console.log('SHOP_BUY_CARD EFFECT CALLED for four fingers joker')
+        const selectedCard = ctx.game.shopState.cardsForSale.find(
+          card => card.card.id === ctx.game.shopState.selectedCardId
+        )
+        console.log('selectedCard', selectedCard)
+        if (!selectedCard) return
+        if (
+          isJokerState(selectedCard.card) &&
+          selectedCard.card.jokerId === jokers.fourFingersJoker.id
+        ) {
+          console.log(
+            'four fingers joker bought, setting numberOfCardsRequiredForFlushAndStraight to 4'
+          )
+          ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
+        } else {
+          console.log(
+            'four fingers joker not bought, not setting numberOfCardsRequiredForFlushAndStraight'
+          )
+        }
+      },
+    },
+    {
       event: { type: 'JOKER_SOLD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        console.log('JOKER_SOLD EFFECT CALLED')
         // don't modify if there's another four fingers joker in play
         if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
           console.log('removing four fingers joker effect')
@@ -444,7 +468,6 @@ export const fourFingersJoker: JokerDefinition = {
       event: { type: 'JOKER_REMOVED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        console.log('JOKER_REMOVED EFFECT CALLED')
         if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
           console.log('removing four fingers joker effect')
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5

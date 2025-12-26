@@ -1,5 +1,3 @@
-import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { initializeCelestialCard } from '@/app/daily-card-game/domain/consumable/utils'
 import { initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
 import {
   fiveOfAKindHand,
@@ -17,17 +15,12 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
-import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
-import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
 import { GameState } from './types'
 
 export const defaultGameState: GameState = {
-  consumables: [
-    initializeCelestialCard(celestialCards['highCard']),
-    initializeCelestialCard(celestialCards['pair']),
-  ],
+  consumables: [],
   consumablesUsed: [],
   discardsPlayed: 0,
   fullDeck: initialDeckStates.pokerDeck,
@@ -50,7 +43,7 @@ export const defaultGameState: GameState = {
   },
   gameSeed: 'default',
   handsPlayed: 0,
-  jokers: [initializeJoker(jokers['jokerStencil']), initializeJoker(jokers['fourFingersJoker'])],
+  jokers: [],
   maxConsumables: 2,
   maxJokers: 5,
   maxHands: 4,
@@ -101,6 +94,7 @@ export const defaultGameState: GameState = {
   staticRules: {
     numberOfCardsRequiredForFlushAndStraight: 5,
     areAllCardsFaceCards: false,
+    allowDuplicateJokersInShop: false,
   },
   totalScore: 0,
 }

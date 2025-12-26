@@ -96,37 +96,50 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
   const allCelestialCards = Object.values(celestialCards)
   const allJokers = Object.values(jokers)
   const allPlayingCards = Object.values(playingCards)
-  const allBuyableCards: (
+
+  let allBuyableCardDefinitions: (
     | TarotCardDefinition
     | CelestialCardDefinition
     | JokerDefinition
     | PlayingCardDefinition
-  )[] = [...allJokers] // jokers never increase in availability
+  )[] = [...allJokers] // jokers never increase in availability so we can initialize them first
 
   _.times(game.shopState.celestialMultiplier, () => {
-    allBuyableCards.push(...allCelestialCards)
+    allBuyableCardDefinitions.push(...allCelestialCards)
   })
 
   _.times(game.shopState.tarotCardMultiplier, () => {
-    allBuyableCards.push(...allTarotCards.filter(card => card.tarotType !== 'notImplemented'))
+    allBuyableCardDefinitions.push(
+      ...allTarotCards.filter(card => card.tarotType !== 'notImplemented')
+    )
   })
 
   _.times(game.shopState.playingCardMultiplier, () => {
-    allBuyableCards.push(...allPlayingCards)
+    allBuyableCardDefinitions.push(...allPlayingCards)
   })
 
   const seed =
     game.gameSeed + game.roundIndex.toString() + game.gamePlayState.timesRerolled.toString()
 
+  if (!game.staticRules.allowDuplicateJokersInShop) {
+    const ownedJokers = game.jokers.map(joker => joker.jokerId)
+    allBuyableCardDefinitions = allBuyableCardDefinitions.filter(card => {
+      if (isJokerDefinition(card)) {
+        return !ownedJokers.includes(card.id)
+      }
+      return true
+    })
+  }
+
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
-    max: allBuyableCards.length - 1,
+    max: allBuyableCardDefinitions.length - 1,
     numberOfNumbers: numberOfCards,
   })
 
   return randomCardIndices.map(index => {
-    const card = allBuyableCards[index]
+    const card = allBuyableCardDefinitions[index]
     const buyableCard = initializeBuyableCard(card)
     if (!buyableCard) throw new Error('Failed to get card for shop: ' + JSON.stringify(card))
     return buyableCard
