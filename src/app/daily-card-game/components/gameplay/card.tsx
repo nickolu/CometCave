@@ -1,4 +1,3 @@
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { Card as CardUI } from '@/components/ui/card'

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import { defaultGameState } from '@/app/daily-card-game/domain/game/default-game-state'
 import { reduceGame } from '@/app/daily-card-game/domain/game/reduce-game'
+import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 
@@ -32,7 +32,10 @@ describe('daily-card-game joker sold effects', () => {
 
   it('Four Fingers does not reset staticRules if another Four Fingers remains after selling one', () => {
     const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.fourFingersJoker), initializeJoker(jokers.fourFingersJoker)]
+    game.jokers = [
+      initializeJoker(jokers.fourFingersJoker),
+      initializeJoker(jokers.fourFingersJoker),
+    ]
     game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
 
     const started = reduceGame(game, { type: 'GAME_START' })
@@ -52,5 +55,3 @@ describe('daily-card-game joker sold effects', () => {
     expect(afterSale.staticRules.numberOfCardsRequiredForFlushAndStraight).toBe(4)
   })
 })
-
-
