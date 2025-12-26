@@ -66,24 +66,74 @@ export const findAllStraights = (
   cards: PlayingCardState[],
   minLength = 5
 ): PlayingCardState[][] => {
-  const straights: PlayingCardState[][] = []
+  if (cards.length < minLength) return []
 
-  for (let i = 0; i < cards.length - minLength + 1; i++) {
-    let isStraight = true
-    for (let j = i; j < i + minLength - 1; j++) {
-      if (
-        cardValuePriority[playingCards[cards[j].playingCardId].value] + 1 !==
-        cardValuePriority[playingCards[cards[j + 1].playingCardId].value]
-      ) {
-        isStraight = false
-        break
+  type Priority = number
+
+  const getPriority = (card: PlayingCardState): Priority =>
+    cardValuePriority[playingCards[card.playingCardId].value]
+
+  const isBetterSameValueCard = (a: PlayingCardState, b: PlayingCardState): boolean => {
+    // Prefer the card with the higher suitPriority for deterministic selection.
+    return (
+      suitPriority[playingCards[a.playingCardId].suit] >
+      suitPriority[playingCards[b.playingCardId].suit]
+    )
+  }
+
+  const buildBestCardByPriority = (input: PlayingCardState[]): Map<Priority, PlayingCardState> => {
+    const best = new Map<Priority, PlayingCardState>()
+    for (const card of input) {
+      const pr = getPriority(card)
+      const existing = best.get(pr)
+      if (!existing || isBetterSameValueCard(card, existing)) {
+        best.set(pr, card)
       }
     }
-    if (isStraight) {
-      straights.push(cards.slice(i, i + minLength))
+
+    // Ace can also be used as "low" in A-2-3-4-5, so we mirror it at priority 0.
+    const acePr = cardValuePriority.A
+    const aceCard = best.get(acePr)
+    if (aceCard) best.set(0, aceCard)
+
+    return best
+  }
+
+  const bestCardByPriority = buildBestCardByPriority(cards)
+  const prioritiesAsc = Array.from(bestCardByPriority.keys()).sort((a, b) => a - b)
+
+  // Collect all consecutive runs, then take sliding windows of `minLength`.
+  const found: Array<{ high: Priority; cards: PlayingCardState[] }> = []
+
+  const pushWindowsForRun = (run: Priority[]) => {
+    if (run.length < minLength) return
+    for (let start = 0; start <= run.length - minLength; start++) {
+      const window = run.slice(start, start + minLength)
+      const straightCards = window.map(pr => bestCardByPriority.get(pr)!).filter(Boolean)
+      found.push({ high: window[window.length - 1], cards: straightCards })
     }
   }
-  return straights
+
+  let currentRun: Priority[] = []
+  for (const pr of prioritiesAsc) {
+    if (currentRun.length === 0) {
+      currentRun = [pr]
+      continue
+    }
+
+    const prev = currentRun[currentRun.length - 1]
+    if (pr === prev + 1) {
+      currentRun.push(pr)
+    } else {
+      pushWindowsForRun(currentRun)
+      currentRun = [pr]
+    }
+  }
+  pushWindowsForRun(currentRun)
+
+  // Highest straight first (important because callers use [0]).
+  found.sort((a, b) => b.high - a.high)
+  return found.map(s => s.cards)
 }
 
 export const rankThreeOfAKindsByValueAndSuit = (

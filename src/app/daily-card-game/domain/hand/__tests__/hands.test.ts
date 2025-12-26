@@ -108,15 +108,30 @@ describe('daily-card-game hand checkers', () => {
     expect(trips).toEqual(trips4)
   })
 
-  it('checkHandForStraight requires cards to be in sequential value order', () => {
-    const straight = [c('2_hearts'), c('3_clubs'), c('4_spades'), c('5_diamonds'), c('6_hearts')]
+  it('checkHandForStraight detects a straight regardless of selection order', () => {
+    const expectedStraight = [
+      c('2_hearts'),
+      c('3_clubs'),
+      c('4_spades'),
+      c('5_diamonds'),
+      c('6_hearts'),
+    ]
 
-    const [isStraight, straightCards] = checkHandForStraight(straight, {
+    const outOfOrderSelection = [
+      expectedStraight[2], // 4
+      expectedStraight[0], // 2
+      expectedStraight[1], // 3
+      expectedStraight[4], // 6
+      expectedStraight[3], // 5
+    ]
+
+    const [isStraight, straightCards] = checkHandForStraight(outOfOrderSelection, {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
     })
     expect(isStraight).toBe(true)
-    expect(straightCards).toEqual(straight)
+    // We return the straight cards in ascending value order.
+    expect(straightCards).toEqual(expectedStraight)
 
     const [isNotStraight, notStraightCards] = checkHandForStraight(
       [c('2_hearts'), c('3_clubs'), c('5_spades'), c('6_diamonds'), c('7_hearts')],
@@ -124,6 +139,52 @@ describe('daily-card-game hand checkers', () => {
     )
     expect(isNotStraight).toBe(false)
     expect(notStraightCards).toEqual([])
+  })
+
+  it('checkHandForStraight detects straights that include face cards (10-J-Q-K-A)', () => {
+    const expectedStraight = [
+      c('10_hearts'),
+      c('J_clubs'),
+      c('Q_spades'),
+      c('K_diamonds'),
+      c('A_hearts'),
+    ]
+
+    const [isStraight, straightCards] = checkHandForStraight(
+      [
+        expectedStraight[4],
+        expectedStraight[0],
+        expectedStraight[3],
+        expectedStraight[2],
+        expectedStraight[1],
+      ],
+      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
+    )
+    expect(isStraight).toBe(true)
+    expect(straightCards).toEqual(expectedStraight)
+  })
+
+  it('checkHandForStraight treats Ace as 1 for A-2-3-4-5', () => {
+    const expectedStraight = [
+      c('A_hearts'),
+      c('2_clubs'),
+      c('3_spades'),
+      c('4_diamonds'),
+      c('5_hearts'),
+    ]
+
+    const [isStraight, straightCards] = checkHandForStraight(
+      [
+        expectedStraight[3],
+        expectedStraight[0],
+        expectedStraight[4],
+        expectedStraight[2],
+        expectedStraight[1],
+      ],
+      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
+    )
+    expect(isStraight).toBe(true)
+    expect(straightCards).toEqual(expectedStraight)
   })
 
   it('checkHandForFlush checks the suit of the first ranked card and returns the first N of that suit', () => {
