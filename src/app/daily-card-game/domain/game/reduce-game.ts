@@ -27,8 +27,10 @@ import {
   collectEffects,
   getBlindDefinition,
   randomizeDeck,
-  useCelestialCard,
-  useTarotCard,
+  useBuyableCelestialCard,
+  useBuyableTarotCard,
+  useConsumableCelestialCard,
+  useConsumableTarotCard,
 } from './utils'
 
 import type { GameState } from './types'
@@ -307,10 +309,13 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         gamePlayState.remainingHands -= 1
 
-        const playedHandLevel = draft.pokerHands[playedHand].level
+        const playedHandLevel = draft.pokerHands[playedHand].level - 1
 
         // ensure hand is no longer secret once played
         draft.pokerHands[playedHand].isSecret = false
+
+        // increment the times the hand has been played
+        draft.pokerHands[playedHand].timesPlayed += 1
 
         const handMult =
           pokerHands[playedHand].baseMult +
@@ -354,8 +359,31 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
-      case 'HAND_SCORING_END': {
+      case 'HAND_SCORING_DONE_CARD_SCORING': {
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: draft.gamePlayState.score,
+          playedCards: draft.gamePlayState.selectedHand?.[1],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
+        return
+      }
+      case 'HAND_SCORING_FINALIZE': {
         handleHandScoringEnd(draft, event)
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: draft.gamePlayState.score,
+          playedCards: draft.gamePlayState.selectedHand?.[1],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
       case 'BLIND_REWARDS_END': {
@@ -447,18 +475,18 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'SHOP_BUY_AND_USE_CARD': {
-        const selectedCard = draft.shopState.cardsForSale.find(
+        const selectedCardForSale = draft.shopState.cardsForSale.find(
           card => card.card.id === draft.shopState.selectedCardId
         )
-        if (!selectedCard) return
-        draft.money -= selectedCard.price
-        if (isTarotCardState(selectedCard.card)) {
-          useTarotCard(draft, event)
-        } else if (isCelestialCardState(selectedCard.card)) {
-          useCelestialCard(draft, event)
+        if (!selectedCardForSale) return
+        draft.money -= selectedCardForSale.price
+        if (isTarotCardState(selectedCardForSale.card)) {
+          useBuyableTarotCard(draft)
+        } else if (isCelestialCardState(selectedCardForSale.card)) {
+          useBuyableCelestialCard(draft)
         }
         draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
-          card => card.card.id !== selectedCard.card.id
+          card => card.card.id !== selectedCardForSale.card.id
         )
         return
       }
@@ -502,11 +530,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'CELESTIAL_CARD_USED': {
-        useCelestialCard(draft, event)
+        useConsumableCelestialCard(draft, event)
         return
       }
       case 'TAROT_CARD_USED': {
-        useTarotCard(draft, event)
+        useConsumableTarotCard(draft, event)
         return
       }
       case 'CONSUMABLE_SOLD': {

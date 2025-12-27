@@ -40,7 +40,9 @@ const useScoreHand = () => {
       }
 
       await sleep(750)
-      eventEmitter.emit({ type: 'HAND_SCORING_END' })
+      eventEmitter.emit({ type: 'HAND_SCORING_DONE_CARD_SCORING' })
+      await sleep(750)
+      eventEmitter.emit({ type: 'HAND_SCORING_FINALIZE' })
     } finally {
       isScoringRef.current = false
     }

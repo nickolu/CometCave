@@ -43,11 +43,9 @@ export const bonusOnHandPlayed = ({
   value: number
   source: string
 }) => {
-  const scoredHand = ctx.game.gamePlayState.selectedHand?.[1]
-  if (
-    scoredHand &&
-    scoredHand.every(card => playingCards[card.playingCardId].suit === playingCards[hand.id].suit)
-  ) {
+  const scoredHandId = ctx.game.gamePlayState.selectedHand?.[0]
+
+  if (scoredHandId === hand.id) {
     ctx.game.gamePlayState.scoringEvents.push({
       id: uuid(),
       type,

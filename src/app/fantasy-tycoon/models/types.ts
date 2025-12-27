@@ -25,7 +25,7 @@ export type {
   FantasyStoryEventSchema,
   FantasyDecisionOption,
   FantasyDecisionOptionSchema,
-  FantasyDecisionPoint,
+  FantasyDecisionPoint, 
   FantasyDecisionPointSchema,
 } from './story'
 export type { Item, ItemSchema } from './item'

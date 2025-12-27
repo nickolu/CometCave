@@ -15,9 +15,11 @@ import {
 } from '@/app/daily-card-game/domain/hand/hands'
 import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
 import { getCurrentDayAsSeedString } from '@/app/daily-card-game/domain/randomness'
-import { rounds } from '@/app/daily-card-game/domain/round/rounds'
+import { initializeRounds } from '@/app/daily-card-game/domain/round/rounds'
 
 import { GameState } from './types'
+
+const gameSeed = getCurrentDayAsSeedString()
 
 export const defaultGameState: GameState = {
   consumables: [],
@@ -40,7 +42,7 @@ export const defaultGameState: GameState = {
     },
     scoringEvents: [],
   },
-  gameSeed: getCurrentDayAsSeedString(),
+  gameSeed: gameSeed,
   handsPlayed: 0,
   jokers: [],
   maxConsumables: 2,
@@ -64,7 +66,7 @@ export const defaultGameState: GameState = {
     fiveOfAKind: initializeHand(fiveOfAKindHand),
     flushFive: initializeHand(flushFiveHand),
   },
-  rounds,
+  rounds: initializeRounds(gameSeed),
   roundIndex: 1,
   shopState: {
     selectedCardId: null,

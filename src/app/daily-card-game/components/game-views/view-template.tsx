@@ -1,7 +1,12 @@
+import { useState } from 'react'
+
+import { Hands } from '@/app/daily-card-game/components/hands/hands'
+import { Modal } from '@/app/daily-card-game/components/ui/modal'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
+import { Button } from '@/components/ui/button'
 
 export function ViewTemplate({
   sidebarContentTop,
@@ -14,6 +19,7 @@ export function ViewTemplate({
 }) {
   const { game } = useGameState()
   const currentBlind = getInProgressBlind(game)
+  const [showHands, setShowHands] = useState(false)
   return (
     <div>
       <div className="flex">
@@ -34,6 +40,14 @@ export function ViewTemplate({
             </div>
             <div>
               <strong>Hands Played:</strong> {game.handsPlayed}
+            </div>
+            <div>
+              <Button onClick={() => setShowHands(!showHands)}>Show Hands</Button>
+              {showHands && (
+                <Modal onClose={() => setShowHands(false)}>
+                  <Hands pokerHandsState={game.pokerHands} />
+                </Modal>
+              )}
             </div>
           </div>
           {currentBlind && (
