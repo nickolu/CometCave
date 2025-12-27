@@ -78,7 +78,7 @@ export function ShopView() {
             </div>
           </div>
           {selectedCard && (
-            <div className="mt-4">
+            <div className="mt-4 flex gap-2">
               <Button
                 disabled={!canAffordSelectedCard || !isRoomForSelectedCard}
                 onClick={() => {

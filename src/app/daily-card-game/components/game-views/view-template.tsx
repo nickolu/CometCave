@@ -26,7 +26,7 @@ export function ViewTemplate({
     <div>
       <div className="flex">
         {/* Sidebar */}
-        <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
+        <div id="game-sidebar" className="w-1/4 min-w-[300px] p-4 flex flex-col gap-4">
           {sidebarContentTop}
 
           <hr />

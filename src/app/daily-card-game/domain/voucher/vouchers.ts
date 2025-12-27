@@ -1,4 +1,5 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 
 import { VoucherDefinition, VoucherType } from './types'
 
@@ -12,6 +13,13 @@ export const overstock: VoucherDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.shopState.maxCardsForSale += 1
+        console.log('maxCardsForSale', ctx.game.shopState.maxCardsForSale)
+        if (ctx.game.shopState.cardsForSale.length < ctx.game.shopState.maxCardsForSale) {
+          const difference =
+            ctx.game.shopState.maxCardsForSale - ctx.game.shopState.cardsForSale.length
+          const newCards = getRandomBuyableCards(ctx.game, difference)
+          ctx.game.shopState.cardsForSale.push(...newCards)
+        }
       },
     },
   ],
@@ -541,6 +549,15 @@ export const palette: VoucherDefinition = {
   ],
   dependentVoucher: null,
 }
+
+export const implementedVouchers: VoucherType[] = [
+  'overstock',
+  'overstockPlus',
+  'clearanceSale',
+  'liquidation',
+  'hone',
+  'glowUp',
+]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
   overstock,

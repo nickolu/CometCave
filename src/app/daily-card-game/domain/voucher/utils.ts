@@ -6,7 +6,7 @@ import {
 } from '@/app/daily-card-game/domain/randomness'
 
 import { VoucherDefinition, VoucherState, VoucherType } from './types'
-import { vouchers } from './vouchers'
+import { implementedVouchers, vouchers } from './vouchers'
 
 export function initializeVoucherState(voucher: VoucherDefinition): VoucherState {
   return {
@@ -17,12 +17,12 @@ export function initializeVoucherState(voucher: VoucherDefinition): VoucherState
 
 export function getRandomVoucherType(draft: GameState): VoucherType {
   const seed = buildSeedString([draft.gameSeed, draft.roundIndex.toString()])
-  const validVoucherTypes = Object.values(vouchers).filter(voucher => {
-    return (
-      voucher.dependentVoucher === null ||
-      draft.vouchers.some(v => v.type === voucher.dependentVoucher)
-    )
+
+  const validVoucherTypes = implementedVouchers.filter(voucherType => {
+    const dependentVoucher = vouchers[voucherType].dependentVoucher
+    return dependentVoucher === null || draft.vouchers.some(v => v.type === dependentVoucher)
   })
+
   const randomNumber = getRandomNumberWithSeed(seed, 0, Object.keys(validVoucherTypes).length - 1)
-  return Object.values(validVoucherTypes)[randomNumber].type
+  return validVoucherTypes[randomNumber]
 }

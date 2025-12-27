@@ -72,7 +72,7 @@ export const defaultGameState: GameState = {
     baseRerollPrice: 5,
     cardsForSale: [],
     celestialMultiplier: 1,
-    maxCardsForSale: 0,
+    maxCardsForSale: 2,
     maxVouchersForSale: 0,
     openPackState: null,
     packsForSale: [],

@@ -3,7 +3,7 @@ import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/ty
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
-import type { VoucherType } from '@/app/daily-card-game/domain/voucher/types'
+import type { VoucherState, VoucherType } from '@/app/daily-card-game/domain/voucher/types'
 
 export type GameEvent =
   | BigBlindSelectedEvent
@@ -183,6 +183,7 @@ export interface EffectContext {
   score: ScoreState
   scoredCards?: PlayingCardState[]
   tarotCards?: TarotCardState[]
+  vouchers: VoucherState[]
 }
 
 export interface Effect {

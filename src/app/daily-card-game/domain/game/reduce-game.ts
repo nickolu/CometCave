@@ -56,6 +56,7 @@ function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerSta
     round: draft.rounds[draft.roundIndex],
     bossBlind: draft.rounds[draft.roundIndex].bossBlind,
     jokers: draft.jokers,
+    vouchers: draft.vouchers,
   }
   // Collect effects *before* removing the joker so "on sold/removed" effects that live on the
   // removed joker itself still get a chance to run. Then dispatch *after* removal so effects
@@ -91,6 +92,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
+          vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -297,6 +299,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
+          vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -361,6 +364,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
+          vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -374,6 +378,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
+          vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -388,6 +393,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
+          vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -417,7 +423,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'SHOP_OPEN': {
-        draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
+        draft.shopState.cardsForSale = getRandomBuyableCards(draft, draft.shopState.maxCardsForSale)
         return
       }
       case 'SHOP_SELECT_BLIND': {
@@ -462,6 +468,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
+          vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
 
@@ -511,16 +518,29 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'SHOP_REROLL': {
         draft.shopState.rerollsUsed += 1
-        draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
+        draft.shopState.cardsForSale = getRandomBuyableCards(draft, draft.shopState.maxCardsForSale)
         draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
         return
       }
       case 'VOUCHER_PURCHASED': {
+        console.log('VOUCHER_PURCHASED', event)
         const id = event.id
         const voucher = vouchers[id]
         if (!voucher) return
         draft.vouchers.push(initializeVoucherState(voucher))
         draft.shopState.voucher = null
+
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
 

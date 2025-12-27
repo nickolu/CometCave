@@ -16,6 +16,7 @@ export const CelestialCard = ({
       onClick={() => {
         onClick?.(isSelected ?? false, celestialCard.id)
       }}
+      isSelected={isSelected}
     >
       <div className={'px-1 h-full '}>
         <div>
