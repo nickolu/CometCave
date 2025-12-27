@@ -3,6 +3,7 @@ import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/ty
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
+import type { VoucherType } from '@/app/daily-card-game/domain/voucher/types'
 
 export type GameEvent =
   | BigBlindSelectedEvent
@@ -43,6 +44,7 @@ export type GameEvent =
   | ShopBuyCardEvent
   | ShopBuyAndUseCardEvent
   | ShopRerollEvent
+  | VoucherPurchasedEvent
 
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
@@ -165,6 +167,10 @@ export type TarotCardUsedEvent = {
 }
 export type ShopRerollEvent = {
   type: 'SHOP_REROLL'
+}
+export type VoucherPurchasedEvent = {
+  type: 'VOUCHER_PURCHASED'
+  id: VoucherType
 }
 
 export interface EffectContext {

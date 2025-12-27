@@ -3,76 +3,20 @@
 import { useEffect } from 'react'
 
 import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
-import { PlayingCard } from '@/app/daily-card-game/components/gameplay/card'
-import { CelestialCard } from '@/app/daily-card-game/components/gameplay/celestial-card'
-import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
-import { TarotCard } from '@/app/daily-card-game/components/gameplay/tarot-card'
 import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
-import {
-  isCelestialCardState,
-  isTarotCardState,
-} from '@/app/daily-card-game/domain/consumable/utils'
+import { BuyableCard } from '@/app/daily-card-game/components/shop/buyable-card'
+import { Voucher } from '@/app/daily-card-game/components/shop/voucher'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
-import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
-import type { BuyableCard } from '@/app/daily-card-game/domain/shop/types'
 import {
   canAffordToBuy,
   getIsRoomForSelectedCard,
   getIsSelectedCardPlayable,
 } from '@/app/daily-card-game/domain/shop/utils'
+import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
-
-function handleCardSelection(isSelected: boolean, id: string) {
-  if (isSelected) {
-    eventEmitter.emit({ type: 'SHOP_DESELECT_CARD', id })
-  } else {
-    eventEmitter.emit({ type: 'SHOP_SELECT_CARD', id })
-  }
-}
-
-export function BuyableCard({
-  buyableCard,
-  isSelected,
-}: {
-  buyableCard: BuyableCard
-  isSelected: boolean
-}) {
-  if (isCelestialCardState(buyableCard.card)) {
-    return (
-      <CelestialCard
-        celestialCard={buyableCard.card}
-        isSelected={isSelected}
-        onClick={handleCardSelection}
-      />
-    )
-  }
-  if (isTarotCardState(buyableCard.card)) {
-    return (
-      <TarotCard
-        tarotCard={buyableCard.card}
-        isSelected={isSelected}
-        onClick={handleCardSelection}
-      />
-    )
-  }
-  if (isJokerState(buyableCard.card)) {
-    return <Joker joker={buyableCard.card} isSelected={isSelected} onClick={handleCardSelection} />
-  }
-  if (isPlayingCardState(buyableCard.card)) {
-    return (
-      <PlayingCard
-        playingCard={buyableCard.card}
-        isSelected={isSelected}
-        onClick={handleCardSelection}
-      />
-    )
-  }
-  return null
-}
 
 export function ShopView() {
   const { game } = useGameState()
@@ -150,6 +94,21 @@ export function ShopView() {
                 }}
               >
                 Buy and Use (${selectedCard.price})
+              </Button>
+            </div>
+          )}
+          {game.shopState.voucher !== null && (
+            <div className="mt-4">
+              <h3 className="mb-2">Voucher</h3>
+              <div className="flex flex-wrap">
+                <Voucher voucher={game.shopState.voucher} />
+              </div>
+              <Button
+                onClick={() => {
+                  eventEmitter.emit({ type: 'VOUCHER_PURCHASED', id: game.shopState.voucher! })
+                }}
+              >
+                Buy (${VOUCHER_PRICE})
               </Button>
             </div>
           )}

@@ -7,6 +7,7 @@ import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
+import type { VoucherState } from '@/app/daily-card-game/domain/voucher/types'
 
 export interface GameState {
   consumables: (CelestialCardState | TarotCardState)[]
@@ -32,6 +33,7 @@ export interface GameState {
   stake: Stake
   staticRules: StaticRulesState
   totalScore: number
+  vouchers: VoucherState[]
 }
 
 export interface StaticRulesState {

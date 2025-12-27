@@ -20,6 +20,11 @@ import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
+import {
+  getRandomVoucherType,
+  initializeVoucherState,
+} from '@/app/daily-card-game/domain/voucher/utils'
+import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
 import { handleHandScoringEnd } from './handlers'
@@ -77,6 +82,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
       case 'GAME_START': {
         draft.gamePhase = 'blindSelection'
+        draft.shopState.voucher = getRandomVoucherType(draft)
         const ctx: EffectContext = {
           event,
           game: draft,
@@ -395,6 +401,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.money += totalReward
         currentBlind.status = 'completed'
         draft.gamePhase = 'shop'
+        draft.shopState.voucher = getRandomVoucherType(draft)
         draft.gamePlayState.remainingDeck = draft.fullDeck
         draft.gamePlayState.remainingHands = draft.maxHands
         if (currentBlind.type === 'bossBlind') {
@@ -431,7 +438,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         )
 
         if (!selectedCard) return
-        draft.money -= selectedCard.price
+        draft.money -= Math.floor(selectedCard.price * draft.shopState.priceMultiplier)
         const didAddJoker = isJokerState(selectedCard.card)
         if (isJokerState(selectedCard.card)) {
           draft.jokers.push(selectedCard.card)
@@ -479,7 +486,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           card => card.card.id === draft.shopState.selectedCardId
         )
         if (!selectedCardForSale) return
-        draft.money -= selectedCardForSale.price
+        draft.money -= Math.floor(selectedCardForSale.price * draft.shopState.priceMultiplier)
         if (isTarotCardState(selectedCardForSale.card)) {
           useBuyableTarotCard(draft)
         } else if (isCelestialCardState(selectedCardForSale.card)) {
@@ -506,6 +513,14 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.shopState.rerollsUsed += 1
         draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
         draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
+        return
+      }
+      case 'VOUCHER_PURCHASED': {
+        const id = event.id
+        const voucher = vouchers[id]
+        if (!voucher) return
+        draft.vouchers.push(initializeVoucherState(voucher))
+        draft.shopState.voucher = null
         return
       }
 

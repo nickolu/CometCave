@@ -40,6 +40,7 @@ class EventEmitter {
     TAROT_CARD_USED: [],
     SHOP_BUY_CARD: [],
     SHOP_BUY_AND_USE_CARD: [],
+    VOUCHER_PURCHASED: [],
   }
 
   private anyListeners: Array<(event: GameEvent) => void> = []

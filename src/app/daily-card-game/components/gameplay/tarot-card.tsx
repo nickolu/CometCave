@@ -1,7 +1,6 @@
+import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
 import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 export const TarotCard = ({
   tarotCard,
@@ -13,11 +12,7 @@ export const TarotCard = ({
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
   return (
-    <Card
-      className={cn(
-        isSelected ? 'ring-2 ring-space-purple transform -translate-y-2' : '',
-        'h-36 w-24 transform transition-all duration-300 cursor-pointer'
-      )}
+    <GameCard
       onClick={() => {
         onClick?.(isSelected ?? false, tarotCard.id)
       }}
@@ -30,6 +25,6 @@ export const TarotCard = ({
           </p>
         </div>
       </div>
-    </Card>
+    </GameCard>
   )
 }

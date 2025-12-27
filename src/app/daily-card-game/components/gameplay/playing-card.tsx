@@ -1,6 +1,6 @@
+import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
-import { Card as CardUI } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 const cardSymbols = {
@@ -75,16 +75,13 @@ export const PlayingCard = ({
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
   return (
-    <CardUI
-      className={cn(
-        isSelected ? 'ring-2 ring-space-purple -mt-2' : '',
-        'h-36 w-24 transform transition-all duration-300 cursor-pointer text-xl'
-      )}
+    <GameCard
+      isSelected={isSelected}
       onClick={() => {
         onClick?.(isSelected ?? false, playingCard.id)
       }}
     >
       {playingCard.isFaceUp ? <FaceUpCard playingCard={playingCard} /> : <FaceDownCard />}
-    </CardUI>
+    </GameCard>
   )
 }
