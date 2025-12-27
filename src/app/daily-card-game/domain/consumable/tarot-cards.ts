@@ -57,9 +57,7 @@ const theMagician: TarotCardDefinition = {
       event: { type: 'TAROT_CARD_USED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        console.log('tarot effect applied')
         for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
-          console.log('tarot card used for card', cardId)
           const fullDeckCard = ctx.game.fullDeck.find(fullDeckCard => fullDeckCard.id === cardId)
           const handCard = ctx.game.gamePlayState.dealtCards.find(
             handCard => handCard.id === cardId
@@ -69,15 +67,12 @@ const theMagician: TarotCardDefinition = {
           )
 
           if (fullDeckCard) {
-            console.log('fullDeckCard', fullDeckCard)
             fullDeckCard.flags.enchantment = 'lucky'
           }
           if (handCard) {
-            console.log('handCard', handCard)
             handCard.flags.enchantment = 'lucky'
           }
           if (remainingDeckCard) {
-            console.log('remainingDeckCard', remainingDeckCard)
             remainingDeckCard.flags.enchantment = 'lucky'
           }
         }

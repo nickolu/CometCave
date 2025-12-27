@@ -40,8 +40,6 @@ const blindIndices: Record<BlindState['type'], number> = {
 }
 
 function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerState) {
-  console.log('removeJoker reducer', selectedJoker)
-
   draft.gamePlayState.selectedJokerId = undefined
   const ctx: EffectContext = {
     event,
@@ -545,7 +543,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'JOKER_SOLD': {
-        console.log('JOKER_SOLD EVENT reducer')
         const selectedJoker = draft.jokers.find(
           joker => joker.id === draft.gamePlayState.selectedJokerId
         )
@@ -559,7 +556,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'JOKER_REMOVED': {
-        console.log('JOKER_REMOVED EVENT reducer')
         const selectedJoker = draft.jokers.find(
           joker => joker.id === draft.gamePlayState.selectedJokerId
         )

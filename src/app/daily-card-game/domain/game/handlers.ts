@@ -80,7 +80,6 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   const round = getCurrentRound(draft)
   // Effects (boss blinds / jokers) react BEFORE cleanup/phase transitions
   applyHandScoringEndEffects(draft, event, round)
-  console.log('hand scoring end effects applied', draft.gamePlayState.score.mult)
 
   const computed = computeBlindScoreAndAnte(draft, currentBlind, round)
   if (!computed) return

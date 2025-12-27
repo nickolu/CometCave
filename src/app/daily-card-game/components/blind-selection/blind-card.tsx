@@ -48,7 +48,6 @@ export function BlindCard({
               className="w-full mt-2"
               disabled={disabled}
               onClick={() => {
-                console.log('SKIP EVENT NAME', skipEventName)
                 eventEmitter.emit({ type: skipEventName })
               }}
             >

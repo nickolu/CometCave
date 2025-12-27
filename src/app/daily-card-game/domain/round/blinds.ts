@@ -16,6 +16,7 @@ export function getInProgressBlind(game: GameState): BlindState | undefined {
 export const smallBlind: BlindDefinition = {
   type: 'smallBlind',
   name: 'Small Blind',
+  description: 'The small blind is the first blind in the round.',
   anteMultiplier: 1,
   baseReward: 3,
   effects: [],
@@ -24,6 +25,7 @@ export const smallBlind: BlindDefinition = {
 export const bigBlind: BlindDefinition = {
   type: 'bigBlind',
   name: 'Big Blind',
+  description: 'The big blind is the second blind in the round.',
   anteMultiplier: 1.5,
   baseReward: 4,
   effects: [],

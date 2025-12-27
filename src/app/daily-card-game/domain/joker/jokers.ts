@@ -432,24 +432,15 @@ export const fourFingersJoker: JokerDefinition = {
       event: { type: 'SHOP_BUY_CARD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        console.log('SHOP_BUY_CARD EFFECT CALLED for four fingers joker')
         const selectedCard = ctx.game.shopState.cardsForSale.find(
           card => card.card.id === ctx.game.shopState.selectedCardId
         )
-        console.log('selectedCard', selectedCard)
         if (!selectedCard) return
         if (
           isJokerState(selectedCard.card) &&
           selectedCard.card.jokerId === jokers.fourFingersJoker.id
         ) {
-          console.log(
-            'four fingers joker bought, setting numberOfCardsRequiredForFlushAndStraight to 4'
-          )
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
-        } else {
-          console.log(
-            'four fingers joker not bought, not setting numberOfCardsRequiredForFlushAndStraight'
-          )
         }
       },
     },
@@ -459,7 +450,6 @@ export const fourFingersJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         // don't modify if there's another four fingers joker in play
         if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
-          console.log('removing four fingers joker effect')
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
         }
       },
@@ -469,7 +459,6 @@ export const fourFingersJoker: JokerDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
-          console.log('removing four fingers joker effect')
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
         }
       },

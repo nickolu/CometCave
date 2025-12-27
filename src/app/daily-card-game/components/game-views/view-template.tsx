@@ -1,9 +1,7 @@
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
 export function ViewTemplate({
   sidebarContentTop,

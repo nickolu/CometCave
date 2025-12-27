@@ -44,8 +44,6 @@ export const bonusOnHandPlayed = ({
   source: string
 }) => {
   const scoredHand = ctx.game.gamePlayState.selectedHand?.[1]
-  console.log('scoredHand', scoredHand)
-  console.log('hand', hand)
   if (
     scoredHand &&
     scoredHand.every(card => playingCards[card.playingCardId].suit === playingCards[hand.id].suit)
