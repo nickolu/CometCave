@@ -1,5 +1,4 @@
 import { initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
-import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import {
   fiveOfAKindHand,
   flushFiveHand,
@@ -9,40 +8,20 @@ import {
   fullHouseHand,
   highCardHand,
   pairHand,
-  royalFlushHand,
   straightFlushHand,
   straightHand,
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
-import type { PokerHandDefinition, PokerHandState } from '@/app/daily-card-game/domain/hand/types'
-import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
-import type { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
+import { getCurrentDayAsSeedString } from '@/app/daily-card-game/domain/randomness'
 import { rounds } from '@/app/daily-card-game/domain/round/rounds'
 
-const getDefaultHandState = (hand: PokerHandDefinition): PokerHandState => ({
-  timesPlayed: 0,
-  level: 0,
-  handId: hand.id,
-})
-
-const getDefaultJokerState = (joker: JokerDefinition): JokerState => ({
-  id: uuid(),
-  jokerId: joker.id,
-  flags: {
-    isRentable: false,
-    isPerishable: false,
-    isEternal: false,
-    isHolographic: false,
-    isFoil: false,
-    isNegative: false,
-    faceUp: false,
-  },
-})
+import { GameState } from './types'
 
 export const defaultGameState: GameState = {
   consumables: [],
+  consumablesUsed: [],
   discardsPlayed: 0,
   fullDeck: initialDeckStates.pokerDeck,
   gamePhase: 'mainMenu',
@@ -61,45 +40,44 @@ export const defaultGameState: GameState = {
     },
     scoringEvents: [],
   },
-  gameSeed: 'default',
+  gameSeed: getCurrentDayAsSeedString(),
   handsPlayed: 0,
-  jokers: [
-    getDefaultJokerState(jokers['jokerStencil']),
-    getDefaultJokerState(jokers['fourFingersJoker']),
-  ],
+  jokers: [],
   maxConsumables: 2,
   maxJokers: 5,
   maxHands: 4,
   maxDiscards: 3,
+  maxInterest: 5,
   money: 0,
+  minimumMoney: 0,
   pokerHands: {
-    highCard: getDefaultHandState(highCardHand),
-    pair: getDefaultHandState(pairHand),
-    twoPair: getDefaultHandState(twoPairHand),
-    threeOfAKind: getDefaultHandState(threeOfAKindHand),
-    straight: getDefaultHandState(straightHand),
-    flush: getDefaultHandState(flushHand),
-    fullHouse: getDefaultHandState(fullHouseHand),
-    fourOfAKind: getDefaultHandState(fourOfAKindHand),
-    straightFlush: getDefaultHandState(straightFlushHand),
-    royalFlush: getDefaultHandState(royalFlushHand),
-    flushHouse: getDefaultHandState(flushHouseHand),
-    fiveOfAKind: getDefaultHandState(fiveOfAKindHand),
-    flushFive: getDefaultHandState(flushFiveHand),
+    highCard: initializeHand(highCardHand),
+    pair: initializeHand(pairHand),
+    twoPair: initializeHand(twoPairHand),
+    threeOfAKind: initializeHand(threeOfAKindHand),
+    straight: initializeHand(straightHand),
+    flush: initializeHand(flushHand),
+    fullHouse: initializeHand(fullHouseHand),
+    fourOfAKind: initializeHand(fourOfAKindHand),
+    straightFlush: initializeHand(straightFlushHand),
+    flushHouse: initializeHand(flushHouseHand),
+    fiveOfAKind: initializeHand(fiveOfAKindHand),
+    flushFive: initializeHand(flushFiveHand),
   },
   rounds,
   roundIndex: 1,
   shopState: {
+    selectedCardId: null,
+    openPackState: null,
     cardsForSale: [],
     packsForSale: [],
-    vouchersForSale: [],
     rerollsUsed: 0,
-    rerollPrice: 0,
-    modifiers: {
-      maxCardsForSale: 0,
-      maxVouchersForSale: 0,
-      baseRerollPrice: 0,
-    },
+    baseRerollPrice: 5,
+    celestialMultiplier: 1,
+    playingCardMultiplier: 0,
+    tarotCardMultiplier: 1,
+    maxCardsForSale: 0,
+    maxVouchersForSale: 0,
   },
   stake: {
     disableSmallBlindReward: false,
@@ -113,8 +91,7 @@ export const defaultGameState: GameState = {
   staticRules: {
     numberOfCardsRequiredForFlushAndStraight: 5,
     areAllCardsFaceCards: false,
+    allowDuplicateJokersInShop: false,
   },
-  tags: [],
   totalScore: 0,
-  vouchersUsed: [],
 }

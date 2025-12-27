@@ -1,4 +1,3 @@
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { Card as CardUI } from '@/components/ui/card'
@@ -18,25 +17,38 @@ const cardColors = {
   spades: 'text-blue-500',
 }
 
+const enchantmentStyles = {
+  bonus: 'border-2 border-green-500',
+  mult: 'border-2 border-blue-500',
+  gold: 'border-2 border-yellow-500',
+  glass: 'border-2 border-gray-500',
+  lucky: 'border-2 border-purple-500',
+  none: '',
+}
+
 const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
   return (
-    <div
-      className={
-        'flex flex-col px-1 h-full ' + cardColors[playingCards[playingCard.playingCardId]?.suit]
-      }
-    >
-      <div data-name="top-row" className="flex justify-between">
-        <div>{playingCards[playingCard.playingCardId]?.value}</div>
-        <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+    <>
+      <div
+        className={cn(
+          'flex flex-col px-1 h-full',
+          cardColors[playingCards[playingCard.playingCardId]?.suit ?? 'hearts'],
+          enchantmentStyles[playingCard.flags.enchantment ?? 'none']
+        )}
+      >
+        <div data-name="top-row" className="flex justify-between">
+          <div>{playingCards[playingCard.playingCardId]?.value}</div>
+          <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+        </div>
+        <div data-name="image-row" className="flex justify-center grow items-center">
+          <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+        </div>
+        <div data-name="bottom-row" className="flex justify-between">
+          <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+          <div>{playingCards[playingCard.playingCardId].value}</div>
+        </div>
       </div>
-      <div data-name="image-row" className="flex justify-center grow items-center">
-        <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
-      </div>
-      <div data-name="bottom-row" className="flex justify-between">
-        <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
-        <div>{playingCards[playingCard.playingCardId].value}</div>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -53,16 +65,15 @@ const FaceDownCard = () => {
   )
 }
 
-export const Card = ({
+export const PlayingCard = ({
   playingCard,
-  handIndex,
   isSelected,
+  onClick,
 }: {
   playingCard: PlayingCardState
-  handIndex?: number
   isSelected?: boolean
+  onClick?: (isSelected: boolean, id: string) => void
 }) => {
-  console.log('playingCard', playingCard)
   return (
     <CardUI
       className={cn(
@@ -70,13 +81,7 @@ export const Card = ({
         'h-36 w-24 transform transition-all duration-300 cursor-pointer text-xl'
       )}
       onClick={() => {
-        if (handIndex !== undefined) {
-          if (isSelected) {
-            eventEmitter.emit({ type: 'CARD_DESELECTED', id: playingCard.id })
-          } else {
-            eventEmitter.emit({ type: 'CARD_SELECTED', id: playingCard.id })
-          }
-        }
+        onClick?.(isSelected ?? false, playingCard.id)
       }}
     >
       {playingCard.isFaceUp ? <FaceUpCard playingCard={playingCard} /> : <FaceDownCard />}

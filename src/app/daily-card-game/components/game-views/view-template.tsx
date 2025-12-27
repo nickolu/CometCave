@@ -1,11 +1,17 @@
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
-export function ViewTemplate({ children }: { children: React.ReactNode }) {
+export function ViewTemplate({
+  sidebarContentTop,
+  sidebarContentBottom,
+  children,
+}: {
+  sidebarContentTop?: React.ReactNode
+  sidebarContentBottom?: React.ReactNode
+  children: React.ReactNode
+}) {
   const { game } = useGameState()
   const currentBlind = getInProgressBlind(game)
   return (
@@ -13,13 +19,8 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
       <div className="flex">
         {/* Sidebar */}
         <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
-          <Button
-            onClick={() => {
-              eventEmitter.emit({ type: 'BLIND_SELECTION_BACK_TO_MENU' })
-            }}
-          >
-            Back to Main Menu
-          </Button>
+          {sidebarContentTop}
+
           <hr />
           <div className="flex flex-col gap-2 pl-2">
             <div>
@@ -29,7 +30,7 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
               <strong>Round:</strong> {game.roundIndex}/{game.rounds.length}
             </div>
             <div>
-              <strong>Current Money:</strong> {game.money}
+              <strong>Current Money:</strong> ${game.money}
             </div>
             <div>
               <strong>Hands Played:</strong> {game.handsPlayed}
@@ -66,6 +67,7 @@ export function ViewTemplate({ children }: { children: React.ReactNode }) {
             </>
           )}
           <hr />
+          {sidebarContentBottom}
           <div className="pl-2 flex flex-col gap-2">
             {game.gamePlayState.scoringEvents.length > 0 && (
               <>

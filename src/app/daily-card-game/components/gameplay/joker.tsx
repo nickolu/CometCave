@@ -1,5 +1,5 @@
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -29,13 +29,14 @@ const FaceUpJoker = ({ joker }: { joker: JokerDefinition }) => {
 
 export const Joker = ({
   joker,
-  handIndex,
   isSelected,
+  onClick,
 }: {
-  joker: JokerDefinition
-  handIndex?: number
+  joker: JokerState
   isSelected?: boolean
+  onClick?: (isSelected: boolean, id: string) => void
 }) => {
+  const jokerDefinition = jokers[joker.jokerId]
   return (
     <Card
       className={cn(
@@ -43,16 +44,10 @@ export const Joker = ({
         'h-36 w-24 transform transition-all duration-300 cursor-pointer'
       )}
       onClick={() => {
-        if (handIndex !== undefined) {
-          if (isSelected) {
-            eventEmitter.emit({ type: 'CARD_DESELECTED', id: joker.id })
-          } else {
-            eventEmitter.emit({ type: 'CARD_SELECTED', id: joker.id })
-          }
-        }
+        onClick?.(isSelected ?? false, joker.id)
       }}
     >
-      <FaceUpJoker joker={joker} />
+      <FaceUpJoker joker={jokerDefinition} />
     </Card>
   )
 }

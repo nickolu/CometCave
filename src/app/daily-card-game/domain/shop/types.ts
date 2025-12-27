@@ -1,33 +1,37 @@
 import type {
-  Arcane,
-  Celestial,
-  VoucherDefinition,
+  CelestialCardState,
+  TarotCardState,
 } from '@/app/daily-card-game/domain/consumable/types'
-import type { JokerDefinition } from '@/app/daily-card-game/domain/joker/types'
-import type { PlayingCardDefinition } from '@/app/daily-card-game/domain/playing-card/types'
+import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
+import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 
 export interface ShopState {
+  baseRerollPrice: number
   cardsForSale: BuyableCard[]
+  celestialMultiplier: number
+  maxCardsForSale: number
+  maxVouchersForSale: number
+  openPackState: OpenPackState | null
   packsForSale: Pack[]
-  vouchersForSale: VoucherDefinition[]
+  playingCardMultiplier: number
   rerollsUsed: number
-  rerollPrice: number
-  modifiers: ShopStateModifiers
+  selectedCardId: string | null
+  tarotCardMultiplier: number
 }
 
+export interface OpenPackState {
+  cards: BuyableCard[]
+  packType: 'jumbo' | 'normal' | 'mega'
+  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
+}
 export interface BuyableCard {
-  type: PlayingCardDefinition | Celestial | Arcane | JokerDefinition
+  type: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
+  card: PlayingCardState | CelestialCardState | TarotCardState | JokerState
   price: number
 }
 
 export interface Pack {
-  card: Celestial | Arcane | JokerDefinition | PlayingCardDefinition
+  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard'
   type: 'jumbo' | 'normal' | 'mega'
   price: number
-}
-
-export interface ShopStateModifiers {
-  maxCardsForSale: number
-  maxVouchersForSale: number
-  baseRerollPrice: number
 }

@@ -108,22 +108,96 @@ describe('daily-card-game hand checkers', () => {
     expect(trips).toEqual(trips4)
   })
 
-  it('checkHandForStraight requires cards to be in sequential value order', () => {
-    const straight = [c('2_hearts'), c('3_clubs'), c('4_spades'), c('5_diamonds'), c('6_hearts')]
+  it('checkHandForStraight detects a straight regardless of selection order', () => {
+    const expectedStraight = [
+      c('2_hearts'),
+      c('3_clubs'),
+      c('4_spades'),
+      c('5_diamonds'),
+      c('6_hearts'),
+    ]
 
-    const [isStraight, straightCards] = checkHandForStraight(straight, {
+    const outOfOrderSelection = [
+      expectedStraight[2], // 4
+      expectedStraight[0], // 2
+      expectedStraight[1], // 3
+      expectedStraight[4], // 6
+      expectedStraight[3], // 5
+    ]
+
+    const [isStraight, straightCards] = checkHandForStraight(outOfOrderSelection, {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
     })
     expect(isStraight).toBe(true)
-    expect(straightCards).toEqual(straight)
+    // We return the straight cards in ascending value order.
+    expect(straightCards).toEqual(expectedStraight)
 
     const [isNotStraight, notStraightCards] = checkHandForStraight(
       [c('2_hearts'), c('3_clubs'), c('5_spades'), c('6_diamonds'), c('7_hearts')],
-      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
+      {
+        numberOfCardsRequiredForFlushAndStraight: 5,
+        areAllCardsFaceCards: false,
+        allowDuplicateJokersInShop: false,
+      }
     )
     expect(isNotStraight).toBe(false)
     expect(notStraightCards).toEqual([])
+  })
+
+  it('checkHandForStraight detects straights that include face cards (10-J-Q-K-A)', () => {
+    const expectedStraight = [
+      c('10_hearts'),
+      c('J_clubs'),
+      c('Q_spades'),
+      c('K_diamonds'),
+      c('A_hearts'),
+    ]
+
+    const [isStraight, straightCards] = checkHandForStraight(
+      [
+        expectedStraight[4],
+        expectedStraight[0],
+        expectedStraight[3],
+        expectedStraight[2],
+        expectedStraight[1],
+      ],
+      {
+        numberOfCardsRequiredForFlushAndStraight: 5,
+        areAllCardsFaceCards: false,
+        allowDuplicateJokersInShop: false,
+      }
+    )
+    expect(isStraight).toBe(true)
+    expect(straightCards).toEqual(expectedStraight)
+  })
+
+  it('checkHandForStraight treats Ace as 1 for A-2-3-4-5', () => {
+    const expectedStraight = [
+      c('A_hearts'),
+      c('2_clubs'),
+      c('3_spades'),
+      c('4_diamonds'),
+      c('5_hearts'),
+    ]
+
+    const [isStraight, straightCards] = checkHandForStraight(
+      [
+        expectedStraight[3],
+        expectedStraight[0],
+        expectedStraight[4],
+        expectedStraight[2],
+        expectedStraight[1],
+      ],
+      {
+        numberOfCardsRequiredForFlushAndStraight: 5,
+        areAllCardsFaceCards: false,
+        allowDuplicateJokersInShop: false,
+      }
+    )
+    expect(isStraight).toBe(true)
+    expect(straightCards).toEqual(expectedStraight)
   })
 
   it('checkHandForFlush checks the suit of the first ranked card and returns the first N of that suit', () => {
@@ -132,6 +206,7 @@ describe('daily-card-game hand checkers', () => {
     const [isFlush, flushCards] = checkHandForFlush(cards, {
       numberOfCardsRequiredForFlushAndStraight: 4,
       areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
     })
     expect(isFlush).toBe(true)
     expect(
@@ -146,6 +221,7 @@ describe('daily-card-game hand checkers', () => {
       {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
+        allowDuplicateJokersInShop: false,
       }
     )
     expect(isNotFlush).toBe(false)
@@ -200,6 +276,7 @@ describe('daily-card-game hand checkers', () => {
     const [isStraightFlush, straightFlushCards] = checkHandForStraightFlush(allSameSuitStraight, {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
     })
     expect(isStraightFlush).toBe(true)
     expect(straightFlushCards).toEqual(allSameSuitStraight)
@@ -216,6 +293,7 @@ describe('daily-card-game hand checkers', () => {
     const [isFlushHouse, flushHouseCards] = checkHandForFlushHouse(suitedStraight, {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
     })
     expect(isFlushHouse).toBe(true)
     expect(flushHouseCards).toEqual(suitedStraight)
@@ -230,6 +308,7 @@ describe('daily-card-game hand checkers', () => {
     const [isNotFlushHouse, notFlushHouseCards] = checkHandForFlushHouse(mixedSuitStraight, {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
     })
     expect(isNotFlushHouse).toBe(false)
     expect(notFlushHouseCards).toEqual([])
@@ -240,20 +319,29 @@ describe('daily-card-game hand checkers', () => {
     const [isFive, fiveCards] = checkHandForFiveOfAKind(fiveAces, {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
     })
     expect(isFive).toBe(true)
     expect(fiveCards).toEqual(fiveAces)
 
     const [isNotFive, notFiveCards] = checkHandForFiveOfAKind(
       [c('A_hearts'), c('A_diamonds'), c('A_clubs'), c('A_spades'), c('K_hearts')],
-      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
+      {
+        numberOfCardsRequiredForFlushAndStraight: 5,
+        areAllCardsFaceCards: false,
+        allowDuplicateJokersInShop: false,
+      }
     )
     expect(isNotFive).toBe(false)
     expect(notFiveCards).toEqual([])
 
     const [isNotExactlyFive, notExactlyFiveCards] = checkHandForFiveOfAKind(
       [c('A_hearts'), c('A_diamonds'), c('A_clubs'), c('A_spades')],
-      { numberOfCardsRequiredForFlushAndStraight: 5, areAllCardsFaceCards: false }
+      {
+        numberOfCardsRequiredForFlushAndStraight: 5,
+        areAllCardsFaceCards: false,
+        allowDuplicateJokersInShop: false,
+      }
     )
     expect(isNotExactlyFive).toBe(false)
     expect(notExactlyFiveCards).toEqual([])

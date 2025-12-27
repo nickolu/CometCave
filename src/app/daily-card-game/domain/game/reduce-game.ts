@@ -1,18 +1,35 @@
 import { produce } from 'immer'
 
+import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
+import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import {
+  isCelestialCardState,
+  isTarotCardState,
+} from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { findHighestPriorityHand, pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
+import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
+import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 
-import { HAND_SIZE } from './constants'
+import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
 import { handleHandScoringEnd } from './handlers'
-import { collectEffects, getBlindDefinition, randomizeDeck } from './utils'
+import {
+  collectEffects,
+  getBlindDefinition,
+  randomizeDeck,
+  useCelestialCard,
+  useTarotCard,
+} from './utils'
 
 import type { GameState } from './types'
 
@@ -22,9 +39,40 @@ const blindIndices: Record<BlindState['type'], number> = {
   bossBlind: 2,
 }
 
+function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerState) {
+  draft.gamePlayState.selectedJokerId = undefined
+  const ctx: EffectContext = {
+    event,
+    game: draft as unknown as GameState,
+    score: draft.gamePlayState.score,
+    playedCards: [],
+    round: draft.rounds[draft.roundIndex],
+    bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+    jokers: draft.jokers,
+  }
+  // Collect effects *before* removing the joker so "on sold/removed" effects that live on the
+  // removed joker itself still get a chance to run. Then dispatch *after* removal so effects
+  // can observe the post-removal game state.
+  const effectsBeforeRemoval = collectEffects(ctx.game)
+  draft.jokers = draft.jokers.filter(joker => joker.id !== selectedJoker.id)
+  ctx.jokers = draft.jokers
+  dispatchEffects(event, ctx, effectsBeforeRemoval)
+}
+
+export function calculateInterest(draft: GameState): number {
+  const currentMoney = draft.money
+  const maxInterest = draft.maxInterest
+  const interestCalculation = Math.floor(currentMoney / INTEREST_CALCULATION_FACTOR)
+  return Math.min(interestCalculation, maxInterest)
+}
+
 export function reduceGame(game: GameState, event: GameEvent): GameState {
   return produce(game, draft => {
     switch (event.type) {
+      /*
+       * NAVIGATION EVENTS
+       */
+
       case 'GAME_START': {
         draft.gamePhase = 'blindSelection'
         const ctx: EffectContext = {
@@ -39,6 +87,19 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
+      case 'BACK_TO_MAIN_MENU': {
+        draft.gamePhase = 'mainMenu'
+        return
+      }
+      case 'DISPLAY_JOKERS': {
+        draft.gamePhase = 'jokers'
+        return
+      }
+
+      /*
+       * BLIND SELECTION EVENTS
+       */
+
       case 'SMALL_BLIND_SELECTED': {
         const round = draft.rounds[draft.roundIndex]
         round.smallBlind.status = 'inProgress'
@@ -72,6 +133,21 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         })
         return
       }
+      case 'BIG_BLIND_SKIPPED': {
+        const round = draft.rounds[draft.roundIndex]
+        round.bigBlind.status = 'skipped'
+        return
+      }
+      case 'SMALL_BLIND_SKIPPED': {
+        const round = draft.rounds[draft.roundIndex]
+        round.smallBlind.status = 'skipped'
+        return
+      }
+
+      /*
+       * GAMEPLAY EVENTS
+       */
+
       case 'HAND_DEALT': {
         if (draft.gamePlayState.dealtCards.length) return
         draft.gamePlayState.dealtCards = draft.gamePlayState.remainingDeck.slice(0, HAND_SIZE)
@@ -82,6 +158,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const id = event.id
         const gamePlayState = draft.gamePlayState
         if (gamePlayState.selectedCardIds.includes(id)) return
+        if (gamePlayState.selectedCardIds.length >= MAX_SELECTED_CARDS) return
 
         const selectedCardIds = [...gamePlayState.selectedCardIds, id]
         const selectedCards: PlayingCardState[] = gamePlayState.dealtCards.filter(card =>
@@ -138,63 +215,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         return
       }
-      case 'HAND_SCORING_START': {
-        const gamePlayState = draft.gamePlayState
-        const selectedCards = gamePlayState.dealtCards.filter(card =>
-          gamePlayState.selectedCardIds.includes(card.id)
-        )
-        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
-          selectedCards,
-          draft.staticRules
-        )
-        gamePlayState.cardsToScore = cardsToScore
-        gamePlayState.playedCardIds = selectedCards.map(card => card.id)
 
-        gamePlayState.remainingHands -= 1
-
-        const playedHandLevel = draft.pokerHands[playedHand].level
-        const handMult =
-          pokerHands[playedHand].baseMult +
-          pokerHands[playedHand].multIncreasePerLevel * playedHandLevel
-        const handChips =
-          pokerHands[playedHand].baseChips +
-          pokerHands[playedHand].chipIncreasePerLevel * playedHandLevel
-
-        if (handChips > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'chips',
-            value: handChips,
-            source: 'hand',
-          })
-        }
-
-        if (handMult > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'mult',
-            value: handMult,
-            source: 'hand',
-          })
-        }
-
-        gamePlayState.isScoring = true
-        gamePlayState.score = { chips: handChips, mult: handMult }
-        gamePlayState.selectedHand = [pokerHands[playedHand].id, selectedCards]
-        draft.handsPlayed += 1
-
-        const ctx: EffectContext = {
-          event,
-          game: draft,
-          score: gamePlayState.score,
-          playedCards: selectedCards,
-          round: draft.rounds[draft.roundIndex],
-          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: draft.jokers,
-        }
-        dispatchEffects(event, ctx, collectEffects(ctx.game))
-        return
-      }
       case 'CARD_SCORED': {
         const gamePlayState = draft.gamePlayState
         const currentCardToScore = gamePlayState.cardsToScore.shift()
@@ -272,6 +293,67 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
+      case 'HAND_SCORING_START': {
+        const gamePlayState = draft.gamePlayState
+        const selectedCards = gamePlayState.dealtCards.filter(card =>
+          gamePlayState.selectedCardIds.includes(card.id)
+        )
+        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
+          selectedCards,
+          draft.staticRules
+        )
+        gamePlayState.cardsToScore = cardsToScore
+        gamePlayState.playedCardIds = selectedCards.map(card => card.id)
+
+        gamePlayState.remainingHands -= 1
+
+        const playedHandLevel = draft.pokerHands[playedHand].level
+
+        // ensure hand is no longer secret once played
+        draft.pokerHands[playedHand].isSecret = false
+
+        const handMult =
+          pokerHands[playedHand].baseMult +
+          pokerHands[playedHand].multIncreasePerLevel * playedHandLevel
+        const handChips =
+          pokerHands[playedHand].baseChips +
+          pokerHands[playedHand].chipIncreasePerLevel * playedHandLevel
+
+        if (handChips > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: handChips,
+            source: 'hand',
+          })
+        }
+
+        if (handMult > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: handMult,
+            source: 'hand',
+          })
+        }
+
+        gamePlayState.isScoring = true
+        gamePlayState.score = { chips: handChips, mult: handMult }
+        gamePlayState.selectedHand = [pokerHands[playedHand].id, selectedCards]
+        draft.handsPlayed += 1
+
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: gamePlayState.score,
+          playedCards: selectedCards,
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
+        return
+      }
       case 'HAND_SCORING_END': {
         handleHandScoringEnd(draft, event)
         return
@@ -294,6 +376,15 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePlayState.remainingDiscards = draft.maxDiscards
         return
       }
+
+      /*
+       * SHOP EVENTS
+       */
+
+      case 'SHOP_OPEN': {
+        draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
+        return
+      }
       case 'SHOP_SELECT_BLIND': {
         draft.gamePhase = 'blindSelection'
         return
@@ -306,37 +397,184 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePhase = 'shop'
         return
       }
-      case 'BLIND_SELECTION_BACK_TO_MENU': {
-        draft.gamePhase = 'mainMenu'
+      case 'SHOP_BUY_CARD': {
+        const selectedCard = draft.shopState.cardsForSale.find(
+          card => card.card.id === draft.shopState.selectedCardId
+        )
+
+        if (!selectedCard) return
+        draft.money -= selectedCard.price
+        const didAddJoker = isJokerState(selectedCard.card)
+        if (isJokerState(selectedCard.card)) {
+          draft.jokers.push(selectedCard.card)
+        } else if (isPlayingCardState(selectedCard.card)) {
+          draft.gamePlayState.dealtCards.push(selectedCard.card)
+        } else if (isCelestialCardState(selectedCard.card)) {
+          draft.consumables.push(selectedCard.card)
+        } else if (isTarotCardState(selectedCard.card)) {
+          draft.consumables.push(selectedCard.card)
+        } else {
+          throw new Error(`Unknown card type: ${selectedCard.card}`)
+        }
+
+        // Run effects before removing the card from `cardsForSale` so effects can inspect the
+        // selected shop card via `selectedCardId` + `cardsForSale`.
+        const ctx: EffectContext = {
+          event,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
+
+        // When a joker is purchased, also emit a more semantic lifecycle event so jokers can
+        // react without needing to inspect shop selection state.
+        if (didAddJoker) {
+          const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
+          dispatchEffects(
+            jokerAddedEvent,
+            { ...ctx, event: jokerAddedEvent },
+            collectEffects(ctx.game)
+          )
+        }
+
+        draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
+          card => card.card.id !== selectedCard.card.id
+        )
         return
       }
-      case 'DISPLAY_JOKERS': {
-        draft.gamePhase = 'jokers'
+      case 'SHOP_BUY_AND_USE_CARD': {
+        const selectedCard = draft.shopState.cardsForSale.find(
+          card => card.card.id === draft.shopState.selectedCardId
+        )
+        if (!selectedCard) return
+        draft.money -= selectedCard.price
+        if (isTarotCardState(selectedCard.card)) {
+          useTarotCard(draft, event)
+        } else if (isCelestialCardState(selectedCard.card)) {
+          useCelestialCard(draft, event)
+        }
+        draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
+          card => card.card.id !== selectedCard.card.id
+        )
         return
       }
-      // no-ops for now
+      case 'SHOP_SELECT_CARD': {
+        const id = event.id
+        if (draft.shopState.selectedCardId === id) return
+        draft.shopState.selectedCardId = id
+        return
+      }
+      case 'SHOP_DESELECT_CARD': {
+        const id = event.id
+        if (draft.shopState.selectedCardId !== id) return
+        draft.shopState.selectedCardId = null
+        return
+      }
+      case 'SHOP_REROLL': {
+        draft.shopState.rerollsUsed += 1
+        draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
+        draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
+        return
+      }
+
+      /*
+       * CONSUMABLE EVENTS
+       */
+
+      case 'CONSUMABLE_SELECTED': {
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedConsumable?.id === id) return
+        gamePlayState.selectedConsumable = draft.consumables.find(
+          consumable => consumable.id === id
+        )
+        return
+      }
+      case 'CONSUMABLE_DESELECTED': {
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedConsumable?.id !== id) return
+        gamePlayState.selectedConsumable = undefined
+        return
+      }
+      case 'CELESTIAL_CARD_USED': {
+        useCelestialCard(draft, event)
+        return
+      }
+      case 'TAROT_CARD_USED': {
+        useTarotCard(draft, event)
+        return
+      }
+      case 'CONSUMABLE_SOLD': {
+        const selectedConsumable = game.gamePlayState.selectedConsumable
+        const selectedConsumableDefinition = isCelestialCardState(selectedConsumable)
+          ? celestialCards[selectedConsumable.handId]
+          : isTarotCardState(selectedConsumable)
+            ? tarotCards[selectedConsumable.tarotType]
+            : undefined
+        if (!selectedConsumableDefinition) return
+        draft.consumables = draft.consumables.filter(
+          consumable => consumable.id !== selectedConsumable?.id
+        )
+        draft.money += selectedConsumableDefinition.price
+        draft.gamePlayState.selectedConsumable = undefined
+        return
+      }
+
+      /*
+       * JOKER EVENTS
+       */
+      case 'JOKER_SELECTED': {
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedJokerId === id) return
+        gamePlayState.selectedJokerId = id
+        return
+      }
+      case 'JOKER_DESELECTED': {
+        const id = event.id
+        const gamePlayState = draft.gamePlayState
+        if (gamePlayState.selectedJokerId !== id) return
+        gamePlayState.selectedJokerId = undefined
+        return
+      }
+      case 'JOKER_SOLD': {
+        const selectedJoker = draft.jokers.find(
+          joker => joker.id === draft.gamePlayState.selectedJokerId
+        )
+        if (!selectedJoker) return
+        draft.money += jokers[selectedJoker.jokerId].price
+        removeJoker(draft, event, selectedJoker)
+        return
+      }
+
+      case 'JOKER_ADDED': {
+        return
+      }
+      case 'JOKER_REMOVED': {
+        const selectedJoker = draft.jokers.find(
+          joker => joker.id === draft.gamePlayState.selectedJokerId
+        )
+        if (!selectedJoker) return
+        removeJoker(draft, event, selectedJoker)
+        return
+      }
+
+      /*
+       * NO-OP EVENTS
+       */
+
       case 'BLIND_REWARDS_START': {
         return
       }
       case 'ROUND_END': {
         return
       }
-      case 'BIG_BLIND_SKIPPED': {
-        const round = draft.rounds[draft.roundIndex]
-        round.bigBlind.status = 'skipped'
-        return
-      }
-      case 'SMALL_BLIND_SKIPPED': {
-        const round = draft.rounds[draft.roundIndex]
-        round.smallBlind.status = 'skipped'
-        return
-      }
-      case 'JOKER_ADDED': {
-        return
-      }
-      case 'JOKER_REMOVED': {
-        return
-      }
+
       default: {
         // Exhaustiveness guard in case GameEvent grows
         const _exhaustive: never = event

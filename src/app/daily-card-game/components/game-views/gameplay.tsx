@@ -1,54 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
-import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
+import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
-import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
-import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
-
-const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
-
-const useScoreHand = () => {
-  const { game } = useGameState()
-  const { gamePlayState } = game
-  const selectedCardIds = gamePlayState.selectedCardIds
-  const isScoringRef = useRef(false)
-
-  const scoreHand = useCallback(async () => {
-    if (isScoringRef.current) return
-
-    if (selectedCardIds.length === 0) return
-
-    isScoringRef.current = true
-    try {
-      eventEmitter.emit({ type: 'HAND_SCORING_START' })
-
-      const cardsToScoreCount =
-        useDailyCardGameStore.getState().game.gamePlayState.cardsToScore.length
-
-      for (let i = 0; i < cardsToScoreCount; i++) {
-        await sleep(250)
-        eventEmitter.emit({ type: 'CARD_SCORED' })
-      }
-
-      await sleep(750)
-      eventEmitter.emit({ type: 'HAND_SCORING_END' })
-    } finally {
-      isScoringRef.current = false
-    }
-  }, [selectedCardIds])
-  return { scoreHand }
-}
 
 const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
   const currentHandChips =
@@ -57,7 +22,12 @@ const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
     pokerHands[hand.handId].baseMult + pokerHands[hand.handId].multIncreasePerLevel * hand.level
   return (
     <div>
-      Selected Hand: {pokerHands[hand.handId].name} ({currentHandChips}x{currentHandMult})
+      <div>
+        <strong>Selected Hand:</strong>
+      </div>{' '}
+      <div className="pl-4">
+        {pokerHands[hand.handId].name} (Lvl {hand.level + 1}) ({currentHandChips}x{currentHandMult})
+      </div>
     </div>
   )
 }
@@ -66,8 +36,7 @@ export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)
   const { game } = useGameState()
   const { gamePlayState } = game
-  const { isScoring, remainingDiscards, score, selectedHand } = gamePlayState
-  const { scoreHand } = useScoreHand()
+  const { score, selectedHand } = gamePlayState
   const currentBlind = getInProgressBlind(game)
 
   useEffect(() => {
@@ -75,33 +44,47 @@ export function GamePlayView() {
   }, [])
 
   return (
-    <ViewTemplate>
+    <ViewTemplate
+      sidebarContentBottom={
+        <>
+          <div className="pl-2">
+            <div>
+              <strong>Blind Score:</strong> {score.chips} x {score.mult}
+            </div>
+            <div>
+              <strong>Your Score:</strong> {currentBlind?.score}
+            </div>
+            {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
+          </div>
+          <hr />
+        </>
+      }
+    >
       <div>
-        <div className="mt-4 flex gap-2 justify-center">
-          {game.jokers.map(joker => (
-            <Joker key={joker.jokerId} joker={jokers[joker.jokerId]} />
-          ))}
+        <div className="flex flex-wrap justify-between ">
+          {game.jokers.length > 0 && (
+            <div className="mt-4 flex flex-col gap-2 justify-start w-3/4">
+              <h3 className="mb-2">Jokers</h3>
+              <CurrentJokers />
+            </div>
+          )}
+
+          {game.consumables.length > 0 && (
+            <div className="flex flex-col gap-2 justify-end text-rightw-1/4">
+              <h3 className="mb-2">Consumables</h3>
+              <CurrentConsumables />
+            </div>
+          )}
         </div>
-        <div className="mt-4">
-          <Hand />
-        </div>
-        <div className="flex mt-4 gap-2 justify-center">
-          <Button
-            disabled={remainingDiscards === 0 || isScoring}
-            className="bg-red-500"
-            onClick={() => {
-              eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
-            }}
-          >
-            Discard
-          </Button>
-          <Button disabled={isScoring} className="bg-green-500" onClick={scoreHand}>
-            Play Hand
-          </Button>
-          <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
-            Show Deck
-          </Button>
-        </div>
+      </div>
+      <div className="mt-4">
+        <h3 className="mb-2">Hand</h3>
+        <Hand />
+      </div>
+      <div className="mt-4">
+        <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
+          Show Deck
+        </Button>
       </div>
 
       {showDeck && (
@@ -112,13 +95,6 @@ export function GamePlayView() {
           <Deck />
         </div>
       )}
-      <div className="mt-4">
-        <div>
-          Blind Score: {score.chips} x {score.mult}
-        </div>
-        <div>Your Score: {currentBlind?.score}</div>
-        {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
-      </div>
     </ViewTemplate>
   )
 }

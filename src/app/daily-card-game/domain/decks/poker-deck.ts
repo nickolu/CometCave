@@ -3,7 +3,7 @@ import {
   PlayingCardDefinition,
   PlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/types'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import { initializePlayingCard } from '@/app/daily-card-game/domain/playing-card/utils'
 
 export const pokerDeckDefinition: PlayingCardDefinition[] = [
   getDefaultCard('2', 'hearts'),
@@ -60,13 +60,6 @@ export const pokerDeckDefinition: PlayingCardDefinition[] = [
   getDefaultCard('A', 'spades'),
 ]
 
-export const initialPokerDeckState: PlayingCardState[] = pokerDeckDefinition.map(card => ({
-  id: uuid(),
-  playingCardId: card.id,
-  bonusChips: 0,
-  flags: {
-    isHolographic: false,
-    isFoil: false,
-  },
-  isFaceUp: true,
-}))
+export const initialPokerDeckState: PlayingCardState[] = pokerDeckDefinition.map(card =>
+  initializePlayingCard(card)
+)

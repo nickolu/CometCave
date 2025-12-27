@@ -11,10 +11,7 @@ import {
   rankThreeOfAKindsByValueAndSuit,
 } from '@/app/daily-card-game/domain/hand/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import {
-  PlayingCardDefinition,
-  PlayingCardState,
-} from '@/app/daily-card-game/domain/playing-card/types'
+import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 
 import { handPriority } from './constants'
 
@@ -108,16 +105,6 @@ export const straightFlushHand: PokerHandDefinition = {
   name: 'Straight Flush',
 }
 
-export const royalFlushHand: PokerHandDefinition = {
-  id: 'royalFlush',
-  baseChips: 100,
-  baseMult: 8,
-  chipIncreasePerLevel: 40, // TODO: Add correct value
-  isSecret: false,
-  multIncreasePerLevel: 4, // TODO: Add correct value
-  name: 'Flush House',
-}
-
 export const fiveOfAKindHand: PokerHandDefinition = {
   id: 'fiveOfAKind',
   baseChips: 120,
@@ -158,7 +145,6 @@ export const pokerHands: Record<PokerHandDefinition['id'], PokerHandDefinition> 
   fullHouse: fullHouseHand,
   fourOfAKind: fourOfAKindHand,
   straightFlush: straightFlushHand,
-  royalFlush: royalFlushHand,
   flushHouse: flushHouseHand,
   fiveOfAKind: fiveOfAKindHand,
   flushFive: flushFiveHand,
@@ -263,28 +249,6 @@ export const checkHandForStraightFlush: HandCheckFunction<[StaticRulesState]> = 
   return [false, []]
 }
 
-const faceCardValues = ['J', 'Q', 'K']
-const isFaceCard = (card: PlayingCardDefinition): boolean => {
-  return faceCardValues.includes(card.value)
-}
-
-export const checkHandForRoyalFlush: HandCheckFunction<[StaticRulesState]> = (
-  cards,
-  staticRules
-) => {
-  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
-  if (straights.length > 0) {
-    const flush = areAllCardsSameSuit(straights[0])
-    const isRoyalFlush =
-      staticRules.areAllCardsFaceCards ||
-      straights[0].every(card => isFaceCard(playingCards[card.playingCardId]))
-    if (flush && isRoyalFlush) {
-      return [true, straights[0]]
-    }
-  }
-  return [false, []]
-}
-
 export const checkHandForFlushHouse: HandCheckFunction<[StaticRulesState]> = (
   cards,
   staticRules
@@ -338,7 +302,6 @@ const handCheckFunctions: Record<
   fullHouse: checkHandForFullHouse,
   fourOfAKind: checkHandForFourOfAKind,
   straightFlush: checkHandForStraightFlush,
-  royalFlush: checkHandForRoyalFlush,
   flushHouse: checkHandForFlushHouse,
   fiveOfAKind: checkHandForFiveOfAKind,
   flushFive: checkHandForFlushFive,

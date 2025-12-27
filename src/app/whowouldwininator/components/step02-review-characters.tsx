@@ -72,6 +72,297 @@ const CardContent = ({
   className?: string
 }) => <div className={`p-6 pt-0 ${className}`}>{children}</div>
 
+const StatBar = ({ label, value, max = 100 }: { label: string; value: number; max?: number }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-sm font-medium w-20">{label}:</span>
+    <Progress value={(value / max) * 100} className="flex-1 text-space-purple" />
+    <span className="text-sm w-8">{value}</span>
+  </div>
+)
+
+const CharacterCard = ({
+  candidateNumber,
+  name,
+  description,
+  details,
+  loading,
+  editingFields,
+  imageGenerationAllowed,
+  handleGeneratePortrait,
+  toggleEdit,
+  updateCharacterDetail,
+  toggleBackstoryExpansion,
+  expandedBackstories,
+  truncateText,
+}: {
+  candidateNumber: 1 | 2
+  name: string
+  description: string
+  details: Partial<CharacterDetails>
+  loading: CharacterDetailsLoading
+  editingFields: {
+    candidate1: Set<keyof CharacterDetails>
+    candidate2: Set<keyof CharacterDetails>
+  }
+  imageGenerationAllowed: boolean
+  handleGeneratePortrait: (candidateNumber: 1 | 2) => void
+  toggleEdit: (candidateNumber: 1 | 2, field: keyof CharacterDetails) => void
+  updateCharacterDetail: (
+    candidateNumber: 1 | 2,
+    detailType: keyof CharacterDetails,
+    value: CharacterDetails[keyof CharacterDetails]
+  ) => void
+  toggleBackstoryExpansion: (candidateNumber: 1 | 2) => void
+  expandedBackstories: {
+    candidate1: boolean
+    candidate2: boolean
+  }
+  truncateText: (text: string) => string
+}) => {
+  const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2'
+  const isEditing = (field: keyof CharacterDetails) => editingFields[candidateKey].has(field)
+
+  return (
+    <Card className="bg-space-dark border-space-purple/30">
+      <CardHeader>
+        <CardTitle className="text-2xl text-cream-white">{name}</CardTitle>
+        <p className="text-sm text-gray-300">{description}</p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Portrait */}
+        {imageGenerationAllowed && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-cream-white">Portrait</h3>
+              {!details.portrait && !loading.portrait && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleGeneratePortrait(candidateNumber)}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Portrait
+                </Button>
+              )}
+            </div>
+            {loading.portrait ? (
+              <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
+                <Loader2 className="w-8 h-8 animate-spin text-space-purple" />
+              </div>
+            ) : details.portrait ? (
+              <Image
+                src={details.portrait.imageUrl}
+                alt={details.portrait.altText}
+                className="w-full object-cover rounded-lg"
+                width={1024}
+                height={1024}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 bg-space-grey/20 rounded-lg gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => handleGeneratePortrait(candidateNumber)}
+                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                >
+                  Generate Portrait
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Backstory */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-cream-white">Backstory</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleEdit(candidateNumber, 'backstory')}
+            >
+              {isEditing('backstory') ? (
+                <Save className="w-4 h-4" />
+              ) : (
+                <Edit2 className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          {loading.backstory ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <span className="text-sm text-gray-400">Generating backstory...</span>
+            </div>
+          ) : isEditing('backstory') ? (
+            <Textarea
+              value={details.backstory || ''}
+              onChange={e => updateCharacterDetail(candidateNumber, 'backstory', e.target.value)}
+              className="bg-space-dark border-space-purple/30"
+              rows={4}
+            />
+          ) : (
+            <div>
+              <p className="text-sm text-gray-300">
+                {details.backstory
+                  ? expandedBackstories[candidateKey]
+                    ? details.backstory
+                    : truncateText(details.backstory)
+                  : 'No backstory available'}
+              </p>
+              {details.backstory && details.backstory.length > 150 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleBackstoryExpansion(candidateNumber)}
+                  className="mt-2 text-space-purple hover:text-space-purple/80 p-0 h-auto"
+                >
+                  {expandedBackstories[candidateKey] ? 'Show less' : 'Show more'}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Powers */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-cream-white">Powers</h3>
+            <Button variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'powers')}>
+              {isEditing('powers') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+            </Button>
+          </div>
+          {loading.powers ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <span className="text-sm text-gray-400">Generating powers...</span>
+            </div>
+          ) : isEditing('powers') ? (
+            <Textarea
+              value={details.powers?.join('\n') || ''}
+              onChange={e =>
+                updateCharacterDetail(
+                  candidateNumber,
+                  'powers',
+                  e.target.value.split('\n').filter(p => p.trim())
+                )
+              }
+              className="bg-space-dark border-space-purple/30"
+              rows={3}
+              placeholder="Enter powers, one per line"
+            />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {details.powers?.map((power, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-space-purple/20 text-purple-200 rounded-md text-sm"
+                >
+                  {power}
+                </span>
+              )) || <span className="text-gray-400">No powers available</span>}
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-cream-white">Combat Stats</h3>
+            <Button variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'stats')}>
+              {isEditing('stats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+            </Button>
+          </div>
+          {loading.stats ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <span className="text-sm text-gray-400">Generating stats...</span>
+            </div>
+          ) : isEditing('stats') ? (
+            <div className="space-y-4">
+              {details.stats ? (
+                Object.entries(details.stats).map(([statName, statValue]) => (
+                  <div key={statName} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-medium text-cream-white capitalize">
+                        {statName}
+                      </label>
+                      <span className="text-sm text-gray-300">{statValue}</span>
+                    </div>
+                    <Slider
+                      value={[statValue]}
+                      onValueChange={([newValue]) => {
+                        const updatedStats = {
+                          ...details.stats,
+                          [statName]: newValue,
+                        } as CharacterStats
+                        updateCharacterDetail(candidateNumber, 'stats', updatedStats)
+                      }}
+                      max={100}
+                      min={1}
+                      step={1}
+                      className="w-full"
+                    />
+                  </div>
+                ))
+              ) : (
+                <span className="text-gray-400">No stats available to edit</span>
+              )}
+            </div>
+          ) : details.stats ? (
+            <div className="space-y-2">
+              <StatBar label="Strength" value={details.stats.strength} />
+              <StatBar label="Speed" value={details.stats.speed} />
+              <StatBar label="Durability" value={details.stats.durability} />
+              <StatBar label="Intelligence" value={details.stats.intelligence} />
+              <StatBar label="Special Abilities" value={details.stats.specialAbilities} />
+              <StatBar label="Fighting" value={details.stats.fighting} />
+            </div>
+          ) : (
+            <span className="text-gray-400">No stats available</span>
+          )}
+        </div>
+
+        {/* Feats */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-cream-white">Notable Feats</h3>
+            <Button variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'feats')}>
+              {isEditing('feats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+            </Button>
+          </div>
+          {loading.feats ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <span className="text-sm text-gray-400">Generating feats...</span>
+            </div>
+          ) : isEditing('feats') ? (
+            <Textarea
+              value={details.feats?.join('\n') || ''}
+              onChange={e =>
+                updateCharacterDetail(
+                  candidateNumber,
+                  'feats',
+                  e.target.value.split('\n').filter(f => f.trim())
+                )
+              }
+              className="bg-space-dark border-space-purple/30"
+              rows={4}
+              placeholder="Enter feats, one per line"
+            />
+          ) : (
+            <ul className="space-y-1">
+              {details.feats?.map((feat, index) => (
+                <li key={index} className="text-sm text-gray-300">
+                  • {feat}
+                </li>
+              )) || <span className="text-gray-400">No feats available</span>}
+            </ul>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function Step02ReviewCharacters({
   candidate1Name,
   candidate2Name,
@@ -210,283 +501,6 @@ export function Step02ReviewCharacters({
     }
   }
 
-  const StatBar = ({ label, value, max = 100 }: { label: string; value: number; max?: number }) => (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium w-20">{label}:</span>
-      <Progress value={(value / max) * 100} className="flex-1 text-space-purple" />
-      <span className="text-sm w-8">{value}</span>
-    </div>
-  )
-
-  const CharacterCard = ({
-    candidateNumber,
-    name,
-    description,
-    details,
-    loading,
-  }: {
-    candidateNumber: 1 | 2
-    name: string
-    description: string
-    details: Partial<CharacterDetails>
-    loading: CharacterDetailsLoading
-  }) => {
-    const candidateKey = candidateNumber === 1 ? 'candidate1' : 'candidate2'
-    const isEditing = (field: keyof CharacterDetails) => editingFields[candidateKey].has(field)
-
-    return (
-      <Card className="bg-space-dark border-space-purple/30">
-        <CardHeader>
-          <CardTitle className="text-2xl text-cream-white">{name}</CardTitle>
-          <p className="text-sm text-gray-300">{description}</p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Portrait */}
-          {imageGenerationAllowed && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-cream-white">Portrait</h3>
-                {!details.portrait && !loading.portrait && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleGeneratePortrait(candidateNumber)}
-                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                  >
-                    Generate Portrait
-                  </Button>
-                )}
-              </div>
-              {loading.portrait ? (
-                <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
-                  <Loader2 className="w-8 h-8 animate-spin text-space-purple" />
-                </div>
-              ) : details.portrait ? (
-                <Image
-                  src={details.portrait.imageUrl}
-                  alt={details.portrait.altText}
-                  className="w-full object-cover rounded-lg"
-                  width={1024}
-                  height={1024}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-48 bg-space-grey/20 rounded-lg gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleGeneratePortrait(candidateNumber)}
-                    className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
-                  >
-                    Generate Portrait
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Backstory */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-cream-white">Backstory</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleEdit(candidateNumber, 'backstory')}
-              >
-                {isEditing('backstory') ? (
-                  <Save className="w-4 h-4" />
-                ) : (
-                  <Edit2 className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-            {loading.backstory ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
-                <span className="text-sm text-gray-400">Generating backstory...</span>
-              </div>
-            ) : isEditing('backstory') ? (
-              <Textarea
-                value={details.backstory || ''}
-                onChange={e => updateCharacterDetail(candidateNumber, 'backstory', e.target.value)}
-                className="bg-space-dark border-space-purple/30"
-                rows={4}
-              />
-            ) : (
-              <div>
-                <p className="text-sm text-gray-300">
-                  {details.backstory
-                    ? expandedBackstories[candidateKey]
-                      ? details.backstory
-                      : truncateText(details.backstory)
-                    : 'No backstory available'}
-                </p>
-                {details.backstory && details.backstory.length > 150 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleBackstoryExpansion(candidateNumber)}
-                    className="mt-2 text-space-purple hover:text-space-purple/80 p-0 h-auto"
-                  >
-                    {expandedBackstories[candidateKey] ? 'Show less' : 'Show more'}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Powers */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-cream-white">Powers</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleEdit(candidateNumber, 'powers')}
-              >
-                {isEditing('powers') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-              </Button>
-            </div>
-            {loading.powers ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
-                <span className="text-sm text-gray-400">Generating powers...</span>
-              </div>
-            ) : isEditing('powers') ? (
-              <Textarea
-                value={details.powers?.join('\n') || ''}
-                onChange={e =>
-                  updateCharacterDetail(
-                    candidateNumber,
-                    'powers',
-                    e.target.value.split('\n').filter(p => p.trim())
-                  )
-                }
-                className="bg-space-dark border-space-purple/30"
-                rows={3}
-                placeholder="Enter powers, one per line"
-              />
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {details.powers?.map((power, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-space-purple/20 text-purple-200 rounded-md text-sm"
-                  >
-                    {power}
-                  </span>
-                )) || <span className="text-gray-400">No powers available</span>}
-              </div>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-cream-white">Combat Stats</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleEdit(candidateNumber, 'stats')}
-              >
-                {isEditing('stats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-              </Button>
-            </div>
-            {loading.stats ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
-                <span className="text-sm text-gray-400">Generating stats...</span>
-              </div>
-            ) : isEditing('stats') ? (
-              <div className="space-y-4">
-                {details.stats ? (
-                  Object.entries(details.stats).map(([statName, statValue]) => (
-                    <div key={statName} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <label className="text-sm font-medium text-cream-white capitalize">
-                          {statName}
-                        </label>
-                        <span className="text-sm text-gray-300">{statValue}</span>
-                      </div>
-                      <Slider
-                        value={[statValue]}
-                        onValueChange={([newValue]) => {
-                          const updatedStats = {
-                            ...details.stats,
-                            [statName]: newValue,
-                          } as CharacterStats
-                          updateCharacterDetail(candidateNumber, 'stats', updatedStats)
-                        }}
-                        max={100}
-                        min={1}
-                        step={1}
-                        className="w-full"
-                      />
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-gray-400">No stats available to edit</span>
-                )}
-              </div>
-            ) : details.stats ? (
-              <div className="space-y-2">
-                <StatBar label="Strength" value={details.stats.strength} />
-                <StatBar label="Speed" value={details.stats.speed} />
-                <StatBar label="Durability" value={details.stats.durability} />
-                <StatBar label="Intelligence" value={details.stats.intelligence} />
-                <StatBar label="Special Abilities" value={details.stats.specialAbilities} />
-                <StatBar label="Fighting" value={details.stats.fighting} />
-              </div>
-            ) : (
-              <span className="text-gray-400">No stats available</span>
-            )}
-          </div>
-
-          {/* Feats */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-cream-white">Notable Feats</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleEdit(candidateNumber, 'feats')}
-              >
-                {isEditing('feats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-              </Button>
-            </div>
-            {loading.feats ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
-                <span className="text-sm text-gray-400">Generating feats...</span>
-              </div>
-            ) : isEditing('feats') ? (
-              <Textarea
-                value={details.feats?.join('\n') || ''}
-                onChange={e =>
-                  updateCharacterDetail(
-                    candidateNumber,
-                    'feats',
-                    e.target.value.split('\n').filter(f => f.trim())
-                  )
-                }
-                className="bg-space-dark border-space-purple/30"
-                rows={4}
-                placeholder="Enter feats, one per line"
-              />
-            ) : (
-              <ul className="space-y-1">
-                {details.feats?.map((feat, index) => (
-                  <li key={index} className="text-sm text-gray-300">
-                    • {feat}
-                  </li>
-                )) || <span className="text-gray-400">No feats available</span>}
-              </ul>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -526,6 +540,14 @@ export function Step02ReviewCharacters({
           description={candidate1Description}
           details={candidate1Details}
           loading={candidate1DetailsLoading}
+          editingFields={editingFields}
+          imageGenerationAllowed={imageGenerationAllowed}
+          handleGeneratePortrait={handleGeneratePortrait}
+          toggleEdit={toggleEdit}
+          updateCharacterDetail={updateCharacterDetail}
+          toggleBackstoryExpansion={toggleBackstoryExpansion}
+          expandedBackstories={expandedBackstories}
+          truncateText={truncateText}
         />
         <CharacterCard
           candidateNumber={2}
@@ -533,6 +555,14 @@ export function Step02ReviewCharacters({
           description={candidate2Description}
           details={candidate2Details}
           loading={candidate2DetailsLoading}
+          editingFields={editingFields}
+          imageGenerationAllowed={imageGenerationAllowed}
+          handleGeneratePortrait={handleGeneratePortrait}
+          toggleEdit={toggleEdit}
+          updateCharacterDetail={updateCharacterDetail}
+          toggleBackstoryExpansion={toggleBackstoryExpansion}
+          expandedBackstories={expandedBackstories}
+          truncateText={truncateText}
         />
       </div>
 

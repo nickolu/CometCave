@@ -5,6 +5,7 @@ import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 
 import { HAND_SIZE } from './constants'
+import { calculateInterest } from './reduce-game'
 import { collectEffects, getBlindDefinition } from './utils'
 
 import type { GamePlayState, GameState } from './types'
@@ -79,7 +80,6 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   const round = getCurrentRound(draft)
   // Effects (boss blinds / jokers) react BEFORE cleanup/phase transitions
   applyHandScoringEndEffects(draft, event, round)
-  console.log('hand scoring end effects applied', draft.gamePlayState.score.mult)
 
   const computed = computeBlindScoreAndAnte(draft, currentBlind, round)
   if (!computed) return
@@ -118,6 +118,11 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
 
     if (draft.gamePlayState.remainingHands > 0) {
       currentBlind.additionalRewards.push(['Remaining Hands', 3])
+    }
+    const interest = calculateInterest(draft)
+
+    if (interest > 0) {
+      currentBlind.additionalRewards.push(['Interest', interest])
     }
 
     resetScoreForNextHand(draft.gamePlayState)

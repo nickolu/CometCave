@@ -1,7 +1,6 @@
 import type {
-  Consumable,
-  TagDefinition,
-  VoucherDefinition,
+  CelestialCardState,
+  TarotCardState,
 } from '@/app/daily-card-game/domain/consumable/types'
 import type { PokerHandDefinition, PokerHandsState } from '@/app/daily-card-game/domain/hand/types'
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
@@ -10,7 +9,8 @@ import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 
 export interface GameState {
-  consumables: Consumable[]
+  consumables: (CelestialCardState | TarotCardState)[]
+  consumablesUsed: (CelestialCardState | TarotCardState)[]
   discardsPlayed: number
   fullDeck: PlayingCardState[]
   gamePhase: GamePhase
@@ -22,21 +22,22 @@ export interface GameState {
   maxDiscards: number
   maxHands: number
   maxJokers: number
+  maxInterest: number
   money: number
+  minimumMoney: number
   pokerHands: PokerHandsState
   roundIndex: number
   rounds: RoundState[]
   shopState: ShopState
   stake: Stake
   staticRules: StaticRulesState
-  tags: TagDefinition[]
   totalScore: number
-  vouchersUsed: VoucherDefinition[]
 }
 
 export interface StaticRulesState {
   numberOfCardsRequiredForFlushAndStraight: number
   areAllCardsFaceCards: boolean
+  allowDuplicateJokersInShop: boolean
 }
 
 export type GamePhase =
@@ -61,6 +62,8 @@ export interface GamePlayState {
   scoringEvents: (ScoringEvent | CustomScoringEvent)[]
   selectedCardIds: string[]
   selectedHand?: [PokerHandDefinition['id'], PlayingCardState[]]
+  selectedConsumable?: CelestialCardState | TarotCardState
+  selectedJokerId?: string
 }
 
 export interface ScoringEvent {

@@ -9,7 +9,7 @@ import {
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { JokerDefinition } from './types'
-import { bonusOnCardScored, bonusOnHandPlayed } from './utils'
+import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
 
 export const jokerJoker: JokerDefinition = {
   id: 'jokerJoker',
@@ -422,17 +422,42 @@ export const fourFingersJoker: JokerDefinition = {
       },
     },
     {
-      event: { type: 'JOKER_ADDED' }, // handle game start in case the game starts with jokers
+      event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
       },
     },
     {
-      event: { type: 'JOKER_REMOVED' }, // handle game start in case the game starts with jokers
+      event: { type: 'SHOP_BUY_CARD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedCard = ctx.game.shopState.cardsForSale.find(
+          card => card.card.id === ctx.game.shopState.selectedCardId
+        )
+        if (!selectedCard) return
+        if (
+          isJokerState(selectedCard.card) &&
+          selectedCard.card.jokerId === jokers.fourFingersJoker.id
+        ) {
+          ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // don't modify if there's another four fingers joker in play
+        if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
+          ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
         if (!ctx.game.jokers.some(joker => joker.jokerId === jokers.fourFingersJoker.id)) {
           ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
         }

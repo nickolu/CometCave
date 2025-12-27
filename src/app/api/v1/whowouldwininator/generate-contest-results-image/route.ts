@@ -6,9 +6,7 @@ import OpenAI from 'openai'
 import { generatePublicId, uploadBase64Image } from '@/lib/cloudinary'
 import { isImageGenerationAllowed } from '@/lib/utils'
 
-export const config = {
-  maxDuration: 300, // 5 minutes in seconds
-}
+export const maxDuration = 300 // 5 minutes in seconds
 
 export const runtime = 'nodejs'
 

@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable */
 import { extend } from '@pixi/react'
 import { Container, Graphics } from 'pixi.js'
 import { useCallback, useEffect, useRef, useState } from 'react'

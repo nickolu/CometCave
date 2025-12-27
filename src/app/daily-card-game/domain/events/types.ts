@@ -1,3 +1,4 @@
+import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
 import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/types'
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
@@ -8,11 +9,15 @@ export type GameEvent =
   | BigBlindSkippedEvent
   | BlindRewardsEndEvent
   | BlindRewardsStartEvent
-  | BlindSelectionBackToMenuEvent
+  | BackToMenuEvent
   | BossBlindSelectedEvent
   | CardDeselectedEvent
   | CardScoredEvent
   | CardSelectedEvent
+  | CelestialCardUsedEvent
+  | ConsumableDeselectedEvent
+  | ConsumableSelectedEvent
+  | ConsumableSoldEvent
   | DiscardSelectedCardsEvent
   | DisplayJokersEvent
   | HandDealtEvent
@@ -20,14 +25,30 @@ export type GameEvent =
   | HandScoringStartEvent
   | JokerAddedEvent
   | JokerRemovedEvent
+  | JokerSelectedEvent
+  | JokerDeselectedEvent
+  | JokerSoldEvent
   | PackOpenBackToShopEvent
   | RoundEndEvent
   | RoundStartEvent
   | ShopOpenPackEvent
   | ShopSelectBlindEvent
+  | ShopSelectCardEvent
+  | ShopDeselectCardEvent
   | SmallBlindSelectedEvent
   | SmallBlindSkippedEvent
+  | TarotCardUsedEvent
+  | ShopOpenEvent
+  | ShopBuyCardEvent
+  | ShopBuyAndUseCardEvent
+  | ShopRerollEvent
 
+export type ShopBuyCardEvent = {
+  type: 'SHOP_BUY_CARD'
+}
+export type ShopBuyAndUseCardEvent = {
+  type: 'SHOP_BUY_AND_USE_CARD'
+}
 export type BigBlindSelectedEvent = {
   type: 'BIG_BLIND_SELECTED'
 }
@@ -40,8 +61,8 @@ export type BlindRewardsEndEvent = {
 export type BlindRewardsStartEvent = {
   type: 'BLIND_REWARDS_START'
 }
-export type BlindSelectionBackToMenuEvent = {
-  type: 'BLIND_SELECTION_BACK_TO_MENU'
+export type BackToMenuEvent = {
+  type: 'BACK_TO_MAIN_MENU'
 }
 export type BossBlindSelectedEvent = {
   type: 'BOSS_BLIND_SELECTED'
@@ -56,6 +77,20 @@ export type CardScoredEvent = {
 export type CardSelectedEvent = {
   type: 'CARD_SELECTED'
   id: string
+}
+export type CelestialCardUsedEvent = {
+  type: 'CELESTIAL_CARD_USED'
+}
+export type ConsumableSelectedEvent = {
+  type: 'CONSUMABLE_SELECTED'
+  id: string
+}
+export type ConsumableDeselectedEvent = {
+  type: 'CONSUMABLE_DESELECTED'
+  id: string
+}
+export type ConsumableSoldEvent = {
+  type: 'CONSUMABLE_SOLD'
 }
 export type DiscardSelectedCardsEvent = {
   type: 'DISCARD_SELECTED_CARDS'
@@ -78,6 +113,17 @@ export type JokerAddedEvent = {
 export type JokerRemovedEvent = {
   type: 'JOKER_REMOVED'
 }
+export type JokerSelectedEvent = {
+  type: 'JOKER_SELECTED'
+  id: string
+}
+export type JokerDeselectedEvent = {
+  type: 'JOKER_DESELECTED'
+  id: string
+}
+export type JokerSoldEvent = {
+  type: 'JOKER_SOLD'
+}
 export type PackOpenBackToShopEvent = {
   type: 'PACK_OPEN_BACK_TO_SHOP'
 }
@@ -90,8 +136,19 @@ export type RoundStartEvent = {
 export type ShopOpenPackEvent = {
   type: 'SHOP_OPEN_PACK'
 }
+export type ShopOpenEvent = {
+  type: 'SHOP_OPEN'
+}
 export type ShopSelectBlindEvent = {
   type: 'SHOP_SELECT_BLIND'
+}
+export type ShopSelectCardEvent = {
+  type: 'SHOP_SELECT_CARD'
+  id: string
+}
+export type ShopDeselectCardEvent = {
+  type: 'SHOP_DESELECT_CARD'
+  id: string
 }
 export type SmallBlindSelectedEvent = {
   type: 'SMALL_BLIND_SELECTED'
@@ -99,16 +156,23 @@ export type SmallBlindSelectedEvent = {
 export type SmallBlindSkippedEvent = {
   type: 'SMALL_BLIND_SKIPPED'
 }
+export type TarotCardUsedEvent = {
+  type: 'TAROT_CARD_USED'
+}
+export type ShopRerollEvent = {
+  type: 'SHOP_REROLL'
+}
 
 export interface EffectContext {
+  bossBlind?: BlindState
   event: GameEvent
   game: GameState
-  score: ScoreState
-  playedCards?: PlayingCardState[]
-  scoredCards?: PlayingCardState[]
   jokers?: JokerState[]
+  playedCards?: PlayingCardState[]
   round?: RoundState
-  bossBlind?: BlindState
+  score: ScoreState
+  scoredCards?: PlayingCardState[]
+  tarotCards?: TarotCardState[]
 }
 
 export interface Effect {
