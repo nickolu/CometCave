@@ -53,3 +53,7 @@ export function getRandomNumbersWithSeed({
 export function getCurrentDayAsSeedString() {
   return new Date().toISOString().split('T')[0]
 }
+
+export function buildSeedString(strings: string[]) {
+  return strings.join('-')
+}

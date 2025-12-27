@@ -1,7 +1,7 @@
 import _ from 'lodash'
 
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
   CelestialCardDefinition,
   TarotCardDefinition,
@@ -29,7 +29,7 @@ import {
   isPlayingCardDefinition,
   isPlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/utils'
-import { getRandomNumbersWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, getRandomNumbersWithSeed } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { BlindState } from '@/app/daily-card-game/domain/round/types'
 
@@ -130,12 +130,6 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
 
   const currentBlind = getInProgressBlind(game)
 
-  const seed =
-    game.gameSeed +
-    game.roundIndex.toString() +
-    (currentBlind?.type ? blindIndices[currentBlind.type] : 0).toString() +
-    game.shopState.rerollsUsed.toString()
-
   if (!game.staticRules.allowDuplicateJokersInShop) {
     const ownedJokers = game.jokers.map(joker => joker.jokerId)
     allBuyableCardDefinitions = allBuyableCardDefinitions.filter(card => {
@@ -145,6 +139,13 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
       return true
     })
   }
+  const blindIndex = currentBlind?.type ? blindIndices[currentBlind.type] : 0
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    blindIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
 
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,

@@ -1,7 +1,6 @@
+import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 const FaceUpJoker = ({ joker }: { joker: JokerDefinition }) => {
   return (
@@ -38,16 +37,13 @@ export const Joker = ({
 }) => {
   const jokerDefinition = jokers[joker.jokerId]
   return (
-    <Card
-      className={cn(
-        isSelected ? 'ring-2 ring-space-purple -mt-2' : '',
-        'h-36 w-24 transform transition-all duration-300 cursor-pointer'
-      )}
+    <GameCard
+      isSelected={isSelected}
       onClick={() => {
         onClick?.(isSelected ?? false, joker.id)
       }}
     >
       <FaceUpJoker joker={jokerDefinition} />
-    </Card>
+    </GameCard>
   )
 }

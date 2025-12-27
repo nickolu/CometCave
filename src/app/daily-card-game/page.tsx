@@ -1,12 +1,16 @@
 'use client'
 import { BlindRewardsView } from './components/game-views/blind-rewards'
 import { BlindSelectionView } from './components/game-views/blind-selection'
+import { BossBlindsView } from './components/game-views/boss-blinds'
+import { CelestialsView } from './components/game-views/celestials'
 import { GameOverView } from './components/game-views/game-over'
 import { GamePlayView } from './components/game-views/gameplay'
-import JokersView from './components/game-views/jokers'
+import { JokersView } from './components/game-views/jokers'
 import { MainMenuView } from './components/game-views/main-menu'
 import { PackOpenView } from './components/game-views/pack-open'
 import { ShopView } from './components/game-views/shop'
+import { TarotCardsView } from './components/game-views/tarot-cards'
+import { VouchersView } from './components/game-views/vouchers'
 import { useGameEvents } from './useGameEvents'
 import { useGameState } from './useGameState'
 
@@ -31,6 +35,14 @@ export default function DailyCardGamePage() {
       return <BlindRewardsView />
     case 'jokers':
       return <JokersView />
+    case 'vouchers':
+      return <VouchersView />
+    case 'tarotCards':
+      return <TarotCardsView />
+    case 'celestialCards':
+      return <CelestialsView />
+    case 'bossBlinds':
+      return <BossBlindsView />
     default:
       return <div>Error: Unknown game phase {game.gamePhase}</div>
   }

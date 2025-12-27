@@ -1,7 +1,7 @@
 import { Draft } from 'immer'
 
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
   isCelestialCardState,
   isTarotCardState,
@@ -18,6 +18,7 @@ import type {
   BlindState,
   RoundState,
 } from '@/app/daily-card-game/domain/round/types'
+import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 import type { GameState } from './types'
 
@@ -42,6 +43,8 @@ export function collectEffects(game: GameState): Effect[] {
   }
 
   effects.push(...game.jokers.flatMap(j => jokers[j.jokerId]?.effects || []))
+
+  effects.push(...game.vouchers.flatMap(v => vouchers[v.type]?.effects || []))
 
   return effects
 }
@@ -90,6 +93,7 @@ export function useBuyableCelestialCard(draft: Draft<GameState>): void {
         round: draft.rounds[draft.roundIndex],
         bossBlind: draft.rounds[draft.roundIndex].bossBlind,
         jokers: draft.jokers,
+        vouchers: draft.vouchers,
       },
       celestialCards[celestialCard.card.handId].effects
     )
@@ -121,6 +125,7 @@ export function useConsumableCelestialCard(draft: Draft<GameState>, event: GameE
       round: draft.rounds[draft.roundIndex],
       bossBlind: draft.rounds[draft.roundIndex].bossBlind,
       jokers: draft.jokers,
+      vouchers: draft.vouchers,
     },
     celestialCards[celestialCard.handId].effects
   )
@@ -146,6 +151,7 @@ export function useBuyableTarotCard(draft: Draft<GameState>): void {
         round: draft.rounds[draft.roundIndex],
         bossBlind: draft.rounds[draft.roundIndex].bossBlind,
         jokers: draft.jokers,
+        vouchers: draft.vouchers,
       },
       tarotCards[tarotCard.card.tarotType].effects
     )
@@ -178,6 +184,7 @@ export function useConsumableTarotCard(draft: Draft<GameState>, event: GameEvent
       round: draft.rounds[draft.roundIndex],
       bossBlind: draft.rounds[draft.roundIndex].bossBlind,
       jokers: draft.jokers,
+      vouchers: draft.vouchers,
     },
     tarotCards[tarotCard.tarotType].effects
   )

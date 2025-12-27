@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { Hands } from '@/app/daily-card-game/components/hands/hands'
 import { Modal } from '@/app/daily-card-game/components/ui/modal'
+import { Vouchers } from '@/app/daily-card-game/components/voucher/vouchers'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
@@ -20,11 +21,12 @@ export function ViewTemplate({
   const { game } = useGameState()
   const currentBlind = getInProgressBlind(game)
   const [showHands, setShowHands] = useState(false)
+  const [showVouchers, setShowVouchers] = useState(false)
   return (
     <div>
       <div className="flex">
         {/* Sidebar */}
-        <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
+        <div id="game-sidebar" className="w-1/4 min-w-[300px] p-4 flex flex-col gap-4">
           {sidebarContentTop}
 
           <hr />
@@ -41,14 +43,22 @@ export function ViewTemplate({
             <div>
               <strong>Hands Played:</strong> {game.handsPlayed}
             </div>
-            <div>
+            <div className="flex gap-2">
               <Button onClick={() => setShowHands(!showHands)}>Show Hands</Button>
-              {showHands && (
-                <Modal onClose={() => setShowHands(false)}>
-                  <Hands pokerHandsState={game.pokerHands} />
-                </Modal>
+              {game.vouchers.length > 0 && (
+                <Button onClick={() => setShowVouchers(!showVouchers)}>Show Vouchers</Button>
               )}
             </div>
+            {showHands && (
+              <Modal onClose={() => setShowHands(false)}>
+                <Hands pokerHandsState={game.pokerHands} />
+              </Modal>
+            )}
+            {showVouchers && (
+              <Modal onClose={() => setShowVouchers(false)}>
+                <Vouchers vouchers={game.vouchers.map(voucher => voucher.type)} />
+              </Modal>
+            )}
           </div>
           {currentBlind && (
             <>

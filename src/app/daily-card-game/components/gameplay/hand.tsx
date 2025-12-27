@@ -11,7 +11,7 @@ import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { PlayingCard } from './card'
+import { PlayingCard } from './playing-card'
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 

@@ -4,6 +4,7 @@ import type {
 } from '@/app/daily-card-game/domain/consumable/types'
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import type { VoucherType } from '@/app/daily-card-game/domain/voucher/types'
 
 export interface ShopState {
   baseRerollPrice: number
@@ -14,9 +15,11 @@ export interface ShopState {
   openPackState: OpenPackState | null
   packsForSale: Pack[]
   playingCardMultiplier: number
+  priceMultiplier: number
   rerollsUsed: number
   selectedCardId: string | null
   tarotCardMultiplier: number
+  voucher: VoucherType | null
 }
 
 export interface OpenPackState {

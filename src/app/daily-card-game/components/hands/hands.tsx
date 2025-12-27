@@ -22,24 +22,32 @@ export const Hands = ({ pokerHandsState }: { pokerHandsState: PokerHandsState })
           <p>Times Played</p>
         </div>
       </div>
-      {visiblePokerHands.map(hand => (
-        <div key={hand.handId} className="grid grid-cols-4 gap-2">
-          <div className="col-span-1">
-            <p>
-              <strong>{pokerHands[hand.handId].name}</strong>
-            </p>
+      {visiblePokerHands.map(hand => {
+        const currentHandChips =
+          pokerHands[hand.handId].baseChips +
+          pokerHands[hand.handId].chipIncreasePerLevel * (hand.level - 1)
+        const currentHandMult =
+          pokerHands[hand.handId].baseMult +
+          pokerHands[hand.handId].multIncreasePerLevel * (hand.level - 1)
+        return (
+          <div key={hand.handId} className="grid grid-cols-4 gap-2">
+            <div className="col-span-1">
+              <p>
+                <strong>{pokerHands[hand.handId].name}</strong>
+              </p>
+            </div>
+            <div className="col-span-1">
+              <p>{hand.level}</p>
+            </div>
+            <div className="col-span-1">
+              <p>{`${currentHandChips} x ${currentHandMult}`}</p>
+            </div>
+            <div className="col-span-1">
+              <p>{hand.timesPlayed}</p>
+            </div>
           </div>
-          <div className="col-span-1">
-            <p>{hand.level}</p>
-          </div>
-          <div className="col-span-1">
-            <p>{`${pokerHands[hand.handId].baseChips} x ${pokerHands[hand.handId].baseMult}`}</p>
-          </div>
-          <div className="col-span-1">
-            <p>{hand.timesPlayed}</p>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

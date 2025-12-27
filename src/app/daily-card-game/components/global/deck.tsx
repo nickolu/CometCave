@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { PlayingCard } from '@/app/daily-card-game/components/gameplay/card'
+import { PlayingCard } from '@/app/daily-card-game/components/gameplay/playing-card'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
