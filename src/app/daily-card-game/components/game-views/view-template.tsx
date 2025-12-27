@@ -6,10 +6,12 @@ import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
 export function ViewTemplate({
-  sidebarContent,
+  sidebarContentTop,
+  sidebarContentBottom,
   children,
 }: {
-  sidebarContent?: React.ReactNode
+  sidebarContentTop?: React.ReactNode
+  sidebarContentBottom?: React.ReactNode
   children: React.ReactNode
 }) {
   const { game } = useGameState()
@@ -19,7 +21,7 @@ export function ViewTemplate({
       <div className="flex">
         {/* Sidebar */}
         <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
-          {sidebarContent}
+          {sidebarContentTop}
 
           <hr />
           <div className="flex flex-col gap-2 pl-2">
@@ -67,6 +69,7 @@ export function ViewTemplate({
             </>
           )}
           <hr />
+          {sidebarContentBottom}
           <div className="pl-2 flex flex-col gap-2">
             {game.gamePlayState.scoringEvents.length > 0 && (
               <>

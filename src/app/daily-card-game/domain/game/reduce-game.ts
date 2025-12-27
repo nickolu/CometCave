@@ -21,7 +21,7 @@ import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 
-import { HAND_SIZE, MAX_SELECTED_CARDS } from './constants'
+import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
 import { handleHandScoringEnd } from './handlers'
 import {
   collectEffects,
@@ -59,6 +59,13 @@ function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerSta
   draft.jokers = draft.jokers.filter(joker => joker.id !== selectedJoker.id)
   ctx.jokers = draft.jokers
   dispatchEffects(event, ctx, effectsBeforeRemoval)
+}
+
+export function calculateInterest(draft: GameState): number {
+  const currentMoney = draft.money
+  const maxInterest = draft.maxInterest
+  const interestCalculation = Math.floor(currentMoney / INTEREST_CALCULATION_FACTOR)
+  return Math.min(interestCalculation, maxInterest)
 }
 
 export function reduceGame(game: GameState, event: GameEvent): GameState {

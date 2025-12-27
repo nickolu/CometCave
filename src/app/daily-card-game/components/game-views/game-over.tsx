@@ -64,8 +64,8 @@ export function GameOverView() {
             {hasCopied ? 'Copied!' : 'Share Score'}
           </Button>
         </div>
-        <div>
-          <p>Try again tomorrow for a new game!</p>
+        <div className="mt-4">
+          <p className="text-lg text-space-purple-light">Try again tomorrow for a new game!</p>
         </div>
       </div>
     </ViewTemplate>

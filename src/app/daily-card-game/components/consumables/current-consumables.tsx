@@ -15,7 +15,7 @@ export const CurrentConsumables = () => {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         {game.consumables.map(consumable =>
           consumable.consumableType === 'tarotCard' ? (
             <TarotCard

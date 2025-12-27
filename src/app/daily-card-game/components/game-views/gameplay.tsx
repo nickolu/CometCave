@@ -22,8 +22,12 @@ const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
     pokerHands[hand.handId].baseMult + pokerHands[hand.handId].multIncreasePerLevel * hand.level
   return (
     <div>
-      Selected Hand: {pokerHands[hand.handId].name} (Lvl {hand.level + 1}) ({currentHandChips}x
-      {currentHandMult})
+      <div>
+        <strong>Selected Hand:</strong>
+      </div>{' '}
+      <div className="pl-4">
+        {pokerHands[hand.handId].name} (Lvl {hand.level + 1}) ({currentHandChips}x{currentHandMult})
+      </div>
     </div>
   )
 }
@@ -40,24 +44,48 @@ export function GamePlayView() {
   }, [])
 
   return (
-    <ViewTemplate>
+    <ViewTemplate
+      sidebarContentBottom={
+        <>
+          <div className="pl-2">
+            <div>
+              <strong>Blind Score:</strong> {score.chips} x {score.mult}
+            </div>
+            <div>
+              <strong>Your Score:</strong> {currentBlind?.score}
+            </div>
+            {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
+          </div>
+          <hr />
+        </>
+      }
+    >
       <div>
         <div className="flex flex-wrap justify-between ">
-          <div className="mt-4 flex gap-2 justify-center w-1/2">
-            <CurrentJokers />
-          </div>
+          {game.jokers.length > 0 && (
+            <div className="mt-4 flex flex-col gap-2 justify-start w-3/4">
+              <h3 className="mb-2">Jokers</h3>
+              <CurrentJokers />
+            </div>
+          )}
 
-          <div className="flex flex-wrap gap-2 justify-end w-1/2">
-            <CurrentConsumables />
-          </div>
+          {game.consumables.length > 0 && (
+            <div className="flex flex-col gap-2 justify-end text-rightw-1/4">
+              <h3 className="mb-2">Consumables</h3>
+              <CurrentConsumables />
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-4">
+        <h3 className="mb-2">Hand</h3>
         <Hand />
       </div>
-      <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
-        Show Deck
-      </Button>
+      <div className="mt-4">
+        <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
+          Show Deck
+        </Button>
+      </div>
 
       {showDeck && (
         <div className="absolute top-0 right-1/8 w-3/4 h-full bg-black/90 flex flex-col items-center justify-center p-4 rounded-l-lg border-2 border-space-white">
@@ -67,13 +95,6 @@ export function GamePlayView() {
           <Deck />
         </div>
       )}
-      <div className="mt-4">
-        <div>
-          Blind Score: {score.chips} x {score.mult}
-        </div>
-        <div>Your Score: {currentBlind?.score}</div>
-        {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
-      </div>
     </ViewTemplate>
   )
 }

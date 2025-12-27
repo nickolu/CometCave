@@ -22,6 +22,7 @@ export interface GameState {
   maxDiscards: number
   maxHands: number
   maxJokers: number
+  maxInterest: number
   money: number
   minimumMoney: number
   pokerHands: PokerHandsState

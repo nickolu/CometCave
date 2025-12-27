@@ -48,6 +48,7 @@ export const defaultGameState: GameState = {
   maxJokers: 5,
   maxHands: 4,
   maxDiscards: 3,
+  maxInterest: 5,
   money: 0,
   minimumMoney: 0,
   pokerHands: {

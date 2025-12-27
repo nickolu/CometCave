@@ -90,7 +90,7 @@ export function ShopView() {
 
   return (
     <ViewTemplate
-      sidebarContent={
+      sidebarContentBottom={
         <div className="flex flex-col gap-2">
           <Button
             onClick={() => {
@@ -110,17 +110,17 @@ export function ShopView() {
         </div>
       }
     >
-      <h2>Shop</h2>
+      <h2 className="text-xl font-bold">Shop</h2>
       <div className="flex">
         <div className="flex flex-col gap-2 w-3/4">
           <div className="mt-4">
-            <h3>Jokers</h3>
+            <h3 className="mb-2">Jokers</h3>
             <div className="flex flex-wrap">
               <CurrentJokers />
             </div>
           </div>
           <div className="mt-4">
-            <h3>Cards for Sale</h3>
+            <h3 className="mb-2">Cards for Sale</h3>
             <div className="flex gap-2">
               {game.shopState.cardsForSale.map(buyableCard => (
                 <BuyableCard
@@ -153,7 +153,7 @@ export function ShopView() {
           )}
         </div>
         <div className="flex flex-col items-end gap-2 w-1/4">
-          <h3>Consumables</h3>
+          <h3 className="mb-2">Consumables</h3>
           <div className="flex flex-wrap justify-end">
             <CurrentConsumables />
           </div>

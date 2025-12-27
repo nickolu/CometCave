@@ -21,6 +21,7 @@ const config = {
         'space-dark': '#141A2A',
         'space-grey': '#2A2F3F',
         'space-purple': '#4A3D66',
+        'space-purple-light': '#665A8A',
         'space-blue': '#3D4A66',
         'cream-white': '#F5F2E3',
         'space-gold': '#F5D700',

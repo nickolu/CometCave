@@ -75,7 +75,7 @@ export const Hand = () => {
   return (
     <>
       <div>
-        <div className="flex flex-wrap gap-2 w-full justify-center">
+        <div className="flex flex-wrap gap-2 w-full justify-start">
           {sortedCards?.map((card: PlayingCardState) => (
             <PlayingCard
               key={card.id}
@@ -91,7 +91,7 @@ export const Hand = () => {
             />
           ))}
         </div>
-        <div className="flex flex-wrap gap-2 w-full justify-center mt-2">
+        <div className="flex flex-wrap gap-2 w-full justify-start mt-2">
           Sort By:{' '}
           <span
             className={cn(
@@ -114,7 +114,7 @@ export const Hand = () => {
         </div>
       </div>
 
-      <div className="flex mt-4 gap-2 justify-center">
+      <div className="flex mt-4 gap-2 justify-start">
         <Button
           disabled={remainingDiscards === 0 || isScoring}
           className="bg-red-500"
