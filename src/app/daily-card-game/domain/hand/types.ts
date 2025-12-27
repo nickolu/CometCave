@@ -8,7 +8,6 @@ export interface PokerHandsState {
   fullHouse: PokerHandState
   fourOfAKind: PokerHandState
   straightFlush: PokerHandState
-  royalFlush: PokerHandState
   flushHouse: PokerHandState
   fiveOfAKind: PokerHandState
   flushFive: PokerHandState
@@ -18,12 +17,13 @@ export interface PokerHandState {
   timesPlayed: number
   level: number
   handId: keyof PokerHandsState
+  isSecret: boolean
 }
 
 export interface PokerHandDefinition {
   id: keyof PokerHandsState
   name: string
-  baseChips: number 
+  baseChips: number
   multIncreasePerLevel: number
   chipIncreasePerLevel: number
   baseMult: number

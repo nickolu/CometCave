@@ -113,12 +113,14 @@ export function ShopView() {
       <h2 className="text-xl font-bold">Shop</h2>
       <div className="flex">
         <div className="flex flex-col gap-2 w-3/4">
-          <div className="mt-4">
-            <h3 className="mb-2">Jokers</h3>
-            <div className="flex flex-wrap">
-              <CurrentJokers />
+          {game.jokers.length > 0 && (
+            <div className="mt-4">
+              <h3 className="mb-2">Jokers</h3>
+              <div className="flex flex-wrap">
+                <CurrentJokers />
+              </div>
             </div>
-          </div>
+          )}
           <div className="mt-4">
             <h3 className="mb-2">Cards for Sale</h3>
             <div className="flex gap-2">
@@ -152,12 +154,14 @@ export function ShopView() {
             </div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-2 w-1/4">
-          <h3 className="mb-2">Consumables</h3>
-          <div className="flex flex-wrap justify-end">
-            <CurrentConsumables />
+        {game.consumables.length > 0 && (
+          <div className="flex flex-col items-end gap-2 w-1/4 mt-4">
+            <h3 className="mb-2">Consumables</h3>
+            <div className="flex flex-wrap justify-end">
+              <CurrentConsumables />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </ViewTemplate>
   )

@@ -217,63 +217,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         return
       }
-      case 'HAND_SCORING_START': {
-        const gamePlayState = draft.gamePlayState
-        const selectedCards = gamePlayState.dealtCards.filter(card =>
-          gamePlayState.selectedCardIds.includes(card.id)
-        )
-        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
-          selectedCards,
-          draft.staticRules
-        )
-        gamePlayState.cardsToScore = cardsToScore
-        gamePlayState.playedCardIds = selectedCards.map(card => card.id)
 
-        gamePlayState.remainingHands -= 1
-
-        const playedHandLevel = draft.pokerHands[playedHand].level
-        const handMult =
-          pokerHands[playedHand].baseMult +
-          pokerHands[playedHand].multIncreasePerLevel * playedHandLevel
-        const handChips =
-          pokerHands[playedHand].baseChips +
-          pokerHands[playedHand].chipIncreasePerLevel * playedHandLevel
-
-        if (handChips > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'chips',
-            value: handChips,
-            source: 'hand',
-          })
-        }
-
-        if (handMult > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'mult',
-            value: handMult,
-            source: 'hand',
-          })
-        }
-
-        gamePlayState.isScoring = true
-        gamePlayState.score = { chips: handChips, mult: handMult }
-        gamePlayState.selectedHand = [pokerHands[playedHand].id, selectedCards]
-        draft.handsPlayed += 1
-
-        const ctx: EffectContext = {
-          event,
-          game: draft,
-          score: gamePlayState.score,
-          playedCards: selectedCards,
-          round: draft.rounds[draft.roundIndex],
-          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: draft.jokers,
-        }
-        dispatchEffects(event, ctx, collectEffects(ctx.game))
-        return
-      }
       case 'CARD_SCORED': {
         const gamePlayState = draft.gamePlayState
         const currentCardToScore = gamePlayState.cardsToScore.shift()
@@ -344,6 +288,67 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           score: gamePlayState.score,
           playedCards,
           scoredCards: [currentCardToScore],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
+        return
+      }
+      case 'HAND_SCORING_START': {
+        const gamePlayState = draft.gamePlayState
+        const selectedCards = gamePlayState.dealtCards.filter(card =>
+          gamePlayState.selectedCardIds.includes(card.id)
+        )
+        const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
+          selectedCards,
+          draft.staticRules
+        )
+        gamePlayState.cardsToScore = cardsToScore
+        gamePlayState.playedCardIds = selectedCards.map(card => card.id)
+
+        gamePlayState.remainingHands -= 1
+
+        const playedHandLevel = draft.pokerHands[playedHand].level
+
+        // ensure hand is no longer secret once played
+        draft.pokerHands[playedHand].isSecret = false
+
+        const handMult =
+          pokerHands[playedHand].baseMult +
+          pokerHands[playedHand].multIncreasePerLevel * playedHandLevel
+        const handChips =
+          pokerHands[playedHand].baseChips +
+          pokerHands[playedHand].chipIncreasePerLevel * playedHandLevel
+
+        if (handChips > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: handChips,
+            source: 'hand',
+          })
+        }
+
+        if (handMult > 0) {
+          draft.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: handMult,
+            source: 'hand',
+          })
+        }
+
+        gamePlayState.isScoring = true
+        gamePlayState.score = { chips: handChips, mult: handMult }
+        gamePlayState.selectedHand = [pokerHands[playedHand].id, selectedCards]
+        draft.handsPlayed += 1
+
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: gamePlayState.score,
+          playedCards: selectedCards,
           round: draft.rounds[draft.roundIndex],
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,

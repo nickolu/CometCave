@@ -101,7 +101,9 @@ const blindIndices: Record<BlindState['type'], number> = {
 
 export function getRandomBuyableCards(game: GameState, numberOfCards: number): BuyableCard[] {
   const allTarotCards = Object.values(tarotCards)
-  const allCelestialCards = Object.values(celestialCards)
+  const allCelestialCards = Object.values(celestialCards).filter(
+    card => !game.pokerHands[card.handId].isSecret // don't sell celestial cards for secret hands
+  )
   const allJokers = Object.values(jokers)
   const allPlayingCards = Object.values(playingCards)
 

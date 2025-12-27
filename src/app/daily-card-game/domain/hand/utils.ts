@@ -175,4 +175,5 @@ export const initializeHand = (hand: PokerHandDefinition): PokerHandState => ({
   timesPlayed: 0,
   level: 0,
   handId: hand.id,
+  isSecret: hand.isSecret,
 })
