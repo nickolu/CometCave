@@ -23,6 +23,7 @@ const config = {
         'space-purple': '#4A3D66',
         'space-blue': '#3D4A66',
         'cream-white': '#F5F2E3',
+        'space-gold': '#F5D700',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
