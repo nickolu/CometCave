@@ -2,17 +2,13 @@
 
 import { useEffect, useState } from 'react'
 
+import { ViewTemplate } from '@/app/daily-card-game/components/game-views/view-template'
+import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-signs'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
-
-import { ViewTemplate } from './view-template'
-
-const DollarSigns = ({ count }: { count: number }) => {
-  return Array.from({ length: count }, (_, index) => <span key={index}>$</span>)
-}
 
 export function BlindRewardsView() {
   const { game } = useGameState()

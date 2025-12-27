@@ -30,6 +30,8 @@ import {
   isPlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/utils'
 import { getRandomNumbersWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { BlindState } from '@/app/daily-card-game/domain/round/types'
 
 import { BuyableCard } from './types'
 
@@ -91,6 +93,12 @@ export function getBuyableCardDefinition(
   throw new Error('Invalid card type: ' + buyableCard.type)
 }
 
+const blindIndices: Record<BlindState['type'], number> = {
+  smallBlind: 0,
+  bigBlind: 1,
+  bossBlind: 2,
+}
+
 export function getRandomBuyableCards(game: GameState, numberOfCards: number): BuyableCard[] {
   const allTarotCards = Object.values(tarotCards)
   const allCelestialCards = Object.values(celestialCards)
@@ -118,8 +126,13 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
     allBuyableCardDefinitions.push(...allPlayingCards)
   })
 
+  const currentBlind = getInProgressBlind(game)
+
   const seed =
-    game.gameSeed + game.roundIndex.toString() + game.gamePlayState.timesRerolled.toString()
+    game.gameSeed +
+    game.roundIndex.toString() +
+    (currentBlind?.type ? blindIndices[currentBlind.type] : 0).toString() +
+    game.shopState.rerollsUsed.toString()
 
   if (!game.staticRules.allowDuplicateJokersInShop) {
     const ownedJokers = game.jokers.map(joker => joker.jokerId)
@@ -178,4 +191,8 @@ export function getIsRoomForSelectedCard(
   }
 
   return isPlayingCardDefinition(selectedCardDefinition)
+}
+
+export function canAffordToBuy(price: number = 0, game: GameState): boolean {
+  return game.money - price >= game.minimumMoney
 }

@@ -27,7 +27,6 @@ export const defaultGameState: GameState = {
   fullDeck: initialDeckStates.pokerDeck,
   gamePhase: 'mainMenu',
   gamePlayState: {
-    timesRerolled: 0,
     cardsToScore: [],
     dealtCards: [],
     isScoring: false,
@@ -50,6 +49,7 @@ export const defaultGameState: GameState = {
   maxHands: 4,
   maxDiscards: 3,
   money: 0,
+  minimumMoney: 0,
   pokerHands: {
     highCard: initializeHand(highCardHand),
     pair: initializeHand(pairHand),
@@ -73,15 +73,12 @@ export const defaultGameState: GameState = {
     cardsForSale: [],
     packsForSale: [],
     rerollsUsed: 0,
-    rerollPrice: 0,
+    baseRerollPrice: 5,
     celestialMultiplier: 1,
     playingCardMultiplier: 0,
     tarotCardMultiplier: 1,
-    modifiers: {
-      maxCardsForSale: 0,
-      maxVouchersForSale: 0,
-      baseRerollPrice: 0,
-    },
+    maxCardsForSale: 0,
+    maxVouchersForSale: 0,
   },
   stake: {
     disableSmallBlindReward: false,

@@ -13,6 +13,7 @@ export interface BlindDefinition {
   anteMultiplier: 1 | 1.5 | 2 | 4 | 6
   baseReward: number
   effects: Effect[]
+  description: string
 }
 
 export interface SmallBlindDefinition extends BlindDefinition {
@@ -60,7 +61,6 @@ export interface BossBlindDefinition extends BlindDefinition {
     | 'Violet Vessel'
     | 'Crimson Heart'
     | 'Cerulean Bell'
-  description: string
   image: string
   effects: Effect[]
   minimumAnte: number

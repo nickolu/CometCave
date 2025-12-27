@@ -41,6 +41,7 @@ export type GameEvent =
   | ShopOpenEvent
   | ShopBuyCardEvent
   | ShopBuyAndUseCardEvent
+  | ShopRerollEvent
 
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
@@ -157,6 +158,9 @@ export type SmallBlindSkippedEvent = {
 }
 export type TarotCardUsedEvent = {
   type: 'TAROT_CARD_USED'
+}
+export type ShopRerollEvent = {
+  type: 'SHOP_REROLL'
 }
 
 export interface EffectContext {

@@ -17,6 +17,7 @@ import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import type { BuyableCard } from '@/app/daily-card-game/domain/shop/types'
 import {
+  canAffordToBuy,
   getIsRoomForSelectedCard,
   getIsSelectedCardPlayable,
 } from '@/app/daily-card-game/domain/shop/utils'
@@ -83,14 +84,14 @@ export function ShopView() {
   const selectedCard = game.shopState.cardsForSale.find(
     card => card.card.id === game.shopState.selectedCardId
   )
-  const canAffordSelectedCard = game.money >= (selectedCard?.price ?? 0)
+  const canAffordSelectedCard = canAffordToBuy(selectedCard?.price, game)
   const isSelectedCardPlayable = getIsSelectedCardPlayable(selectedCard, game)
   const isRoomForSelectedCard = getIsRoomForSelectedCard(selectedCard, game)
 
   return (
     <ViewTemplate
       sidebarContent={
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             onClick={() => {
               eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })
@@ -99,11 +100,12 @@ export function ShopView() {
             Finish and Select Blind
           </Button>
           <Button
+            disabled={game.money < game.shopState.baseRerollPrice + game.shopState.rerollsUsed}
             onClick={() => {
-              // eventEmitter.emit({ type: 'SHOP_REROLL' })
+              eventEmitter.emit({ type: 'SHOP_REROLL' })
             }}
           >
-            Reroll
+            Reroll (${game.shopState.baseRerollPrice + game.shopState.rerollsUsed})
           </Button>
         </div>
       }

@@ -464,6 +464,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.shopState.selectedCardId = null
         return
       }
+      case 'SHOP_REROLL': {
+        draft.shopState.rerollsUsed += 1
+        draft.shopState.cardsForSale = getRandomBuyableCards(draft, 3)
+        draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
+        return
+      }
 
       /*
        * CONSUMABLE EVENTS

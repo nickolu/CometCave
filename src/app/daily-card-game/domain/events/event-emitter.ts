@@ -33,6 +33,7 @@ class EventEmitter {
     SHOP_SELECT_CARD: [],
     SHOP_DESELECT_CARD: [],
     SHOP_SELECT_BLIND: [],
+    SHOP_REROLL: [],
     SMALL_BLIND_SELECTED: [],
     SMALL_BLIND_SKIPPED: [],
     TAROT_CARD_USED: [],

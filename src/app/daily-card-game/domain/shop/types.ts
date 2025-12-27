@@ -6,15 +6,16 @@ import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 
 export interface ShopState {
+  baseRerollPrice: number
   cardsForSale: BuyableCard[]
-  modifiers: ShopStateModifiers
+  celestialMultiplier: number
+  maxCardsForSale: number
+  maxVouchersForSale: number
   openPackState: OpenPackState | null
   packsForSale: Pack[]
-  rerollPrice: number
+  playingCardMultiplier: number
   rerollsUsed: number
   selectedCardId: string | null
-  celestialMultiplier: number
-  playingCardMultiplier: number
   tarotCardMultiplier: number
 }
 
@@ -33,10 +34,4 @@ export interface Pack {
   cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard'
   type: 'jumbo' | 'normal' | 'mega'
   price: number
-}
-
-export interface ShopStateModifiers {
-  maxCardsForSale: number
-  maxVouchersForSale: number
-  baseRerollPrice: number
 }

@@ -33,6 +33,7 @@ export function BlindSelectionView() {
       <div className="flex gap-2">
         <BlindCard
           name="Small Blind"
+          reward={smallBlindDefinition.baseReward}
           minimumScore={
             game.rounds[game.roundIndex].baseAnte * (smallBlindDefinition.anteMultiplier || 1)
           }
@@ -42,6 +43,7 @@ export function BlindSelectionView() {
         />
         <BlindCard
           name="Big Blind"
+          reward={bigBlindDefinition.baseReward}
           minimumScore={
             game.rounds[game.roundIndex].baseAnte * (bigBlindDefinition.anteMultiplier || 1)
           }
@@ -50,7 +52,9 @@ export function BlindSelectionView() {
           skipEventName="BIG_BLIND_SKIPPED"
         />
         <BlindCard
-          name={'Boss Blind: ' + bossBlindDefinition.name}
+          name={'Boss: ' + bossBlindDefinition.name}
+          description={bossBlindDefinition.description}
+          reward={bossBlindDefinition.baseReward}
           minimumScore={
             game.rounds[game.roundIndex].baseAnte * (bossBlindDefinition.anteMultiplier || 1)
           }

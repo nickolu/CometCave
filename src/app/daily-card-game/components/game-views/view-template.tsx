@@ -20,13 +20,7 @@ export function ViewTemplate({
         {/* Sidebar */}
         <div id="game-sidebar" className="w-1/4 p-4 flex flex-col gap-4">
           {sidebarContent}
-          <Button
-            onClick={() => {
-              eventEmitter.emit({ type: 'BACK_TO_MAIN_MENU' })
-            }}
-          >
-            Back to Main Menu
-          </Button>
+
           <hr />
           <div className="flex flex-col gap-2 pl-2">
             <div>

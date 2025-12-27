@@ -23,6 +23,7 @@ export interface GameState {
   maxHands: number
   maxJokers: number
   money: number
+  minimumMoney: number
   pokerHands: PokerHandsState
   roundIndex: number
   rounds: RoundState[]
@@ -62,7 +63,6 @@ export interface GamePlayState {
   selectedHand?: [PokerHandDefinition['id'], PlayingCardState[]]
   selectedConsumable?: CelestialCardState | TarotCardState
   selectedJokerId?: string
-  timesRerolled: number
 }
 
 export interface ScoringEvent {
