@@ -1,5 +1,5 @@
 import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
 
 export const TarotCard = ({

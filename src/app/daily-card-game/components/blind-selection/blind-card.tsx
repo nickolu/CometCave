@@ -15,7 +15,7 @@ export function BlindCard({
   name: string
   description?: string
   reward: number
-  minimumScore: number
+  minimumScore?: number
   disabled: boolean
   selectEventName: 'SMALL_BLIND_SELECTED' | 'BIG_BLIND_SELECTED' | 'BOSS_BLIND_SELECTED'
   skipEventName?: 'SMALL_BLIND_SKIPPED' | 'BIG_BLIND_SKIPPED'
@@ -31,7 +31,7 @@ export function BlindCard({
       </div>
 
       <div className="flex flex-col gap-2 justify-start h-full mt-7">
-        <p>Score at Least: {minimumScore}</p>
+        {minimumScore && <p>Score at Least: {minimumScore}</p>}
         <div>
           <Button
             className="w-full"

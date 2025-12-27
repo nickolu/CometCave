@@ -1,7 +1,7 @@
 import _ from 'lodash'
 
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
   CelestialCardDefinition,
   TarotCardDefinition,

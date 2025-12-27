@@ -117,3 +117,8 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   judgement: notImplemented,
   theWorld: notImplemented,
 }
+
+export const implementedTarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefinition> =
+  Object.fromEntries(
+    Object.entries(tarotCards).filter(entry => entry[1].tarotType !== 'notImplemented')
+  ) as Record<TarotCardDefinition['tarotType'], TarotCardDefinition>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 export function MainMenuView() {
   return (
     <div className="flex flex-col items-center mt-10 h-screen">
-      <h1 className="text-2xl font-bold">Cosmic Cards</h1>
+      <h1 className="text-2xl font-bold">Daily Card Game</h1>
       <Button
         className="mt-4"
         size="lg"
@@ -16,7 +16,8 @@ export function MainMenuView() {
       >
         Start Game
       </Button>
-      <div className="flex gap-2 mt-4">
+
+      <div className="flex flex-wrap justify-center gap-2 mt-4 w-3/4 mx-auto">
         <Button
           className="mt-4"
           variant="space"
@@ -26,20 +27,48 @@ export function MainMenuView() {
         >
           Jokers
         </Button>
-        <Button className="mt-4" variant="space" disabled={true}>
-          Tags
-        </Button>
-        <Button className="mt-4" variant="space" disabled={true}>
+
+        <Button
+          className="mt-4"
+          variant="space"
+          onClick={() => {
+            eventEmitter.emit({ type: 'DISPLAY_VOUCHERS' })
+          }}
+        >
           Vouchers
         </Button>
-        <Button className="mt-4" variant="space" disabled={true}>
-          Arcana Cards
+        <Button
+          className="mt-4"
+          variant="space"
+          onClick={() => {
+            eventEmitter.emit({ type: 'DISPLAY_TAROT_CARDS' })
+          }}
+        >
+          Tarot Cards
         </Button>
-        <Button className="mt-4" variant="space" disabled={true}>
+        <Button
+          className="mt-4"
+          variant="space"
+          onClick={() => {
+            eventEmitter.emit({ type: 'DISPLAY_CELESTIALS' })
+          }}
+        >
           Celestial Cards
         </Button>
+        <Button
+          className="mt-4"
+          variant="space"
+          onClick={() => {
+            eventEmitter.emit({ type: 'DISPLAY_BOSS_BLINDS' })
+          }}
+        >
+          Boss Blinds
+        </Button>
         <Button className="mt-4" variant="space" disabled={true}>
-          Spectral Cards
+          Tags (Coming Soon)
+        </Button>
+        <Button className="mt-4" variant="space" disabled={true}>
+          Spectral Cards (Coming Soon)
         </Button>
       </div>
     </div>

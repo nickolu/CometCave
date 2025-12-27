@@ -1,7 +1,7 @@
 import { produce } from 'immer'
 
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
   isCelestialCardState,
   isTarotCardState,
@@ -103,6 +103,22 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'DISPLAY_JOKERS': {
         draft.gamePhase = 'jokers'
+        return
+      }
+      case 'DISPLAY_VOUCHERS': {
+        draft.gamePhase = 'vouchers'
+        return
+      }
+      case 'DISPLAY_TAROT_CARDS': {
+        draft.gamePhase = 'tarotCards'
+        return
+      }
+      case 'DISPLAY_CELESTIALS': {
+        draft.gamePhase = 'celestialCards'
+        return
+      }
+      case 'DISPLAY_BOSS_BLINDS': {
+        draft.gamePhase = 'bossBlinds'
         return
       }
 

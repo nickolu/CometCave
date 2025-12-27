@@ -43,15 +43,19 @@ export interface StaticRulesState {
 }
 
 export type GamePhase =
-  | 'mainMenu'
-  | 'jokers'
-  | 'shop'
-  | 'blindSelection'
-  | 'gameplay'
-  | 'packOpening'
-  | 'gameOver'
   | 'blindRewards'
-
+  | 'blindSelection'
+  | 'bossBlinds'
+  | 'celestialCards'
+  | 'gameOver'
+  | 'gameplay'
+  | 'jokers'
+  | 'mainMenu'
+  | 'packOpening'
+  | 'shop'
+  | 'spectralCards'
+  | 'tarotCards'
+  | 'vouchers'
 export interface GamePlayState {
   cardsToScore: PlayingCardState[]
   dealtCards: PlayingCardState[]

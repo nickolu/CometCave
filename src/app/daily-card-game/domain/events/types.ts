@@ -45,6 +45,11 @@ export type GameEvent =
   | ShopBuyAndUseCardEvent
   | ShopRerollEvent
   | VoucherPurchasedEvent
+  | DisplayBossBlindsEvent
+  | DisplayCelestialsEvent
+  | DisplayTarotCardsEvent
+  | DisplayVouchersEvent
+  | DisplayJokersEvent
 
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
@@ -173,6 +178,18 @@ export type VoucherPurchasedEvent = {
   id: VoucherType
 }
 
+export type DisplayBossBlindsEvent = {
+  type: 'DISPLAY_BOSS_BLINDS'
+}
+export type DisplayCelestialsEvent = {
+  type: 'DISPLAY_CELESTIALS'
+}
+export type DisplayTarotCardsEvent = {
+  type: 'DISPLAY_TAROT_CARDS'
+}
+export type DisplayVouchersEvent = {
+  type: 'DISPLAY_VOUCHERS'
+}
 export interface EffectContext {
   bossBlind?: BlindState
   event: GameEvent

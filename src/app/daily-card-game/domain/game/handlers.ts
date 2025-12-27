@@ -49,6 +49,7 @@ function applyHandScoringEndEffects(
     round: round,
     bossBlind: round.bossBlind,
     jokers: draft.jokers,
+    vouchers: draft.vouchers,
   }
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
