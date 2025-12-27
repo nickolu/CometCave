@@ -2,6 +2,10 @@ import { Draft } from 'immer'
 
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
 import { tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
+import {
+  isCelestialCardState,
+  isTarotCardState,
+} from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { Effect, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
@@ -66,8 +70,35 @@ export function randomizeDeck({
   return shuffleDeck(deck, rng)
 }
 
-export function useCelestialCard(draft: Draft<GameState>, event: GameEvent): void {
+export function useBuyableCelestialCard(draft: Draft<GameState>): void {
+  const celestialCardId = draft.shopState.selectedCardId
+  if (!celestialCardId) return
+  const celestialCard = draft.shopState.cardsForSale.find(card => card.card.id === celestialCardId)
+  if (!celestialCard) return
+  if (isCelestialCardState(celestialCard.card)) {
+    // Important: `dispatchEffects` matches by `event.type`. When buying + using in the shop,
+    // the triggering event is typically `SHOP_BUY_AND_USE_CARD`, but the card's effects are
+    // keyed off `CELESTIAL_CARD_USED`.
+    const usedEvent: GameEvent = { type: 'CELESTIAL_CARD_USED' }
+    dispatchEffects(
+      usedEvent,
+      {
+        event: usedEvent,
+        game: draft,
+        score: draft.gamePlayState.score,
+        playedCards: [],
+        round: draft.rounds[draft.roundIndex],
+        bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+        jokers: draft.jokers,
+      },
+      celestialCards[celestialCard.card.handId].effects
+    )
+  }
+}
+
+export function useConsumableCelestialCard(draft: Draft<GameState>, event: GameEvent): void {
   const celestialCard = draft.gamePlayState.selectedConsumable
+  console.log('celestialCard', celestialCard)
   if (!celestialCard) return
   if (celestialCard.consumableType !== 'celestialCard') return
   draft.consumablesUsed.push(celestialCard)
@@ -84,7 +115,7 @@ export function useCelestialCard(draft: Draft<GameState>, event: GameEvent): voi
     event,
     {
       event,
-      game: draft as unknown as GameState,
+      game: draft,
       score: draft.gamePlayState.score,
       playedCards: [],
       round: draft.rounds[draft.roundIndex],
@@ -95,7 +126,33 @@ export function useCelestialCard(draft: Draft<GameState>, event: GameEvent): voi
   )
 }
 
-export function useTarotCard(draft: Draft<GameState>, event: GameEvent): void {
+export function useBuyableTarotCard(draft: Draft<GameState>): void {
+  const tarotCardId = draft.shopState.selectedCardId
+  if (!tarotCardId) return
+  const tarotCard = draft.shopState.cardsForSale.find(card => card.card.id === tarotCardId)
+  if (!tarotCard) return
+  if (isTarotCardState(tarotCard.card)) {
+    draft.consumables.push(tarotCard.card)
+    // See note in `useBuyableCelestialCard`: buy+use triggers a shop event, but tarot effects
+    // are keyed off `TAROT_CARD_USED`.
+    const usedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
+    dispatchEffects(
+      usedEvent,
+      {
+        event: usedEvent,
+        game: draft,
+        score: draft.gamePlayState.score,
+        playedCards: [],
+        round: draft.rounds[draft.roundIndex],
+        bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+        jokers: draft.jokers,
+      },
+      tarotCards[tarotCard.card.tarotType].effects
+    )
+  }
+}
+
+export function useConsumableTarotCard(draft: Draft<GameState>, event: GameEvent): void {
   const tarotCard = draft.gamePlayState.selectedConsumable
   if (!tarotCard) return
   if (tarotCard.consumableType !== 'tarotCard') return

@@ -2,7 +2,7 @@ import { cardValuePriority, suitPriority } from '@/app/daily-card-game/domain/ha
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 
-import { PokerHandDefinition, PokerHandState } from './types'
+import { PokerHandDefinition, PokerHandState, PokerHandsState } from './types'
 
 export const rankCardsByValueAndSuit = (cards: PlayingCardState[]): PlayingCardState[] => {
   return cards.sort((a, b) => {
@@ -173,7 +173,11 @@ export const areAllCardsSameSuit = (cards: PlayingCardState[]): boolean => {
 
 export const initializeHand = (hand: PokerHandDefinition): PokerHandState => ({
   timesPlayed: 0,
-  level: 0,
+  level: 1,
   handId: hand.id,
   isSecret: hand.isSecret,
 })
+
+export const getMostPlayedHand = (hands: PokerHandsState): PokerHandState => {
+  return Object.values(hands).sort((a, b) => b.timesPlayed - a.timesPlayed)[0]
+}

@@ -6,6 +6,7 @@ import { CurrentConsumables } from '@/app/daily-card-game/components/consumables
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
 import { Deck } from '@/app/daily-card-game/components/global/deck'
 import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
+import { Modal } from '@/app/daily-card-game/components/ui/modal'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
@@ -17,16 +18,18 @@ import { ViewTemplate } from './view-template'
 
 const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
   const currentHandChips =
-    pokerHands[hand.handId].baseChips + pokerHands[hand.handId].chipIncreasePerLevel * hand.level
+    pokerHands[hand.handId].baseChips +
+    pokerHands[hand.handId].chipIncreasePerLevel * (hand.level - 1)
   const currentHandMult =
-    pokerHands[hand.handId].baseMult + pokerHands[hand.handId].multIncreasePerLevel * hand.level
+    pokerHands[hand.handId].baseMult +
+    pokerHands[hand.handId].multIncreasePerLevel * (hand.level - 1)
   return (
     <div>
       <div>
         <strong>Selected Hand:</strong>
       </div>{' '}
       <div className="pl-4">
-        {pokerHands[hand.handId].name} (Lvl {hand.level + 1}) ({currentHandChips}x{currentHandMult})
+        {pokerHands[hand.handId].name} (Lvl {hand.level}) ({currentHandChips}x{currentHandMult})
       </div>
     </div>
   )
@@ -49,7 +52,7 @@ export function GamePlayView() {
         <>
           <div className="pl-2">
             <div>
-              <strong>Blind Score:</strong> {score.chips} x {score.mult}
+              <strong>Chips x Mult:</strong> {score.chips} x {score.mult}
             </div>
             <div>
               <strong>Your Score:</strong> {currentBlind?.score}
@@ -88,12 +91,9 @@ export function GamePlayView() {
       </div>
 
       {showDeck && (
-        <div className="absolute top-0 right-1/8 w-3/4 h-full bg-black/90 flex flex-col items-center justify-center p-4 rounded-l-lg border-2 border-space-white">
-          <div className="flex justify-end w-3/4">
-            <Button onClick={() => setShowDeck(false)}>Close</Button>
-          </div>
+        <Modal onClose={() => setShowDeck(false)}>
           <Deck />
-        </div>
+        </Modal>
       )}
     </ViewTemplate>
   )

@@ -21,7 +21,8 @@ export type GameEvent =
   | DiscardSelectedCardsEvent
   | DisplayJokersEvent
   | HandDealtEvent
-  | HandScoringEndEvent
+  | HandScoringDoneCardScoringEvent
+  | HandScoringFInalizeEvent
   | HandScoringStartEvent
   | JokerAddedEvent
   | JokerRemovedEvent
@@ -101,8 +102,11 @@ export type DisplayJokersEvent = {
 export type HandDealtEvent = {
   type: 'HAND_DEALT'
 }
-export type HandScoringEndEvent = {
-  type: 'HAND_SCORING_END'
+export type HandScoringDoneCardScoringEvent = {
+  type: 'HAND_SCORING_DONE_CARD_SCORING'
+}
+export type HandScoringFInalizeEvent = {
+  type: 'HAND_SCORING_FINALIZE'
 }
 export type HandScoringStartEvent = {
   type: 'HAND_SCORING_START'

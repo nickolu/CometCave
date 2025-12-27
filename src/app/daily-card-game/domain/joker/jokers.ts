@@ -18,7 +18,7 @@ export const jokerJoker: JokerDefinition = {
   price: 2,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.gamePlayState.scoringEvents.push({
@@ -133,7 +133,7 @@ export const jollyJoker: JokerDefinition = {
   price: 3,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -156,7 +156,7 @@ export const zanyJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -179,7 +179,7 @@ export const madJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -202,7 +202,7 @@ export const crazyJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -225,7 +225,7 @@ export const drollJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -248,7 +248,7 @@ export const slyJoker: JokerDefinition = {
   price: 3,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -271,7 +271,7 @@ export const wilyJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -294,7 +294,7 @@ export const cleverJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -317,7 +317,7 @@ export const deviousJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_DONE_CARD_SCORING' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -340,7 +340,7 @@ export const craftyJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         bonusOnHandPlayed({
@@ -388,7 +388,7 @@ export const jokerStencil: JokerDefinition = {
   price: 8,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.gamePlayState.score.mult *= Math.max(

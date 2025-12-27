@@ -1,4 +1,6 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import { getMostPlayedHand } from '@/app/daily-card-game/domain/hand/utils'
+import { getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 import type { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
 const theHook: BossBlindDefinition = {
@@ -12,10 +14,11 @@ const theHook: BossBlindDefinition = {
   baseReward: 5,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_DONE_CARD_SCORING' },
       priority: 1,
-      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_END',
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_DONE_CARD_SCORING',
       apply: (ctx: EffectContext) => {
+        console.log('the hook effect applied')
         ctx.game.gamePlayState.dealtCards.splice(
           Math.floor(Math.random() * ctx.game.gamePlayState.dealtCards.length),
           2
@@ -36,11 +39,15 @@ const theOx: BossBlindDefinition = {
   baseReward: 5,
   effects: [
     {
-      event: { type: 'HAND_SCORING_END' },
+      event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
-      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_END',
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_FINALIZE',
       apply: (ctx: EffectContext) => {
-        ctx.game.money = 0
+        const mostPlayedHand = getMostPlayedHand(ctx.game.pokerHands)
+        const currentHand = ctx.game.gamePlayState.selectedHand?.[0]
+        if (currentHand === mostPlayedHand.handId) {
+          ctx.game.money = 0
+        }
       },
     },
   ],
@@ -84,3 +91,14 @@ frameless]	Violet Vessel	Very large blind	8	6x base	$8	✗ No
 	Crimson Heart	One random Joker disabled every hand (changes every hand)	8	2x base	$8	✗ No
 	Cerulean Bell	Forces 1 card to always be selected	8	2x base	$8	✗ No
  */
+
+export const getRandomBossBlind = (ante: number, seed: string): BossBlindDefinition => {
+  const bossBlindsForAnte = bossBlinds.filter(blind => blind.minimumAnte <= ante)
+  const randomIndex = getRandomNumberWithSeed(seed, 0, bossBlindsForAnte.length - 1)
+
+  if (bossBlindsForAnte.length === 0) {
+    throw new Error(`No boss blind found for ante ${ante}`)
+  }
+
+  return bossBlindsForAnte[randomIndex]
+}

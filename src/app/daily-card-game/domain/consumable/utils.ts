@@ -63,5 +63,7 @@ export const isTarotCardDefinition = (card: unknown): card is TarotCardDefinitio
 }
 
 export const isCelestialCardDefinition = (card: unknown): card is CelestialCardDefinition => {
-  return typeof card === 'object' && card !== null && 'handId' in card
+  return (
+    typeof card === 'object' && card !== null && 'type' in card && card.type === 'celestialCard'
+  )
 }

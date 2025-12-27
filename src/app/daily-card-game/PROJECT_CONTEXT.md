@@ -28,7 +28,7 @@ Example scoring flow:
 
    - Emit CARD_SCORED
 
-3. Emit HAND_SCORING_END
+3. Emit HAND_SCORING_FINALIZE
 
 Scoring itself is linear and dumb. All complexity lives in effects.
 
@@ -40,7 +40,7 @@ GameEvent is a discriminated union with:
 
 - HAND_SCORING_START (handCards, score)
 - CARD_SCORED (card, index, score)
-- HAND_SCORING_END (handCards, score)
+- HAND_SCORING_FINALIZE (handCards, score)
 - GAME_START (round)
 - ROUND_END (round)
 - JOKER_TRIGGERED (jokerId, sourceEvent)

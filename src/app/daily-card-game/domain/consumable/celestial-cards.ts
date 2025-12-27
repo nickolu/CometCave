@@ -33,6 +33,7 @@ const getDefaultCelestialCardDefinition = (
         event: { type: 'CELESTIAL_CARD_USED' },
         priority: 1,
         apply: (ctx: EffectContext) => {
+          console.log('applying celestial card effect', handId)
           ctx.game.pokerHands[handId].level++
         },
       },
