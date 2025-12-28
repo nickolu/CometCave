@@ -26,8 +26,9 @@ const c = (cardDefinitionId: PlayingCardDefinition['id']): PlayingCardState => (
   playingCardId: cardDefinitionId,
   bonusChips: 0,
   flags: {
-    isHolographic: false,
-    isFoil: false,
+    edition: 'normal',
+    enchantment: 'none',
+    seal: 'none',
   },
   isFaceUp: true,
 })

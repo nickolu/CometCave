@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 
 import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
 import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
+import { BoosterPacksForSale } from '@/app/daily-card-game/components/shop/booster-packs'
 import { BuyableCard } from '@/app/daily-card-game/components/shop/buyable-card'
 import { Voucher } from '@/app/daily-card-game/components/shop/voucher'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
@@ -29,6 +30,7 @@ export function ShopView() {
     card => card.card.id === game.shopState.selectedCardId
   )
   const canAffordSelectedCard = canAffordToBuy(selectedCard?.price, game)
+  const canAffordVoucher = canAffordToBuy(VOUCHER_PRICE, game)
   const isSelectedCardPlayable = getIsSelectedCardPlayable(selectedCard, game)
   const isRoomForSelectedCard = getIsRoomForSelectedCard(selectedCard, game)
 
@@ -97,30 +99,40 @@ export function ShopView() {
               </Button>
             </div>
           )}
-          {game.shopState.voucher !== null && (
-            <div className="mt-4">
-              <h3 className="mb-2">Voucher</h3>
-              <div className="flex flex-wrap">
-                <Voucher voucher={game.shopState.voucher} />
+          <div className="flex justify-between gap-2 mt-4 w-full">
+            {game.shopState.voucher !== null && (
+              <div className="mt-4">
+                <h3 className="mb-2">Voucher</h3>
+                <div className="flex flex-wrap">
+                  <Voucher voucher={game.shopState.voucher} />
+                </div>
+                <Button
+                  disabled={!canAffordVoucher}
+                  onClick={() => {
+                    eventEmitter.emit({ type: 'SHOP_BUY_VOUCHER', id: game.shopState.voucher! })
+                  }}
+                >
+                  Buy (${VOUCHER_PRICE})
+                </Button>
               </div>
-              <Button
-                onClick={() => {
-                  eventEmitter.emit({ type: 'VOUCHER_PURCHASED', id: game.shopState.voucher! })
-                }}
-              >
-                Buy (${VOUCHER_PRICE})
-              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 w-1/3">
+          {game.consumables.length > 0 && (
+            <div className="flex flex-col items-end gap-2 mt-4">
+              <h3 className="mb-2">Consumables</h3>
+              <div className="flex flex-wrap justify-end">
+                <CurrentConsumables />
+              </div>
             </div>
           )}
-        </div>
-        {game.consumables.length > 0 && (
-          <div className="flex flex-col items-end gap-2 w-1/4 mt-4">
-            <h3 className="mb-2">Consumables</h3>
-            <div className="flex flex-wrap justify-end">
-              <CurrentConsumables />
-            </div>
+          <div className="mt-4 flex flex-col items-end gap-2">
+            <h3 className="mb-2">Booster Packs</h3>
+            <BoosterPacksForSale />
           </div>
-        )}
+        </div>
       </div>
     </ViewTemplate>
   )

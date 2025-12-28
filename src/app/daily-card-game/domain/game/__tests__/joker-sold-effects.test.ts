@@ -9,7 +9,7 @@ import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 describe('daily-card-game joker sold effects', () => {
   it('Four Fingers resets staticRules back to 5 when sold and no other Four Fingers remains', () => {
     const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.fourFingersJoker)]
+    game.jokers = [initializeJoker(jokers.fourFingersJoker, game)]
     game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
 
     // Ensure the Four Fingers static rule is active.
@@ -33,8 +33,8 @@ describe('daily-card-game joker sold effects', () => {
   it('Four Fingers does not reset staticRules if another Four Fingers remains after selling one', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.jokers = [
-      initializeJoker(jokers.fourFingersJoker),
-      initializeJoker(jokers.fourFingersJoker),
+      initializeJoker(jokers.fourFingersJoker, defaultGameState),
+      initializeJoker(jokers.fourFingersJoker, defaultGameState),
     ]
     game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
 

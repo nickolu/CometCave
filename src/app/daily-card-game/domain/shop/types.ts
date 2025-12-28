@@ -12,20 +12,43 @@ export interface ShopState {
   celestialMultiplier: number
   maxCardsForSale: number
   maxVouchersForSale: number
-  openPackState: OpenPackState | null
-  packsForSale: Pack[]
-  playingCardMultiplier: number
+  openPackState: PackState | null
+  packsForSale: PackState[]
+  playingCard: {
+    multiplier: number
+    editionBaseChance: number
+    enchantmentBaseChance: number
+    chipBaseChance: number
+    editionWeights: {
+      holographic: number
+      foil: number
+      polychrome: number
+    }
+  }
   priceMultiplier: number
   rerollsUsed: number
   selectedCardId: string | null
-  tarotCardMultiplier: number
+  tarotCard: {
+    multiplier: number
+  }
+  joker: {
+    multiplier: number
+    editionWeights: {
+      holographic: number
+      foil: number
+      polychrome: number
+      negative: number
+      normal: number
+    }
+  }
   voucher: VoucherType | null
 }
 
-export interface OpenPackState {
+export interface PackState {
+  id: string
   cards: BuyableCard[]
-  packType: 'jumbo' | 'normal' | 'mega'
-  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
+  rarity: 'jumbo' | 'normal' | 'mega'
+  remainingCardsToSelect: number
 }
 export interface BuyableCard {
   type: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
@@ -33,8 +56,10 @@ export interface BuyableCard {
   price: number
 }
 
-export interface Pack {
-  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard'
-  type: 'jumbo' | 'normal' | 'mega'
+export interface PackDefinition {
+  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
+  rarity: 'jumbo' | 'normal' | 'mega'
   price: number
+  numberOfCardsPerPack: number
+  numberOfCardsToSelect: number
 }

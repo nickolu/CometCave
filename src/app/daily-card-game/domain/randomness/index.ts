@@ -34,6 +34,13 @@ export function getRandomNumberWithSeed(seed: string, min: number, max: number) 
   return Math.floor(rng() * (max - min + 1)) + min
 }
 
+// Deterministic RNG that returns a float in [0, 1)
+export function getRandomFloatWithSeed(seed: string) {
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  return rng()
+}
+
 export function getRandomNumbersWithSeed({
   seed,
   min,
@@ -50,10 +57,67 @@ export function getRandomNumbersWithSeed({
   return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
 }
 
+export function getRandomWeightedNumberWithSeed({
+  seed,
+  weightedOptions,
+}: {
+  seed: string
+  weightedOptions: Record<string, number>
+}) {
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  return Object.keys(weightedOptions).reduce(
+    (acc, key) => {
+      acc[key] = rng() * weightedOptions[key]
+      return acc
+    },
+    {} as Record<string, number>
+  )
+}
+
+export function getRandomWeightedChoiceWithSeed<T extends string>({
+  seed,
+  weightedOptions,
+}: {
+  seed: string
+  weightedOptions: Record<T, number>
+}): T | undefined {
+  const entries = Object.entries(weightedOptions) as [T, number][]
+  const totalWeight = entries.reduce((sum, [, weight]) => sum + Math.max(0, weight), 0)
+  if (totalWeight <= 0) return
+
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+
+  // roll in [0, totalWeight)
+  let roll = rng() * totalWeight
+  for (const [key, rawWeight] of entries) {
+    const weight = Math.max(0, rawWeight)
+    if (weight === 0) continue
+    if (roll < weight) return key
+    roll -= weight
+  }
+
+  // Floating point safety fallback
+  return entries[entries.length - 1]?.[0]
+}
+
 export function getCurrentDayAsSeedString() {
   return new Date().toISOString().split('T')[0]
 }
 
 export function buildSeedString(strings: string[]) {
   return strings.join('-')
+}
+
+export function getRandomChoiceWithSeed<T extends string>({
+  seed,
+  choices,
+}: {
+  seed: string
+  choices: T[]
+}): T | undefined {
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  return choices[Math.floor(rng() * choices.length)]
 }

@@ -10,6 +10,8 @@ import { Modal } from '@/app/daily-card-game/components/ui/modal'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
@@ -35,11 +37,54 @@ const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
   )
 }
 
+function getMultTimes(card: PlayingCardState) {
+  let multTimes = 1
+  if (card.flags.edition === 'polychrome') multTimes += 0.5
+  if (card.flags.enchantment === 'glass') multTimes += 1
+  return multTimes
+}
+
+const SelectedCardDetails = ({ card }: { card: PlayingCardState }) => {
+  const modifications = []
+  if (card.flags.edition !== 'normal') modifications.push(card.flags.edition + ' edition')
+  if (card.flags.enchantment !== 'none') modifications.push(card.flags.enchantment + ' card')
+  if (card.flags.seal !== 'none') modifications.push(card.flags.seal + ' seal')
+  const enchantmentChips = card.flags.enchantment === 'bonus' ? 30 : 0
+  const enchantmentMult = card.flags.enchantment === 'mult' ? 5 : 0
+  const editionChips = card.flags.edition === 'foil' ? 50 : 0
+  const editionMultPlus = card.flags.edition === 'holographic' ? 10 : 0
+  const editionMultTimes = getMultTimes(card)
+  const cardChips =
+    playingCards[card.playingCardId].baseChips + card.bonusChips + editionChips + enchantmentChips
+  const cardMult = enchantmentMult + editionMultPlus
+
+  return (
+    <div>
+      <div>
+        <strong>Selected Card:</strong>
+      </div>
+      <div className="pl-4">
+        <div>
+          {playingCards[card.playingCardId].value} of {playingCards[card.playingCardId].suit}
+        </div>
+        <div>+ {cardChips} chips</div>
+        {cardMult > 0 && <div>+ {cardMult} mult</div>}
+        {editionMultTimes > 1 && <div>+ {editionMultTimes}x mult</div>}
+        {modifications.length > 0 && <div>{modifications.join(', ')}</div>}
+      </div>
+    </div>
+  )
+}
+
 export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)
   const { game } = useGameState()
   const { gamePlayState } = game
-  const { score, selectedHand } = gamePlayState
+  const { score, selectedHand, selectedCardIds } = gamePlayState
+  const selectedCard =
+    selectedCardIds.length === 1
+      ? game.fullDeck.find(card => card.id === selectedCardIds[0])
+      : undefined
   const currentBlind = getInProgressBlind(game)
 
   useEffect(() => {
@@ -58,6 +103,7 @@ export function GamePlayView() {
               <strong>Your Score:</strong> {currentBlind?.score}
             </div>
             {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
+            {selectedCard && <SelectedCardDetails card={selectedCard} />}
           </div>
           <hr />
         </>

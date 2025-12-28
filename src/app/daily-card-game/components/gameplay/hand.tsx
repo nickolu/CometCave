@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { scoreHand as domainScoreHand } from '@/app/daily-card-game/domain/game/score-hand'
 import { cardValuePriority } from '@/app/daily-card-game/domain/hand/constants'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
@@ -13,40 +14,12 @@ import { cn } from '@/lib/utils'
 
 import { PlayingCard } from './playing-card'
 
-const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
-
-// TODO: Move this logic to the domain layer
 const useScoreHand = () => {
-  const { game } = useGameState()
-  const { gamePlayState } = game
-  const selectedCardIds = gamePlayState.selectedCardIds
-  const isScoringRef = useRef(false)
-
-  const scoreHand = useCallback(async () => {
-    if (isScoringRef.current) return
-
-    if (selectedCardIds.length === 0) return
-
-    isScoringRef.current = true
-    try {
-      eventEmitter.emit({ type: 'HAND_SCORING_START' })
-
-      const cardsToScoreCount =
-        useDailyCardGameStore.getState().game.gamePlayState.cardsToScore.length
-
-      for (let i = 0; i < cardsToScoreCount; i++) {
-        await sleep(250)
-        eventEmitter.emit({ type: 'CARD_SCORED' })
-      }
-
-      await sleep(750)
-      eventEmitter.emit({ type: 'HAND_SCORING_DONE_CARD_SCORING' })
-      await sleep(750)
-      eventEmitter.emit({ type: 'HAND_SCORING_FINALIZE' })
-    } finally {
-      isScoringRef.current = false
-    }
-  }, [selectedCardIds])
+  const scoreHand = useCallback(() => {
+    domainScoreHand({
+      getGameState: () => useDailyCardGameStore.getState().game,
+    })
+  }, [])
   return { scoreHand }
 }
 

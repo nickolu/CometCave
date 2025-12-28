@@ -13,14 +13,12 @@ export interface JokerState {
   id: string
   jokerId: JokerDefinition['id']
   flags: JokerFlags
+  edition: 'holographic' | 'foil' | 'polychrome' | 'negative' | 'normal'
+  isFaceUp: boolean
 }
 
 export interface JokerFlags {
   isRentable: boolean
   isPerishable: boolean
   isEternal: boolean
-  isHolographic: boolean
-  isFoil: boolean
-  isNegative: boolean
-  faceUp: boolean
 }

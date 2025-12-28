@@ -1,9 +1,9 @@
 import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+import { PlayingCardFlags, PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { cn } from '@/lib/utils'
 
-const cardSymbols = {
+const suitSymbols = {
   hearts: '♥',
   diamonds: '♦',
   clubs: '♣',
@@ -17,36 +17,68 @@ const cardColors = {
   spades: 'text-blue-500',
 }
 
-const enchantmentStyles = {
-  bonus: 'border-2 border-green-500',
-  mult: 'border-2 border-blue-500',
-  gold: 'border-2 border-yellow-500',
-  glass: 'border-2 border-gray-500',
-  lucky: 'border-2 border-purple-500',
-  none: '',
+const enchantmentStyles: Record<PlayingCardFlags['enchantment'], string> = {
+  bonus: 'bg-blue-500',
+  mult: 'bg-red-500',
+  gold: 'bg-space-gold',
+  glass: 'bg-gradient-to-br from-cream-white to-transparent',
+  lucky: 'bg-green-500',
+  steel: 'bg-space-grey',
+  stone: 'bg-grey-500',
+  wild: 'bg-white',
+  none: 'bg-white',
 }
 
+const sealStyles: Record<PlayingCardFlags['seal'], string> = {
+  blue: 'bg-blue-500',
+  purple: 'bg-purple-500',
+  gold: 'bg-space-gold',
+  red: 'bg-red-500',
+  none: 'bg-white',
+}
 const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
+  const suit =
+    playingCard.flags.enchantment === 'wild'
+      ? 'X'
+      : suitSymbols[playingCards[playingCard.playingCardId]?.suit ?? 'hearts']
+
   return (
     <>
       <div
         className={cn(
-          'flex flex-col px-1 h-full',
+          'flex flex-col px-1 h-full rounded-xl',
           cardColors[playingCards[playingCard.playingCardId]?.suit ?? 'hearts'],
           enchantmentStyles[playingCard.flags.enchantment ?? 'none']
         )}
       >
+        {playingCard.flags.seal !== 'none' && (
+          <div
+            data-name="seal-row"
+            className={cn(
+              'absolute top-8 right-2 rounded-full w-6 h-6 shadow-xl',
+              sealStyles[playingCard.flags.seal]
+            )}
+          ></div>
+        )}
         <div data-name="top-row" className="flex justify-between">
           <div>{playingCards[playingCard.playingCardId]?.value}</div>
-          <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+          <div className="text-2xl">{suit}</div>
         </div>
         <div data-name="image-row" className="flex justify-center grow items-center">
-          <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+          <div className="text-2xl">{suit}</div>
         </div>
         <div data-name="bottom-row" className="flex justify-between">
-          <div>{cardSymbols[playingCards[playingCard.playingCardId].suit]}</div>
+          <div className="text-2xl">{suit}</div>
           <div>{playingCards[playingCard.playingCardId].value}</div>
         </div>
+        {playingCard.flags.edition !== 'normal' && (
+          <div
+            data-name="edition-row"
+            className="flex justify-center bg-cream-white -mx-1 rounded-b-xl"
+          >
+            <div className="text-xs">{playingCard.flags.edition}</div>
+          </div>
+        )}
       </div>
     </>
   )
@@ -77,6 +109,7 @@ export const PlayingCard = ({
   return (
     <GameCard
       isSelected={isSelected}
+      className="bg-transparent"
       onClick={() => {
         onClick?.(isSelected ?? false, playingCard.id)
       }}

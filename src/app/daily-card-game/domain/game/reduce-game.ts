@@ -3,6 +3,7 @@ import { produce } from 'immer'
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
 import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
+  initializeTarotCard,
   isCelestialCardState,
   isTarotCardState,
 } from '@/app/daily-card-game/domain/consumable/utils'
@@ -13,13 +14,14 @@ import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/type
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
-import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
-import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
+import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
+import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
+import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import {
   getRandomVoucherType,
   initializeVoucherState,
@@ -27,7 +29,7 @@ import {
 import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
-import { handleHandScoringEnd } from './handlers'
+import { handleCardScored, handleHandScoringEnd } from './handlers'
 import {
   collectEffects,
   getBlindDefinition,
@@ -219,6 +221,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'DISCARD_SELECTED_CARDS': {
         const gamePlayState = draft.gamePlayState
 
+        // Find discarded cards before we clear selection
+        const discardedCards = gamePlayState.dealtCards.filter(card =>
+          gamePlayState.selectedCardIds.includes(card.id)
+        )
+
         const cardsToKeep = gamePlayState.dealtCards.filter(
           card => !gamePlayState.selectedCardIds.includes(card.id)
         )
@@ -239,85 +246,20 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.dealtCards = gamePlayState.dealtCards.concat(cardsToRefill)
         gamePlayState.remainingDeck = gamePlayState.remainingDeck.slice(cardsToRefill.length)
 
+        // Purple seal: add a tarot card for each discarded card with purple seal
+        const purpleSealCount = discardedCards.filter(card => card.flags.seal === 'purple').length
+        for (let i = 0; i < purpleSealCount; i++) {
+          if (draft.consumables.length < draft.maxConsumables) {
+            draft.consumables.push(initializeTarotCard(getRandomTarotCards(draft, 1)[0]))
+          }
+        }
+
         return
       }
 
       case 'CARD_SCORED': {
-        const gamePlayState = draft.gamePlayState
-        const currentCardToScore = gamePlayState.cardsToScore.shift()
-        if (!currentCardToScore) return
-        const scoredCardId = currentCardToScore.id
-
-        const additionalRewards: [string, number][] = []
-
-        let cardChips = playingCards[currentCardToScore.playingCardId].baseChips
-        let cardMult = 0
-
-        if (currentCardToScore.flags.enchantment === 'bonus') cardChips += 10
-        if (currentCardToScore.flags.enchantment === 'mult') cardMult += 5
-        if (currentCardToScore.flags.isFoil) cardMult += 5
-        if (currentCardToScore.flags.isHolographic) cardMult += 50
-
-        if (cardChips > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'chips',
-            value: cardChips,
-            source: playingCards[currentCardToScore.playingCardId].value,
-          })
-        }
-
-        if (cardMult > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'mult',
-            value: cardMult,
-            source: playingCards[currentCardToScore.playingCardId].value,
-          })
-        }
-
-        gamePlayState.score = {
-          chips: gamePlayState.score.chips + cardChips,
-          mult: gamePlayState.score.mult + cardMult,
-        }
-
-        if (currentCardToScore.flags.chip === 'gold') {
-          additionalRewards.push(['Gold Chip', 3])
-        }
-
-        const currentBlind = getInProgressBlind(draft as unknown as GameState)
-        if (!currentBlind) return
-
-        // attach additional rewards to the in-progress blind
-        currentBlind.additionalRewards.push(...additionalRewards)
-
-        // remove card from selection & hand UI
-        gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(
-          id => id !== scoredCardId
-        )
-        if (gamePlayState.selectedHand) {
-          gamePlayState.selectedHand = [
-            gamePlayState.selectedHand[0],
-            gamePlayState.selectedHand[1].filter(card => card.id !== scoredCardId),
-          ]
-        }
-
-        // remove scored card from dealt cards
-        gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== scoredCardId)
-
-        const playedCards = draft.gamePlayState.selectedHand?.[1]
-        const ctx: EffectContext = {
-          event,
-          game: draft as unknown as GameState,
-          score: gamePlayState.score,
-          playedCards,
-          scoredCards: [currentCardToScore],
-          round: draft.rounds[draft.roundIndex],
-          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: draft.jokers,
-          vouchers: draft.vouchers,
-        }
-        dispatchEffects(event, ctx, collectEffects(ctx.game))
+        // Red seal handling is done inside handleCardScored
+        handleCardScored(draft, event)
         return
       }
       case 'HAND_SCORING_START': {
@@ -414,6 +356,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
+      case 'BLIND_REWARDS_START': {
+        // Blue seal logic is handled in handleHandScoringEnd (before state is cleared)
+        return
+      }
       case 'BLIND_REWARDS_END': {
         const currentBlind = getInProgressBlind(draft)
         if (!currentBlind) return
@@ -439,19 +385,122 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'SHOP_OPEN': {
-        draft.shopState.cardsForSale = getRandomBuyableCards(draft, draft.shopState.maxCardsForSale)
+        if (draft.shopState.cardsForSale.length === 0) {
+          draft.shopState.cardsForSale = getRandomBuyableCards(
+            draft,
+            draft.shopState.maxCardsForSale
+          )
+        }
+        if (draft.shopState.packsForSale.length === 0) {
+          draft.shopState.packsForSale = getRandomPacks(draft, 2)
+        }
         return
       }
       case 'SHOP_SELECT_BLIND': {
         draft.gamePhase = 'blindSelection'
         return
       }
-      case 'SHOP_OPEN_PACK': {
-        draft.gamePhase = 'packOpening'
+      case 'SHOP_SELECT_PLAYING_CARD_FROM_PACK': {
+        const id = event.id
+        const card = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!card) return
+        if (!isPlayingCardState(card.card)) return
+        draft.fullDeck.push(card.card)
+        if (!draft.shopState.openPackState) return
+
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+        }
         return
       }
-      case 'PACK_OPEN_BACK_TO_SHOP': {
-        draft.gamePhase = 'shop'
+      case 'SHOP_USE_TAROT_CARD_FROM_PACK': {
+        const id = event.id
+        const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!buyableCard) return
+        if (!isTarotCardState(buyableCard.card)) return
+        const tarotCard = buyableCard.card
+        if (tarotCard.tarotType === 'notImplemented') return
+
+        // Add to consumablesUsed so The Fool and similar cards can reference it
+        draft.consumablesUsed.push(tarotCard)
+
+        // Remove the card from the pack
+        if (!draft.shopState.openPackState) return
+        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+          card => card.card.id !== id
+        )
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+          draft.gamePlayState.selectedCardIds = []
+        }
+        // Create effect context for dispatching effects
+        const tarotCardUsedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
+        const ctx: EffectContext = {
+          event: tarotCardUsedEvent,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+        }
+
+        // Dispatch the tarot card's own effects (e.g., enchantments from The Magician)
+        dispatchEffects(tarotCardUsedEvent, ctx, tarotCards[tarotCard.tarotType].effects)
+
+        // Also dispatch to other effects that react to TAROT_CARD_USED (jokers, vouchers, etc.)
+        dispatchEffects(tarotCardUsedEvent, ctx, collectEffects(ctx.game))
+
+        return
+      }
+      case 'SHOP_USE_CELESTIAL_CARD_FROM_PACK': {
+        const id = event.id
+        const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!buyableCard) return
+        if (!isCelestialCardState(buyableCard.card)) return
+        const celestialCard = buyableCard.card
+
+        // Add to consumablesUsed so The Fool and similar cards can reference it
+        draft.consumablesUsed.push(celestialCard)
+
+        // Remove the card from the pack
+        if (!draft.shopState.openPackState) return
+        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+          card => card.card.id !== id
+        )
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+        }
+
+        // Create effect context for dispatching effects
+        const celestialCardUsedEvent: GameEvent = { type: 'CELESTIAL_CARD_USED' }
+        const ctx: EffectContext = {
+          event: celestialCardUsedEvent,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+        }
+
+        // Dispatch the celestial card's own effects (level up the poker hand)
+        dispatchEffects(celestialCardUsedEvent, ctx, celestialCards[celestialCard.handId].effects)
+
+        // Also dispatch to other effects that react to CELESTIAL_CARD_USED (jokers, vouchers, etc.)
+        dispatchEffects(celestialCardUsedEvent, ctx, collectEffects(ctx.game))
+
         return
       }
       case 'SHOP_BUY_CARD': {
@@ -538,13 +587,39 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
         return
       }
-      case 'VOUCHER_PURCHASED': {
-        console.log('VOUCHER_PURCHASED', event)
+      case 'SHOP_OPEN_PACK': {
+        const id = event.id
+        const pack = draft.shopState.packsForSale.find(pack => pack.id === id)
+        if (!pack) return
+        const packDefinition = getPackDefinition(pack.cards[0].type, pack.rarity)
+        if (!pack) return
+        draft.money -= packDefinition.price
+        draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
+        draft.gamePhase = 'packOpening'
+        draft.shopState.openPackState = pack
+
+        if (packDefinition.cardType === 'tarotCard') {
+          draft.gamePlayState.remainingDeck = randomizeDeck({
+            deck: draft.fullDeck,
+            seed: buildSeedString([
+              draft.gameSeed,
+              draft.roundIndex.toString(),
+              draft.shopState.rerollsUsed.toString(),
+              'tarotCardOpenPack',
+            ]),
+            iteration: draft.roundIndex + blindIndices['smallBlind'],
+          })
+          draft.gamePlayState.dealtCards = draft.gamePlayState.remainingDeck.slice(0, HAND_SIZE)
+        }
+        return
+      }
+      case 'SHOP_BUY_VOUCHER': {
         const id = event.id
         const voucher = vouchers[id]
         if (!voucher) return
         draft.vouchers.push(initializeVoucherState(voucher))
         draft.shopState.voucher = null
+        draft.money -= VOUCHER_PRICE
 
         const ctx: EffectContext = {
           event,
@@ -557,6 +632,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
+        return
+      }
+      case 'PACK_OPEN_SKIP': {
+        if (!draft.shopState.openPackState) return
+        draft.gamePhase = 'shop'
+        draft.shopState.openPackState = null
         return
       }
 
@@ -630,7 +711,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         removeJoker(draft, event, selectedJoker)
         return
       }
-
       case 'JOKER_ADDED': {
         return
       }
@@ -647,9 +727,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        * NO-OP EVENTS
        */
 
-      case 'BLIND_REWARDS_START': {
-        return
-      }
       case 'ROUND_END': {
         return
       }

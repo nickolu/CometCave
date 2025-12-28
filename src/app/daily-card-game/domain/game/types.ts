@@ -10,6 +10,7 @@ import type { ShopState } from '@/app/daily-card-game/domain/shop/types'
 import type { VoucherState } from '@/app/daily-card-game/domain/voucher/types'
 
 export interface GameState {
+  allowedJokerFlags: ('isRentable' | 'isPerishable' | 'isEternal')[]
   consumables: (CelestialCardState | TarotCardState)[]
   consumablesUsed: (CelestialCardState | TarotCardState)[]
   discardsPlayed: number

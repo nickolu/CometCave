@@ -15,7 +15,7 @@ describe('daily-card-game shop buy effects', () => {
     game.jokers = []
     game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
 
-    const fourFingersState = initializeJoker(jokers.fourFingersJoker)
+    const fourFingersState = initializeJoker(jokers.fourFingersJoker, game)
     const buyable: BuyableCard = {
       type: 'jokerCard',
       card: fourFingersState,
