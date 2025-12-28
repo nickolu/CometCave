@@ -45,8 +45,10 @@ export interface ShopState {
 }
 
 export interface PackState {
+  id: string
   cards: BuyableCard[]
   rarity: 'jumbo' | 'normal' | 'mega'
+  remainingCardsToSelect: number
 }
 export interface BuyableCard {
   type: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
@@ -55,7 +57,7 @@ export interface BuyableCard {
 }
 
 export interface PackDefinition {
-  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard'
+  cardType: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'
   rarity: 'jumbo' | 'normal' | 'mega'
   price: number
   numberOfCardsPerPack: number

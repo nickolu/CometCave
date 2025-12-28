@@ -30,10 +30,8 @@ export type GameEvent =
   | JokerSelectedEvent
   | JokerDeselectedEvent
   | JokerSoldEvent
-  | PackOpenBackToShopEvent
   | RoundEndEvent
   | RoundStartEvent
-  | ShopOpenPackEvent
   | ShopSelectBlindEvent
   | ShopSelectCardEvent
   | ShopDeselectCardEvent
@@ -50,9 +48,19 @@ export type GameEvent =
   | DisplayTarotCardsEvent
   | DisplayVouchersEvent
   | DisplayJokersEvent
+  | ShopBuyPackEvent
+  | ShopSelectPlayingCardFromPackEvent
+  | PackOpenSkipEvent
 
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
+}
+export type ShopSelectPlayingCardFromPackEvent = {
+  type: 'SHOP_SELECT_PLAYING_CARD_FROM_PACK'
+  id: string
+}
+export type PackOpenSkipEvent = {
+  type: 'PACK_OPEN_SKIP'
 }
 export type ShopBuyAndUseCardEvent = {
   type: 'SHOP_BUY_AND_USE_CARD'
@@ -135,17 +143,11 @@ export type JokerDeselectedEvent = {
 export type JokerSoldEvent = {
   type: 'JOKER_SOLD'
 }
-export type PackOpenBackToShopEvent = {
-  type: 'PACK_OPEN_BACK_TO_SHOP'
-}
 export type RoundEndEvent = {
   type: 'ROUND_END'
 }
 export type RoundStartEvent = {
   type: 'GAME_START'
-}
-export type ShopOpenPackEvent = {
-  type: 'SHOP_OPEN_PACK'
 }
 export type ShopOpenEvent = {
   type: 'SHOP_OPEN'
@@ -173,11 +175,14 @@ export type TarotCardUsedEvent = {
 export type ShopRerollEvent = {
   type: 'SHOP_REROLL'
 }
+export type ShopBuyPackEvent = {
+  type: 'SHOP_BUY_PACK'
+  id: string
+}
 export type VoucherPurchasedEvent = {
   type: 'VOUCHER_PURCHASED'
   id: VoucherType
 }
-
 export type DisplayBossBlindsEvent = {
   type: 'DISPLAY_BOSS_BLINDS'
 }

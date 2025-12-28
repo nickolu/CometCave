@@ -12,6 +12,7 @@ import {
   buildSeedString,
   getRandomChoiceWithSeed,
   getRandomWeightedChoiceWithSeed,
+  uuid,
 } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 
@@ -42,7 +43,7 @@ const pricePerRarity: Record<PackState['rarity'], number> = {
   mega: 8,
 }
 
-const getPackDefinition = (
+export const getPackDefinition = (
   cardType: PackDefinition['cardType'],
   rarity: PackState['rarity']
 ): PackDefinition => {
@@ -56,44 +57,56 @@ const getPackDefinition = (
 }
 
 const initializePackState = (game: GameState, packDefinition: PackDefinition): PackState => {
+  const id = uuid()
+  const rarity = packDefinition.rarity
+  const numberOfCardsToSelect = packDefinition.numberOfCardsToSelect
+
   if (packDefinition.cardType === 'playingCard') {
     return {
+      id,
+      rarity,
+      remainingCardsToSelect: numberOfCardsToSelect,
       cards: getRandomPlayingCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
         type: 'playingCard',
         card: initializePlayingCard(card, game, true),
         price: playingCards[card.id].baseChips,
       })),
-      rarity: packDefinition.rarity,
     }
   }
   if (packDefinition.cardType === 'tarotCard') {
     return {
+      id,
+      rarity,
+      remainingCardsToSelect: numberOfCardsToSelect,
       cards: getRandomTarotCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
         type: 'tarotCard',
         card: initializeTarotCard(card),
         price: tarotCards[card.tarotType].price,
       })),
-      rarity: packDefinition.rarity,
     }
   }
   if (packDefinition.cardType === 'jokerCard') {
     return {
+      id,
+      rarity,
+      remainingCardsToSelect: numberOfCardsToSelect,
       cards: getRandomJokers(game, packDefinition.numberOfCardsPerPack).map(joker => ({
         type: 'jokerCard',
         card: initializeJoker(joker, game),
         price: joker.price,
       })),
-      rarity: packDefinition.rarity,
     }
   }
   if (packDefinition.cardType === 'celestialCard') {
     return {
+      id,
+      rarity,
+      remainingCardsToSelect: numberOfCardsToSelect,
       cards: getRandomCelestialCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
         type: 'celestialCard',
         card: initializeCelestialCard(card),
         price: celestialCards[card.handId].price,
       })),
-      rarity: packDefinition.rarity,
     }
   }
   throw new Error(`Invalid pack type: ${packDefinition.cardType}`)

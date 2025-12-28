@@ -19,7 +19,7 @@ import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/ut
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
-import { getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
+import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
 import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
 import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import {
@@ -385,20 +385,35 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'SHOP_OPEN': {
-        draft.shopState.cardsForSale = getRandomBuyableCards(draft, draft.shopState.maxCardsForSale)
-        draft.shopState.packsForSale = getRandomPacks(draft, 2)
+        if (draft.shopState.cardsForSale.length === 0) {
+          draft.shopState.cardsForSale = getRandomBuyableCards(
+            draft,
+            draft.shopState.maxCardsForSale
+          )
+        }
+        if (draft.shopState.packsForSale.length === 0) {
+          draft.shopState.packsForSale = getRandomPacks(draft, 2)
+        }
         return
       }
       case 'SHOP_SELECT_BLIND': {
         draft.gamePhase = 'blindSelection'
         return
       }
-      case 'SHOP_OPEN_PACK': {
-        draft.gamePhase = 'packOpening'
-        return
-      }
-      case 'PACK_OPEN_BACK_TO_SHOP': {
-        draft.gamePhase = 'shop'
+      case 'SHOP_SELECT_PLAYING_CARD_FROM_PACK': {
+        const id = event.id
+        const card = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!card) return
+        if (!isPlayingCardState(card.card)) return
+        draft.fullDeck.push(card.card)
+        if (!draft.shopState.openPackState) return
+        console.log('remainingCardsToSelect', draft.shopState.openPackState.remainingCardsToSelect)
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+        console.log('remainingCardsToSelect', draft.shopState.openPackState.remainingCardsToSelect)
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+        }
         return
       }
       case 'SHOP_BUY_CARD': {
@@ -485,6 +500,18 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
         return
       }
+      case 'SHOP_BUY_PACK': {
+        const id = event.id
+        const pack = draft.shopState.packsForSale.find(pack => pack.id === id)
+        if (!pack) return
+        const packDefinition = getPackDefinition(pack.cards[0].type, pack.rarity)
+        if (!pack) return
+        draft.money -= packDefinition.price
+        draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
+        draft.gamePhase = 'packOpening'
+        draft.shopState.openPackState = pack
+        return
+      }
       case 'VOUCHER_PURCHASED': {
         const id = event.id
         const voucher = vouchers[id]
@@ -504,6 +531,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           vouchers: draft.vouchers,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
+        return
+      }
+      case 'PACK_OPEN_SKIP': {
+        if (!draft.shopState.openPackState) return
+        draft.gamePhase = 'shop'
+        draft.shopState.openPackState = null
         return
       }
 
@@ -577,7 +610,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         removeJoker(draft, event, selectedJoker)
         return
       }
-
       case 'JOKER_ADDED': {
         return
       }
@@ -589,6 +621,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         removeJoker(draft, event, selectedJoker)
         return
       }
+      
 
       /*
        * NO-OP EVENTS
