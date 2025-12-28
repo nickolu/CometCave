@@ -62,4 +62,4 @@ export const pokerDeckDefinition: PlayingCardDefinition[] = [
 ]
 
 export const initialPokerDeckState = (game: GameState): PlayingCardState[] =>
-  pokerDeckDefinition.map(card => initializePlayingCard(card, game, true))
+  pokerDeckDefinition.map(card => initializePlayingCard(card, game))

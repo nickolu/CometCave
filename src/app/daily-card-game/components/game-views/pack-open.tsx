@@ -1,5 +1,6 @@
 'use client'
 
+import { CelestialCardOpenBoosterPack } from '@/app/daily-card-game/components/pack-open/celestial-card-open-booster-pack'
 import { PlayingCardOpenBoosterPack } from '@/app/daily-card-game/components/pack-open/playing-card-open-booster-pack'
 import { TarotCardOpenBoosterPack } from '@/app/daily-card-game/components/pack-open/tarot-card-open-booster-pack'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
@@ -15,6 +16,9 @@ function OpenBoosterPack({ cardType }: { cardType: BuyableCardType['type'] }) {
   }
   if (cardType === 'tarotCard') {
     return <TarotCardOpenBoosterPack />
+  }
+  if (cardType === 'celestialCard') {
+    return <CelestialCardOpenBoosterPack />
   }
   return null
 }

@@ -51,6 +51,7 @@ export type GameEvent =
   | ShopOpenPackEvent
   | ShopSelectPlayingCardFromPackEvent
   | ShopUseTarotCardFromPackEvent
+  | ShopUseCelestialCardFromPackEvent
   | PackOpenSkipEvent
 
 export type ShopBuyCardEvent = {
@@ -62,6 +63,10 @@ export type ShopSelectPlayingCardFromPackEvent = {
 }
 export type ShopUseTarotCardFromPackEvent = {
   type: 'SHOP_USE_TAROT_CARD_FROM_PACK'
+  id: string
+}
+export type ShopUseCelestialCardFromPackEvent = {
+  type: 'SHOP_USE_CELESTIAL_CARD_FROM_PACK'
   id: string
 }
 export type PackOpenSkipEvent = {

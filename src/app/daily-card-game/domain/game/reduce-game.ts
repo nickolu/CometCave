@@ -460,6 +460,49 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         return
       }
+      case 'SHOP_USE_CELESTIAL_CARD_FROM_PACK': {
+        const id = event.id
+        const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!buyableCard) return
+        if (!isCelestialCardState(buyableCard.card)) return
+        const celestialCard = buyableCard.card
+
+        // Add to consumablesUsed so The Fool and similar cards can reference it
+        draft.consumablesUsed.push(celestialCard)
+
+        // Remove the card from the pack
+        if (!draft.shopState.openPackState) return
+        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+          card => card.card.id !== id
+        )
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+        }
+
+        // Create effect context for dispatching effects
+        const celestialCardUsedEvent: GameEvent = { type: 'CELESTIAL_CARD_USED' }
+        const ctx: EffectContext = {
+          event: celestialCardUsedEvent,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+        }
+
+        // Dispatch the celestial card's own effects (level up the poker hand)
+        dispatchEffects(celestialCardUsedEvent, ctx, celestialCards[celestialCard.handId].effects)
+
+        // Also dispatch to other effects that react to CELESTIAL_CARD_USED (jokers, vouchers, etc.)
+        dispatchEffects(celestialCardUsedEvent, ctx, collectEffects(ctx.game))
+
+        return
+      }
       case 'SHOP_BUY_CARD': {
         const selectedCard = draft.shopState.cardsForSale.find(
           card => card.card.id === draft.shopState.selectedCardId
