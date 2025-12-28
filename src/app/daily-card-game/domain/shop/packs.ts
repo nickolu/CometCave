@@ -10,10 +10,10 @@ import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-
 import { initializePlayingCard } from '@/app/daily-card-game/domain/playing-card/utils'
 import {
   buildSeedString,
-  getRandomChoiceWithSeed,
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
+import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 
 import {
   getRandomCelestialCards,
@@ -40,6 +40,27 @@ const pricePerRarity: Record<PackState['rarity'], number> = {
   normal: 4,
   jumbo: 6,
   mega: 8,
+}
+
+// Weights for pack rarity selection based on pack type
+// Standard (playingCard), Arcana (tarotCard), and Celestial packs share the same weights
+// Buffoon (jokerCard) packs are rarer
+type PackRarityWeights = Record<PackState['rarity'], number>
+type ImplementedPackType = Exclude<PackDefinition['cardType'], 'spectralCard'>
+const packRarityWeightsByType: Record<ImplementedPackType, PackRarityWeights> = {
+  playingCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Standard
+  tarotCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Arcana
+  celestialCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Celestial
+  jokerCard: { normal: 1.2, jumbo: 0.6, mega: 0.15 }, // Buffoon
+}
+
+// Pack type weights (sum of all rarity weights for each type)
+// This makes Standard/Arcana/Celestial more common than Buffoon
+const packTypeWeights: Record<ImplementedPackType, number> = {
+  playingCard: 6.5, // 4 + 2 + 0.5
+  tarotCard: 6.5, // 4 + 2 + 0.5
+  celestialCard: 6.5, // 4 + 2 + 0.5
+  jokerCard: 1.95, // 1.2 + 0.6 + 0.15
 }
 
 export const getPackDefinition = (
@@ -111,7 +132,7 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
   throw new Error(`Invalid pack type: ${packDefinition.cardType}`)
 }
 
-const getRandomPackType = (game: GameState, packIndex: number): PackDefinition['cardType'] => {
+const getRandomPackType = (game: GameState, packIndex: number): ImplementedPackType => {
   const seed = buildSeedString([
     game.gameSeed,
     game.roundIndex.toString(),
@@ -121,9 +142,9 @@ const getRandomPackType = (game: GameState, packIndex: number): PackDefinition['
   ])
 
   return (
-    getRandomChoiceWithSeed({
+    getRandomWeightedChoiceWithSeed({
       seed,
-      choices: ['playingCard', 'tarotCard', 'jokerCard', 'celestialCard'],
+      weightedOptions: packTypeWeights,
     }) ?? 'playingCard'
   )
 }
@@ -133,18 +154,18 @@ const getRandomPack = (game: GameState, packIndex: number): PackState => {
     game.gameSeed,
     game.roundIndex.toString(),
     game.shopState.rerollsUsed.toString(),
+    getInProgressBlind(game)?.type.toString() ?? '0',
     packIndex.toString(),
     'packRarity',
   ])
   const randomPackType = getRandomPackType(game, packIndex)
+
+  // Use the correct rarity weights based on pack type
+  const rarityWeights = packRarityWeightsByType[randomPackType]
   const randomRarity =
     getRandomWeightedChoiceWithSeed({
       seed,
-      weightedOptions: {
-        normal: 1,
-        jumbo: 1,
-        mega: 1,
-      },
+      weightedOptions: rarityWeights,
     }) ?? 'normal'
 
   return initializePackState(game, getPackDefinition(randomPackType, randomRarity))

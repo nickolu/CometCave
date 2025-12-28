@@ -377,6 +377,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         }
         draft.gamePlayState.scoringEvents = []
         draft.gamePlayState.remainingDiscards = draft.maxDiscards
+
+        // Reset shop state for the new shop session
+        draft.shopState.cardsForSale = []
+        draft.shopState.packsForSale = []
+        draft.shopState.rerollsUsed = 0
+        draft.shopState.selectedCardId = null
         return
       }
 
@@ -409,6 +415,42 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (!draft.shopState.openPackState) return
 
         draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+        }
+        return
+      }
+      case 'SHOP_SELECT_JOKER_FROM_PACK': {
+        const id = event.id
+        const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!buyableCard) return
+        if (!isJokerState(buyableCard.card)) return
+
+        // Add the joker to the player's jokers
+        draft.jokers.push(buyableCard.card)
+
+        // Remove the card from the pack
+        if (!draft.shopState.openPackState) return
+        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+          card => card.card.id !== id
+        )
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        // Emit JOKER_ADDED event for effects that react to new jokers
+        const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
+        const ctx: EffectContext = {
+          event: jokerAddedEvent,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+        }
+        dispatchEffects(jokerAddedEvent, ctx, collectEffects(ctx.game))
 
         if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
           draft.gamePhase = 'shop'

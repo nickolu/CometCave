@@ -50,6 +50,7 @@ export type GameEvent =
   | DisplayJokersEvent
   | ShopOpenPackEvent
   | ShopSelectPlayingCardFromPackEvent
+  | ShopSelectJokerFromPackEvent
   | ShopUseTarotCardFromPackEvent
   | ShopUseCelestialCardFromPackEvent
   | PackOpenSkipEvent
@@ -59,6 +60,10 @@ export type ShopBuyCardEvent = {
 }
 export type ShopSelectPlayingCardFromPackEvent = {
   type: 'SHOP_SELECT_PLAYING_CARD_FROM_PACK'
+  id: string
+}
+export type ShopSelectJokerFromPackEvent = {
+  type: 'SHOP_SELECT_JOKER_FROM_PACK'
   id: string
 }
 export type ShopUseTarotCardFromPackEvent = {
