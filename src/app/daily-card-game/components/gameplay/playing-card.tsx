@@ -60,19 +60,13 @@ const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
         )}
         <div data-name="top-row" className="flex justify-between">
           <div>{playingCards[playingCard.playingCardId]?.value}</div>
-          <div className="text-2xl">
-            {cardSymbols[playingCards[playingCard.playingCardId].suit]}
-          </div>
+          <div className="text-2xl">{suit}</div>
         </div>
         <div data-name="image-row" className="flex justify-center grow items-center">
-          <div className="text-2xl">
-            {cardSymbols[playingCards[playingCard.playingCardId].suit]}
-          </div>
+          <div className="text-2xl">{suit}</div>
         </div>
         <div data-name="bottom-row" className="flex justify-between">
-          <div className="text-2xl">
-            {cardSymbols[playingCards[playingCard.playingCardId].suit]}
-          </div>
+          <div className="text-2xl">{suit}</div>
           <div>{playingCards[playingCard.playingCardId].value}</div>
         </div>
         {playingCard.flags.edition !== 'normal' && (
