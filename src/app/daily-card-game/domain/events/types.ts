@@ -81,7 +81,6 @@ export type CardDeselectedEvent = {
 }
 export type CardScoredEvent = {
   type: 'CARD_SCORED'
-  hasRedSeal?: boolean
 }
 export type CardSelectedEvent = {
   type: 'CARD_SELECTED'
@@ -103,7 +102,6 @@ export type ConsumableSoldEvent = {
 }
 export type DiscardSelectedCardsEvent = {
   type: 'DISCARD_SELECTED_CARDS'
-  hasPurpleSeal?: boolean
 }
 export type DisplayJokersEvent = {
   type: 'DISPLAY_JOKERS'

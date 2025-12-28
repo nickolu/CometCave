@@ -3,7 +3,7 @@ import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-
 import { PlayingCardFlags, PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { cn } from '@/lib/utils'
 
-const cardSymbols = {
+const suitSymbols = {
   hearts: '♥',
   diamonds: '♦',
   clubs: '♣',
@@ -38,7 +38,9 @@ const sealStyles: Record<PlayingCardFlags['seal'], string> = {
 }
 const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
   const suit =
-    playingCard.flags.enchantment === 'wild' ? 'X' : playingCards[playingCard.playingCardId]?.suit
+    playingCard.flags.enchantment === 'wild'
+      ? 'X'
+      : suitSymbols[playingCards[playingCard.playingCardId]?.suit ?? 'hearts']
 
   return (
     <>

@@ -3,7 +3,6 @@ import { produce } from 'immer'
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
 import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
-  initializeCelestialCard,
   initializeTarotCard,
   isCelestialCardState,
   isTarotCardState,
@@ -221,6 +220,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'DISCARD_SELECTED_CARDS': {
         const gamePlayState = draft.gamePlayState
 
+        // Find discarded cards before we clear selection
+        const discardedCards = gamePlayState.dealtCards.filter(card =>
+          gamePlayState.selectedCardIds.includes(card.id)
+        )
+
         const cardsToKeep = gamePlayState.dealtCards.filter(
           card => !gamePlayState.selectedCardIds.includes(card.id)
         )
@@ -241,8 +245,9 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.dealtCards = gamePlayState.dealtCards.concat(cardsToRefill)
         gamePlayState.remainingDeck = gamePlayState.remainingDeck.slice(cardsToRefill.length)
 
-        // add tarot card for purple seal
-        if (event.hasPurpleSeal) {
+        // Purple seal: add a tarot card for each discarded card with purple seal
+        const purpleSealCount = discardedCards.filter(card => card.flags.seal === 'purple').length
+        for (let i = 0; i < purpleSealCount; i++) {
           if (draft.consumables.length < draft.maxConsumables) {
             draft.consumables.push(initializeTarotCard(getRandomTarotCards(draft, 1)[0]))
           }
@@ -252,12 +257,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
 
       case 'CARD_SCORED': {
+        // Red seal handling is done inside handleCardScored
         handleCardScored(draft, event)
-
-        // duplicate card scoring for red seal
-        if (event.hasRedSeal) {
-          handleCardScored(draft, event)
-        }
         return
       }
       case 'HAND_SCORING_START': {
@@ -355,16 +356,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'BLIND_REWARDS_START': {
-        // add celestial card for selected hand for every blue seal held in hand
-        const cardsInHandWithBlueSeal = draft.gamePlayState.dealtCards.filter(
-          card => card.flags.seal === 'blue'
-        )
-        const playedHand = draft.gamePlayState.selectedHand?.[0]
-        cardsInHandWithBlueSeal.forEach(() => {
-          if (draft.consumables.length < draft.maxConsumables && playedHand) {
-            draft.consumables.push(initializeCelestialCard(celestialCards[playedHand]))
-          }
-        })
+        // Blue seal logic is handled in handleHandScoringEnd (before state is cleared)
         return
       }
       case 'BLIND_REWARDS_END': {

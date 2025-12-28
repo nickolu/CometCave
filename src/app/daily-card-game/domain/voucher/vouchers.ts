@@ -555,8 +555,6 @@ export const implementedVouchers: VoucherType[] = [
   'overstockPlus',
   'clearanceSale',
   'liquidation',
-  'hone',
-  'glowUp',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {

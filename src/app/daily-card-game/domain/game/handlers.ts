@@ -1,3 +1,5 @@
+import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
+import { initializeCelestialCard } from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
@@ -88,6 +90,9 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
 
   const { blindScore, ante, newTotalScore } = computed
 
+  // Capture the played hand before clearing state (needed for blue seal)
+  const playedHand = draft.gamePlayState.selectedHand?.[0]
+
   // After effects have reacted, discard ALL played cards (even ones that didn't score)
   const playedIds = new Set(draft.gamePlayState.playedCardIds)
   if (playedIds.size > 0) {
@@ -116,6 +121,19 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
 
   if (outcome === 'blindRewards') {
     draft.gamePhase = 'blindRewards'
+
+    // Blue seal: add celestial card for the played hand for each card with blue seal still in hand
+    const cardsInHandWithBlueSeal = draft.gamePlayState.dealtCards.filter(
+      card => card.flags.seal === 'blue'
+    )
+    if (playedHand) {
+      for (let i = 0; i < cardsInHandWithBlueSeal.length; i++) {
+        if (draft.consumables.length < draft.maxConsumables) {
+          draft.consumables.push(initializeCelestialCard(celestialCards[playedHand]))
+        }
+      }
+    }
+
     draft.gamePlayState.dealtCards = []
 
     if (draft.gamePlayState.remainingHands > 0) {
@@ -143,29 +161,28 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   resetScoreForNextHand(draft.gamePlayState)
 }
 
-export function handleCardScored(draft: GameState, event: GameEvent) {
+function scoreCardOnce(
+  draft: GameState,
+  card: (typeof draft.gamePlayState.cardsToScore)[number],
+  event: GameEvent
+) {
   const gamePlayState = draft.gamePlayState
-  const currentCardToScore = gamePlayState.cardsToScore.shift()
-  if (!currentCardToScore) return
-  const scoredCardId = currentCardToScore.id
 
-  const additionalRewards: [string, number][] = []
-
-  let cardChips = playingCards[currentCardToScore.playingCardId].baseChips
+  let cardChips = playingCards[card.playingCardId].baseChips
   let cardMult = 0
 
-  if (currentCardToScore.flags.enchantment === 'bonus') cardChips += 10
-  if (currentCardToScore.flags.enchantment === 'mult') cardMult += 5
-  if (currentCardToScore.flags.edition === 'foil') cardMult += 5
-  if (currentCardToScore.flags.edition === 'holographic') cardMult += 50
-  if (currentCardToScore.flags.edition === 'polychrome') cardMult *= 1.5
+  if (card.flags.enchantment === 'bonus') cardChips += 10
+  if (card.flags.enchantment === 'mult') cardMult += 5
+  if (card.flags.edition === 'foil') cardMult += 5
+  if (card.flags.edition === 'holographic') cardMult += 50
+  if (card.flags.edition === 'polychrome') cardMult *= 1.5
 
   if (cardChips > 0) {
     draft.gamePlayState.scoringEvents.push({
       id: uuid(),
       type: 'chips',
       value: cardChips,
-      source: playingCards[currentCardToScore.playingCardId].value,
+      source: playingCards[card.playingCardId].value,
     })
   }
 
@@ -174,7 +191,7 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
       id: uuid(),
       type: 'mult',
       value: cardMult,
-      source: playingCards[currentCardToScore.playingCardId].value,
+      source: playingCards[card.playingCardId].value,
     })
   }
 
@@ -183,17 +200,43 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
     mult: gamePlayState.score.mult + cardMult,
   }
 
-  if (currentCardToScore.flags.seal === 'gold') {
-    additionalRewards.push(['Gold Chip', 3])
+  // Gold seal: earn $3 immediately when scored
+  if (card.flags.seal === 'gold') {
+    draft.money += 3
   }
 
   const currentBlind = getInProgressBlind(draft as unknown as GameState)
   if (!currentBlind) return
 
-  // attach additional rewards to the in-progress blind
-  currentBlind.additionalRewards.push(...additionalRewards)
+  const playedCards = draft.gamePlayState.selectedHand?.[1]
+  const ctx: EffectContext = {
+    event,
+    game: draft as unknown as GameState,
+    score: gamePlayState.score,
+    playedCards,
+    scoredCards: [card],
+    round: draft.rounds[draft.roundIndex],
+    bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+    jokers: draft.jokers,
+    vouchers: draft.vouchers,
+  }
+  dispatchEffects(event, ctx, collectEffects(ctx.game))
+}
 
-  // remove card from selection & hand UI
+export function handleCardScored(draft: GameState, event: GameEvent) {
+  const gamePlayState = draft.gamePlayState
+  const currentCardToScore = gamePlayState.cardsToScore.shift()
+  if (!currentCardToScore) return
+  const scoredCardId = currentCardToScore.id
+  const hasRedSeal = currentCardToScore.flags.seal === 'red'
+
+  // Score the card (and score again if it has a red seal)
+  scoreCardOnce(draft, currentCardToScore, event)
+  if (hasRedSeal) {
+    scoreCardOnce(draft, currentCardToScore, event)
+  }
+
+  // remove card from selection & hand UI (only once, regardless of red seal)
   gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(id => id !== scoredCardId)
   if (gamePlayState.selectedHand) {
     gamePlayState.selectedHand = [
@@ -204,18 +247,4 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
 
   // remove scored card from dealt cards
   gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== scoredCardId)
-
-  const playedCards = draft.gamePlayState.selectedHand?.[1]
-  const ctx: EffectContext = {
-    event,
-    game: draft as unknown as GameState,
-    score: gamePlayState.score,
-    playedCards,
-    scoredCards: [currentCardToScore],
-    round: draft.rounds[draft.roundIndex],
-    bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-    jokers: draft.jokers,
-    vouchers: draft.vouchers,
-  }
-  dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
