@@ -25,6 +25,7 @@ const config = {
         'space-blue': '#3D4A66',
         'cream-white': '#F5F2E3',
         'space-gold': '#F5D700',
+        'grey-500': '#999999',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
