@@ -103,7 +103,7 @@ export function getRandomWeightedChoiceWithSeed<T extends string>({
 }
 
 export function getCurrentDayAsSeedString() {
-  return new Date().toISOString().split('T')[0] + '3'
+  return new Date().toISOString().split('T')[0]
 }
 
 export function buildSeedString(strings: string[]) {

@@ -16,7 +16,7 @@ import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
@@ -407,13 +407,57 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (!isPlayingCardState(card.card)) return
         draft.fullDeck.push(card.card)
         if (!draft.shopState.openPackState) return
-        console.log('remainingCardsToSelect', draft.shopState.openPackState.remainingCardsToSelect)
+
         draft.shopState.openPackState.remainingCardsToSelect -= 1
-        console.log('remainingCardsToSelect', draft.shopState.openPackState.remainingCardsToSelect)
+
         if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
           draft.gamePhase = 'shop'
           draft.shopState.openPackState = null
         }
+        return
+      }
+      case 'SHOP_USE_TAROT_CARD_FROM_PACK': {
+        const id = event.id
+        const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!buyableCard) return
+        if (!isTarotCardState(buyableCard.card)) return
+        const tarotCard = buyableCard.card
+        if (tarotCard.tarotType === 'notImplemented') return
+
+        // Add to consumablesUsed so The Fool and similar cards can reference it
+        draft.consumablesUsed.push(tarotCard)
+
+        // Remove the card from the pack
+        if (!draft.shopState.openPackState) return
+        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+          card => card.card.id !== id
+        )
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+          draft.gamePlayState.selectedCardIds = []
+        }
+        // Create effect context for dispatching effects
+        const tarotCardUsedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
+        const ctx: EffectContext = {
+          event: tarotCardUsedEvent,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+        }
+
+        // Dispatch the tarot card's own effects (e.g., enchantments from The Magician)
+        dispatchEffects(tarotCardUsedEvent, ctx, tarotCards[tarotCard.tarotType].effects)
+
+        // Also dispatch to other effects that react to TAROT_CARD_USED (jokers, vouchers, etc.)
+        dispatchEffects(tarotCardUsedEvent, ctx, collectEffects(ctx.game))
+
         return
       }
       case 'SHOP_BUY_CARD': {
@@ -500,7 +544,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
         return
       }
-      case 'SHOP_BUY_PACK': {
+      case 'SHOP_OPEN_PACK': {
         const id = event.id
         const pack = draft.shopState.packsForSale.find(pack => pack.id === id)
         if (!pack) return
@@ -510,9 +554,23 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
         draft.gamePhase = 'packOpening'
         draft.shopState.openPackState = pack
+
+        if (packDefinition.cardType === 'tarotCard') {
+          draft.gamePlayState.remainingDeck = randomizeDeck({
+            deck: draft.fullDeck,
+            seed: buildSeedString([
+              draft.gameSeed,
+              draft.roundIndex.toString(),
+              draft.shopState.rerollsUsed.toString(),
+              'tarotCardOpenPack',
+            ]),
+            iteration: draft.roundIndex + blindIndices['smallBlind'],
+          })
+          draft.gamePlayState.dealtCards = draft.gamePlayState.remainingDeck.slice(0, HAND_SIZE)
+        }
         return
       }
-      case 'VOUCHER_PURCHASED': {
+      case 'SHOP_BUY_VOUCHER': {
         const id = event.id
         const voucher = vouchers[id]
         if (!voucher) return
@@ -621,7 +679,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         removeJoker(draft, event, selectedJoker)
         return
       }
-      
 
       /*
        * NO-OP EVENTS

@@ -9,7 +9,7 @@ export const overstock: VoucherDefinition = {
   description: '+1 card slot available in shop (to 3 slots)',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'overstock' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'overstock' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.shopState.maxCardsForSale += 1
@@ -32,7 +32,7 @@ export const overstockPlus: VoucherDefinition = {
   description: '+1 card slot available in shop (to 4 slots)',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'overstockPlus' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'overstockPlus' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.shopState.maxCardsForSale += 1
@@ -48,7 +48,7 @@ export const clearanceSale: VoucherDefinition = {
   description: 'All cards and packs in shop are 25% off',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'clearanceSale' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'clearanceSale' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.shopState.priceMultiplier = 0.75
@@ -64,7 +64,7 @@ export const liquidation: VoucherDefinition = {
   description: 'All cards and packs in shop are 50% off',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'liquidation' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'liquidation' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.shopState.priceMultiplier = 0.5
@@ -80,7 +80,7 @@ export const hone: VoucherDefinition = {
   description: 'Foil, Holographic, and Polychrome cards appear 2x more often',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'hone' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'hone' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement hone effect
@@ -97,7 +97,7 @@ export const glowUp: VoucherDefinition = {
   description: 'Foil, Holographic, and Polychrome cards appear 4x more often',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'glowUp' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'glowUp' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement glow up effect
@@ -114,7 +114,7 @@ export const rerollSurplus: VoucherDefinition = {
   description: 'Rerolls cost $2 less',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'rerollSurplus' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'rerollSurplus' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement reroll surplus effect
@@ -131,7 +131,7 @@ export const rerollGlut: VoucherDefinition = {
   description: 'Rerolls cost an additional $2 less',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'rerollGlut' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'rerollGlut' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement reroll glut effect
@@ -148,7 +148,7 @@ export const crystalBall: VoucherDefinition = {
   description: '+1 consumable slot',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'crystalBall' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'crystalBall' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement crystal ball effect
@@ -165,7 +165,7 @@ export const omenGlobe: VoucherDefinition = {
   description: 'Spectral cards may appear in any of the Arcana Packs',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'omenGlobe' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'omenGlobe' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement omen globe effect
@@ -182,7 +182,7 @@ export const telescope: VoucherDefinition = {
   description: 'Celestial Packs always contain the Planet card for your most played poker hand',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'telescope' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'telescope' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement telescope effect
@@ -199,7 +199,7 @@ export const observatory: VoucherDefinition = {
   description: 'Planet cards in your consumable area give X1.5 Mult for their specified poker hand',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'observatory' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'observatory' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement observatory effect
@@ -216,7 +216,7 @@ export const grabber: VoucherDefinition = {
   description: 'Permanently gain +1 hand per round',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'grabber' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'grabber' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement grabber effect
@@ -233,7 +233,7 @@ export const nachoTong: VoucherDefinition = {
   description: 'Permanently gain an additional +1 hand per round',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'nachoTong' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'nachoTong' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement nacho tong effect
@@ -250,7 +250,7 @@ export const wasteful: VoucherDefinition = {
   description: 'Permanently gain +1 discard each round',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'wasteful' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'wasteful' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement wasteful effect
@@ -267,7 +267,7 @@ export const recyclomancy: VoucherDefinition = {
   description: 'Permanently gain an additional +1 discard each round',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'recyclomancy' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'recyclomancy' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement recyclomancy effect
@@ -284,7 +284,7 @@ export const tarotMerchant: VoucherDefinition = {
   description: 'Tarot cards appear 2X more frequently in the shop',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'tarotMerchant' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'tarotMerchant' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement tarot merchant effect
@@ -301,7 +301,7 @@ export const tarotTycoon: VoucherDefinition = {
   description: 'Tarot cards appear 4X more frequently in the shop',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'tarotTycoon' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'tarotTycoon' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement tarot tycoon effect
@@ -318,7 +318,7 @@ export const planetMerchant: VoucherDefinition = {
   description: 'Planet cards appear 2X more frequently in the shop',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'planetMerchant' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'planetMerchant' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement planet merchant effect
@@ -335,7 +335,7 @@ export const planetTycoon: VoucherDefinition = {
   description: 'Planet cards appear 4X more frequently in the shop',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'planetTycoon' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'planetTycoon' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement planet tycoon effect
@@ -352,7 +352,7 @@ export const seedMoney: VoucherDefinition = {
   description: 'Raise the cap on interest earned in each round to $10',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'seedMoney' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'seedMoney' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement seed money effect
@@ -369,7 +369,7 @@ export const moneyTree: VoucherDefinition = {
   description: 'Raise the cap on interest earned in each round to $20',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'moneyTree' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'moneyTree' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement money tree effect
@@ -386,7 +386,7 @@ export const blank: VoucherDefinition = {
   description: 'Does nothing?',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'blank' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'blank' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement blank effect
@@ -403,7 +403,7 @@ export const antimatter: VoucherDefinition = {
   description: '+1 Joker slot',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'antimatter' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'antimatter' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement antimatter effect
@@ -420,7 +420,7 @@ export const magicTrick: VoucherDefinition = {
   description: 'Playing cards can be purchased from the shop',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'magicTrick' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'magicTrick' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement magic trick effect
@@ -437,7 +437,7 @@ export const illusion: VoucherDefinition = {
   description: 'Playing cards in shop may have an Enhancement, Edition, and/or a Seal',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'illusion' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'illusion' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement illusion effect
@@ -454,7 +454,7 @@ export const hieroglyph: VoucherDefinition = {
   description: '-1 Ante, -1 hand each round',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'hieroglyph' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'hieroglyph' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement hieroglyph effect
@@ -471,7 +471,7 @@ export const petroglyph: VoucherDefinition = {
   description: '-1 Ante, -1 discard each round',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'petroglyph' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'petroglyph' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement petroglyph effect
@@ -488,7 +488,7 @@ export const directorsCut: VoucherDefinition = {
   description: 'Reroll Boss Blind 1 time per Ante, $10 per roll',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'directorsCut' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'directorsCut' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement directors cut effect
@@ -505,7 +505,7 @@ export const retcon: VoucherDefinition = {
   description: 'Reroll Boss Blind unlimited times, $10 per roll',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'retcon' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'retcon' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement retcon effect
@@ -522,7 +522,7 @@ export const paintBrush: VoucherDefinition = {
   description: '+1 Hand Size',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'paintBrush' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'paintBrush' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement paint brush effect
@@ -539,7 +539,7 @@ export const palette: VoucherDefinition = {
   description: '+1 Hand Size',
   effects: [
     {
-      event: { type: 'VOUCHER_PURCHASED', id: 'palette' },
+      event: { type: 'SHOP_BUY_VOUCHER', id: 'palette' },
       priority: 1,
       apply: (ctx: EffectContext) => {
         // TODO: Implement palette effect

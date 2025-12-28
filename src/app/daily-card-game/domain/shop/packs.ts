@@ -14,7 +14,6 @@ import {
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
-import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 
 import {
   getRandomCelestialCards,
@@ -112,11 +111,13 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
   throw new Error(`Invalid pack type: ${packDefinition.cardType}`)
 }
 
-const getRandomPackType = (game: GameState): PackDefinition['cardType'] => {
+const getRandomPackType = (game: GameState, packIndex: number): PackDefinition['cardType'] => {
   const seed = buildSeedString([
     game.gameSeed,
     game.roundIndex.toString(),
-    getInProgressBlind(game)?.type ?? '',
+    game.shopState.rerollsUsed.toString(),
+    packIndex.toString(),
+    'packType',
   ])
 
   return (
@@ -127,13 +128,15 @@ const getRandomPackType = (game: GameState): PackDefinition['cardType'] => {
   )
 }
 
-const getRandomPack = (game: GameState): PackState => {
+const getRandomPack = (game: GameState, packIndex: number): PackState => {
   const seed = buildSeedString([
     game.gameSeed,
     game.roundIndex.toString(),
     game.shopState.rerollsUsed.toString(),
+    packIndex.toString(),
+    'packRarity',
   ])
-  const randomPackType = getRandomPackType(game)
+  const randomPackType = getRandomPackType(game, packIndex)
   const randomRarity =
     getRandomWeightedChoiceWithSeed({
       seed,
@@ -148,5 +151,5 @@ const getRandomPack = (game: GameState): PackState => {
 }
 
 export const getRandomPacks = (game: GameState, numberOfPacks = 2): PackState[] => {
-  return Array.from({ length: numberOfPacks }, () => getRandomPack(game))
+  return Array.from({ length: numberOfPacks }, (_, index) => getRandomPack(game, index))
 }

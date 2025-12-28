@@ -20,7 +20,7 @@ const cardTypeLabels: Record<BuyableCard['type'], string> = {
   spectralCard: 'Spectral Cards',
 }
 
-function BoosterPack({ pack }: { pack: PackState }) {
+function BoosterPackForSale({ pack }: { pack: PackState }) {
   const { game } = useGameState()
   const cardType = pack.cards[0].type
   const packDefinition = getPackDefinition(cardType, pack.rarity)
@@ -38,16 +38,16 @@ function BoosterPack({ pack }: { pack: PackState }) {
       <Button
         disabled={!canAffordPack}
         onClick={() => {
-          eventEmitter.emit({ type: 'SHOP_BUY_PACK', id: pack.id })
+          eventEmitter.emit({ type: 'SHOP_OPEN_PACK', id: pack.id })
         }}
       >
-        Buy (${packDefinition.price})
+        Open (${packDefinition.price})
       </Button>
     </div>
   )
 }
 
-export function BoosterPacks() {
+export function BoosterPacksForSale() {
   const { game } = useGameState()
   const boosterPacks = game.shopState.packsForSale
   if (boosterPacks.length === 0) {
@@ -56,7 +56,7 @@ export function BoosterPacks() {
   return (
     <div className="flex gap-2">
       {boosterPacks.map(pack => (
-        <BoosterPack key={pack.id} pack={pack} />
+        <BoosterPackForSale key={pack.id} pack={pack} />
       ))}
     </div>
   )

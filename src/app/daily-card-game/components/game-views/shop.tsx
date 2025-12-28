@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 
 import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
 import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
-import { BoosterPacks } from '@/app/daily-card-game/components/shop/booster-packs'
+import { BoosterPacksForSale } from '@/app/daily-card-game/components/shop/booster-packs'
 import { BuyableCard } from '@/app/daily-card-game/components/shop/buyable-card'
 import { Voucher } from '@/app/daily-card-game/components/shop/voucher'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
@@ -109,7 +109,7 @@ export function ShopView() {
                 <Button
                   disabled={!canAffordVoucher}
                   onClick={() => {
-                    eventEmitter.emit({ type: 'VOUCHER_PURCHASED', id: game.shopState.voucher! })
+                    eventEmitter.emit({ type: 'SHOP_BUY_VOUCHER', id: game.shopState.voucher! })
                   }}
                 >
                   Buy (${VOUCHER_PRICE})
@@ -130,7 +130,7 @@ export function ShopView() {
           )}
           <div className="mt-4 flex flex-col items-end gap-2">
             <h3 className="mb-2">Booster Packs</h3>
-            <BoosterPacks />
+            <BoosterPacksForSale />
           </div>
         </div>
       </div>

@@ -170,7 +170,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     draft.gamePlayState.dealtCards = []
 
     if (draft.gamePlayState.remainingHands > 0) {
-      currentBlind.additionalRewards.push(['Remaining Hands', 3])
+      currentBlind.additionalRewards.push(['Remaining Hands', draft.gamePlayState.remainingHands])
     }
     const interest = calculateInterest(draft)
 
