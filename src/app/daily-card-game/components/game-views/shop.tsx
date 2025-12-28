@@ -29,6 +29,7 @@ export function ShopView() {
     card => card.card.id === game.shopState.selectedCardId
   )
   const canAffordSelectedCard = canAffordToBuy(selectedCard?.price, game)
+  const canAffordVoucher = canAffordToBuy(VOUCHER_PRICE, game)
   const isSelectedCardPlayable = getIsSelectedCardPlayable(selectedCard, game)
   const isRoomForSelectedCard = getIsRoomForSelectedCard(selectedCard, game)
 
@@ -104,6 +105,7 @@ export function ShopView() {
                 <Voucher voucher={game.shopState.voucher} />
               </div>
               <Button
+                disabled={!canAffordVoucher}
                 onClick={() => {
                   eventEmitter.emit({ type: 'VOUCHER_PURCHASED', id: game.shopState.voucher! })
                 }}

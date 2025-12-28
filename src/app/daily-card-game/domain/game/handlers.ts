@@ -3,7 +3,11 @@ import { initializeCelestialCard } from '@/app/daily-card-game/domain/consumable
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import {
+  buildSeedString,
+  getRandomFloatWithSeed,
+  uuid,
+} from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 
@@ -15,6 +19,29 @@ import type { GamePlayState, GameState } from './types'
 import type { Draft } from 'immer'
 
 type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
+
+/**
+ * Gets the probability multiplier based on game state.
+ * e.g., "Oops! All 6s" joker doubles all probabilities.
+ */
+function getProbabilityMultiplier(game: GameState): number {
+  const hasOopsAll6s = game.jokers.some(j => j.jokerId === 'oopsAll6s')
+  return hasOopsAll6s ? 2 : 1
+}
+
+/**
+ * Checks if a lucky roll succeeds.
+ * @param baseChance - The base chance as "1 in X" (e.g., 5 means 1 in 5 = 20%)
+ * @param seed - Seed string for deterministic random
+ * @param game - Game state to check for probability modifiers
+ */
+function checkLuckyRoll(baseChance: number, seed: string, game: GameState): boolean {
+  const multiplier = getProbabilityMultiplier(game)
+  // Base probability is 1/baseChance, multiplied by the modifier
+  const probability = Math.min(1, (1 / baseChance) * multiplier)
+  const roll = getRandomFloatWithSeed(seed)
+  return roll < probability
+}
 
 function getCurrentRound(draft: Draft<GameState>): RoundState {
   return draft.rounds[draft.roundIndex]
@@ -134,6 +161,12 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
       }
     }
 
+    // Gold enchantment: earn $3 for each card with gold enchantment held in hand (not played)
+    const cardsInHandWithGoldEnchantment = draft.gamePlayState.dealtCards.filter(
+      card => card.flags.enchantment === 'gold'
+    )
+    draft.money += cardsInHandWithGoldEnchantment.length * 3
+
     draft.gamePlayState.dealtCards = []
 
     if (draft.gamePlayState.remainingHands > 0) {
@@ -171,11 +204,13 @@ function scoreCardOnce(
   let cardChips = playingCards[card.playingCardId].baseChips
   let cardMult = 0
 
-  if (card.flags.enchantment === 'bonus') cardChips += 10
+  // Enchantments (additive)
+  if (card.flags.enchantment === 'bonus') cardChips += 30
   if (card.flags.enchantment === 'mult') cardMult += 5
-  if (card.flags.edition === 'foil') cardMult += 5
-  if (card.flags.edition === 'holographic') cardMult += 50
-  if (card.flags.edition === 'polychrome') cardMult *= 1.5
+
+  // Editions (additive)
+  if (card.flags.edition === 'foil') cardChips += 50
+  if (card.flags.edition === 'holographic') cardMult += 10
 
   if (cardChips > 0) {
     draft.gamePlayState.scoringEvents.push({
@@ -200,9 +235,52 @@ function scoreCardOnce(
     mult: gamePlayState.score.mult + cardMult,
   }
 
+  // Polychrome edition: X1.5 Mult (multiplicative, applied after additive bonuses)
+  if (card.flags.edition === 'polychrome') {
+    gamePlayState.score.mult *= 1.5
+    draft.gamePlayState.scoringEvents.push({
+      id: uuid(),
+      type: 'mult',
+      operator: 'x',
+      value: 1.5,
+      source: playingCards[card.playingCardId].value,
+    })
+  }
+
   // Gold seal: earn $3 immediately when scored
   if (card.flags.seal === 'gold') {
     draft.money += 3
+  }
+
+  // Lucky enchantment: 1 in 5 chance for +20 Mult, 1 in 15 chance for $20
+  // Both effects roll separately and can both trigger
+  if (card.flags.enchantment === 'lucky') {
+    const multSeed = buildSeedString([
+      draft.gameSeed,
+      card.id,
+      'lucky-mult',
+      String(draft.handsPlayed),
+    ])
+    const moneySeed = buildSeedString([
+      draft.gameSeed,
+      card.id,
+      'lucky-money',
+      String(draft.handsPlayed),
+    ])
+
+    if (checkLuckyRoll(5, multSeed, draft)) {
+      draft.gamePlayState.scoringEvents.push({
+        id: uuid(),
+        type: 'mult',
+        value: 20,
+        source: 'Lucky',
+      })
+      gamePlayState.score.mult += 20
+    }
+
+    if (checkLuckyRoll(15, moneySeed, draft)) {
+      draft.money += 20
+    }
   }
 
   const currentBlind = getInProgressBlind(draft as unknown as GameState)

@@ -21,6 +21,7 @@ import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
 import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
+import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import {
   getRandomVoucherType,
   initializeVoucherState,
@@ -485,12 +486,12 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'VOUCHER_PURCHASED': {
-        console.log('VOUCHER_PURCHASED', event)
         const id = event.id
         const voucher = vouchers[id]
         if (!voucher) return
         draft.vouchers.push(initializeVoucherState(voucher))
         draft.shopState.voucher = null
+        draft.money -= VOUCHER_PRICE
 
         const ctx: EffectContext = {
           event,
