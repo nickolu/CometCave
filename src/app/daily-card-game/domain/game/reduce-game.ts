@@ -3,6 +3,8 @@ import { produce } from 'immer'
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
 import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
+  initializeCelestialCard,
+  initializeTarotCard,
   isCelestialCardState,
   isTarotCardState,
 } from '@/app/daily-card-game/domain/consumable/utils'
@@ -19,7 +21,8 @@ import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/ut
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
-import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
+import { getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
+import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
 import {
   getRandomVoucherType,
   initializeVoucherState,
@@ -27,7 +30,7 @@ import {
 import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
-import { handleHandScoringEnd } from './handlers'
+import { handleCardScored, handleHandScoringEnd } from './handlers'
 import {
   collectEffects,
   getBlindDefinition,
@@ -239,85 +242,23 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.dealtCards = gamePlayState.dealtCards.concat(cardsToRefill)
         gamePlayState.remainingDeck = gamePlayState.remainingDeck.slice(cardsToRefill.length)
 
+        // add tarot card for purple seal
+        if (event.hasPurpleSeal) {
+          if (draft.consumables.length < draft.maxConsumables) {
+            draft.consumables.push(initializeTarotCard(getRandomTarotCards(draft, 1)[0]))
+          }
+        }
+
         return
       }
 
       case 'CARD_SCORED': {
-        const gamePlayState = draft.gamePlayState
-        const currentCardToScore = gamePlayState.cardsToScore.shift()
-        if (!currentCardToScore) return
-        const scoredCardId = currentCardToScore.id
+        handleCardScored(draft, event)
 
-        const additionalRewards: [string, number][] = []
-
-        let cardChips = playingCards[currentCardToScore.playingCardId].baseChips
-        let cardMult = 0
-
-        if (currentCardToScore.flags.enchantment === 'bonus') cardChips += 10
-        if (currentCardToScore.flags.enchantment === 'mult') cardMult += 5
-        if (currentCardToScore.flags.isFoil) cardMult += 5
-        if (currentCardToScore.flags.isHolographic) cardMult += 50
-
-        if (cardChips > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'chips',
-            value: cardChips,
-            source: playingCards[currentCardToScore.playingCardId].value,
-          })
+        // duplicate card scoring for red seal
+        if (event.hasRedSeal) {
+          handleCardScored(draft, event)
         }
-
-        if (cardMult > 0) {
-          draft.gamePlayState.scoringEvents.push({
-            id: uuid(),
-            type: 'mult',
-            value: cardMult,
-            source: playingCards[currentCardToScore.playingCardId].value,
-          })
-        }
-
-        gamePlayState.score = {
-          chips: gamePlayState.score.chips + cardChips,
-          mult: gamePlayState.score.mult + cardMult,
-        }
-
-        if (currentCardToScore.flags.chip === 'gold') {
-          additionalRewards.push(['Gold Chip', 3])
-        }
-
-        const currentBlind = getInProgressBlind(draft as unknown as GameState)
-        if (!currentBlind) return
-
-        // attach additional rewards to the in-progress blind
-        currentBlind.additionalRewards.push(...additionalRewards)
-
-        // remove card from selection & hand UI
-        gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(
-          id => id !== scoredCardId
-        )
-        if (gamePlayState.selectedHand) {
-          gamePlayState.selectedHand = [
-            gamePlayState.selectedHand[0],
-            gamePlayState.selectedHand[1].filter(card => card.id !== scoredCardId),
-          ]
-        }
-
-        // remove scored card from dealt cards
-        gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== scoredCardId)
-
-        const playedCards = draft.gamePlayState.selectedHand?.[1]
-        const ctx: EffectContext = {
-          event,
-          game: draft as unknown as GameState,
-          score: gamePlayState.score,
-          playedCards,
-          scoredCards: [currentCardToScore],
-          round: draft.rounds[draft.roundIndex],
-          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: draft.jokers,
-          vouchers: draft.vouchers,
-        }
-        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
       case 'HAND_SCORING_START': {
@@ -414,6 +355,19 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
+      case 'BLIND_REWARDS_START': {
+        // add celestial card for selected hand for every blue seal held in hand
+        const cardsInHandWithBlueSeal = draft.gamePlayState.dealtCards.filter(
+          card => card.flags.seal === 'blue'
+        )
+        const playedHand = draft.gamePlayState.selectedHand?.[0]
+        cardsInHandWithBlueSeal.forEach(() => {
+          if (draft.consumables.length < draft.maxConsumables && playedHand) {
+            draft.consumables.push(initializeCelestialCard(celestialCards[playedHand]))
+          }
+        })
+        return
+      }
       case 'BLIND_REWARDS_END': {
         const currentBlind = getInProgressBlind(draft)
         if (!currentBlind) return
@@ -440,6 +394,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
       case 'SHOP_OPEN': {
         draft.shopState.cardsForSale = getRandomBuyableCards(draft, draft.shopState.maxCardsForSale)
+        draft.shopState.packsForSale = getRandomPacks(draft, 2)
         return
       }
       case 'SHOP_SELECT_BLIND': {
@@ -647,9 +602,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        * NO-OP EVENTS
        */
 
-      case 'BLIND_REWARDS_START': {
-        return
-      }
       case 'ROUND_END': {
         return
       }

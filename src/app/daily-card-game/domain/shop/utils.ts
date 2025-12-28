@@ -36,34 +36,39 @@ import { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { BuyableCard } from './types'
 
 function initializeBuyableCard(
-  card: TarotCardDefinition | CelestialCardDefinition | JokerDefinition | PlayingCardDefinition
+  cardDefinition:
+    | TarotCardDefinition
+    | CelestialCardDefinition
+    | JokerDefinition
+    | PlayingCardDefinition,
+  game: GameState
 ): BuyableCard | undefined {
-  if (isJokerDefinition(card)) {
+  if (isJokerDefinition(cardDefinition)) {
     return {
       type: 'jokerCard',
-      card: initializeJoker(card),
-      price: card.price,
+      card: initializeJoker(cardDefinition, game),
+      price: cardDefinition.price,
     }
   }
-  if (isTarotCardDefinition(card)) {
+  if (isTarotCardDefinition(cardDefinition)) {
     return {
       type: 'tarotCard',
-      card: initializeTarotCard(card),
-      price: card.price,
+      card: initializeTarotCard(cardDefinition),
+      price: cardDefinition.price,
     }
   }
-  if (isCelestialCardDefinition(card)) {
+  if (isCelestialCardDefinition(cardDefinition)) {
     return {
       type: 'celestialCard',
-      card: initializeCelestialCard(card),
-      price: celestialCards[card.handId].price,
+      card: initializeCelestialCard(cardDefinition),
+      price: celestialCards[cardDefinition.handId].price,
     }
   }
-  if (isPlayingCardDefinition(card)) {
+  if (isPlayingCardDefinition(cardDefinition)) {
     return {
       type: 'playingCard',
-      card: initializePlayingCard(card),
-      price: playingCards[card.id].baseChips,
+      card: initializePlayingCard(cardDefinition, game, true),
+      price: playingCards[cardDefinition.id].baseChips,
     }
   }
   return
@@ -99,6 +104,78 @@ const blindIndices: Record<BlindState['type'], number> = {
   bossBlind: 2,
 }
 
+export function getRandomCelestialCards(
+  game: GameState,
+  numberOfCards: number
+): CelestialCardDefinition[] {
+  const allCelestialCards = Object.values(celestialCards).filter(
+    card => !game.pokerHands[card.handId].isSecret // don't sell celestial cards for secret hands
+  )
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allCelestialCards.length - 1,
+    numberOfNumbers: numberOfCards,
+  })
+  return randomCardIndices.map(index => allCelestialCards[index])
+}
+
+export function getRandomTarotCards(game: GameState, numberOfCards: number): TarotCardDefinition[] {
+  const allTarotCards = Object.values(tarotCards)
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allTarotCards.length - 1,
+    numberOfNumbers: numberOfCards,
+  })
+  return randomCardIndices.map(index => allTarotCards[index])
+}
+
+export function getRandomPlayingCards(
+  game: GameState,
+  numberOfCards: number
+): PlayingCardDefinition[] {
+  const allPlayingCards = Object.values(playingCards)
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allPlayingCards.length - 1,
+    numberOfNumbers: numberOfCards,
+  })
+  return randomCardIndices.map(index => allPlayingCards[index])
+}
+
+export function getRandomJokers(game: GameState, numberOfCards: number): JokerDefinition[] {
+  const allJokers = Object.values(jokers)
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allJokers.length - 1,
+    numberOfNumbers: numberOfCards,
+  })
+  return randomCardIndices.map(index => allJokers[index])
+}
+
 export function getRandomBuyableCards(game: GameState, numberOfCards: number): BuyableCard[] {
   const allTarotCards = Object.values(tarotCards)
   const allCelestialCards = Object.values(celestialCards).filter(
@@ -118,13 +195,13 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
     allBuyableCardDefinitions.push(...allCelestialCards)
   })
 
-  _.times(game.shopState.tarotCardMultiplier, () => {
+  _.times(game.shopState.tarotCard.multiplier, () => {
     allBuyableCardDefinitions.push(
       ...allTarotCards.filter(card => card.tarotType !== 'notImplemented')
     )
   })
 
-  _.times(game.shopState.playingCardMultiplier, () => {
+  _.times(game.shopState.playingCard.multiplier, () => {
     allBuyableCardDefinitions.push(...allPlayingCards)
   })
 
@@ -156,7 +233,7 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
 
   return randomCardIndices.map(index => {
     const card = allBuyableCardDefinitions[index]
-    const buyableCard = initializeBuyableCard(card)
+    const buyableCard = initializeBuyableCard(card, game)
     if (!buyableCard) throw new Error('Failed to get card for shop: ' + JSON.stringify(card))
     return buyableCard
   })

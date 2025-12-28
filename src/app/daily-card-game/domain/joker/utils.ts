@@ -1,7 +1,13 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/types'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import {
+  buildSeedString,
+  getRandomFloatWithSeed,
+  getRandomWeightedChoiceWithSeed,
+  uuid,
+} from '@/app/daily-card-game/domain/randomness'
 
 import { JokerDefinition, JokerState } from './types'
 
@@ -64,16 +70,60 @@ export const isJokerDefinition = (card: unknown): card is JokerDefinition => {
   return typeof card === 'object' && card !== null && 'id' in card
 }
 
-export const initializeJoker = (joker: JokerDefinition): JokerState => ({
-  id: uuid(),
-  jokerId: joker.id,
-  flags: {
-    isRentable: false,
-    isPerishable: false,
-    isEternal: false,
-    isHolographic: false,
-    isFoil: false,
-    isNegative: false,
-    faceUp: false,
-  },
-})
+function getRandomJokerEdition(game: GameState): JokerState['edition'] {
+  const baseSeed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'edition',
+  ])
+
+  const pickSeed = buildSeedString([baseSeed, 'pick'])
+  return (
+    getRandomWeightedChoiceWithSeed({
+      seed: pickSeed,
+      weightedOptions: game.shopState.joker.editionWeights,
+    }) ?? 'normal'
+  )
+}
+
+const getRandomFlag = (
+  possibleFlags: ('isRentable' | 'isPerishable' | 'isEternal')[],
+  game: GameState
+): ('isRentable' | 'isPerishable' | 'isEternal') | undefined => {
+  if (possibleFlags.length === 0) {
+    return undefined
+  }
+  return getRandomWeightedChoiceWithSeed({
+    seed: buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      'flag',
+    ]),
+    weightedOptions: possibleFlags.reduce(
+      (acc, flag) => {
+        acc[flag] = 1
+        return acc
+      },
+      {} as Record<'isRentable' | 'isPerishable' | 'isEternal', number>
+    ),
+  })
+}
+
+export const initializeJoker = (joker: JokerDefinition, game: GameState): JokerState => {
+  const edition = getRandomJokerEdition(game)
+  const allowedFlags = game.allowedJokerFlags
+  const flag = getRandomFlag(allowedFlags, game)
+  return {
+    id: uuid(),
+    jokerId: joker.id,
+    edition,
+    isFaceUp: true,
+    flags: {
+      isRentable: flag === 'isRentable',
+      isPerishable: flag === 'isPerishable',
+      isEternal: flag === 'isEternal',
+    },
+  }
+}

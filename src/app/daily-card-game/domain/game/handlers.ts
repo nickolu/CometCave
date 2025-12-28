@@ -1,5 +1,6 @@
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { RoundState } from '@/app/daily-card-game/domain/round/types'
@@ -140,4 +141,81 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   draft.gamePlayState.dealtCards = draft.gamePlayState.dealtCards.concat(cardsToRefill)
   draft.gamePlayState.remainingDeck = draft.gamePlayState.remainingDeck.slice(cardsToRefill.length)
   resetScoreForNextHand(draft.gamePlayState)
+}
+
+export function handleCardScored(draft: GameState, event: GameEvent) {
+  const gamePlayState = draft.gamePlayState
+  const currentCardToScore = gamePlayState.cardsToScore.shift()
+  if (!currentCardToScore) return
+  const scoredCardId = currentCardToScore.id
+
+  const additionalRewards: [string, number][] = []
+
+  let cardChips = playingCards[currentCardToScore.playingCardId].baseChips
+  let cardMult = 0
+
+  if (currentCardToScore.flags.enchantment === 'bonus') cardChips += 10
+  if (currentCardToScore.flags.enchantment === 'mult') cardMult += 5
+  if (currentCardToScore.flags.edition === 'foil') cardMult += 5
+  if (currentCardToScore.flags.edition === 'holographic') cardMult += 50
+  if (currentCardToScore.flags.edition === 'polychrome') cardMult *= 1.5
+
+  if (cardChips > 0) {
+    draft.gamePlayState.scoringEvents.push({
+      id: uuid(),
+      type: 'chips',
+      value: cardChips,
+      source: playingCards[currentCardToScore.playingCardId].value,
+    })
+  }
+
+  if (cardMult > 0) {
+    draft.gamePlayState.scoringEvents.push({
+      id: uuid(),
+      type: 'mult',
+      value: cardMult,
+      source: playingCards[currentCardToScore.playingCardId].value,
+    })
+  }
+
+  gamePlayState.score = {
+    chips: gamePlayState.score.chips + cardChips,
+    mult: gamePlayState.score.mult + cardMult,
+  }
+
+  if (currentCardToScore.flags.seal === 'gold') {
+    additionalRewards.push(['Gold Chip', 3])
+  }
+
+  const currentBlind = getInProgressBlind(draft as unknown as GameState)
+  if (!currentBlind) return
+
+  // attach additional rewards to the in-progress blind
+  currentBlind.additionalRewards.push(...additionalRewards)
+
+  // remove card from selection & hand UI
+  gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(id => id !== scoredCardId)
+  if (gamePlayState.selectedHand) {
+    gamePlayState.selectedHand = [
+      gamePlayState.selectedHand[0],
+      gamePlayState.selectedHand[1].filter(card => card.id !== scoredCardId),
+    ]
+  }
+
+  // remove scored card from dealt cards
+  gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== scoredCardId)
+
+  const playedCards = draft.gamePlayState.selectedHand?.[1]
+  const ctx: EffectContext = {
+    event,
+    game: draft as unknown as GameState,
+    score: gamePlayState.score,
+    playedCards,
+    scoredCards: [currentCardToScore],
+    round: draft.rounds[draft.roundIndex],
+    bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+    jokers: draft.jokers,
+    vouchers: draft.vouchers,
+  }
+  dispatchEffects(event, ctx, collectEffects(ctx.game))
 }

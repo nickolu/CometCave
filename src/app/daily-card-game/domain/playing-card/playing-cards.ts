@@ -41,6 +41,7 @@ export const getDefaultCard = (
     id: `${value}_${suit}`,
     baseChips: cardValueBaseChips[value],
     suit: suit,
+    effects: [],
   }
 }
 

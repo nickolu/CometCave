@@ -21,11 +21,12 @@ import { GameState } from './types'
 
 const gameSeed = getCurrentDayAsSeedString()
 
-export const defaultGameState: GameState = {
+const gameState: GameState = {
+  allowedJokerFlags: [],
   consumables: [],
   consumablesUsed: [],
   discardsPlayed: 0,
-  fullDeck: initialDeckStates.pokerDeck,
+  fullDeck: [],
   gamePhase: 'mainMenu',
   gamePlayState: {
     cardsToScore: [],
@@ -76,11 +77,33 @@ export const defaultGameState: GameState = {
     maxVouchersForSale: 0,
     openPackState: null,
     packsForSale: [],
-    playingCardMultiplier: 0,
+    playingCard: {
+      multiplier: 0,
+      editionBaseChance: 0.04,
+      enchantmentBaseChance: 0.4,
+      chipBaseChance: 0.2,
+      editionWeights: {
+        holographic: 0.35,
+        foil: 0.5,
+        polychrome: 0.15,
+      },
+    },
     priceMultiplier: 1,
     rerollsUsed: 0,
     selectedCardId: null,
-    tarotCardMultiplier: 1,
+    tarotCard: {
+      multiplier: 1,
+    },
+    joker: {
+      multiplier: 1,
+      editionWeights: {
+        holographic: 0.014,
+        foil: 0.02,
+        polychrome: 0.003,
+        negative: 0.003,
+        normal: 0.96,
+      },
+    },
     voucher: null,
   },
   stake: {
@@ -99,4 +122,9 @@ export const defaultGameState: GameState = {
   },
   totalScore: 0,
   vouchers: [],
+}
+
+export const defaultGameState = {
+  ...gameState,
+  fullDeck: initialDeckStates(gameState).pokerDeck,
 }

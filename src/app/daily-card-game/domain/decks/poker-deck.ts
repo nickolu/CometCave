@@ -1,3 +1,4 @@
+import { GameState } from '@/app/daily-card-game/domain/game/types'
 import { getDefaultCard } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import {
   PlayingCardDefinition,
@@ -60,6 +61,5 @@ export const pokerDeckDefinition: PlayingCardDefinition[] = [
   getDefaultCard('A', 'spades'),
 ]
 
-export const initialPokerDeckState: PlayingCardState[] = pokerDeckDefinition.map(card =>
-  initializePlayingCard(card)
-)
+export const initialPokerDeckState = (game: GameState): PlayingCardState[] =>
+  pokerDeckDefinition.map(card => initializePlayingCard(card, game, true))

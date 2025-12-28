@@ -1,5 +1,6 @@
 import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { defaultGameState } from '@/app/daily-card-game/domain/game/default-game-state'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ export const JokersView = () => {
       <h1 className="text-2xl font-bold">Jokers</h1>
       <div className="flex flex-wrap justify-center gap-2 mt-4 mx-auto">
         {Object.values(jokers).map(joker => (
-          <Joker key={joker.id} joker={initializeJoker(joker)} />
+          <Joker key={joker.id} joker={initializeJoker(joker, defaultGameState)} />
         ))}
       </div>
       <Button
