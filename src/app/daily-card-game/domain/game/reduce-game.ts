@@ -15,7 +15,6 @@ import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/type
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
-import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import { uuid } from '@/app/daily-card-game/domain/randomness'

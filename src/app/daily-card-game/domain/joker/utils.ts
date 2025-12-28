@@ -4,7 +4,6 @@ import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/type
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import {
   buildSeedString,
-  getRandomFloatWithSeed,
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
