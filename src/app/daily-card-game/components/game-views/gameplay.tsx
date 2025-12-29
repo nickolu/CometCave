@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
 import { Hand } from '@/app/daily-card-game/components/gameplay/hand'
@@ -8,11 +8,13 @@ import { Deck } from '@/app/daily-card-game/components/global/deck'
 import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
 import { Modal } from '@/app/daily-card-game/components/ui/modal'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { scoreHand as domainScoreHand } from '@/app/daily-card-game/domain/game/score-hand'
 import { pokerHands } from '@/app/daily-card-game/domain/hand/hands'
 import { PokerHandState } from '@/app/daily-card-game/domain/hand/types'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
@@ -76,6 +78,15 @@ const SelectedCardDetails = ({ card }: { card: PlayingCardState }) => {
   )
 }
 
+const useScoreHand = () => {
+  const scoreHand = useCallback(() => {
+    domainScoreHand({
+      getGameState: () => useDailyCardGameStore.getState().game,
+    })
+  }, [])
+  return { scoreHand }
+}
+
 export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)
   const { game } = useGameState()
@@ -86,6 +97,9 @@ export function GamePlayView() {
       ? game.fullDeck.find(card => card.id === selectedCardIds[0])
       : undefined
   const currentBlind = getInProgressBlind(game)
+
+  const { isScoring, remainingDiscards } = gamePlayState
+  const { scoreHand } = useScoreHand()
 
   useEffect(() => {
     eventEmitter.emit({ type: 'HAND_DEALT' })
@@ -129,6 +143,21 @@ export function GamePlayView() {
       <div className="mt-4">
         <h3 className="mb-2">Hand</h3>
         <Hand />
+
+        <div className="flex mt-4 gap-2 justify-start">
+          <Button
+            disabled={remainingDiscards === 0 || isScoring}
+            className="bg-red-500"
+            onClick={() => {
+              eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
+            }}
+          >
+            Discard
+          </Button>
+          <Button disabled={isScoring} className="bg-green-500" onClick={scoreHand}>
+            Play Hand
+          </Button>
+        </div>
       </div>
       <div className="mt-4">
         <Button className="bg-blue-500" onClick={() => setShowDeck(true)}>
