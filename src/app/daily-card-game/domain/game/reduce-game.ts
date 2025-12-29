@@ -343,17 +343,6 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'HAND_SCORING_FINALIZE': {
         handleHandScoringEnd(draft, event)
-        const ctx: EffectContext = {
-          event,
-          game: draft,
-          score: draft.gamePlayState.score,
-          playedCards: draft.gamePlayState.selectedHand?.[1],
-          round: draft.rounds[draft.roundIndex],
-          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
-          jokers: draft.jokers,
-          vouchers: draft.vouchers,
-        }
-        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
       case 'BLIND_REWARDS_START': {
