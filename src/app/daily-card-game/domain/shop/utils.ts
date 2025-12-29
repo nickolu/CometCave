@@ -29,7 +29,7 @@ import {
   isPlayingCardDefinition,
   isPlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/utils'
-import { buildSeedString, getRandomNumbersWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, getRandomNumbersWithSeed, mulberry32, xmur3 } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { BlindState } from '@/app/daily-card-game/domain/round/types'
 
@@ -231,7 +231,20 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
     numberOfNumbers: numberOfCards,
   })
 
-  return randomCardIndices.map(index => {
+  // Deduplicate indices to prevent duplicate cards in shop
+  const uniqueIndices = Array.from(new Set(randomCardIndices))
+
+  // If we got duplicates, we need to generate more unique indices
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  while (uniqueIndices.length < numberOfCards && uniqueIndices.length < allBuyableCardDefinitions.length) {
+    const newIndex = Math.floor(rng() * allBuyableCardDefinitions.length)
+    if (!uniqueIndices.includes(newIndex)) {
+      uniqueIndices.push(newIndex)
+    }
+  }
+
+  return uniqueIndices.slice(0, numberOfCards).map(index => {
     const card = allBuyableCardDefinitions[index]
     const buyableCard = initializeBuyableCard(card, game)
     if (!buyableCard) throw new Error('Failed to get card for shop: ' + JSON.stringify(card))

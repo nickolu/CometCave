@@ -1,3 +1,4 @@
+import { Link } from '@mui/material'
 import { useState } from 'react'
 
 import { Hands } from '@/app/daily-card-game/components/hands/hands'
@@ -116,6 +117,9 @@ export function ViewTemplate({
         <div id="game-content" className="w-3/4 p-4">
           {children}
         </div>
+      </div>
+      <div className="text-sm text-gray-500">
+        <div>Current seed: &quot;{game.gameSeed}&quot;</div>
       </div>
     </div>
   )

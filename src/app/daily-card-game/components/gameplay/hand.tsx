@@ -1,35 +1,21 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { scoreHand as domainScoreHand } from '@/app/daily-card-game/domain/game/score-hand'
 import { cardValuePriority } from '@/app/daily-card-game/domain/hand/constants'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
-import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 import { PlayingCard } from './playing-card'
-
-const useScoreHand = () => {
-  const scoreHand = useCallback(() => {
-    domainScoreHand({
-      getGameState: () => useDailyCardGameStore.getState().game,
-    })
-  }, [])
-  return { scoreHand }
-}
 
 export const Hand = () => {
   const [sortKey, setSortKey] = useState<'value' | 'suit'>('value')
   const { game } = useGameState()
   const { gamePlayState } = game
   const { dealtCards, selectedCardIds } = gamePlayState
-  const { isScoring, remainingDiscards } = gamePlayState
-  const { scoreHand } = useScoreHand()
 
   const sortedCards: PlayingCardState[] | undefined = useMemo(() => {
     return (
@@ -87,21 +73,6 @@ export const Hand = () => {
             Suit
           </span>
         </div>
-      </div>
-
-      <div className="flex mt-4 gap-2 justify-start">
-        <Button
-          disabled={remainingDiscards === 0 || isScoring}
-          className="bg-red-500"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISCARD_SELECTED_CARDS' })
-          }}
-        >
-          Discard
-        </Button>
-        <Button disabled={isScoring} className="bg-green-500" onClick={scoreHand}>
-          Play Hand
-        </Button>
       </div>
     </>
   )

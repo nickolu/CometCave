@@ -87,7 +87,7 @@ export function ShopView() {
                   eventEmitter.emit({ type: 'SHOP_BUY_CARD' })
                 }}
               >
-                Buy (${selectedCard.price})
+                Buy (${Math.floor(selectedCard.price * game.shopState.priceMultiplier)})
               </Button>
               <Button
                 disabled={!canAffordSelectedCard || !isSelectedCardPlayable}
@@ -95,7 +95,7 @@ export function ShopView() {
                   eventEmitter.emit({ type: 'SHOP_BUY_AND_USE_CARD' })
                 }}
               >
-                Buy and Use (${selectedCard.price})
+                Buy and Use (${Math.floor(selectedCard.price * game.shopState.priceMultiplier)})
               </Button>
             </div>
           )}

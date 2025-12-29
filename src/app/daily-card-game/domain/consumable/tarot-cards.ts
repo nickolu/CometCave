@@ -2,7 +2,6 @@ import { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
 
 import { TarotCardDefinition } from './types'
-import { findLastTarotOrCelestialCard } from './utils'
 
 const theFool: TarotCardDefinition = {
   type: 'tarotCard',
@@ -11,17 +10,17 @@ const theFool: TarotCardDefinition = {
   name: 'The Fool',
   description: 'Creates a copy of the last Tarot or Planet card used.',
   isPlayable: (game: GameState) => {
-    const lastTarotOrCelestialCard = findLastTarotOrCelestialCard(game.consumablesUsed)
-    if (!lastTarotOrCelestialCard) {
-      return false
-    }
-    if (
-      lastTarotOrCelestialCard.consumableType === 'tarotCard' &&
-      tarotCards[lastTarotOrCelestialCard.tarotType] &&
-      lastTarotOrCelestialCard.tarotType === 'theFool'
-    ) {
-      return false
-    }
+    // Find the most recent tarot/celestial card
+    const lastCard = game.consumablesUsed.findLast(
+      consumable =>
+        consumable.consumableType === 'tarotCard' || consumable.consumableType === 'celestialCard'
+    )
+    // The Fool is only playable if:
+    // 1. There is a previous card used
+    // 2. The most recent card is NOT The Fool (can't use Fool twice in a row)
+    // 3. There is at least one non-Fool card in history to copy
+    if (!lastCard) return false
+    if (lastCard.consumableType === 'tarotCard' && lastCard.tarotType === 'theFool') return false
     return true
   },
   effects: [
@@ -29,12 +28,13 @@ const theFool: TarotCardDefinition = {
       event: { type: 'TAROT_CARD_USED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const lastTarotOrCelestialCard = findLastTarotOrCelestialCard(ctx.game.consumablesUsed)
-        if (
-          lastTarotOrCelestialCard &&
-          lastTarotOrCelestialCard.consumableType === 'tarotCard' &&
-          lastTarotOrCelestialCard.tarotType !== 'theFool'
-        ) {
+        // Find the last tarot/celestial that isn't The Fool (to skip The Fool itself if it was just used)
+        const lastTarotOrCelestialCard = ctx.game.consumablesUsed.findLast(
+          consumable =>
+            (consumable.consumableType === 'tarotCard' || consumable.consumableType === 'celestialCard') &&
+            !(consumable.consumableType === 'tarotCard' && consumable.tarotType === 'theFool')
+        )
+        if (lastTarotOrCelestialCard) {
           ctx.game.consumables.push(lastTarotOrCelestialCard)
         }
       },

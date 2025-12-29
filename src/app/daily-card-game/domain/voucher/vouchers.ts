@@ -71,7 +71,7 @@ export const liquidation: VoucherDefinition = {
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'clearanceSale',
 }
 
 export const hone: VoucherDefinition = {
