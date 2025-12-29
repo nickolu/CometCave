@@ -358,7 +358,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.money += totalReward
         currentBlind.status = 'completed'
         draft.gamePhase = 'shop'
-        draft.shopState.voucher = getRandomVoucherType(draft)
+        // Only generate a new voucher after completing the small blind (start of new round)
+        if (currentBlind.type === 'smallBlind') {
+          draft.shopState.voucher = getRandomVoucherType(draft)
+        }
         draft.gamePlayState.remainingDeck = draft.fullDeck
         draft.gamePlayState.remainingHands = draft.maxHands
         if (currentBlind.type === 'bossBlind') {

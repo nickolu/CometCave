@@ -216,6 +216,25 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
       return true
     })
   }
+
+  // Filter out cards already in the shop to prevent duplicates
+  const existingCardIds = game.shopState.cardsForSale.map(buyableCard => {
+    const def = getBuyableCardDefinition(buyableCard)
+    if (isJokerDefinition(def)) return def.id
+    if (isTarotCardDefinition(def)) return def.tarotType
+    if (isCelestialCardDefinition(def)) return def.handId
+    if (isPlayingCardDefinition(def)) return def.id
+    return null
+  }).filter((id): id is string => id !== null)
+
+  allBuyableCardDefinitions = allBuyableCardDefinitions.filter(card => {
+    if (isJokerDefinition(card)) return !existingCardIds.includes(card.id)
+    if (isTarotCardDefinition(card)) return !existingCardIds.includes(card.tarotType)
+    if (isCelestialCardDefinition(card)) return !existingCardIds.includes(card.handId)
+    if (isPlayingCardDefinition(card)) return !existingCardIds.includes(card.id)
+    return true
+  })
+
   const blindIndex = currentBlind?.type ? blindIndices[currentBlind.type] : 0
   const seed = buildSeedString([
     game.gameSeed,
@@ -224,28 +243,13 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
     game.shopState.rerollsUsed.toString(),
   ])
 
-  const randomCardIndices = getRandomNumbersWithSeed({
-    seed,
-    min: 0,
-    max: allBuyableCardDefinitions.length - 1,
-    numberOfNumbers: numberOfCards,
-  })
-
-  // Deduplicate indices to prevent duplicate cards in shop
-  const uniqueIndices = Array.from(new Set(randomCardIndices))
-
-  // If we got duplicates, we need to generate more unique indices
+  // Shuffle the available cards and take the first N (simpler than deduplication)
   const seedFn = xmur3(seed)
   const rng = mulberry32(seedFn())
-  while (uniqueIndices.length < numberOfCards && uniqueIndices.length < allBuyableCardDefinitions.length) {
-    const newIndex = Math.floor(rng() * allBuyableCardDefinitions.length)
-    if (!uniqueIndices.includes(newIndex)) {
-      uniqueIndices.push(newIndex)
-    }
-  }
+  const shuffled = [...allBuyableCardDefinitions].sort(() => rng() - 0.5)
+  const selectedCards = shuffled.slice(0, Math.min(numberOfCards, shuffled.length))
 
-  return uniqueIndices.slice(0, numberOfCards).map(index => {
-    const card = allBuyableCardDefinitions[index]
+  return selectedCards.map(card => {
     const buyableCard = initializeBuyableCard(card, game)
     if (!buyableCard) throw new Error('Failed to get card for shop: ' + JSON.stringify(card))
     return buyableCard

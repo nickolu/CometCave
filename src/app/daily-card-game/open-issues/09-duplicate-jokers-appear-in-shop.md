@@ -1,9 +1,9 @@
-## Using the tarot card "the magician" not working from a tarot pack
+## Vouchers appear that have already been purchase
 
 ### Reproduction steps:
 
-1. finish a blind to go to the shop
-2. observe the jokers
+1. purchase a voucher from the shop
+2. keep playing
 
 ### Expected
 
@@ -15,4 +15,7 @@ on occassion the same joker appears multiple times in the shop
 
 ### Issue status
 
-Fixed - Added deduplication logic to getRandomBuyableCards (utils.ts:234-245). The function now removes duplicate indices and generates additional unique indices if needed, ensuring each card (including jokers) appears only once in the shop.
+Fixed - Redesigned getRandomBuyableCards (utils.ts:220-256) with simpler, more robust logic:
+1. Filter out cards already in the shop (lines 220-236) - prevents duplicates when Overstock voucher adds cards
+2. Use shuffle-and-take approach instead of deduplication (lines 246-250) - simpler and guarantees uniqueness
+This fixes both the initial duplicate issue and the Overstock voucher duplicate issue.
