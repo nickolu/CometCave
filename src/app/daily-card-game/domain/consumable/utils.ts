@@ -20,7 +20,8 @@ export function getConsumableDefinition(
 export const findLastTarotOrCelestialCard = (
   consumables: (CelestialCardState | TarotCardState)[]
 ): TarotCardState | CelestialCardState | undefined => {
-  return consumables.find(
+  // Find the LAST (most recent) tarot or celestial card, not the first
+  return consumables.findLast(
     consumable =>
       consumable.consumableType === 'tarotCard' || consumable.consumableType === 'celestialCard'
   )

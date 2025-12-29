@@ -79,6 +79,8 @@ export function useBuyableCelestialCard(draft: Draft<GameState>): void {
   const celestialCard = draft.shopState.cardsForSale.find(card => card.card.id === celestialCardId)
   if (!celestialCard) return
   if (isCelestialCardState(celestialCard.card)) {
+    // Add to consumablesUsed so The Fool and similar cards can reference it
+    draft.consumablesUsed.push(celestialCard.card)
     // Important: `dispatchEffects` matches by `event.type`. When buying + using in the shop,
     // the triggering event is typically `SHOP_BUY_AND_USE_CARD`, but the card's effects are
     // keyed off `CELESTIAL_CARD_USED`.
@@ -137,7 +139,8 @@ export function useBuyableTarotCard(draft: Draft<GameState>): void {
   const tarotCard = draft.shopState.cardsForSale.find(card => card.card.id === tarotCardId)
   if (!tarotCard) return
   if (isTarotCardState(tarotCard.card)) {
-    draft.consumables.push(tarotCard.card)
+    // Add to consumablesUsed so The Fool and similar cards can reference it
+    draft.consumablesUsed.push(tarotCard.card)
     // See note in `useBuyableCelestialCard`: buy+use triggers a shop event, but tarot effects
     // are keyed off `TAROT_CARD_USED`.
     const usedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
