@@ -379,8 +379,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePlayState.remainingDiscards = draft.maxDiscards
 
         // Reset shop state for the new shop session
-        draft.shopState.cardsForSale = []
-        draft.shopState.packsForSale = []
+        draft.shopState.cardsForSale = getRandomBuyableCards(
+          draft,
+          draft.shopState.maxCardsForSale
+        )
+        draft.shopState.packsForSale = getRandomPacks(draft, 2)
         draft.shopState.rerollsUsed = 0
         draft.shopState.selectedCardId = null
         return
@@ -391,15 +394,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'SHOP_OPEN': {
-        if (draft.shopState.cardsForSale.length === 0) {
-          draft.shopState.cardsForSale = getRandomBuyableCards(
-            draft,
-            draft.shopState.maxCardsForSale
-          )
-        }
-        if (draft.shopState.packsForSale.length === 0) {
-          draft.shopState.packsForSale = getRandomPacks(draft, 2)
-        }
+        // Shop inventory is now initialized in BLIND_REWARDS_END
+        // This event is just for any additional shop opening logic if needed
         return
       }
       case 'SHOP_SELECT_BLIND': {
