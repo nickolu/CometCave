@@ -461,11 +461,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         )
         draft.shopState.openPackState.remainingCardsToSelect -= 1
 
-        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
-          draft.gamePhase = 'shop'
-          draft.shopState.openPackState = null
-          draft.gamePlayState.selectedCardIds = []
-        }
+        const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
+
         // Create effect context for dispatching effects
         const tarotCardUsedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
         const ctx: EffectContext = {
@@ -484,6 +481,13 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         // Also dispatch to other effects that react to TAROT_CARD_USED (jokers, vouchers, etc.)
         dispatchEffects(tarotCardUsedEvent, ctx, collectEffects(ctx.game))
+
+        // Clean up after effects have been applied
+        if (isLastCardToSelect) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+          draft.gamePlayState.selectedCardIds = []
+        }
 
         return
       }
@@ -504,10 +508,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         )
         draft.shopState.openPackState.remainingCardsToSelect -= 1
 
-        if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
-          draft.gamePhase = 'shop'
-          draft.shopState.openPackState = null
-        }
+        const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
 
         // Create effect context for dispatching effects
         const celestialCardUsedEvent: GameEvent = { type: 'CELESTIAL_CARD_USED' }
@@ -527,6 +528,13 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         // Also dispatch to other effects that react to CELESTIAL_CARD_USED (jokers, vouchers, etc.)
         dispatchEffects(celestialCardUsedEvent, ctx, collectEffects(ctx.game))
+
+        // Clean up after effects have been applied
+        if (isLastCardToSelect) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+          draft.gamePlayState.selectedCardIds = []
+        }
 
         return
       }
