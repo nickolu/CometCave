@@ -620,7 +620,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (!pack) return
         const packDefinition = getPackDefinition(pack.cards[0].type, pack.rarity)
         if (!pack) return
-        draft.money -= packDefinition.price
+        draft.money -= Math.floor(packDefinition.price * draft.shopState.priceMultiplier)
         draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
         draft.gamePhase = 'packOpening'
         draft.shopState.openPackState = pack

@@ -24,7 +24,8 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
   const { game } = useGameState()
   const cardType = pack.cards[0].type
   const packDefinition = getPackDefinition(cardType, pack.rarity)
-  const canAffordPack = canAffordToBuy(packDefinition.price, game)
+  const discountedPrice = Math.floor(packDefinition.price * game.shopState.priceMultiplier)
+  const canAffordPack = canAffordToBuy(discountedPrice, game)
   return (
     <div className="flex flex-col gap-2">
       <GameCard>
@@ -41,7 +42,7 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
           eventEmitter.emit({ type: 'SHOP_OPEN_PACK', id: pack.id })
         }}
       >
-        Open (${packDefinition.price})
+        Open (${discountedPrice})
       </Button>
     </div>
   )
