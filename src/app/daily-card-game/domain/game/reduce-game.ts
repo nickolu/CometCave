@@ -432,12 +432,15 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
             draft.shopState.cardsForSale.push(item)
           }
         }
+        // Clear guaranteed items after adding them
+        draft.shopState.guaranteedForSaleItems = []
         // If there are still slots available, add random cards to the shop
         if (draft.shopState.cardsForSale.length < draft.shopState.maxCardsForSale) {
-          draft.shopState.cardsForSale = getRandomBuyableCards(
+          const additionalCards = getRandomBuyableCards(
             draft,
             draft.shopState.maxCardsForSale - draft.shopState.cardsForSale.length
           )
+          draft.shopState.cardsForSale.push(...additionalCards)
         }
         draft.shopState.packsForSale = getRandomPacks(draft, 2)
         return
