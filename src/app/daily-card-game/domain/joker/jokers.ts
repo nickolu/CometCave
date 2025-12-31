@@ -399,7 +399,7 @@ export const jokerStencil: JokerDefinition = {
           id: uuid(),
           type: 'mult',
           operator: 'x',
-          value: ctx.game.maxJokers - ctx.game.jokers.length,
+          value: Math.max(1, ctx.game.maxJokers - ctx.game.jokers.length + 1),
           source: 'Joker Stencil',
         })
       },

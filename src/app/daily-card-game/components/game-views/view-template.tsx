@@ -7,7 +7,7 @@ import { Vouchers } from '@/app/daily-card-game/components/voucher/vouchers'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
-import { tags } from '@/app/daily-card-game/domain/tag/tags'
+import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 

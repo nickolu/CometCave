@@ -1,6 +1,7 @@
 import { CelestialCard } from '@/app/daily-card-game/components/gameplay/celestial-card'
 import { Joker } from '@/app/daily-card-game/components/gameplay/joker'
 import { PlayingCard } from '@/app/daily-card-game/components/gameplay/playing-card'
+import { SpectralCard } from '@/app/daily-card-game/components/gameplay/spectral-card'
 import { TarotCard } from '@/app/daily-card-game/components/gameplay/tarot-card'
 import {
   isCelestialCardState,
@@ -10,6 +11,7 @@ import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import type { BuyableCard } from '@/app/daily-card-game/domain/shop/types'
+import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
 
 function handleCardSelection(isSelected: boolean, id: string) {
   if (isSelected) {
@@ -51,6 +53,15 @@ export function BuyableCard({
     return (
       <PlayingCard
         playingCard={buyableCard.card}
+        isSelected={isSelected}
+        onClick={handleCardSelection}
+      />
+    )
+  }
+  if (isSpectralCardState(buyableCard.card)) {
+    return (
+      <SpectralCard
+        spectralCard={buyableCard.card}
         isSelected={isSelected}
         onClick={handleCardSelection}
       />

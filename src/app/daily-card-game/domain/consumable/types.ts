@@ -46,10 +46,6 @@ export interface TarotCardDefinition extends ConsumableDefinition {
   effects: Effect[]
 }
 
-export interface SpectralCardDefinition extends ConsumableDefinition {
-  type: 'spectralCard'
-}
-
 export interface ConsumableState {
   id: string
   consumableType: ConsumableDefinition['type']

@@ -37,6 +37,7 @@ export type GameEvent =
   | ShopSelectCardEvent
   | ShopDeselectCardEvent
   | SmallBlindSelectedEvent
+  | SpectralCardUsedEvent
   | TarotCardUsedEvent
   | ShopOpenEvent
   | ShopBuyCardEvent
@@ -45,6 +46,8 @@ export type GameEvent =
   | ShopBuyVoucherEvent
   | DisplayBossBlindsEvent
   | DisplayCelestialsEvent
+  | DisplaySpectralCardsEvent
+  | DisplayTagsEvent
   | DisplayTarotCardsEvent
   | DisplayVouchersEvent
   | DisplayJokersEvent
@@ -53,6 +56,7 @@ export type GameEvent =
   | ShopSelectJokerFromPackEvent
   | ShopUseTarotCardFromPackEvent
   | ShopUseCelestialCardFromPackEvent
+  | ShopUseSpectralCardFromPackEvent
   | PackOpenSkipEvent
 
 export type ShopBuyCardEvent = {
@@ -72,6 +76,10 @@ export type ShopUseTarotCardFromPackEvent = {
 }
 export type ShopUseCelestialCardFromPackEvent = {
   type: 'SHOP_USE_CELESTIAL_CARD_FROM_PACK'
+  id: string
+}
+export type ShopUseSpectralCardFromPackEvent = {
+  type: 'SHOP_USE_SPECTRAL_CARD_FROM_PACK'
   id: string
 }
 export type PackOpenSkipEvent = {
@@ -184,6 +192,9 @@ export type SmallBlindSelectedEvent = {
 export type TarotCardUsedEvent = {
   type: 'TAROT_CARD_USED'
 }
+export type SpectralCardUsedEvent = {
+  type: 'SPECTRAL_CARD_USED'
+}
 export type ShopRerollEvent = {
   type: 'SHOP_REROLL'
 }
@@ -206,6 +217,12 @@ export type DisplayTarotCardsEvent = {
 }
 export type DisplayVouchersEvent = {
   type: 'DISPLAY_VOUCHERS'
+}
+export type DisplaySpectralCardsEvent = {
+  type: 'DISPLAY_SPECTRAL_CARDS'
+}
+export type DisplayTagsEvent = {
+  type: 'DISPLAY_TAGS'
 }
 export interface EffectContext {
   bossBlind?: BlindState

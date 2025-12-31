@@ -2,11 +2,13 @@ import { GameState } from '@/app/daily-card-game/domain/game/types'
 import {
   buildSeedString,
   getRandomFloatWithSeed,
+  getRandomNumbersWithSeed,
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
 
-import { PlayingCardDefinition, PlayingCardState } from './types'
+import { playingCards } from './playing-cards'
+import { CardValue, PlayingCardDefinition, PlayingCardState } from './types'
 
 export function isPlayingCardState(card: unknown): card is PlayingCardState {
   return typeof card === 'object' && card !== null && 'playingCardId' in card
@@ -46,7 +48,7 @@ function getRandomEdition(
   )
 }
 
-function getRandomEnchantment(
+export function getRandomEnchantment(
   game: GameState,
   playingCardId: string
 ): 'bonus' | 'mult' | 'gold' | 'glass' | 'lucky' | 'none' {
@@ -115,6 +117,34 @@ function getRandomChip(
       },
     }) ?? 'none'
   )
+}
+
+export function getRandomPlayingCardsWithFilters({
+  game,
+  numberOfCards,
+  values,
+  suits,
+}: {
+  game: GameState
+  numberOfCards: number
+  values?: CardValue[]
+  suits?: ('hearts' | 'diamonds' | 'clubs' | 'spades')[]
+}): PlayingCardDefinition[] {
+  let allPlayingCards = Object.values(playingCards)
+  if (values) {
+    allPlayingCards = allPlayingCards.filter(card => values.includes(card.value))
+  }
+  if (suits) {
+    allPlayingCards = allPlayingCards.filter(card => suits.includes(card.suit))
+  }
+  const seed = buildSeedString([game.gameSeed, game.roundIndex.toString()])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allPlayingCards.length - 1,
+    numberOfNumbers: numberOfCards,
+  })
+  return randomCardIndices.map(index => allPlayingCards[index])
 }
 
 export function initializePlayingCard(

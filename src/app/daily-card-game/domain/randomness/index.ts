@@ -28,6 +28,12 @@ export function uuid() {
     .slice(2, 10)}`
 }
 
+export function deterministicUuid(seed: string) {
+  const seedFn = xmur3(seed)
+  const rng = mulberry32(seedFn())
+  return `${rng().toString(36)}-${rng().toString(36).slice(2, 10)}-${rng().toString(36).slice(2, 10)}`
+}
+
 export function getRandomNumberWithSeed(seed: string, min: number, max: number) {
   const seedFn = xmur3(seed)
   const rng = mulberry32(seedFn())

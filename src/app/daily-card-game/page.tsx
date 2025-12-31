@@ -9,6 +9,8 @@ import { JokersView } from './components/game-views/jokers'
 import { MainMenuView } from './components/game-views/main-menu'
 import { PackOpenView } from './components/game-views/pack-open'
 import { ShopView } from './components/game-views/shop'
+import { SpectralCardsView } from './components/game-views/spectral-cards'
+import { TagsView } from './components/game-views/tags'
 import { TarotCardsView } from './components/game-views/tarot-cards'
 import { VouchersView } from './components/game-views/vouchers'
 import { useGameEvents } from './useGameEvents'
@@ -43,6 +45,10 @@ export default function DailyCardGamePage() {
       return <CelestialsView />
     case 'bossBlinds':
       return <BossBlindsView />
+    case 'spectralCards':
+      return <SpectralCardsView />
+    case 'tags':
+      return <TagsView />
     default:
       return <div>Error: Unknown game phase {game.gamePhase}</div>
   }

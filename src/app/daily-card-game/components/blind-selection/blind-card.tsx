@@ -1,6 +1,6 @@
 import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-signs'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { tags } from '@/app/daily-card-game/domain/tag/tags'
+import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import type { TagType } from '@/app/daily-card-game/domain/tag/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -48,7 +48,7 @@ export function BlindCard({
             <div className="flex flex-col gap-2">
               <Button
                 variant="outline"
-                className="w-full mt-2"
+                className="w-full mt-2 h-auto whitespace-break-spaces"
                 disabled={disabled}
                 onClick={() => {
                   eventEmitter.emit({ type: 'BLIND_SKIPPED' })
