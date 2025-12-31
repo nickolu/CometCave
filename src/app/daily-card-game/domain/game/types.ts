@@ -57,6 +57,7 @@ export type GamePhase =
   | 'packOpening'
   | 'shop'
   | 'spectralCards'
+  | 'tags'
   | 'tarotCards'
   | 'vouchers'
 export interface GamePlayState {

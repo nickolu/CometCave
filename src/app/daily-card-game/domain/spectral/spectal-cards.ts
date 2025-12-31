@@ -198,7 +198,9 @@ export const spectralCards: Record<SpectralCardType, SpectralCardDefinition> = {
   theSoul,
   blackHole,
 }
-export const implementedSpectralCards: Partial<typeof spectralCards> = {}
+export const implementedSpectralCards: Partial<typeof spectralCards> = {
+  familiar,
+}
 
 /**
  * List of Spectral Cards

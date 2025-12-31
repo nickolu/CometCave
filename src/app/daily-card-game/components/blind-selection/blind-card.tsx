@@ -1,6 +1,6 @@
 import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-signs'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { tags } from '@/app/daily-card-game/domain/tag/tags'
+import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import type { TagType } from '@/app/daily-card-game/domain/tag/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

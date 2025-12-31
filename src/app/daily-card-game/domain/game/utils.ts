@@ -18,7 +18,7 @@ import type {
   BlindState,
   RoundState,
 } from '@/app/daily-card-game/domain/round/types'
-import { tags } from '@/app/daily-card-game/domain/tag/tags'
+import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 import type { GameState } from './types'

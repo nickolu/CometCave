@@ -64,11 +64,23 @@ export function MainMenuView() {
         >
           Boss Blinds
         </Button>
-        <Button className="mt-4" variant="space" disabled={true}>
-          Tags (Coming Soon)
+        <Button
+          className="mt-4"
+          variant="space"
+          onClick={() => {
+            eventEmitter.emit({ type: 'DISPLAY_TAGS' })
+          }}
+        >
+          Tags
         </Button>
-        <Button className="mt-4" variant="space" disabled={true}>
-          Spectral Cards (Coming Soon)
+        <Button
+          className="mt-4"
+          variant="space"
+          onClick={() => {
+            eventEmitter.emit({ type: 'DISPLAY_SPECTRAL_CARDS' })
+          }}
+        >
+          Spectral Cards
         </Button>
       </div>
     </div>

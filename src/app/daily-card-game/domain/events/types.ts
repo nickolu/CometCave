@@ -46,6 +46,8 @@ export type GameEvent =
   | ShopBuyVoucherEvent
   | DisplayBossBlindsEvent
   | DisplayCelestialsEvent
+  | DisplaySpectralCardsEvent
+  | DisplayTagsEvent
   | DisplayTarotCardsEvent
   | DisplayVouchersEvent
   | DisplayJokersEvent
@@ -215,6 +217,12 @@ export type DisplayTarotCardsEvent = {
 }
 export type DisplayVouchersEvent = {
   type: 'DISPLAY_VOUCHERS'
+}
+export type DisplaySpectralCardsEvent = {
+  type: 'DISPLAY_SPECTRAL_CARDS'
+}
+export type DisplayTagsEvent = {
+  type: 'DISPLAY_TAGS'
 }
 export interface EffectContext {
   bossBlind?: BlindState

@@ -21,7 +21,7 @@ import { getInProgressBlind, getNextBlind } from '@/app/daily-card-game/domain/r
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
 import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
-import { spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
+import { implementedSpectralCards as spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
 import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
 import { getRandomTag, initializeTag } from '@/app/daily-card-game/domain/tag/utils'
 import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
@@ -130,6 +130,14 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'DISPLAY_CELESTIALS': {
         draft.gamePhase = 'celestialCards'
+        return
+      }
+      case 'DISPLAY_SPECTRAL_CARDS': {
+        draft.gamePhase = 'spectralCards'
+        return
+      }
+      case 'DISPLAY_TAGS': {
+        draft.gamePhase = 'tags'
         return
       }
       case 'DISPLAY_BOSS_BLINDS': {
@@ -634,11 +642,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         }
 
         // Dispatch the spectral card's own effects
-        dispatchEffects(
-          spectralCardUsedEvent,
-          ctx,
-          spectralCards[spectralCard.spectralType].effects
-        )
+        const spectralCardDefinition = spectralCards[spectralCard.spectralType]
+        if (spectralCardDefinition && spectralCardDefinition.effects) {
+          dispatchEffects(spectralCardUsedEvent, ctx, spectralCardDefinition.effects)
+        }
 
         // Also dispatch to other effects that react to SPECTRAL_CARD_USED (jokers, vouchers, etc.)
         dispatchEffects(spectralCardUsedEvent, ctx, collectEffects(ctx.game))

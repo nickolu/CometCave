@@ -37,7 +37,7 @@ import {
 } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { BlindState } from '@/app/daily-card-game/domain/round/types'
-import { spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
+import { implementedSpectralCards as spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
 import { SpectralCardDefinition } from '@/app/daily-card-game/domain/spectral/types'
 import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
 

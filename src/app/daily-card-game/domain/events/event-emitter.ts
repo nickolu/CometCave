@@ -48,6 +48,8 @@ class EventEmitter {
     SHOP_BUY_VOUCHER: [],
     DISPLAY_BOSS_BLINDS: [],
     DISPLAY_CELESTIALS: [],
+    DISPLAY_SPECTRAL_CARDS: [],
+    DISPLAY_TAGS: [],
     DISPLAY_TAROT_CARDS: [],
     DISPLAY_VOUCHERS: [],
   }
