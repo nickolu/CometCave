@@ -14,11 +14,13 @@ import {
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { initializeSpectralCard } from '@/app/daily-card-game/domain/spectral/utils'
 
 import {
   getRandomCelestialCards,
   getRandomJokers,
   getRandomPlayingCards,
+  getRandomSpectralCards,
   getRandomTarotCards,
 } from './utils'
 
@@ -44,23 +46,25 @@ const pricePerRarity: Record<PackState['rarity'], number> = {
 
 // Weights for pack rarity selection based on pack type
 // Standard (playingCard), Arcana (tarotCard), and Celestial packs share the same weights
-// Buffoon (jokerCard) packs are rarer
+// Buffoon (jokerCard) and Spectral packs are rarer
 type PackRarityWeights = Record<PackState['rarity'], number>
-type ImplementedPackType = Exclude<PackDefinition['cardType'], 'spectralCard'>
+type ImplementedPackType = PackDefinition['cardType']
 const packRarityWeightsByType: Record<ImplementedPackType, PackRarityWeights> = {
   playingCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Standard
   tarotCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Arcana
   celestialCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Celestial
   jokerCard: { normal: 1.2, jumbo: 0.6, mega: 0.15 }, // Buffoon
+  spectralCard: { normal: 0.8, jumbo: 0.4, mega: 0.1 }, // Spectral (rarer than Buffoon)
 }
 
 // Pack type weights (sum of all rarity weights for each type)
-// This makes Standard/Arcana/Celestial more common than Buffoon
+// This makes Standard/Arcana/Celestial more common than Buffoon and Spectral
 const packTypeWeights: Record<ImplementedPackType, number> = {
   playingCard: 6.5, // 4 + 2 + 0.5
   tarotCard: 6.5, // 4 + 2 + 0.5
   celestialCard: 6.5, // 4 + 2 + 0.5
   jokerCard: 1.95, // 1.2 + 0.6 + 0.15
+  spectralCard: 1.3, // 0.8 + 0.4 + 0.1
 }
 
 export const getPackDefinition = (
@@ -126,6 +130,18 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
         type: 'celestialCard',
         card: initializeCelestialCard(card),
         price: celestialCards[card.handId].price,
+      })),
+    }
+  }
+  if (packDefinition.cardType === 'spectralCard') {
+    return {
+      id,
+      rarity,
+      remainingCardsToSelect: numberOfCardsToSelect,
+      cards: getRandomSpectralCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
+        type: 'spectralCard',
+        card: initializeSpectralCard(card),
+        price: 0, // Spectral cards have no price - only obtained from packs
       })),
     }
   }

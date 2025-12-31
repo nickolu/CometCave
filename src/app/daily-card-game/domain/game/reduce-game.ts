@@ -21,6 +21,8 @@ import { getInProgressBlind, getNextBlind } from '@/app/daily-card-game/domain/r
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
 import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
+import { spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
+import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
 import { getRandomTag, initializeTag } from '@/app/daily-card-game/domain/tag/utils'
 import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import {
@@ -601,6 +603,55 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         return
       }
+      case 'SHOP_USE_SPECTRAL_CARD_FROM_PACK': {
+        const id = event.id
+        const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
+        if (!buyableCard) return
+        if (!isSpectralCardState(buyableCard.card)) return
+        const spectralCard = buyableCard.card
+
+        // Remove the card from the pack
+        if (!draft.shopState.openPackState) return
+        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
+          card => card.card.id !== id
+        )
+        draft.shopState.openPackState.remainingCardsToSelect -= 1
+
+        const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
+
+        // Create effect context for dispatching effects
+        const spectralCardUsedEvent: GameEvent = { type: 'SPECTRAL_CARD_USED' }
+        const ctx: EffectContext = {
+          event: spectralCardUsedEvent,
+          game: draft as unknown as GameState,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+          tags: draft.tags,
+        }
+
+        // Dispatch the spectral card's own effects
+        dispatchEffects(
+          spectralCardUsedEvent,
+          ctx,
+          spectralCards[spectralCard.spectralType].effects
+        )
+
+        // Also dispatch to other effects that react to SPECTRAL_CARD_USED (jokers, vouchers, etc.)
+        dispatchEffects(spectralCardUsedEvent, ctx, collectEffects(ctx.game))
+
+        // Clean up after effects have been applied
+        if (isLastCardToSelect) {
+          draft.gamePhase = 'shop'
+          draft.shopState.openPackState = null
+          draft.gamePlayState.selectedCardIds = []
+        }
+
+        return
+      }
       case 'SHOP_BUY_CARD': {
         const selectedCard = draft.shopState.cardsForSale.find(
           card => card.card.id === draft.shopState.selectedCardId
@@ -767,6 +818,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'TAROT_CARD_USED': {
         useConsumableTarotCard(draft, event)
+        return
+      }
+      case 'SPECTRAL_CARD_USED': {
+        // Spectral cards are currently only usable from packs via SHOP_USE_SPECTRAL_CARD_FROM_PACK
+        // This case handles the event for effect dispatching purposes
         return
       }
       case 'CONSUMABLE_SOLD': {

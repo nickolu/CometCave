@@ -29,9 +29,17 @@ import {
   isPlayingCardDefinition,
   isPlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/utils'
-import { buildSeedString, getRandomNumbersWithSeed, mulberry32, xmur3 } from '@/app/daily-card-game/domain/randomness'
+import {
+  buildSeedString,
+  getRandomNumbersWithSeed,
+  mulberry32,
+  xmur3,
+} from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { BlindState } from '@/app/daily-card-game/domain/round/types'
+import { spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
+import { SpectralCardDefinition } from '@/app/daily-card-game/domain/spectral/types'
+import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
 
 import { BuyableCard } from './types'
 
@@ -176,6 +184,25 @@ export function getRandomJokers(game: GameState, numberOfCards: number): JokerDe
   return randomCardIndices.map(index => allJokers[index])
 }
 
+export function getRandomSpectralCards(
+  game: GameState,
+  numberOfCards: number
+): SpectralCardDefinition[] {
+  const allSpectralCards = Object.values(spectralCards)
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allSpectralCards.length - 1,
+    numberOfNumbers: numberOfCards,
+  })
+  return randomCardIndices.map(index => allSpectralCards[index])
+}
+
 export function getRandomBuyableCards(game: GameState, numberOfCards: number): BuyableCard[] {
   const allTarotCards = Object.values(tarotCards)
   const allCelestialCards = Object.values(celestialCards).filter(
@@ -218,14 +245,16 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
   }
 
   // Filter out cards already in the shop to prevent duplicates
-  const existingCardIds = game.shopState.cardsForSale.map(buyableCard => {
-    const def = getBuyableCardDefinition(buyableCard)
-    if (isJokerDefinition(def)) return def.id
-    if (isTarotCardDefinition(def)) return def.tarotType
-    if (isCelestialCardDefinition(def)) return def.handId
-    if (isPlayingCardDefinition(def)) return def.id
-    return null
-  }).filter((id): id is string => id !== null)
+  const existingCardIds = game.shopState.cardsForSale
+    .map(buyableCard => {
+      const def = getBuyableCardDefinition(buyableCard)
+      if (isJokerDefinition(def)) return def.id
+      if (isTarotCardDefinition(def)) return def.tarotType
+      if (isCelestialCardDefinition(def)) return def.handId
+      if (isPlayingCardDefinition(def)) return def.id
+      return null
+    })
+    .filter((id): id is string => id !== null)
 
   allBuyableCardDefinitions = allBuyableCardDefinitions.filter(card => {
     if (isJokerDefinition(card)) return !existingCardIds.includes(card.id)
@@ -292,4 +321,16 @@ export function getIsRoomForSelectedCard(
 
 export function canAffordToBuy(price: number = 0, game: GameState): boolean {
   return game.money - price >= game.minimumMoney
+}
+
+export function getIsSpectralCardPlayable(
+  selectedCard: BuyableCard | undefined,
+  game: GameState
+): boolean {
+  if (!selectedCard) return false
+  if (!isSpectralCardState(selectedCard.card)) return false
+  const spectralCardDefinition = spectralCards[selectedCard.card.spectralType]
+  if (!spectralCardDefinition) return false
+  // If isPlayable is not defined, default to true
+  return spectralCardDefinition.isPlayable?.(game) ?? true
 }
