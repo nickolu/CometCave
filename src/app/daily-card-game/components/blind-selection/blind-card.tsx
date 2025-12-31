@@ -48,7 +48,7 @@ export function BlindCard({
             <div className="flex flex-col gap-2">
               <Button
                 variant="outline"
-                className="w-full mt-2"
+                className="w-full mt-2 h-auto whitespace-break-spaces"
                 disabled={disabled}
                 onClick={() => {
                   eventEmitter.emit({ type: 'BLIND_SKIPPED' })
