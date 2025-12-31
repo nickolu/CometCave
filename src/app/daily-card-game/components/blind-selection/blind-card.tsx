@@ -1,5 +1,7 @@
 import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-signs'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { tags } from '@/app/daily-card-game/domain/tag/tags'
+import type { TagType } from '@/app/daily-card-game/domain/tag/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -10,7 +12,7 @@ export function BlindCard({
   minimumScore,
   disabled,
   selectEventName,
-  skipEventName,
+  tag,
 }: {
   name: string
   description?: string
@@ -18,7 +20,7 @@ export function BlindCard({
   minimumScore?: number
   disabled: boolean
   selectEventName: 'SMALL_BLIND_SELECTED' | 'BIG_BLIND_SELECTED' | 'BOSS_BLIND_SELECTED'
-  skipEventName?: 'SMALL_BLIND_SKIPPED' | 'BIG_BLIND_SKIPPED'
+  tag?: TagType
 }) {
   return (
     <Card className="bg-space-grey border-space-purple p-4 text-cream-white h-63 w-1/3 flex flex-col justify-between text-center">
@@ -42,17 +44,22 @@ export function BlindCard({
           >
             Select
           </Button>
-          {skipEventName && (
-            <Button
-              variant="outline"
-              className="w-full mt-2"
-              disabled={disabled}
-              onClick={() => {
-                eventEmitter.emit({ type: skipEventName })
-              }}
-            >
-              Skip
-            </Button>
+          {tag && (
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                disabled={disabled}
+                onClick={() => {
+                  eventEmitter.emit({ type: 'BLIND_SKIPPED' })
+                }}
+              >
+                Skip and get the {tags[tag]?.name} tag
+              </Button>{' '}
+              <div className="text-sm text-cream-white/50">
+                {tags[tag]?.name} Tag: {tags[tag]?.benefit}
+              </div>
+            </div>
           )}
         </div>
       </div>

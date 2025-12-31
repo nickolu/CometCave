@@ -17,10 +17,11 @@ import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import { buildSeedString, uuid } from '@/app/daily-card-game/domain/randomness'
-import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { getInProgressBlind, getNextBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
 import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
+import { getRandomTag, initializeTag } from '@/app/daily-card-game/domain/tag/utils'
 import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import {
   getRandomVoucherType,
@@ -59,6 +60,7 @@ function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerSta
     bossBlind: draft.rounds[draft.roundIndex].bossBlind,
     jokers: draft.jokers,
     vouchers: draft.vouchers,
+    tags: draft.tags,
   }
   // Collect effects *before* removing the joker so "on sold/removed" effects that live on the
   // removed joker itself still get a chance to run. Then dispatch *after* removal so effects
@@ -76,6 +78,13 @@ export function calculateInterest(draft: GameState): number {
   return Math.min(interestCalculation, maxInterest)
 }
 
+export function populateTags(draft: GameState): void {
+  const bigBlindTag = getRandomTag(draft)
+  const smallBlindTag = getRandomTag(draft)
+  draft.rounds[draft.roundIndex].bigBlind.tag = bigBlindTag
+  draft.rounds[draft.roundIndex].smallBlind.tag = smallBlindTag
+}
+
 export function reduceGame(game: GameState, event: GameEvent): GameState {
   return produce(game, draft => {
     switch (event.type) {
@@ -86,6 +95,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'GAME_START': {
         draft.gamePhase = 'blindSelection'
         draft.shopState.voucher = getRandomVoucherType(draft)
+        populateTags(draft)
         const ctx: EffectContext = {
           event,
           game: draft,
@@ -95,6 +105,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -161,14 +172,30 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         })
         return
       }
-      case 'BIG_BLIND_SKIPPED': {
+      case 'BLIND_SKIPPED': {
         const round = draft.rounds[draft.roundIndex]
-        round.bigBlind.status = 'skipped'
-        return
-      }
-      case 'SMALL_BLIND_SKIPPED': {
-        const round = draft.rounds[draft.roundIndex]
-        round.smallBlind.status = 'skipped'
+        const blind = getNextBlind(draft)
+        if (!blind) return
+
+        if (blind.tag) {
+          draft.tags.push(initializeTag(blind.tag))
+        }
+        round[blind.type].status = 'skipped'
+        dispatchEffects(
+          event,
+          {
+            event,
+            game: draft,
+            score: draft.gamePlayState.score,
+            playedCards: [],
+            round: draft.rounds[draft.roundIndex],
+            bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+            jokers: draft.jokers,
+            vouchers: draft.vouchers,
+            tags: draft.tags,
+          },
+          collectEffects(draft)
+        )
         return
       }
 
@@ -323,6 +350,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -337,6 +365,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
@@ -371,11 +400,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePlayState.remainingDiscards = draft.maxDiscards
 
         // Reset shop state for the new shop session
-        draft.shopState.cardsForSale = getRandomBuyableCards(
-          draft,
-          draft.shopState.maxCardsForSale
-        )
-        draft.shopState.packsForSale = getRandomPacks(draft, 2)
+        draft.shopState.cardsForSale = []
+        draft.shopState.packsForSale = []
         draft.shopState.rerollsUsed = 0
         draft.shopState.selectedCardId = null
         return
@@ -386,12 +412,40 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'SHOP_OPEN': {
-        // Shop inventory is now initialized in BLIND_REWARDS_END
-        // This event is just for any additional shop opening logic if needed
+        // dispatch first to use any tag effects
+        const ctx: EffectContext = {
+          event,
+          game: draft,
+          score: draft.gamePlayState.score,
+          playedCards: [],
+          round: draft.rounds[draft.roundIndex],
+          bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+          jokers: draft.jokers,
+          vouchers: draft.vouchers,
+          tags: draft.tags,
+        }
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
+
+        // Add guaranteed for sale items to the shop, up to the limit of maxCardsForSale
+        for (const item of draft.shopState.guaranteedForSaleItems) {
+          if (draft.shopState.cardsForSale.length < draft.shopState.maxCardsForSale) {
+            draft.shopState.cardsForSale.push(item)
+          }
+        }
+        // If there are still slots available, add random cards to the shop
+        if (draft.shopState.cardsForSale.length < draft.shopState.maxCardsForSale) {
+          draft.shopState.cardsForSale = getRandomBuyableCards(
+            draft,
+            draft.shopState.maxCardsForSale - draft.shopState.cardsForSale.length
+          )
+        }
+        draft.shopState.packsForSale = getRandomPacks(draft, 2)
         return
       }
+
       case 'SHOP_SELECT_BLIND': {
         draft.gamePhase = 'blindSelection'
+        populateTags(draft)
         return
       }
       case 'SHOP_SELECT_PLAYING_CARD_FROM_PACK': {
@@ -437,6 +491,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
         dispatchEffects(jokerAddedEvent, ctx, collectEffects(ctx.game))
 
@@ -477,6 +532,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
 
         // Dispatch the tarot card's own effects (e.g., enchantments from The Magician)
@@ -524,6 +580,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
 
         // Dispatch the celestial card's own effects (level up the poker hand)
@@ -572,6 +629,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
 
@@ -668,6 +726,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           bossBlind: draft.rounds[draft.roundIndex].bossBlind,
           jokers: draft.jokers,
           vouchers: draft.vouchers,
+          tags: draft.tags,
         }
         dispatchEffects(event, ctx, collectEffects(ctx.game))
         return

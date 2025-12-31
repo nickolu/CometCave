@@ -3,11 +3,12 @@ import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/ty
 import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
+import type { TagState } from '@/app/daily-card-game/domain/tag/types'
 import type { VoucherState, VoucherType } from '@/app/daily-card-game/domain/voucher/types'
 
 export type GameEvent =
   | BigBlindSelectedEvent
-  | BigBlindSkippedEvent
+  | BlindSkippedEvent
   | BlindRewardsEndEvent
   | BlindRewardsStartEvent
   | BackToMenuEvent
@@ -36,7 +37,6 @@ export type GameEvent =
   | ShopSelectCardEvent
   | ShopDeselectCardEvent
   | SmallBlindSelectedEvent
-  | SmallBlindSkippedEvent
   | TarotCardUsedEvent
   | ShopOpenEvent
   | ShopBuyCardEvent
@@ -83,8 +83,8 @@ export type ShopBuyAndUseCardEvent = {
 export type BigBlindSelectedEvent = {
   type: 'BIG_BLIND_SELECTED'
 }
-export type BigBlindSkippedEvent = {
-  type: 'BIG_BLIND_SKIPPED'
+export type BlindSkippedEvent = {
+  type: 'BLIND_SKIPPED'
 }
 export type BlindRewardsEndEvent = {
   type: 'BLIND_REWARDS_END'
@@ -181,9 +181,6 @@ export type ShopDeselectCardEvent = {
 export type SmallBlindSelectedEvent = {
   type: 'SMALL_BLIND_SELECTED'
 }
-export type SmallBlindSkippedEvent = {
-  type: 'SMALL_BLIND_SKIPPED'
-}
 export type TarotCardUsedEvent = {
   type: 'TAROT_CARD_USED'
 }
@@ -214,6 +211,7 @@ export interface EffectContext {
   bossBlind?: BlindState
   event: GameEvent
   game: GameState
+  tags: TagState[]
   jokers?: JokerState[]
   playedCards?: PlayingCardState[]
   round?: RoundState

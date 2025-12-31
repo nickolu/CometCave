@@ -13,6 +13,17 @@ export function getInProgressBlind(game: GameState): BlindState | undefined {
   return blindsInCurrentRound.find(blind => blind.status === 'inProgress')
 }
 
+export function getNextBlind(game: GameState): BlindState | undefined {
+  const currentRoundIndex = game.roundIndex
+  const currentRound = game.rounds[currentRoundIndex]
+  const blindsInCurrentRound = [
+    currentRound.smallBlind,
+    currentRound.bigBlind,
+    currentRound.bossBlind,
+  ]
+  return blindsInCurrentRound.find(blind => blind.status === 'notStarted')
+}
+
 export const smallBlind: BlindDefinition = {
   type: 'smallBlind',
   name: 'Small Blind',

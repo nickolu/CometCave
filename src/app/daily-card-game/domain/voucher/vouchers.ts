@@ -13,7 +13,6 @@ export const overstock: VoucherDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.shopState.maxCardsForSale += 1
-        console.log('maxCardsForSale', ctx.game.shopState.maxCardsForSale)
         if (ctx.game.shopState.cardsForSale.length < ctx.game.shopState.maxCardsForSale) {
           const difference =
             ctx.game.shopState.maxCardsForSale - ctx.game.shopState.cardsForSale.length

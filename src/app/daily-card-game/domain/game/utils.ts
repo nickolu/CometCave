@@ -18,6 +18,7 @@ import type {
   BlindState,
   RoundState,
 } from '@/app/daily-card-game/domain/round/types'
+import { tags } from '@/app/daily-card-game/domain/tag/tags'
 import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 import type { GameState } from './types'
@@ -45,6 +46,8 @@ export function collectEffects(game: GameState): Effect[] {
   effects.push(...game.jokers.flatMap(j => jokers[j.jokerId]?.effects || []))
 
   effects.push(...game.vouchers.flatMap(v => vouchers[v.type]?.effects || []))
+
+  effects.push(...game.tags.flatMap(t => tags[t.tagType]?.effects || []))
 
   return effects
 }
@@ -96,6 +99,7 @@ export function useBuyableCelestialCard(draft: Draft<GameState>): void {
         bossBlind: draft.rounds[draft.roundIndex].bossBlind,
         jokers: draft.jokers,
         vouchers: draft.vouchers,
+        tags: draft.tags,
       },
       celestialCards[celestialCard.card.handId].effects
     )
@@ -104,7 +108,6 @@ export function useBuyableCelestialCard(draft: Draft<GameState>): void {
 
 export function useConsumableCelestialCard(draft: Draft<GameState>, event: GameEvent): void {
   const celestialCard = draft.gamePlayState.selectedConsumable
-  console.log('celestialCard', celestialCard)
   if (!celestialCard) return
   if (celestialCard.consumableType !== 'celestialCard') return
   draft.consumablesUsed.push(celestialCard)
@@ -128,6 +131,7 @@ export function useConsumableCelestialCard(draft: Draft<GameState>, event: GameE
       bossBlind: draft.rounds[draft.roundIndex].bossBlind,
       jokers: draft.jokers,
       vouchers: draft.vouchers,
+      tags: draft.tags,
     },
     celestialCards[celestialCard.handId].effects
   )
@@ -155,6 +159,7 @@ export function useBuyableTarotCard(draft: Draft<GameState>): void {
         bossBlind: draft.rounds[draft.roundIndex].bossBlind,
         jokers: draft.jokers,
         vouchers: draft.vouchers,
+        tags: draft.tags,
       },
       tarotCards[tarotCard.card.tarotType].effects
     )
@@ -188,6 +193,7 @@ export function useConsumableTarotCard(draft: Draft<GameState>, event: GameEvent
       bossBlind: draft.rounds[draft.roundIndex].bossBlind,
       jokers: draft.jokers,
       vouchers: draft.vouchers,
+      tags: draft.tags,
     },
     tarotCards[tarotCard.tarotType].effects
   )

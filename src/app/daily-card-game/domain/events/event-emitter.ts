@@ -3,7 +3,7 @@ import { GameEvent } from '@/app/daily-card-game/domain/events/types'
 class EventEmitter {
   private events: Record<GameEvent['type'], Array<(event: GameEvent) => void>> = {
     BIG_BLIND_SELECTED: [],
-    BIG_BLIND_SKIPPED: [],
+    BLIND_SKIPPED: [],
     BLIND_REWARDS_END: [],
     BLIND_REWARDS_START: [],
     BACK_TO_MAIN_MENU: [],
@@ -35,7 +35,6 @@ class EventEmitter {
     SHOP_REROLL: [],
     SHOP_OPEN_PACK: [],
     SMALL_BLIND_SELECTED: [],
-    SMALL_BLIND_SKIPPED: [],
     TAROT_CARD_USED: [],
     SHOP_BUY_CARD: [],
     SHOP_SELECT_PLAYING_CARD_FROM_PACK: [],

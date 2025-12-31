@@ -1,4 +1,4 @@
-import { Link } from '@mui/material'
+import { Chip } from '@mui/material'
 import { useState } from 'react'
 
 import { Hands } from '@/app/daily-card-game/components/hands/hands'
@@ -7,6 +7,7 @@ import { Vouchers } from '@/app/daily-card-game/components/voucher/vouchers'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { tags } from '@/app/daily-card-game/domain/tag/tags'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
@@ -92,6 +93,14 @@ export function ViewTemplate({
             </>
           )}
           <hr />
+          <div className="pl-2 text-sm text-gray-500">
+            <div>
+              Tags:{' '}
+              {game.tags.map(tag => (
+                <Chip key={tag.id} label={tags[tag.tagType]?.name} />
+              ))}
+            </div>
+          </div>
           {sidebarContentBottom}
           <div className="pl-2 flex flex-col gap-2">
             {game.gamePlayState.scoringEvents.length > 0 && (
