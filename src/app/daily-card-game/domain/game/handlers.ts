@@ -80,6 +80,7 @@ function applyHandScoringEndEffects(
     bossBlind: round.bossBlind,
     jokers: draft.jokers,
     vouchers: draft.vouchers,
+    tags: draft.tags,
   }
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
@@ -297,6 +298,7 @@ function scoreCardOnce(
     bossBlind: draft.rounds[draft.roundIndex].bossBlind,
     jokers: draft.jokers,
     vouchers: draft.vouchers,
+    tags: draft.tags,
   }
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 }

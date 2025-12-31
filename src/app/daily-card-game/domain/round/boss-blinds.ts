@@ -18,7 +18,6 @@ const theHook: BossBlindDefinition = {
       priority: 1,
       condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_DONE_CARD_SCORING',
       apply: (ctx: EffectContext) => {
-        console.log('the hook effect applied')
         ctx.game.gamePlayState.dealtCards.splice(
           Math.floor(Math.random() * ctx.game.gamePlayState.dealtCards.length),
           2

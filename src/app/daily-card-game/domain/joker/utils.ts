@@ -4,10 +4,12 @@ import type { PokerHandDefinition } from '@/app/daily-card-game/domain/hand/type
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import {
   buildSeedString,
+  getRandomNumbersWithSeed,
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
 
+import { jokers } from './jokers'
 import { JokerDefinition, JokerState } from './types'
 
 export const bonusOnCardScored = ({
@@ -125,4 +127,20 @@ export const initializeJoker = (joker: JokerDefinition, game: GameState): JokerS
       isEternal: flag === 'isEternal',
     },
   }
+}
+
+export const getRandomUncommonJoker = (game: GameState): JokerDefinition => {
+  const allUncommonJokers = Object.values(jokers).filter(joker => joker.rarity === 'uncommon')
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: allUncommonJokers.length - 1,
+    numberOfNumbers: 1,
+  })
+  return allUncommonJokers[randomCardIndices[0]]
 }

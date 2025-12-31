@@ -10,6 +10,7 @@ export interface ShopState {
   baseRerollPrice: number
   cardsForSale: BuyableCard[]
   celestialMultiplier: number
+  guaranteedForSaleItems: BuyableCard[]
   maxCardsForSale: number
   maxVouchersForSale: number
   openPackState: PackState | null

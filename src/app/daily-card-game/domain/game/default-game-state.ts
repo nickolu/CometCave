@@ -73,6 +73,7 @@ const gameState: GameState = {
     baseRerollPrice: 5,
     cardsForSale: [],
     celestialMultiplier: 1,
+    guaranteedForSaleItems: [],
     maxCardsForSale: 2,
     maxVouchersForSale: 0,
     openPackState: null,
@@ -120,6 +121,7 @@ const gameState: GameState = {
     areAllCardsFaceCards: false,
     allowDuplicateJokersInShop: false,
   },
+  tags: [],
   totalScore: 0,
   vouchers: [],
 }

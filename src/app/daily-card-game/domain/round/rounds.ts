@@ -11,18 +11,21 @@ const getDefaultRoundState = (baseAnte: number, ante: number, seed: string): Rou
       status: 'notStarted',
       additionalRewards: [],
       score: 0,
+      tag: null,
     },
     bigBlind: {
       type: 'bigBlind',
       status: 'notStarted',
       additionalRewards: [],
       score: 0,
+      tag: null,
     },
     bossBlind: {
       type: 'bossBlind',
       status: 'notStarted',
       additionalRewards: [],
       score: 0,
+      tag: null,
     },
   }
 }

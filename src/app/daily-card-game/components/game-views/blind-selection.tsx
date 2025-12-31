@@ -39,7 +39,7 @@ export function BlindSelectionView() {
           }
           disabled={nextBlind?.type !== 'smallBlind'}
           selectEventName="SMALL_BLIND_SELECTED"
-          skipEventName="SMALL_BLIND_SKIPPED"
+          tag={game.rounds[game.roundIndex].smallBlind.tag ?? undefined}
         />
         <BlindCard
           name="Big Blind"
@@ -49,7 +49,7 @@ export function BlindSelectionView() {
           }
           disabled={nextBlind?.type !== 'bigBlind'}
           selectEventName="BIG_BLIND_SELECTED"
-          skipEventName="BIG_BLIND_SKIPPED"
+          tag={game.rounds[game.roundIndex].bigBlind.tag ?? undefined}
         />
         <BlindCard
           name={'Boss: ' + bossBlindDefinition.name}

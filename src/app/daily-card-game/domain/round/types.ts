@@ -1,10 +1,12 @@
 import type { Effect } from '@/app/daily-card-game/domain/events/types'
+import type { TagType } from '@/app/daily-card-game/domain/tag/types'
 
 export interface BlindState {
   type: 'smallBlind' | 'bigBlind' | 'bossBlind'
   status: 'completed' | 'skipped' | 'notStarted' | 'inProgress'
   additionalRewards: [string, number][] // [rewardName, rewardAmount]
   score: number
+  tag: TagType | null
 }
 
 export interface BlindDefinition {
