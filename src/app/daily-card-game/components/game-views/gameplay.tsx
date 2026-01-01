@@ -94,7 +94,7 @@ export function GamePlayView() {
   const { score, selectedHand, selectedCardIds } = gamePlayState
   const selectedCard =
     selectedCardIds.length === 1
-      ? game.fullDeck.find(card => card.id === selectedCardIds[0])
+      ? game.cards[selectedCardIds[0]]
       : undefined
   const currentBlind = getInProgressBlind(game)
 

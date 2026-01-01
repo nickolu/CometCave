@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { PlayingCard } from '@/app/daily-card-game/components/gameplay/playing-card'
+import { getDrawPile, getOwnedCards } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
@@ -23,11 +24,9 @@ const CardRow = ({ cards }: { cards: PlayingCardState[] }) => {
 
 export const Deck = () => {
   const { game } = useGameState()
-  const { gamePlayState, fullDeck } = game
-  const { remainingDeck } = gamePlayState
   const [deckType, setDeckType] = useState<'remaining' | 'full'>('remaining')
 
-  const deck = deckType === 'remaining' ? remainingDeck : fullDeck
+  const deck = deckType === 'remaining' ? getDrawPile(game) : getOwnedCards(game)
   const spades = deck.filter(card => playingCards[card.playingCardId].suit === 'spades')
   const hearts = deck.filter(card => playingCards[card.playingCardId].suit === 'hearts')
   const clubs = deck.filter(card => playingCards[card.playingCardId].suit === 'clubs')

@@ -18,10 +18,12 @@ const theHook: BossBlindDefinition = {
       priority: 1,
       condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_DONE_CARD_SCORING',
       apply: (ctx: EffectContext) => {
-        ctx.game.gamePlayState.dealtCards.splice(
-          Math.floor(Math.random() * ctx.game.gamePlayState.dealtCards.length),
-          2
-        )
+        // Remove 2 random cards from hand
+        const handIds = ctx.game.gamePlayState.handIds
+        if (handIds.length > 0) {
+          const randomIndex = Math.floor(Math.random() * handIds.length)
+          handIds.splice(randomIndex, Math.min(2, handIds.length))
+        }
       },
     },
   ],

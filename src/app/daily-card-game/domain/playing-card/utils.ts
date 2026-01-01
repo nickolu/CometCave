@@ -50,7 +50,8 @@ function getRandomEdition(
 
 export function getRandomEnchantment(
   game: GameState,
-  playingCardId: string
+  playingCardId: string,
+  ensureEnchantment: boolean = false
 ): 'bonus' | 'mult' | 'gold' | 'glass' | 'lucky' | 'none' {
   const baseSeed = buildSeedString([
     game.gameSeed,
@@ -65,7 +66,7 @@ export function getRandomEnchantment(
     getRandomFloatWithSeed(gateSeed) <
     Math.min(1, Math.max(0, game.shopState.playingCard.enchantmentBaseChance))
 
-  if (!doesCardHaveEnchantment) {
+  if (!doesCardHaveEnchantment && !ensureEnchantment) {
     return 'none'
   }
 

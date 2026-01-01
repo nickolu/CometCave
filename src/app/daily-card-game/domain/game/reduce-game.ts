@@ -31,12 +31,20 @@ import {
 } from '@/app/daily-card-game/domain/voucher/utils'
 import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
+import {
+  addOwnedCard,
+  dealCardsFromDrawPile,
+  discardCardsFromHand,
+  getCards,
+  getHand,
+  getSelectedCards,
+} from './card-registry-utils'
 import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
 import { handleCardScored, handleHandScoringEnd } from './handlers'
 import {
   collectEffects,
   getBlindDefinition,
-  randomizeDeck,
+  shuffleCardIds,
   useBuyableCelestialCard,
   useBuyableTarotCard,
   useConsumableCelestialCard,
@@ -153,33 +161,39 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const round = draft.rounds[draft.roundIndex]
         round.smallBlind.status = 'inProgress'
         draft.gamePhase = 'gameplay'
-        draft.gamePlayState.remainingDeck = randomizeDeck({
-          deck: draft.fullDeck,
+        draft.gamePlayState.drawPileIds = shuffleCardIds({
+          cardIds: draft.ownedCardIds,
           seed: draft.gameSeed,
           iteration: draft.roundIndex + blindIndices['smallBlind'],
         })
+        draft.gamePlayState.handIds = []
+        draft.gamePlayState.discardPileIds = []
         return
       }
       case 'BIG_BLIND_SELECTED': {
         const round = draft.rounds[draft.roundIndex]
         round.bigBlind.status = 'inProgress'
         draft.gamePhase = 'gameplay'
-        draft.gamePlayState.remainingDeck = randomizeDeck({
-          deck: draft.fullDeck,
+        draft.gamePlayState.drawPileIds = shuffleCardIds({
+          cardIds: draft.ownedCardIds,
           seed: draft.gameSeed,
           iteration: draft.roundIndex + blindIndices['bigBlind'],
         })
+        draft.gamePlayState.handIds = []
+        draft.gamePlayState.discardPileIds = []
         return
       }
       case 'BOSS_BLIND_SELECTED': {
         const round = draft.rounds[draft.roundIndex]
         round.bossBlind.status = 'inProgress'
         draft.gamePhase = 'gameplay'
-        draft.gamePlayState.remainingDeck = randomizeDeck({
-          deck: draft.fullDeck,
+        draft.gamePlayState.drawPileIds = shuffleCardIds({
+          cardIds: draft.ownedCardIds,
           seed: draft.gameSeed,
           iteration: draft.roundIndex + blindIndices['bossBlind'],
         })
+        draft.gamePlayState.handIds = []
+        draft.gamePlayState.discardPileIds = []
         return
       }
       case 'BLIND_SKIPPED': {
@@ -214,9 +228,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'HAND_DEALT': {
-        if (draft.gamePlayState.dealtCards.length) return
-        draft.gamePlayState.dealtCards = draft.gamePlayState.remainingDeck.slice(0, HAND_SIZE)
-        draft.gamePlayState.remainingDeck = draft.gamePlayState.remainingDeck.slice(HAND_SIZE)
+        if (draft.gamePlayState.handIds.length) return
+        dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE)
         return
       }
       case 'CARD_SELECTED': {
@@ -226,9 +239,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (gamePlayState.selectedCardIds.length >= MAX_SELECTED_CARDS) return
 
         const selectedCardIds = [...gamePlayState.selectedCardIds, id]
-        const selectedCards: PlayingCardState[] = gamePlayState.dealtCards.filter(card =>
-          selectedCardIds.includes(card.id)
-        )
+        const selectedCards = getCards(draft as unknown as GameState, selectedCardIds)
         const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
 
         gamePlayState.selectedCardIds = selectedCardIds
@@ -241,9 +252,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (!gamePlayState.selectedCardIds.includes(id)) return
 
         const selectedCardIds = gamePlayState.selectedCardIds.filter(cardId => cardId !== id)
-        const selectedCards = gamePlayState.dealtCards.filter(card =>
-          selectedCardIds.includes(card.id)
-        )
+        const selectedCards = getCards(draft as unknown as GameState, selectedCardIds)
 
         let selectedHand: [PokerHandDefinition['id'], PlayingCardState[]] | undefined = undefined
         if (selectedCards.length > 0) {
@@ -259,29 +268,24 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const gamePlayState = draft.gamePlayState
 
         // Find discarded cards before we clear selection
-        const discardedCards = gamePlayState.dealtCards.filter(card =>
-          gamePlayState.selectedCardIds.includes(card.id)
+        const discardedCards = getCards(
+          draft as unknown as GameState,
+          gamePlayState.selectedCardIds
         )
 
-        const cardsToKeep = gamePlayState.dealtCards.filter(
-          card => !gamePlayState.selectedCardIds.includes(card.id)
-        )
+        // Move selected cards from hand to discard pile
+        discardCardsFromHand(draft as unknown as GameState, gamePlayState.selectedCardIds)
 
         draft.discardsPlayed += 1
         gamePlayState.selectedCardIds = []
         gamePlayState.selectedHand = undefined
         gamePlayState.cardsToScore = []
         gamePlayState.playedCardIds = []
-        gamePlayState.dealtCards = cardsToKeep
         gamePlayState.remainingDiscards -= 1
 
         // refill immediately (this was previously orchestrated in useGameEvents)
-        const cardsToRefill = gamePlayState.remainingDeck.slice(
-          0,
-          HAND_SIZE - gamePlayState.dealtCards.length
-        )
-        gamePlayState.dealtCards = gamePlayState.dealtCards.concat(cardsToRefill)
-        gamePlayState.remainingDeck = gamePlayState.remainingDeck.slice(cardsToRefill.length)
+        const cardsNeeded = HAND_SIZE - gamePlayState.handIds.length
+        dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
 
         // Purple seal: add a tarot card for each discarded card with purple seal
         const purpleSealCount = discardedCards.filter(card => card.flags.seal === 'purple').length
@@ -301,15 +305,13 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'HAND_SCORING_START': {
         const gamePlayState = draft.gamePlayState
-        const selectedCards = gamePlayState.dealtCards.filter(card =>
-          gamePlayState.selectedCardIds.includes(card.id)
-        )
+        const selectedCards = getSelectedCards(draft as unknown as GameState)
         const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
           selectedCards,
           draft.staticRules
         )
         gamePlayState.cardsToScore = cardsToScore
-        gamePlayState.playedCardIds = selectedCards.map(card => card.id)
+        gamePlayState.playedCardIds = gamePlayState.selectedCardIds
 
         gamePlayState.remainingHands -= 1
 
@@ -401,7 +403,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (currentBlind.type === 'smallBlind') {
           draft.shopState.voucher = getRandomVoucherType(draft)
         }
-        draft.gamePlayState.remainingDeck = draft.fullDeck
+        draft.gamePlayState.drawPileIds = draft.ownedCardIds
         draft.gamePlayState.remainingHands = draft.maxHands
         if (currentBlind.type === 'bossBlind') {
           draft.roundIndex += 1
@@ -466,7 +468,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const card = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
         if (!card) return
         if (!isPlayingCardState(card.card)) return
-        draft.fullDeck.push(card.card)
+        addOwnedCard(draft as unknown as GameState, card.card)
         if (!draft.shopState.openPackState) return
 
         draft.shopState.openPackState.remainingCardsToSelect -= 1
@@ -670,7 +672,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (isJokerState(selectedCard.card)) {
           draft.jokers.push(selectedCard.card)
         } else if (isPlayingCardState(selectedCard.card)) {
-          draft.gamePlayState.dealtCards.push(selectedCard.card)
+          draft.gamePlayState.handIds.push(selectedCard.card.id)
+          addOwnedCard(draft as unknown as GameState, selectedCard.card)
         } else if (isCelestialCardState(selectedCard.card)) {
           draft.consumables.push(selectedCard.card)
         } else if (isTarotCardState(selectedCard.card)) {
@@ -756,8 +759,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.shopState.openPackState = pack
 
         if (packDefinition.cardType === 'tarotCard') {
-          draft.gamePlayState.remainingDeck = randomizeDeck({
-            deck: draft.fullDeck,
+          draft.gamePlayState.drawPileIds = shuffleCardIds({
+            cardIds: draft.ownedCardIds,
             seed: buildSeedString([
               draft.gameSeed,
               draft.roundIndex.toString(),
@@ -766,7 +769,20 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
             ]),
             iteration: draft.roundIndex + blindIndices['smallBlind'],
           })
-          draft.gamePlayState.dealtCards = draft.gamePlayState.remainingDeck.slice(0, HAND_SIZE)
+          dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE)
+        }
+        if (packDefinition.cardType === 'spectralCard') {
+          draft.gamePlayState.drawPileIds = shuffleCardIds({
+            cardIds: draft.ownedCardIds,
+            seed: buildSeedString([
+              draft.gameSeed,
+              draft.roundIndex.toString(),
+              draft.shopState.rerollsUsed.toString(),
+              'spectralCardOpenPack',
+            ]),
+            iteration: draft.roundIndex + blindIndices['smallBlind'],
+          })
+          dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE)
         }
         return
       }
