@@ -57,23 +57,12 @@ const theMagician: TarotCardDefinition = {
       event: { type: 'TAROT_CARD_USED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        // With ID-based architecture, we only need to update the card once in the registry
+        // The change is automatically visible everywhere the card is referenced
         for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
-          const fullDeckCard = ctx.game.fullDeck.find(fullDeckCard => fullDeckCard.id === cardId)
-          const handCard = ctx.game.gamePlayState.dealtCards.find(
-            handCard => handCard.id === cardId
-          )
-          const remainingDeckCard = ctx.game.gamePlayState.remainingDeck.find(
-            remainingDeckCard => remainingDeckCard.id === cardId
-          )
-
-          if (fullDeckCard) {
-            fullDeckCard.flags.enchantment = 'lucky'
-          }
-          if (handCard) {
-            handCard.flags.enchantment = 'lucky'
-          }
-          if (remainingDeckCard) {
-            remainingDeckCard.flags.enchantment = 'lucky'
+          const card = ctx.game.cards[cardId]
+          if (card) {
+            card.flags.enchantment = 'lucky'
           }
         }
         return

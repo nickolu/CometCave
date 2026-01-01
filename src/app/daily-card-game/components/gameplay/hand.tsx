@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { getHand } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { cardValuePriority } from '@/app/daily-card-game/domain/hand/constants'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
@@ -15,7 +16,8 @@ export const Hand = () => {
   const [sortKey, setSortKey] = useState<'value' | 'suit'>('value')
   const { game } = useGameState()
   const { gamePlayState } = game
-  const { dealtCards, selectedCardIds } = gamePlayState
+  const { selectedCardIds } = gamePlayState
+  const dealtCards = getHand(game)
 
   const sortedCards: PlayingCardState[] | undefined = useMemo(() => {
     return (

@@ -11,6 +11,7 @@ import {
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 
+import { dealCardsFromDrawPile, getHand } from './card-registry-utils'
 import { HAND_SIZE } from './constants'
 import { calculateInterest } from './reduce-game'
 import { collectEffects, getBlindDefinition } from './utils'
@@ -124,9 +125,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   // After effects have reacted, discard ALL played cards (even ones that didn't score)
   const playedIds = new Set(draft.gamePlayState.playedCardIds)
   if (playedIds.size > 0) {
-    draft.gamePlayState.dealtCards = draft.gamePlayState.dealtCards.filter(
-      card => !playedIds.has(card.id)
-    )
+    draft.gamePlayState.handIds = draft.gamePlayState.handIds.filter(id => !playedIds.has(id))
   }
   draft.gamePlayState.selectedCardIds = []
   draft.gamePlayState.selectedHand = undefined
@@ -151,9 +150,8 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     draft.gamePhase = 'blindRewards'
 
     // Blue seal: add celestial card for the played hand for each card with blue seal still in hand
-    const cardsInHandWithBlueSeal = draft.gamePlayState.dealtCards.filter(
-      card => card.flags.seal === 'blue'
-    )
+    const cardsInHand = getHand(draft as unknown as GameState)
+    const cardsInHandWithBlueSeal = cardsInHand.filter(card => card.flags.seal === 'blue')
     if (playedHand) {
       for (let i = 0; i < cardsInHandWithBlueSeal.length; i++) {
         if (draft.consumables.length < draft.maxConsumables) {
@@ -163,12 +161,12 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     }
 
     // Gold enchantment: earn $3 for each card with gold enchantment held in hand (not played)
-    const cardsInHandWithGoldEnchantment = draft.gamePlayState.dealtCards.filter(
+    const cardsInHandWithGoldEnchantment = cardsInHand.filter(
       card => card.flags.enchantment === 'gold'
     )
     draft.money += cardsInHandWithGoldEnchantment.length * 3
 
-    draft.gamePlayState.dealtCards = []
+    draft.gamePlayState.handIds = []
 
     if (draft.gamePlayState.remainingHands > 0) {
       currentBlind.additionalRewards.push(['Remaining Hands', draft.gamePlayState.remainingHands])
@@ -185,13 +183,9 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   }
 
   // Continue gameplay: refill + reset score
-  const cardsToRefill = draft.gamePlayState.remainingDeck.slice(
-    0,
-    HAND_SIZE - draft.gamePlayState.dealtCards.length
-  )
+  const cardsNeeded = HAND_SIZE - draft.gamePlayState.handIds.length
+  dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
   draft.gamePhase = 'gameplay'
-  draft.gamePlayState.dealtCards = draft.gamePlayState.dealtCards.concat(cardsToRefill)
-  draft.gamePlayState.remainingDeck = draft.gamePlayState.remainingDeck.slice(cardsToRefill.length)
   resetScoreForNextHand(draft.gamePlayState)
 }
 
@@ -325,6 +319,6 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
     ]
   }
 
-  // remove scored card from dealt cards
-  gamePlayState.dealtCards = gamePlayState.dealtCards.filter(card => card.id !== scoredCardId)
+  // remove scored card from hand
+  gamePlayState.handIds = gamePlayState.handIds.filter(id => id !== scoredCardId)
 }

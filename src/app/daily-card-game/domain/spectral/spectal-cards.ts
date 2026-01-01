@@ -1,4 +1,9 @@
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import {
+  addCardToRegistry,
+  addOwnedCard,
+  removeOwnedCard,
+} from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { GameState } from '@/app/daily-card-game/domain/game/types'
 import {
   getRandomEnchantment,
@@ -18,7 +23,7 @@ const familiar: SpectralCardDefinition = {
   name: 'Familiar',
   description: 'Destroy 1 random card in your hand, but add 3 random Enhanced face cards instead.',
   isPlayable: (game: GameState) => {
-    return game.gamePlayState.dealtCards.length > 0
+    return game.gamePlayState.handIds.length > 0
   },
   effects: [
     {
@@ -27,27 +32,45 @@ const familiar: SpectralCardDefinition = {
       },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString()])
-        const randomCardIndex = getRandomNumberWithSeed(
-          seed,
-          0,
-          ctx.game.gamePlayState.dealtCards.length - 1
-        )
+        const destructionSeed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'destruction',
+        ])
+
+        // Generate 3 random enhanced face cards
         const randomCards = getRandomPlayingCardsWithFilters({
           game: ctx.game,
           numberOfCards: 3,
           values: ['J', 'Q', 'K'],
         })
-        const playingCards = randomCards.map(card => {
+        const playingCardsToAdd = randomCards.map(card => {
           const cardState = initializePlayingCard(card, ctx.game, true)
           cardState.flags.enchantment =
             cardState.flags.enchantment === 'none'
-              ? getRandomEnchantment(ctx.game, deterministicUuid(seed))
+              ? getRandomEnchantment(ctx.game, card.id, true)
               : cardState.flags.enchantment
           return cardState
         })
-        ctx.game.gamePlayState.dealtCards.splice(randomCardIndex, 1)
-        ctx.game.gamePlayState.dealtCards.push(...playingCards)
+
+        // Select a random card from hand to remove
+        const randomCardToRemoveIndex = getRandomNumberWithSeed(
+          destructionSeed,
+          0,
+          ctx.game.gamePlayState.handIds.length - 1
+        )
+        const cardToRemoveId = ctx.game.gamePlayState.handIds[randomCardToRemoveIndex]
+
+        // Remove the card from everywhere (registry, owned, hand, draw pile)
+        removeOwnedCard(ctx.game, cardToRemoveId)
+
+        // Add new cards to the game
+        playingCardsToAdd.forEach(card => {
+          // Add to registry and owned cards
+          addOwnedCard(ctx.game, card)
+          // Also add to current hand so they're immediately available
+          ctx.game.gamePlayState.handIds.push(card.id)
+        })
       },
     },
   ],

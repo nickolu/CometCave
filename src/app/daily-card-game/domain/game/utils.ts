@@ -52,7 +52,7 @@ export function collectEffects(game: GameState): Effect[] {
   return effects
 }
 
-function shuffleDeck(array: PlayingCardState[], rng: () => number): PlayingCardState[] {
+function shuffleArray<T>(array: T[], rng: () => number): T[] {
   const shuffled = [...array]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
@@ -61,6 +61,10 @@ function shuffleDeck(array: PlayingCardState[], rng: () => number): PlayingCardS
   return shuffled
 }
 
+/**
+ * Shuffle an array of card IDs using a seeded RNG
+ * @deprecated Use shuffleCardIds instead
+ */
 export function randomizeDeck({
   deck,
   seed,
@@ -72,8 +76,25 @@ export function randomizeDeck({
 }): PlayingCardState[] {
   const seedFn = xmur3(seed + iteration.toString())
   const rng = mulberry32(seedFn())
+  return shuffleArray(deck, rng)
+}
 
-  return shuffleDeck(deck, rng)
+/**
+ * Shuffle an array of card IDs using a seeded RNG
+ * This is the new ID-based version of randomizeDeck
+ */
+export function shuffleCardIds({
+  cardIds,
+  seed,
+  iteration,
+}: {
+  cardIds: string[]
+  seed: string
+  iteration: number
+}): string[] {
+  const seedFn = xmur3(seed + iteration.toString())
+  const rng = mulberry32(seedFn())
+  return shuffleArray(cardIds, rng)
 }
 
 export function useBuyableCelestialCard(draft: Draft<GameState>): void {

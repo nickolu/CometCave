@@ -23,17 +23,18 @@ const gameSeed = getCurrentDayAsSeedString()
 
 const gameState: GameState = {
   allowedJokerFlags: [],
+  cards: {}, // Will be populated below
   consumables: [],
   consumablesUsed: [],
   discardsPlayed: 0,
-  fullDeck: [],
   gamePhase: 'mainMenu',
   gamePlayState: {
     cardsToScore: [],
-    dealtCards: [],
+    discardPileIds: [],
+    drawPileIds: [],
+    handIds: [],
     isScoring: false,
     playedCardIds: [],
-    remainingDeck: [],
     remainingHands: 4,
     remainingDiscards: 3,
     selectedCardIds: [],
@@ -53,6 +54,7 @@ const gameState: GameState = {
   maxInterest: 5,
   money: 0,
   minimumMoney: 0,
+  ownedCardIds: [], // Will be populated below
   pokerHands: {
     highCard: initializeHand(highCardHand),
     pair: initializeHand(pairHand),
@@ -126,7 +128,18 @@ const gameState: GameState = {
   vouchers: [],
 }
 
-export const defaultGameState = {
+// Initialize the card registry and owned cards from the initial deck
+const initialDeck = initialDeckStates(gameState).pokerDeck
+const cards: Record<string, typeof initialDeck[number]> = {}
+const ownedCardIds: string[] = []
+
+for (const card of initialDeck) {
+  cards[card.id] = card
+  ownedCardIds.push(card.id)
+}
+
+export const defaultGameState: GameState = {
   ...gameState,
-  fullDeck: initialDeckStates(gameState).pokerDeck,
+  cards,
+  ownedCardIds,
 }

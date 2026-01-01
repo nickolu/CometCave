@@ -37,6 +37,9 @@ const sealStyles: Record<PlayingCardFlags['seal'], string> = {
   none: 'bg-white',
 }
 const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
+  if (playingCard.flags.enchantment !== 'none') {
+    console.log('playingCard', playingCard)
+  }
   const suit =
     playingCard.flags.enchantment === 'wild'
       ? 'X'

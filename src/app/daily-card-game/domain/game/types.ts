@@ -12,10 +12,13 @@ import type { VoucherState } from '@/app/daily-card-game/domain/voucher/types'
 
 export interface GameState {
   allowedJokerFlags: ('isRentable' | 'isPerishable' | 'isEternal')[]
+
+  // Card registry: single source of truth for all card state
+  cards: Record<string, PlayingCardState>
+
   consumables: (CelestialCardState | TarotCardState)[]
   consumablesUsed: (CelestialCardState | TarotCardState)[]
   discardsPlayed: number
-  fullDeck: PlayingCardState[]
   gamePhase: GamePhase
   gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
   gameSeed: string
@@ -28,6 +31,10 @@ export interface GameState {
   maxInterest: number
   money: number
   minimumMoney: number
+
+  // Which cards the player owns (persists between blinds)
+  ownedCardIds: string[]
+
   pokerHands: PokerHandsState
   roundIndex: number
   rounds: RoundState[]
@@ -62,10 +69,18 @@ export type GamePhase =
   | 'vouchers'
 export interface GamePlayState {
   cardsToScore: PlayingCardState[]
-  dealtCards: PlayingCardState[]
+
+  // Discard pile for current blind (card IDs)
+  discardPileIds: string[]
+
+  // Draw pile for current blind (card IDs)
+  drawPileIds: string[]
+
+  // Current hand (card IDs)
+  handIds: string[]
+
   isScoring: boolean
   playedCardIds: string[]
-  remainingDeck: PlayingCardState[]
   remainingDiscards: number
   remainingHands: number
   score: ScoreState
