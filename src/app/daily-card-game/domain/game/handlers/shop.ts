@@ -48,6 +48,7 @@ import { vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
 
 export function handleShopOpen(draft: GameState, event: GameEvent) {
   draft.shopState.isOpen = true
+  draft.shopState.cardsForSale = []
   // dispatch first to use any tag effects
   const ctx = getEffectContext(draft, event)
   dispatchEffects(event, ctx, collectEffects(ctx.game))
@@ -65,7 +66,7 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
     draft.gameSeed,
     draft.roundIndex.toString(),
     draft.shopState.rerollsUsed.toString(),
-    draft.shopState.voucher ?? '0',
+    getNextBlind(draft)?.type.toString() ?? 'unknown-blind',
   ])
   if (draft.shopState.cardsForSale.length < draft.shopState.maxCardsForSale) {
     const additionalCards = getRandomBuyableCards(
