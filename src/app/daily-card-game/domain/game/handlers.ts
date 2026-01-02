@@ -2,12 +2,7 @@ import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestia
 import { initializeCelestialCard } from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
-import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import {
-  buildSeedString,
-  getRandomFloatWithSeed,
-  uuid,
-} from '@/app/daily-card-game/domain/randomness'
+import { uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 
@@ -19,7 +14,6 @@ import type { GamePlayState, GameState } from './types'
 import type { Draft } from 'immer'
 
 type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
-
 
 function getCurrentRound(draft: Draft<GameState>): RoundState {
   return draft.rounds[draft.roundIndex]

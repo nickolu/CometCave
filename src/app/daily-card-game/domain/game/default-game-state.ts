@@ -52,7 +52,7 @@ const gameState: GameState = {
   maxHands: 4,
   maxDiscards: 3,
   maxInterest: 5,
-  money: 1000,
+  money: 0,
   minimumMoney: 0,
   ownedCardIds: [], // Will be populated below
   pokerHands: {

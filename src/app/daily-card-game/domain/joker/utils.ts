@@ -136,11 +136,6 @@ const isUncommonPredicate: JokerPredicate = (joker: JokerDefinition): boolean =>
 }
 
 const isNotOwnedPredicate: JokerPredicate = (joker: JokerDefinition, game: GameState): boolean => {
-  console.log(
-    'owned jokers',
-    game.jokers.map(joker => joker.jokerId)
-  )
-  console.log('joker', joker.id)
   return !game.jokers.some(existingJoker => existingJoker.jokerId === joker.id)
 }
 

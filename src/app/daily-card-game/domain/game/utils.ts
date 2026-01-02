@@ -1,11 +1,3 @@
-import { Draft } from 'immer'
-
-import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
-import {
-  isCelestialCardState,
-  isTarotCardState,
-} from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { Effect, EffectContext, GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
@@ -100,7 +92,6 @@ export function shuffleCardIds({
   const rng = mulberry32(seedFn())
   return shuffleArray(cardIds, rng)
 }
-
 
 export function removeJoker(draft: GameState, event: GameEvent, selectedJoker: JokerState) {
   draft.gamePlayState.selectedJokerId = undefined

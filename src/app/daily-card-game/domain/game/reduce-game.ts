@@ -1,11 +1,5 @@
 import { produce } from 'immer'
 
-import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
-import {
-  isCelestialCardState,
-  isTarotCardState,
-} from '@/app/daily-card-game/domain/consumable/utils'
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { GameEvent } from '@/app/daily-card-game/domain/events/types'
 import { dealCardsFromDrawPile } from '@/app/daily-card-game/domain/game/card-registry-utils'

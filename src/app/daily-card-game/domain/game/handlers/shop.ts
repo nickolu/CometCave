@@ -38,7 +38,7 @@ import {
 import { isJokerState } from '@/app/daily-card-game/domain/joker/utils'
 import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/utils'
 import { buildSeedString } from '@/app/daily-card-game/domain/randomness'
-import { blindIndices } from '@/app/daily-card-game/domain/round/blinds'
+import { blindIndices, getNextBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 import { spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
 import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
@@ -321,19 +321,22 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
   draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
   draft.gamePhase = 'packOpening'
   draft.shopState.openPackState = pack
+  const nextBlind = getNextBlind(draft)
 
   if (packDefinition.cardType === 'tarotCard') {
+    const seed = buildSeedString([
+      draft.gameSeed,
+      draft.roundIndex.toString(),
+      draft.shopState.rerollsUsed.toString(),
+      nextBlind?.type.toString() ?? '0',
+      'tarotCardOpenPack',
+    ])
     draft.gamePlayState.drawPileIds = shuffleCardIds({
       cardIds: draft.ownedCardIds,
-      seed: buildSeedString([
-        draft.gameSeed,
-        draft.roundIndex.toString(),
-        draft.shopState.rerollsUsed.toString(),
-        'tarotCardOpenPack',
-      ]),
-      iteration: draft.roundIndex + blindIndices['smallBlind'],
+      seed: seed,
+      iteration: draft.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
     })
-    dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE)
+    dealCardsFromDrawPile(draft, HAND_SIZE)
   }
   if (packDefinition.cardType === 'spectralCard') {
     draft.gamePlayState.drawPileIds = shuffleCardIds({
@@ -342,9 +345,10 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
         draft.gameSeed,
         draft.roundIndex.toString(),
         draft.shopState.rerollsUsed.toString(),
+        nextBlind?.type.toString() ?? '0',
         'spectralCardOpenPack',
       ]),
-      iteration: draft.roundIndex + blindIndices['smallBlind'],
+      iteration: draft.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
     })
     dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE)
   }

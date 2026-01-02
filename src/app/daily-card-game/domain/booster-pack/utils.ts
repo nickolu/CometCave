@@ -13,7 +13,7 @@ import {
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
-import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
+import { getInProgressBlind, getNextBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { PackDefinition, PackState } from '@/app/daily-card-game/domain/shop/types'
 import {
   getRandomCelestialCards,
@@ -50,15 +50,20 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
   const id = uuid()
   const rarity = packDefinition.rarity
   const numberOfCardsToSelect = packDefinition.numberOfCardsToSelect
+  const nextBlind = getNextBlind(game)
 
-  if (packDefinition.cardType === 'playingCard') {
-    const randomPlayingCardsSeed = buildSeedString([
+  const seedStringBuilder = (seedString: string) => {
+    return buildSeedString([
       game.gameSeed,
       game.roundIndex.toString(),
-      game.shopState.rerollsUsed.toString(),
       game.shopState.packsForSale.length.toString(),
-      'playingCards',
+      nextBlind?.type.toString() ?? '0',
+      seedString,
     ])
+  }
+
+  if (packDefinition.cardType === 'playingCard') {
+    const randomPlayingCardsSeed = seedStringBuilder('playingCards')
     return {
       id,
       rarity,
@@ -73,13 +78,7 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'tarotCard') {
-    const randomTarotCardsSeed = buildSeedString([
-      game.gameSeed,
-      game.roundIndex.toString(),
-      game.shopState.rerollsUsed.toString(),
-      game.shopState.packsForSale.length.toString(),
-      'tarotCards',
-    ])
+    const randomTarotCardsSeed = seedStringBuilder('tarotCards')
     return {
       id,
       rarity,
@@ -94,13 +93,7 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'jokerCard') {
-    const randomJokersSeed = buildSeedString([
-      game.gameSeed,
-      game.roundIndex.toString(),
-      game.shopState.rerollsUsed.toString(),
-      game.shopState.packsForSale.length.toString(),
-      'jokers',
-    ])
+    const randomJokersSeed = seedStringBuilder('jokers')
     return {
       id,
       rarity,
@@ -113,13 +106,7 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'celestialCard') {
-    const randomCelestialCardsSeed = buildSeedString([
-      game.gameSeed,
-      game.roundIndex.toString(),
-      game.shopState.rerollsUsed.toString(),
-      game.shopState.packsForSale.length.toString(),
-      'celestialCards',
-    ])
+    const randomCelestialCardsSeed = seedStringBuilder('celestialCards')
     return {
       id,
       rarity,
@@ -136,13 +123,7 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'spectralCard') {
-    const randomSpectralCardsSeed = buildSeedString([
-      game.gameSeed,
-      game.roundIndex.toString(),
-      game.shopState.rerollsUsed.toString(),
-      game.shopState.packsForSale.length.toString(),
-      'spectralCards',
-    ])
+    const randomSpectralCardsSeed = seedStringBuilder('spectralCards')
     return {
       id,
       rarity,
