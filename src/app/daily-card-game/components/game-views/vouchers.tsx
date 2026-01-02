@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 
 export const VouchersView = () => {
   return (
-    <div className="flex flex-col items-center mt-10 h-screen w-3/4 mx-auto">
+    <div className="flex flex-col items-center mt-10 w-3/4 mx-auto">
       <h1 className="text-2xl font-bold">Vouchers</h1>
       <div className="flex flex-wrap justify-center gap-2 mt-4 mx-auto">
         {Object.values(vouchers)

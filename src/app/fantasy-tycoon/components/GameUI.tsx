@@ -71,7 +71,7 @@ export default function GameUI() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-col">
       <div className="relative z-10 mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
           <div className={'p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4'}>

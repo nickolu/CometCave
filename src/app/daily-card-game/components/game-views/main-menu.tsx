@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 
 export function MainMenuView() {
   return (
-    <div className="flex flex-col items-center mt-10 h-screen">
+    <div className="flex flex-col items-center mt-10">
       <h1 className="text-2xl font-bold">Daily Card Game</h1>
       <Button
         className="mt-4"

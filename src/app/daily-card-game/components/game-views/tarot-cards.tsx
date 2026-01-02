@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 
 export const TarotCardsView = () => {
   return (
-    <div className="flex flex-col items-center mt-10 h-screen w-3/4 mx-auto">
+    <div className="flex flex-col items-center mt-10 w-3/4 mx-auto">
       <h1 className="text-2xl font-bold">Tarot Cards</h1>
       <div className="flex flex-wrap gap-2 mt-4">
         {Object.values(tarotCards).map(tarotCard => (
