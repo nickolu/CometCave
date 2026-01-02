@@ -1,4 +1,5 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import { buildSeedString } from '@/app/daily-card-game/domain/randomness'
 import { getRandomBuyableCards } from '@/app/daily-card-game/domain/shop/utils'
 
 import { VoucherDefinition, VoucherType } from './types'
@@ -16,7 +17,13 @@ export const overstock: VoucherDefinition = {
         if (ctx.game.shopState.cardsForSale.length < ctx.game.shopState.maxCardsForSale) {
           const difference =
             ctx.game.shopState.maxCardsForSale - ctx.game.shopState.cardsForSale.length
-          const newCards = getRandomBuyableCards(ctx.game, difference)
+          const randomBuyableCardsSeed = buildSeedString([
+            ctx.game.gameSeed,
+            ctx.game.roundIndex.toString(),
+            ctx.game.shopState.rerollsUsed.toString(),
+            ctx.game.shopState.voucher ?? '0',
+          ])
+          const newCards = getRandomBuyableCards(ctx.game, difference, randomBuyableCardsSeed)
           ctx.game.shopState.cardsForSale.push(...newCards)
         }
       },

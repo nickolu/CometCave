@@ -11,8 +11,9 @@
  * - `handIds`, `drawPileIds`: Where cards are currently located (transient)
  */
 
+import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
+
 import type { GameState } from './types'
-import type { PlayingCardState } from '../playing-card/types'
 
 /**
  * Get a single card by ID from the registry
@@ -136,7 +137,9 @@ export function removeOwnedCard(game: GameState, cardId: string): void {
   game.gamePlayState.handIds = game.gamePlayState.handIds.filter(id => id !== cardId)
   game.gamePlayState.drawPileIds = game.gamePlayState.drawPileIds.filter(id => id !== cardId)
   if (game.gamePlayState.discardPileIds) {
-    game.gamePlayState.discardPileIds = game.gamePlayState.discardPileIds.filter(id => id !== cardId)
+    game.gamePlayState.discardPileIds = game.gamePlayState.discardPileIds.filter(
+      id => id !== cardId
+    )
   }
 }
 
@@ -157,9 +160,7 @@ export function dealCardsFromDrawPile(game: GameState, count: number): string[] 
  */
 export function discardCardsFromHand(game: GameState, cardIds: string[]): void {
   // Remove from hand
-  game.gamePlayState.handIds = game.gamePlayState.handIds.filter(
-    id => !cardIds.includes(id)
-  )
+  game.gamePlayState.handIds = game.gamePlayState.handIds.filter(id => !cardIds.includes(id))
 
   // Add to discard pile
   if (!game.gamePlayState.discardPileIds) {

@@ -72,6 +72,7 @@ const gameState: GameState = {
   rounds: initializeRounds(gameSeed),
   roundIndex: 1,
   shopState: {
+    isOpen: false,
     baseRerollPrice: 5,
     cardsForSale: [],
     celestialMultiplier: 1,
@@ -130,7 +131,7 @@ const gameState: GameState = {
 
 // Initialize the card registry and owned cards from the initial deck
 const initialDeck = initialDeckStates(gameState).pokerDeck
-const cards: Record<string, typeof initialDeck[number]> = {}
+const cards: Record<string, (typeof initialDeck)[number]> = {}
 const ownedCardIds: string[] = []
 
 for (const card of initialDeck) {

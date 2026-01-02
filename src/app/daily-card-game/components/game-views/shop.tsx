@@ -22,18 +22,10 @@ import { ViewTemplate } from './view-template'
 export function ShopView() {
   const { game } = useGameState()
   useEffect(() => {
-    if (
-      game.shopState.cardsForSale.length === 0 &&
-      game.shopState.packsForSale.length === 0 &&
-      game.shopState.rerollsUsed === 0
-    ) {
+    if (!game.shopState.isOpen) {
       eventEmitter.emit({ type: 'SHOP_OPEN' })
     }
-  }, [
-    game.shopState.cardsForSale.length,
-    game.shopState.packsForSale.length,
-    game.shopState.rerollsUsed,
-  ])
+  }, [game.shopState.isOpen])
 
   const selectedCard = game.shopState.cardsForSale.find(
     card => card.card.id === game.shopState.selectedCardId

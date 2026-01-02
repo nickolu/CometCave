@@ -129,8 +129,28 @@ export const initializeJoker = (joker: JokerDefinition, game: GameState): JokerS
   }
 }
 
-export const getRandomUncommonJoker = (game: GameState): JokerDefinition => {
-  const allUncommonJokers = Object.values(jokers).filter(joker => joker.rarity === 'uncommon')
+type JokerPredicate = (joker: JokerDefinition, game: GameState) => boolean
+
+const isUncommonPredicate: JokerPredicate = (joker: JokerDefinition): boolean => {
+  return joker.rarity === 'uncommon'
+}
+
+const isNotOwnedPredicate: JokerPredicate = (joker: JokerDefinition, game: GameState): boolean => {
+  return !game.jokers.some(existingJoker => existingJoker.jokerId === joker.id)
+}
+
+export const getRandomUncommonJoker = (
+  game: GameState,
+  allowDuplicates: boolean = false
+): JokerDefinition => {
+  const allJokers = Object.values(jokers)
+  const predicates = [isUncommonPredicate]
+  if (!allowDuplicates) {
+    predicates.push(isNotOwnedPredicate)
+  }
+  const filteredJokers = allJokers.filter(joker =>
+    predicates.every(predicate => predicate(joker, game))
+  )
   const seed = buildSeedString([
     game.gameSeed,
     game.roundIndex.toString(),
@@ -139,8 +159,8 @@ export const getRandomUncommonJoker = (game: GameState): JokerDefinition => {
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
-    max: allUncommonJokers.length - 1,
+    max: filteredJokers.length - 1,
     numberOfNumbers: 1,
   })
-  return allUncommonJokers[randomCardIndices[0]]
+  return filteredJokers[randomCardIndices[0]]
 }
