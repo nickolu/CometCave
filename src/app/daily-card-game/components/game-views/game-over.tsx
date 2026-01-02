@@ -44,7 +44,7 @@ export function GameOverView() {
     return [
       didWin ? 'Daily Card Game — You Win!' : 'Daily Card Game — Game Over',
       '',
-      `Final Score: ${game.totalScore}`,
+      `Final Score: ${game.totalScore.toString()}`,
       `Hands Played: ${game.handsPlayed}`,
       `Rounds Completed:`,
       progressBar,
@@ -69,7 +69,7 @@ export function GameOverView() {
       <Card className="bg-space-grey border-space-purple p-4 text-cream-white h-63 w-1/3 flex flex-col justify-between text-center mx-auto">
         <div className="flex flex-col items-center justify-center">
           <h2>{didWin ? 'You Win!' : 'Game Over: You Lose'}</h2>
-          <div>Total Score: {game.totalScore}</div>
+          <div>Total Score: {game.totalScore.toString()}</div>
           <div>Hands Played: {game.handsPlayed}</div>
           <div>
             Rounds Completed: {roundsCompleted} / {totalRounds}

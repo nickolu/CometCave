@@ -125,7 +125,7 @@ const gameState: GameState = {
     allowDuplicateJokersInShop: false,
   },
   tags: [],
-  totalScore: 0,
+  totalScore: 0n,
   vouchers: [],
 }
 

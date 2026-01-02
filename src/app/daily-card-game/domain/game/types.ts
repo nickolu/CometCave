@@ -42,7 +42,7 @@ export interface GameState {
   stake: Stake
   staticRules: StaticRulesState
   tags: TagState[]
-  totalScore: number
+  totalScore: bigint
   vouchers: VoucherState[]
 }
 
