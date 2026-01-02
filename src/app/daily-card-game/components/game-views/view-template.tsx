@@ -5,7 +5,7 @@ import { Hands } from '@/app/daily-card-game/components/hands/hands'
 import { Modal } from '@/app/daily-card-game/components/ui/modal'
 import { Vouchers } from '@/app/daily-card-game/components/voucher/vouchers'
 import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
-import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
+import { calculateAnte, getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import { useGameState } from '@/app/daily-card-game/useGameState'
@@ -34,7 +34,7 @@ export function ViewTemplate({
           <hr />
           <div className="flex flex-col gap-2 pl-2">
             <div>
-              <strong>Total Score:</strong> {game.totalScore}
+              <strong>Total Score:</strong> {game.totalScore.toString()}
             </div>
             <div>
               <strong>Round:</strong> {game.roundIndex}/{game.rounds.length}
@@ -77,11 +77,13 @@ export function ViewTemplate({
                 </div>
                 <div>
                   <strong>Score at Least:</strong>{' '}
-                  {game.rounds[game.roundIndex].baseAnte *
-                    (getBlindDefinition(
+                  {calculateAnte(
+                    game.rounds[game.roundIndex].baseAnte,
+                    getBlindDefinition(
                       currentBlind?.type ?? 'smallBlind',
                       game.rounds[game.roundIndex]
-                    ).anteMultiplier || 1)}
+                    ).anteMultiplier
+                  ).toString()}
                 </div>
                 <div>
                   <strong>Remaining Hands:</strong> {game.gamePlayState.remainingHands}
@@ -106,7 +108,7 @@ export function ViewTemplate({
             {game.gamePlayState.scoringEvents.length > 0 && (
               <>
                 <h2 className="text-lg font-bold">Scoring Events Log</h2>
-                <div className="flex flex-col gap-0.5 pl-1 max-h-[300px] overflow-y-auto">
+                <div className="flex flex-col gap-0.5 pl-1 max-h-[100px] overflow-y-auto">
                   {game.gamePlayState.scoringEvents.map(event =>
                     isCustomScoringEvent(event) ? (
                       <div key={event.id}>{event.message}</div>

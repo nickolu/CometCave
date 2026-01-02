@@ -19,6 +19,20 @@ import { INTEREST_CALCULATION_FACTOR } from './constants'
 
 import type { GameState } from './types'
 
+/**
+ * Calculate the ante target as BigInt, handling the decimal 1.5 multiplier
+ * Since BigInt doesn't support decimals, we handle 1.5 as (baseAnte * 3n) / 2n
+ */
+export function calculateAnte(
+  baseAnte: bigint,
+  multiplier: BlindDefinition['anteMultiplier']
+): bigint {
+  if (multiplier === 1.5) {
+    return (baseAnte * 3n) / 2n
+  }
+  return baseAnte * BigInt(multiplier)
+}
+
 export function getBlindDefinition(type: BlindState['type'], round: RoundState): BlindDefinition {
   if (type === 'smallBlind') return smallBlind
   if (type === 'bigBlind') return bigBlind

@@ -8,7 +8,7 @@ import type { RoundState } from '@/app/daily-card-game/domain/round/types'
 
 import { dealCardsFromDrawPile, getHand } from './card-registry-utils'
 import { HAND_SIZE } from './constants'
-import { calculateInterest, collectEffects, getBlindDefinition } from './utils'
+import { calculateAnte, calculateInterest, collectEffects, getBlindDefinition } from './utils'
 
 import type { GamePlayState, GameState } from './types'
 import type { Draft } from 'immer'
@@ -26,10 +26,11 @@ function computeBlindScoreAndAnte(
 ) {
   if (!currentBlind) return null
 
-  const blindScore =
-    currentBlind.score + draft.gamePlayState.score.chips * draft.gamePlayState.score.mult
+  // Convert hand score (chips * mult) to BigInt before adding to blind score
+  const handScore = BigInt(draft.gamePlayState.score.chips * draft.gamePlayState.score.mult)
+  const blindScore = currentBlind.score + handScore
   const blindDefinition = getBlindDefinition(currentBlind.type, round)
-  const ante = blindDefinition.anteMultiplier * round.baseAnte
+  const ante = calculateAnte(round.baseAnte, blindDefinition.anteMultiplier)
   const newTotalScore = draft.totalScore + blindScore
 
   // Persist computed blind score onto the round
@@ -58,8 +59,8 @@ function applyHandScoringEndEffects(
 }
 
 function decideHandEndOutcome(args: {
-  blindScore: number
-  ante: number
+  blindScore: bigint
+  ante: bigint
   remainingHands: number
 }): HandEndOutcome {
   const { blindScore, ante, remainingHands } = args

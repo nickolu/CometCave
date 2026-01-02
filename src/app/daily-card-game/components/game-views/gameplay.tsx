@@ -114,7 +114,7 @@ export function GamePlayView() {
               <strong>Chips x Mult:</strong> {score.chips} x {score.mult}
             </div>
             <div>
-              <strong>Your Score:</strong> {currentBlind?.score}
+              <strong>Your Score:</strong> {currentBlind?.score.toString()}
             </div>
             {selectedHand?.[0] && <SelectedHandScore hand={game.pokerHands[selectedHand[0]]} />}
             {selectedCard && <SelectedCardDetails card={selectedCard} />}

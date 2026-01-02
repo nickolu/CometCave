@@ -5,7 +5,7 @@ export interface BlindState {
   type: 'smallBlind' | 'bigBlind' | 'bossBlind'
   status: 'completed' | 'skipped' | 'notStarted' | 'inProgress'
   additionalRewards: [string, number][] // [rewardName, rewardAmount]
-  score: number
+  score: bigint
   tag: TagType | null
 }
 
@@ -69,7 +69,7 @@ export interface BossBlindDefinition extends BlindDefinition {
 }
 
 export interface RoundState {
-  baseAnte: number
+  baseAnte: bigint
   bossBlindName: string
   smallBlind: BlindState
   bigBlind: BlindState

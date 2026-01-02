@@ -28,7 +28,7 @@ export function BlindRewardsView() {
       <div>
         <h2>Blind Rewards</h2>
         <div>
-          Your Score: {currentBlind?.score}
+          Your Score: {currentBlind?.score.toString()}
           <div>
             <p>
               Blind: <DollarSigns count={baseReward || 0} />

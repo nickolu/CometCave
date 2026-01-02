@@ -1,7 +1,7 @@
 'use client'
 
 import { BlindCard } from '@/app/daily-card-game/components/blind-selection/blind-card'
-import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
+import { calculateAnte, getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 
 import { ViewTemplate } from './view-template'
@@ -34,9 +34,10 @@ export function BlindSelectionView() {
         <BlindCard
           name="Small Blind"
           reward={smallBlindDefinition.baseReward}
-          minimumScore={
-            game.rounds[game.roundIndex].baseAnte * (smallBlindDefinition.anteMultiplier || 1)
-          }
+          minimumScore={calculateAnte(
+            game.rounds[game.roundIndex].baseAnte,
+            smallBlindDefinition.anteMultiplier
+          )}
           disabled={nextBlind?.type !== 'smallBlind'}
           selectEventName="SMALL_BLIND_SELECTED"
           tag={game.rounds[game.roundIndex].smallBlind.tag ?? undefined}
@@ -44,9 +45,10 @@ export function BlindSelectionView() {
         <BlindCard
           name="Big Blind"
           reward={bigBlindDefinition.baseReward}
-          minimumScore={
-            game.rounds[game.roundIndex].baseAnte * (bigBlindDefinition.anteMultiplier || 1)
-          }
+          minimumScore={calculateAnte(
+            game.rounds[game.roundIndex].baseAnte,
+            bigBlindDefinition.anteMultiplier
+          )}
           disabled={nextBlind?.type !== 'bigBlind'}
           selectEventName="BIG_BLIND_SELECTED"
           tag={game.rounds[game.roundIndex].bigBlind.tag ?? undefined}
@@ -55,9 +57,10 @@ export function BlindSelectionView() {
           name={'Boss: ' + bossBlindDefinition.name}
           description={bossBlindDefinition.description}
           reward={bossBlindDefinition.baseReward}
-          minimumScore={
-            game.rounds[game.roundIndex].baseAnte * (bossBlindDefinition.anteMultiplier || 1)
-          }
+          minimumScore={calculateAnte(
+            game.rounds[game.roundIndex].baseAnte,
+            bossBlindDefinition.anteMultiplier
+          )}
           disabled={nextBlind?.type !== 'bossBlind'}
           selectEventName="BOSS_BLIND_SELECTED"
         />
