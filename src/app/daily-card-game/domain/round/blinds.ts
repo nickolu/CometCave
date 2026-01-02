@@ -2,6 +2,12 @@ import type { GameState } from '@/app/daily-card-game/domain/game/types'
 
 import type { BlindDefinition, BlindState } from './types'
 
+export const blindIndices: Record<BlindState['type'], number> = {
+  smallBlind: 0,
+  bigBlind: 1,
+  bossBlind: 2,
+}
+
 export function getInProgressBlind(game: GameState): BlindState | undefined {
   const currentRoundIndex = game.roundIndex
   const currentRound = game.rounds[currentRoundIndex]

@@ -30,7 +30,6 @@ import {
   isPlayingCardState,
 } from '@/app/daily-card-game/domain/playing-card/utils'
 import {
-  buildSeedString,
   getRandomNumbersWithSeed,
   mulberry32,
   xmur3,
@@ -121,11 +120,7 @@ export function getRandomCelestialCards(
   return randomCardIndices.map(index => allCelestialCards[index])
 }
 
-export function getRandomTarotCards(
-  game: GameState,
-  numberOfCards: number,
-  seed: string
-): TarotCardDefinition[] {
+export function getRandomTarotCards(numberOfCards: number, seed: string): TarotCardDefinition[] {
   const allTarotCards = Object.values(tarotCards)
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
@@ -137,15 +132,10 @@ export function getRandomTarotCards(
 }
 
 export function getRandomPlayingCards(
-  game: GameState,
-  numberOfCards: number
+  numberOfCards: number,
+  seed: string
 ): PlayingCardDefinition[] {
   const allPlayingCards = Object.values(playingCards)
-  const seed = buildSeedString([
-    game.gameSeed,
-    game.roundIndex.toString(),
-    game.shopState.rerollsUsed.toString(),
-  ])
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
@@ -155,11 +145,7 @@ export function getRandomPlayingCards(
   return randomCardIndices.map(index => allPlayingCards[index])
 }
 
-export function getRandomJokers(
-  game: GameState,
-  numberOfCards: number,
-  seed: string
-): JokerDefinition[] {
+export function getRandomJokers(numberOfCards: number, seed: string): JokerDefinition[] {
   const allJokers = Object.values(jokers)
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
@@ -171,7 +157,6 @@ export function getRandomJokers(
 }
 
 export function getRandomSpectralCards(
-  game: GameState,
   numberOfCards: number,
   seed: string
 ): SpectralCardDefinition[] {

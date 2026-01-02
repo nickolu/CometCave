@@ -52,15 +52,24 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
   const numberOfCardsToSelect = packDefinition.numberOfCardsToSelect
 
   if (packDefinition.cardType === 'playingCard') {
+    const randomPlayingCardsSeed = buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      game.shopState.packsForSale.length.toString(),
+      'playingCards',
+    ])
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomPlayingCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
-        type: 'playingCard',
-        card: initializePlayingCard(card, game, true),
-        price: playingCards[card.id].baseChips,
-      })),
+      cards: getRandomPlayingCards(packDefinition.numberOfCardsPerPack, randomPlayingCardsSeed).map(
+        card => ({
+          type: 'playingCard',
+          card: initializePlayingCard(card, game, true),
+          price: playingCards[card.id].baseChips,
+        })
+      ),
     }
   }
   if (packDefinition.cardType === 'tarotCard') {
@@ -75,15 +84,13 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomTarotCards(
-        game,
-        packDefinition.numberOfCardsPerPack,
-        randomTarotCardsSeed
-      ).map(card => ({
-        type: 'tarotCard',
-        card: initializeTarotCard(card),
-        price: tarotCards[card.tarotType].price,
-      })),
+      cards: getRandomTarotCards(packDefinition.numberOfCardsPerPack, randomTarotCardsSeed).map(
+        card => ({
+          type: 'tarotCard',
+          card: initializeTarotCard(card),
+          price: tarotCards[card.tarotType].price,
+        })
+      ),
     }
   }
   if (packDefinition.cardType === 'jokerCard') {
@@ -98,13 +105,11 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomJokers(game, packDefinition.numberOfCardsPerPack, randomJokersSeed).map(
-        joker => ({
-          type: 'jokerCard',
-          card: initializeJoker(joker, game),
-          price: joker.price,
-        })
-      ),
+      cards: getRandomJokers(packDefinition.numberOfCardsPerPack, randomJokersSeed).map(joker => ({
+        type: 'jokerCard',
+        card: initializeJoker(joker, game),
+        price: joker.price,
+      })),
     }
   }
   if (packDefinition.cardType === 'celestialCard') {
@@ -143,7 +148,6 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
       cards: getRandomSpectralCards(
-        game,
         packDefinition.numberOfCardsPerPack,
         randomSpectralCardsSeed
       ).map(card => ({

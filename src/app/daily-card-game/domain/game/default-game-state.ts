@@ -14,8 +14,6 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
-import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
-import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { getCurrentDayAsSeedString } from '@/app/daily-card-game/domain/randomness'
 import { initializeRounds } from '@/app/daily-card-game/domain/round/rounds'
 
@@ -143,7 +141,6 @@ for (const card of initialDeck) {
 
 export const defaultGameState: GameState = {
   ...gameState,
-  jokers: [initializeJoker(jokers.jokerStencil, gameState)],
   cards,
   ownedCardIds,
 }
