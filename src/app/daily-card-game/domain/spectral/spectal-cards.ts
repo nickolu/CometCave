@@ -1,6 +1,5 @@
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import {
-  addCardToRegistry,
   addOwnedCard,
   removeOwnedCard,
 } from '@/app/daily-card-game/domain/game/card-registry-utils'
@@ -10,11 +9,7 @@ import {
   getRandomPlayingCardsWithFilters,
   initializePlayingCard,
 } from '@/app/daily-card-game/domain/playing-card/utils'
-import {
-  buildSeedString,
-  deterministicUuid,
-  getRandomNumberWithSeed,
-} from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 
 import { SpectralCardDefinition, SpectralCardType } from './types'
 

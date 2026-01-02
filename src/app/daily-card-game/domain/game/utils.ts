@@ -135,12 +135,7 @@ export function useConsumableCelestialCard(draft: Draft<GameState>, event: GameE
   draft.gamePlayState.selectedConsumable = undefined
   // remove tarot card from consumables
   draft.consumables = draft.consumables.filter(consumable => consumable.id !== celestialCard.id)
-  // remove tarot card from pack
-  if (draft.shopState.openPackState) {
-    draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-      card => card.card.id !== celestialCard.id
-    )
-  }
+
   dispatchEffects(
     event,
     {
@@ -194,14 +189,7 @@ export function useConsumableTarotCard(draft: Draft<GameState>, event: GameEvent
   if (tarotCard.tarotType === 'notImplemented') return
   draft.consumablesUsed.push(tarotCard)
   draft.gamePlayState.selectedConsumable = undefined
-  // remove tarot card from consumables
   draft.consumables = draft.consumables.filter(consumable => consumable.id !== tarotCard.id)
-  // remove tarot card from pack
-  if (draft.shopState.openPackState) {
-    draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-      card => card.card.id !== tarotCard.id
-    )
-  }
 
   dispatchEffects(
     event,

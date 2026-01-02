@@ -1,5 +1,10 @@
 import { produce } from 'immer'
 
+import {
+  getPackDefinition,
+  getRandomPacks,
+  removeCardFromPack,
+} from '@/app/daily-card-game/domain/booster-pack/utils'
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
 import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
 import {
@@ -19,7 +24,6 @@ import { isPlayingCardState } from '@/app/daily-card-game/domain/playing-card/ut
 import { buildSeedString, uuid } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind, getNextBlind } from '@/app/daily-card-game/domain/round/blinds'
 import type { BlindState } from '@/app/daily-card-game/domain/round/types'
-import { getPackDefinition, getRandomPacks } from '@/app/daily-card-game/domain/shop/packs'
 import { getRandomBuyableCards, getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
 import { implementedSpectralCards as spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
 import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
@@ -36,7 +40,6 @@ import {
   dealCardsFromDrawPile,
   discardCardsFromHand,
   getCards,
-  getHand,
   getSelectedCards,
 } from './card-registry-utils'
 import { HAND_SIZE, INTEREST_CALCULATION_FACTOR, MAX_SELECTED_CARDS } from './constants'
@@ -291,7 +294,15 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         const purpleSealCount = discardedCards.filter(card => card.flags.seal === 'purple').length
         for (let i = 0; i < purpleSealCount; i++) {
           if (draft.consumables.length < draft.maxConsumables) {
-            draft.consumables.push(initializeTarotCard(getRandomTarotCards(draft, 1)[0]))
+            const randomTarotCardsSeed = buildSeedString([
+              draft.gameSeed,
+              draft.roundIndex.toString(),
+              draft.shopState.rerollsUsed.toString(),
+              'purpleSeal',
+            ])
+            draft.consumables.push(
+              initializeTarotCard(getRandomTarotCards(draft, 1, randomTarotCardsSeed)[0])
+            )
           }
         }
 
@@ -424,6 +435,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'SHOP_OPEN': {
+        draft.shopState.isOpen = true
         // dispatch first to use any tag effects
         const ctx: EffectContext = {
           event,
@@ -447,10 +459,17 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         // Clear guaranteed items after adding them
         draft.shopState.guaranteedForSaleItems = []
         // If there are still slots available, add random cards to the shop
+        const randomBuyableCardsSeed = buildSeedString([
+          draft.gameSeed,
+          draft.roundIndex.toString(),
+          draft.shopState.rerollsUsed.toString(),
+          draft.shopState.voucher ?? '0',
+        ])
         if (draft.shopState.cardsForSale.length < draft.shopState.maxCardsForSale) {
           const additionalCards = getRandomBuyableCards(
             draft,
-            draft.shopState.maxCardsForSale - draft.shopState.cardsForSale.length
+            draft.shopState.maxCardsForSale - draft.shopState.cardsForSale.length,
+            randomBuyableCardsSeed
           )
           draft.shopState.cardsForSale.push(...additionalCards)
         }
@@ -459,6 +478,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
 
       case 'SHOP_SELECT_BLIND': {
+        draft.shopState.isOpen = false
         draft.gamePhase = 'blindSelection'
         populateTags(draft)
         return
@@ -490,10 +510,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         // Remove the card from the pack
         if (!draft.shopState.openPackState) return
-        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-          card => card.card.id !== id
-        )
-        draft.shopState.openPackState.remainingCardsToSelect -= 1
+        removeCardFromPack(draft.shopState.openPackState, id)
 
         // Emit JOKER_ADDED event for effects that react to new jokers
         const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
@@ -529,10 +546,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         // Remove the card from the pack
         if (!draft.shopState.openPackState) return
-        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-          card => card.card.id !== id
-        )
-        draft.shopState.openPackState.remainingCardsToSelect -= 1
+        removeCardFromPack(draft.shopState.openPackState, id)
 
         const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
 
@@ -557,10 +571,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(tarotCardUsedEvent, ctx, collectEffects(ctx.game))
 
         // Clean up after effects have been applied
+        draft.gamePlayState.selectedCardIds = []
         if (isLastCardToSelect) {
           draft.gamePhase = 'shop'
           draft.shopState.openPackState = null
-          draft.gamePlayState.selectedCardIds = []
         }
 
         return
@@ -577,10 +591,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         // Remove the card from the pack
         if (!draft.shopState.openPackState) return
-        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-          card => card.card.id !== id
-        )
-        draft.shopState.openPackState.remainingCardsToSelect -= 1
+        removeCardFromPack(draft.shopState.openPackState, id)
 
         const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
 
@@ -622,10 +633,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
         // Remove the card from the pack
         if (!draft.shopState.openPackState) return
-        draft.shopState.openPackState.cards = draft.shopState.openPackState.cards.filter(
-          card => card.card.id !== id
-        )
-        draft.shopState.openPackState.remainingCardsToSelect -= 1
+        removeCardFromPack(draft.shopState.openPackState, id)
 
         const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
 
@@ -743,7 +751,16 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'SHOP_REROLL': {
         draft.shopState.rerollsUsed += 1
-        draft.shopState.cardsForSale = getRandomBuyableCards(draft, draft.shopState.maxCardsForSale)
+        const randomBuyableCardsSeed = buildSeedString([
+          draft.gameSeed,
+          draft.roundIndex.toString(),
+          draft.shopState.rerollsUsed.toString(),
+        ])
+        draft.shopState.cardsForSale = getRandomBuyableCards(
+          draft,
+          draft.shopState.maxCardsForSale,
+          randomBuyableCardsSeed
+        )
         draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
         return
       }

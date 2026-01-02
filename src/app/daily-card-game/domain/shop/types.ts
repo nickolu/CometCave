@@ -12,6 +12,7 @@ export interface ShopState {
   cardsForSale: BuyableCard[]
   celestialMultiplier: number
   guaranteedForSaleItems: BuyableCard[]
+  isOpen: boolean
   maxCardsForSale: number
   maxVouchersForSale: number
   openPackState: PackState | null

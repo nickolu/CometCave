@@ -14,6 +14,8 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import { initializeHand } from '@/app/daily-card-game/domain/hand/utils'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { getCurrentDayAsSeedString } from '@/app/daily-card-game/domain/randomness'
 import { initializeRounds } from '@/app/daily-card-game/domain/round/rounds'
 
@@ -52,7 +54,7 @@ const gameState: GameState = {
   maxHands: 4,
   maxDiscards: 3,
   maxInterest: 5,
-  money: 0,
+  money: 1000,
   minimumMoney: 0,
   ownedCardIds: [], // Will be populated below
   pokerHands: {
@@ -72,6 +74,7 @@ const gameState: GameState = {
   rounds: initializeRounds(gameSeed),
   roundIndex: 1,
   shopState: {
+    isOpen: false,
     baseRerollPrice: 5,
     cardsForSale: [],
     celestialMultiplier: 1,
@@ -130,7 +133,7 @@ const gameState: GameState = {
 
 // Initialize the card registry and owned cards from the initial deck
 const initialDeck = initialDeckStates(gameState).pokerDeck
-const cards: Record<string, typeof initialDeck[number]> = {}
+const cards: Record<string, (typeof initialDeck)[number]> = {}
 const ownedCardIds: string[] = []
 
 for (const card of initialDeck) {
@@ -140,6 +143,7 @@ for (const card of initialDeck) {
 
 export const defaultGameState: GameState = {
   ...gameState,
+  jokers: [initializeJoker(jokers.jokerStencil, gameState)],
   cards,
   ownedCardIds,
 }

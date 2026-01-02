@@ -35,8 +35,6 @@ import {
   mulberry32,
   xmur3,
 } from '@/app/daily-card-game/domain/randomness'
-import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
-import { BlindState } from '@/app/daily-card-game/domain/round/types'
 import { implementedSpectralCards as spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
 import { SpectralCardDefinition } from '@/app/daily-card-game/domain/spectral/types'
 import { isSpectralCardState } from '@/app/daily-card-game/domain/spectral/utils'
@@ -106,24 +104,14 @@ export function getBuyableCardDefinition(
   throw new Error('Invalid card type: ' + buyableCard.type)
 }
 
-const blindIndices: Record<BlindState['type'], number> = {
-  smallBlind: 0,
-  bigBlind: 1,
-  bossBlind: 2,
-}
-
 export function getRandomCelestialCards(
   game: GameState,
-  numberOfCards: number
+  numberOfCards: number,
+  seed: string
 ): CelestialCardDefinition[] {
   const allCelestialCards = Object.values(celestialCards).filter(
     card => !game.pokerHands[card.handId].isSecret // don't sell celestial cards for secret hands
   )
-  const seed = buildSeedString([
-    game.gameSeed,
-    game.roundIndex.toString(),
-    game.shopState.rerollsUsed.toString(),
-  ])
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
@@ -133,13 +121,12 @@ export function getRandomCelestialCards(
   return randomCardIndices.map(index => allCelestialCards[index])
 }
 
-export function getRandomTarotCards(game: GameState, numberOfCards: number): TarotCardDefinition[] {
+export function getRandomTarotCards(
+  game: GameState,
+  numberOfCards: number,
+  seed: string
+): TarotCardDefinition[] {
   const allTarotCards = Object.values(tarotCards)
-  const seed = buildSeedString([
-    game.gameSeed,
-    game.roundIndex.toString(),
-    game.shopState.rerollsUsed.toString(),
-  ])
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
@@ -168,13 +155,12 @@ export function getRandomPlayingCards(
   return randomCardIndices.map(index => allPlayingCards[index])
 }
 
-export function getRandomJokers(game: GameState, numberOfCards: number): JokerDefinition[] {
+export function getRandomJokers(
+  game: GameState,
+  numberOfCards: number,
+  seed: string
+): JokerDefinition[] {
   const allJokers = Object.values(jokers)
-  const seed = buildSeedString([
-    game.gameSeed,
-    game.roundIndex.toString(),
-    game.shopState.rerollsUsed.toString(),
-  ])
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
@@ -186,14 +172,10 @@ export function getRandomJokers(game: GameState, numberOfCards: number): JokerDe
 
 export function getRandomSpectralCards(
   game: GameState,
-  numberOfCards: number
+  numberOfCards: number,
+  seed: string
 ): SpectralCardDefinition[] {
   const allSpectralCards = Object.values(spectralCards)
-  const seed = buildSeedString([
-    game.gameSeed,
-    game.roundIndex.toString(),
-    game.shopState.rerollsUsed.toString(),
-  ])
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
@@ -203,7 +185,11 @@ export function getRandomSpectralCards(
   return randomCardIndices.map(index => allSpectralCards[index])
 }
 
-export function getRandomBuyableCards(game: GameState, numberOfCards: number): BuyableCard[] {
+export function getRandomBuyableCards(
+  game: GameState,
+  numberOfCards: number,
+  seed: string
+): BuyableCard[] {
   const allTarotCards = Object.values(tarotCards)
   const allCelestialCards = Object.values(celestialCards).filter(
     card => !game.pokerHands[card.handId].isSecret // don't sell celestial cards for secret hands
@@ -232,7 +218,7 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
     allBuyableCardDefinitions.push(...allPlayingCards)
   })
 
-  const currentBlind = getInProgressBlind(game)
+  // const currentBlind = getInProgressBlind(game)
 
   if (!game.staticRules.allowDuplicateJokersInShop) {
     const ownedJokers = game.jokers.map(joker => joker.jokerId)
@@ -264,13 +250,13 @@ export function getRandomBuyableCards(game: GameState, numberOfCards: number): B
     return true
   })
 
-  const blindIndex = currentBlind?.type ? blindIndices[currentBlind.type] : 0
-  const seed = buildSeedString([
-    game.gameSeed,
-    game.roundIndex.toString(),
-    blindIndex.toString(),
-    game.shopState.rerollsUsed.toString(),
-  ])
+  // const blindIndex = currentBlind?.type ? blindIndices[currentBlind.type] : 0
+  // const seed = buildSeedString([
+  //   game.gameSeed,
+  //   game.roundIndex.toString(),
+  //   blindIndex.toString(),
+  //   game.shopState.rerollsUsed.toString(),
+  // ])
 
   // Shuffle the available cards and take the first N (simpler than deduplication)
   const seedFn = xmur3(seed)

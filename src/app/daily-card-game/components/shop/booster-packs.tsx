@@ -1,6 +1,6 @@
 import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { getPackDefinition } from '@/app/daily-card-game/domain/booster-pack/utils'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { getPackDefinition } from '@/app/daily-card-game/domain/shop/packs'
 import type { BuyableCard, PackState } from '@/app/daily-card-game/domain/shop/types'
 import { canAffordToBuy } from '@/app/daily-card-game/domain/shop/utils'
 import { useGameState } from '@/app/daily-card-game/useGameState'

@@ -14,62 +14,24 @@ import {
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
-import { initializeSpectralCard } from '@/app/daily-card-game/domain/spectral/utils'
-
+import type { PackDefinition, PackState } from '@/app/daily-card-game/domain/shop/types'
 import {
   getRandomCelestialCards,
   getRandomJokers,
   getRandomPlayingCards,
   getRandomSpectralCards,
   getRandomTarotCards,
-} from './utils'
+} from '@/app/daily-card-game/domain/shop/utils'
+import { initializeSpectralCard } from '@/app/daily-card-game/domain/spectral/utils'
 
-import type { PackDefinition, PackState } from './types'
-
-const numberOfCardsPerRarity: Record<PackState['rarity'], number> = {
-  normal: 3,
-  jumbo: 5,
-  mega: 7,
-}
-
-const numberOfCardsToSelectPerRarity: Record<PackState['rarity'], number> = {
-  normal: 1,
-  jumbo: 1,
-  mega: 2,
-}
-
-const pricePerRarity: Record<PackState['rarity'], number> = {
-  normal: 4,
-  jumbo: 6,
-  mega: 8,
-}
-
-// Weights for pack rarity selection based on pack type
-// Standard (playingCard), Arcana (tarotCard), and Celestial packs share the same weights
-// Buffoon (jokerCard) and Spectral packs are rarer
-type PackRarityWeights = Record<PackState['rarity'], number>
-type ImplementedPackType = PackDefinition['cardType']
-// Pack weights matching expected probabilities:
-// Standard/Arcana/Celestial: Normal 4 (53.52%), Jumbo 2 (26.76%), Mega 0.5 (6.69%)
-// Buffoon: Normal 1.2 (5.35%), Jumbo 0.6 (2.67%), Mega 0.15 (0.66%)
-// Spectral: Normal 0.6 (2.67%), Jumbo 0.3 (1.34%), Mega 0.075 (0.31%)
-const packRarityWeightsByType: Record<ImplementedPackType, PackRarityWeights> = {
-  playingCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Standard
-  tarotCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Arcana
-  celestialCard: { normal: 4, jumbo: 2, mega: 0.5 }, // Celestial
-  jokerCard: { normal: 1.2, jumbo: 0.6, mega: 0.15 }, // Buffoon
-  spectralCard: { normal: 0.6, jumbo: 0.3, mega: 0.075 }, // Spectral
-}
-
-// Pack type weights (sum of all rarity weights for each type)
-// This makes Standard/Arcana/Celestial more common than Buffoon and Spectral
-const packTypeWeights: Record<ImplementedPackType, number> = {
-  playingCard: 6.5, // 4 + 2 + 0.5
-  tarotCard: 6.5, // 4 + 2 + 0.5
-  celestialCard: 6.5, // 4 + 2 + 0.5
-  jokerCard: 1.95, // 1.2 + 0.6 + 0.15
-  spectralCard: 0.975, // 0.6 + 0.3 + 0.075
-}
+import {
+  numberOfCardsPerRarity,
+  numberOfCardsToSelectPerRarity,
+  packRarityWeightsByType,
+  packTypeWeights,
+  pricePerRarity,
+} from './booster-packs'
+import { ImplementedPackType } from './types'
 
 export const getPackDefinition = (
   cardType: PackDefinition['cardType'],
@@ -102,11 +64,22 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'tarotCard') {
+    const randomTarotCardsSeed = buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      game.shopState.packsForSale.length.toString(),
+      'tarotCards',
+    ])
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomTarotCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
+      cards: getRandomTarotCards(
+        game,
+        packDefinition.numberOfCardsPerPack,
+        randomTarotCardsSeed
+      ).map(card => ({
         type: 'tarotCard',
         card: initializeTarotCard(card),
         price: tarotCards[card.tarotType].price,
@@ -114,23 +87,43 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'jokerCard') {
+    const randomJokersSeed = buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      game.shopState.packsForSale.length.toString(),
+      'jokers',
+    ])
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomJokers(game, packDefinition.numberOfCardsPerPack).map(joker => ({
-        type: 'jokerCard',
-        card: initializeJoker(joker, game),
-        price: joker.price,
-      })),
+      cards: getRandomJokers(game, packDefinition.numberOfCardsPerPack, randomJokersSeed).map(
+        joker => ({
+          type: 'jokerCard',
+          card: initializeJoker(joker, game),
+          price: joker.price,
+        })
+      ),
     }
   }
   if (packDefinition.cardType === 'celestialCard') {
+    const randomCelestialCardsSeed = buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      game.shopState.packsForSale.length.toString(),
+      'celestialCards',
+    ])
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomCelestialCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
+      cards: getRandomCelestialCards(
+        game,
+        packDefinition.numberOfCardsPerPack,
+        randomCelestialCardsSeed
+      ).map(card => ({
         type: 'celestialCard',
         card: initializeCelestialCard(card),
         price: celestialCards[card.handId].price,
@@ -138,11 +131,22 @@ const initializePackState = (game: GameState, packDefinition: PackDefinition): P
     }
   }
   if (packDefinition.cardType === 'spectralCard') {
+    const randomSpectralCardsSeed = buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      game.shopState.packsForSale.length.toString(),
+      'spectralCards',
+    ])
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomSpectralCards(game, packDefinition.numberOfCardsPerPack).map(card => ({
+      cards: getRandomSpectralCards(
+        game,
+        packDefinition.numberOfCardsPerPack,
+        randomSpectralCardsSeed
+      ).map(card => ({
         type: 'spectralCard',
         card: initializeSpectralCard(card),
         price: 0, // Spectral cards have no price - only obtained from packs
@@ -193,4 +197,9 @@ const getRandomPack = (game: GameState, packIndex: number): PackState => {
 
 export const getRandomPacks = (game: GameState, numberOfPacks = 2): PackState[] => {
   return Array.from({ length: numberOfPacks }, (_, index) => getRandomPack(game, index))
+}
+
+export const removeCardFromPack = (pack: PackState, cardId: string): void => {
+  pack.cards = pack.cards.filter(card => card.card.id !== cardId)
+  pack.remainingCardsToSelect -= 1
 }
