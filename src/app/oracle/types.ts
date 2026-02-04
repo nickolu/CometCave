@@ -1,13 +1,22 @@
-export type LineData = {
+export type ChangingLine = {
     type: 'solid' | 'broken'
     hasChanges: boolean
 }
 
-export type HexagramData = [
-    LineData | undefined,
-    LineData | undefined,
-    LineData | undefined,
-    LineData | undefined,
-    LineData | undefined,
-    LineData | undefined
+export type ChangingLines = [
+    ChangingLine | undefined,
+    ChangingLine | undefined,
+    ChangingLine | undefined,
+    ChangingLine | undefined,
+    ChangingLine | undefined,
+    ChangingLine | undefined
 ]
+
+export type Hexagram = [boolean, boolean, boolean, boolean, boolean, boolean]
+
+export type HexagramDefinition = {
+    number: number
+    name: string
+    description: string
+    hexagram: Hexagram
+}
