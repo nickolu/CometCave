@@ -25,7 +25,6 @@ Example scoring flow:
 
 1. Emit HAND_SCORING_START
 2. For each card:
-
    - Emit CARD_SCORED
 
 3. Emit HAND_SCORING_FINALIZE
