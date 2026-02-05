@@ -4,7 +4,11 @@
     "source.organizeImports": "never"
   },
   "eslint.useFlatConfig": true,
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
-
-
