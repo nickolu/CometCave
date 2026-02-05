@@ -150,10 +150,51 @@ export const GenerateHexagram = ({
       isDrawing = false
     }
 
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault()
+      isDrawing = true
+      const rect = canvas.getBoundingClientRect()
+      const touch = e.touches[0]
+      lastX = touch.clientX - rect.left
+      lastY = touch.clientY - rect.top
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault()
+      if (!isDrawing) return
+
+      const rect = canvas.getBoundingClientRect()
+      const touch = e.touches[0]
+      const currentX = touch.clientX - rect.left
+      const currentY = touch.clientY - rect.top
+
+      setGeneratedNumber(prev => prev + currentX + currentY)
+
+      ctx.beginPath()
+      ctx.moveTo(lastX, lastY)
+      ctx.lineTo(currentX, currentY)
+      ctx.strokeStyle = 'black'
+      ctx.lineWidth = 18
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.stroke()
+
+      lastX = currentX
+      lastY = currentY
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault()
+      isDrawing = false
+    }
+
     canvasRef.current = canvas
     canvas.addEventListener('mousedown', handleMouseDown)
     canvas.addEventListener('mousemove', handleMouseMove)
     canvas.addEventListener('mouseup', handleMouseUp)
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false })
 
     return () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -161,6 +202,9 @@ export const GenerateHexagram = ({
       canvas.removeEventListener('mousedown', handleMouseDown)
       canvas.removeEventListener('mousemove', handleMouseMove)
       canvas.removeEventListener('mouseup', handleMouseUp)
+      canvas.removeEventListener('touchstart', handleTouchStart)
+      canvas.removeEventListener('touchmove', handleTouchMove)
+      canvas.removeEventListener('touchend', handleTouchEnd)
     }
   }, [resetTimes])
 
@@ -199,8 +243,8 @@ export const GenerateHexagram = ({
           Your question: &quot;{divinationQuestion.question}&quot;
         </Typography>
         <Typography>
-          Hold the question in your mind and let your subconscious guide your mouse as you scribble
-          on the canvas
+          Hold the question in your mind and let your subconscious guide you as you draw on the
+          canvas
         </Typography>
       </div>
       <div className="flex flex-col space-y-4 items-center justify-center">
