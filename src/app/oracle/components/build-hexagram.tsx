@@ -61,13 +61,13 @@ export const EnterDivinationManually = ({
   }
 
   return (
-    <div className="flex flex-col space-y-8">
+    <div className="flex flex-col space-y-8 items-center justify-center">
       <div className="space-y-4 max-w-xl mx-auto">
         <Typography variant="h2">Build Hexagram Manually</Typography>
         <Typography variant="h3">&quot;{divinationQuestion}&quot;</Typography>
         <Typography>
-          Build the hexagram from the result of your own divination method (yarrow stalk, coins,
-          etc.).
+          Build the hexagram from the result of your own divination method <br />
+          (yarrow stalk, coins, etc.).
         </Typography>
       </div>
       <InteractiveHexagram changingLines={changingLines} setChangingLines={setChangingLines} />
