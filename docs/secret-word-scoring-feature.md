@@ -9,12 +9,10 @@ A comprehensive scoring system has been implemented for the Secret Word game tha
 ### Changes Made
 
 1. **Player Interface Extension** (`src/app/secret-word/page.tsx`)
-
    - Added `wordScore?: number` field to the `Player` interface
    - Modified `handleSetupComplete` to accept and store the word score
 
 2. **Setup Component Updates** (`src/app/secret-word/components/SecretWordSetup.tsx`)
-
    - Updated `SecretWordSetupProps` to pass word score in `onSetupComplete` callback
    - Modified `handleProceed` to include the word score when advancing to gameplay
 
