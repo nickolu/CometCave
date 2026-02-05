@@ -1,8 +1,14 @@
-import { TextField } from '@mui/material'
+import { CircularProgress, TextField } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 
 import { possibleHexagrams } from '@/app/oracle/possible-hexagrams'
-import { ChangingLines, DivinationResult, Hexagram as HexagramType } from '@/app/oracle/types'
+import {
+  ChangingLines,
+  DivinationQuestion,
+  DivinationResult,
+  Hexagram as HexagramType,
+} from '@/app/oracle/types'
+import { getInterpretation } from '@/app/oracle/utils/interpret-reading'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 
@@ -91,13 +97,14 @@ export const GenerateHexagram = ({
   setDivinationResult,
   onDivinationEntryComplete,
 }: {
-  divinationQuestion: string
+  divinationQuestion: DivinationQuestion
   setDivinationResult: (divinationResult: DivinationResult | null) => void
   onDivinationEntryComplete: (divinationResult: DivinationResult) => void
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [generatedNumber, setGeneratedNumber] = useState(0)
   const [resetTimes, setResetTimes] = useState(0)
+  const [isLoadingInterpretation, setIsLoadingInterpretation] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -157,8 +164,15 @@ export const GenerateHexagram = ({
     }
   }, [resetTimes])
 
-  const handleGenerateHexagram = () => {
+  const handleGenerateHexagram = async () => {
+    setIsLoadingInterpretation(true)
     const hexagram = generateHexagramFromNumber(generatedNumber)
+
+    // Get AI interpretation
+    const interpretation = await getInterpretation(divinationQuestion, hexagram)
+    hexagram.interpretation = interpretation
+
+    setIsLoadingInterpretation(false)
     onDivinationEntryComplete(hexagram)
   }
 
@@ -168,11 +182,22 @@ export const GenerateHexagram = ({
     setGeneratedNumber(0)
   }
 
+  if (isLoadingInterpretation) {
+    return (
+      <div className="w-full space-y-8 items-center justify-center flex flex-col">
+        <Typography variant="h2">Generating Your Reading...</Typography>
+        <CircularProgress size={40} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       <div className="space-y-4 max-w-xl mx-auto">
         <Typography variant="h2">Generate Hexagram with Divination</Typography>
-        <Typography variant="h4">Your question: &quot;{divinationQuestion}&quot;</Typography>
+        <Typography variant="h4">
+          Your question: &quot;{divinationQuestion.question}&quot;
+        </Typography>
         <Typography>
           Hold the question in your mind and let your subconscious guide your mouse as you scribble
           on the canvas

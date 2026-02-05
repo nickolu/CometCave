@@ -11,11 +11,14 @@ import { Step02SelectGenerationMethod } from './components/workflow/step02-selec
 import { Step03GenerateHexagram } from './components/workflow/step03-generate-hexagram'
 import { Step04ReviewReading } from './components/workflow/step04-review-changing-lines'
 import { Step05ReviewInterpretation } from './components/workflow/step05-review-interpretation'
-import { ChangingLines, DivinationResult } from './types'
+import { ChangingLines, DivinationQuestion, DivinationResult } from './types'
 
 const OraclePage = () => {
   const [currentStep, setCurrentStep] = useState(0)
-  const [divinationQuestion, setDivinationQuestion] = useState('')
+  const [divinationQuestion, setDivinationQuestion] = useState<DivinationQuestion>({
+    question: '',
+    context: '',
+  })
   const [divinationResult, setDivinationResult] = useState<DivinationResult | null>(null)
   const [divinationMethod, setDivinationMethod] = useState<'generate' | 'build' | null>(null)
 
@@ -29,7 +32,7 @@ const OraclePage = () => {
 
   const handleReset = () => {
     setCurrentStep(0)
-    setDivinationQuestion('')
+    setDivinationQuestion({ question: '', context: '' })
     setDivinationResult(null)
     setDivinationMethod(null)
   }

@@ -2,7 +2,7 @@ import { AnimatePresence } from 'framer-motion'
 
 import { EnterDivinationManually } from '@/app/oracle/components/build-hexagram'
 import { GenerateHexagram } from '@/app/oracle/components/generate-hexagram'
-import { DivinationResult } from '@/app/oracle/types'
+import { DivinationQuestion, DivinationResult } from '@/app/oracle/types'
 
 export const Step03GenerateHexagram = ({
   divinationMethod,
@@ -12,7 +12,7 @@ export const Step03GenerateHexagram = ({
 }: {
   divinationMethod: 'generate' | 'build' | null
   setDivinationResult: (divinationResult: DivinationResult | null) => void
-  divinationQuestion: string
+  divinationQuestion: DivinationQuestion
   onNext: () => void
 }) => {
   return (

@@ -1,7 +1,9 @@
+import { CircularProgress } from '@mui/material'
 import { useState } from 'react'
 
 import { possibleHexagrams } from '@/app/oracle/possible-hexagrams'
-import { ChangingLines, DivinationResult } from '@/app/oracle/types'
+import { ChangingLines, DivinationQuestion, DivinationResult } from '@/app/oracle/types'
+import { getInterpretation } from '@/app/oracle/utils/interpret-reading'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 
@@ -43,7 +45,7 @@ export const EnterDivinationManually = ({
   divinationQuestion,
   onDivinationEntryComplete,
 }: {
-  divinationQuestion: string
+  divinationQuestion: DivinationQuestion
   onDivinationEntryComplete: (divinationResult: DivinationResult) => void
 }) => {
   const [changingLines, setChangingLines] = useState<ChangingLines>([
@@ -54,17 +56,34 @@ export const EnterDivinationManually = ({
     undefined,
     undefined,
   ])
+  const [isLoadingInterpretation, setIsLoadingInterpretation] = useState(false)
 
-  const handleDivinationEntryComplete = () => {
+  const handleDivinationEntryComplete = async () => {
+    setIsLoadingInterpretation(true)
     const divinationResult = getDivinationResultFromChangingLines(changingLines)
+
+    // Get AI interpretation
+    const interpretation = await getInterpretation(divinationQuestion, divinationResult)
+    divinationResult.interpretation = interpretation
+
+    setIsLoadingInterpretation(false)
     onDivinationEntryComplete(divinationResult)
+  }
+
+  if (isLoadingInterpretation) {
+    return (
+      <div className="w-full space-y-8 items-center justify-center flex flex-col">
+        <Typography variant="h2">Generating Your Reading...</Typography>
+        <CircularProgress size={40} />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col space-y-8 items-center justify-center">
       <div className="space-y-4 max-w-xl mx-auto">
         <Typography variant="h2">Build Hexagram Manually</Typography>
-        <Typography variant="h3">&quot;{divinationQuestion}&quot;</Typography>
+        <Typography variant="h3">&quot;{divinationQuestion.question}&quot;</Typography>
         <Typography>
           Build the hexagram from the result of your own divination method <br />
           (yarrow stalk, coins, etc.).

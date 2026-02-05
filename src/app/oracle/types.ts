@@ -18,6 +18,12 @@ export type DivinationResult = {
   changingLines: ChangingLines
   hexagram1: HexagramDefinition
   hexagram2: HexagramDefinition
+  interpretation?: string
+}
+
+export type DivinationQuestion = {
+  question: string
+  context?: string
 }
 
 export type HexagramDefinition = {
