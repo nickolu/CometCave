@@ -46,7 +46,7 @@ export const Line = ({ isSolid }: { isSolid: boolean }) => {
 export const Hexagram = ({
   hexagram,
 }: {
-  hexagram: HexagramType // these should already be in reverse order (bottom is line 1 and top is line 6)
+  hexagram: HexagramType // array: [0]=Line 1 (bottom), [5]=Line 6 (top)
 }) => {
   const line1 = hexagram[0]
   const line2 = hexagram[1]
@@ -57,12 +57,12 @@ export const Hexagram = ({
 
   return (
     <div className="flex flex-col gap-4 items-center">
-      <Line isSolid={line1} />
-      <Line isSolid={line2} />
-      <Line isSolid={line3} />
-      <Line isSolid={line4} />
-      <Line isSolid={line5} />
       <Line isSolid={line6} />
+      <Line isSolid={line5} />
+      <Line isSolid={line4} />
+      <Line isSolid={line3} />
+      <Line isSolid={line2} />
+      <Line isSolid={line1} />
     </div>
   )
 }

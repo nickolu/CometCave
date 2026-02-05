@@ -77,7 +77,7 @@ const Present = ({ divinationResult }: { divinationResult: DivinationResult }) =
   return (
     <div className="space-y-4">
       <Typography variant="h2">Present: {getHexagramTitle(divinationResult.hexagram1)}</Typography>
-      <Typography variant="body1" className="whitespace-pre-line">
+      <Typography variant="body1" className="whitespace-pre-line text-left">
         {hexagramDescriptions[divinationResult.hexagram1.number]}
       </Typography>
     </div>
@@ -92,7 +92,7 @@ const ChangingLines = ({ divinationResult }: { divinationResult: DivinationResul
   // Get indices of lines that are changing (0-indexed)
   const changingLineIndices = changingLines
     .map((line, index) => (line?.hasChanges ? index : -1))
-    .filter((index) => index !== -1)
+    .filter(index => index !== -1)
 
   if (changingLineIndices.length === 0) {
     return (
@@ -110,17 +110,27 @@ const ChangingLines = ({ divinationResult }: { divinationResult: DivinationResul
         These lines are in motion, representing the dynamic aspects of your situation.
       </Typography>
       <div className="space-y-6">
-        {changingLineIndices.map((lineIndex) => (
-          <div key={lineIndex} className="space-y-2">
-            <Typography variant="h5" className="text-space-purple">
-              Line {lineIndex + 1} (
-              {changingLines[lineIndex]?.type === 'solid' ? 'Yang → Yin' : 'Yin → Yang'})
-            </Typography>
-            <Typography variant="body1" className="whitespace-pre-line">
-              {lineDescriptions[lineIndex]}
-            </Typography>
-          </div>
-        ))}
+        {changingLineIndices.map(lineIndex => {
+          const line = changingLines[lineIndex]
+          const isYangToYin = line?.type === 'solid'
+          const direction = isYangToYin ? 'Yang → Yin' : 'Yin → Yang'
+
+          // After fixing the visual rendering, arrays are now consistent:
+          // changingLines[0] = Line 1 (bottom), changingLines[5] = Line 6 (top)
+          // lineDescriptions[0] = Line 1 desc, lineDescriptions[5] = Line 6 desc
+          const lineNumber = lineIndex + 1
+
+          return (
+            <div key={lineIndex} className="space-y-2">
+              <Typography variant="h5" className="text-space-purple">
+                Line {lineNumber} ({direction})
+              </Typography>
+              <Typography variant="body1" className="whitespace-pre-line text-left">
+                {lineDescriptions[lineIndex]}
+              </Typography>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -130,7 +140,7 @@ const Future = ({ divinationResult }: { divinationResult: DivinationResult }) =>
   return (
     <div className="space-y-4">
       <Typography variant="h2">Future: {getHexagramTitle(divinationResult.hexagram2)}</Typography>
-      <Typography variant="body1" className="whitespace-pre-line">
+      <Typography variant="body1" className="whitespace-pre-line text-left">
         {hexagramDescriptions[divinationResult.hexagram2.number]}
       </Typography>
     </div>
