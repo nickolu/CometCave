@@ -65,7 +65,7 @@ const OraclePage = () => {
     <div className="flex flex-col gap-4 text-center pt-10">
       <div className="flex flex-col gap-4 text-center items-center justify-center mt-10">
         <AnimatePresence mode="wait">{steps[currentStep]}</AnimatePresence>
-        {currentStep > 2 && (
+        {currentStep > 1 && (
           <div className="flex justify-center mt-10">
             <Button variant="outline" onClick={handleReset}>
               Start Over
