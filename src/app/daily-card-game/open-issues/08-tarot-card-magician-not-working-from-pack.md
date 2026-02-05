@@ -18,7 +18,6 @@ The previously selected cards should have the 'lucky' enchantment applied in the
 The cards selected in the pack appear to have no enchantment applied
 A duplicate card appeared in the hand (this may be unrelated/coincidence)
 
-
 ### Issue status
 
 Fixed - Moved the cleanup code (clearing selectedCardIds and closing pack) to AFTER effect dispatching in both SHOP_USE_TAROT_CARD_FROM_PACK (reduce-game.ts:486-490) and SHOP_USE_CELESTIAL_CARD_FROM_PACK (reduce-game.ts:533-537). Previously, selectedCardIds was cleared BEFORE The Magician's effect ran, so it had no target cards to enchant. Now effects run first, then cleanup happens.

@@ -92,10 +92,7 @@ export function GamePlayView() {
   const { game } = useGameState()
   const { gamePlayState } = game
   const { score, selectedHand, selectedCardIds } = gamePlayState
-  const selectedCard =
-    selectedCardIds.length === 1
-      ? game.cards[selectedCardIds[0]]
-      : undefined
+  const selectedCard = selectedCardIds.length === 1 ? game.cards[selectedCardIds[0]] : undefined
   const currentBlind = getInProgressBlind(game)
 
   const { isScoring, remainingDiscards } = gamePlayState

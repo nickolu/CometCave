@@ -9,9 +9,7 @@ import { StarIcon } from '@/components/star-icon'
 
 import { ROUTE_CONSTANTS } from './route-constants'
 
-
 import type React from 'react'
-
 
 export default function Home() {
   return (

@@ -8,7 +8,6 @@ import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { Item } from '@/app/fantasy-tycoon/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story'
 
-
 type ResolveDecisionRequest = {
   character: FantasyCharacter
   decisionPoint: FantasyDecisionPoint

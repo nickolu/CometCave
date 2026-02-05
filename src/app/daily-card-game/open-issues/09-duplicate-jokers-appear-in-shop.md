@@ -16,6 +16,7 @@ on occassion the same joker appears multiple times in the shop
 ### Issue status
 
 Fixed - Redesigned getRandomBuyableCards (utils.ts:220-256) with simpler, more robust logic:
+
 1. Filter out cards already in the shop (lines 220-236) - prevents duplicates when Overstock voucher adds cards
 2. Use shuffle-and-take approach instead of deduplication (lines 246-250) - simpler and guarantees uniqueness
-This fixes both the initial duplicate issue and the Overstock voucher duplicate issue.
+   This fixes both the initial duplicate issue and the Overstock voucher duplicate issue.

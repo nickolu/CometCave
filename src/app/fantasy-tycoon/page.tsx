@@ -5,7 +5,6 @@ import { HudBar } from './components/HudBar'
 import { PageTemplate } from './components/ui/PageTemplate'
 import { useGameStore } from './hooks/useGameStore'
 
-
 type initialView = 'game' | 'characters'
 
 export default function FantasyTycoonPage() {

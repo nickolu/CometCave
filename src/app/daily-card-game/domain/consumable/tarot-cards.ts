@@ -31,7 +31,8 @@ const theFool: TarotCardDefinition = {
         // Find the last tarot/celestial that isn't The Fool (to skip The Fool itself if it was just used)
         const lastTarotOrCelestialCard = ctx.game.consumablesUsed.findLast(
           consumable =>
-            (consumable.consumableType === 'tarotCard' || consumable.consumableType === 'celestialCard') &&
+            (consumable.consumableType === 'tarotCard' ||
+              consumable.consumableType === 'celestialCard') &&
             !(consumable.consumableType === 'tarotCard' && consumable.tarotType === 'theFool')
         )
         if (lastTarotOrCelestialCard) {

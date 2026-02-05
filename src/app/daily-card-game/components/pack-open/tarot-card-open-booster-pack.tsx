@@ -45,7 +45,7 @@ export function TarotCardOpenBoosterPack() {
                       eventEmitter.emit({
                         type: 'SHOP_USE_TAROT_CARD_FROM_PACK',
                         id: buyableCard.card.id,
-                      })  
+                      })
                     }}
                   >
                     Use
