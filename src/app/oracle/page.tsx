@@ -3,6 +3,7 @@
 import { AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 
 import { Step01EnterQuestion } from './components/workflow/step01-enter-question'
@@ -26,11 +27,12 @@ const OraclePage = () => {
   //   setCurrentStep(currentStep - 1)
   // }
 
-  // const handleReset = () => {
-  //   setCurrentStep(0)
-  //   setDivinationQuestion('')
-  //   setAcceptedDivinationDoodle(false)
-  // }
+  const handleReset = () => {
+    setCurrentStep(0)
+    setDivinationQuestion('')
+    setDivinationResult(null)
+    setDivinationMethod(null)
+  }
 
   const steps = [
     <Step01EnterQuestion
@@ -60,6 +62,13 @@ const OraclePage = () => {
     <div className="flex flex-col gap-4 text-center pt-10">
       <div className="flex flex-col gap-4 text-center items-center justify-center mt-10">
         <AnimatePresence mode="wait">{steps[currentStep]}</AnimatePresence>
+        {currentStep > 2 && (
+          <div className="flex justify-center mt-10">
+            <Button variant="outline" onClick={handleReset}>
+              Start Over
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
