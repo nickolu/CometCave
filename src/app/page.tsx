@@ -2,6 +2,7 @@ import { HelpCircle, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import { BallotIcon } from '@/components/ballot-icon'
+import { HexagramIcon } from '@/components/hexagram-icon'
 import { MoonIcon } from '@/components/moon-icon'
 import { PlanetIcon } from '@/components/planet-icon'
 import { SecretWordIcon } from '@/components/secret-word-icon'
@@ -23,6 +24,14 @@ export default function Home() {
         id="games"
         className="max-w-4xl mx-auto w-full mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
+        <GameCard
+          title="I-Ching Oracle"
+          icon={<HexagramIcon />}
+          href={ROUTE_CONSTANTS.ORACLE}
+          description="Seek wisdom and guidance from the ancient I-Ching"
+          featured
+        />
+
         <GameCard
           title="Secret Word"
           icon={<SecretWordIcon />}
@@ -82,22 +91,37 @@ function GameCard({
   icon,
   href,
   description,
+  featured = false,
 }: {
   title: string
   icon: React.ReactNode
   href: string
   description: string
+  featured?: boolean
 }) {
   return (
     <Link
       href={href}
-      className="bg-space-dark rounded-2xl p-6 flex flex-col items-center hover:bg-space-dark/80 transition-colors border border-space-dark hover:border-space-purple/30 group"
+      className={`bg-space-dark rounded-2xl p-6 flex flex-col items-center hover:bg-space-dark/80 transition-colors border group ${
+        featured
+          ? 'border-space-purple/50 hover:border-space-purple shadow-lg shadow-space-purple/20'
+          : 'border-space-dark hover:border-space-purple/30'
+      }`}
     >
       <div className="w-24 h-24 mb-4 transform group-hover:scale-105 transition-transform">
         {icon}
       </div>
-      <h3 className="text-xl font-bold text-cream-white text-center">{title}</h3>
+      <h3
+        className={`text-xl font-bold text-center ${featured ? 'text-space-purple' : 'text-cream-white'}`}
+      >
+        {title}
+      </h3>
       <p className="text-slate-400 text-sm text-center mt-2">{description}</p>
+      {featured && (
+        <div className="mt-3 text-xs text-space-purple/80 font-semibold uppercase tracking-wider">
+          New ✦
+        </div>
+      )}
     </Link>
   )
 }

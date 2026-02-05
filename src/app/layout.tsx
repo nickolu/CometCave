@@ -47,6 +47,12 @@ export default function RootLayout({
                     HOME
                   </Link>
                   <Link
+                    href={ROUTE_CONSTANTS.ORACLE}
+                    className="text-space-purple hover:text-space-purple/80 transition-colors font-semibold"
+                  >
+                    I-CHING ORACLE
+                  </Link>
+                  <Link
                     href={ROUTE_CONSTANTS.RING_TOSS}
                     className="text-cream-white hover:text-cream-white/80 transition-colors"
                   >
