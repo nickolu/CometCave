@@ -10,11 +10,8 @@ import { useGameStateBuilder, useGameStore } from './useGameStore'
 interface CombatActionResponse {
   combatState: CombatState
   rewards?: {
-    xp: number
     gold: number
     loot: Item[]
-    leveledUp?: boolean
-    newLevel?: number
   }
   updatedCharacter: FantasyCharacter
   consumedItemId?: string
@@ -91,17 +88,13 @@ export function useCombatActionMutation() {
             addItem(inferItemTypeAndEffects(lootItem))
           }
 
-          const levelMsg = data.rewards.leveledUp
-            ? ` Level up! You are now level ${data.rewards.newLevel}!`
-            : ''
-
           addStoryEvent({
             id: `combat-victory-${Date.now()}`,
             type: 'combat_victory',
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.xp} XP, +${data.rewards.gold} Gold.${levelMsg}`,
+            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.`,
             resourceDelta: {
               gold: data.rewards.gold,
             },

@@ -258,7 +258,6 @@ export function processPlayerAction(
 }
 
 export interface CombatRewards {
-  xp: number
   gold: number
   loot: Item[]
 }
@@ -268,7 +267,6 @@ export function getCombatRewards(
   character: FantasyCharacter
 ): CombatRewards {
   const { enemy } = combatState
-  const xp = enemy.xpReward
   const gold = enemy.goldReward
 
   // Select loot based on luck
@@ -282,5 +280,5 @@ export function getCombatRewards(
     }
   }
 
-  return { xp, gold, loot }
+  return { gold, loot }
 }

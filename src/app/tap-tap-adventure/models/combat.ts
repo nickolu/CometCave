@@ -11,7 +11,6 @@ export const CombatEnemySchema = z.object({
   attack: z.number(),
   defense: z.number(),
   level: z.number(),
-  xpReward: z.number(),
   goldReward: z.number(),
   lootTable: z.array(ItemSchema).optional(),
   specialAbility: z

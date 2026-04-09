@@ -16,8 +16,6 @@ const baseChar: FantasyCharacter = {
   race: 'Human',
   class: 'Warrior',
   level: 3,
-  xp: 0,
-  xpToNextLevel: 225,
   abilities: [],
   locationId: 'loc1',
   gold: 50,
@@ -52,7 +50,6 @@ function makeActiveCombat(overrides: Partial<CombatState> = {}): CombatState {
       attack: 8,
       defense: 3,
       level: 2,
-      xpReward: 40,
       goldReward: 15,
       lootTable: [
         { id: 'loot-1', name: 'Gold Coin', description: 'Shiny', quantity: 1 },
@@ -203,12 +200,11 @@ describe('Combat Engine', () => {
   })
 
   describe('getCombatRewards', () => {
-    it('returns xp and gold from enemy', () => {
+    it('returns gold from enemy', () => {
       const combat = makeActiveCombat()
       vi.spyOn(Math, 'random').mockReturnValue(0.1) // high loot chance
       const rewards = getCombatRewards(combat, baseChar)
 
-      expect(rewards.xp).toBe(40)
       expect(rewards.gold).toBe(15)
       expect(rewards.loot.length).toBeGreaterThanOrEqual(0)
       vi.restoreAllMocks()

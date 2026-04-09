@@ -15,8 +15,6 @@ describe('Decision Resolution', () => {
     race: 'Elf',
     class: 'Mage',
     level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
     abilities: [],
     locationId: 'loc1',
     gold: 10,

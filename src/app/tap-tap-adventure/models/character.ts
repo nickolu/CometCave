@@ -20,8 +20,6 @@ export const FantasyCharacterSchema = z.object({
   race: z.string(),
   class: z.string(),
   level: z.number(),
-  xp: z.number().default(0),
-  xpToNextLevel: z.number().default(100),
   abilities: z.array(FantasyAbilitySchema),
   locationId: z.string(),
   gold: z.number(),
