@@ -12,9 +12,14 @@ interface InventoryPanelProps {
 
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
 
   const handleUse = useCallback((item: Item) => {
-    console.log('Item use not implemented in this component.', item)
+    const result = useGameStore.getState().useItem(item.id)
+    if (result) {
+      setFeedbackMessage(result.message)
+      setTimeout(() => setFeedbackMessage(null), 3000)
+    }
   }, [])
 
   const handleDiscard = useCallback((item: Item) => {
@@ -46,6 +51,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           {activeTab === 'active' ? 'Show Deleted' : 'Show Active'}
         </Button>
       </div>
+      {feedbackMessage && (
+        <div className="mb-2 p-2 bg-green-900/50 border border-green-700 rounded-md text-green-300 text-sm animate-pulse">
+          {feedbackMessage}
+        </div>
+      )}
       <div className="overflow-auto flex-1">
         {itemsToDisplay.length === 0 ? (
           <div className="text-gray-400">
@@ -58,11 +68,29 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             renderItem={(item: Item) => (
               <div className="bg-[#1e1f30] border border-[#3a3c56] p-4 rounded-lg space-y-2 mb-3 w-full">
                 <div className="flex-1">
-                  <div className="font-bold text-white">{item.name}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="font-bold text-white">{item.name}</div>
+                    {item.type === 'consumable' && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-green-900/50 text-green-400 rounded">
+                        Consumable
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-gray-400">{item.description}</div>
+                  {item.effects && (
+                    <div className="text-xs text-emerald-400 mt-1">
+                      Effects: {Object.entries(item.effects)
+                        .filter(([, v]) => v !== undefined && v !== 0)
+                        .map(([k, v]) => `${(v as number) > 0 ? '+' : ''}${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`)
+                        .join(', ')}
+                    </div>
+                  )}
+                  {item.quantity > 1 && (
+                    <div className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity}</div>
+                  )}
                 </div>
                 <div className="flex space-x-2 mt-3">
-                  {activeTab === 'active' && (
+                  {activeTab === 'active' && item.type === 'consumable' && (
                     <Button
                       className="flex-1 bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white text-xs py-2 px-3 rounded-md transition-colors"
                       onClick={() => handleUse(item)}

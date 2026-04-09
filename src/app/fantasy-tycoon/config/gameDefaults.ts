@@ -12,6 +12,8 @@ export const DEFAULT_ABILITY_NAME = 'Basic Attack'
 export const DEFAULT_ABILITY_DESCRIPTION = 'A simple attack with your weapon'
 export const DEFAULT_ABILITY_POWER = 1
 export const DEFAULT_ABILITY_COOLDOWN = 0
+export const DEFAULT_CHARACTER_XP = 0
+export const DEFAULT_CHARACTER_XP_TO_NEXT_LEVEL = 100
 export const DEFAULT_STAT_MIN = 5
 export const DEFAULT_STAT_MAX = 10
 export const DEFAULT_ABILITY = {
@@ -28,6 +30,8 @@ export const DEFAULT_CHARACTER = {
   race: DEFAULT_CHARACTER_RACE,
   class: DEFAULT_CHARACTER_CLASS,
   level: DEFAULT_CHARACTER_LEVEL,
+  xp: DEFAULT_CHARACTER_XP,
+  xpToNextLevel: DEFAULT_CHARACTER_XP_TO_NEXT_LEVEL,
   abilities: [DEFAULT_ABILITY],
   locationId: DEFAULT_CHARACTER_LOCATION_ID,
   gold: DEFAULT_CHARACTER_GOLD,

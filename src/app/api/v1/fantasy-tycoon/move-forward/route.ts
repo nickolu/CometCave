@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       ) // error object, not MoveForwardResponse
     }
-    const { character } = parseResult.data
-    const result = await moveForwardService(character)
+    const { character, storyEvents } = parseResult.data
+    const result = await moveForwardService(character, storyEvents)
     return NextResponse.json(result)
   } catch (err) {
     console.error('Error in moveForwardController', err)

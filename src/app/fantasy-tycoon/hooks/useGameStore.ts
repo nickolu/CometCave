@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { defaultGameState } from '@/app/fantasy-tycoon/lib/defaultGameState'
+import { useItem as applyItemUse } from '@/app/fantasy-tycoon/lib/itemEffects'
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import {
   FantasyDecisionPoint,
@@ -19,6 +20,8 @@ const defaultCharacter: FantasyCharacter = {
   race: '',
   class: '',
   level: 1,
+  xp: 0,
+  xpToNextLevel: 100,
   abilities: [],
   locationId: '',
   gold: 0,
@@ -42,6 +45,7 @@ export interface GameStore {
   setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void
   setGameState: (gameState: GameState) => void
   setGenericMessage: (message: string) => void
+  useItem: (itemId: string) => { message: string; consumed: boolean; leveledUp?: boolean } | null
   discardItem: (itemId: string) => void
   restoreItem: (itemId: string) => void
 }
@@ -145,6 +149,33 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      useItem: (itemId: string) => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return null
+
+        const item = selectedCharacter.inventory.find(i => i.id === itemId)
+        if (!item) return null
+
+        const result = applyItemUse(selectedCharacter, item)
+
+        if (result.consumed) {
+          set(
+            produce((state: GameStore) => {
+              const charIndex = state.gameState.characters.findIndex(
+                char => char.id === selectedCharacter.id
+              )
+              if (charIndex === -1) return
+              state.gameState.characters[charIndex] = result.character
+            })
+          )
+        }
+
+        return {
+          message: result.message,
+          consumed: result.consumed,
+          leveledUp: result.levelUpResult?.leveledUp,
+        }
+      },
       discardItem: (itemId: string) => {
         set(
           produce((state: GameStore) => {
@@ -210,6 +241,18 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key
+      version: 1,
+      migrate: (persistedState: unknown) => {
+        const state = persistedState as GameStore
+        if (state?.gameState?.characters) {
+          state.gameState.characters = state.gameState.characters.map(char => ({
+            ...char,
+            xp: char.xp ?? 0,
+            xpToNextLevel: char.xpToNextLevel ?? 100,
+          }))
+        }
+        return state
+      },
     }
   )
 )
