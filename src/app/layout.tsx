@@ -59,10 +59,10 @@ export default function RootLayout({
                     RING TOSS
                   </Link>
                   <Link
-                    href={ROUTE_CONSTANTS.FANTASY_TYCOON}
+                    href={ROUTE_CONSTANTS.TAP_TAP_ADVENTURE}
                     className="text-cream-white hover:text-cream-white/80 transition-colors"
                   >
-                    FANTASY TYCOON
+                    TAP TAP ADVENTURE
                   </Link>
                   <Link
                     href={ROUTE_CONSTANTS.CHAT_ROOM}

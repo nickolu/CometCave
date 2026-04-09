@@ -54,10 +54,10 @@ export default function Home() {
         />
 
         <GameCard
-          title="Fantasy Tycoon"
+          title="Tap Tap Adventure"
           icon={<StarIcon />}
-          href={ROUTE_CONSTANTS.FANTASY_TYCOON}
-          description="Play as a fantasy character and explore the world!"
+          href={ROUTE_CONSTANTS.TAP_TAP_ADVENTURE}
+          description="Tap to travel, fight monsters, and collect loot in this AI-powered adventure!"
         />
 
         <GameCard

@@ -12,8 +12,8 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: [
-      'src/app/api/v1/fantasy-tycoon/**/*.test.ts',
-      'src/app/fantasy-tycoon/**/*.test.ts',
+      'src/app/api/v1/tap-tap-adventure/**/*.test.ts',
+      'src/app/tap-tap-adventure/**/*.test.ts',
       'src/app/daily-card-game/**/*.test.ts',
       'src/app/daily-card-game/**/*.test.tsx',
     ],
