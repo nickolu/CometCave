@@ -1,6 +1,6 @@
 export const ROUTE_CONSTANTS = {
   CHAT_ROOM: '/chat-room-of-infinity',
-  FANTASY_TYCOON: '/fantasy-tycoon',
+  TAP_TAP_ADVENTURE: '/tap-tap-adventure',
   HOME: '/',
   ORACLE: '/oracle',
   RING_TOSS: '/ring-toss',
