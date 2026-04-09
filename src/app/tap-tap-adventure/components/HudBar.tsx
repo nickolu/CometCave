@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from '@/app/tap-tap-adventure/components/ui/tooltip'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { levelProgress, stepsToNextLevel, stepsRequiredForLevel } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
 type IconType =
@@ -76,6 +77,12 @@ export function HudBar() {
     (char: FantasyCharacter) => char.id === gameState?.selectedCharacterId
   )
 
+  const distance = character?.distance ?? 0
+  const level = character?.level ?? 1
+  const progress = character ? levelProgress(distance) : 0
+  const stepsNeeded = stepsToNextLevel(level)
+  const stepsIntoLevel = distance - stepsRequiredForLevel(level)
+
   const stats = useMemo(
     () => ({
       sunIcon: character?.gold ?? 0,
@@ -98,8 +105,20 @@ export function HudBar() {
               <TooltipTrigger className="flex items-center gap-1 text-sm font-semibold">
                 <span className="inline-block align-middle">{ICONS[key]}</span>
                 <span>{stats[key]}</span>
+                {key === 'fireIcon' && (
+                  <span className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
+                    <span
+                      className="block h-full bg-orange-400 rounded-full transition-all duration-300"
+                      style={{ width: `${progress * 100}%` }}
+                    />
+                  </span>
+                )}
               </TooltipTrigger>
-              <TooltipContent>{STAT_LABELS[key]}</TooltipContent>
+              <TooltipContent>
+                {key === 'fireIcon'
+                  ? `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
+                  : STAT_LABELS[key]}
+              </TooltipContent>
             </Tooltip>
           ))}
         </div>

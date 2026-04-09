@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
+import { applyLevelFromDistance } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import {
@@ -95,10 +96,10 @@ export const useGameStore = create<GameStore>()(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
             if (!selectedCharacter) return
-            const updatedCharacter = {
+            const updatedCharacter = applyLevelFromDistance({
               ...selectedCharacter,
               distance: (selectedCharacter.distance || 0) + 1,
-            }
+            })
             state.gameState.characters = state.gameState.characters.map(char =>
               char.id === selectedCharacter.id ? updatedCharacter : char
             )
@@ -310,11 +311,12 @@ export function useGameStateBuilder() {
     const charIndex = gameStateClone.characters.findIndex(c => c.id === selectedCharacterId)
     if (charIndex === -1) return
 
-    // Create a new character object to ensure reactivity
-    gameStateClone.characters[charIndex] = {
+    // Create a new character object and recalculate level from distance
+    const merged = {
       ...gameStateClone.characters[charIndex],
       ...characterUpdate,
     }
+    gameStateClone.characters[charIndex] = applyLevelFromDistance(merged)
   }
 
   return {
