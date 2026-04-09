@@ -6,6 +6,7 @@ import { persist } from 'zustand/middleware'
 import { defaultGameState } from '@/app/fantasy-tycoon/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/fantasy-tycoon/lib/itemEffects'
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
+import { CombatState } from '@/app/fantasy-tycoon/models/combat'
 import {
   FantasyDecisionPoint,
   FantasyStoryEvent,
@@ -42,6 +43,7 @@ export interface GameStore {
   getSelectedCharacter: () => FantasyCharacter | null
   incrementDistance: () => void
   selectCharacter: (id: string) => void
+  setCombatState: (combatState: CombatState | null) => void
   setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void
   setGameState: (gameState: GameState) => void
   setGenericMessage: (message: string) => void
@@ -133,6 +135,18 @@ export const useGameStore = create<GameStore>()(
               },
             }
             return updatedState
+          })
+        )
+      },
+      setCombatState: (combatState: CombatState | null) => {
+        set(
+          produce((state: GameStore) => {
+            return {
+              gameState: {
+                ...state.gameState,
+                combatState,
+              },
+            }
           })
         )
       },
@@ -241,7 +255,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key
-      version: 1,
+      version: 2,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState?.characters) {
@@ -250,6 +264,9 @@ export const useGameStore = create<GameStore>()(
             xp: char.xp ?? 0,
             xpToNextLevel: char.xpToNextLevel ?? 100,
           }))
+        }
+        if (state?.gameState && !('combatState' in state.gameState)) {
+          (state.gameState as GameState).combatState = null
         }
         return state
       },
@@ -284,6 +301,10 @@ export function useGameStateBuilder() {
     gameStateClone.storyEvents.push(event)
   }
 
+  const setCombatState = (combatState: CombatState | null) => {
+    gameStateClone.combatState = combatState
+  }
+
   const setDecisionPoint = (decisionPoint: FantasyDecisionPoint | null) => {
     gameStateClone.decisionPoint = decisionPoint
   }
@@ -311,6 +332,7 @@ export function useGameStateBuilder() {
     commit,
     addItem,
     addStoryEvent,
+    setCombatState,
     setDecisionPoint,
     setGenericMessage,
     updateSelectedCharacter,
