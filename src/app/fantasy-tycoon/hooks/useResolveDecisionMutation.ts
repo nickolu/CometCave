@@ -1,6 +1,7 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { inferItemTypeAndEffects } from '@/app/fantasy-tycoon/lib/itemPostProcessor'
 import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/fantasy-tycoon/models/types'
 
 import { useGameStateBuilder, useGameStore } from './useGameStore'
@@ -63,12 +64,12 @@ export function useResolveDecisionMutation() {
       const rewardItems = data.rewardItems ?? []
 
       for (const reward of rewardItems) {
-        const item = {
+        const item = inferItemTypeAndEffects({
           id: reward.id,
           name: reward.name,
           description: reward.description,
           quantity: 1,
-        }
+        })
         addItem(item)
       }
 

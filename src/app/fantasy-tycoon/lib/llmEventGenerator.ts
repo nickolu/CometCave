@@ -4,10 +4,12 @@ import { z } from 'zod'
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { Item } from '@/app/fantasy-tycoon/models/item'
 
+import { inferItemTypeAndEffects } from './itemPostProcessor'
+
 const processFallbackRewardItems = (
   items?: { id: string; name?: string; description?: string; quantity: number; type?: string; effects?: Record<string, number> }[]
 ): Item[] | undefined =>
-  items?.map(item => ({
+  items?.map(item => inferItemTypeAndEffects({
     id: item.id,
     quantity: item.quantity,
     name: item.name || 'Unknown Item',

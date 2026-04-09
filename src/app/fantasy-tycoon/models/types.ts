@@ -1,6 +1,7 @@
 // Central re-export for all Fantasy Tycoon models and schemas (Zod-first, single source of truth)
 
 import { FantasyCharacter } from './character'
+import { CombatState } from './combat'
 import { FantasyLocation } from './location'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
 
@@ -29,6 +30,24 @@ export type {
   FantasyDecisionPointSchema,
 } from './story'
 export type { Item, ItemSchema, ItemEffects, ItemEffectsSchema } from './item'
+export type {
+  CombatState,
+  CombatEnemy,
+  CombatPlayerState,
+  CombatAction,
+  CombatActionRequest,
+  CombatLogEntry,
+  CombatBuff,
+  CombatStatus,
+  CombatStateSchema,
+  CombatEnemySchema,
+  CombatPlayerStateSchema,
+  CombatActionSchema,
+  CombatActionRequestSchema,
+  CombatLogEntrySchema,
+  CombatBuffSchema,
+  CombatStatusSchema,
+} from './combat'
 
 type GameState = {
   player: {
@@ -40,6 +59,7 @@ type GameState = {
   locations: FantasyLocation[]
   storyEvents: FantasyStoryEvent[]
   decisionPoint: FantasyDecisionPoint | null
+  combatState: CombatState | null
   genericMessage: string | null
 }
 export type { GameState }

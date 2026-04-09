@@ -12,5 +12,6 @@ export const defaultGameState: GameState = {
   locations: [],
   storyEvents: [],
   decisionPoint: null,
+  combatState: null,
   genericMessage: null,
 }

@@ -14,6 +14,7 @@ export const MoveForwardResponseSchema = z.object({
   character: z.any(),
   event: z.any().optional().nullable(),
   decisionPoint: z.any().optional().nullable(),
+  combatEncounter: z.any().optional().nullable(),
   genericMessage: z.string().optional().nullable(),
 })
 

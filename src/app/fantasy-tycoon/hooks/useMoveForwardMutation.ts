@@ -1,6 +1,7 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { inferItemTypeAndEffects } from '@/app/fantasy-tycoon/lib/itemPostProcessor'
 import {
   FantasyCharacter,
   FantasyDecisionPoint,
@@ -14,13 +15,14 @@ export interface MoveForwardResponse {
   character: FantasyCharacter
   event?: FantasyStoryEvent | null
   decisionPoint?: FantasyDecisionPoint | null
+  combatEncounter?: { enemy: unknown; scenario: string } | null
   genericMessage?: string | null
 }
 
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient()
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, commit, setDecisionPoint, setGenericMessage } = useGameStateBuilder()
+  const { addItem, commit, setDecisionPoint, setGenericMessage, setCombatState } = useGameStateBuilder()
 
   return useMutation({
     mutationFn: async () => {
@@ -45,15 +47,32 @@ export function useMoveForwardMutation() {
 
       const rewardItems: Item[] = data.event?.resourceDelta?.rewardItems ?? []
       for (const reward of rewardItems) {
-        const item: Item = {
+        const item: Item = inferItemTypeAndEffects({
           id: reward.id,
           name: reward.name ?? '',
           description: reward.description ?? '',
           quantity: reward.quantity,
-        }
+        })
         addItem(item)
       }
-      if (data.decisionPoint) {
+
+      if (data.combatEncounter) {
+        // Start combat - fetch combat state from server
+        const combatRes = await fetch('/api/v1/fantasy-tycoon/combat/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character: currentCharacter,
+            storyEvents: gameState.storyEvents,
+          }),
+        })
+        if (combatRes.ok) {
+          const combatData = await combatRes.json()
+          setGenericMessage(null)
+          setDecisionPoint(null)
+          setCombatState(combatData.combatState)
+        }
+      } else if (data.decisionPoint) {
         setGenericMessage(null)
         setDecisionPoint(data.decisionPoint)
       }
