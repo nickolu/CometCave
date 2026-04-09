@@ -27,10 +27,14 @@ export function useMoveForwardMutation() {
       const currentCharacter = getSelectedCharacter()
       if (!currentCharacter) throw new Error('No character found')
 
+      const { gameState } = useGameStore.getState()
       const res = await fetch('/api/v1/fantasy-tycoon/move-forward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ character: currentCharacter }),
+        body: JSON.stringify({
+          character: currentCharacter,
+          storyEvents: gameState.storyEvents,
+        }),
       })
 
       if (!res.ok) {

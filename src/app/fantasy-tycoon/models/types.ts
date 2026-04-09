@@ -28,7 +28,7 @@ export type {
   FantasyDecisionPoint,
   FantasyDecisionPointSchema,
 } from './story'
-export type { Item, ItemSchema } from './item'
+export type { Item, ItemSchema, ItemEffects, ItemEffectsSchema } from './item'
 
 type GameState = {
   player: {

@@ -4,6 +4,7 @@ import {
   applyEffects,
   calculateEffectiveProbability,
 } from '@/app/fantasy-tycoon/lib/eventResolution'
+import { applyXpGain, getXpForDecision } from '@/app/fantasy-tycoon/lib/leveling'
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { Item } from '@/app/fantasy-tycoon/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint } from '@/app/fantasy-tycoon/models/story'
@@ -27,6 +28,9 @@ type ResolveDecisionResponse = {
     distance?: number
     statusChange?: string
   }
+  xpGained?: number
+  leveledUp?: boolean
+  newLevel?: number
 }
 
 export async function POST(req: NextRequest) {
@@ -85,6 +89,12 @@ export async function POST(req: NextRequest) {
     if (typedOption.rewardItems && Array.isArray(typedOption.rewardItems)) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems]
     }
+
+    // Apply XP gain
+    const xpGained = getXpForDecision(outcome)
+    const levelUpResult = applyXpGain(updatedCharacter, xpGained)
+    updatedCharacter = levelUpResult.character
+
     const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
       updatedCharacter,
       resultDescription: resultDescription,
@@ -94,6 +104,9 @@ export async function POST(req: NextRequest) {
       outcomeDescription: resultDescription,
       resourceDelta: appliedEffects,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
+      xpGained,
+      leveledUp: levelUpResult.leveledUp,
+      newLevel: levelUpResult.leveledUp ? levelUpResult.character.level : undefined,
     }
 
     return NextResponse.json(response)

@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { ItemSchema } from './item'
+
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
 export const FantasyAbilitySchema = z.object({
@@ -18,6 +20,8 @@ export const FantasyCharacterSchema = z.object({
   race: z.string(),
   class: z.string(),
   level: z.number(),
+  xp: z.number().default(0),
+  xpToNextLevel: z.number().default(100),
   abilities: z.array(FantasyAbilitySchema),
   locationId: z.string(),
   gold: z.number(),
@@ -27,14 +31,7 @@ export const FantasyCharacterSchema = z.object({
   strength: z.number(),
   intelligence: z.number(),
   luck: z.number(),
-  inventory: z.array(
-    z.object({
-      id: z.string(),
-      quantity: z.number().int().min(1),
-      name: z.string(),
-      description: z.string(),
-    })
-  ),
+  inventory: z.array(ItemSchema),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

@@ -5,6 +5,7 @@ import type { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 // Use z.custom<FantasyCharacter>() to validate the full FantasyCharacter shape
 export const MoveForwardRequestSchema = z.object({
   character: z.custom<FantasyCharacter>(),
+  storyEvents: z.array(z.any()).optional(),
 })
 
 export type MoveForwardRequest = z.infer<typeof MoveForwardRequestSchema>

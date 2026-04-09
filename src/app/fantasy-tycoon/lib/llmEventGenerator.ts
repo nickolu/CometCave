@@ -5,13 +5,15 @@ import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { Item } from '@/app/fantasy-tycoon/models/item'
 
 const processFallbackRewardItems = (
-  items?: { id: string; name?: string; description?: string; quantity: number }[]
+  items?: { id: string; name?: string; description?: string; quantity: number; type?: string; effects?: Record<string, number> }[]
 ): Item[] | undefined =>
   items?.map(item => ({
     id: item.id,
     quantity: item.quantity,
     name: item.name || 'Unknown Item',
     description: item.description || 'No description available',
+    type: (item.type as Item['type']) || 'misc',
+    effects: item.effects,
   })) || []
 
 export interface LLMEventOption {
@@ -40,6 +42,22 @@ export interface LLMGeneratedEvent {
   options: LLMEventOption[]
 }
 
+const rewardItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  quantity: z.number(),
+  type: z.enum(['consumable', 'equipment', 'quest', 'misc']).optional().default('misc'),
+  effects: z.object({
+    gold: z.number().optional(),
+    reputation: z.number().optional(),
+    strength: z.number().optional(),
+    intelligence: z.number().optional(),
+    luck: z.number().optional(),
+    xp: z.number().optional(),
+  }).optional(),
+})
+
 const eventOptionSchema = z.object({
   id: z.string(),
   text: z.string(),
@@ -49,32 +67,14 @@ const eventOptionSchema = z.object({
     gold: z.number().optional(),
     reputation: z.number().optional(),
     statusChange: z.string().optional(),
-    rewardItems: z
-      .array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          description: z.string(),
-          quantity: z.number(),
-        })
-      )
-      .optional(),
+    rewardItems: z.array(rewardItemSchema).optional(),
   }),
   failureDescription: z.string(),
   failureEffects: z.object({
     gold: z.number().optional(),
     reputation: z.number().optional(),
     statusChange: z.string().optional(),
-    rewardItems: z
-      .array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          description: z.string(),
-          quantity: z.number(),
-        })
-      )
-      .optional(),
+    rewardItems: z.array(rewardItemSchema).optional(),
   }),
 })
 
@@ -89,6 +89,29 @@ const eventsArraySchema = z.array(eventSchema).length(3)
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 // Function calling schema for event generation
+const rewardItemSchemaForOpenAI = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    quantity: { type: 'number', minimum: 1 },
+    name: { type: 'string' },
+    description: { type: 'string' },
+    type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc'] },
+    effects: {
+      type: 'object',
+      properties: {
+        gold: { type: 'number' },
+        reputation: { type: 'number' },
+        strength: { type: 'number' },
+        intelligence: { type: 'number' },
+        luck: { type: 'number' },
+        xp: { type: 'number' },
+      },
+    },
+  },
+  required: ['id', 'quantity', 'name', 'description'],
+}
+
 const eventOptionSchemaForOpenAI = {
   type: 'object',
   properties: {
@@ -104,16 +127,7 @@ const eventOptionSchemaForOpenAI = {
         statusChange: { type: 'string' },
         rewardItems: {
           type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              quantity: { type: 'number', minimum: 1 },
-              name: { type: 'string' },
-              description: { type: 'string' },
-            },
-            required: ['id', 'quantity', 'name', 'description'],
-          },
+          items: rewardItemSchemaForOpenAI,
         },
       },
     },
@@ -126,16 +140,7 @@ const eventOptionSchemaForOpenAI = {
         statusChange: { type: 'string' },
         rewardItems: {
           type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              quantity: { type: 'number', minimum: 1 },
-              name: { type: 'string' },
-              description: { type: 'string' },
-            },
-            required: ['id', 'quantity', 'name', 'description'],
-          },
+          items: rewardItemSchemaForOpenAI,
         },
       },
     },
@@ -210,7 +215,15 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
-      content: `Generate 3 fantasy adventure event objects for the following character and context. Each event must match the following JSON schema and be part of a JSON array. Do not return any extra text.\n\nCharacter:\n${JSON.stringify(character, null, 2)}\n\nContext:\n${context}`,
+      content: `Generate 3 fantasy adventure events for this character. Reference their past adventures and current state when creating events. Events should feel like a continuation of their story, not random encounters.
+
+When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts, gold, or XP. Examples: potions that grant +2 strength, scrolls that grant +50 XP, lucky coins that grant +1 luck.
+
+Character:
+${JSON.stringify(character, null, 2)}
+
+Recent History & Context:
+${context || 'No prior adventures yet — this is the beginning of their journey.'}`,
     },
   ]
 
@@ -298,6 +311,8 @@ function getDefaultEvents() {
                 quantity: 1,
                 name: 'Gold Pouch',
                 description: 'A small leather pouch filled with gold coins',
+                type: 'consumable',
+                effects: { gold: 15 },
               },
             ]),
           },
@@ -337,7 +352,9 @@ function getDefaultEvents() {
                 id: 'mysterious-potion',
                 quantity: 1,
                 name: 'Mysterious Potion',
-                description: 'A swirling potion with unknown effects',
+                description: 'A swirling potion that boosts your abilities',
+                type: 'consumable',
+                effects: { strength: 1, intelligence: 1, xp: 25 },
               },
             ]),
           },

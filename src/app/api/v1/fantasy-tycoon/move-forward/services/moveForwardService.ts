@@ -1,4 +1,5 @@
 import { MoveForwardResponse } from '@/app/api/v1/fantasy-tycoon/move-forward/schemas'
+import { buildStoryContext } from '@/app/fantasy-tycoon/lib/contextBuilder'
 import { generateLLMEvents } from '@/app/fantasy-tycoon/lib/llmEventGenerator'
 import { FantasyCharacter } from '@/app/fantasy-tycoon/models/character'
 import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/fantasy-tycoon/models/story'
@@ -6,7 +7,8 @@ import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/fantasy-tycoon/mo
 const BASE_DISTANCE = 1
 
 export async function moveForwardService(
-  character: FantasyCharacter
+  character: FantasyCharacter,
+  storyEvents: FantasyStoryEvent[] = []
 ): Promise<MoveForwardResponse> {
   const updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE }
 
@@ -14,7 +16,7 @@ export async function moveForwardService(
   let decisionPoint: FantasyDecisionPoint | null = null
 
   try {
-    const context = ''
+    const context = buildStoryContext(character, storyEvents)
     const llmEvents = await generateLLMEvents(character, context)
     const llmEvent = llmEvents[0]
 
