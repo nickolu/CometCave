@@ -15,7 +15,6 @@ type IconType =
   | 'waterDropIcon'
   | 'leafIcon'
   | 'fireIcon'
-  | 'xpIcon'
   | 'purpleCircleIcon'
   | 'blueCircleIcon'
   | 'yellowMoonIcon'
@@ -41,11 +40,6 @@ const ICONS: Record<IconType, React.ReactNode> = {
       <path d="M10.5 0C7.286.057 4.536 2.018 4.536 5.714 4.536 9.07 7.071 11.25 7.071 12.5c0 .964-1.071 3.75-1.071 3.75s1.071.893 3.5.893c2.679 0 3.5-1.25 3.5-1.25s-1.071-2.679-1.071-3.75C12.429 11.25 15 9.07 15 5.714 15 2.018 12.714.057 10.5 0z" />
     </svg>
   ),
-  xpIcon: (
-    <svg width="20" height="20" fill="#34D399" viewBox="0 0 20 20">
-      <polygon points="10,2 13,8 19,8 14,12 16,18 10,14 4,18 6,12 1,8 7,8" />
-    </svg>
-  ),
   purpleCircleIcon: (
     <svg width="20" height="20" fill="#A78BFA" viewBox="0 0 20 20">
       <circle cx="10" cy="10" r="8" />
@@ -68,13 +62,12 @@ const STAT_LABELS: Record<IconType, string> = {
   waterDropIcon: 'Reputation',
   leafIcon: 'Distance',
   fireIcon: 'Level',
-  xpIcon: 'XP',
   purpleCircleIcon: 'Strength',
   blueCircleIcon: 'Intelligence',
   yellowMoonIcon: 'Luck',
 } as const
 
-const STATS_LEFT: IconType[] = ['sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon', 'xpIcon']
+const STATS_LEFT: IconType[] = ['sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon']
 const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
 
 export function HudBar() {
@@ -89,13 +82,12 @@ export function HudBar() {
       waterDropIcon: character?.reputation ?? 0,
       leafIcon: character?.distance ?? 0,
       fireIcon: character?.level ?? 1,
-      xpIcon: character ? `${character.xp ?? 0}/${character.xpToNextLevel ?? 100}` : '0/100',
       purpleCircleIcon: character?.strength ?? 0,
       blueCircleIcon: character?.intelligence ?? 0,
       yellowMoonIcon: character?.luck ?? 0,
     }),
     [character]
-  ) as Record<IconType, number | string>
+  ) as Record<IconType, number>
 
   return (
     <TooltipProvider>

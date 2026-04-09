@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { processPlayerAction, getCombatRewards } from '@/app/tap-tap-adventure/lib/combatEngine'
-import { applyXpGain } from '@/app/tap-tap-adventure/lib/leveling'
 import { CombatActionRequestSchema } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
@@ -21,27 +20,20 @@ export async function POST(req: NextRequest) {
         ...character,
         gold: character.gold + rewards.gold,
       }
-      const levelResult = applyXpGain(updatedCharacter, rewards.xp)
-      updatedCharacter = levelResult.character
-      rewards = {
-        ...rewards,
-        leveledUp: levelResult.leveledUp,
-        newLevel: levelResult.character.level,
-      }
     } else if (updatedCombat.status === 'defeat') {
       const goldLoss = Math.floor(character.gold * 0.1)
       updatedCharacter = {
         ...character,
         gold: Math.max(0, character.gold - goldLoss),
       }
-      rewards = { xp: 0, gold: -goldLoss, loot: [] }
+      rewards = { gold: -goldLoss, loot: [] }
     } else if (updatedCombat.status === 'fled') {
       const goldLoss = Math.floor(character.gold * 0.05)
       updatedCharacter = {
         ...character,
         gold: Math.max(0, character.gold - goldLoss),
       }
-      rewards = { xp: 0, gold: -goldLoss, loot: [] }
+      rewards = { gold: -goldLoss, loot: [] }
     }
 
     return NextResponse.json({

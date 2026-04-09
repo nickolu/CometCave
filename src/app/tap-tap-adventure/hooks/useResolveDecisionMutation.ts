@@ -20,9 +20,6 @@ export interface ResolveDecisionResponse {
     statusChange?: string
   }
   rewardItems?: Item[]
-  xpGained?: number
-  leveledUp?: boolean
-  newLevel?: number
 }
 
 export function useResolveDecisionMutation() {
@@ -73,10 +70,6 @@ export function useResolveDecisionMutation() {
         addItem(item)
       }
 
-      const xpMessage = data.xpGained ? ` (+${data.xpGained} XP)` : ''
-      const levelUpMessage = data.leveledUp ? ` Level up! You are now level ${data.newLevel}!` : ''
-      const outcomeWithXp = (data.outcomeDescription ?? '') + xpMessage + levelUpMessage
-
       const newStoryEvent = {
         decisionPoint,
         id: `result-${Date.now()}`,
@@ -86,7 +79,7 @@ export function useResolveDecisionMutation() {
         timestamp: new Date().toISOString(),
         selectedOptionId: data.selectedOptionId,
         selectedOptionText: data.selectedOptionText,
-        outcomeDescription: outcomeWithXp,
+        outcomeDescription: data.outcomeDescription ?? '',
         resourceDelta: data.resourceDelta,
       }
 

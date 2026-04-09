@@ -53,19 +53,18 @@ describe('itemPostProcessor', () => {
   })
 
   describe('scrolls', () => {
-    it('infers scroll as consumable with XP', () => {
+    it('infers scroll as consumable with intelligence', () => {
       const item = makeItem({ name: 'Mysterious Scroll' })
       const result = inferItemTypeAndEffects(item)
       expect(result.type).toBe('consumable')
-      expect(result.effects?.xp).toBe(30)
+      expect(result.effects?.intelligence).toBe(1)
     })
 
-    it('infers knowledge tome with bonus XP and intelligence', () => {
+    it('infers knowledge tome with intelligence boost', () => {
       const item = makeItem({ name: 'Tome of Knowledge' })
       const result = inferItemTypeAndEffects(item)
       expect(result.type).toBe('consumable')
-      expect(result.effects?.xp).toBe(50)
-      expect(result.effects?.intelligence).toBe(1)
+      expect(result.effects?.intelligence).toBe(2)
     })
   })
 

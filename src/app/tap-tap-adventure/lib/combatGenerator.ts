@@ -27,7 +27,6 @@ const enemySchemaForOpenAI = {
         attack: { type: 'number' },
         defense: { type: 'number' },
         level: { type: 'number' },
-        xpReward: { type: 'number' },
         goldReward: { type: 'number' },
         lootTable: {
           type: 'array',
@@ -47,7 +46,6 @@ const enemySchemaForOpenAI = {
                   strength: { type: 'number' },
                   intelligence: { type: 'number' },
                   luck: { type: 'number' },
-                  xp: { type: 'number' },
                 },
               },
             },
@@ -74,7 +72,6 @@ const enemySchemaForOpenAI = {
         'attack',
         'defense',
         'level',
-        'xpReward',
         'goldReward',
       ],
     },
@@ -99,7 +96,6 @@ Stat guidelines for a level ${character.level} character:
 - Enemy HP: ${30 + character.level * 15} (±20%)
 - Enemy attack: ${3 + character.level * 2} (±20%)
 - Enemy defense: ${2 + character.level} (±20%)
-- XP reward: ${20 + character.level * 15}
 - Gold reward: ${5 + character.level * 5}
 - Include 1-2 loot items (potions, scrolls, gems, etc.)
 - Optionally include a special ability with cooldown of 2-4 turns
@@ -168,7 +164,6 @@ function getDefaultCombatEncounter(
       attack: 3 + level * 2,
       defense: 2 + level,
       level,
-      xpReward: 20 + level * 15,
       goldReward: 5 + level * 5,
       lootTable: [
         inferItemTypeAndEffects({

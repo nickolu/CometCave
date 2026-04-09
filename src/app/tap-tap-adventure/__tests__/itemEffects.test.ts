@@ -11,8 +11,6 @@ const baseChar: FantasyCharacter = {
   race: 'Human',
   class: 'Warrior',
   level: 1,
-  xp: 0,
-  xpToNextLevel: 100,
   abilities: [],
   locationId: 'loc1',
   gold: 50,
@@ -106,16 +104,6 @@ describe('Item Effects', () => {
 
     expect(result.character.gold).toBe(75)
     expect(result.message).toContain('+25 Gold')
-  })
-
-  it('applies XP effects and triggers leveling', () => {
-    const item = makeConsumable({ effects: { xp: 100 } })
-    const char = { ...baseChar, inventory: [item] }
-    const result = useItem(char, item)
-
-    expect(result.character.level).toBe(2) // leveled up from XP
-    expect(result.levelUpResult?.leveledUp).toBe(true)
-    expect(result.message).toContain('+100 XP')
   })
 
   it('applies multiple effects simultaneously', () => {

@@ -14,8 +14,8 @@ const POTION_SUBRULES: KeywordRule[] = [
 ]
 
 const SCROLL_SUBRULES: KeywordRule[] = [
-  { keywords: ['knowledge', 'wisdom', 'ancient'], effects: { xp: 50, intelligence: 1 } },
-  { keywords: ['power', 'might', 'war', 'battle'], effects: { xp: 30, strength: 1 } },
+  { keywords: ['knowledge', 'wisdom', 'ancient'], effects: { intelligence: 2 } },
+  { keywords: ['power', 'might', 'war', 'battle'], effects: { strength: 2 } },
 ]
 
 function matchesAny(name: string, keywords: string[]): boolean {
@@ -53,7 +53,7 @@ export function inferItemTypeAndEffects(item: Item): Item {
     return {
       ...item,
       type: 'consumable',
-      effects: item.effects ?? findMatchingEffects(name, SCROLL_SUBRULES, { xp: 30 }),
+      effects: item.effects ?? findMatchingEffects(name, SCROLL_SUBRULES, { intelligence: 1 }),
     }
   }
 

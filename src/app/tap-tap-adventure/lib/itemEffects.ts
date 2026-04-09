@@ -1,13 +1,10 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 
-import { applyXpGain, LevelUpResult } from './leveling'
-
 export interface UseItemResult {
   character: FantasyCharacter
   consumed: boolean
   message: string
-  levelUpResult?: LevelUpResult
 }
 
 export function useItem(character: FantasyCharacter, item: Item): UseItemResult {
@@ -52,14 +49,6 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     effectMessages.push(`${effects.luck > 0 ? '+' : ''}${effects.luck} Luck`)
   }
 
-  let levelUpResult: LevelUpResult | undefined
-  if (effects.xp) {
-    const result = applyXpGain(updatedCharacter, effects.xp)
-    updatedCharacter = result.character
-    levelUpResult = result
-    effectMessages.push(`+${effects.xp} XP`)
-  }
-
   // Update inventory: decrement quantity or remove
   const updatedInventory = character.inventory
     .map(i => {
@@ -81,6 +70,5 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     character: updatedCharacter,
     consumed: true,
     message,
-    levelUpResult,
   }
 }

@@ -11,8 +11,6 @@ const baseChar: FantasyCharacter = {
   race: 'Elf',
   class: 'Mage',
   level: 3,
-  xp: 50,
-  xpToNextLevel: 225,
   abilities: [],
   locationId: 'loc1',
   gold: 100,

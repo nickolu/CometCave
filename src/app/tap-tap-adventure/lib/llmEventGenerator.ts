@@ -56,7 +56,6 @@ const rewardItemSchema = z.object({
     strength: z.number().optional(),
     intelligence: z.number().optional(),
     luck: z.number().optional(),
-    xp: z.number().optional(),
   }).optional(),
 })
 
@@ -107,7 +106,6 @@ const rewardItemSchemaForOpenAI = {
         strength: { type: 'number' },
         intelligence: { type: 'number' },
         luck: { type: 'number' },
-        xp: { type: 'number' },
       },
     },
   },
@@ -219,7 +217,7 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
       role: 'user',
       content: `Generate 3 fantasy adventure events for this character. Reference their past adventures and current state when creating events. Events should feel like a continuation of their story, not random encounters.
 
-When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts, gold, or XP. Examples: potions that grant +2 strength, scrolls that grant +50 XP, lucky coins that grant +1 luck.
+When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts or gold. Examples: potions that grant +2 strength, scrolls that grant +2 intelligence, lucky coins that grant +1 luck.
 
 Character:
 ${JSON.stringify(character, null, 2)}
@@ -356,7 +354,7 @@ function getDefaultEvents() {
                 name: 'Mysterious Potion',
                 description: 'A swirling potion that boosts your abilities',
                 type: 'consumable',
-                effects: { strength: 1, intelligence: 1, xp: 25 },
+                effects: { strength: 1, intelligence: 1, luck: 1 },
               },
             ]),
           },

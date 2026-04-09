@@ -4,7 +4,6 @@ import {
   applyEffects,
   calculateEffectiveProbability,
 } from '@/app/tap-tap-adventure/lib/eventResolution'
-import { applyXpGain, getXpForDecision } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint } from '@/app/tap-tap-adventure/models/story'
@@ -28,9 +27,6 @@ type ResolveDecisionResponse = {
     distance?: number
     statusChange?: string
   }
-  xpGained?: number
-  leveledUp?: boolean
-  newLevel?: number
 }
 
 export async function POST(req: NextRequest) {
@@ -90,11 +86,6 @@ export async function POST(req: NextRequest) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems]
     }
 
-    // Apply XP gain
-    const xpGained = getXpForDecision(outcome)
-    const levelUpResult = applyXpGain(updatedCharacter, xpGained)
-    updatedCharacter = levelUpResult.character
-
     const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
       updatedCharacter,
       resultDescription: resultDescription,
@@ -104,9 +95,6 @@ export async function POST(req: NextRequest) {
       outcomeDescription: resultDescription,
       resourceDelta: appliedEffects,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
-      xpGained,
-      leveledUp: levelUpResult.leveledUp,
-      newLevel: levelUpResult.leveledUp ? levelUpResult.character.level : undefined,
     }
 
     return NextResponse.json(response)

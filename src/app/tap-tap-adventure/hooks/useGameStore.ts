@@ -21,8 +21,6 @@ const defaultCharacter: FantasyCharacter = {
   race: '',
   class: '',
   level: 1,
-  xp: 0,
-  xpToNextLevel: 100,
   abilities: [],
   locationId: '',
   gold: 0,
@@ -47,7 +45,7 @@ export interface GameStore {
   setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void
   setGameState: (gameState: GameState) => void
   setGenericMessage: (message: string) => void
-  useItem: (itemId: string) => { message: string; consumed: boolean; leveledUp?: boolean } | null
+  useItem: (itemId: string) => { message: string; consumed: boolean } | null
   discardItem: (itemId: string) => void
   restoreItem: (itemId: string) => void
 }
@@ -187,7 +185,6 @@ export const useGameStore = create<GameStore>()(
         return {
           message: result.message,
           consumed: result.consumed,
-          leveledUp: result.levelUpResult?.leveledUp,
         }
       },
       discardItem: (itemId: string) => {
@@ -258,13 +255,6 @@ export const useGameStore = create<GameStore>()(
       version: 2,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
-        if (state?.gameState?.characters) {
-          state.gameState.characters = state.gameState.characters.map(char => ({
-            ...char,
-            xp: char.xp ?? 0,
-            xpToNextLevel: char.xpToNextLevel ?? 100,
-          }))
-        }
         if (state?.gameState && !('combatState' in state.gameState)) {
           (state.gameState as GameState).combatState = null
         }
