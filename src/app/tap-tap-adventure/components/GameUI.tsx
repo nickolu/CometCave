@@ -73,7 +73,7 @@ export default function GameUI() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col select-none">
       <div className="relative z-10 mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
           <div className={'p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4'}>
@@ -104,7 +104,6 @@ export default function GameUI() {
                           <Button
                             key={option.id}
                             className="block w-full text-left border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
-                            style={{ userSelect: 'none' }}
                             disabled={resolveDecisionPending}
                             onClick={() => {
                               handleResolveDecision(option.id)
@@ -124,8 +123,7 @@ export default function GameUI() {
             ) : (
               <>
                 <Button
-                  className="w-full bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white hover:shadow-md transition-all duration-300 active:translate-y-1/8 active:ring-1 active:ring-[#515375]"
-                  style={{ userSelect: 'none' }}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-indigo-400/30 text-white font-bold text-lg py-6 rounded-lg shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all duration-300 active:translate-y-0.5 active:shadow-none select-none"
                   onClick={handleMoveForward}
                   disabled={moveForwardPending || resolveDecisionPending}
                 >
@@ -137,7 +135,9 @@ export default function GameUI() {
                 {gameState.genericMessage && (
                   <div className="text-sm">{gameState.genericMessage}</div>
                 )}
-                <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
+                <div className="select-text">
+                  <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
+                </div>
               </>
             )}
           </div>

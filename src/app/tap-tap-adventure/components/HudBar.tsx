@@ -98,15 +98,15 @@ export function HudBar() {
 
   return (
     <TooltipProvider>
-      <div className="w-full flex justify-between items-center gap-4 px-4 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white">
-        <div className="flex items-center gap-4">
+      <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-2 px-3 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white select-none">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           {STATS_LEFT.map(key => (
             <Tooltip key={key}>
-              <TooltipTrigger className="flex items-center gap-1 text-sm font-semibold">
-                <span className="inline-block align-middle">{ICONS[key]}</span>
+              <TooltipTrigger className="flex items-center gap-1 text-xs sm:text-sm font-semibold">
+                <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
                 <span>{stats[key]}</span>
                 {key === 'fireIcon' && (
-                  <span className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
+                  <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
                     <span
                       className="block h-full bg-orange-400 rounded-full transition-all duration-300"
                       style={{ width: `${progress * 100}%` }}
@@ -123,11 +123,11 @@ export function HudBar() {
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {STATS_RIGHT.map((key: IconType) => (
             <Tooltip key={key}>
-              <TooltipTrigger className="flex items-center gap-1 text-sm font-semibold">
-                <span className="inline-block align-middle">{ICONS[key]}</span>
+              <TooltipTrigger className="flex items-center gap-1 text-xs sm:text-sm font-semibold">
+                <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
                 <span>{stats[key]}</span>
               </TooltipTrigger>
               <TooltipContent>{STAT_LABELS[key]}</TooltipContent>
