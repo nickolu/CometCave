@@ -39,10 +39,12 @@ export const CombatPlayerStateSchema = z.object({
   isDefending: z.boolean(),
   activeBuffs: z.array(CombatBuffSchema).optional(),
   comboCount: z.number().default(0),
+  abilityCooldown: z.number().default(0),
+  enemyStunned: z.boolean().default(false),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
-export const CombatActionSchema = z.enum(['attack', 'defend', 'use_item', 'flee'])
+export const CombatActionSchema = z.enum(['attack', 'defend', 'use_item', 'flee', 'class_ability'])
 export type CombatAction = z.infer<typeof CombatActionSchema>
 
 export const CombatActionRequestSchema = z.object({

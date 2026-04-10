@@ -74,6 +74,36 @@ export const CLASSES: ClassOption[] = [
   },
 ]
 
+
+export interface ClassAbility {
+  name: string
+  description: string
+  cooldown: number
+}
+
+export const CLASS_ABILITIES: Record<string, ClassAbility> = {
+  warrior: {
+    name: 'Shield Bash',
+    description: 'Deals 0.8x damage and stuns the enemy, skipping their next attack.',
+    cooldown: 3,
+  },
+  mage: {
+    name: 'Arcane Blast',
+    description: 'Deals 2x damage but takes 20% of max HP as recoil.',
+    cooldown: 3,
+  },
+  rogue: {
+    name: 'Backstab',
+    description: 'If combo >= 2, deals 3x damage and resets combo. Otherwise deals normal damage.',
+    cooldown: 2,
+  },
+  ranger: {
+    name: 'Precise Shot',
+    description: 'Ignores enemy defense entirely, dealing full base attack damage.',
+    cooldown: 3,
+  },
+}
+
 export interface StartingStats {
   strength: number
   intelligence: number
