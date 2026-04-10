@@ -16,6 +16,51 @@ export async function moveForwardService(
   const newLevel = calculateLevel(newDistance)
   const updatedCharacter = { ...character, distance: newDistance }
 
+  // Trigger boss event every 5 levels
+  if (newLevel > oldLevel && newLevel % 5 === 0) {
+    const bossEventId = `boss-event-${Date.now()}`
+    return {
+      character: updatedCharacter,
+      event: {
+        id: bossEventId,
+        type: 'boss_available',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      },
+      decisionPoint: {
+        id: `decision-${bossEventId}`,
+        eventId: bossEventId,
+        prompt: `You sense a powerful presence ahead. A formidable guardian blocks the path forward. You are now level ${newLevel} — do you feel ready to face this challenge?`,
+        options: [
+          {
+            id: `boss-fight-${bossEventId}`,
+            text: 'Challenge the boss!',
+            triggersCombat: true,
+            isBoss: true,
+            successProbability: 0.5,
+            successDescription: 'You prepare for an epic battle!',
+            successEffects: {},
+            failureDescription: 'You prepare for an epic battle!',
+            failureEffects: {},
+            resultDescription: 'You prepare for an epic battle!',
+          },
+          {
+            id: `boss-skip-${bossEventId}`,
+            text: 'Not yet — keep traveling and grow stronger',
+            successProbability: 1.0,
+            successDescription: 'You wisely decide to prepare more before facing this challenge. The boss will still be here when you return.',
+            successEffects: { reputation: 0 },
+            failureDescription: 'You continue your journey.',
+            failureEffects: {},
+            resultDescription: 'You wisely decide to prepare more before facing this challenge.',
+          },
+        ],
+        resolved: false,
+      },
+    }
+  }
+
   // Trigger shop event on level up
   if (newLevel > oldLevel) {
     return {
@@ -28,7 +73,6 @@ export async function moveForwardService(
         timestamp: new Date().toISOString(),
       },
       decisionPoint: null,
-      combatEncounter: null,
       shopEvent: true,
     }
   }

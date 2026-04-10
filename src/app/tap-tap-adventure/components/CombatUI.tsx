@@ -75,8 +75,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h4 className="font-semibold uppercase text-red-400 border-b border-red-900/50 pb-2 mb-2">
-          Combat
+        <h4 className="font-semibold uppercase border-b border-red-900/50 pb-2 mb-2">
+          {combatState.isBoss ? (
+            <span className="text-yellow-400">Boss Battle</span>
+          ) : (
+            <span className="text-red-400">Combat</span>
+          )}
         </h4>
         <p className="text-sm text-slate-300 italic">{scenario}</p>
       </div>
@@ -98,15 +102,35 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
       </div>
 
+      {/* Enemy telegraph warning */}
+      {combatState.enemyTelegraph && (
+        <div className={`border rounded-lg p-2 text-center text-sm animate-pulse ${
+          combatState.enemyTelegraph.action === 'heavy_attack' || combatState.enemyTelegraph.action === 'special'
+            ? 'bg-red-950/50 border-red-700/50 text-red-300'
+            : combatState.enemyTelegraph.action === 'defend'
+              ? 'bg-blue-950/50 border-blue-700/50 text-blue-300'
+              : 'bg-slate-800 border-slate-600 text-slate-300'
+        }`}>
+          {combatState.enemyTelegraph.description}
+        </div>
+      )}
+
       {/* Player info */}
       <div className="bg-[#1e1f30] border border-blue-900/30 rounded-lg p-3 space-y-2">
         <div className="flex justify-between items-center">
           <span className="font-bold text-blue-400">{character?.name ?? 'You'}</span>
-          {playerState.isDefending && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-400 rounded">
-              Defending
-            </span>
-          )}
+          <div className="flex gap-2">
+            {(playerState.comboCount ?? 0) > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-orange-900/50 text-orange-400 rounded font-bold">
+                {playerState.comboCount}x Combo
+              </span>
+            )}
+            {playerState.isDefending && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-400 rounded">
+                Defending
+              </span>
+            )}
+          </div>
         </div>
         <HpBar current={playerState.hp} max={playerState.maxHp} label="You" color="text-blue-400" />
         {playerState.activeBuffs && playerState.activeBuffs.length > 0 && (
