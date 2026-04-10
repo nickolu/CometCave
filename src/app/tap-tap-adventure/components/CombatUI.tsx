@@ -4,10 +4,11 @@ import { LoaderCircle } from 'lucide-react'
 import { useCallback, useRef, useEffect, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
-import { CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
@@ -47,8 +48,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
     (i: Item) => i.status !== 'deleted' && isUsableInCombat(i)
   )
 
+  const classId = character?.class?.toLowerCase() ?? ''
+  const classAbility = CLASS_ABILITIES[classId]
+  const abilityCooldown = playerState.abilityCooldown ?? 0
+
   const handleAction = useCallback(
-    (action: 'attack' | 'defend' | 'flee', itemId?: string) => {
+    (action: CombatAction, itemId?: string) => {
       setShowItemMenu(false)
       combatAction({ action, itemId })
     },
@@ -165,6 +170,27 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
       {/* Actions */}
       <div className="space-y-2">
+        {/* Class Ability */}
+        {classAbility && (
+          <Button
+            className={`w-full text-sm py-2 rounded-md transition-colors border ${
+              abilityCooldown > 0
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-purple-900/50 border-purple-700 hover:bg-purple-800 text-white'
+            }`}
+            onClick={() => handleAction('class_ability')}
+            disabled={isPending || abilityCooldown > 0}
+            title={classAbility.description}
+          >
+            {isPending ? (
+              <LoaderCircle className="animate-spin h-4 w-4" />
+            ) : abilityCooldown > 0 ? (
+              `${classAbility.name} (${abilityCooldown} turns)`
+            ) : (
+              `${classAbility.name} - Ready!`
+            )}
+          </Button>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button
             className="bg-red-900/50 border border-red-800 hover:bg-red-800 text-white text-sm py-2 rounded-md transition-colors"
@@ -236,6 +262,15 @@ interface CombatResultProps {
 
 export function CombatResult({ combatState, onContinue }: CombatResultProps) {
   const { status, enemy } = combatState
+  const { getSelectedCharacter } = useGameStore()
+  const character = getSelectedCharacter()
+
+  // Find the most recent defeat story event to extract penalty info
+  const lastStoryEvents = useGameStore(s => s.gameState.storyEvents)
+  const lastDefeatEvent =
+    status === 'defeat'
+      ? [...lastStoryEvents].reverse().find(e => e.type === 'combat_defeat')
+      : null
 
   const config = {
     victory: {
@@ -244,13 +279,15 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
       borderColor: 'border-yellow-900/50',
       bgColor: 'bg-yellow-900/20',
       message: `You defeated ${enemy.name}!`,
+      buttonText: 'Continue',
     },
     defeat: {
       title: 'Defeated',
       color: 'text-red-400',
       borderColor: 'border-red-900/50',
       bgColor: 'bg-red-900/20',
-      message: `You were defeated by ${enemy.name}...`,
+      message: `You were slain by ${enemy.name}...`,
+      buttonText: 'Rise Again',
     },
     fled: {
       title: 'Escaped',
@@ -258,8 +295,16 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
       borderColor: 'border-slate-600',
       bgColor: 'bg-slate-800',
       message: `You fled from ${enemy.name}.`,
+      buttonText: 'Continue',
     },
-    active: { title: '', color: '', borderColor: '', bgColor: '', message: '' },
+    active: {
+      title: '',
+      color: '',
+      borderColor: '',
+      bgColor: '',
+      message: '',
+      buttonText: 'Continue',
+    },
   }
 
   const c = config[status]
@@ -268,11 +313,26 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
     <div className={`${c.bgColor} border ${c.borderColor} rounded-lg p-6 text-center space-y-4`}>
       <h4 className={`text-xl font-bold ${c.color}`}>{c.title}</h4>
       <p className="text-slate-300">{c.message}</p>
+      {status === 'defeat' && lastDefeatEvent && (
+        <div className="text-sm text-red-300 space-y-1 bg-red-950/30 rounded p-3">
+          <p className="font-semibold">Penalties suffered:</p>
+          {lastDefeatEvent.resourceDelta?.gold && (
+            <p>{Math.abs(lastDefeatEvent.resourceDelta.gold)} gold lost</p>
+          )}
+          {lastDefeatEvent.resourceDelta?.reputation && (
+            <p>{Math.abs(lastDefeatEvent.resourceDelta.reputation)} reputation lost</p>
+          )}
+          <p>Inventory scattered and lost</p>
+          {character && (character.deathCount ?? 0) > 0 && (
+            <p className="text-xs text-red-400 mt-2">Total deaths: {character.deathCount}</p>
+          )}
+        </div>
+      )}
       <Button
         className="bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white px-6 py-2 rounded-md"
         onClick={onContinue}
       >
-        Continue
+        {c.buttonText}
       </Button>
     </div>
   )

@@ -35,6 +35,7 @@ const defaultCharacter: FantasyCharacter = {
   luck: 0,
   inventory: [],
   equipment: { weapon: null, armor: null, accessory: null },
+  deathCount: 0,
 }
 
 export interface GameStore {
@@ -288,6 +289,7 @@ export const useGameStore = create<GameStore>()(
             const equipment = selectedCharacter.equipment ?? { weapon: null, armor: null, accessory: null }
             const currentlyEquipped = equipment[targetSlot]
 
+            // Build new inventory: remove the item being equipped, add back old equipped item
             let updatedInventory = selectedCharacter.inventory.filter(i => i.id !== itemId)
             if (currentlyEquipped) {
               updatedInventory = [...updatedInventory, currentlyEquipped]
@@ -342,11 +344,14 @@ export const useGameStore = create<GameStore>()(
         if (state?.gameState && !('shopState' in state.gameState)) {
           (state.gameState as GameState).shopState = null
         }
-        // v4: Add equipment slots to all characters
+        // v4: Add equipment slots and deathCount to all characters
         if (state?.gameState?.characters) {
           for (const char of state.gameState.characters) {
             if (!char.equipment) {
               (char as FantasyCharacter).equipment = { weapon: null, armor: null, accessory: null }
+            }
+            if (char.deathCount === undefined) {
+              (char as FantasyCharacter).deathCount = 0
             }
           }
         }

@@ -77,35 +77,44 @@ export function inferItemTypeAndEffects(item: Item): Item {
     return { ...item, type: 'consumable', effects: item.effects ?? { gold: 15 } }
   }
 
+  // Charms / Amulets (consumable by default, but equipment if explicitly typed)
+  if (matchesAny(name, ['charm', 'amulet', 'talisman', 'trinket', 'lucky'])) {
+    return {
+      ...item,
+      type: item.type === 'equipment' ? 'equipment' : 'consumable',
+      effects: item.effects ?? { luck: 2 },
+    }
+  }
+
   // Equipment: Weapons
-  if (matchesAny(name, ['sword', 'axe', 'dagger', 'bow', 'staff', 'blade', 'hammer', 'spear'])) {
-    const strength = matchesAny(name, ['great', 'legendary', 'enchanted', 'mighty']) ? 3
-      : matchesAny(name, ['fine', 'sharp', 'steel', 'iron']) ? 2 : 1
+  if (matchesAny(name, ['sword', 'axe', 'dagger', 'bow', 'staff', 'blade', 'hammer', 'spear', 'mace', 'wand'])) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'mighty', 'ancient']) ? 3
+      : matchesAny(name, ['fine', 'sharp', 'sturdy', 'steel']) ? 2 : 1
     return {
       ...item,
       type: 'equipment',
-      effects: item.effects ?? { strength },
+      effects: item.effects ?? { strength: quality },
     }
   }
 
   // Equipment: Armor
-  if (matchesAny(name, ['armor', 'shield', 'helm', 'boots', 'cloak', 'robe', 'plate', 'mail'])) {
-    const intelligence = matchesAny(name, ['enchanted', 'legendary', 'dragon', 'mythril']) ? 3
-      : matchesAny(name, ['iron', 'steel', 'reinforced', 'heavy']) ? 2 : 1
+  if (matchesAny(name, ['armor', 'shield', 'helm', 'helmet', 'boots', 'cloak', 'robe', 'plate', 'mail', 'gauntlet'])) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'ancient']) ? 3
+      : matchesAny(name, ['fine', 'reinforced', 'sturdy', 'steel']) ? 2 : 1
     return {
       ...item,
       type: 'equipment',
-      effects: item.effects ?? { intelligence },
+      effects: item.effects ?? { intelligence: quality },
     }
   }
 
   // Equipment: Accessories
-  if (matchesAny(name, ['ring', 'amulet', 'charm', 'necklace', 'bracelet', 'trinket', 'pendant', 'talisman', 'lucky'])) {
-    const luck = matchesAny(name, ['enchanted', 'legendary', 'ancient', 'magical']) ? 2 : 1
+  if (matchesAny(name, ['ring', 'necklace', 'bracelet', 'pendant', 'circlet', 'crown'])) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'ancient']) ? 2 : 1
     return {
       ...item,
       type: 'equipment',
-      effects: item.effects ?? { luck },
+      effects: item.effects ?? { luck: quality },
     }
   }
 

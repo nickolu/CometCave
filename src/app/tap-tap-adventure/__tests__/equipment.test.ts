@@ -33,6 +33,7 @@ const baseChar: FantasyCharacter = {
   intelligence: 5,
   luck: 6,
   inventory: [],
+  deathCount: 0,
   equipment: { weapon: null, armor: null, accessory: null },
 }
 
@@ -118,10 +119,13 @@ describe('Equipment effects in combat', () => {
     const withAccessory = initializePlayerCombatState(charWithAccessory)
     const without = initializePlayerCombatState(baseChar)
 
+    // Accessory adds a passive buff
     expect(withAccessory.activeBuffs.length).toBe(1)
     expect(withAccessory.activeBuffs[0].stat).toBe('attack')
     expect(withAccessory.activeBuffs[0].value).toBe(2)
     expect(withAccessory.activeBuffs[0].turnsRemaining).toBe(999)
+
+    // Without accessory, no buffs
     expect(without.activeBuffs.length).toBe(0)
   })
 
@@ -147,9 +151,9 @@ describe('Equipment effects in combat', () => {
     const state = initializePlayerCombatState(fullEquipChar)
     const base = initializePlayerCombatState(baseChar)
 
-    expect(state.attack).toBe(base.attack + 2 * 2)
-    expect(state.defense).toBe(base.defense + 3)
-    expect(state.activeBuffs.length).toBe(1)
+    expect(state.attack).toBe(base.attack + 2 * 2) // weapon strength * 2
+    expect(state.defense).toBe(base.defense + 3) // armor intelligence
+    expect(state.activeBuffs.length).toBe(1) // accessory luck buff
   })
 })
 

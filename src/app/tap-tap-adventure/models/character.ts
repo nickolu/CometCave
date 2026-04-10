@@ -35,6 +35,7 @@ export const FantasyCharacterSchema = z.object({
     armor: ItemSchema.nullable(),
     accessory: ItemSchema.nullable(),
   }).optional(),
+  deathCount: z.number().default(0),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
