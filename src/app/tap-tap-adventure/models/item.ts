@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { SpellSchema } from './spell'
+
 /** ItemSchema is the single source of truth for both runtime validation and static typing. */
 
 export const ItemEffectsSchema = z.object({
@@ -17,9 +19,10 @@ export const ItemSchema = z.object({
   description: z.string(),
   quantity: z.number(),
   status: z.enum(['active', 'deleted']).optional(),
-  type: z.enum(['consumable', 'equipment', 'quest', 'misc']).optional(),
+  type: z.enum(['consumable', 'equipment', 'quest', 'misc', 'spell_scroll']).optional(),
   effects: ItemEffectsSchema.optional(),
   price: z.number().optional(),
+  spell: SpellSchema.optional(),
 })
 
 export type Item = z.infer<typeof ItemSchema>

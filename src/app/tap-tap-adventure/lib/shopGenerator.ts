@@ -5,6 +5,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item, ItemSchema } from '@/app/tap-tap-adventure/models/item'
 
 import { inferItemTypeAndEffects } from './itemPostProcessor'
+import { generateSpellForLevel } from './spellGenerator'
 
 function getOpenAIClient() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -66,6 +67,7 @@ Include a mix of:
 - Healing potions/consumables
 - Stat-boosting items (strength, intelligence, luck)
 - Interesting thematic items that fit the fantasy setting
+- Occasionally a spell scroll (type: "spell_scroll") with a spell object containing id, name, description, school, manaCost, cooldown, target, effects, and tags
 
 Each item needs a unique id (e.g. "shop-item-1"), a creative name, a short description, quantity of 1, a gold price, and effects.
 
@@ -144,6 +146,18 @@ export function getFallbackShopItems(level: number): Item[] {
       effects: { luck: 2 + Math.floor(level / 3) },
     },
   ]
+
+  // Add a spell scroll to the shop
+  const spell = generateSpellForLevel(level)
+  items.push({
+    id: `shop-spell-${suffix}`,
+    name: `Scroll of ${spell.name}`,
+    description: `A magical scroll containing the spell ${spell.name}.`,
+    quantity: 1,
+    type: 'spell_scroll',
+    price: Math.round(basePrice * 2),
+    spell,
+  })
 
   return items.map(inferItemTypeAndEffects)
 }

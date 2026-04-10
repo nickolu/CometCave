@@ -1,3 +1,4 @@
+import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
 const BASE_STEPS = 200
@@ -68,6 +69,16 @@ export function calculateMaxHp(character: FantasyCharacter): number {
   return 30 + character.strength * 3 + character.level * 8
 }
 
+/**
+ * Calculate max mana for a character based on stats and class.
+ */
+export function calculateMaxMana(character: FantasyCharacter): number {
+  const base = 20 + (character.intelligence ?? 5) * 3 + (character.level ?? 1) * 5
+  const classConfig = CLASS_SPELL_CONFIG[character.class.toLowerCase()]
+  return Math.floor(base * (classConfig?.manaMultiplier ?? 1))
+}
+
+const MANA_REGEN_BASE_RATE = 5 // base: 1 mana every 5 steps
 const HEAL_RATE = 3 // heal 1 HP every N steps
 
 /**
@@ -108,9 +119,20 @@ export function applyLevelFromDistance(
   const healAmount = Math.floor(stepsGained / HEAL_RATE)
   const healed = Math.min(maxHp, currentHp + healAmount)
 
+  // Update maxMana and regen mana
+  const maxMana = calculateMaxMana(updated)
+  const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
+  const regenMultiplier = classConfig?.regenMultiplier ?? 1
+  const effectiveRegenRate = Math.max(1, Math.floor(MANA_REGEN_BASE_RATE / regenMultiplier))
+  const currentMana = updated.mana ?? maxMana
+  const manaRegenAmount = Math.floor(stepsGained / effectiveRegenRate)
+  const regenedMana = Math.min(maxMana, currentMana + manaRegenAmount)
+
   return {
     ...updated,
     hp: healed,
     maxHp,
+    mana: regenedMana,
+    maxMana,
   }
 }

@@ -9,6 +9,7 @@ import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombat
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
@@ -31,6 +32,25 @@ function HpBar({ current, max, label, color }: { current: number; max: number; l
   )
 }
 
+function ManaBar({ current, max }: { current: number; max: number }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span className="text-slate-300">MP</span>
+        <span className="text-blue-400">{current}/{max} MP</span>
+      </div>
+      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-blue-500 rounded-full transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 interface CombatUIProps {
   combatState: CombatState
 }
@@ -39,6 +59,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const { getSelectedCharacter } = useGameStore()
   const { mutate: combatAction, isPending } = useCombatActionMutation()
   const [showItemMenu, setShowItemMenu] = useState(false)
+  const [showSpellMenu, setShowSpellMenu] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
 
   const character = getSelectedCharacter()
@@ -52,9 +73,15 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const classAbility = CLASS_ABILITIES[classId]
   const abilityCooldown = playerState.abilityCooldown ?? 0
 
+  const spellbook = character?.spellbook ?? []
+  const spellCooldowns = playerState.spellCooldowns ?? {}
+  const currentMana = playerState.mana ?? 0
+  const maxMana = playerState.maxMana ?? 0
+
   const handleAction = useCallback(
     (action: CombatAction, itemId?: string) => {
       setShowItemMenu(false)
+      setShowSpellMenu(false)
       combatAction({ action, itemId })
     },
     [combatAction]
@@ -63,7 +90,17 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const handleUseItem = useCallback(
     (itemId: string) => {
       setShowItemMenu(false)
+      setShowSpellMenu(false)
       combatAction({ action: 'use_item', itemId })
+    },
+    [combatAction]
+  )
+
+  const handleCastSpell = useCallback(
+    (spellId: string) => {
+      setShowSpellMenu(false)
+      setShowItemMenu(false)
+      combatAction({ action: 'cast_spell', spellId })
     },
     [combatAction]
   )
@@ -138,6 +175,30 @@ export function CombatUI({ combatState }: CombatUIProps) {
           </div>
         </div>
         <HpBar current={playerState.hp} max={playerState.maxHp} label="You" color="text-blue-400" />
+        {maxMana > 0 && (
+          <ManaBar current={currentMana} max={maxMana} />
+        )}
+        {(playerState.shield ?? 0) > 0 && (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] px-1.5 py-0.5 bg-cyan-900/50 text-cyan-400 rounded">
+              Shield: {playerState.shield}
+            </span>
+          </div>
+        )}
+        {(playerState.activeSpellEffects ?? []).length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {(playerState.activeSpellEffects ?? []).map((effect, i) => (
+              <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${
+                effect.effectType === 'heal_over_time' ? 'bg-green-900/50 text-green-400' :
+                effect.effectType === 'damage_reduction' ? 'bg-cyan-900/50 text-cyan-400' :
+                effect.effectType === 'damage_over_time' || effect.effectType === 'bleed' ? 'bg-red-900/50 text-red-400' :
+                'bg-purple-900/50 text-purple-400'
+              }`}>
+                {effect.effectType.replace(/_/g, ' ')} ({effect.turnsRemaining}t)
+              </span>
+            ))}
+          </div>
+        )}
         {playerState.activeBuffs && playerState.activeBuffs.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {playerState.activeBuffs.map((buff, i) => (
@@ -208,13 +269,20 @@ export function CombatUI({ combatState }: CombatUIProps) {
           </Button>
           <Button
             className="bg-emerald-900/50 border border-emerald-800 hover:bg-emerald-800 text-white text-sm py-2 rounded-md transition-colors relative"
-            onClick={() => setShowItemMenu(!showItemMenu)}
+            onClick={() => { setShowItemMenu(!showItemMenu); setShowSpellMenu(false) }}
             disabled={isPending || combatItems.length === 0}
           >
             Use Item {combatItems.length > 0 && `(${combatItems.length})`}
           </Button>
           <Button
-            className="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-white text-sm py-2 rounded-md transition-colors"
+            className="bg-indigo-900/50 border border-indigo-800 hover:bg-indigo-800 text-white text-sm py-2 rounded-md transition-colors relative"
+            onClick={() => { setShowSpellMenu(!showSpellMenu); setShowItemMenu(false) }}
+            disabled={isPending || spellbook.length === 0}
+          >
+            Cast Spell {spellbook.length > 0 && `(${spellbook.length})`}
+          </Button>
+          <Button
+            className="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-white text-sm py-2 rounded-md transition-colors col-span-2"
             onClick={() => handleAction('flee')}
             disabled={isPending}
           >
@@ -244,6 +312,52 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 )}
               </Button>
             ))}
+          </div>
+        )}
+
+        {/* Spell selection dropdown */}
+        {showSpellMenu && spellbook.length > 0 && (
+          <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1">
+            {spellbook.map((spell: Spell) => {
+              const onCooldown = (spellCooldowns[spell.id] ?? 0) > 0
+              const notEnoughMana = currentMana < spell.manaCost
+              const disabled = isPending || onCooldown || notEnoughMana
+
+              return (
+                <Button
+                  key={spell.id}
+                  className={`w-full text-left text-xs py-2 px-3 rounded-md border ${
+                    disabled
+                      ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                      : 'bg-[#2a2b3f] border-[#3a3c56] hover:bg-[#3a3c56] text-white'
+                  }`}
+                  onClick={() => handleCastSpell(spell.id)}
+                  disabled={disabled}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">{spell.name}</span>
+                    <span className={`text-[10px] ${notEnoughMana ? 'text-red-400' : 'text-blue-400'}`}>
+                      {spell.manaCost} MP
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    {spell.description}
+                  </div>
+                  {onCooldown && (
+                    <span className="text-[10px] text-yellow-400">
+                      Cooldown: {spellCooldowns[spell.id]} turns
+                    </span>
+                  )}
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {spell.tags.map((tag, i) => (
+                      <span key={i} className="text-[9px] px-1 py-0.5 bg-indigo-900/50 text-indigo-400 rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </Button>
+              )
+            })}
           </div>
         )}
       </div>

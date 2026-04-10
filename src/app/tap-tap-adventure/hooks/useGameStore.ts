@@ -5,8 +5,9 @@ import { persist } from 'zustand/middleware'
 
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
-import { applyLevelFromDistance, calculateMaxHp } from '@/app/tap-tap-adventure/lib/leveling'
+import { applyLevelFromDistance, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
@@ -41,6 +42,9 @@ const defaultCharacter: FantasyCharacter = {
   equipment: { weapon: null, armor: null, accessory: null },
   deathCount: 0,
   pendingStatPoints: 0,
+  mana: 20,
+  maxMana: 20,
+  spellbook: [],
 }
 
 export interface GameStore {
@@ -63,6 +67,7 @@ export interface GameStore {
   restoreItem: (itemId: string) => void
   equipItem: (itemId: string, slot?: EquipmentSlotType) => void
   unequipItem: (slot: EquipmentSlotType) => void
+  learnSpell: (itemId: string) => { message: string; learned: boolean } | null
 }
 
 export const useGameStore = create<GameStore>()(
@@ -106,6 +111,12 @@ export const useGameStore = create<GameStore>()(
             // Also increase current HP by the same amount maxHp increased
             const oldMaxHp = selectedCharacter.maxHp ?? maxHp
             updatedCharacter.hp = Math.min(maxHp, (selectedCharacter.hp ?? oldMaxHp) + (maxHp - oldMaxHp))
+
+            // Update maxMana and current mana similarly
+            const maxMana = calculateMaxMana(updatedCharacter)
+            const oldMaxMana = selectedCharacter.maxMana ?? maxMana
+            updatedCharacter.maxMana = maxMana
+            updatedCharacter.mana = Math.min(maxMana, (selectedCharacter.mana ?? oldMaxMana) + (maxMana - oldMaxMana))
 
             state.gameState.characters[characterIndex] = updatedCharacter
           })
@@ -390,10 +401,65 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      learnSpell: (itemId: string) => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return null
+
+        const item = selectedCharacter.inventory.find(
+          i => i.id === itemId && i.status !== 'deleted' && i.type === 'spell_scroll'
+        )
+        if (!item) return null
+
+        // Check if item has a spell (stored in item description or parsed)
+        const spell = (item as Record<string, unknown>).spell
+        if (!spell || typeof spell !== 'object') {
+          return { message: 'This scroll contains no learnable spell.', learned: false }
+        }
+
+        // Check max slots
+        const classConfig = CLASS_SPELL_CONFIG[selectedCharacter.class.toLowerCase()]
+        const maxSlots = classConfig?.maxSlots ?? 3
+        const currentSpells = selectedCharacter.spellbook ?? []
+        if (currentSpells.length >= maxSlots) {
+          return { message: `Your spellbook is full! (${maxSlots} slots max for ${selectedCharacter.class})`, learned: false }
+        }
+
+        // Check if already known
+        const spellData = spell as { id: string; name: string }
+        if (currentSpells.some(s => s.id === spellData.id)) {
+          return { message: `You already know ${spellData.name}.`, learned: false }
+        }
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+
+            const updatedSpellbook = [...currentSpells, spell as FantasyCharacter['spellbook'] extends (infer U)[] | undefined ? U : never]
+            // Remove the scroll from inventory
+            const updatedInventory = selectedCharacter.inventory.map(i => {
+              if (i.id !== itemId) return i
+              const newQty = i.quantity - 1
+              if (newQty <= 0) return { ...i, quantity: 0, status: 'deleted' as const }
+              return { ...i, quantity: newQty }
+            }).filter(i => i.quantity > 0 || i.status === 'deleted')
+
+            state.gameState.characters[charIndex] = {
+              ...selectedCharacter,
+              spellbook: updatedSpellbook,
+              inventory: updatedInventory,
+            }
+          })
+        )
+
+        return { message: `Learned ${spellData.name}!`, learned: true }
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 6,
+      version: 7,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -419,6 +485,15 @@ export const useGameStore = create<GameStore>()(
             // v6: Add pending stat points
             if (char.pendingStatPoints === undefined) {
               ;(char as FantasyCharacter).pendingStatPoints = 0
+            }
+            // v7: Add mana and spellbook
+            if (char.mana === undefined || char.maxMana === undefined) {
+              const maxMana = calculateMaxMana(char as FantasyCharacter)
+              ;(char as FantasyCharacter).mana = maxMana
+              ;(char as FantasyCharacter).maxMana = maxMana
+            }
+            if (!char.spellbook) {
+              ;(char as FantasyCharacter).spellbook = []
             }
           }
         }

@@ -14,6 +14,8 @@ import {
   DEFAULT_CHARACTER_NAME,
   DEFAULT_STAT_MIN,
 } from '@/app/tap-tap-adventure/config/gameDefaults'
+import { getStartingSpell } from '@/app/tap-tap-adventure/config/startingSpells'
+import { calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 
@@ -57,6 +59,33 @@ export function useCharacterCreation() {
 
     const finalStats = calculateStartingStats(selectedRace, selectedClass)
 
+    // Calculate starting mana based on class and stats
+    const startingSpell = getStartingSpell(selectedClass.id)
+    const spellbook = startingSpell ? [startingSpell] : []
+
+    // Build a temp character to calculate maxMana
+    const tempChar = {
+      id: charId,
+      playerId: '',
+      name: character.name || DEFAULT_CHARACTER_NAME,
+      race: selectedRace.name,
+      class: selectedClass.name,
+      level: 1,
+      abilities: [defaultAbility],
+      locationId: '',
+      gold: 0,
+      reputation: 0,
+      distance: 0,
+      status: 'active' as const,
+      strength: finalStats.strength,
+      intelligence: finalStats.intelligence,
+      luck: finalStats.luck,
+      inventory: [],
+      deathCount: 0,
+      pendingStatPoints: 0,
+    }
+    const maxMana = calculateMaxMana(tempChar)
+
     const updatedCharacter = {
       ...character,
       id: charId,
@@ -67,6 +96,9 @@ export function useCharacterCreation() {
       intelligence: finalStats.intelligence,
       luck: finalStats.luck,
       abilities: [defaultAbility],
+      mana: maxMana,
+      maxMana: maxMana,
+      spellbook,
     }
 
     addCharacter(updatedCharacter)

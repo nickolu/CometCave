@@ -104,6 +104,21 @@ export const CLASS_ABILITIES: Record<string, ClassAbility> = {
   },
 }
 
+export interface ClassSpellConfig {
+  manaMultiplier: number
+  regenMultiplier: number
+  maxSlots: number
+  favoredSchool: string
+  schoolBonus: number
+}
+
+export const CLASS_SPELL_CONFIG: Record<string, ClassSpellConfig> = {
+  warrior: { manaMultiplier: 0.6, regenMultiplier: 0.5, maxSlots: 2, favoredSchool: 'war', schoolBonus: 0.5 },
+  mage:    { manaMultiplier: 1.5, regenMultiplier: 2.0, maxSlots: 6, favoredSchool: 'arcane', schoolBonus: 0.2 },
+  rogue:   { manaMultiplier: 0.8, regenMultiplier: 1.0, maxSlots: 3, favoredSchool: 'shadow', schoolBonus: 0.2 },
+  ranger:  { manaMultiplier: 1.0, regenMultiplier: 1.0, maxSlots: 4, favoredSchool: 'nature', schoolBonus: 0.3 },
+}
+
 export interface StartingStats {
   strength: number
   intelligence: number

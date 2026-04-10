@@ -11,6 +11,14 @@ import {
 import { Item } from '@/app/tap-tap-adventure/models/item'
 
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
+import { calculateMaxMana } from './leveling'
+import {
+  applyShieldAbsorption,
+  castSpell,
+  getActiveDamageReduction,
+  tickSpellCooldowns,
+  tickSpellEffects,
+} from './spellEngine'
 
 export function initializePlayerCombatState(character: FantasyCharacter): CombatPlayerState {
   // Calculate equipment bonuses
@@ -22,6 +30,9 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   // Use persistent HP from character, falling back to max if not set
   const maxHp = character.maxHp ?? (30 + character.strength * 3 + character.level * 8)
   const currentHp = character.hp ?? maxHp
+  const maxMana = character.maxMana ?? calculateMaxMana(character)
+  const currentMana = character.mana ?? maxMana
+
   return {
     hp: currentHp,
     maxHp,
@@ -34,6 +45,12 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     comboCount: 0,
     abilityCooldown: 0,
     enemyStunned: false,
+    mana: currentMana,
+    maxMana,
+    spellCooldowns: {},
+    activeSpellEffects: [],
+    spellTagsUsed: [],
+    shield: 0,
   }
 }
 
@@ -459,6 +476,35 @@ export function processPlayerAction(
       playerState.abilityCooldown = ability.cooldown
       break
     }
+    case 'cast_spell': {
+      if (!action.spellId) {
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'cast_spell',
+          description: 'No spell selected.',
+        })
+        break
+      }
+      const spellbook = character.spellbook ?? []
+      const spell = spellbook.find(s => s.id === action.spellId)
+      if (!spell) {
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'cast_spell',
+          description: 'You do not know that spell.',
+        })
+        break
+      }
+      // Use the current combat state with updated turn number for condition checking
+      const spellCombatState = { ...combatState, turnNumber, combatLog: [...combatLog, ...newLogs] }
+      const spellResult = castSpell(spell, playerState, enemy, character, spellCombatState)
+      playerState = spellResult.playerState
+      enemy = spellResult.enemy
+      newLogs.push(...spellResult.logs)
+      break
+    }
   }
 
   // Check boss phase change
@@ -508,16 +554,46 @@ export function processPlayerAction(
   } else if (enemyTelegraph) {
     const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber)
     playerState = result.playerState
+    // Apply shield absorption and damage reduction to enemy's damage
+    const enemyDmgLog = result.logs.find(l => l.damage && l.damage > 0)
+    if (enemyDmgLog && enemyDmgLog.damage) {
+      // Undo the direct HP damage from the telegraph, and re-apply with shield/reduction
+      const originalDmg = enemyDmgLog.damage
+      playerState.hp = Math.min(playerState.maxHp, playerState.hp + originalDmg) // restore
+
+      const dmgReduction = getActiveDamageReduction(playerState)
+      const reducedDmg = Math.max(1, Math.round(originalDmg * (1 - dmgReduction / 100)))
+      const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
+      playerState = shieldResult.playerState
+      playerState.hp = Math.max(0, playerState.hp - shieldResult.damageAfterShield)
+
+      if (dmgReduction > 0 || shieldResult.damageAfterShield < reducedDmg) {
+        const shieldAbsorbed = reducedDmg - shieldResult.damageAfterShield
+        const parts: string[] = []
+        if (dmgReduction > 0) parts.push(`${dmgReduction}% reduced`)
+        if (shieldAbsorbed > 0) parts.push(`${shieldAbsorbed} absorbed by shield`)
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'spell_mitigation',
+          description: `Spell effects mitigate damage (${parts.join(', ')})!`,
+        })
+      }
+    }
     newLogs.push(...result.logs)
   } else {
     const enemyDmg = calculateEnemyDamage(enemy, playerState)
-    playerState.hp = Math.max(0, playerState.hp - enemyDmg)
+    const dmgReduction = getActiveDamageReduction(playerState)
+    const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
+    const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
+    playerState = shieldResult.playerState
+    playerState.hp = Math.max(0, playerState.hp - shieldResult.damageAfterShield)
     newLogs.push({
       turn: turnNumber,
       actor: 'enemy',
       action: 'attack',
-      damage: enemyDmg,
-      description: `${enemy.name} attacks you for ${enemyDmg} damage!`,
+      damage: shieldResult.damageAfterShield,
+      description: `${enemy.name} attacks you for ${shieldResult.damageAfterShield} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== shieldResult.damageAfterShield ? ' (shield absorbed some)' : ''}`,
     })
   }
 
@@ -532,6 +608,25 @@ export function processPlayerAction(
     })
   }
 
+  // Tick spell effects (DOTs, HOTs, bleeds)
+  if (status === 'active') {
+    const spellTickResult = tickSpellEffects(playerState, enemy, turnNumber)
+    playerState = spellTickResult.playerState
+    enemy = spellTickResult.enemy
+    newLogs.push(...spellTickResult.logs)
+
+    // Check victory from DOT/bleed
+    if (enemy.hp <= 0) {
+      status = 'victory'
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'victory',
+        description: `You defeated ${enemy.name} with lingering spell effects!`,
+      })
+    }
+  }
+
   // Tick buffs
   playerState = tickBuffs(playerState)
 
@@ -539,6 +634,9 @@ export function processPlayerAction(
   if ((playerState.abilityCooldown ?? 0) > 0) {
     playerState = { ...playerState, abilityCooldown: playerState.abilityCooldown! - 1 }
   }
+
+  // Tick spell cooldowns
+  playerState = tickSpellCooldowns(playerState)
 
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'

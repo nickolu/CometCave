@@ -42,4 +42,7 @@ export const DEFAULT_CHARACTER = {
   equipment: { weapon: null, armor: null, accessory: null },
   deathCount: 0,
   pendingStatPoints: 0,
+  mana: 20,
+  maxMana: 20,
+  spellbook: [],
 }

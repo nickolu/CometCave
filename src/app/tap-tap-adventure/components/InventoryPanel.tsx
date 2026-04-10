@@ -30,6 +30,14 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
     setTimeout(() => setFeedbackMessage(null), 3000)
   }, [])
 
+  const handleLearnSpell = useCallback((item: Item) => {
+    const result = useGameStore.getState().learnSpell(item.id)
+    if (result) {
+      setFeedbackMessage(result.message)
+      setTimeout(() => setFeedbackMessage(null), 3000)
+    }
+  }, [])
+
   const handleDiscard = useCallback((item: Item) => {
     useGameStore.getState().discardItem(item.id)
   }, [])
@@ -88,6 +96,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                         Equipment
                       </span>
                     )}
+                    {item.type === 'spell_scroll' && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-purple-900/50 text-purple-400 rounded">
+                        Spell Scroll
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-400">{item.description}</div>
                   {item.effects && (
@@ -110,6 +123,15 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       title="Use one of this item"
                     >
                       Use
+                    </Button>
+                  )}
+                  {activeTab === 'active' && item.type === 'spell_scroll' && (
+                    <Button
+                      className="flex-1 bg-purple-700 hover:bg-purple-800 text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      onClick={() => handleLearnSpell(item)}
+                      title="Learn the spell from this scroll"
+                    >
+                      Learn
                     </Button>
                   )}
                   {activeTab === 'active' && item.type === 'equipment' && (

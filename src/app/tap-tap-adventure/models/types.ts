@@ -36,6 +36,20 @@ export type {
   FantasyDecisionPointSchema,
 } from './story'
 export type { Item, ItemSchema, ItemEffects, ItemEffectsSchema } from './item'
+export type {
+  Spell,
+  SpellSchema,
+  SpellEffect,
+  SpellEffectSchema,
+  SpellElement,
+  SpellElementSchema,
+  SpellSchool,
+  SpellSchoolSchema,
+  SpellEffectType,
+  SpellEffectTypeSchema,
+  SpellCondition,
+  SpellConditionSchema,
+} from './spell'
 export type { TimedQuest, TimedQuestSchema } from './quest'
 export type {
   CombatState,
@@ -46,6 +60,7 @@ export type {
   CombatLogEntry,
   CombatBuff,
   CombatStatus,
+  ActiveSpellEffect,
   CombatStateSchema,
   CombatEnemySchema,
   CombatPlayerStateSchema,
@@ -54,6 +69,7 @@ export type {
   CombatLogEntrySchema,
   CombatBuffSchema,
   CombatStatusSchema,
+  ActiveSpellEffectSchema,
 } from './combat'
 
 type GameState = {

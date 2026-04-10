@@ -31,6 +31,15 @@ export const CombatBuffSchema = z.object({
 })
 export type CombatBuff = z.infer<typeof CombatBuffSchema>
 
+export const ActiveSpellEffectSchema = z.object({
+  spellId: z.string(),
+  effectType: z.string(),
+  value: z.number(),
+  turnsRemaining: z.number(),
+  percentage: z.number().optional(),
+})
+export type ActiveSpellEffect = z.infer<typeof ActiveSpellEffectSchema>
+
 export const CombatPlayerStateSchema = z.object({
   hp: z.number(),
   maxHp: z.number(),
@@ -41,15 +50,22 @@ export const CombatPlayerStateSchema = z.object({
   comboCount: z.number().default(0),
   abilityCooldown: z.number().default(0),
   enemyStunned: z.boolean().default(false),
+  mana: z.number().default(0),
+  maxMana: z.number().default(0),
+  spellCooldowns: z.record(z.string(), z.number()).optional(),
+  activeSpellEffects: z.array(ActiveSpellEffectSchema).optional(),
+  spellTagsUsed: z.array(z.string()).optional(),
+  shield: z.number().default(0),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
-export const CombatActionSchema = z.enum(['attack', 'defend', 'use_item', 'flee', 'class_ability'])
+export const CombatActionSchema = z.enum(['attack', 'defend', 'use_item', 'flee', 'class_ability', 'cast_spell'])
 export type CombatAction = z.infer<typeof CombatActionSchema>
 
 export const CombatActionRequestSchema = z.object({
   action: CombatActionSchema,
   itemId: z.string().optional(),
+  spellId: z.string().optional(),
 })
 export type CombatActionRequest = z.infer<typeof CombatActionRequestSchema>
 
