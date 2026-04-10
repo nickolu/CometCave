@@ -6,6 +6,7 @@ import { CombatEnemy, CombatEnemySchema } from '@/app/tap-tap-adventure/models/c
 
 import { getReputationTier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
+import { generateSpellForLevel } from './spellGenerator'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -243,6 +244,17 @@ function getDefaultBossEncounter(
           description: 'An ancient book radiating magical energy.',
           quantity: 1,
         }),
+        (() => {
+          const spell = generateSpellForLevel(level)
+          return {
+            id: `boss-loot-spell-${suffix}`,
+            name: `Scroll of ${spell.name}`,
+            description: `A powerful spell scroll dropped by ${boss.name}.`,
+            quantity: 1,
+            type: 'spell_scroll' as const,
+            spell,
+          }
+        })(),
       ],
       specialAbility: {
         name: boss.special,

@@ -35,9 +35,11 @@ export function useCombatActionMutation() {
     mutationFn: async ({
       action,
       itemId,
+      spellId,
     }: {
       action: CombatAction
       itemId?: string
+      spellId?: string
     }) => {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
@@ -51,7 +53,7 @@ export function useCombatActionMutation() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           combatState,
-          action: { action, itemId },
+          action: { action, itemId, spellId },
           character,
         }),
       })
@@ -78,10 +80,12 @@ export function useCombatActionMutation() {
         updateSelectedCharacter({ inventory: updatedInventory })
       }
 
-      // Persist HP back to character after every combat turn
+      // Persist HP and mana back to character after every combat turn
       updateSelectedCharacter({
         hp: data.combatState.playerState.hp,
         maxHp: data.combatState.playerState.maxHp,
+        mana: data.combatState.playerState.mana,
+        maxMana: data.combatState.playerState.maxMana,
       })
 
       if (data.combatState.status === 'active') {

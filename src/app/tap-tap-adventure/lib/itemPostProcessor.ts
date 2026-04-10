@@ -37,7 +37,19 @@ export function inferItemTypeAndEffects(item: Item): Item {
     return item
   }
 
+  // Spell scroll items — if it has a spell field, mark as spell_scroll
+  if (item.type === 'spell_scroll' && item.spell) {
+    return item
+  }
+
   const name = item.name.toLowerCase()
+
+  // Detect spell scrolls by name pattern (when no type set and has spell data)
+  if (!item.type || item.type === 'misc') {
+    if (matchesAny(name, ['spell scroll', 'scroll of', 'tome of']) && item.spell) {
+      return { ...item, type: 'spell_scroll' }
+    }
+  }
 
   // Potions / Elixirs
   if (matchesAny(name, ['potion', 'elixir', 'brew', 'tonic', 'vial', 'draught', 'flask'])) {

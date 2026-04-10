@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ItemSchema } from './item'
+import { SpellSchema } from './spell'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
@@ -39,6 +40,9 @@ export const FantasyCharacterSchema = z.object({
   }).optional(),
   deathCount: z.number().default(0),
   pendingStatPoints: z.number().default(0),
+  mana: z.number().optional(),
+  maxMana: z.number().optional(),
+  spellbook: z.array(SpellSchema).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

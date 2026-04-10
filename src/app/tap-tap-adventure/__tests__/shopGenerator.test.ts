@@ -4,9 +4,9 @@ import { getFallbackShopItems } from '@/app/tap-tap-adventure/lib/shopGenerator'
 
 describe('shopGenerator', () => {
   describe('getFallbackShopItems', () => {
-    it('returns 4 items', () => {
+    it('returns 5 items (4 consumables + 1 spell scroll)', () => {
       const items = getFallbackShopItems(1)
-      expect(items).toHaveLength(4)
+      expect(items).toHaveLength(5)
     })
 
     it('all items have required fields', () => {
@@ -18,7 +18,10 @@ describe('shopGenerator', () => {
         expect(item.quantity).toBe(1)
         expect(item.price).toBeGreaterThan(0)
         expect(item.type).toBeDefined()
-        expect(item.effects).toBeDefined()
+        // spell_scroll items may not have effects
+        if (item.type !== 'spell_scroll') {
+          expect(item.effects).toBeDefined()
+        }
       }
     })
 
@@ -47,8 +50,17 @@ describe('shopGenerator', () => {
     it('items are post-processed with types', () => {
       const items = getFallbackShopItems(5)
       for (const item of items) {
-        expect(item.type).toBe('consumable')
+        expect(['consumable', 'spell_scroll']).toContain(item.type)
       }
+    })
+
+    it('includes a spell scroll with spell data', () => {
+      const items = getFallbackShopItems(3)
+      const scrolls = items.filter(i => i.type === 'spell_scroll')
+      expect(scrolls.length).toBe(1)
+      expect(scrolls[0].spell).toBeDefined()
+      expect(scrolls[0].spell?.name).toBeTruthy()
+      expect(scrolls[0].spell?.effects.length).toBeGreaterThan(0)
     })
   })
 

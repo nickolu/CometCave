@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
+import { SpellSchema } from '@/app/tap-tap-adventure/models/spell'
 
 import { getReputationTier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
@@ -51,7 +52,7 @@ const rewardItemSchema = z.object({
   name: z.string(),
   description: z.string(),
   quantity: z.number(),
-  type: z.enum(['consumable', 'equipment', 'quest', 'misc']).optional().default('misc'),
+  type: z.enum(['consumable', 'equipment', 'quest', 'misc', 'spell_scroll']).optional().default('misc'),
   effects: z.object({
     gold: z.number().optional(),
     reputation: z.number().optional(),
@@ -59,6 +60,7 @@ const rewardItemSchema = z.object({
     intelligence: z.number().optional(),
     luck: z.number().optional(),
   }).optional(),
+  spell: SpellSchema.optional(),
 })
 
 const eventOptionSchema = z.object({
@@ -93,6 +95,35 @@ const eventsArraySchema = z.array(eventSchema).length(3)
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 // Function calling schema for event generation
+const spellEffectSchemaForOpenAI = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', enum: ['damage', 'damage_over_time', 'true_damage', 'lifesteal', 'heal', 'heal_over_time', 'shield', 'damage_reduction', 'buff', 'debuff', 'stun', 'bleed', 'cleanse', 'mana_restore', 'combo_boost'] },
+    value: { type: 'number' },
+    element: { type: 'string', enum: ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane', 'none'] },
+    stat: { type: 'string' },
+    duration: { type: 'number' },
+    percentage: { type: 'number' },
+  },
+  required: ['type', 'value'],
+}
+
+const spellSchemaForOpenAI = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    name: { type: 'string' },
+    description: { type: 'string' },
+    school: { type: 'string', enum: ['arcane', 'nature', 'shadow', 'war'] },
+    manaCost: { type: 'number' },
+    cooldown: { type: 'number' },
+    target: { type: 'string', enum: ['enemy', 'self'] },
+    effects: { type: 'array', items: spellEffectSchemaForOpenAI },
+    tags: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['id', 'name', 'description', 'school', 'manaCost', 'cooldown', 'target', 'effects', 'tags'],
+}
+
 const rewardItemSchemaForOpenAI = {
   type: 'object',
   properties: {
@@ -100,7 +131,7 @@ const rewardItemSchemaForOpenAI = {
     quantity: { type: 'number', minimum: 1 },
     name: { type: 'string' },
     description: { type: 'string' },
-    type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc'] },
+    type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc', 'spell_scroll'] },
     effects: {
       type: 'object',
       properties: {
@@ -111,6 +142,7 @@ const rewardItemSchemaForOpenAI = {
         luck: { type: 'number' },
       },
     },
+    spell: spellSchemaForOpenAI,
   },
   required: ['id', 'quantity', 'name', 'description'],
 }
@@ -242,6 +274,7 @@ Tailor the tone, NPC attitudes, and available opportunities to reflect the chara
 
 When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts or gold. Examples: potions that grant +2 strength, scrolls that grant +2 intelligence, lucky coins that grant +1 luck.
 Sometimes include equipment items (type: "equipment") like weapons, armor, or accessories with stat-boosting effects. Examples: a steel sword with +2 strength, iron armor with +2 intelligence, or a lucky charm with +1 luck.
+Sometimes reward spell scrolls — items with type "spell_scroll" containing a spell with a creative name, 2-3 effects, optional conditions, and tags. The spell field should have: id, name, description, school (arcane/nature/shadow/war), manaCost, cooldown, target (enemy/self), effects array, optional conditions array, and tags array.
 
 IMPORTANT: About 1 in 3 events should involve a potential confrontation (bandits, monsters, rivals, etc.). For these events, include at least one option with "triggersCombat": true — this represents the character choosing to fight. Other options can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). This gives the player agency over whether to fight.
 
@@ -316,7 +349,7 @@ function parseEventsFromToolCall(toolCall: OpenAI.Chat.Completions.ChatCompletio
   return uniqueEvents
 }
 
-function getDefaultEvents() {
+function getDefaultEvents(): LLMGeneratedEvent[] {
   const uniqueSuffix = `fallback-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
   return [
