@@ -19,9 +19,11 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const armorBonus = equipment.armor?.effects?.intelligence ?? 0
   const accessoryLuckBonus = equipment.accessory?.effects?.luck ?? 0
 
-  const maxHp = 50 + character.strength * 5 + character.level * 10
+  // Use persistent HP from character, falling back to max if not set
+  const maxHp = character.maxHp ?? (50 + character.strength * 5 + character.level * 10)
+  const currentHp = character.hp ?? maxHp
   return {
-    hp: maxHp,
+    hp: currentHp,
     maxHp,
     attack: 5 + character.strength * 2 + character.level + weaponBonus * 2,
     defense: 3 + character.intelligence + character.level + armorBonus,

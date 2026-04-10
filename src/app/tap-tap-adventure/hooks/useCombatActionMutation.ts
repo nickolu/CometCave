@@ -77,6 +77,12 @@ export function useCombatActionMutation() {
         updateSelectedCharacter({ inventory: updatedInventory })
       }
 
+      // Persist HP back to character after every combat turn
+      updateSelectedCharacter({
+        hp: data.combatState.playerState.hp,
+        maxHp: data.combatState.playerState.maxHp,
+      })
+
       if (data.combatState.status === 'active') {
         // Combat continues
         setCombatState(data.combatState)

@@ -37,8 +37,15 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     effectMessages.push(`${effects.reputation > 0 ? '+' : ''}${effects.reputation} Reputation`)
   }
   if (effects.strength) {
-    updatedCharacter.strength += effects.strength
-    effectMessages.push(`${effects.strength > 0 ? '+' : ''}${effects.strength} Strength`)
+    // Strength potions heal HP (strength * 5) instead of boosting stat permanently
+    const healAmount = effects.strength * 5
+    const maxHp = updatedCharacter.maxHp ?? 100
+    const oldHp = updatedCharacter.hp ?? maxHp
+    updatedCharacter.hp = Math.min(maxHp, oldHp + healAmount)
+    const actualHeal = (updatedCharacter.hp ?? 0) - oldHp
+    if (actualHeal > 0) {
+      effectMessages.push(`+${actualHeal} HP`)
+    }
   }
   if (effects.intelligence) {
     updatedCharacter.intelligence += effects.intelligence
