@@ -284,6 +284,12 @@ function getDefaultCombatEncounter(
           description: 'A small vial of restorative liquid.',
           quantity: 1,
         }),
+        ...(level >= 2 ? [inferItemTypeAndEffects({
+          id: `loot-equipment-${suffix}`,
+          name: level <= 3 ? 'Rusty Dagger' : level <= 5 ? 'Iron Sword' : 'Steel Blade',
+          description: level <= 3 ? 'A worn but still sharp dagger.' : level <= 5 ? 'A reliable iron sword.' : 'A finely crafted steel blade.',
+          quantity: 1,
+        })] : []),
       ],
       specialAbility:
         level >= 3

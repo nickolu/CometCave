@@ -30,6 +30,11 @@ export const FantasyCharacterSchema = z.object({
   intelligence: z.number(),
   luck: z.number(),
   inventory: z.array(ItemSchema),
+  equipment: z.object({
+    weapon: ItemSchema.nullable().optional(),
+    armor: ItemSchema.nullable().optional(),
+    accessory: ItemSchema.nullable().optional(),
+  }).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
