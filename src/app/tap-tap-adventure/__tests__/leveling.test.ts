@@ -134,22 +134,21 @@ describe('Distance-Based Leveling (rebalanced)', () => {
   })
 
   describe('applyLevelFromDistance', () => {
-    it('heals 1 HP every 10 steps', () => {
-      const char = { ...baseChar, distance: 10, hp: 40, maxHp: 53 }
-      // 1 step = no heal
-      const result1 = applyLevelFromDistance(char, 1)
-      expect(result1.hp).toBe(40)
-      // 9 steps = no heal
-      const result9 = applyLevelFromDistance(char, 9)
-      expect(result9.hp).toBe(40)
-      // 10 steps = 1 heal
-      const result10 = applyLevelFromDistance(char, 10)
-      expect(result10.hp).toBe(41)
+    it('heals 1 HP every 10 steps using distance thresholds', () => {
+      // Distance 10, stepped from 9: crosses 10-step boundary → heals
+      const charCrossing = { ...baseChar, distance: 10, hp: 40, maxHp: 53 }
+      const result1 = applyLevelFromDistance(charCrossing, 1)
+      expect(result1.hp).toBe(41)
+
+      // Distance 12, stepped from 11: no boundary → no heal
+      const charNoCross = { ...baseChar, distance: 12, hp: 40, maxHp: 53 }
+      const result2 = applyLevelFromDistance(charNoCross, 1)
+      expect(result2.hp).toBe(40)
     })
 
     it('does not heal past maxHp', () => {
-      const char = { ...baseChar, distance: 10, hp: 52, maxHp: 53 }
-      const result = applyLevelFromDistance(char, 30) // would heal 3, but capped at 53
+      const char = { ...baseChar, distance: 20, hp: 53, maxHp: 53 }
+      const result = applyLevelFromDistance(char, 1)
       expect(result.hp).toBe(53)
     })
 

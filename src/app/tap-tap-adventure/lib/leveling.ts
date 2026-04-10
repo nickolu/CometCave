@@ -130,17 +130,19 @@ export function applyLevelFromDistance(
     }
   }
 
-  // Normal walking: slow regen
+  // Normal walking: slow regen using distance-based thresholds
+  // Uses floor(newDist/rate) - floor(oldDist/rate) so single-step increments work
+  const oldDistance = updated.distance - stepsGained
   const currentHp = updated.hp ?? maxHp
-  const healAmount = Math.floor(stepsGained / HEAL_RATE)
-  const healed = Math.min(maxHp, currentHp + healAmount)
+  const healTicks = Math.floor(updated.distance / HEAL_RATE) - Math.floor(oldDistance / HEAL_RATE)
+  const healed = Math.min(maxHp, currentHp + Math.max(0, healTicks))
 
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1
   const effectiveRegenRate = Math.max(1, Math.floor(MANA_REGEN_BASE_RATE / regenMultiplier))
   const currentMana = updated.mana ?? maxMana
-  const manaRegenAmount = Math.floor(stepsGained / effectiveRegenRate)
-  const regenedMana = Math.min(maxMana, currentMana + manaRegenAmount)
+  const manaTicks = Math.floor(updated.distance / effectiveRegenRate) - Math.floor(oldDistance / effectiveRegenRate)
+  const regenedMana = Math.min(maxMana, currentMana + Math.max(0, manaTicks))
 
   return {
     ...updated,
