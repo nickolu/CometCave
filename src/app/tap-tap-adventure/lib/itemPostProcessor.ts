@@ -77,12 +77,44 @@ export function inferItemTypeAndEffects(item: Item): Item {
     return { ...item, type: 'consumable', effects: item.effects ?? { gold: 15 } }
   }
 
-  // Charms / Amulets
+  // Charms / Amulets (consumable by default, but equipment if explicitly typed)
   if (matchesAny(name, ['charm', 'amulet', 'talisman', 'trinket', 'lucky'])) {
     return {
       ...item,
-      type: 'consumable',
+      type: item.type === 'equipment' ? 'equipment' : 'consumable',
       effects: item.effects ?? { luck: 2 },
+    }
+  }
+
+  // Equipment: Weapons
+  if (matchesAny(name, ['sword', 'axe', 'dagger', 'bow', 'staff', 'blade', 'hammer', 'spear', 'mace', 'wand'])) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'mighty', 'ancient']) ? 3
+      : matchesAny(name, ['fine', 'sharp', 'sturdy', 'steel']) ? 2 : 1
+    return {
+      ...item,
+      type: 'equipment',
+      effects: item.effects ?? { strength: quality },
+    }
+  }
+
+  // Equipment: Armor
+  if (matchesAny(name, ['armor', 'shield', 'helm', 'helmet', 'boots', 'cloak', 'robe', 'plate', 'mail', 'gauntlet'])) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'ancient']) ? 3
+      : matchesAny(name, ['fine', 'reinforced', 'sturdy', 'steel']) ? 2 : 1
+    return {
+      ...item,
+      type: 'equipment',
+      effects: item.effects ?? { intelligence: quality },
+    }
+  }
+
+  // Equipment: Accessories
+  if (matchesAny(name, ['ring', 'necklace', 'bracelet', 'pendant', 'circlet', 'crown'])) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'ancient']) ? 2 : 1
+    return {
+      ...item,
+      type: 'equipment',
+      effects: item.effects ?? { luck: quality },
     }
   }
 

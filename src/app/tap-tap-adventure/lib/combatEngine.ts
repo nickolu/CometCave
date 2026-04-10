@@ -1,3 +1,4 @@
+import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import {
   CombatActionRequest,
@@ -113,7 +114,6 @@ function generateEnemyTelegraph(enemy: CombatEnemy, turnNumber: number, isBoss: 
     }
   }
 
-  // Bosses and stronger enemies telegraph heavy attacks more often
   const heavyChance = isBoss ? 0.35 : 0.2
   if (Math.random() < heavyChance) {
     return {
@@ -122,7 +122,6 @@ function generateEnemyTelegraph(enemy: CombatEnemy, turnNumber: number, isBoss: 
     }
   }
 
-  // Rare enemy defend (boss only)
   if (isBoss && Math.random() < 0.15) {
     return {
       action: 'defend',
@@ -263,7 +262,6 @@ export function processPlayerAction(
   // Process player action
   switch (action.action) {
     case 'attack': {
-      // Apply enemy defense boost if they telegraphed defend
       const effectiveEnemy = enemyDefending
         ? { ...enemy, defense: enemy.defense * 2 }
         : enemy
@@ -282,7 +280,7 @@ export function processPlayerAction(
     }
     case 'defend': {
       playerState.isDefending = true
-      playerState.comboCount = 0 // defending breaks combo
+      playerState.comboCount = 0
       newLogs.push({
         turn: turnNumber,
         actor: 'player',
@@ -292,7 +290,7 @@ export function processPlayerAction(
       break
     }
     case 'use_item': {
-      playerState.comboCount = 0 // using item breaks combo
+      playerState.comboCount = 0
       if (!action.itemId) {
         newLogs.push({
           turn: turnNumber,
@@ -356,6 +354,110 @@ export function processPlayerAction(
       })
       break
     }
+    case 'class_ability': {
+      const classId = character.class.toLowerCase()
+      const ability = CLASS_ABILITIES[classId]
+      if (!ability) {
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'class_ability',
+          description: 'You have no class ability available.',
+        })
+        break
+      }
+      if ((playerState.abilityCooldown ?? 0) > 0) {
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'class_ability',
+          description: `${ability.name} is not ready yet! (${playerState.abilityCooldown} turns remaining)`,
+        })
+        break
+      }
+
+      switch (classId) {
+        case 'warrior': {
+          const baseDmg = calculatePlayerDamage(playerState, enemy)
+          const damage = Math.max(1, Math.round(baseDmg * 0.8))
+          enemy.hp = Math.max(0, enemy.hp - damage)
+          playerState.enemyStunned = true
+          playerState.comboCount = (playerState.comboCount ?? 0) + 1
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'class_ability',
+            damage,
+            description: `You bash ${enemy.name} with your shield for ${damage} damage, stunning them!`,
+          })
+          break
+        }
+        case 'mage': {
+          const baseDmg = calculatePlayerDamage(playerState, enemy)
+          const damage = Math.max(1, Math.round(baseDmg * 2))
+          const recoil = Math.max(1, Math.round(playerState.maxHp * 0.2))
+          enemy.hp = Math.max(0, enemy.hp - damage)
+          playerState.hp = Math.max(1, playerState.hp - recoil)
+          playerState.comboCount = 0
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'class_ability',
+            damage,
+            description: `You unleash an Arcane Blast for ${damage} damage! The magical recoil deals ${recoil} damage to you.`,
+          })
+          break
+        }
+        case 'rogue': {
+          const combo = playerState.comboCount ?? 0
+          if (combo >= 2) {
+            const baseDmg = calculatePlayerDamage(playerState, enemy)
+            const damage = Math.max(1, Math.round(baseDmg * 3))
+            enemy.hp = Math.max(0, enemy.hp - damage)
+            playerState.comboCount = 0
+            newLogs.push({
+              turn: turnNumber,
+              actor: 'player',
+              action: 'class_ability',
+              damage,
+              description: `You exploit your ${combo}x combo with a devastating Backstab for ${damage} damage!`,
+            })
+          } else {
+            const damage = calculatePlayerDamage(playerState, enemy)
+            enemy.hp = Math.max(0, enemy.hp - damage)
+            playerState.comboCount = (playerState.comboCount ?? 0) + 1
+            newLogs.push({
+              turn: turnNumber,
+              actor: 'player',
+              action: 'class_ability',
+              damage,
+              description: `Your Backstab lacks setup and deals ${damage} normal damage.`,
+            })
+          }
+          break
+        }
+        case 'ranger': {
+          const buffedAttack =
+            playerState.attack +
+            (playerState.activeBuffs ?? [])
+              .filter(b => b.stat === 'attack')
+              .reduce((sum, b) => sum + b.value, 0)
+          const damage = Math.max(1, Math.round(buffedAttack))
+          enemy.hp = Math.max(0, enemy.hp - damage)
+          playerState.comboCount = (playerState.comboCount ?? 0) + 1
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'class_ability',
+            damage,
+            description: `Your Precise Shot pierces through all defenses for ${damage} damage!`,
+          })
+          break
+        }
+      }
+      playerState.abilityCooldown = ability.cooldown
+      break
+    }
   }
 
   // Check boss phase change
@@ -393,13 +495,21 @@ export function processPlayerAction(
   }
 
   // Execute enemy's telegraphed action (or normal attack if no telegraph)
-  if (enemyTelegraph) {
+  // If enemy is stunned, they skip their action
+  if (playerState.enemyStunned) {
+    playerState.enemyStunned = false
+    newLogs.push({
+      turn: turnNumber,
+      actor: 'enemy',
+      action: 'stunned',
+      description: `${enemy.name} is stunned and cannot act!`,
+    })
+  } else if (enemyTelegraph) {
     const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber)
     playerState = result.playerState
     newLogs.push(...result.logs)
     enemyDefending = result.enemyDefenseBoost
   } else {
-    // First turn or no telegraph — normal attack
     const enemyDmg = calculateEnemyDamage(enemy, playerState)
     playerState.hp = Math.max(0, playerState.hp - enemyDmg)
     newLogs.push({
@@ -424,6 +534,11 @@ export function processPlayerAction(
 
   // Tick buffs
   playerState = tickBuffs(playerState)
+
+  // Tick ability cooldown
+  if ((playerState.abilityCooldown ?? 0) > 0) {
+    playerState = { ...playerState, abilityCooldown: playerState.abilityCooldown! - 1 }
+  }
 
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'
@@ -457,7 +572,6 @@ export function getCombatRewards(
   const { enemy } = combatState
   const gold = enemy.goldReward
 
-  // Select loot based on luck. Boss loot always drops.
   const loot: Item[] = []
   if (enemy.lootTable) {
     for (const item of enemy.lootTable) {

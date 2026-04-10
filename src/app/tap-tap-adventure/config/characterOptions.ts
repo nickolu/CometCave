@@ -74,11 +74,6 @@ export const CLASSES: ClassOption[] = [
   },
 ]
 
-export interface StartingStats {
-  strength: number
-  intelligence: number
-  luck: number
-}
 
 export interface ClassAbility {
   name: string
@@ -107,6 +102,12 @@ export const CLASS_ABILITIES: Record<string, ClassAbility> = {
     description: 'Ignores enemy defense entirely, dealing full base attack damage.',
     cooldown: 3,
   },
+}
+
+export interface StartingStats {
+  strength: number
+  intelligence: number
+  luck: number
 }
 
 export function calculateStartingStats(

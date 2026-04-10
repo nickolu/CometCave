@@ -38,4 +38,5 @@ export const DEFAULT_CHARACTER = {
   intelligence: DEFAULT_STAT_MIN,
   luck: DEFAULT_STAT_MIN,
   equipment: { weapon: null, armor: null, accessory: null },
+  deathCount: 0,
 }
