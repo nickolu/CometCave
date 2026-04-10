@@ -16,13 +16,21 @@ export interface MoveForwardResponse {
   event?: FantasyStoryEvent | null
   decisionPoint?: FantasyDecisionPoint | null
   combatEncounter?: { enemy: unknown; scenario: string } | null
+  shopEvent?: boolean | null
   genericMessage?: string | null
 }
 
 export function useMoveForwardMutation() {
   const queryClient = useQueryClient()
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, commit, setDecisionPoint, setGenericMessage, setCombatState } = useGameStateBuilder()
+  const {
+    addItem,
+    commit,
+    setDecisionPoint,
+    setGenericMessage,
+    setCombatState,
+    setShopState,
+  } = useGameStateBuilder()
 
   return useMutation({
     mutationFn: async () => {
@@ -56,7 +64,21 @@ export function useMoveForwardMutation() {
         addItem(item)
       }
 
-      if (data.combatEncounter) {
+      if (data.shopEvent) {
+        // Level up triggered a shop - fetch shop items from server
+        const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character: currentCharacter }),
+        })
+        if (shopRes.ok) {
+          const shopData = await shopRes.json()
+          setGenericMessage(null)
+          setDecisionPoint(null)
+          setCombatState(null)
+          setShopState({ items: shopData.shopItems, isOpen: true })
+        }
+      } else if (data.combatEncounter) {
         // Start combat - fetch combat state from server
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
           method: 'POST',

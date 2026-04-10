@@ -13,6 +13,7 @@ import {
   FantasyStoryEvent,
   GameState,
   Item,
+  ShopState,
 } from '@/app/tap-tap-adventure/models/types'
 
 const defaultCharacter: FantasyCharacter = {
@@ -43,6 +44,7 @@ export interface GameStore {
   incrementDistance: () => void
   selectCharacter: (id: string) => void
   setCombatState: (combatState: CombatState | null) => void
+  setShopState: (shopState: ShopState | null) => void
   setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void
   setGameState: (gameState: GameState) => void
   setGenericMessage: (message: string) => void
@@ -144,6 +146,18 @@ export const useGameStore = create<GameStore>()(
               gameState: {
                 ...state.gameState,
                 combatState,
+              },
+            }
+          })
+        )
+      },
+      setShopState: (shopState: ShopState | null) => {
+        set(
+          produce((state: GameStore) => {
+            return {
+              gameState: {
+                ...state.gameState,
+                shopState,
               },
             }
           })
@@ -253,11 +267,14 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
           (state.gameState as GameState).combatState = null
+        }
+        if (state?.gameState && !('shopState' in state.gameState)) {
+          (state.gameState as GameState).shopState = null
         }
         return state
       },
@@ -296,6 +313,10 @@ export function useGameStateBuilder() {
     gameStateClone.combatState = combatState
   }
 
+  const setShopState = (shopState: ShopState | null) => {
+    gameStateClone.shopState = shopState
+  }
+
   const setDecisionPoint = (decisionPoint: FantasyDecisionPoint | null) => {
     gameStateClone.decisionPoint = decisionPoint
   }
@@ -325,6 +346,7 @@ export function useGameStateBuilder() {
     addItem,
     addStoryEvent,
     setCombatState,
+    setShopState,
     setDecisionPoint,
     setGenericMessage,
     updateSelectedCharacter,

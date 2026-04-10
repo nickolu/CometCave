@@ -2,8 +2,14 @@
 
 import { FantasyCharacter } from './character'
 import { CombatState } from './combat'
+import { Item } from './item'
 import { FantasyLocation } from './location'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
+
+export type ShopState = {
+  items: Item[]
+  isOpen: boolean
+}
 
 export type {
   FantasyAbility,
@@ -60,6 +66,7 @@ type GameState = {
   storyEvents: FantasyStoryEvent[]
   decisionPoint: FantasyDecisionPoint | null
   combatState: CombatState | null
+  shopState: ShopState | null
   genericMessage: string | null
 }
 export type { GameState }

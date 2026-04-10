@@ -12,6 +12,7 @@ import { flipCoin } from '@/app/utils'
 
 import { CombatUI, CombatResult } from './CombatUI'
 import { InventoryPanel } from './InventoryPanel'
+import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
@@ -85,6 +86,8 @@ export default function GameUI() {
                 combatState={gameState.combatState}
                 onContinue={() => setCombatState(null)}
               />
+            ) : gameState.shopState?.isOpen ? (
+              <ShopUI />
             ) : gameState.decisionPoint ? (
               <>
                 <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">

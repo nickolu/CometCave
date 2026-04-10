@@ -19,6 +19,7 @@ export const ItemSchema = z.object({
   status: z.enum(['active', 'deleted']).optional(),
   type: z.enum(['consumable', 'equipment', 'quest', 'misc']).optional(),
   effects: ItemEffectsSchema.optional(),
+  price: z.number().optional(),
 })
 
 export type Item = z.infer<typeof ItemSchema>
