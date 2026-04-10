@@ -1,7 +1,7 @@
 'use client'
 
 import { LoaderCircle } from 'lucide-react'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
@@ -12,6 +12,7 @@ import { flipCoin } from '@/app/utils'
 
 import { CombatUI, CombatResult } from './CombatUI'
 import { InventoryPanel } from './InventoryPanel'
+import { LevelUpCelebration } from './LevelUpCelebration'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
 
@@ -40,10 +41,20 @@ export default function GameUI() {
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
     useResolveDecisionMutation()
 
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
+  const prevLevelRef = useRef<number | null>(null)
+  const character = getSelectedCharacter()
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && gameState) {
+    if (!character) return
+    const currentLevel = character.level
+    if (prevLevelRef.current !== null && currentLevel > prevLevelRef.current) {
+      setLevelUpLevel(currentLevel)
     }
-  }, [gameState])
+    prevLevelRef.current = currentLevel
+  }, [character?.level])
+
+  const dismissLevelUp = useCallback(() => setLevelUpLevel(null), [])
 
   const handleResolveDecision = (optionId: string) => {
     resolveDecisionMutation({
@@ -75,6 +86,10 @@ export default function GameUI() {
   }
 
   return (
+    <>
+      {levelUpLevel !== null && (
+        <LevelUpCelebration level={levelUpLevel} onDismiss={dismissLevelUp} />
+      )}
     <div className="flex flex-col select-none">
       <div className="relative z-10 mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
@@ -162,5 +177,6 @@ export default function GameUI() {
       </div>
       {/* Main content wrapper END */}
     </div>
+    </>
   )
 }
