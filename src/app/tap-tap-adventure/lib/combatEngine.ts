@@ -122,7 +122,8 @@ function generateEnemyTelegraph(enemy: CombatEnemy, turnNumber: number, isBoss: 
     }
   }
 
-  if (isBoss && Math.random() < 0.15) {
+  const defendChance = isBoss ? 0.2 : 0.1
+  if (Math.random() < defendChance) {
     return {
       action: 'defend',
       description: `${enemy.name} braces and raises their guard.`,
@@ -257,7 +258,7 @@ export function processPlayerAction(
   playerState.isDefending = false
 
   // Track if enemy is defending this turn (from telegraph)
-  let enemyDefending = false
+  let enemyDefending = enemyTelegraph?.action === 'defend'
 
   // Process player action
   switch (action.action) {
@@ -508,7 +509,6 @@ export function processPlayerAction(
     const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber)
     playerState = result.playerState
     newLogs.push(...result.logs)
-    enemyDefending = result.enemyDefenseBoost
   } else {
     const enemyDmg = calculateEnemyDamage(enemy, playerState)
     playerState.hp = Math.max(0, playerState.hp - enemyDmg)

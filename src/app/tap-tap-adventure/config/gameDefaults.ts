@@ -41,4 +41,5 @@ export const DEFAULT_CHARACTER = {
   maxHp: 100,
   equipment: { weapon: null, armor: null, accessory: null },
   deathCount: 0,
+  pendingStatPoints: 0,
 }
