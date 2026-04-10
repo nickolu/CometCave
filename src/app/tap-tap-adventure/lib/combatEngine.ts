@@ -20,13 +20,13 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const accessoryLuckBonus = equipment.accessory?.effects?.luck ?? 0
 
   // Use persistent HP from character, falling back to max if not set
-  const maxHp = character.maxHp ?? (50 + character.strength * 5 + character.level * 10)
+  const maxHp = character.maxHp ?? (30 + character.strength * 3 + character.level * 8)
   const currentHp = character.hp ?? maxHp
   return {
     hp: currentHp,
     maxHp,
-    attack: 5 + character.strength * 2 + character.level + weaponBonus * 2,
-    defense: 3 + character.intelligence + character.level + armorBonus,
+    attack: 2 + character.strength + Math.floor(character.level / 2) + weaponBonus * 2,
+    defense: 1 + Math.floor(character.intelligence / 2) + Math.floor(character.level / 2) + armorBonus,
     isDefending: false,
     activeBuffs: accessoryLuckBonus > 0
       ? [{ stat: 'attack' as const, value: accessoryLuckBonus, turnsRemaining: 999 }]
@@ -60,7 +60,7 @@ export function calculatePlayerDamage(
       .filter(b => b.stat === 'attack')
       .reduce((sum, b) => sum + b.value, 0)
   const comboMultiplier = getComboMultiplier(playerState.comboCount)
-  const raw = randomVariance(buffedAttack) * comboMultiplier - enemy.defense / 2
+  const raw = randomVariance(buffedAttack) * comboMultiplier - enemy.defense
   return Math.max(1, Math.round(raw))
 }
 
@@ -78,7 +78,7 @@ export function calculateEnemyDamage(
       .filter(b => b.stat === 'defense')
       .reduce((sum, b) => sum + b.value, 0)
   const attackPower = isHeavyAttack ? enemy.attack * 1.5 : enemy.attack
-  const raw = randomVariance(attackPower) - buffedDefense / 2
+  const raw = randomVariance(attackPower) - buffedDefense
   return Math.max(1, Math.round(raw))
 }
 

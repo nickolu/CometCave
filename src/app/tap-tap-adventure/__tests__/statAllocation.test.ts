@@ -153,8 +153,8 @@ describe('maxHp recalculation after STR allocation', () => {
 
     const hpAfter = calculateMaxHp(afterAllocation)
 
-    // Each point of STR adds 5 HP
-    expect(hpAfter - hpBefore).toBe(10)
+    // Each point of STR adds 3 HP
+    expect(hpAfter - hpBefore).toBe(6)
   })
 
   it('should not change maxHp when only INT or LCK are increased', () => {

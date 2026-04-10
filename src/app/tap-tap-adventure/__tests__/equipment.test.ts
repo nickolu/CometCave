@@ -135,8 +135,8 @@ describe('Equipment effects in combat', () => {
       equipment: undefined,
     }
     const state = initializePlayerCombatState(charNoEquipment)
-    expect(state.attack).toBe(5 + baseChar.strength * 2 + baseChar.level)
-    expect(state.defense).toBe(3 + baseChar.intelligence + baseChar.level)
+    expect(state.attack).toBe(2 + baseChar.strength + Math.floor(baseChar.level / 2))
+    expect(state.defense).toBe(1 + Math.floor(baseChar.intelligence / 2) + Math.floor(baseChar.level / 2))
   })
 
   it('combines all equipment bonuses', () => {

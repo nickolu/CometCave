@@ -76,13 +76,13 @@ describe('Combat Engine', () => {
   describe('initializePlayerCombatState', () => {
     it('derives stats from character', () => {
       const state = initializePlayerCombatState(baseChar)
-      // HP: 50 + 8*5 + 3*10 = 120
-      expect(state.maxHp).toBe(120)
-      expect(state.hp).toBe(120)
-      // Attack: 5 + 8*2 + 3 = 24
-      expect(state.attack).toBe(24)
-      // Defense: 3 + 5 + 3 = 11
-      expect(state.defense).toBe(11)
+      // HP: 30 + 8*3 + 3*8 = 78
+      expect(state.maxHp).toBe(78)
+      expect(state.hp).toBe(78)
+      // Attack: 2 + 8 + floor(3/2) = 11
+      expect(state.attack).toBe(11)
+      // Defense: 1 + floor(5/2) + floor(3/2) = 4
+      expect(state.defense).toBe(4)
       expect(state.isDefending).toBe(false)
     })
   })

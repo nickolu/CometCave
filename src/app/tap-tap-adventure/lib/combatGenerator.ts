@@ -94,8 +94,8 @@ export async function generateCombatEncounter(
           content: `Generate a combat encounter for this fantasy character. Create an enemy appropriate for the character's level with a vivid scenario description.
 
 Stat guidelines for a level ${character.level} character:
-- Enemy HP: ${30 + character.level * 15} (±20%)
-- Enemy attack: ${3 + character.level * 2} (±20%)
+- Enemy HP: ${35 + character.level * 15} (±20%)
+- Enemy attack: ${6 + character.level * 3} (±20%)
 - Enemy defense: ${2 + character.level} (±20%)
 - Gold reward: ${5 + character.level * 5}
 - Include 1-2 loot items (potions, scrolls, gems, etc.)
@@ -159,9 +159,9 @@ export async function generateBossEncounter(
           content: `Generate a BOSS combat encounter for this fantasy character. This is a major battle — the boss should be powerful, intimidating, and memorable.
 
 This is a level ${character.level} character facing a boss fight. The boss should be significantly stronger than normal enemies:
-- Boss HP: ${Math.round((30 + character.level * 15) * 2.5)} (2.5x normal)
-- Boss attack: ${Math.round((3 + character.level * 2) * 1.8)} (1.8x normal)
-- Boss defense: ${Math.round((2 + character.level) * 1.5)} (1.5x normal)
+- Boss HP: ${Math.round((35 + character.level * 15) * 1.5)} (1.5x normal)
+- Boss attack: ${Math.round((6 + character.level * 3) * 1.3)} (1.3x normal)
+- Boss defense: ${Math.round((2 + character.level) * 1.3)} (1.3x normal)
 - Gold reward: ${Math.round((5 + character.level * 5) * 3)} (3x normal)
 - Include 2-3 high-quality loot items (rare potions, powerful scrolls, gems)
 - MUST include a special ability with cooldown of 2-3 turns — this is a boss!
@@ -224,10 +224,10 @@ function getDefaultBossEncounter(
       id: `boss-${suffix}`,
       name: boss.name,
       description: boss.desc,
-      hp: Math.round((30 + level * 15) * 2.5),
-      maxHp: Math.round((30 + level * 15) * 2.5),
-      attack: Math.round((3 + level * 2) * 1.8),
-      defense: Math.round((2 + level) * 1.5),
+      hp: Math.round((35 + level * 15) * 1.5),
+      maxHp: Math.round((35 + level * 15) * 1.5),
+      attack: Math.round((6 + level * 3) * 1.3),
+      defense: Math.round((2 + level) * 1.3),
       level: level + 2,
       goldReward: Math.round((5 + level * 5) * 3),
       lootTable: [
@@ -271,9 +271,9 @@ function getDefaultCombatEncounter(
           : level <= 5
             ? 'A massive wolf with glowing red eyes.'
             : 'An armored knight wreathed in dark energy.',
-      hp: 30 + level * 15,
-      maxHp: 30 + level * 15,
-      attack: 3 + level * 2,
+      hp: 35 + level * 15,
+      maxHp: 35 + level * 15,
+      attack: 6 + level * 3,
       defense: 2 + level,
       level,
       goldReward: 5 + level * 5,
