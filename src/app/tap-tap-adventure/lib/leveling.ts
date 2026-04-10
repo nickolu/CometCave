@@ -65,8 +65,10 @@ export function calculateDay(distance: number): number {
  * Calculate max HP for a character based on stats.
  */
 export function calculateMaxHp(character: FantasyCharacter): number {
-  return 50 + character.strength * 5 + character.level * 10
+  return 30 + character.strength * 3 + character.level * 8
 }
+
+const HEAL_RATE = 3 // heal 1 HP every N steps
 
 /**
  * Check if a step milestone was just crossed.
@@ -100,10 +102,11 @@ export function applyLevelFromDistance(
     updated.level = newLevel
   }
 
-  // Update maxHp and heal
+  // Update maxHp and heal (1 HP every HEAL_RATE steps)
   const maxHp = calculateMaxHp(updated)
   const currentHp = updated.hp ?? maxHp
-  const healed = Math.min(maxHp, currentHp + stepsGained)
+  const healAmount = Math.floor(stepsGained / HEAL_RATE)
+  const healed = Math.min(maxHp, currentHp + healAmount)
 
   return {
     ...updated,

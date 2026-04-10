@@ -20,13 +20,13 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const accessoryLuckBonus = equipment.accessory?.effects?.luck ?? 0
 
   // Use persistent HP from character, falling back to max if not set
-  const maxHp = character.maxHp ?? (50 + character.strength * 5 + character.level * 10)
+  const maxHp = character.maxHp ?? (30 + character.strength * 3 + character.level * 8)
   const currentHp = character.hp ?? maxHp
   return {
     hp: currentHp,
     maxHp,
-    attack: 5 + character.strength * 2 + character.level + weaponBonus * 2,
-    defense: 3 + character.intelligence + character.level + armorBonus,
+    attack: 3 + character.strength + character.level + weaponBonus * 2,
+    defense: 2 + character.intelligence + character.level + armorBonus,
     isDefending: false,
     activeBuffs: accessoryLuckBonus > 0
       ? [{ stat: 'attack' as const, value: accessoryLuckBonus, turnsRemaining: 999 }]
