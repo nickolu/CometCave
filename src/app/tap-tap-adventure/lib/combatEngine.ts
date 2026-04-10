@@ -9,18 +9,30 @@ import {
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 
+import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
+
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
 
 export function initializePlayerCombatState(character: FantasyCharacter): CombatPlayerState {
+  // Calculate equipment bonuses
+  const equipment = character.equipment ?? { weapon: null, armor: null, accessory: null }
+  const weaponBonus = equipment.weapon?.effects?.strength ?? 0
+  const armorBonus = equipment.armor?.effects?.intelligence ?? 0
+  const accessoryLuckBonus = equipment.accessory?.effects?.luck ?? 0
+
   const maxHp = 50 + character.strength * 5 + character.level * 10
   return {
     hp: maxHp,
     maxHp,
-    attack: 5 + character.strength * 2 + character.level,
-    defense: 3 + character.intelligence + character.level,
+    attack: 5 + character.strength * 2 + character.level + weaponBonus * 2,
+    defense: 3 + character.intelligence + character.level + armorBonus,
     isDefending: false,
-    activeBuffs: [],
+    activeBuffs: accessoryLuckBonus > 0
+      ? [{ stat: 'attack' as const, value: accessoryLuckBonus, turnsRemaining: 999 }]
+      : [],
     comboCount: 0,
+    abilityCooldown: 0,
+    enemyStunned: false,
   }
 }
 

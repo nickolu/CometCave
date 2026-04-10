@@ -8,6 +8,7 @@ import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects
 import { applyLevelFromDistance } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import {
   FantasyDecisionPoint,
   FantasyStoryEvent,
@@ -33,6 +34,7 @@ const defaultCharacter: FantasyCharacter = {
   intelligence: 0,
   luck: 0,
   inventory: [],
+  equipment: { weapon: null, armor: null, accessory: null },
 }
 
 export interface GameStore {
@@ -51,6 +53,8 @@ export interface GameStore {
   useItem: (itemId: string) => { message: string; consumed: boolean } | null
   discardItem: (itemId: string) => void
   restoreItem: (itemId: string) => void
+  equipItem: (itemId: string, slot?: EquipmentSlotType) => void
+  unequipItem: (slot: EquipmentSlotType) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -264,10 +268,73 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      equipItem: (itemId: string, slot?: EquipmentSlotType) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+
+            const item = selectedCharacter.inventory.find(
+              i => i.id === itemId && i.status !== 'deleted'
+            )
+            if (!item) return
+
+            const targetSlot = slot ?? getEquipmentSlot(item)
+            const equipment = selectedCharacter.equipment ?? { weapon: null, armor: null, accessory: null }
+            const currentlyEquipped = equipment[targetSlot]
+
+            // Build new inventory: remove the item being equipped, add back old equipped item
+            let updatedInventory = selectedCharacter.inventory.filter(i => i.id !== itemId)
+            if (currentlyEquipped) {
+              updatedInventory = [...updatedInventory, currentlyEquipped]
+            }
+
+            state.gameState.characters[characterIndex] = {
+              ...selectedCharacter,
+              inventory: updatedInventory,
+              equipment: {
+                ...equipment,
+                [targetSlot]: item,
+              },
+            }
+          })
+        )
+      },
+      unequipItem: (slot: EquipmentSlotType) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+
+            const equipment = selectedCharacter.equipment ?? { weapon: null, armor: null, accessory: null }
+            const equippedItem = equipment[slot]
+            if (!equippedItem) return
+
+            state.gameState.characters[characterIndex] = {
+              ...selectedCharacter,
+              inventory: [...selectedCharacter.inventory, equippedItem],
+              equipment: {
+                ...equipment,
+                [slot]: null,
+              },
+            }
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -275,6 +342,14 @@ export const useGameStore = create<GameStore>()(
         }
         if (state?.gameState && !('shopState' in state.gameState)) {
           (state.gameState as GameState).shopState = null
+        }
+        // v4: Add equipment slots to all characters
+        if (state?.gameState?.characters) {
+          for (const char of state.gameState.characters) {
+            if (!char.equipment) {
+              (char as FantasyCharacter).equipment = { weapon: null, armor: null, accessory: null }
+            }
+          }
         }
         return state
       },

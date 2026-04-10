@@ -77,6 +77,23 @@ export async function moveForwardService(
     }
   }
 
+  // Periodic merchant: ~10% chance every step after distance 15, but not within 10 steps of last shop
+  const merchantChance = newDistance > 15 ? 0.10 : 0
+  if (merchantChance > 0 && Math.random() < merchantChance) {
+    return {
+      character: updatedCharacter,
+      event: {
+        id: `merchant-event-${Date.now()}`,
+        type: 'shop',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      },
+      decisionPoint: null,
+      shopEvent: true,
+    }
+  }
+
   let event: FantasyStoryEvent | null = null
   let decisionPoint: FantasyDecisionPoint | null = null
 
