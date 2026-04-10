@@ -75,7 +75,7 @@ export default function GameUI() {
   }
 
   const handleMoveForward = () => {
-    const shouldDoNothing = flipCoin(0.95, 0.05)
+    const shouldDoNothing = flipCoin(0.75, 0.25)
     if (shouldDoNothing) {
       const genericMessage = getGenericTravelMessage()
       setGenericMessage(genericMessage)
