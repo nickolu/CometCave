@@ -9,19 +9,26 @@ import {
 } from '@/app/tap-tap-adventure/components/ui/tooltip'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
-import { levelProgress, stepsToNextLevel, stepsRequiredForLevel } from '@/app/tap-tap-adventure/lib/leveling'
+import { levelProgress, stepsToNextLevel, stepsRequiredForLevel, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
 type IconType =
+  | 'heartIcon'
   | 'sunIcon'
   | 'waterDropIcon'
   | 'leafIcon'
   | 'fireIcon'
+  | 'dayIcon'
   | 'purpleCircleIcon'
   | 'blueCircleIcon'
   | 'yellowMoonIcon'
 
 const ICONS: Record<IconType, React.ReactNode> = {
+  heartIcon: (
+    <svg width="20" height="20" fill="#EF4444" viewBox="0 0 20 20">
+      <path d="M10 18l-1.45-1.32C3.4 12.36 0 9.28 0 5.5 0 2.42 2.42 0 5.5 0 7.24 0 8.91.81 10 2.09 11.09.81 12.76 0 14.5 0 17.58 0 20 2.42 20 5.5c0 3.78-3.4 6.86-8.55 11.18L10 18z" />
+    </svg>
+  ),
   sunIcon: (
     <svg width="20" height="20" fill="#FACC15" viewBox="0 0 20 20">
       <circle cx="10" cy="10" r="8" />
@@ -42,6 +49,15 @@ const ICONS: Record<IconType, React.ReactNode> = {
       <path d="M10.5 0C7.286.057 4.536 2.018 4.536 5.714 4.536 9.07 7.071 11.25 7.071 12.5c0 .964-1.071 3.75-1.071 3.75s1.071.893 3.5.893c2.679 0 3.5-1.25 3.5-1.25s-1.071-2.679-1.071-3.75C12.429 11.25 15 9.07 15 5.714 15 2.018 12.714.057 10.5 0z" />
     </svg>
   ),
+  dayIcon: (
+    <svg width="20" height="20" fill="#FB923C" viewBox="0 0 20 20">
+      <circle cx="10" cy="10" r="5" />
+      <line x1="10" y1="1" x2="10" y2="4" stroke="#FB923C" strokeWidth="2" />
+      <line x1="10" y1="16" x2="10" y2="19" stroke="#FB923C" strokeWidth="2" />
+      <line x1="1" y1="10" x2="4" y2="10" stroke="#FB923C" strokeWidth="2" />
+      <line x1="16" y1="10" x2="19" y2="10" stroke="#FB923C" strokeWidth="2" />
+    </svg>
+  ),
   purpleCircleIcon: (
     <svg width="20" height="20" fill="#A78BFA" viewBox="0 0 20 20">
       <circle cx="10" cy="10" r="8" />
@@ -60,16 +76,18 @@ const ICONS: Record<IconType, React.ReactNode> = {
 } as const
 
 const STAT_LABELS: Record<IconType, string> = {
+  heartIcon: 'HP',
   sunIcon: 'Gold',
   waterDropIcon: 'Reputation',
-  leafIcon: 'Distance',
+  leafIcon: 'Steps',
   fireIcon: 'Level',
+  dayIcon: 'Day',
   purpleCircleIcon: 'Strength',
   blueCircleIcon: 'Intelligence',
   yellowMoonIcon: 'Luck',
 } as const
 
-const STATS_LEFT: IconType[] = ['sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon']
+const STATS_LEFT: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon', 'dayIcon']
 const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
 
 export function HudBar() {
@@ -83,19 +101,25 @@ export function HudBar() {
   const progress = character ? levelProgress(distance) : 0
   const stepsNeeded = stepsToNextLevel(level)
   const stepsIntoLevel = distance - stepsRequiredForLevel(level)
+  const day = calculateDay(distance)
+  const hp = character?.hp ?? character?.maxHp ?? 100
+  const maxHp = character?.maxHp ?? 100
+  const hpPct = Math.round((hp / maxHp) * 100)
 
   const stats = useMemo(
     () => ({
+      heartIcon: `${character?.hp ?? character?.maxHp ?? 100}`,
       sunIcon: character?.gold ?? 0,
       waterDropIcon: character?.reputation ?? 0,
       leafIcon: character?.distance ?? 0,
       fireIcon: character?.level ?? 1,
+      dayIcon: calculateDay(character?.distance ?? 0),
       purpleCircleIcon: character?.strength ?? 0,
       blueCircleIcon: character?.intelligence ?? 0,
       yellowMoonIcon: character?.luck ?? 0,
     }),
     [character]
-  ) as Record<IconType, number>
+  ) as Record<IconType, number | string>
 
   return (
     <TooltipProvider>
@@ -106,6 +130,16 @@ export function HudBar() {
               <TooltipTrigger className="flex items-center gap-1 text-xs sm:text-sm font-semibold">
                 <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
                 <span>{stats[key]}</span>
+                {key === 'heartIcon' && (
+                  <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
+                    <span
+                      className={`block h-full rounded-full transition-all duration-300 ${
+                        hpPct > 50 ? 'bg-green-500' : hpPct > 25 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${hpPct}%` }}
+                    />
+                  </span>
+                )}
                 {key === 'fireIcon' && (
                   <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
                     <span
@@ -116,10 +150,14 @@ export function HudBar() {
                 )}
               </TooltipTrigger>
               <TooltipContent>
-                {key === 'fireIcon'
+                {key === 'heartIcon'
+                  ? `HP: ${hp}/${maxHp}`
+                  : key === 'fireIcon'
                   ? `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
                   : key === 'waterDropIcon'
-                    ? `Reputation: ${getReputationTier(stats[key])} (${stats[key]})`
+                    ? `Reputation: ${getReputationTier(stats[key] as number)} (${stats[key]})`
+                    : key === 'dayIcon'
+                    ? `Day ${day} (${50 - (distance % 50)} steps to next day)`
                     : STAT_LABELS[key]}
               </TooltipContent>
             </Tooltip>

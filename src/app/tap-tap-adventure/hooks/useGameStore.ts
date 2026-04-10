@@ -33,6 +33,8 @@ const defaultCharacter: FantasyCharacter = {
   strength: 0,
   intelligence: 0,
   luck: 0,
+  hp: 100,
+  maxHp: 100,
   inventory: [],
   equipment: { weapon: null, armor: null, accessory: null },
   deathCount: 0,
@@ -339,7 +341,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 4,
+      version: 5,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -348,7 +350,6 @@ export const useGameStore = create<GameStore>()(
         if (state?.gameState && !('shopState' in state.gameState)) {
           (state.gameState as GameState).shopState = null
         }
-        // v4: Add equipment slots and deathCount to all characters
         if (state?.gameState?.characters) {
           for (const char of state.gameState.characters) {
             if (!char.equipment) {
@@ -356,6 +357,12 @@ export const useGameStore = create<GameStore>()(
             }
             if (char.deathCount === undefined) {
               (char as FantasyCharacter).deathCount = 0
+            }
+            // v5: Add persistent HP
+            if (char.hp === undefined || char.maxHp === undefined) {
+              const maxHp = 50 + (char.strength ?? 5) * 5 + (char.level ?? 1) * 10
+              ;(char as FantasyCharacter).hp = maxHp
+              ;(char as FantasyCharacter).maxHp = maxHp
             }
           }
         }

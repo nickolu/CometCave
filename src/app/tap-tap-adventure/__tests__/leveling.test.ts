@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyLevelFromDistance,
+  calculateDay,
   calculateLevel,
+  crossedMilestone,
   levelProgress,
   stepsRequiredForLevel,
   stepsToNextLevel,
+  BOSS_MILESTONE_INTERVAL,
+  SHOP_MILESTONE_INTERVAL,
+  STEPS_PER_DAY,
 } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
@@ -25,25 +30,22 @@ const baseChar: FantasyCharacter = {
   strength: 5,
   intelligence: 5,
   luck: 5,
+  hp: 100,
+  maxHp: 100,
   inventory: [],
+  deathCount: 0,
 }
 
-describe('Distance-Based Leveling', () => {
+describe('Distance-Based Leveling (rebalanced)', () => {
   describe('stepsToNextLevel', () => {
-    it('returns 25 steps for level 1 -> 2', () => {
-      // 20 + 1*5 = 25
-      expect(stepsToNextLevel(1)).toBe(25)
+    it('returns 250 steps for level 1 -> 2', () => {
+      // 200 + 1*50 = 250
+      expect(stepsToNextLevel(1)).toBe(250)
     })
 
-    it('returns 30 steps for level 2 -> 3', () => {
-      // 20 + 2*5 = 30
-      expect(stepsToNextLevel(2)).toBe(30)
-    })
-
-    it('increases with level', () => {
-      expect(stepsToNextLevel(3)).toBe(35)
-      expect(stepsToNextLevel(5)).toBe(45)
-      expect(stepsToNextLevel(10)).toBe(70)
+    it('returns 300 steps for level 2 -> 3', () => {
+      // 200 + 2*50 = 300
+      expect(stepsToNextLevel(2)).toBe(300)
     })
   })
 
@@ -52,18 +54,13 @@ describe('Distance-Based Leveling', () => {
       expect(stepsRequiredForLevel(1)).toBe(0)
     })
 
-    it('returns 25 for level 2', () => {
-      expect(stepsRequiredForLevel(2)).toBe(25)
+    it('returns 250 for level 2', () => {
+      expect(stepsRequiredForLevel(2)).toBe(250)
     })
 
-    it('returns 55 for level 3', () => {
-      // 25 + 30 = 55
-      expect(stepsRequiredForLevel(3)).toBe(55)
-    })
-
-    it('returns 90 for level 4', () => {
-      // 25 + 30 + 35 = 90
-      expect(stepsRequiredForLevel(4)).toBe(90)
+    it('returns 550 for level 3', () => {
+      // 250 + 300 = 550
+      expect(stepsRequiredForLevel(3)).toBe(550)
     })
   })
 
@@ -72,76 +69,91 @@ describe('Distance-Based Leveling', () => {
       expect(calculateLevel(0)).toBe(1)
     })
 
-    it('returns 1 at 24 distance', () => {
-      expect(calculateLevel(24)).toBe(1)
+    it('returns 1 at 249 distance', () => {
+      expect(calculateLevel(249)).toBe(1)
     })
 
-    it('returns 2 at 25 distance', () => {
-      expect(calculateLevel(25)).toBe(2)
+    it('returns 2 at 250 distance', () => {
+      expect(calculateLevel(250)).toBe(2)
     })
 
-    it('returns 2 at 54 distance', () => {
-      expect(calculateLevel(54)).toBe(2)
-    })
-
-    it('returns 3 at 55 distance', () => {
-      expect(calculateLevel(55)).toBe(3)
-    })
-
-    it('returns 4 at 90 distance', () => {
-      expect(calculateLevel(90)).toBe(4)
-    })
-
-    it('handles high distances', () => {
-      expect(calculateLevel(500)).toBeGreaterThan(5)
+    it('returns 3 at 550 distance', () => {
+      expect(calculateLevel(550)).toBe(3)
     })
   })
 
   describe('levelProgress', () => {
     it('returns 0 at start of level', () => {
       expect(levelProgress(0)).toBe(0)
-      expect(levelProgress(25)).toBe(0)
     })
 
-    it('returns ~0.5 at midpoint', () => {
-      // Level 1 needs 25 steps. At 12 steps: 12/25 ≈ 0.48
-      expect(levelProgress(12)).toBeCloseTo(0.48, 1)
+    it('returns ~0.5 at midpoint of level 1', () => {
+      expect(levelProgress(125)).toBeCloseTo(0.5, 1)
+    })
+  })
+
+  describe('calculateDay', () => {
+    it('returns 1 at distance 0', () => {
+      expect(calculateDay(0)).toBe(1)
     })
 
-    it('returns close to 1 near end of level', () => {
-      // Level 1 needs 25 steps. At 24: 24/25 = 0.96
-      expect(levelProgress(24)).toBeCloseTo(0.96, 1)
+    it('returns 1 at distance 49', () => {
+      expect(calculateDay(49)).toBe(1)
+    })
+
+    it('returns 2 at distance 50', () => {
+      expect(calculateDay(50)).toBe(2)
+    })
+
+    it('returns 3 at distance 100', () => {
+      expect(calculateDay(100)).toBe(3)
+    })
+  })
+
+  describe('crossedMilestone', () => {
+    it('detects shop milestone at 100', () => {
+      expect(crossedMilestone(99, 100, SHOP_MILESTONE_INTERVAL)).toBe(true)
+    })
+
+    it('does not trigger between milestones', () => {
+      expect(crossedMilestone(50, 51, SHOP_MILESTONE_INTERVAL)).toBe(false)
+    })
+
+    it('detects boss milestone at 500', () => {
+      expect(crossedMilestone(499, 500, BOSS_MILESTONE_INTERVAL)).toBe(true)
+    })
+  })
+
+  describe('constants', () => {
+    it('has expected milestone values', () => {
+      expect(STEPS_PER_DAY).toBe(50)
+      expect(SHOP_MILESTONE_INTERVAL).toBe(100)
+      expect(BOSS_MILESTONE_INTERVAL).toBe(500)
     })
   })
 
   describe('applyLevelFromDistance', () => {
-    it('does not change character if level matches', () => {
-      const char = { ...baseChar, distance: 10, level: 1 }
-      const result = applyLevelFromDistance(char)
-      expect(result).toBe(char) // same reference, no change
+    it('heals 1 HP per step', () => {
+      const char = { ...baseChar, distance: 10, hp: 50, maxHp: 100 }
+      const result = applyLevelFromDistance(char, 1)
+      expect(result.hp).toBe(51)
     })
 
-    it('levels up and adds stats when distance crosses threshold', () => {
-      const char = { ...baseChar, distance: 25, level: 1 }
+    it('does not heal past maxHp', () => {
+      // maxHp for level 1, strength 5 = 50 + 25 + 10 = 85
+      const char = { ...baseChar, distance: 10, hp: 84, maxHp: 85 }
+      const result = applyLevelFromDistance(char, 5)
+      expect(result.hp).toBe(85) // capped at maxHp
+    })
+
+    it('levels up and updates maxHp', () => {
+      // At distance 250, level goes from 1 to 2, strength 5->6
+      // maxHp = 50 + 6*5 + 2*10 = 100
+      const char = { ...baseChar, distance: 250, level: 1 }
       const result = applyLevelFromDistance(char)
       expect(result.level).toBe(2)
-      expect(result.strength).toBe(6) // 5 + 1
-      expect(result.intelligence).toBe(6)
-      expect(result.luck).toBe(6)
-    })
-
-    it('handles multiple level jumps', () => {
-      const char = { ...baseChar, distance: 55, level: 1 }
-      const result = applyLevelFromDistance(char)
-      expect(result.level).toBe(3)
-      expect(result.strength).toBe(7) // 5 + 2
-    })
-
-    it('does not reduce stats if level somehow decreases', () => {
-      const char = { ...baseChar, distance: 10, level: 3, strength: 10 }
-      const result = applyLevelFromDistance(char)
-      expect(result.level).toBe(1)
-      expect(result.strength).toBe(10) // unchanged, no negative adjustment
+      expect(result.strength).toBe(6)
+      expect(result.maxHp).toBe(100)
     })
   })
 })

@@ -20,7 +20,10 @@ const baseChar: FantasyCharacter = {
   strength: 5,
   intelligence: 5,
   luck: 5,
+  hp: 50,
+  maxHp: 100,
   inventory: [],
+  deathCount: 0,
 }
 
 function makeConsumable(overrides: Partial<Item> = {}): Item {
@@ -42,9 +45,10 @@ describe('Item Effects', () => {
     const result = useItem(char, item)
 
     expect(result.consumed).toBe(true)
-    expect(result.character.strength).toBe(7) // 5 + 2
+    // Strength effect now heals HP (2 * 5 = 10 HP)
+    expect(result.character.hp).toBe(60) // 50 + 10
     expect(result.character.luck).toBe(6) // 5 + 1
-    expect(result.message).toContain('+2 Strength')
+    expect(result.message).toContain('+10 HP')
     expect(result.message).toContain('+1 Luck')
   })
 
@@ -115,7 +119,8 @@ describe('Item Effects', () => {
 
     expect(result.character.gold).toBe(60)
     expect(result.character.reputation).toBe(15)
-    expect(result.character.strength).toBe(6)
+    // Strength heals HP now (1 * 5 = 5 HP)
+    expect(result.character.hp).toBe(55) // 50 + 5
     expect(result.character.intelligence).toBe(7)
     expect(result.character.luck).toBe(8)
     expect(result.consumed).toBe(true)

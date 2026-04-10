@@ -29,6 +29,8 @@ export const FantasyCharacterSchema = z.object({
   strength: z.number(),
   intelligence: z.number(),
   luck: z.number(),
+  hp: z.number().optional(),
+  maxHp: z.number().optional(),
   inventory: z.array(ItemSchema),
   equipment: z.object({
     weapon: ItemSchema.nullable(),

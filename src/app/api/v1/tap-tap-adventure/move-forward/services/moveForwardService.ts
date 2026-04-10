@@ -1,7 +1,12 @@
 import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward/schemas'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
-import { calculateLevel } from '@/app/tap-tap-adventure/lib/leveling'
+import {
+  crossedMilestone,
+  BOSS_MILESTONE_INTERVAL,
+  SHOP_MILESTONE_INTERVAL,
+  calculateDay,
+} from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
@@ -12,12 +17,11 @@ export async function moveForwardService(
   storyEvents: FantasyStoryEvent[] = []
 ): Promise<MoveForwardResponse> {
   const newDistance = character.distance + BASE_DISTANCE
-  const oldLevel = calculateLevel(character.distance)
-  const newLevel = calculateLevel(newDistance)
   const updatedCharacter = { ...character, distance: newDistance }
+  const day = calculateDay(newDistance)
 
-  // Trigger boss event every 5 levels
-  if (newLevel > oldLevel && newLevel % 5 === 0) {
+  // Trigger boss event every BOSS_MILESTONE_INTERVAL steps (500)
+  if (crossedMilestone(character.distance, newDistance, BOSS_MILESTONE_INTERVAL)) {
     const bossEventId = `boss-event-${Date.now()}`
     return {
       character: updatedCharacter,
@@ -31,7 +35,7 @@ export async function moveForwardService(
       decisionPoint: {
         id: `decision-${bossEventId}`,
         eventId: bossEventId,
-        prompt: `You sense a powerful presence ahead. A formidable guardian blocks the path forward. You are now level ${newLevel} — do you feel ready to face this challenge?`,
+        prompt: `You sense a powerful presence ahead. A formidable guardian blocks the path forward. You have traveled ${newDistance} steps on day ${day} — do you feel ready to face this challenge?`,
         options: [
           {
             id: `boss-fight-${bossEventId}`,
@@ -61,8 +65,8 @@ export async function moveForwardService(
     }
   }
 
-  // Trigger shop event on level up
-  if (newLevel > oldLevel) {
+  // Trigger shop event every SHOP_MILESTONE_INTERVAL steps (100)
+  if (crossedMilestone(character.distance, newDistance, SHOP_MILESTONE_INTERVAL)) {
     return {
       character: updatedCharacter,
       event: {
@@ -77,8 +81,8 @@ export async function moveForwardService(
     }
   }
 
-  // Periodic merchant: ~10% chance every step after distance 15, but not within 10 steps of last shop
-  const merchantChance = newDistance > 15 ? 0.10 : 0
+  // Periodic merchant: ~3% chance every step after distance 50
+  const merchantChance = newDistance > 50 ? 0.03 : 0
   if (merchantChance > 0 && Math.random() < merchantChance) {
     return {
       character: updatedCharacter,
