@@ -134,33 +134,34 @@ describe('Distance-Based Leveling (rebalanced)', () => {
   })
 
   describe('applyLevelFromDistance', () => {
-    it('heals 1 HP every 3 steps', () => {
-      const char = { ...baseChar, distance: 10, hp: 50, maxHp: 53 }
-      // 1 step = no heal (1/3 = 0)
+    it('heals 1 HP every 10 steps', () => {
+      const char = { ...baseChar, distance: 10, hp: 40, maxHp: 53 }
+      // 1 step = no heal
       const result1 = applyLevelFromDistance(char, 1)
-      expect(result1.hp).toBe(50)
-      // 3 steps = 1 heal
-      const result3 = applyLevelFromDistance(char, 3)
-      expect(result3.hp).toBe(51)
+      expect(result1.hp).toBe(40)
+      // 9 steps = no heal
+      const result9 = applyLevelFromDistance(char, 9)
+      expect(result9.hp).toBe(40)
+      // 10 steps = 1 heal
+      const result10 = applyLevelFromDistance(char, 10)
+      expect(result10.hp).toBe(41)
     })
 
     it('does not heal past maxHp', () => {
-      // maxHp for level 1, strength 5 = 30 + 15 + 8 = 53
       const char = { ...baseChar, distance: 10, hp: 52, maxHp: 53 }
-      const result = applyLevelFromDistance(char, 6) // would heal 2, but capped
+      const result = applyLevelFromDistance(char, 30) // would heal 3, but capped at 53
       expect(result.hp).toBe(53)
     })
 
-    it('levels up and adds pending stat points instead of auto-applying stats', () => {
+    it('fully heals HP and mana on level up', () => {
       // At distance 250, level goes from 1 to 2
-      // Stats stay the same, pendingStatPoints increases by 3
-      // maxHp = 30 + 5*3 + 2*8 = 61
-      const char = { ...baseChar, distance: 250, level: 1 }
+      const char = { ...baseChar, distance: 250, level: 1, hp: 10, mana: 5 }
       const result = applyLevelFromDistance(char)
       expect(result.level).toBe(2)
-      expect(result.strength).toBe(5) // unchanged
       expect(result.pendingStatPoints).toBe(3)
-      expect(result.maxHp).toBe(61)
+      // Should be fully healed
+      expect(result.hp).toBe(result.maxHp)
+      expect(result.mana).toBe(result.maxMana)
     })
   })
 })
