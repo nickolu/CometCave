@@ -144,7 +144,7 @@ export default function GameUI() {
             ) : (
               <>
                 <Button
-                  className={`w-full border text-white font-bold text-lg py-6 rounded-lg transition-all duration-300 select-none ${
+                  className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
                     moveForwardPending
                       ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
