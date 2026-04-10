@@ -27,7 +27,6 @@ export type {
   FantasyLocationChoiceSchema,
 } from './location'
 export type { FantasyPlayer, FantasyPlayerSchema } from './player'
-export type { FantasyQuest, FantasyQuestSchema } from './quest'
 export type {
   FantasyStoryEvent,
   FantasyStoryEventSchema,
