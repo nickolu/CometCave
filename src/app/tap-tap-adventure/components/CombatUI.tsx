@@ -4,10 +4,11 @@ import { LoaderCircle } from 'lucide-react'
 import { useCallback, useRef, useEffect, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
-import { CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
@@ -47,8 +48,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
     (i: Item) => i.status !== 'deleted' && isUsableInCombat(i)
   )
 
+  const classId = character?.class?.toLowerCase() ?? ''
+  const classAbility = CLASS_ABILITIES[classId]
+  const abilityCooldown = playerState.abilityCooldown ?? 0
+
   const handleAction = useCallback(
-    (action: 'attack' | 'defend' | 'flee', itemId?: string) => {
+    (action: CombatAction, itemId?: string) => {
       setShowItemMenu(false)
       combatAction({ action, itemId })
     },
@@ -165,6 +170,27 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
       {/* Actions */}
       <div className="space-y-2">
+        {/* Class Ability */}
+        {classAbility && (
+          <Button
+            className={`w-full text-sm py-2 rounded-md transition-colors border ${
+              abilityCooldown > 0
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-purple-900/50 border-purple-700 hover:bg-purple-800 text-white'
+            }`}
+            onClick={() => handleAction('class_ability')}
+            disabled={isPending || abilityCooldown > 0}
+            title={classAbility.description}
+          >
+            {isPending ? (
+              <LoaderCircle className="animate-spin h-4 w-4" />
+            ) : abilityCooldown > 0 ? (
+              `${classAbility.name} (${abilityCooldown} turns)`
+            ) : (
+              `${classAbility.name} - Ready!`
+            )}
+          </Button>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button
             className="bg-red-900/50 border border-red-800 hover:bg-red-800 text-white text-sm py-2 rounded-md transition-colors"
