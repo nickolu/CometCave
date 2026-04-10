@@ -160,6 +160,54 @@ describe('Combat Tactics', () => {
     })
   })
 
+  describe('Enemy Defend', () => {
+    it('non-boss enemy can telegraph defend', () => {
+      // Enemy has no specialAbility, so specialReady is false (no random call).
+      // First random call: heavyChance (0.2) — need > 0.2 to skip.
+      // Second random call: defendChance (0.1) — need < 0.1 to trigger defend.
+      vi.spyOn(Math, 'random')
+        .mockReturnValueOnce(0.99) // heavyChance: > 0.2, skip heavy
+        .mockReturnValueOnce(0.05) // defendChance: < 0.1, trigger defend
+      const telegraph = generateEnemyTelegraph(makeActiveCombat().enemy, 1, false)
+      expect(telegraph.action).toBe('defend')
+      expect(telegraph.description).toContain('braces')
+      vi.restoreAllMocks()
+    })
+
+    it('when enemy telegraphs defend, player attack damage is reduced', () => {
+      // Set up combat with enemy telegraphing defend
+      const combat = makeActiveCombat({
+        enemyTelegraph: { action: 'defend', description: 'Goblin braces and raises their guard.' },
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+
+      // Attack with defend telegraph
+      const { combatState: withDefend } = processPlayerAction(combat, { action: 'attack' }, baseChar)
+
+      // Attack without defend telegraph
+      const combatNoDefend = makeActiveCombat({
+        enemyTelegraph: { action: 'normal_attack', description: 'Goblin readies an attack.' },
+      })
+      const { combatState: withoutDefend } = processPlayerAction(combatNoDefend, { action: 'attack' }, baseChar)
+
+      // Enemy should have taken less damage when defending
+      const damageWithDefend = 30 - withDefend.enemy.hp
+      const damageWithoutDefend = 30 - withoutDefend.enemy.hp
+      expect(damageWithDefend).toBeLessThan(damageWithoutDefend)
+      vi.restoreAllMocks()
+    })
+
+    it('enemy defend telegraph shows correct description', () => {
+      vi.spyOn(Math, 'random')
+        .mockReturnValueOnce(0.99)
+        .mockReturnValueOnce(0.05)
+      const telegraph = generateEnemyTelegraph(makeActiveCombat().enemy, 1, false)
+      expect(telegraph.action).toBe('defend')
+      expect(telegraph.description).toBe('Goblin braces and raises their guard.')
+      vi.restoreAllMocks()
+    })
+  })
+
   describe('Boss Phase Change', () => {
     it('does not trigger for non-boss', () => {
       const enemy = { ...makeActiveCombat().enemy, hp: 10, maxHp: 100 }

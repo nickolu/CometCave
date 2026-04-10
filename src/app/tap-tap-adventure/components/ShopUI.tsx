@@ -5,7 +5,10 @@ import { useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
+import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
 import { Item } from '@/app/tap-tap-adventure/models/types'
+
+type ShopTab = 'buy' | 'sell'
 
 function formatEffects(effects?: Item['effects']): string {
   if (!effects) return 'No effects'
@@ -20,8 +23,9 @@ function formatEffects(effects?: Item['effects']): string {
 
 export function ShopUI() {
   const { gameState, setShopState, setGameState } = useGameStore()
-  const [purchaseFeedback, setPurchaseFeedback] = useState<string | null>(null)
-  const [purchasing, setPurchasing] = useState(false)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [activeTab, setActiveTab] = useState<ShopTab>('buy')
 
   const shopState = gameState.shopState
   if (!shopState || !shopState.isOpen) return null
@@ -31,8 +35,8 @@ export function ShopUI() {
 
   const handlePurchase = async (item: Item) => {
     if (!item.price || character.gold < item.price) return
-    setPurchasing(true)
-    setPurchaseFeedback(null)
+    setBusy(true)
+    setFeedback(null)
 
     try {
       const res = await fetch('/api/v1/tap-tap-adventure/shop/purchase', {
@@ -47,7 +51,7 @@ export function ShopUI() {
 
       if (!res.ok) {
         const errData = await res.json()
-        setPurchaseFeedback(errData.error || 'Purchase failed')
+        setFeedback(errData.error || 'Purchase failed')
         return
       }
 
@@ -79,17 +83,59 @@ export function ShopUI() {
         shopState: { items: remainingItems, isOpen: true },
       })
 
-      setPurchaseFeedback(`Purchased ${item.name}!`)
+      setFeedback(`Purchased ${item.name}!`)
     } catch {
-      setPurchaseFeedback('Purchase failed. Please try again.')
+      setFeedback('Purchase failed. Please try again.')
     } finally {
-      setPurchasing(false)
+      setBusy(false)
+    }
+  }
+
+  const handleSell = async (item: Item) => {
+    setBusy(true)
+    setFeedback(null)
+
+    try {
+      const res = await fetch('/api/v1/tap-tap-adventure/shop/sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character,
+          itemId: item.id,
+        }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json()
+        setFeedback(errData.error || 'Sell failed')
+        return
+      }
+
+      const { updatedCharacter, goldEarned } = await res.json()
+
+      const updatedCharacters = gameState.characters.map(c => {
+        if (c.id !== character.id) return c
+        return updatedCharacter
+      })
+
+      setGameState({
+        ...gameState,
+        characters: updatedCharacters,
+      })
+
+      setFeedback(`Sold ${item.name} for ${goldEarned} gold`)
+    } catch {
+      setFeedback('Sell failed. Please try again.')
+    } finally {
+      setBusy(false)
     }
   }
 
   const handleLeaveShop = () => {
     setShopState(null)
   }
+
+  const sellableItems = character.inventory.filter(i => i.status !== 'deleted' && i.quantity > 0)
 
   return (
     <div className="space-y-4">
@@ -103,40 +149,107 @@ export function ShopUI() {
         Your Gold: {character.gold}
       </div>
 
-      {purchaseFeedback && (
-        <div className="text-sm text-center text-green-400">{purchaseFeedback}</div>
-      )}
-
-      <div className="space-y-3">
-        {shopState.items.map(item => {
-          const canAfford = character.gold >= (item.price ?? 0)
-          return (
-            <div
-              key={item.id}
-              className="border border-[#3a3c56] bg-[#2a2b3f] rounded-lg p-3 space-y-1"
-            >
-              <div className="flex justify-between items-start">
-                <div className="font-semibold text-white">{item.name}</div>
-                <div className="text-yellow-400 font-bold text-sm whitespace-nowrap ml-2">
-                  {item.price ?? '?'} gold
-                </div>
-              </div>
-              <div className="text-xs text-gray-400">{item.description}</div>
-              <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
-              <Button
-                className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 border border-yellow-400/30 text-white font-bold text-sm py-2 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-                disabled={!canAfford || purchasing}
-                onClick={() => handlePurchase(item)}
-              >
-                {canAfford ? 'Buy' : 'Not enough gold'}
-              </Button>
-            </div>
-          )
-        })}
+      {/* Tab toggle */}
+      <div className="flex gap-2">
+        <Button
+          className={`flex-1 font-bold text-sm py-2 rounded border ${
+            activeTab === 'buy'
+              ? 'bg-gradient-to-r from-yellow-600 to-amber-600 border-yellow-400/30 text-white'
+              : 'bg-[#2a2b3f] border-[#3a3c56] text-gray-400 hover:bg-[#3a3c56]'
+          }`}
+          onClick={() => { setActiveTab('buy'); setFeedback(null) }}
+        >
+          Buy
+        </Button>
+        <Button
+          className={`flex-1 font-bold text-sm py-2 rounded border ${
+            activeTab === 'sell'
+              ? 'bg-gradient-to-r from-emerald-600 to-green-600 border-green-400/30 text-white'
+              : 'bg-[#2a2b3f] border-[#3a3c56] text-gray-400 hover:bg-[#3a3c56]'
+          }`}
+          onClick={() => { setActiveTab('sell'); setFeedback(null) }}
+        >
+          Sell
+        </Button>
       </div>
 
-      {shopState.items.length === 0 && (
-        <div className="text-sm text-gray-500 text-center">The merchant has nothing left to sell.</div>
+      {feedback && (
+        <div className="text-sm text-center text-green-400">{feedback}</div>
+      )}
+
+      {/* Buy tab */}
+      {activeTab === 'buy' && (
+        <div className="space-y-3">
+          {shopState.items.map(item => {
+            const canAfford = character.gold >= (item.price ?? 0)
+            return (
+              <div
+                key={item.id}
+                className="border border-[#3a3c56] bg-[#2a2b3f] rounded-lg p-3 space-y-1"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="font-semibold text-white">{item.name}</div>
+                  <div className="text-yellow-400 font-bold text-sm whitespace-nowrap ml-2">
+                    {item.price ?? '?'} gold
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">{item.description}</div>
+                <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
+                <Button
+                  className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 border border-yellow-400/30 text-white font-bold text-sm py-2 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={!canAfford || busy}
+                  onClick={() => handlePurchase(item)}
+                >
+                  {canAfford ? 'Buy' : 'Not enough gold'}
+                </Button>
+              </div>
+            )
+          })}
+
+          {shopState.items.length === 0 && (
+            <div className="text-sm text-gray-500 text-center">The merchant has nothing left to sell.</div>
+          )}
+        </div>
+      )}
+
+      {/* Sell tab */}
+      {activeTab === 'sell' && (
+        <div className="space-y-3">
+          {sellableItems.map(item => {
+            const sellPrice = calculateSellPrice(item)
+            return (
+              <div
+                key={item.id}
+                className="border border-[#3a3c56] bg-[#2a2b3f] rounded-lg p-3 space-y-1"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="font-semibold text-white">
+                    {item.name}
+                    {item.quantity > 1 && (
+                      <span className="text-xs text-gray-400 ml-1">(x{item.quantity})</span>
+                    )}
+                  </div>
+                  <div className="text-emerald-400 font-bold text-sm whitespace-nowrap ml-2">
+                    {sellPrice} gold
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">{item.description}</div>
+                <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
+                <Button
+                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-sm py-2 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={busy}
+                  onClick={() => handleSell(item)}
+                >
+                  Sell
+                </Button>
+              </div>
+            )
+          })}
+
+          {sellableItems.length === 0 && (
+            <div className="text-sm text-gray-500 text-center">You have nothing to sell.</div>
+          )}
+        </div>
       )}
 
       <Button
