@@ -2,17 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { initializePlayerCombatState } from '@/app/tap-tap-adventure/lib/combatEngine'
-import { generateCombatEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
+import { generateCombatEncounter, generateBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
   try {
-    const { character, storyEvents = [], eventContext } = await req.json()
+    const { character, storyEvents = [], eventContext, isBoss = false } = await req.json()
     const storyContext = buildStoryContext(character, storyEvents)
     const fullContext = eventContext
       ? `The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
       : storyContext
-    const { enemy, scenario } = await generateCombatEncounter(character, fullContext)
+
+    const { enemy, scenario } = isBoss
+      ? await generateBossEncounter(character, fullContext)
+      : await generateCombatEncounter(character, fullContext)
     const playerState = initializePlayerCombatState(character)
 
     const combatState: CombatState = {
@@ -24,6 +27,7 @@ export async function POST(req: NextRequest) {
       combatLog: [],
       status: 'active',
       scenario,
+      isBoss,
     }
 
     return NextResponse.json({ combatState })

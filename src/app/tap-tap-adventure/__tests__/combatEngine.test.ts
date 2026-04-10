@@ -62,6 +62,7 @@ function makeActiveCombat(overrides: Partial<CombatState> = {}): CombatState {
       defense: 11,
       isDefending: false,
       activeBuffs: [],
+      comboCount: 0,
     },
     turnNumber: 0,
     combatLog: [],

@@ -38,6 +38,7 @@ export const CombatPlayerStateSchema = z.object({
   defense: z.number(),
   isDefending: z.boolean(),
   activeBuffs: z.array(CombatBuffSchema).optional(),
+  comboCount: z.number().default(0),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
@@ -62,6 +63,12 @@ export type CombatLogEntry = z.infer<typeof CombatLogEntrySchema>
 export const CombatStatusSchema = z.enum(['active', 'victory', 'defeat', 'fled'])
 export type CombatStatus = z.infer<typeof CombatStatusSchema>
 
+export const EnemyTelegraphSchema = z.object({
+  action: z.enum(['heavy_attack', 'special', 'defend', 'normal_attack']),
+  description: z.string(),
+})
+export type EnemyTelegraph = z.infer<typeof EnemyTelegraphSchema>
+
 export const CombatStateSchema = z.object({
   id: z.string(),
   eventId: z.string(),
@@ -71,5 +78,7 @@ export const CombatStateSchema = z.object({
   combatLog: z.array(CombatLogEntrySchema),
   status: CombatStatusSchema,
   scenario: z.string(),
+  enemyTelegraph: EnemyTelegraphSchema.optional().nullable(),
+  isBoss: z.boolean().optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>

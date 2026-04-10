@@ -92,6 +92,8 @@ export function useResolveDecisionMutation() {
       // Pass the event description so the enemy matches the narrative
       if (data.triggersCombat) {
         const { gameState } = useGameStore.getState()
+        const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+        const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -99,6 +101,7 @@ export function useResolveDecisionMutation() {
             character: data.updatedCharacter,
             storyEvents: gameState.storyEvents,
             eventContext: decisionPoint.prompt,
+            isBoss,
           }),
         })
         if (combatRes.ok) {
