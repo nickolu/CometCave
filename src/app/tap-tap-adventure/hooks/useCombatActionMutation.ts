@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
+import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -146,6 +147,14 @@ export function useCombatActionMutation() {
         }
 
         setCombatState(null)
+
+        // Check quest progress after combat ends
+        const { gameState: gs } = useGameStore.getState()
+        if (gs.activeQuest?.status === 'active') {
+          const combatWon = data.combatState.status === 'victory'
+          const updatedQuest = checkQuestProgress(gs.activeQuest, data.updatedCharacter, combatWon)
+          useGameStore.getState().setActiveQuest(updatedQuest)
+        }
       }
 
       commit()

@@ -11,6 +11,7 @@ import { flipCoin } from '@/app/utils'
 import { CombatUI, CombatResult } from './CombatUI'
 import { EquipmentPanel } from './EquipmentPanel'
 import { InventoryPanel } from './InventoryPanel'
+import { QuestPanel } from './QuestPanel'
 import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
@@ -155,8 +156,9 @@ export default function GameUI() {
               </>
             )}
           </div>
-          {/* Right column: Equipment & Inventory Panel */}
+          {/* Right column: Quest, Equipment & Inventory Panel */}
           <div className="p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
+            <QuestPanel />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
             />

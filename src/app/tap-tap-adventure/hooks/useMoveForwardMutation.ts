@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
+import { generateTimedQuest, checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import {
   FantasyCharacter,
   FantasyDecisionPoint,
@@ -28,6 +29,7 @@ export function useMoveForwardMutation() {
     setDecisionPoint,
     setGenericMessage,
     setShopState,
+    setActiveQuest,
   } = useGameStateBuilder()
 
   return useMutation({
@@ -79,6 +81,20 @@ export function useMoveForwardMutation() {
         setGenericMessage(null)
         setDecisionPoint(data.decisionPoint)
       }
+
+      // Check quest progress
+      const { gameState: currentState } = useGameStore.getState()
+      if (currentState.activeQuest?.status === 'active') {
+        const updatedQuest = checkQuestProgress(currentState.activeQuest, data.character)
+        setActiveQuest(updatedQuest)
+      }
+
+      // Offer a new quest if none active (5% chance after 50 steps)
+      if (!currentState.activeQuest && data.character.distance > 50 && Math.random() < 0.05) {
+        const quest = generateTimedQuest(data.character)
+        setActiveQuest(quest)
+      }
+
       commit()
     },
     onSuccess: () => {

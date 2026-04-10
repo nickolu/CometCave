@@ -1,20 +1,26 @@
 import { z } from 'zod'
 
-/** FantasyQuestSchema is the single source of truth for both runtime validation and static typing. */
-export const FantasyQuestSchema = z.object({
+import { ItemSchema } from './item'
+
+export const TimedQuestSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  status: z.enum(['available', 'active', 'completed', 'failed']),
-  giverNpcId: z.string(),
-  locationId: z.string(),
-  objectives: z.array(z.string()),
+  status: z.enum(['active', 'completed', 'failed']),
+  type: z.enum(['reach_distance', 'collect_gold', 'win_combat', 'gain_reputation']),
+  // Target value to reach
+  target: z.number(),
+  // Starting value when quest was accepted
+  startValue: z.number(),
+  // Day deadline (quest fails if current day exceeds this)
+  deadlineDay: z.number(),
+  // Day quest was accepted
+  startDay: z.number(),
+  // Rewards
   rewards: z.object({
     gold: z.number().optional(),
     reputation: z.number().optional(),
-    items: z.array(z.string()).optional(),
+    items: z.array(ItemSchema).optional(),
   }),
-  expiration: z.string().optional(),
 })
-
-export type FantasyQuest = z.infer<typeof FantasyQuestSchema>
+export type TimedQuest = z.infer<typeof TimedQuestSchema>

@@ -14,5 +14,6 @@ export const defaultGameState: GameState = {
   decisionPoint: null,
   combatState: null,
   shopState: null,
+  activeQuest: null,
   genericMessage: null,
 }
