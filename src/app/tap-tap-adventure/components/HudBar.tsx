@@ -1,12 +1,6 @@
 'use client'
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/app/tap-tap-adventure/components/ui/tooltip'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { levelProgress, stepsToNextLevel, stepsRequiredForLevel, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
@@ -121,61 +115,69 @@ export function HudBar() {
     [character]
   ) as Record<IconType, number | string>
 
-  return (
-    <TooltipProvider>
-      <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-2 px-3 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white select-none">
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          {STATS_LEFT.map(key => (
-            <Tooltip key={key}>
-              <TooltipTrigger className="flex items-center gap-1 text-xs sm:text-sm font-semibold">
-                <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
-                <span>{stats[key]}</span>
-                {key === 'heartIcon' && (
-                  <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
-                    <span
-                      className={`block h-full rounded-full transition-all duration-300 ${
-                        hpPct > 50 ? 'bg-green-500' : hpPct > 25 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${hpPct}%` }}
-                    />
-                  </span>
-                )}
-                {key === 'fireIcon' && (
-                  <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
-                    <span
-                      className="block h-full bg-orange-400 rounded-full transition-all duration-300"
-                      style={{ width: `${progress * 100}%` }}
-                    />
-                  </span>
-                )}
-              </TooltipTrigger>
-              <TooltipContent>
-                {key === 'heartIcon'
-                  ? `HP: ${hp}/${maxHp}`
-                  : key === 'fireIcon'
-                  ? `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
-                  : key === 'waterDropIcon'
-                    ? `Reputation: ${getReputationTier(stats[key] as number)} (${stats[key]})`
-                    : key === 'dayIcon'
-                    ? `Day ${day} (${50 - (distance % 50)} steps to next day)`
-                    : STAT_LABELS[key]}
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </div>
+  const [activeTooltip, setActiveTooltip] = useState<IconType | null>(null)
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          {STATS_RIGHT.map((key: IconType) => (
-            <Tooltip key={key}>
-              <TooltipTrigger className="flex items-center gap-1 text-xs sm:text-sm font-semibold">
-                <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
-                <span>{stats[key]}</span>
-              </TooltipTrigger>
-              <TooltipContent>{STAT_LABELS[key]}</TooltipContent>
-            </Tooltip>
-          ))}
+  const getTooltipText = useCallback((key: IconType): string => {
+    switch (key) {
+      case 'heartIcon': return `HP: ${hp}/${maxHp}`
+      case 'fireIcon': return `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
+      case 'waterDropIcon': return `Reputation: ${getReputationTier(stats[key] as number)} (${stats[key]})`
+      case 'dayIcon': return `Day ${day} (${50 - (distance % 50)} steps to next day)`
+      default: return STAT_LABELS[key]
+    }
+  }, [hp, maxHp, level, stepsIntoLevel, stepsNeeded, day, distance, stats])
+
+  const handleStatTap = useCallback((key: IconType) => {
+    setActiveTooltip(prev => prev === key ? null : key)
+    // Auto-dismiss after 2 seconds
+    setTimeout(() => setActiveTooltip(null), 2000)
+  }, [])
+
+  const renderStat = (key: IconType) => (
+    <div key={key} className="relative">
+      <button
+        className="flex items-center gap-1 text-xs sm:text-sm font-semibold"
+        onClick={() => handleStatTap(key)}
+        onMouseEnter={() => setActiveTooltip(key)}
+        onMouseLeave={() => setActiveTooltip(null)}
+      >
+        <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
+        <span>{stats[key]}</span>
+        {key === 'heartIcon' && (
+          <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
+            <span
+              className={`block h-full rounded-full transition-all duration-300 ${
+                hpPct > 50 ? 'bg-green-500' : hpPct > 25 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${hpPct}%` }}
+            />
+          </span>
+        )}
+        {key === 'fireIcon' && (
+          <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
+            <span
+              className="block h-full bg-orange-400 rounded-full transition-all duration-300"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </span>
+        )}
+      </button>
+      {activeTooltip === key && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-[10px] text-slate-200 whitespace-nowrap z-50 shadow-lg">
+          {getTooltipText(key)}
         </div>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-2 px-3 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white select-none">
+      <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+        {STATS_LEFT.map(renderStat)}
       </div>
-    </TooltipProvider>
+      <div className="flex items-center gap-2 sm:gap-4">
+        {STATS_RIGHT.map(renderStat)}
+      </div>
+    </div>
   )
 }
