@@ -11,6 +11,7 @@ import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericT
 import { flipCoin } from '@/app/utils'
 
 import { CombatUI, CombatResult } from './CombatUI'
+import { EquipmentPanel } from './EquipmentPanel'
 import { InventoryPanel } from './InventoryPanel'
 import { LevelUpCelebration } from './LevelUpCelebration'
 import { ShopUI } from './ShopUI'
@@ -165,12 +166,14 @@ export default function GameUI() {
               </>
             )}
           </div>
-          {/* Right column: Inventory Panel */}
+          {/* Right column: Equipment & Inventory Panel */}
           <div className="p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
-            <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
-              Inventory
-            </h4>
-            <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
+            <EquipmentPanel
+              equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
+            />
+            <div className="border-t border-[#3a3c56] pt-4">
+              <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
+            </div>
           </div>
         </div>
         {/* Two-column grid END */}

@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { List } from '@/app/tap-tap-adventure/components/ui/list'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { getEquipmentSlot } from '@/app/tap-tap-adventure/models/equipment'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
 interface InventoryPanelProps {
@@ -20,6 +21,13 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       setFeedbackMessage(result.message)
       setTimeout(() => setFeedbackMessage(null), 3000)
     }
+  }, [])
+
+  const handleEquip = useCallback((item: Item) => {
+    const slot = getEquipmentSlot(item)
+    useGameStore.getState().equipItem(item.id, slot)
+    setFeedbackMessage(`Equipped ${item.name} in ${slot} slot`)
+    setTimeout(() => setFeedbackMessage(null), 3000)
   }, [])
 
   const handleDiscard = useCallback((item: Item) => {
@@ -75,6 +83,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                         Consumable
                       </span>
                     )}
+                    {item.type === 'equipment' && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-indigo-900/50 text-indigo-400 rounded">
+                        Equipment
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-400">{item.description}</div>
                   {item.effects && (
@@ -97,6 +110,15 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       title="Use one of this item"
                     >
                       Use
+                    </Button>
+                  )}
+                  {activeTab === 'active' && item.type === 'equipment' && (
+                    <Button
+                      className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      onClick={() => handleEquip(item)}
+                      title={`Equip to ${getEquipmentSlot(item)} slot`}
+                    >
+                      Equip
                     </Button>
                   )}
                   {activeTab === 'active' ? (
