@@ -76,7 +76,7 @@ export default function GameUI() {
     <div className="flex flex-col select-none">
       <div className="relative z-10 mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
-          <div className={'p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4'}>
+          <div className={'p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 overflow-hidden'}>
             {/* Combat UI takes priority */}
             {gameState.combatState && gameState.combatState.status === 'active' ? (
               <CombatUI combatState={gameState.combatState} />
@@ -95,7 +95,7 @@ export default function GameUI() {
                 )}
                 {!gameState.decisionPoint.resolved && (
                   <div>
-                    <div className="font-semibold mb-6">{gameState.decisionPoint.prompt}</div>
+                    <div className="font-semibold mb-6 break-words">{gameState.decisionPoint.prompt}</div>
                     <div className="space-y-2 mt-2">
                       {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
                         if (!option) return null
@@ -103,7 +103,7 @@ export default function GameUI() {
                         return (
                           <Button
                             key={option.id}
-                            className="block w-full text-left border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
+                            className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
                             disabled={resolveDecisionPending}
                             onClick={() => {
                               handleResolveDecision(option.id)
