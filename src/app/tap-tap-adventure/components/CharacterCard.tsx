@@ -39,6 +39,9 @@ export default function CharacterCard({
         <span>STR: {character.strength}</span>
         <span>INT: {character.intelligence}</span>
         <span>LUCK: {character.luck}</span>
+        {(character.deathCount ?? 0) > 0 && (
+          <span className="text-red-400">Deaths: {character.deathCount}</span>
+        )}
       </div>
       {onDelete && (
         <button

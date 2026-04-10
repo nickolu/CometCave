@@ -33,6 +33,7 @@ const defaultCharacter: FantasyCharacter = {
   intelligence: 0,
   luck: 0,
   inventory: [],
+  deathCount: 0,
 }
 
 export interface GameStore {
@@ -267,7 +268,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -275,6 +276,14 @@ export const useGameStore = create<GameStore>()(
         }
         if (state?.gameState && !('shopState' in state.gameState)) {
           (state.gameState as GameState).shopState = null
+        }
+        // v4: Add deathCount to all characters
+        if (state?.gameState?.characters) {
+          for (const char of state.gameState.characters) {
+            if (char.deathCount === undefined) {
+              (char as FantasyCharacter).deathCount = 0
+            }
+          }
         }
         return state
       },
