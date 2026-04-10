@@ -10,8 +10,6 @@ import {
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 
-import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
-
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
 
 export function initializePlayerCombatState(character: FantasyCharacter): CombatPlayerState {
