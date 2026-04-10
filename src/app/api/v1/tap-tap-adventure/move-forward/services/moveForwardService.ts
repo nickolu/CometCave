@@ -1,6 +1,5 @@
 import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward/schemas'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
-import { generateCombatEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
 import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import { calculateLevel } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
@@ -36,36 +35,9 @@ export async function moveForwardService(
 
   let event: FantasyStoryEvent | null = null
   let decisionPoint: FantasyDecisionPoint | null = null
-  let combatEncounter = null
 
   try {
     const context = buildStoryContext(character, storyEvents)
-
-    // Combat chance: base 15% + level scaling, modified by reputation
-    let combatChance = 0.15 + character.level * 0.01
-    if (character.reputation >= 50) {
-      combatChance -= 0.05 // High reputation: fewer hostile encounters
-    } else if (character.reputation <= -20) {
-      combatChance += 0.05 // Low reputation: more hostile encounters
-    }
-    if (Math.random() < combatChance) {
-      const encounter = await generateCombatEncounter(character, context)
-      combatEncounter = encounter
-      event = {
-        id: `combat-event-${Date.now()}`,
-        type: 'combat_start',
-        characterId: character.id,
-        locationId: character.locationId,
-        timestamp: new Date().toISOString(),
-      }
-      return {
-        character: updatedCharacter,
-        event,
-        decisionPoint: null,
-        combatEncounter,
-      }
-    }
-
     const llmEvents = await generateLLMEvents(character, context)
     const llmEvent = llmEvents[0]
 
@@ -88,7 +60,8 @@ export async function moveForwardService(
         successEffects: opt.successEffects,
         failureDescription: opt.failureDescription,
         failureEffects: opt.failureEffects,
-        resultDescription: opt.successDescription, // Default to success description
+        resultDescription: opt.successDescription,
+        triggersCombat: opt.triggersCombat,
       })),
       resolved: false,
     }
@@ -102,6 +75,5 @@ export async function moveForwardService(
     character: updatedCharacter,
     event,
     decisionPoint,
-    combatEncounter,
   }
 }

@@ -37,6 +37,7 @@ export interface LLMEventOption {
     statusChange?: string
     rewardItems?: Item[]
   }
+  triggersCombat?: boolean
 }
 
 export interface LLMGeneratedEvent {
@@ -78,6 +79,7 @@ const eventOptionSchema = z.object({
     statusChange: z.string().optional(),
     rewardItems: z.array(rewardItemSchema).optional(),
   }),
+  triggersCombat: z.boolean().optional(),
 })
 
 const eventSchema = z.object({
@@ -145,6 +147,7 @@ const eventOptionSchemaForOpenAI = {
         },
       },
     },
+    triggersCombat: { type: 'boolean', description: 'Set to true if this option leads to a fight' },
   },
   required: [
     'id',
@@ -238,6 +241,8 @@ ${reputationGuidance}
 Tailor the tone, NPC attitudes, and available opportunities to reflect the character's reputation tier.
 
 When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts or gold. Examples: potions that grant +2 strength, scrolls that grant +2 intelligence, lucky coins that grant +1 luck.
+
+IMPORTANT: About 1 in 3 events should involve a potential confrontation (bandits, monsters, rivals, etc.). For these events, include at least one option with "triggersCombat": true — this represents the character choosing to fight. Other options can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). This gives the player agency over whether to fight.
 
 Character:
 ${JSON.stringify(character, null, 2)}
@@ -400,33 +405,44 @@ function getDefaultEvents() {
     },
     {
       id: `default-3-${uniqueSuffix}`,
-      description: 'You find a wounded animal on the road.',
+      description: 'A band of thieves blocks the road ahead, demanding you hand over your gold.',
       options: [
         {
-          id: `help-3-${uniqueSuffix}`,
-          text: 'Help the animal',
-          successProbability: 0.8,
-          successDescription: 'The animal recovers and you gain reputation.',
+          id: `fight-3-${uniqueSuffix}`,
+          text: 'Draw your weapon and fight',
+          triggersCombat: true,
+          successProbability: 0.5,
+          successDescription: 'You prepare for battle!',
+          successEffects: {},
+          failureDescription: 'You prepare for battle!',
+          failureEffects: {},
+        },
+        {
+          id: `pay-3-${uniqueSuffix}`,
+          text: 'Pay the toll and pass safely',
+          successProbability: 0.9,
+          successDescription: 'You hand over some gold and the thieves let you pass.',
           successEffects: {
-            reputation: 3,
+            gold: -10,
           },
-          failureDescription: 'The animal was more dangerous than it appeared.',
+          failureDescription: 'They take your gold and shove you aside.',
           failureEffects: {
-            gold: -5,
+            gold: -15,
             reputation: -2,
           },
         },
         {
-          id: `ignore-3-${uniqueSuffix}`,
-          text: 'Ignore it',
-          successProbability: 0.2,
-          successDescription: 'You made the right choice - it was a trap!',
+          id: `sneak-3-${uniqueSuffix}`,
+          text: 'Try to sneak around them',
+          successProbability: 0.4,
+          successDescription: 'You slip past unnoticed!',
           successEffects: {
-            gold: 5,
+            reputation: 1,
           },
-          failureDescription: 'You walk on, feeling a bit guilty.',
+          failureDescription: 'They spot you and take your gold by force.',
           failureEffects: {
-            reputation: -1,
+            gold: -15,
+            reputation: -3,
           },
         },
       ],
