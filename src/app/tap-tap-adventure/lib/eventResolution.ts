@@ -43,5 +43,10 @@ export function calculateEffectiveProbability(
     const attrMod = Number(typedOption.attributeModifiers?.[attr] ?? 0.01)
     modifier += value * attrMod
   }
+
+  // Reputation modifier: +0.01 per 10 reputation, capped at +/-0.1
+  const reputationModifier = Math.max(-0.1, Math.min(0.1, character.reputation * 0.001))
+  modifier += reputationModifier
+
   return Math.max(0, Math.min(1, Number(base) + modifier))
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { buildStoryContext, getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
@@ -94,6 +94,20 @@ describe('buildStoryContext', () => {
     expect(context).toContain('Event number 18')
     expect(context).toContain('Event number 19')
     expect(context).not.toContain('Event number 0')
+  })
+
+  it('includes reputation tier in context', () => {
+    const context = buildStoryContext(baseChar, [])
+    expect(context).toContain('Respected')
+    expect(context).toContain('Reputation: 25 (Respected)')
+    expect(context).toContain('Reputation implications:')
+  })
+
+  it('includes reputation tier for negative reputation', () => {
+    const negRepChar = { ...baseChar, reputation: -25 }
+    const context = buildStoryContext(negRepChar, [])
+    expect(context).toContain('Infamous')
+    expect(context).toContain('Bounty hunters')
   })
 
   it('caps context string length', () => {

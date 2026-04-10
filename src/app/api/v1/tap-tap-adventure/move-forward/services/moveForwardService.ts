@@ -20,8 +20,13 @@ export async function moveForwardService(
   try {
     const context = buildStoryContext(character, storyEvents)
 
-    // 20% chance of combat encounter (increases slightly with level)
-    const combatChance = 0.15 + character.level * 0.01
+    // Combat chance: base 15% + level scaling, modified by reputation
+    let combatChance = 0.15 + character.level * 0.01
+    if (character.reputation >= 50) {
+      combatChance -= 0.05 // High reputation: fewer hostile encounters
+    } else if (character.reputation <= -20) {
+      combatChance += 0.05 // Low reputation: more hostile encounters
+    }
     if (Math.random() < combatChance) {
       const encounter = await generateCombatEncounter(character, context)
       combatEncounter = encounter
