@@ -1,6 +1,7 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
@@ -15,6 +16,7 @@ interface CombatActionResponse {
   }
   updatedCharacter: FantasyCharacter
   consumedItemId?: string
+  deathPenalty?: DeathPenalty
 }
 
 export function useCombatActionMutation() {
@@ -100,14 +102,30 @@ export function useCombatActionMutation() {
             },
           })
         } else if (data.combatState.status === 'defeat') {
+          const penalty = data.deathPenalty
+          const penaltyParts: string[] = []
+          if (penalty) {
+            if (penalty.goldLost > 0) penaltyParts.push(`${penalty.goldLost} gold`)
+            if (penalty.itemsLost > 0)
+              penaltyParts.push(
+                `${penalty.itemsLost} item${penalty.itemsLost !== 1 ? 's' : ''} from your inventory`
+              )
+            penaltyParts.push('some of your reputation')
+          }
+          const lossDescription =
+            penaltyParts.length > 0 ? ` You lost ${penaltyParts.join(', ')}.` : ''
+
           addStoryEvent({
             id: `combat-defeat-${Date.now()}`,
             type: 'combat_defeat',
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You were defeated by ${enemy.name}. You lost some gold fleeing the battle.`,
-            resourceDelta: { gold: data.rewards?.gold },
+            outcomeDescription: `You were defeated by ${enemy.name}.${lossDescription} (Death #${penalty?.newDeathCount ?? '?'})`,
+            resourceDelta: {
+              gold: data.rewards?.gold,
+              reputation: penalty ? -penalty.reputationLost : undefined,
+            },
           })
         } else if (data.combatState.status === 'fled') {
           addStoryEvent({
