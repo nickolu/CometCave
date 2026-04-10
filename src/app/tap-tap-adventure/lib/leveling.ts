@@ -75,10 +75,11 @@ export function crossedMilestone(oldDistance: number, newDistance: number, inter
   return Math.floor(newDistance / interval) > Math.floor(oldDistance / interval)
 }
 
-const STAT_BONUS_PER_LEVEL = 1
+export const STAT_POINTS_PER_LEVEL = 3
 
 /**
  * Apply level-derived stat bonuses and update maxHp.
+ * Instead of auto-applying stat increases, accumulates pending stat points.
  * Also heals 1 HP per step (called on distance change).
  */
 export function applyLevelFromDistance(
@@ -93,9 +94,7 @@ export function applyLevelFromDistance(
     updated = {
       ...updated,
       level: newLevel,
-      strength: character.strength + levelsGained * STAT_BONUS_PER_LEVEL,
-      intelligence: character.intelligence + levelsGained * STAT_BONUS_PER_LEVEL,
-      luck: character.luck + levelsGained * STAT_BONUS_PER_LEVEL,
+      pendingStatPoints: (character.pendingStatPoints ?? 0) + levelsGained * STAT_POINTS_PER_LEVEL,
     }
   } else if (newLevel < character.level) {
     updated.level = newLevel

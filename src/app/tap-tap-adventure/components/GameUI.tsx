@@ -1,8 +1,6 @@
 'use client'
 
 import { LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { useMoveForwardMutation } from '@/app/tap-tap-adventure/hooks/useMoveForwardMutation'
@@ -13,7 +11,7 @@ import { flipCoin } from '@/app/utils'
 import { CombatUI, CombatResult } from './CombatUI'
 import { EquipmentPanel } from './EquipmentPanel'
 import { InventoryPanel } from './InventoryPanel'
-import { LevelUpCelebration } from './LevelUpCelebration'
+import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
 
@@ -36,26 +34,14 @@ export default function GameUI() {
     incrementDistance,
     setDecisionPoint,
     setCombatState,
+    allocateStatPoints,
   } = useGameStore()
 
   const { mutate: moveForwardMutation, isPending: moveForwardPending } = useMoveForwardMutation()
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
     useResolveDecisionMutation()
 
-  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
-  const prevLevelRef = useRef<number | null>(null)
   const character = getSelectedCharacter()
-
-  useEffect(() => {
-    if (!character) return
-    const currentLevel = character.level
-    if (prevLevelRef.current !== null && currentLevel > prevLevelRef.current) {
-      setLevelUpLevel(currentLevel)
-    }
-    prevLevelRef.current = currentLevel
-  }, [character?.level])
-
-  const dismissLevelUp = useCallback(() => setLevelUpLevel(null), [])
 
   const handleResolveDecision = (optionId: string) => {
     resolveDecisionMutation({
@@ -88,8 +74,11 @@ export default function GameUI() {
 
   return (
     <>
-      {levelUpLevel !== null && (
-        <LevelUpCelebration level={levelUpLevel} onDismiss={dismissLevelUp} />
+      {character && (character.pendingStatPoints ?? 0) > 0 && (
+        <StatAllocationScreen
+          character={character}
+          onConfirm={(str, int, lck) => allocateStatPoints(str, int, lck)}
+        />
       )}
     <div className="flex flex-col select-none">
       <div className="relative z-10 mx-auto w-full">

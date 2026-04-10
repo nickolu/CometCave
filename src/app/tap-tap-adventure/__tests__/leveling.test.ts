@@ -34,6 +34,7 @@ const baseChar: FantasyCharacter = {
   maxHp: 100,
   inventory: [],
   deathCount: 0,
+  pendingStatPoints: 0,
 }
 
 describe('Distance-Based Leveling (rebalanced)', () => {
@@ -146,14 +147,16 @@ describe('Distance-Based Leveling (rebalanced)', () => {
       expect(result.hp).toBe(85) // capped at maxHp
     })
 
-    it('levels up and updates maxHp', () => {
-      // At distance 250, level goes from 1 to 2, strength 5->6
-      // maxHp = 50 + 6*5 + 2*10 = 100
+    it('levels up and adds pending stat points instead of auto-applying stats', () => {
+      // At distance 250, level goes from 1 to 2
+      // Stats stay the same, pendingStatPoints increases by 3
+      // maxHp = 50 + 5*5 + 2*10 = 95
       const char = { ...baseChar, distance: 250, level: 1 }
       const result = applyLevelFromDistance(char)
       expect(result.level).toBe(2)
-      expect(result.strength).toBe(6)
-      expect(result.maxHp).toBe(100)
+      expect(result.strength).toBe(5) // unchanged
+      expect(result.pendingStatPoints).toBe(3)
+      expect(result.maxHp).toBe(95)
     })
   })
 })

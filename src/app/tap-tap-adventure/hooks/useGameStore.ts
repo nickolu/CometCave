@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware'
 
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
-import { applyLevelFromDistance } from '@/app/tap-tap-adventure/lib/leveling'
+import { applyLevelFromDistance, calculateMaxHp } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
@@ -38,11 +38,13 @@ const defaultCharacter: FantasyCharacter = {
   inventory: [],
   equipment: { weapon: null, armor: null, accessory: null },
   deathCount: 0,
+  pendingStatPoints: 0,
 }
 
 export interface GameStore {
   gameState: GameState
   addCharacter: (c: Partial<FantasyCharacter>) => void
+  allocateStatPoints: (strength: number, intelligence: number, luck: number) => void
   clearGameState: () => void
   deleteCharacter: (id: string) => void
   getSelectedCharacter: () => FantasyCharacter | null
@@ -71,6 +73,38 @@ export const useGameStore = create<GameStore>()(
             const characters = state.gameState.characters || []
             if (characters.length >= 5) return
             state.gameState.characters = [...characters, { ...defaultCharacter, ...c }]
+          })
+        )
+      },
+      allocateStatPoints: (strength: number, intelligence: number, luck: number) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+
+            const totalAllocated = strength + intelligence + luck
+            const pending = selectedCharacter.pendingStatPoints ?? 0
+            if (totalAllocated > pending || totalAllocated <= 0) return
+
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+
+            const updatedCharacter = {
+              ...selectedCharacter,
+              strength: selectedCharacter.strength + strength,
+              intelligence: selectedCharacter.intelligence + intelligence,
+              luck: selectedCharacter.luck + luck,
+              pendingStatPoints: pending - totalAllocated,
+            }
+            const maxHp = calculateMaxHp(updatedCharacter)
+            updatedCharacter.maxHp = maxHp
+            // Also increase current HP by the same amount maxHp increased
+            const oldMaxHp = selectedCharacter.maxHp ?? maxHp
+            updatedCharacter.hp = Math.min(maxHp, (selectedCharacter.hp ?? oldMaxHp) + (maxHp - oldMaxHp))
+
+            state.gameState.characters[characterIndex] = updatedCharacter
           })
         )
       },
@@ -341,7 +375,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 5,
+      version: 6,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -363,6 +397,10 @@ export const useGameStore = create<GameStore>()(
               const maxHp = 50 + (char.strength ?? 5) * 5 + (char.level ?? 1) * 10
               ;(char as FantasyCharacter).hp = maxHp
               ;(char as FantasyCharacter).maxHp = maxHp
+            }
+            // v6: Add pending stat points
+            if (char.pendingStatPoints === undefined) {
+              ;(char as FantasyCharacter).pendingStatPoints = 0
             }
           }
         }
