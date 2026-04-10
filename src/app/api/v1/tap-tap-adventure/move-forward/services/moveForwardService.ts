@@ -2,6 +2,7 @@ import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateCombatEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
 import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
+import { calculateLevel } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
@@ -11,7 +12,27 @@ export async function moveForwardService(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[] = []
 ): Promise<MoveForwardResponse> {
-  const updatedCharacter = { ...character, distance: character.distance + BASE_DISTANCE }
+  const newDistance = character.distance + BASE_DISTANCE
+  const oldLevel = calculateLevel(character.distance)
+  const newLevel = calculateLevel(newDistance)
+  const updatedCharacter = { ...character, distance: newDistance }
+
+  // Trigger shop event on level up
+  if (newLevel > oldLevel) {
+    return {
+      character: updatedCharacter,
+      event: {
+        id: `shop-event-${Date.now()}`,
+        type: 'shop',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      },
+      decisionPoint: null,
+      combatEncounter: null,
+      shopEvent: true,
+    }
+  }
 
   let event: FantasyStoryEvent | null = null
   let decisionPoint: FantasyDecisionPoint | null = null
@@ -20,8 +41,13 @@ export async function moveForwardService(
   try {
     const context = buildStoryContext(character, storyEvents)
 
-    // 20% chance of combat encounter (increases slightly with level)
-    const combatChance = 0.15 + character.level * 0.01
+    // Combat chance: base 15% + level scaling, modified by reputation
+    let combatChance = 0.15 + character.level * 0.01
+    if (character.reputation >= 50) {
+      combatChance -= 0.05 // High reputation: fewer hostile encounters
+    } else if (character.reputation <= -20) {
+      combatChance += 0.05 // Low reputation: more hostile encounters
+    }
     if (Math.random() < combatChance) {
       const encounter = await generateCombatEncounter(character, context)
       combatEncounter = encounter
