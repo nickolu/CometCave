@@ -292,11 +292,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
         {/* Item selection dropdown */}
         {showItemMenu && combatItems.length > 0 && (
-          <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1">
+          <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1 max-h-48 overflow-y-auto">
             {combatItems.map((item: Item) => (
               <Button
                 key={item.id}
-                className="w-full text-left bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white text-xs py-2 px-3 rounded-md"
+                className="w-full text-left whitespace-normal h-auto bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white text-xs py-2 px-3 rounded-md"
                 onClick={() => handleUseItem(item.id)}
                 disabled={isPending}
               >
@@ -317,7 +317,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
         {/* Spell selection dropdown */}
         {showSpellMenu && spellbook.length > 0 && (
-          <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1">
+          <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1 max-h-48 overflow-y-auto">
             {spellbook.map((spell: Spell) => {
               const onCooldown = (spellCooldowns[spell.id] ?? 0) > 0
               const notEnoughMana = currentMana < spell.manaCost
@@ -326,7 +326,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
               return (
                 <Button
                   key={spell.id}
-                  className={`w-full text-left text-xs py-2 px-3 rounded-md border ${
+                  className={`w-full text-left whitespace-normal h-auto text-xs py-2 px-3 rounded-md border ${
                     disabled
                       ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                       : 'bg-[#2a2b3f] border-[#3a3c56] hover:bg-[#3a3c56] text-white'
