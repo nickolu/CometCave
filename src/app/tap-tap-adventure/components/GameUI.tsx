@@ -18,8 +18,9 @@ import { StoryFeed } from './StoryFeed'
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
   if (isLoading)
     return (
-      <div className="flex items-center mr-2 text-xs justify-center gap-2 w-full">
-        <LoaderCircle className="animate-spin" /> Loading...
+      <div className="flex items-center justify-center gap-2 w-full">
+        <LoaderCircle className="animate-spin h-5 w-5" />
+        <span>Searching for adventure...</span>
       </div>
     )
   if (distance === 0) return 'Start Your Adventure'
@@ -93,32 +94,33 @@ export default function GameUI() {
                 <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
                   Event
                 </h4>
-                {resolveDecisionPending && (
-                  <div className="text-xs text-gray-500 mt-2">Resolving...</div>
-                )}
                 {!gameState.decisionPoint.resolved && (
                   <div>
                     <div className="font-semibold mb-6 break-words">{gameState.decisionPoint.prompt}</div>
-                    <div className="space-y-2 mt-2">
-                      {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
-                        if (!option) return null
-                        if (!gameState.decisionPoint) return null
-                        return (
-                          <Button
-                            key={option.id}
-                            className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
-                            disabled={resolveDecisionPending}
-                            onClick={() => {
-                              handleResolveDecision(option.id)
-                            }}
-                          >
-                            {option.text}
-                          </Button>
-                        )
-                      })}
-                    </div>
-                    {resolveDecisionPending && (
-                      <div className="text-xs text-gray-500 mt-2">Resolving...</div>
+                    {resolveDecisionPending ? (
+                      <div className="flex flex-col items-center gap-3 py-6 text-slate-400">
+                        <LoaderCircle className="animate-spin h-6 w-6" />
+                        <span className="text-sm">Resolving your choice...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 mt-2">
+                        {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
+                          if (!option) return null
+                          if (!gameState.decisionPoint) return null
+                          return (
+                            <Button
+                              key={option.id}
+                              className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
+                              disabled={resolveDecisionPending}
+                              onClick={() => {
+                                handleResolveDecision(option.id)
+                              }}
+                            >
+                              {option.text}
+                            </Button>
+                          )
+                        })}
+                      </div>
                     )}
                   </div>
                 )}
@@ -126,7 +128,11 @@ export default function GameUI() {
             ) : (
               <>
                 <Button
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-indigo-400/30 text-white font-bold text-lg py-6 rounded-lg shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all duration-300 active:translate-y-0.5 active:shadow-none select-none"
+                  className={`w-full border text-white font-bold text-lg py-6 rounded-lg transition-all duration-300 select-none ${
+                    moveForwardPending
+                      ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
+                  }`}
                   onClick={handleMoveForward}
                   disabled={moveForwardPending || resolveDecisionPending}
                 >
