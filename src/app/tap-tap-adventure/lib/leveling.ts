@@ -79,7 +79,7 @@ export function calculateMaxMana(character: FantasyCharacter): number {
 }
 
 const MANA_REGEN_BASE_RATE = 5 // base: 1 mana every 5 steps
-const HEAL_RATE = 3 // heal 1 HP every N steps
+const HEAL_RATE = 10 // heal 1 HP every N steps
 
 /**
  * Check if a step milestone was just crossed.
@@ -102,7 +102,9 @@ export function applyLevelFromDistance(
   const newLevel = calculateLevel(character.distance)
   let updated = { ...character }
 
-  if (newLevel > character.level) {
+  const leveledUp = newLevel > character.level
+
+  if (leveledUp) {
     const levelsGained = newLevel - character.level
     updated = {
       ...updated,
@@ -113,14 +115,26 @@ export function applyLevelFromDistance(
     updated.level = newLevel
   }
 
-  // Update maxHp and heal (1 HP every HEAL_RATE steps)
+  // Update maxHp and maxMana
   const maxHp = calculateMaxHp(updated)
+  const maxMana = calculateMaxMana(updated)
+
+  // Level up: full heal HP and mana
+  if (leveledUp) {
+    return {
+      ...updated,
+      hp: maxHp,
+      maxHp,
+      mana: maxMana,
+      maxMana,
+    }
+  }
+
+  // Normal walking: slow regen
   const currentHp = updated.hp ?? maxHp
   const healAmount = Math.floor(stepsGained / HEAL_RATE)
   const healed = Math.min(maxHp, currentHp + healAmount)
 
-  // Update maxMana and regen mana
-  const maxMana = calculateMaxMana(updated)
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1
   const effectiveRegenRate = Math.max(1, Math.floor(MANA_REGEN_BASE_RATE / regenMultiplier))
