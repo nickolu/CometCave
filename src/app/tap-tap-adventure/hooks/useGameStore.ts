@@ -121,13 +121,17 @@ export const useGameStore = create<GameStore>()(
               (char: FantasyCharacter) => char.id === id
             )
             if (!matchingCharacter) return {}
-            const updatedState = {
+            return {
               gameState: {
                 ...state.gameState,
                 selectedCharacterId: id,
+                storyEvents: [],
+                decisionPoint: null,
+                combatState: null,
+                shopState: null,
+                genericMessage: null,
               },
             }
-            return updatedState
           })
         )
       },
