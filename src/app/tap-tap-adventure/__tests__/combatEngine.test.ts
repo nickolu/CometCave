@@ -79,10 +79,10 @@ describe('Combat Engine', () => {
       // HP: 30 + 8*3 + 3*8 = 78
       expect(state.maxHp).toBe(78)
       expect(state.hp).toBe(78)
-      // Attack: 3 + 8 + 3 = 14
-      expect(state.attack).toBe(14)
-      // Defense: 2 + 5 + 3 = 10
-      expect(state.defense).toBe(10)
+      // Attack: 2 + 8 + floor(3/2) = 11
+      expect(state.attack).toBe(11)
+      // Defense: 1 + floor(5/2) + floor(3/2) = 4
+      expect(state.defense).toBe(4)
       expect(state.isDefending).toBe(false)
     })
   })
