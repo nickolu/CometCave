@@ -6,9 +6,11 @@ import { persist } from 'zustand/middleware'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance } from '@/app/tap-tap-adventure/lib/leveling'
+import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
+import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
   FantasyDecisionPoint,
   FantasyStoryEvent,
@@ -54,6 +56,7 @@ export interface GameStore {
   setGameState: (gameState: GameState) => void
   setGenericMessage: (message: string) => void
   useItem: (itemId: string) => { message: string; consumed: boolean } | null
+  setActiveQuest: (quest: TimedQuest | null) => void
   discardItem: (itemId: string) => void
   restoreItem: (itemId: string) => void
   equipItem: (itemId: string, slot?: EquipmentSlotType) => void
@@ -112,6 +115,20 @@ export const useGameStore = create<GameStore>()(
             state.gameState.characters = state.gameState.characters.map(char =>
               char.id === selectedCharacter.id ? updatedCharacter : char
             )
+            // Check quest progress on each step
+            if (state.gameState.activeQuest?.status === 'active') {
+              state.gameState.activeQuest = checkQuestProgress(
+                state.gameState.activeQuest,
+                updatedCharacter
+              )
+            }
+          })
+        )
+      },
+      setActiveQuest: (quest: TimedQuest | null) => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.activeQuest = quest
           })
         )
       },
@@ -131,6 +148,7 @@ export const useGameStore = create<GameStore>()(
                 decisionPoint: null,
                 combatState: null,
                 shopState: null,
+                activeQuest: null,
                 genericMessage: null,
               },
             }
@@ -341,7 +359,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 5,
+      version: 6,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -365,6 +383,10 @@ export const useGameStore = create<GameStore>()(
               ;(char as FantasyCharacter).maxHp = maxHp
             }
           }
+        }
+        // v6: Add activeQuest
+        if (state?.gameState && !('activeQuest' in state.gameState)) {
+          (state.gameState as GameState).activeQuest = null
         }
         return state
       },
@@ -407,6 +429,10 @@ export function useGameStateBuilder() {
     gameStateClone.shopState = shopState
   }
 
+  const setActiveQuest = (quest: TimedQuest | null) => {
+    gameStateClone.activeQuest = quest
+  }
+
   const setDecisionPoint = (decisionPoint: FantasyDecisionPoint | null) => {
     gameStateClone.decisionPoint = decisionPoint
   }
@@ -437,6 +463,7 @@ export function useGameStateBuilder() {
     addStoryEvent,
     setCombatState,
     setShopState,
+    setActiveQuest,
     setDecisionPoint,
     setGenericMessage,
     updateSelectedCharacter,

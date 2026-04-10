@@ -4,6 +4,7 @@ import { FantasyCharacter } from './character'
 import { CombatState } from './combat'
 import { Item } from './item'
 import { FantasyLocation } from './location'
+import { TimedQuest } from './quest'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
 
 export type ShopState = {
@@ -36,6 +37,7 @@ export type {
   FantasyDecisionPointSchema,
 } from './story'
 export type { Item, ItemSchema, ItemEffects, ItemEffectsSchema } from './item'
+export type { TimedQuest, TimedQuestSchema } from './quest'
 export type {
   CombatState,
   CombatEnemy,
@@ -67,6 +69,7 @@ type GameState = {
   decisionPoint: FantasyDecisionPoint | null
   combatState: CombatState | null
   shopState: ShopState | null
+  activeQuest: TimedQuest | null
   genericMessage: string | null
 }
 export type { GameState }
