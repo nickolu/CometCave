@@ -3,6 +3,26 @@ import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
 const MAX_CONTEXT_LENGTH = 1500
 
+export type ReputationTier = 'Infamous' | 'Disreputable' | 'Unknown' | 'Respected' | 'Renowned' | 'Legendary'
+
+const REPUTATION_TIER_IMPLICATIONS: Record<ReputationTier, string> = {
+  Infamous: 'NPCs are hostile or fearful. Bounty hunters pursue the character. Prices are much higher. Few will offer aid.',
+  Disreputable: 'NPCs are suspicious and distrustful. Prices are higher. Fewer friendly encounters.',
+  Unknown: 'NPCs are neutral. Standard pricing and interactions.',
+  Respected: 'NPCs are friendly and helpful. Better deals available. Some share useful information.',
+  Renowned: 'NPCs eagerly offer help, share secrets, and propose important quests. Excellent prices.',
+  Legendary: 'NPCs revere the character. The best deals, exclusive quests, and powerful allies seek them out.',
+}
+
+export function getReputationTier(reputation: number): ReputationTier {
+  if (reputation < -20) return 'Infamous'
+  if (reputation < 0) return 'Disreputable'
+  if (reputation < 20) return 'Unknown'
+  if (reputation < 50) return 'Respected'
+  if (reputation < 100) return 'Renowned'
+  return 'Legendary'
+}
+
 export function buildStoryContext(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[],
@@ -15,11 +35,13 @@ export function buildStoryContext(
   const parts: string[] = []
 
   // Character summary
+  const tier = getReputationTier(character.reputation)
   parts.push(
     `Character: ${character.name}, Level ${character.level} ${character.race} ${character.class}. ` +
-    `Gold: ${character.gold}, Reputation: ${character.reputation}, Distance: ${character.distance}. ` +
+    `Gold: ${character.gold}, Reputation: ${character.reputation} (${tier}), Distance: ${character.distance}. ` +
     `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}.`
   )
+  parts.push(`Reputation implications: ${REPUTATION_TIER_IMPLICATIONS[tier]}`)
 
   // Inventory highlights
   const activeItems = character.inventory.filter(i => i.status !== 'deleted')

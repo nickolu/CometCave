@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatEnemy, CombatEnemySchema } from '@/app/tap-tap-adventure/models/combat'
 
+import { getReputationTier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -99,6 +100,9 @@ Stat guidelines for a level ${character.level} character:
 - Gold reward: ${5 + character.level * 5}
 - Include 1-2 loot items (potions, scrolls, gems, etc.)
 - Optionally include a special ability with cooldown of 2-4 turns
+
+Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
+${character.reputation >= 50 ? 'High reputation: the enemy might offer to surrender or parley before fighting. Consider less aggressive enemies like misguided guards or territorial creatures rather than outright villains.' : ''}${character.reputation <= -20 ? 'Low reputation: enemies are more aggressive. Consider bounty hunters, rival adventurers seeking the bounty on this character, or vengeful NPCs.' : ''}
 
 Character:
 ${JSON.stringify(character, null, 2)}

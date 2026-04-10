@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from '@/app/tap-tap-adventure/components/ui/tooltip'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { levelProgress, stepsToNextLevel, stepsRequiredForLevel } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
@@ -117,7 +118,9 @@ export function HudBar() {
               <TooltipContent>
                 {key === 'fireIcon'
                   ? `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
-                  : STAT_LABELS[key]}
+                  : key === 'waterDropIcon'
+                    ? `Reputation: ${getReputationTier(stats[key])} (${stats[key]})`
+                    : STAT_LABELS[key]}
               </TooltipContent>
             </Tooltip>
           ))}

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 
+import { getReputationTier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 
 const processFallbackRewardItems = (
@@ -212,10 +213,29 @@ export async function generateLLMEvents(
 
 function getCompletionsConfig(character: FantasyCharacter, context: string) {
   const model = 'gpt-4o'
+  const reputationTier = getReputationTier(character.reputation)
+
+  let reputationGuidance = ''
+  if (character.reputation >= 50) {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be friendly and welcoming. Offer better deals, share secrets, and present important quests. Some NPCs may recognize the character by name and ask for help with critical tasks.`
+  } else if (character.reputation >= 20) {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be generally positive and willing to help. Fair deals and occasional bonus opportunities.`
+  } else if (character.reputation >= 0) {
+    reputationGuidance = `This character has an ${reputationTier} reputation (${character.reputation}). NPCs are neutral — standard interactions and pricing.`
+  } else if (character.reputation >= -20) {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be suspicious and wary. Prices are higher, information is harder to obtain, and some may refuse to deal with the character.`
+  } else {
+    reputationGuidance = `This character has an ${reputationTier} reputation (${character.reputation}). NPCs are hostile or fearful. Bounty hunters or rival adventurers may appear. Prices are much higher. Very few friendly encounters — most NPCs want nothing to do with this character.`
+  }
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
       content: `Generate 3 fantasy adventure events for this character. Reference their past adventures and current state when creating events. Events should feel like a continuation of their story, not random encounters.
+
+IMPORTANT — Reputation guidance:
+${reputationGuidance}
+Tailor the tone, NPC attitudes, and available opportunities to reflect the character's reputation tier.
 
 When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts or gold. Examples: potions that grant +2 strength, scrolls that grant +2 intelligence, lucky coins that grant +1 luck.
 

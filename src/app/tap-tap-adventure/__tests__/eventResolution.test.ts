@@ -49,7 +49,7 @@ describe('Decision Resolution', () => {
       relevantAttributes: ['strength', 'luck'],
       attributeModifiers: { strength: 0.05, luck: 0.1 },
     }
-    // 0.2 + (2*0.05) + (1*0.1) = 0.4
-    expect(calculateEffectiveProbability(option, baseChar)).toBeCloseTo(0.4)
+    // 0.2 + (2*0.05) + (1*0.1) + (5*0.001 reputation modifier) = 0.405
+    expect(calculateEffectiveProbability(option, baseChar)).toBeCloseTo(0.405)
   })
 })
