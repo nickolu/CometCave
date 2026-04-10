@@ -89,6 +89,7 @@ export function useResolveDecisionMutation() {
       addStoryEvent(newStoryEvent)
 
       // If the chosen option triggers combat, start a combat encounter
+      // Pass the event description so the enemy matches the narrative
       if (data.triggersCombat) {
         const { gameState } = useGameStore.getState()
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
@@ -97,6 +98,7 @@ export function useResolveDecisionMutation() {
           body: JSON.stringify({
             character: data.updatedCharacter,
             storyEvents: gameState.storyEvents,
+            eventContext: decisionPoint.prompt,
           }),
         })
         if (combatRes.ok) {

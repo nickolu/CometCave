@@ -7,9 +7,12 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
   try {
-    const { character, storyEvents = [] } = await req.json()
-    const context = buildStoryContext(character, storyEvents)
-    const { enemy, scenario } = await generateCombatEncounter(character, context)
+    const { character, storyEvents = [], eventContext } = await req.json()
+    const storyContext = buildStoryContext(character, storyEvents)
+    const fullContext = eventContext
+      ? `The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
+      : storyContext
+    const { enemy, scenario } = await generateCombatEncounter(character, fullContext)
     const playerState = initializePlayerCombatState(character)
 
     const combatState: CombatState = {
