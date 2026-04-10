@@ -31,9 +31,9 @@ export const FantasyCharacterSchema = z.object({
   luck: z.number(),
   inventory: z.array(ItemSchema),
   equipment: z.object({
-    weapon: ItemSchema.nullable().optional(),
-    armor: ItemSchema.nullable().optional(),
-    accessory: ItemSchema.nullable().optional(),
+    weapon: ItemSchema.nullable(),
+    armor: ItemSchema.nullable(),
+    accessory: ItemSchema.nullable(),
   }).optional(),
   deathCount: z.number().default(0),
 })
