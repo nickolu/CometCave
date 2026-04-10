@@ -15,7 +15,6 @@ export interface MoveForwardResponse {
   character: FantasyCharacter
   event?: FantasyStoryEvent | null
   decisionPoint?: FantasyDecisionPoint | null
-  combatEncounter?: { enemy: unknown; scenario: string } | null
   shopEvent?: boolean | null
   genericMessage?: string | null
 }
@@ -28,7 +27,6 @@ export function useMoveForwardMutation() {
     commit,
     setDecisionPoint,
     setGenericMessage,
-    setCombatState,
     setShopState,
   } = useGameStateBuilder()
 
@@ -75,24 +73,7 @@ export function useMoveForwardMutation() {
           const shopData = await shopRes.json()
           setGenericMessage(null)
           setDecisionPoint(null)
-          setCombatState(null)
           setShopState({ items: shopData.shopItems, isOpen: true })
-        }
-      } else if (data.combatEncounter) {
-        // Start combat - fetch combat state from server
-        const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            character: currentCharacter,
-            storyEvents: gameState.storyEvents,
-          }),
-        })
-        if (combatRes.ok) {
-          const combatData = await combatRes.json()
-          setGenericMessage(null)
-          setDecisionPoint(null)
-          setCombatState(combatData.combatState)
         }
       } else if (data.decisionPoint) {
         setGenericMessage(null)

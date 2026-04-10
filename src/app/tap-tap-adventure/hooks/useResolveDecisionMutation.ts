@@ -20,11 +20,12 @@ export interface ResolveDecisionResponse {
     statusChange?: string
   }
   rewardItems?: Item[]
+  triggersCombat?: boolean
 }
 
 export function useResolveDecisionMutation() {
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder()
+  const { addItem, addStoryEvent, commit, setCombatState, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
@@ -73,17 +74,37 @@ export function useResolveDecisionMutation() {
       const newStoryEvent = {
         decisionPoint,
         id: `result-${Date.now()}`,
-        type: 'decision_result',
+        type: data.triggersCombat ? 'combat_start' : 'decision_result',
         characterId: data.updatedCharacter.id,
         locationId: data.updatedCharacter.locationId,
         timestamp: new Date().toISOString(),
         selectedOptionId: data.selectedOptionId,
         selectedOptionText: data.selectedOptionText,
-        outcomeDescription: data.outcomeDescription ?? '',
+        outcomeDescription: data.triggersCombat
+          ? `You chose to fight: ${data.selectedOptionText}`
+          : (data.outcomeDescription ?? ''),
         resourceDelta: data.resourceDelta,
       }
 
       addStoryEvent(newStoryEvent)
+
+      // If the chosen option triggers combat, start a combat encounter
+      if (data.triggersCombat) {
+        const { gameState } = useGameStore.getState()
+        const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character: data.updatedCharacter,
+            storyEvents: gameState.storyEvents,
+          }),
+        })
+        if (combatRes.ok) {
+          const combatData = await combatRes.json()
+          setCombatState(combatData.combatState)
+        }
+      }
+
       commit()
       onSuccess?.()
     },

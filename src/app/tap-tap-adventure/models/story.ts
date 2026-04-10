@@ -35,6 +35,7 @@ export const FantasyDecisionOptionSchema = z.object({
   resultDescription: z.string().optional(),
   effects: EffectsSchema.optional(),
   rewardItems: z.array(ItemSchema).optional(),
+  triggersCombat: z.boolean().optional(),
 })
 export type FantasyDecisionOption = z.infer<typeof FantasyDecisionOptionSchema>
 

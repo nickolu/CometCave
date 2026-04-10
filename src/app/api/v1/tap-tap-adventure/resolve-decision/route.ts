@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems]
     }
 
-    const response: ResolveDecisionResponse & { rewardItems?: Item[] } = {
+    const response: ResolveDecisionResponse & { rewardItems?: Item[]; triggersCombat?: boolean } = {
       updatedCharacter,
       resultDescription: resultDescription,
       appliedEffects,
@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
       outcomeDescription: resultDescription,
       resourceDelta: appliedEffects,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
+      triggersCombat: typedOption.triggersCombat,
     }
 
     return NextResponse.json(response)
