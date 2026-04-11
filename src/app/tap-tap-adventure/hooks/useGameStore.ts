@@ -13,6 +13,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
   FantasyDecisionPoint,
@@ -48,6 +49,7 @@ const defaultCharacter: FantasyCharacter = {
   maxMana: 20,
   spellbook: [],
   classData: undefined,
+  activeMount: null,
 }
 
 export interface GameStore {
@@ -72,6 +74,7 @@ export interface GameStore {
   unequipItem: (slot: EquipmentSlotType) => void
   learnSpell: (itemId: string) => { message: string; learned: boolean } | null
   updateAchievements: (achievements: PlayerAchievement[]) => void
+  setMount: (mount: Mount | null) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -516,6 +519,10 @@ export const useGameStore = create<GameStore>()(
             // v8: Add classData
             if ((char as FantasyCharacter).classData === undefined) {
               ;(char as FantasyCharacter).classData = undefined
+            }
+            // v10: Add activeMount
+            if ((char as FantasyCharacter).activeMount === undefined) {
+              ;(char as FantasyCharacter).activeMount = null
             }
           }
         }

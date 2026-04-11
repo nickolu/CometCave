@@ -9,6 +9,8 @@ import {
   EnemyTelegraph,
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
 import { calculateMaxMana } from './leveling'
@@ -27,6 +29,11 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const armorBonus = equipment.armor?.effects?.intelligence ?? 0
   const accessoryLuckBonus = equipment.accessory?.effects?.luck ?? 0
 
+  // Calculate mount bonuses
+  const mountStrBonus = character.activeMount?.bonuses?.strength ?? 0
+  const mountIntBonus = character.activeMount?.bonuses?.intelligence ?? 0
+  const mountLuckBonus = character.activeMount?.bonuses?.luck ?? 0
+
   // Use persistent HP from character, falling back to max if not set
   const maxHp = character.maxHp ?? (30 + character.strength * 3 + character.level * 8)
   const currentHp = character.hp ?? maxHp
@@ -36,12 +43,13 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   return {
     hp: currentHp,
     maxHp,
-    attack: 2 + character.strength + Math.floor(character.level / 2) + weaponBonus * 2,
-    defense: 1 + Math.floor(character.intelligence / 2) + Math.floor(character.level / 2) + armorBonus,
+    attack: 2 + character.strength + mountStrBonus + Math.floor(character.level / 2) + weaponBonus * 2,
+    defense: 1 + Math.floor((character.intelligence + mountIntBonus) / 2) + Math.floor(character.level / 2) + armorBonus,
     isDefending: false,
-    activeBuffs: accessoryLuckBonus > 0
-      ? [{ stat: 'attack' as const, value: accessoryLuckBonus, turnsRemaining: 999 }]
-      : [],
+    activeBuffs: [
+      ...(accessoryLuckBonus > 0 ? [{ stat: 'attack' as const, value: accessoryLuckBonus, turnsRemaining: 999 }] : []),
+      ...(mountLuckBonus > 0 ? [{ stat: 'attack' as const, value: mountLuckBonus, turnsRemaining: 999 }] : []),
+    ],
     comboCount: 0,
     abilityCooldown: 0,
     enemyStunned: false,
@@ -673,6 +681,7 @@ export function processPlayerAction(
 export interface CombatRewards {
   gold: number
   loot: Item[]
+  mountDrop?: Mount
 }
 
 export function getCombatRewards(
@@ -692,7 +701,16 @@ export function getCombatRewards(
     }
   }
 
-  return { gold, loot }
+  // Bosses have a chance to drop a mount
+  let mountDrop: Mount | undefined
+  if (combatState.isBoss) {
+    const mountDropChance = 0.25 + character.luck * 0.02
+    if (Math.random() < mountDropChance) {
+      mountDrop = getRandomMount(character.luck)
+    }
+  }
+
+  return { gold, loot, mountDrop }
 }
 
 // Re-export for tests

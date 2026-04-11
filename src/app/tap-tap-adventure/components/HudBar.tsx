@@ -170,12 +170,32 @@ export function HudBar() {
     </div>
   )
 
+  const activeMount = character?.activeMount
+
+  const mountRarityColor: Record<string, string> = {
+    common: 'border-slate-400',
+    uncommon: 'border-green-400',
+    rare: 'border-blue-400',
+    legendary: 'border-yellow-400',
+  }
+
   return (
     <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-2 px-3 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white select-none">
       <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
         {STATS_LEFT.map(renderStat)}
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
+        {activeMount && (
+          <div className="relative">
+            <button
+              className={`flex items-center gap-1 text-xs sm:text-sm font-semibold border rounded px-1.5 py-0.5 ${mountRarityColor[activeMount.rarity] ?? 'border-slate-400'} bg-[#2a2b3f]`}
+              title={`${activeMount.name} -- ${activeMount.description}`}
+            >
+              <span>{activeMount.icon}</span>
+              <span className="hidden sm:inline text-[10px]">{activeMount.name}</span>
+            </button>
+          </div>
+        )}
         {STATS_RIGHT.map(renderStat)}
       </div>
     </div>
