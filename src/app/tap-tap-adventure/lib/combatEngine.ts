@@ -500,11 +500,21 @@ export function processPlayerAction(
         break
       }
       // Use the current combat state with updated turn number for condition checking
-      const spellCombatState = { ...combatState, turnNumber, combatLog: [...combatLog, ...newLogs] }
-      const spellResult = castSpell(spell, playerState, enemy, character, spellCombatState)
-      playerState = spellResult.playerState
-      enemy = spellResult.enemy
-      newLogs.push(...spellResult.logs)
+      try {
+        const spellCombatState = { ...combatState, turnNumber, combatLog: [...combatLog, ...newLogs] }
+        const spellResult = castSpell(spell, playerState, enemy, character, spellCombatState)
+        playerState = spellResult.playerState
+        enemy = spellResult.enemy
+        newLogs.push(...spellResult.logs)
+      } catch (err) {
+        console.error('Spell casting error:', err)
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'cast_spell',
+          description: `Failed to cast ${spell.name}. The spell fizzles.`,
+        })
+      }
       break
     }
   }

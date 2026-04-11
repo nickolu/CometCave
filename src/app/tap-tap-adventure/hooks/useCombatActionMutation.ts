@@ -58,7 +58,10 @@ export function useCombatActionMutation() {
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to process combat action')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.details || 'Failed to process combat action')
+      }
 
       const data: CombatActionResponse = await res.json()
 
