@@ -8,7 +8,7 @@ import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
-import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -50,6 +50,35 @@ function ManaBar({ current, max }: { current: number; max: number }) {
     </div>
   )
 }
+function StatusEffectBadges({ effects, label }: { effects: StatusEffect[]; label: string }) {
+  if (effects.length === 0) return null
+
+  const colorMap: Record<string, string> = {
+    poison: 'bg-green-900/50 text-green-400',
+    burn: 'bg-orange-900/50 text-orange-400',
+    slow: 'bg-blue-900/50 text-blue-400',
+    curse: 'bg-purple-900/50 text-purple-400',
+    thorns: 'bg-green-900/50 text-green-400',
+    berserk: 'bg-red-900/50 text-red-400',
+    fear: 'bg-yellow-900/50 text-yellow-400',
+    reflect: 'bg-slate-700/50 text-slate-300',
+  }
+
+  return (
+    <div className="flex gap-1 flex-wrap">
+      {effects.map((effect, i) => (
+        <span
+          key={i}
+          className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
+          title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
+        >
+          {effect.name} ({effect.turnsRemaining}t)
+        </span>
+      ))}
+    </div>
+  )
+}
+
 
 interface CombatUIProps {
   combatState: CombatState
@@ -144,6 +173,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
         </div>
         <p className="text-xs text-slate-400">{enemy.description}</p>
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
+        <StatusEffectBadges effects={enemy.statusEffects ?? []} label="Enemy" />
       </div>
 
       {/* Enemy telegraph warning */}
@@ -210,6 +240,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             ))}
           </div>
         )}
+        <StatusEffectBadges effects={playerState.statusEffects ?? []} label="Player" />
       </div>
 
       {/* Combat Log */}

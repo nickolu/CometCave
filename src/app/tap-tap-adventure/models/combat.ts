@@ -2,6 +2,36 @@ import { z } from 'zod'
 
 import { ItemSchema } from './item'
 
+export const StatusEffectTypeSchema = z.enum([
+  'poison',
+  'burn',
+  'slow',
+  'curse',
+  'thorns',
+  'berserk',
+  'fear',
+  'reflect',
+])
+export type StatusEffectType = z.infer<typeof StatusEffectTypeSchema>
+
+export const StatusEffectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: StatusEffectTypeSchema,
+  value: z.number(),
+  turnsRemaining: z.number(),
+  source: z.enum(['player', 'enemy']),
+})
+export type StatusEffect = z.infer<typeof StatusEffectSchema>
+
+export const StatusAbilitySchema = z.object({
+  type: StatusEffectTypeSchema,
+  value: z.number(),
+  duration: z.number(),
+  chance: z.number(),
+})
+export type StatusAbility = z.infer<typeof StatusAbilitySchema>
+
 export const CombatEnemySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -21,6 +51,8 @@ export const CombatEnemySchema = z.object({
       cooldown: z.number(),
     })
     .optional(),
+  statusEffects: z.array(StatusEffectSchema).optional(),
+  statusAbility: StatusAbilitySchema.optional(),
 })
 export type CombatEnemy = z.infer<typeof CombatEnemySchema>
 
@@ -56,6 +88,7 @@ export const CombatPlayerStateSchema = z.object({
   activeSpellEffects: z.array(ActiveSpellEffectSchema).optional(),
   spellTagsUsed: z.array(z.string()).optional(),
   shield: z.number().default(0),
+  statusEffects: z.array(StatusEffectSchema).optional(),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 

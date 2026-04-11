@@ -65,6 +65,16 @@ const enemySchemaForOpenAI = {
           },
           required: ['name', 'description', 'damage', 'cooldown'],
         },
+        statusAbility: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: ['poison', 'burn', 'slow', 'curse', 'fear'] },
+            value: { type: 'number' },
+            duration: { type: 'number' },
+            chance: { type: 'number' },
+          },
+          required: ['type', 'value', 'duration', 'chance'],
+        },
       },
       required: [
         'id',
@@ -102,6 +112,7 @@ Stat guidelines for a level ${character.level} character:
 - Gold reward: ${5 + character.level * 5}
 - Include 1-2 loot items (potions, scrolls, gems, etc.). For healing items, use the 'heal' effect (e.g., heal: 15 restores 15 HP). The 'strength' effect permanently increases the strength stat.
 - Optionally include a special ability with cooldown of 2-4 turns
+- Some enemies can inflict status effects (poison, burn, slow, curse, fear). Include a statusAbility field with type, value (damage per turn or effect strength), duration (2-4 turns), and chance (0-1 probability of inflicting)
 
 Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
 ${character.reputation >= 50 ? 'High reputation: the enemy might offer to surrender or parley before fighting. Consider less aggressive enemies like misguided guards or territorial creatures rather than outright villains.' : ''}${character.reputation <= -20 ? 'Low reputation: enemies are more aggressive. Consider bounty hunters, rival adventurers seeking the bounty on this character, or vengeful NPCs.' : ''}
@@ -313,6 +324,12 @@ function getDefaultCombatEncounter(
               cooldown: 3,
             }
           : undefined,
+      statusAbility:
+        level <= 2
+          ? { type: 'slow' as const, value: 0, duration: 2, chance: 0.3 }
+          : level <= 5
+            ? { type: 'poison' as const, value: 3 + level, duration: 3, chance: 0.4 }
+            : { type: 'curse' as const, value: 0, duration: 3, chance: 0.3 },
     },
   }
 }
