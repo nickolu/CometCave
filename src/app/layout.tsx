@@ -27,7 +27,7 @@ export default function RootLayout({
     <Providers>
       <html lang="en">
         <body className={spaceGrotesk.className}>
-          <div className="min-h-screen flex flex-col bg-space-black text-cream-white relative overflow-hidden">
+          <div id="site-wrapper" className="min-h-screen flex flex-col bg-space-black text-cream-white relative overflow-hidden">
             <StarField />
             <header className="p-4 z-10 relative">
               <div className="container mx-auto flex justify-between items-center flex-col md:flex-row">

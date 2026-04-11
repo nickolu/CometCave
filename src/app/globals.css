@@ -16,6 +16,24 @@ body {
   }
 }
 
+/* When game is active on mobile, hide site chrome and fix scrolling */
+@media (max-width: 767px) {
+  body.game-active header,
+  body.game-active footer {
+    display: none !important;
+  }
+
+  /* Remove overflow-hidden that prevents scrolling */
+  body.game-active #site-wrapper {
+    overflow: visible !important;
+  }
+
+  body.game-active main {
+    padding: 0.5rem !important;
+    max-width: 100% !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
