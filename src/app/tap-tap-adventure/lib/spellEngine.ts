@@ -374,6 +374,15 @@ export function castSpell(
         })
         break
       }
+      default: {
+        logs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'cast_spell',
+          description: `${spell.name}'s ${effect.type} effect activates!`,
+        })
+        break
+      }
     }
   }
 
