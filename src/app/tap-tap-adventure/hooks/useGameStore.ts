@@ -477,6 +477,24 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      setMount: (mount: Mount | null) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+
+            state.gameState.characters[characterIndex] = {
+              ...selectedCharacter,
+              activeMount: mount,
+            }
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
