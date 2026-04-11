@@ -7,8 +7,11 @@ import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { useMoveForwardMutation } from '@/app/tap-tap-adventure/hooks/useMoveForwardMutation'
 import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useResolveDecisionMutation'
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
+import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { flipCoin } from '@/app/utils'
 
+import { AchievementPanel } from './AchievementPanel'
+import { AchievementToastContainer } from './AchievementToast'
 import { CombatUI, CombatResult } from './CombatUI'
 import { EquipmentPanel } from './EquipmentPanel'
 import { InventoryPanel } from './InventoryPanel'
@@ -37,7 +40,10 @@ export default function GameUI() {
     setDecisionPoint,
     setCombatState,
     allocateStatPoints,
+    updateAchievements,
   } = useGameStore()
+
+  const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
 
   const { mutate: moveForwardMutation, isPending: moveForwardPending } = useMoveForwardMutation()
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
@@ -90,6 +96,27 @@ export default function GameUI() {
     setIsAutoWalking(false)
   }, [])
 
+  // Track newly completed achievements for toast notifications
+  const prevCompletedRef = useRef<Set<string>>(new Set(
+    (gameState.achievements ?? []).filter(a => a.completed).map(a => a.achievementId)
+  ))
+
+  useEffect(() => {
+    const currentCompleted = new Set(
+      (gameState.achievements ?? []).filter(a => a.completed).map(a => a.achievementId)
+    )
+    const newOnes: string[] = []
+    for (const id of currentCompleted) {
+      if (!prevCompletedRef.current.has(id)) {
+        newOnes.push(id)
+      }
+    }
+    prevCompletedRef.current = currentCompleted
+    if (newOnes.length > 0) {
+      setNewlyCompletedIds(newOnes)
+    }
+  }, [gameState.achievements])
+
   // Stop auto-walking when an event triggers or server call is pending
   useEffect(() => {
     if (gameState.decisionPoint || gameState.combatState || gameState.shopState || moveForwardPending) {
@@ -122,6 +149,7 @@ export default function GameUI() {
 
   return (
     <>
+      <AchievementToastContainer achievementIds={newlyCompletedIds} />
       {character && (character.pendingStatPoints ?? 0) > 0 && (
         <StatAllocationScreen
           character={character}
@@ -138,7 +166,38 @@ export default function GameUI() {
             ) : gameState.combatState && gameState.combatState.status !== 'active' ? (
               <CombatResult
                 combatState={gameState.combatState}
-                onContinue={() => setCombatState(null)}
+                onContinue={() => {
+                  const combatState = gameState.combatState
+                  if (combatState && combatState.status === 'victory' && character) {
+                    const { achievements, newlyCompleted } = checkAchievements(
+                      character,
+                      gameState,
+                      gameState.achievements ?? [],
+                      {
+                        type: 'combat_win',
+                        hpAfterCombat: combatState.playerState.hp,
+                        maxHp: combatState.playerState.maxHp,
+                        isBoss: combatState.isBoss ?? false,
+                      }
+                    )
+                    updateAchievements(achievements)
+                    if (newlyCompleted.length > 0) {
+                      setNewlyCompletedIds(newlyCompleted)
+                    }
+                  } else if (combatState && combatState.status === 'defeat' && character) {
+                    const { achievements, newlyCompleted } = checkAchievements(
+                      character,
+                      gameState,
+                      gameState.achievements ?? [],
+                      { type: 'death' }
+                    )
+                    updateAchievements(achievements)
+                    if (newlyCompleted.length > 0) {
+                      setNewlyCompletedIds(newlyCompleted)
+                    }
+                  }
+                  setCombatState(null)
+                }}
               />
             ) : gameState.shopState?.isOpen ? (
               <ShopUI />
@@ -211,9 +270,10 @@ export default function GameUI() {
               </>
             )}
           </div>
-          {/* Right column: Quest, Equipment & Inventory Panel */}
+          {/* Right column: Quest, Equipment, Achievements & Inventory Panel */}
           <div className="p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
             <QuestPanel />
+            <AchievementPanel achievements={gameState.achievements ?? []} />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
             />
