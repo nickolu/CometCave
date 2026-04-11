@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
@@ -73,6 +74,52 @@ export default function GameUI() {
     }
   }
 
+  const [isAutoWalking, setIsAutoWalking] = useState(false)
+  const autoWalkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const clearAutoWalk = useCallback(() => {
+    if (autoWalkTimeoutRef.current) {
+      clearTimeout(autoWalkTimeoutRef.current)
+      autoWalkTimeoutRef.current = null
+    }
+    if (autoWalkIntervalRef.current) {
+      clearInterval(autoWalkIntervalRef.current)
+      autoWalkIntervalRef.current = null
+    }
+    setIsAutoWalking(false)
+  }, [])
+
+  // Stop auto-walking when an event triggers
+  useEffect(() => {
+    if (gameState.decisionPoint || gameState.combatState || gameState.shopState) {
+      clearAutoWalk()
+    }
+  }, [gameState.decisionPoint, gameState.combatState, gameState.shopState, clearAutoWalk])
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      clearAutoWalk()
+    }
+  }, [clearAutoWalk])
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault()
+    autoWalkTimeoutRef.current = setTimeout(() => {
+      setIsAutoWalking(true)
+      handleMoveForward()
+      autoWalkIntervalRef.current = setInterval(() => {
+        handleMoveForward()
+      }, 300)
+    }, 500)
+  }
+
+  const handlePointerUpOrLeave = (e: React.PointerEvent) => {
+    e.preventDefault()
+    clearAutoWalk()
+  }
+
   return (
     <>
       {character && (character.pendingStatPoints ?? 0) > 0 && (
@@ -135,17 +182,25 @@ export default function GameUI() {
               <>
                 <Button
                   className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
-                    moveForwardPending
+                    isAutoWalking
+                      ? 'bg-gradient-to-r from-emerald-700 to-teal-700 border-emerald-400/30 shadow-lg shadow-emerald-500/20 animate-pulse'
+                      : moveForwardPending
                       ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
                   }`}
                   onClick={handleMoveForward}
+                  onPointerDown={handlePointerDown}
+                  onPointerUp={handlePointerUpOrLeave}
+                  onPointerLeave={handlePointerUpOrLeave}
+                  onPointerCancel={handlePointerUpOrLeave}
                   disabled={moveForwardPending || resolveDecisionPending}
                 >
-                  {getTravelButtonMessage({
-                    isLoading: moveForwardPending,
-                    distance: getSelectedCharacter()?.distance ?? 0,
-                  })}
+                  {isAutoWalking
+                    ? 'Walking...'
+                    : getTravelButtonMessage({
+                        isLoading: moveForwardPending,
+                        distance: getSelectedCharacter()?.distance ?? 0,
+                      })}
                 </Button>
                 {gameState.genericMessage && (
                   <div className="text-sm">{gameState.genericMessage}</div>
