@@ -6,7 +6,7 @@ interface KeywordRule {
 }
 
 const POTION_SUBRULES: KeywordRule[] = [
-  { keywords: ['healing', 'health', 'life', 'restore', 'recovery'], effects: { strength: 2 } },
+  { keywords: ['healing', 'health', 'life', 'restore', 'recovery'], effects: { heal: 10 } },
   { keywords: ['intelligence', 'wisdom', 'mind', 'knowledge', 'insight'], effects: { intelligence: 2 } },
   { keywords: ['luck', 'fortune', 'lucky', 'chance'], effects: { luck: 2 } },
   { keywords: ['strength', 'power', 'might', 'vigor', 'brawn'], effects: { strength: 3 } },
@@ -56,7 +56,7 @@ export function inferItemTypeAndEffects(item: Item): Item {
     return {
       ...item,
       type: 'consumable',
-      effects: item.effects ?? findMatchingEffects(name, POTION_SUBRULES, { strength: 1, intelligence: 1 }),
+      effects: item.effects ?? findMatchingEffects(name, POTION_SUBRULES, { heal: 5, intelligence: 1 }),
     }
   }
 
@@ -74,7 +74,7 @@ export function inferItemTypeAndEffects(item: Item): Item {
     return {
       ...item,
       type: 'consumable',
-      effects: item.effects ?? { strength: 1 },
+      effects: item.effects ?? { heal: 5 },
     }
   }
 
@@ -139,7 +139,7 @@ export function inferItemTypeAndEffects(item: Item): Item {
   if (item.type === 'consumable') {
     return {
       ...item,
-      effects: { strength: 1, luck: 1 },
+      effects: { heal: 5, luck: 1 },
     }
   }
 

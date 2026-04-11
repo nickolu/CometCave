@@ -15,11 +15,11 @@ function makeItem(overrides: Partial<Item> = {}): Item {
 
 describe('itemPostProcessor', () => {
   describe('potions', () => {
-    it('infers healing potion as consumable with strength effect', () => {
+    it('infers healing potion as consumable with heal effect', () => {
       const item = makeItem({ name: 'Healing Potion' })
       const result = inferItemTypeAndEffects(item)
       expect(result.type).toBe('consumable')
-      expect(result.effects?.strength).toBe(2)
+      expect(result.effects?.heal).toBe(10)
     })
 
     it('infers strength potion', () => {
@@ -43,11 +43,11 @@ describe('itemPostProcessor', () => {
       expect(result.effects?.luck).toBe(2)
     })
 
-    it('defaults unknown potion to strength+intelligence', () => {
+    it('defaults unknown potion to heal+intelligence', () => {
       const item = makeItem({ name: 'Mysterious Potion' })
       const result = inferItemTypeAndEffects(item)
       expect(result.type).toBe('consumable')
-      expect(result.effects?.strength).toBe(1)
+      expect(result.effects?.heal).toBe(5)
       expect(result.effects?.intelligence).toBe(1)
     })
   })
@@ -69,11 +69,11 @@ describe('itemPostProcessor', () => {
   })
 
   describe('food', () => {
-    it('infers bread as consumable', () => {
+    it('infers bread as consumable with heal', () => {
       const item = makeItem({ name: 'Loaf of Bread' })
       const result = inferItemTypeAndEffects(item)
       expect(result.type).toBe('consumable')
-      expect(result.effects?.strength).toBe(1)
+      expect(result.effects?.heal).toBe(5)
     })
   })
 

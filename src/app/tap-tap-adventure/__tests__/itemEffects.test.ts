@@ -33,7 +33,7 @@ function makeConsumable(overrides: Partial<Item> = {}): Item {
     description: 'Restores health',
     quantity: 3,
     type: 'consumable',
-    effects: { strength: 2, luck: 1 },
+    effects: { heal: 10, luck: 1 },
     ...overrides,
   }
 }
@@ -45,7 +45,7 @@ describe('Item Effects', () => {
     const result = useItem(char, item)
 
     expect(result.consumed).toBe(true)
-    // Strength effect now heals HP (2 * 5 = 10 HP)
+    // Heal effect restores 10 HP directly
     expect(result.character.hp).toBe(60) // 50 + 10
     expect(result.character.luck).toBe(6) // 5 + 1
     expect(result.message).toContain('+10 HP')
@@ -112,18 +112,47 @@ describe('Item Effects', () => {
 
   it('applies multiple effects simultaneously', () => {
     const item = makeConsumable({
-      effects: { gold: 10, reputation: 5, strength: 1, intelligence: 2, luck: 3 },
+      effects: { gold: 10, reputation: 5, heal: 15, strength: 1, intelligence: 2, luck: 3 },
     })
     const char = { ...baseChar, inventory: [item] }
     const result = useItem(char, item)
 
     expect(result.character.gold).toBe(60)
     expect(result.character.reputation).toBe(15)
-    // Strength heals HP now (1 * 5 = 5 HP)
-    expect(result.character.hp).toBe(55) // 50 + 5
+    expect(result.character.hp).toBe(65) // 50 + 15 heal
+    expect(result.character.strength).toBe(6) // 5 + 1 strength
     expect(result.character.intelligence).toBe(7)
     expect(result.character.luck).toBe(8)
     expect(result.consumed).toBe(true)
+  })
+
+  it('strength effect adds to strength stat (not HP)', () => {
+    const item = makeConsumable({ effects: { strength: 3 } })
+    const char = { ...baseChar, inventory: [item] }
+    const result = useItem(char, item)
+
+    expect(result.character.strength).toBe(8) // 5 + 3
+    expect(result.character.hp).toBe(50) // unchanged
+    expect(result.message).toContain('+3 Strength')
+  })
+
+  it('heal effect restores HP directly', () => {
+    const item = makeConsumable({ effects: { heal: 20 } })
+    const char = { ...baseChar, inventory: [item] }
+    const result = useItem(char, item)
+
+    expect(result.character.hp).toBe(70) // 50 + 20
+    expect(result.character.strength).toBe(5) // unchanged
+    expect(result.message).toContain('+20 HP')
+  })
+
+  it('heal effect does not exceed maxHp', () => {
+    const item = makeConsumable({ effects: { heal: 100 } })
+    const char = { ...baseChar, hp: 90, inventory: [item] }
+    const result = useItem(char, item)
+
+    expect(result.character.hp).toBe(100) // capped at maxHp
+    expect(result.message).toContain('+10 HP')
   })
 
   it('rejects deleted items', () => {

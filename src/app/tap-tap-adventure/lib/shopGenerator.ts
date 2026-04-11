@@ -37,6 +37,7 @@ const shopSchemaForOpenAI = {
               strength: { type: 'number' },
               intelligence: { type: 'number' },
               luck: { type: 'number' },
+              heal: { type: 'number', description: 'Directly restores this amount of HP. Use for healing items instead of strength.' },
             },
           },
         },
@@ -64,7 +65,7 @@ Price guidelines for level ${character.level}:
 - Expensive items: ${Math.round(basePrice * 2)}-${Math.round(basePrice * 3)} gold
 
 Include a mix of:
-- Healing potions/consumables
+- Healing potions/consumables (use the 'heal' effect for HP restoration, e.g., heal: 15 restores 15 HP. The 'strength' effect permanently increases the strength stat.)
 - Stat-boosting items (strength, intelligence, luck)
 - Interesting thematic items that fit the fantasy setting
 - Occasionally a spell scroll (type: "spell_scroll") with a spell object containing id, name, description, school, manaCost, cooldown, target, effects, and tags
@@ -116,7 +117,7 @@ export function getFallbackShopItems(level: number): Item[] {
       quantity: 1,
       type: 'consumable',
       price: Math.round(basePrice * 0.8),
-      effects: { strength: 1 + Math.floor(level / 3) },
+      effects: { heal: 10 + level * 5 },
     },
     {
       id: `shop-str-${suffix}`,

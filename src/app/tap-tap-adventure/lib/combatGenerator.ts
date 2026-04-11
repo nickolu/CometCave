@@ -48,6 +48,7 @@ const enemySchemaForOpenAI = {
                   strength: { type: 'number' },
                   intelligence: { type: 'number' },
                   luck: { type: 'number' },
+                  heal: { type: 'number', description: 'Directly restores this amount of HP. Use for healing items instead of strength.' },
                 },
               },
             },
@@ -99,7 +100,7 @@ Stat guidelines for a level ${character.level} character:
 - Enemy attack: ${6 + character.level * 3} (±20%)
 - Enemy defense: ${2 + character.level} (±20%)
 - Gold reward: ${5 + character.level * 5}
-- Include 1-2 loot items (potions, scrolls, gems, etc.)
+- Include 1-2 loot items (potions, scrolls, gems, etc.). For healing items, use the 'heal' effect (e.g., heal: 15 restores 15 HP). The 'strength' effect permanently increases the strength stat.
 - Optionally include a special ability with cooldown of 2-4 turns
 
 Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
