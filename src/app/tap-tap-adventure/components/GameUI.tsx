@@ -106,12 +106,14 @@ export default function GameUI() {
 
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault()
+    const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
+    const walkInterval = Math.round(300 / mountSpeed)
     autoWalkTimeoutRef.current = setTimeout(() => {
       setIsAutoWalking(true)
       handleMoveForward()
       autoWalkIntervalRef.current = setInterval(() => {
         handleMoveForward()
-      }, 300)
+      }, walkInterval)
     }, 500)
   }
 

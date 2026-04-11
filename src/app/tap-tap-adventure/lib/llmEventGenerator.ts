@@ -556,6 +556,37 @@ function getDefaultEvents(): LLMGeneratedEvent[] {
           failureEffects: {} },
       ],
     },
+    // Mount discovery events
+    {
+      id: `fb-wild-horse-${s}`,
+      description: 'You spot a wild horse grazing peacefully in a sunlit meadow. It watches you with curious eyes.',
+      options: [
+        { id: `tame-horse-${s}`, text: 'Try to tame it (luck check)', successProbability: 0.5,
+          successDescription: 'With patience and a gentle hand, the horse accepts you as its rider! You have gained a new mount.',
+          successEffects: { reputation: 2 },
+          failureDescription: 'The horse bolts at your approach. Perhaps next time.',
+          failureEffects: {} },
+        { id: `leave-horse-${s}`, text: 'Admire from afar and move on', successProbability: 1.0,
+          successDescription: 'You enjoy the peaceful scene before continuing your journey.',
+          successEffects: { reputation: 1 },
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-abandoned-mount-${s}`,
+      description: 'By the roadside, you find a mount tethered to a post with a note: "Free to a worthy adventurer."',
+      options: [
+        { id: `claim-mount-${s}`, text: 'Claim the mount', successProbability: 0.7,
+          successDescription: 'The mount seems happy to have a new rider. A fine companion for your travels!',
+          successEffects: { reputation: 1 },
+          failureDescription: "The mount seems wary and won\'t let you near. It needs a more experienced handler.",
+          failureEffects: {} },
+        { id: `pass-mount-${s}`, text: 'Leave it for someone else', successProbability: 1.0,
+          successDescription: 'You leave the mount behind, hoping another traveler will find it.',
+          successEffects: { reputation: 2 },
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
     {
       id: `fb-bandits-${s}`,
       description: 'A band of thieves blocks the road ahead, demanding you hand over your gold.',
