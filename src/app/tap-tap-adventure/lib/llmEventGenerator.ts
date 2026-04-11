@@ -93,7 +93,9 @@ const eventSchema = z.object({
 
 const eventsArraySchema = z.array(eventSchema).length(3)
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 // Function calling schema for event generation
 const spellEffectSchemaForOpenAI = {
@@ -227,7 +229,7 @@ export async function generateLLMEvents(
     context
   )
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model,
       messages,
       tools,

@@ -3,6 +3,7 @@ import { produce } from 'immer'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
@@ -11,6 +12,7 @@ import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/chara
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
+import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
   FantasyDecisionPoint,
@@ -69,6 +71,7 @@ export interface GameStore {
   equipItem: (itemId: string, slot?: EquipmentSlotType) => void
   unequipItem: (slot: EquipmentSlotType) => void
   learnSpell: (itemId: string) => { message: string; learned: boolean } | null
+  updateAchievements: (achievements: PlayerAchievement[]) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -168,6 +171,13 @@ export const useGameStore = create<GameStore>()(
                 updatedCharacter
               )
             }
+            // Check achievements on each step
+            const { achievements } = checkAchievements(
+              updatedCharacter,
+              state.gameState,
+              state.gameState.achievements ?? []
+            )
+            state.gameState.achievements = achievements
           })
         )
       },
@@ -457,10 +467,17 @@ export const useGameStore = create<GameStore>()(
 
         return { message: `Learned ${spellData.name}!`, learned: true }
       },
+      updateAchievements: (achievements: PlayerAchievement[]) => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.achievements = achievements
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 8,
+      version: 9,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -505,6 +522,10 @@ export const useGameStore = create<GameStore>()(
         // v6: Add activeQuest
         if (state?.gameState && !('activeQuest' in state.gameState)) {
           (state.gameState as GameState).activeQuest = null
+        }
+        // v9: Add achievements
+        if (state?.gameState && !('achievements' in state.gameState)) {
+          (state.gameState as GameState).achievements = []
         }
         return state
       },

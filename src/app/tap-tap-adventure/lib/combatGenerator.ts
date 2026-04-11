@@ -8,7 +8,9 @@ import { getReputationTier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 import { generateSpellForLevel } from './spellGenerator'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 const combatResponseSchema = z.object({
   enemy: CombatEnemySchema,
@@ -98,7 +100,7 @@ export async function generateCombatEncounter(
   context: string
 ): Promise<{ enemy: CombatEnemy; scenario: string }> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
@@ -164,7 +166,7 @@ export async function generateBossEncounter(
   context: string
 ): Promise<{ enemy: CombatEnemy; scenario: string }> {
   try {
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
