@@ -280,7 +280,7 @@ When rewarding items, sometimes include consumable items (type: "consumable") wi
 Sometimes include equipment items (type: "equipment") like weapons, armor, or accessories with stat-boosting effects. Examples: a steel sword with +2 strength, iron armor with +2 intelligence, or a lucky charm with +1 luck.
 Sometimes reward spell scrolls — items with type "spell_scroll" containing a spell with a creative name, 2-3 effects, optional conditions, and tags. The spell field should have: id, name, description, school (arcane/nature/shadow/war), manaCost, cooldown, target (enemy/self), effects array, optional conditions array, and tags array.
 
-IMPORTANT: About 1 in 3 events should involve a potential confrontation (bandits, monsters, rivals, etc.). For these events, include at least one option with "triggersCombat": true — this represents the character choosing to fight. Other options can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). This gives the player agency over whether to fight.
+IMPORTANT: About half of all events should involve a potential confrontation (bandits, monsters, rivals, etc.). For these events, include at least one option with "triggersCombat": true — this represents the character choosing to fight. Other options can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). This gives the player agency over whether to fight.
 
 Character:
 ${JSON.stringify(character, null, 2)}
@@ -606,6 +606,76 @@ function getDefaultEvents(): LLMGeneratedEvent[] {
           successEffects: { reputation: 1 },
           failureDescription: 'They spot you but you escape with just a scare.',
           failureEffects: { reputation: -1 } },
+      ],
+    },
+    {
+      id: `fb-skeleton-${s}`,
+      description: 'Skeletal warriors rise from the cracked earth, their hollow eyes glowing with malice.',
+      options: [
+        { id: `fight-skeletons-${s}`, text: 'Smash them to pieces', triggersCombat: true,
+          successProbability: 0.5, successDescription: 'You raise your weapon against the undead!',
+          successEffects: {}, failureDescription: 'You raise your weapon against the undead!', failureEffects: {} },
+        { id: `flee-skeletons-${s}`, text: 'Run before they surround you', successProbability: 0.6,
+          successDescription: 'You sprint away before the circle closes.',
+          successEffects: {},
+          failureDescription: 'You stumble but manage to escape, losing a few coins in the process.',
+          failureEffects: { gold: -3 } },
+      ],
+    },
+    {
+      id: `fb-ogre-${s}`,
+      description: 'A hulking ogre lumbers out from behind a boulder, club raised and hungry.',
+      options: [
+        { id: `fight-ogre-${s}`, text: 'Fight the ogre', triggersCombat: true,
+          successProbability: 0.5, successDescription: 'You brace yourself for a brutal fight!',
+          successEffects: {}, failureDescription: 'You brace yourself for a brutal fight!', failureEffects: {} },
+        { id: `distract-ogre-${s}`, text: 'Throw rations to distract it', successProbability: 0.7,
+          successDescription: 'The ogre drops its club and devours the food. You slip away.',
+          successEffects: { reputation: 1 },
+          failureDescription: 'The ogre ignores the food and glares at you, but loses interest.',
+          failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-spider-nest-${s}`,
+      description: 'Thick webs stretch between the trees. Giant spiders skitter in the shadows above.',
+      options: [
+        { id: `fight-spiders-${s}`, text: 'Burn the webs and fight', triggersCombat: true,
+          successProbability: 0.5, successDescription: 'The spiders descend in a fury!',
+          successEffects: {}, failureDescription: 'The spiders descend in a fury!', failureEffects: {} },
+        { id: `sneak-spiders-${s}`, text: 'Creep through carefully', successProbability: 0.4,
+          successDescription: 'You navigate the webs without disturbing anything.',
+          successEffects: { reputation: 1 },
+          failureDescription: 'You get tangled briefly but break free and escape.',
+          failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-rival-${s}`,
+      description: 'A rival adventurer steps into your path, blade drawn. "Only one of us moves forward."',
+      options: [
+        { id: `fight-rival-${s}`, text: 'Accept the challenge', triggersCombat: true,
+          successProbability: 0.5, successDescription: 'Steel meets steel!',
+          successEffects: {}, failureDescription: 'Steel meets steel!', failureEffects: {} },
+        { id: `talk-rival-${s}`, text: 'Try to reason with them', successProbability: 0.5,
+          successDescription: 'After tense words, the rival sheathes their blade and walks away.',
+          successEffects: { reputation: 3 },
+          failureDescription: 'They scoff at your words but decide you are not worth the trouble.',
+          failureEffects: { reputation: -1 } },
+      ],
+    },
+    {
+      id: `fb-goblin-ambush-${s}`,
+      description: 'Goblins leap from the bushes with shrill war cries, brandishing crude weapons.',
+      options: [
+        { id: `fight-goblins-${s}`, text: 'Stand and fight', triggersCombat: true,
+          successProbability: 0.5, successDescription: 'You swing at the nearest goblin!',
+          successEffects: {}, failureDescription: 'You swing at the nearest goblin!', failureEffects: {} },
+        { id: `intimidate-goblins-${s}`, text: 'Roar and try to scare them off', successProbability: 0.6,
+          successDescription: 'The goblins scatter in terror!',
+          successEffects: { reputation: 2 },
+          failureDescription: 'They hesitate but hold their ground... then eventually slink away.',
+          failureEffects: {} },
       ],
     },
     {
