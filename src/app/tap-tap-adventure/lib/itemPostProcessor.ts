@@ -1,5 +1,7 @@
 import { Item, ItemEffects } from '@/app/tap-tap-adventure/models/item'
 
+import { generateItemDescription } from './itemDescriptionGenerator'
+
 interface KeywordRule {
   keywords: string[]
   effects: ItemEffects
@@ -32,6 +34,11 @@ function findMatchingEffects(name: string, rules: KeywordRule[], fallback: ItemE
 }
 
 export function inferItemTypeAndEffects(item: Item): Item {
+  const inferred = inferItemTypeAndEffectsInternal(item)
+  return { ...inferred, description: generateItemDescription(inferred) }
+}
+
+function inferItemTypeAndEffectsInternal(item: Item): Item {
   // Already fully specified
   if (item.type === 'consumable' && item.effects && Object.keys(item.effects).length > 0) {
     return item
