@@ -73,7 +73,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const classAbility = CLASS_ABILITIES[classId]
   const abilityCooldown = playerState.abilityCooldown ?? 0
 
-  const spellbook = character?.spellbook ?? []
+  const spellbook = (character?.spellbook ?? []).filter(
+    (s): s is Spell => !!s && !!s.id && !!s.name
+  )
   const spellCooldowns = playerState.spellCooldowns ?? {}
   const currentMana = playerState.mana ?? 0
   const maxMana = playerState.maxMana ?? 0
@@ -320,7 +322,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
           <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1 max-h-48 overflow-y-auto">
             {spellbook.map((spell: Spell) => {
               const onCooldown = (spellCooldowns[spell.id] ?? 0) > 0
-              const notEnoughMana = currentMana < spell.manaCost
+              const notEnoughMana = currentMana < (spell.manaCost ?? 0)
               const disabled = isPending || onCooldown || notEnoughMana
 
               return (
@@ -337,7 +339,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">{spell.name}</span>
                     <span className={`text-[10px] ${notEnoughMana ? 'text-red-400' : 'text-blue-400'}`}>
-                      {spell.manaCost} MP
+                      {spell.manaCost ?? 0} MP
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
@@ -348,13 +350,15 @@ export function CombatUI({ combatState }: CombatUIProps) {
                       Cooldown: {spellCooldowns[spell.id]} turns
                     </span>
                   )}
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {spell.tags.map((tag, i) => (
-                      <span key={i} className="text-[9px] px-1 py-0.5 bg-indigo-900/50 text-indigo-400 rounded">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  {spell.tags && spell.tags.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {spell.tags.map((tag, i) => (
+                        <span key={i} className="text-[9px] px-1 py-0.5 bg-indigo-900/50 text-indigo-400 rounded">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </Button>
               )
             })}

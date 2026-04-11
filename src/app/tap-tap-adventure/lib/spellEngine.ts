@@ -60,7 +60,7 @@ function getTagSynergyMultiplier(
   spellTagsUsed: string[]
 ): number {
   if (spellTagsUsed.length === 0) return 1
-  const hasMatchingTag = spell.tags.some(tag => spellTagsUsed.includes(tag))
+  const hasMatchingTag = (spell.tags ?? []).some(tag => spellTagsUsed.includes(tag))
   return hasMatchingTag ? 1.3 : 1
 }
 
@@ -149,7 +149,7 @@ export function castSpell(
   // 5. Iterate effects
   const newActiveEffects: ActiveSpellEffect[] = [...(playerState.activeSpellEffects ?? [])]
 
-  for (const effect of spell.effects) {
+  for (const effect of spell.effects ?? []) {
     const damageMultiplier = synergyMultiplier * schoolMultiplier * (doubleDamage ? 2 : 1)
     const healMultiplier = synergyMultiplier * (doubleHeal ? 2 : 1)
     const durationBonus = extendDuration ? 2 : 0
@@ -396,11 +396,11 @@ export function castSpell(
       ...cooldowns,
       [spell.id]: spell.cooldown,
     },
-    spellTagsUsed: [...spellTagsUsed, ...spell.tags],
+    spellTagsUsed: [...spellTagsUsed, ...(spell.tags ?? [])],
   }
 
   // Casting a spell resets combo unless the spell has combo_boost
-  const hasComboBoost = spell.effects.some(e => e.type === 'combo_boost')
+  const hasComboBoost = (spell.effects ?? []).some(e => e.type === 'combo_boost')
   if (!hasComboBoost) {
     playerState = { ...playerState, comboCount: 0 }
   }
