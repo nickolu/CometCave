@@ -23,17 +23,12 @@ body {
     display: none !important;
   }
 
-  /* Remove overflow-hidden and flex constraints that prevent scrolling */
   body.game-active #site-wrapper {
-    overflow: visible !important;
-    min-height: auto !important;
-    height: auto !important;
+    overflow-y: auto !important;
   }
 
   body.game-active main {
     padding: 0.5rem !important;
-    max-width: 100% !important;
-    flex: none !important;
   }
 }
 
