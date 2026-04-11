@@ -19,6 +19,19 @@ import {
   tickSpellCooldowns,
   tickSpellEffects,
 } from './spellEngine'
+import {
+  applyStatusEffect,
+  checkFearSkip,
+  createStatusEffectFromAbility,
+  getBerserkAttackMultiplier,
+  getBerserkDefenseMultiplier,
+  getBurnDefenseMultiplier,
+  getSlowMultiplier,
+  getThornsDamage,
+  hasStatusEffect,
+  processReflect,
+  tickStatusEffects,
+} from './statusEffects'
 
 export function initializePlayerCombatState(character: FantasyCharacter): CombatPlayerState {
   // Calculate equipment bonuses
@@ -51,6 +64,7 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     activeSpellEffects: [],
     spellTagsUsed: [],
     shield: 0,
+    statusEffects: [],
   }
 }
 
@@ -77,7 +91,9 @@ export function calculatePlayerDamage(
       .filter(b => b.stat === 'attack')
       .reduce((sum, b) => sum + b.value, 0)
   const comboMultiplier = getComboMultiplier(playerState.comboCount)
-  const raw = randomVariance(buffedAttack) * comboMultiplier - enemy.defense
+  const berserkMultiplier = getBerserkAttackMultiplier(playerState.statusEffects)
+  const enemyDefense = enemy.defense * getBurnDefenseMultiplier(enemy.statusEffects)
+  const raw = randomVariance(buffedAttack) * comboMultiplier * berserkMultiplier - enemyDefense
   return Math.max(1, Math.round(raw))
 }
 
@@ -89,12 +105,15 @@ export function calculateEnemyDamage(
   const effectiveDefense = playerState.isDefending
     ? playerState.defense * 2
     : playerState.defense
+  const burnDefMult = getBurnDefenseMultiplier(playerState.statusEffects)
+  const berserkDefMult = getBerserkDefenseMultiplier(playerState.statusEffects)
   const buffedDefense =
-    effectiveDefense +
+    (effectiveDefense * burnDefMult * berserkDefMult) +
     (playerState.activeBuffs ?? [])
       .filter(b => b.stat === 'defense')
       .reduce((sum, b) => sum + b.value, 0)
-  const attackPower = isHeavyAttack ? enemy.attack * 1.5 : enemy.attack
+  const slowMultiplier = getSlowMultiplier(enemy.statusEffects)
+  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier
   const raw = randomVariance(attackPower) - buffedDefense
   return Math.max(1, Math.round(raw))
 }
@@ -144,6 +163,22 @@ function generateEnemyTelegraph(enemy: CombatEnemy, turnNumber: number, isBoss: 
     return {
       action: 'defend',
       description: `${enemy.name} braces and raises their guard.`,
+    }
+  }
+
+  // Telegraph status ability
+  if (enemy.statusAbility && Math.random() < 0.3) {
+    const statusNames: Record<string, string> = {
+      poison: 'venomous',
+      burn: 'fiery',
+      slow: 'chilling',
+      curse: 'cursed',
+      fear: 'terrifying',
+    }
+    const adjective = statusNames[enemy.statusAbility.type] ?? 'empowered'
+    return {
+      action: 'normal_attack',
+      description: `${enemy.name} prepares a ${adjective} strike!`,
     }
   }
 
@@ -554,7 +589,8 @@ export function processPlayerAction(
   }
 
   // Execute enemy's telegraphed action (or normal attack if no telegraph)
-  // If enemy is stunned, they skip their action
+  // Check fear: 50% chance to skip action
+  const enemyFeared = checkFearSkip(enemy.statusEffects)
   if (playerState.enemyStunned) {
     playerState.enemyStunned = false
     newLogs.push({
@@ -563,59 +599,136 @@ export function processPlayerAction(
       action: 'stunned',
       description: `${enemy.name} is stunned and cannot act!`,
     })
+  } else if (enemyFeared) {
+    newLogs.push({
+      turn: turnNumber,
+      actor: 'enemy',
+      action: 'feared',
+      description: `${enemy.name} is paralyzed with fear and cannot act!`,
+    })
   } else if (enemyTelegraph) {
     const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber)
     playerState = result.playerState
-    // Apply shield absorption and damage reduction to enemy's damage
     const enemyDmgLog = result.logs.find(l => l.damage && l.damage > 0)
+    let actualDamageDealt = 0
     if (enemyDmgLog && enemyDmgLog.damage) {
-      // Undo the direct HP damage from the telegraph, and re-apply with shield/reduction
       const originalDmg = enemyDmgLog.damage
-      playerState.hp = Math.min(playerState.maxHp, playerState.hp + originalDmg) // restore
+      playerState.hp = Math.min(playerState.maxHp, playerState.hp + originalDmg)
 
       const dmgReduction = getActiveDamageReduction(playerState)
       const reducedDmg = Math.max(1, Math.round(originalDmg * (1 - dmgReduction / 100)))
       const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
       playerState = shieldResult.playerState
-      playerState.hp = Math.max(0, playerState.hp - shieldResult.damageAfterShield)
+      actualDamageDealt = shieldResult.damageAfterShield
 
-      if (dmgReduction > 0 || shieldResult.damageAfterShield < reducedDmg) {
-        const shieldAbsorbed = reducedDmg - shieldResult.damageAfterShield
+      // Apply reflect
+      if (hasStatusEffect(playerState.statusEffects, 'reflect')) {
+        const reflectResult = processReflect(playerState.statusEffects ?? [], actualDamageDealt)
+        if (reflectResult.reflectedDamage > 0) {
+          enemy.hp = Math.max(0, enemy.hp - reflectResult.reflectedDamage)
+          playerState = { ...playerState, statusEffects: reflectResult.updatedEffects }
+          newLogs.push({
+            turn: turnNumber, actor: 'player', action: 'reflect', damage: reflectResult.reflectedDamage,
+            description: `Your reflect barrier sends ${reflectResult.reflectedDamage} damage back to ${enemy.name}!`,
+          })
+        }
+      }
+
+      playerState.hp = Math.max(0, playerState.hp - actualDamageDealt)
+
+      if (dmgReduction > 0 || actualDamageDealt < reducedDmg) {
+        const shieldAbsorbed = reducedDmg - actualDamageDealt
         const parts: string[] = []
         if (dmgReduction > 0) parts.push(`${dmgReduction}% reduced`)
         if (shieldAbsorbed > 0) parts.push(`${shieldAbsorbed} absorbed by shield`)
         newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'spell_mitigation',
+          turn: turnNumber, actor: 'player', action: 'spell_mitigation',
           description: `Spell effects mitigate damage (${parts.join(', ')})!`,
+        })
+      }
+
+      // Apply thorns damage back to enemy
+      const thornsDmg = getThornsDamage(playerState.statusEffects)
+      if (thornsDmg > 0) {
+        enemy.hp = Math.max(0, enemy.hp - thornsDmg)
+        newLogs.push({
+          turn: turnNumber, actor: 'player', action: 'thorns', damage: thornsDmg,
+          description: `Thorns deal ${thornsDmg} damage back to ${enemy.name}!`,
         })
       }
     }
     newLogs.push(...result.logs)
+
+    // Enemy status ability: chance to inflict status effect on player
+    if (enemy.statusAbility && actualDamageDealt > 0) {
+      if (Math.random() < enemy.statusAbility.chance) {
+        const statusEffect = createStatusEffectFromAbility(
+          enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
+        )
+        playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy', action: 'status_effect',
+          description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+        })
+      }
+    }
   } else {
     const enemyDmg = calculateEnemyDamage(enemy, playerState)
     const dmgReduction = getActiveDamageReduction(playerState)
     const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
     const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
     playerState = shieldResult.playerState
-    playerState.hp = Math.max(0, playerState.hp - shieldResult.damageAfterShield)
+    const actualDmg = shieldResult.damageAfterShield
+
+    // Apply reflect
+    if (hasStatusEffect(playerState.statusEffects, 'reflect')) {
+      const reflectResult = processReflect(playerState.statusEffects ?? [], actualDmg)
+      if (reflectResult.reflectedDamage > 0) {
+        enemy.hp = Math.max(0, enemy.hp - reflectResult.reflectedDamage)
+        playerState = { ...playerState, statusEffects: reflectResult.updatedEffects }
+        newLogs.push({
+          turn: turnNumber, actor: 'player', action: 'reflect', damage: reflectResult.reflectedDamage,
+          description: `Your reflect barrier sends ${reflectResult.reflectedDamage} damage back to ${enemy.name}!`,
+        })
+      }
+    }
+
+    playerState.hp = Math.max(0, playerState.hp - actualDmg)
     newLogs.push({
-      turn: turnNumber,
-      actor: 'enemy',
-      action: 'attack',
-      damage: shieldResult.damageAfterShield,
-      description: `${enemy.name} attacks you for ${shieldResult.damageAfterShield} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== shieldResult.damageAfterShield ? ' (shield absorbed some)' : ''}`,
+      turn: turnNumber, actor: 'enemy', action: 'attack', damage: actualDmg,
+      description: `${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}`,
     })
+
+    // Apply thorns damage back to enemy
+    const thornsDmg = getThornsDamage(playerState.statusEffects)
+    if (thornsDmg > 0) {
+      enemy.hp = Math.max(0, enemy.hp - thornsDmg)
+      newLogs.push({
+        turn: turnNumber, actor: 'player', action: 'thorns', damage: thornsDmg,
+        description: `Thorns deal ${thornsDmg} damage back to ${enemy.name}!`,
+      })
+    }
+
+    // Enemy status ability: chance to inflict status effect on player
+    if (enemy.statusAbility) {
+      if (Math.random() < enemy.statusAbility.chance) {
+        const statusEffect = createStatusEffectFromAbility(
+          enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
+        )
+        playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy', action: 'status_effect',
+          description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+        })
+      }
+    }
   }
 
   // Check defeat
   if (playerState.hp <= 0) {
     status = 'defeat'
     newLogs.push({
-      turn: turnNumber,
-      actor: 'enemy',
-      action: 'defeat',
+      turn: turnNumber, actor: 'enemy', action: 'defeat',
       description: `You have been defeated by ${enemy.name}...`,
     })
   }
@@ -627,14 +740,27 @@ export function processPlayerAction(
     enemy = spellTickResult.enemy
     newLogs.push(...spellTickResult.logs)
 
-    // Check victory from DOT/bleed
+    // Tick status effects (poison, burn, etc.)
+    const statusTickResult = tickStatusEffects(playerState, enemy, turnNumber)
+    playerState = statusTickResult.playerState
+    enemy = statusTickResult.enemy
+    newLogs.push(...statusTickResult.logs)
+
+    // Check victory from DOT/bleed/status effects
     if (enemy.hp <= 0) {
       status = 'victory'
       newLogs.push({
-        turn: turnNumber,
-        actor: 'player',
-        action: 'victory',
-        description: `You defeated ${enemy.name} with lingering spell effects!`,
+        turn: turnNumber, actor: 'player', action: 'victory',
+        description: `You defeated ${enemy.name} with lingering effects!`,
+      })
+    }
+
+    // Check defeat from status effects
+    if (playerState.hp <= 0) {
+      status = 'defeat'
+      newLogs.push({
+        turn: turnNumber, actor: 'enemy', action: 'defeat',
+        description: `You succumbed to status effects...`,
       })
     }
   }

@@ -6,8 +6,15 @@ import {
   CombatLogEntry,
   CombatPlayerState,
   CombatState,
+  StatusEffectType,
 } from '@/app/tap-tap-adventure/models/combat'
 import { Spell, SpellCondition } from '@/app/tap-tap-adventure/models/spell'
+
+import {
+  applyStatusEffect,
+  createStatusEffectFromAbility,
+  getCurseHealingMultiplier,
+} from './statusEffects'
 
 export interface CastSpellResult {
   playerState: CombatPlayerState
@@ -196,16 +203,18 @@ export function castSpell(
         break
       }
       case 'heal': {
-        const healAmount = Math.round(effect.value * healMultiplier)
+        const curseMultiplier = getCurseHealingMultiplier(playerState.statusEffects)
+        const healAmount = Math.round(effect.value * healMultiplier * curseMultiplier)
         playerState = {
           ...playerState,
           hp: Math.min(playerState.maxHp, playerState.hp + healAmount),
         }
+        const curseText = curseMultiplier < 1 ? ' (reduced by curse!)' : ''
         logs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'cast_spell',
-          description: `${spell.name} heals you for ${healAmount} HP!`,
+          description: `${spell.name} heals you for ${healAmount} HP!${curseText}`,
         })
         break
       }
@@ -374,6 +383,44 @@ export function castSpell(
         })
         break
       }
+      case 'apply_poison':
+      case 'apply_burn':
+      case 'apply_slow':
+      case 'apply_thorns':
+      case 'apply_berserk': {
+        const statusType = effect.type.replace('apply_', '') as StatusEffectType
+        const duration = (effect.duration ?? 3) + durationBonus
+        const statusEffect = createStatusEffectFromAbility(
+          statusType,
+          Math.round(effect.value * synergyMultiplier),
+          duration,
+          'player'
+        )
+        if (statusType === 'thorns' || statusType === 'berserk') {
+          playerState = {
+            ...playerState,
+            statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect),
+          }
+          logs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'cast_spell',
+            description: `${spell.name} applies ${statusEffect.name} to you for ${duration} turns!`,
+          })
+        } else {
+          updatedEnemy = {
+            ...updatedEnemy,
+            statusEffects: applyStatusEffect(updatedEnemy.statusEffects ?? [], statusEffect),
+          }
+          logs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'cast_spell',
+            description: `${spell.name} applies ${statusEffect.name} to ${updatedEnemy.name} for ${duration} turns!`,
+          })
+        }
+        break
+      }
       default: {
         logs.push({
           turn: turnNumber,
@@ -444,16 +491,18 @@ export function tickSpellEffects(
         break
       }
       case 'heal_over_time': {
-        const healAmount = effect.value
+        const curseHotMult = getCurseHealingMultiplier(updatedPlayer.statusEffects)
+        const healAmount = Math.round(effect.value * curseHotMult)
         updatedPlayer = {
           ...updatedPlayer,
           hp: Math.min(updatedPlayer.maxHp, updatedPlayer.hp + healAmount),
         }
+        const curseHotText = curseHotMult < 1 ? ' (reduced by curse!)' : ''
         logs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'spell_hot',
-          description: `Healing spell restores ${healAmount} HP!`,
+          description: `Healing spell restores ${healAmount} HP!${curseHotText}`,
         })
         break
       }
