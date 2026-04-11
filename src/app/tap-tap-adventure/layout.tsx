@@ -1,16 +1,17 @@
+'use client'
+
+import { useEffect } from 'react'
+
 export default function TapTapAdventureLayout({ children }: { children: React.ReactNode }) {
+  // On mobile, hide site header/footer and make body scrollable
+  useEffect(() => {
+    document.body.classList.add('game-active')
+    return () => document.body.classList.remove('game-active')
+  }, [])
+
   return (
-    <>
-      {/* Mobile: fullscreen overlay that covers everything */}
-      <div className="md:hidden fixed inset-0 z-[100] bg-space-black overflow-y-auto">
-        <div className="min-h-full px-4 pt-4 pb-8">
-          {children}
-        </div>
-      </div>
-      {/* Desktop: normal layout */}
-      <div className="hidden md:block w-full min-h-[700px] shadow-2xl">
-        {children}
-      </div>
-    </>
+    <div className="w-full md:min-h-[700px] md:shadow-2xl">
+      {children}
+    </div>
   )
 }
