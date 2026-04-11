@@ -4,9 +4,11 @@ import OpenAI from 'openai'
 import { hexagramDescriptions } from '@/app/oracle/library'
 import { getHexagramTrigrams } from '@/app/oracle/trigrams'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+}
 
 interface InterpretationRequest {
   question: string
@@ -71,7 +73,7 @@ Please provide a comprehensive interpretation that:
 
 Write in a warm, wise, and accessible tone. Be specific to the question and context, weaving together the symbolism, traditional meanings, and practical guidance. Aim for 3-5 paragraphs.`
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
