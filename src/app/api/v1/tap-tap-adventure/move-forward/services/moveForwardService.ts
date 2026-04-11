@@ -81,8 +81,8 @@ export async function moveForwardService(
     }
   }
 
-  // Periodic merchant: ~3% chance every step after distance 50
-  const merchantChance = newDistance > 50 ? 0.03 : 0
+  // Periodic merchant: ~5% chance every step after distance 50
+  const merchantChance = newDistance > 50 ? 0.05 : 0
   if (merchantChance > 0 && Math.random() < merchantChance) {
     return {
       character: updatedCharacter,

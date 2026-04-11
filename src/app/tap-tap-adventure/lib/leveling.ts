@@ -15,7 +15,7 @@ const STEPS_PER_LEVEL_INCREMENT = 50
 
 // Milestone constants
 export const STEPS_PER_DAY = 50
-export const SHOP_MILESTONE_INTERVAL = 100
+export const SHOP_MILESTONE_INTERVAL = 75
 export const BOSS_MILESTONE_INTERVAL = 500
 
 /**

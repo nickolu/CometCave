@@ -25,7 +25,7 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
-  const { getSelectedCharacter, setMount } = useGameStore()
+  const { getSelectedCharacter } = useGameStore()
   const { addItem, addStoryEvent, commit, setCombatState, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
@@ -94,7 +94,7 @@ export function useResolveDecisionMutation() {
       if (isMountEvent && data.outcomeDescription && !data.outcomeDescription.includes('bolts') && !data.outcomeDescription.includes("won't let you")) {
         const currentChar = getSelectedCharacter()
         const mount = getRandomMount(currentChar?.luck ?? 0)
-        setMount(mount)
+        updateSelectedCharacter({ activeMount: mount })
       }
 
       // If the chosen option triggers combat, start a combat encounter
