@@ -61,6 +61,7 @@ describe('Mount Definitions', () => {
     expect(horse!.name).toBe('Horse')
     expect(horse!.bonuses.strength).toBe(1)
     expect(horse!.bonuses.autoWalkSpeed).toBe(1.5)
+    expect(horse!.dailyCost).toBe(1)
   })
 
   it('should return undefined for unknown mount id', () => {
@@ -193,6 +194,38 @@ describe('Mount Heal Rate', () => {
     })
 
     expect(updated.hp).toBe(51)
+  })
+})
+
+describe('Mount Daily Cost', () => {
+  it('common mounts cost 1 gp/day', () => {
+    for (const m of getMountsByRarity('common')) {
+      expect(m.dailyCost).toBe(1)
+    }
+  })
+
+  it('uncommon mounts cost 2 gp/day', () => {
+    for (const m of getMountsByRarity('uncommon')) {
+      expect(m.dailyCost).toBe(2)
+    }
+  })
+
+  it('rare mounts cost 3 gp/day', () => {
+    for (const m of getMountsByRarity('rare')) {
+      expect(m.dailyCost).toBe(3)
+    }
+  })
+
+  it('legendary mounts cost 5 gp/day', () => {
+    for (const m of getMountsByRarity('legendary')) {
+      expect(m.dailyCost).toBe(5)
+    }
+  })
+
+  it('all mounts have a dailyCost property', () => {
+    for (const m of MOUNT_DEFINITIONS) {
+      expect(m.dailyCost).toBeGreaterThan(0)
+    }
   })
 })
 

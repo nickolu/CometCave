@@ -20,6 +20,7 @@ export const MountSchema = z.object({
   rarity: MountRaritySchema,
   bonuses: MountBonusesSchema,
   icon: z.string(),
+  dailyCost: z.number(),
 })
 
 export type Mount = z.infer<typeof MountSchema>

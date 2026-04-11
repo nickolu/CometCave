@@ -7,7 +7,7 @@ import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracke
 import { computeUnlockedSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
-import { applyLevelFromDistance, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
+import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
@@ -161,10 +161,27 @@ export const useGameStore = create<GameStore>()(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
             if (!selectedCharacter) return
-            const updatedCharacter = applyLevelFromDistance({
+            const oldDistance = selectedCharacter.distance || 0
+            const newDistance = oldDistance + 1
+            let updatedCharacter = applyLevelFromDistance({
               ...selectedCharacter,
-              distance: (selectedCharacter.distance || 0) + 1,
+              distance: newDistance,
             })
+
+            // Mount daily upkeep: deduct gold when a new day boundary is crossed
+            const oldDay = calculateDay(oldDistance)
+            const newDay = calculateDay(newDistance)
+            if (newDay > oldDay && updatedCharacter.activeMount) {
+              const cost = updatedCharacter.activeMount.dailyCost ?? 0
+              const newGold = updatedCharacter.gold - cost
+              if (newGold < 0) {
+                // Can't afford upkeep — auto-release mount
+                updatedCharacter = { ...updatedCharacter, gold: updatedCharacter.gold, activeMount: null }
+              } else {
+                updatedCharacter = { ...updatedCharacter, gold: newGold }
+              }
+            }
+
             state.gameState.characters = state.gameState.characters.map(char =>
               char.id === selectedCharacter.id ? updatedCharacter : char
             )
