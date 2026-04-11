@@ -16,6 +16,11 @@ export const SpellEffectTypeSchema = z.enum([
   'cleanse',
   'mana_restore',
   'combo_boost',
+  'apply_poison',
+  'apply_burn',
+  'apply_slow',
+  'apply_thorns',
+  'apply_berserk',
 ])
 export type SpellEffectType = z.infer<typeof SpellEffectTypeSchema>
 
