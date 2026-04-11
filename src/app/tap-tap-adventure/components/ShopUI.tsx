@@ -143,7 +143,7 @@ export function ShopUI() {
         Milestone Shop
       </h4>
       <p className="text-sm text-gray-400 text-center">
-        You leveled up! A traveling merchant has wares to offer.
+        A merchant&apos;s caravan comes into view!
       </p>
       <div className="text-sm text-center text-yellow-400 font-semibold">
         Your Gold: {character.gold}
