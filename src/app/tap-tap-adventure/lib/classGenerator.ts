@@ -4,8 +4,35 @@ import { FALLBACK_CLASSES } from '@/app/tap-tap-adventure/config/fallbackClasses
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
 import { SpellSchool } from '@/app/tap-tap-adventure/models/spell'
 
-export const COMBAT_STYLES = ['martial', 'arcane', 'divine', 'primal', 'shadow', 'psionic'] as const
-export const MODIFIERS = ['fire', 'ice', 'storm', 'blood', 'nature', 'void', 'light', 'beast', 'time', 'iron'] as const
+export const COMBAT_STYLES = [
+  // Physical
+  'martial', 'berserker', 'duelist', 'guardian', 'monk',
+  // Magical
+  'arcane', 'elementalist', 'enchanter', 'summoner', 'ritualist',
+  // Spiritual
+  'divine', 'shaman', 'oracle', 'mystic', 'zealot',
+  // Wild
+  'primal', 'feral', 'druid', 'beastmaster', 'nomad',
+  // Stealth
+  'shadow', 'assassin', 'trickster', 'phantom', 'spy',
+  // Mental
+  'psionic', 'telepath', 'dreamwalker', 'illusionist', 'savant',
+] as const
+
+export const MODIFIERS = [
+  // Elements
+  'fire', 'ice', 'storm', 'lightning', 'earth', 'water', 'wind',
+  // Dark/Light
+  'shadow', 'void', 'light', 'radiance', 'twilight', 'eclipse',
+  // Life/Death
+  'blood', 'bone', 'death', 'life', 'spirit', 'soul',
+  // Nature
+  'nature', 'beast', 'flora', 'fungal', 'venom', 'coral',
+  // Material
+  'iron', 'crystal', 'obsidian', 'gold', 'jade', 'amber',
+  // Concepts
+  'time', 'fate', 'chaos', 'order', 'dream', 'memory', 'rage', 'song',
+] as const
 
 export type CombatStyle = (typeof COMBAT_STYLES)[number]
 export type Modifier = (typeof MODIFIERS)[number]
@@ -40,16 +67,24 @@ export function pickRandomSeeds(count: number): SeedCombo[] {
  */
 export function getSchoolForModifier(modifier: string): SpellSchool {
   const mapping: Record<string, SpellSchool> = {
-    fire: 'war',
-    ice: 'arcane',
-    storm: 'arcane',
-    blood: 'shadow',
-    nature: 'nature',
-    void: 'shadow',
-    light: 'arcane',
-    beast: 'nature',
-    time: 'arcane',
-    iron: 'war',
+    // Elements → war/arcane
+    fire: 'war', ice: 'arcane', storm: 'arcane', lightning: 'arcane',
+    earth: 'war', water: 'nature', wind: 'arcane',
+    // Dark/Light → shadow/arcane
+    shadow: 'shadow', void: 'shadow', light: 'arcane', radiance: 'arcane',
+    twilight: 'shadow', eclipse: 'shadow',
+    // Life/Death → nature/shadow
+    blood: 'shadow', bone: 'shadow', death: 'shadow', life: 'nature',
+    spirit: 'nature', soul: 'arcane',
+    // Nature → nature
+    nature: 'nature', beast: 'nature', flora: 'nature', fungal: 'nature',
+    venom: 'shadow', coral: 'nature',
+    // Material → war
+    iron: 'war', crystal: 'arcane', obsidian: 'war', gold: 'war',
+    jade: 'nature', amber: 'nature',
+    // Concepts → arcane/shadow
+    time: 'arcane', fate: 'arcane', chaos: 'shadow', order: 'war',
+    dream: 'arcane', memory: 'arcane', rage: 'war', song: 'nature',
   }
   return mapping[modifier] ?? 'arcane'
 }
@@ -66,14 +101,14 @@ Each class must have:
 - A starting ability with effects using these types: damage, heal, buff, debuff, shield, damage_over_time, stun, combo_boost
 
 The [STYLE] determines the combat feel:
-- martial: physical, melee, high strength
-- arcane: magical, ranged, high intelligence
-- divine: support/healing, balanced
-- primal: nature/beast, strength + luck
-- shadow: stealth/assassination, high luck
-- psionic: mental, intelligence + luck
+- martial/berserker/duelist/guardian/monk: physical fighters, melee, high strength
+- arcane/elementalist/enchanter/summoner/ritualist: spellcasters, ranged, high intelligence
+- divine/shaman/oracle/mystic/zealot: spiritual, support/healing, balanced stats
+- primal/feral/druid/beastmaster/nomad: wild, nature-connected, strength + luck
+- shadow/assassin/trickster/phantom/spy: stealth, precision, high luck
+- psionic/telepath/dreamwalker/illusionist/savant: mental powers, intelligence + luck
 
-The [MODIFIER] adds elemental flavor and determines the starting ability's element.`
+The [MODIFIER] adds elemental/thematic flavor and determines the starting ability's element. Be creative — combine the style and modifier into something unique and evocative.`
 
 const classGenerationFunctions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
