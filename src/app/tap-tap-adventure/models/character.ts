@@ -47,6 +47,7 @@ export const FantasyCharacterSchema = z.object({
   spellbook: z.array(SpellSchema).optional(),
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),
+  unlockedSkills: z.array(z.string()).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
