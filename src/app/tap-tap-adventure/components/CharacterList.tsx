@@ -55,20 +55,19 @@ export default function CharacterList() {
         {characters.length < 5 && <AddCharacterCard onClick={handleNewCharacter} />}
       </div>
       {showCreation && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm">
-          <div className="min-h-full flex items-center justify-center py-8 px-4">
-            <div className="bg-[#161723] border border-[#3a3c56] rounded-lg p-6 shadow-2xl w-full max-w-md relative">
+        <div className="mt-6 bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-200">Create Character</h3>
             <button
               type="button"
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 transition-colors text-3xl leading-none font-semibold"
+              className="text-slate-400 hover:text-slate-200 transition-colors text-2xl leading-none font-semibold"
               onClick={handleCloseCreation}
               aria-label="Close"
             >
               &times;
             </button>
-            <CharacterCreation onComplete={handleCloseCreation} />
-            </div>
           </div>
+          <CharacterCreation onComplete={handleCloseCreation} />
         </div>
       )}
     </div>
