@@ -10,6 +10,9 @@ import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericT
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { flipCoin } from '@/app/utils'
 
+import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
+import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
+
 import { AchievementPanel } from './AchievementPanel'
 import { AchievementToastContainer } from './AchievementToast'
 import { CombatUI, CombatResult } from './CombatUI'
@@ -18,6 +21,7 @@ import { InventoryPanel } from './InventoryPanel'
 import { QuestPanel } from './QuestPanel'
 import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
+import { SkillPanel } from './SkillPanel'
 import { StoryFeed } from './StoryFeed'
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
@@ -134,7 +138,11 @@ export default function GameUI() {
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault()
     const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
-    const walkInterval = Math.round(300 / mountSpeed)
+    const unlockedSkillIds = character?.unlockedSkills ?? []
+    const unlockedSkillObjects = SKILLS.filter(s => unlockedSkillIds.includes(s.id))
+    const walkSpeedBonus = getSkillBonus(unlockedSkillObjects, 'auto_walk_speed')
+    const skillSpeedMultiplier = 1 + walkSpeedBonus.percentage / 100
+    const walkInterval = Math.round(300 / (mountSpeed * skillSpeedMultiplier))
     autoWalkTimeoutRef.current = setTimeout(() => {
       setIsAutoWalking(true)
       handleMoveForward()
@@ -275,6 +283,7 @@ export default function GameUI() {
           {/* Right column: Quest, Equipment, Achievements & Inventory Panel */}
           <div className="p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
             <QuestPanel />
+            <SkillPanel unlockedSkillIds={character?.unlockedSkills ?? []} />
             <AchievementPanel achievements={gameState.achievements ?? []} />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}

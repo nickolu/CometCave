@@ -1,5 +1,14 @@
 import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
+import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { Skill } from '@/app/tap-tap-adventure/models/skill'
+import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
+
+/** Resolve unlocked Skill objects from the character's stored skill IDs. */
+function resolveSkills(character: FantasyCharacter): Skill[] {
+  const ids = character.unlockedSkills ?? []
+  return SKILLS.filter(s => ids.includes(s.id))
+}
 
 const BASE_STEPS = 200
 const STEPS_PER_LEVEL_INCREMENT = 50
@@ -64,21 +73,32 @@ export function calculateDay(distance: number): number {
 
 /**
  * Calculate max HP for a character based on stats.
+ * Applies passive skill bonuses (e.g. Thick Skin +10% max HP, Veteran +1 all stats).
  */
 export function calculateMaxHp(character: FantasyCharacter): number {
-  return 30 + character.strength * 3 + character.level * 8
+  const skills = resolveSkills(character)
+  const hpBonus = getSkillBonus(skills, 'maxHp')
+  const allStatsBonus = getSkillBonus(skills, 'all_stats')
+  const effectiveStr = character.strength + allStatsBonus.flat
+  const base = 30 + effectiveStr * 3 + character.level * 8
+  return Math.floor(base * (1 + hpBonus.percentage / 100))
 }
 
 /**
  * Calculate max mana for a character based on stats and class.
+ * Applies passive skill bonuses (e.g. Mana Well +20% max mana).
  */
 export function calculateMaxMana(character: FantasyCharacter): number {
-  const base = 20 + (character.intelligence ?? 5) * 3 + (character.level ?? 1) * 5
+  const skills = resolveSkills(character)
+  const manaBonus = getSkillBonus(skills, 'maxMana')
+  const allStatsBonus = getSkillBonus(skills, 'all_stats')
+  const effectiveInt = (character.intelligence ?? 5) + allStatsBonus.flat
+  const base = 20 + effectiveInt * 3 + (character.level ?? 1) * 5
   // Use classData manaMultiplier if available, otherwise fall back to static config
   const manaMultiplier = character.classData?.manaMultiplier
     ?? CLASS_SPELL_CONFIG[character.class.toLowerCase()]?.manaMultiplier
     ?? 1
-  return Math.floor(base * manaMultiplier)
+  return Math.floor(base * manaMultiplier * (1 + manaBonus.percentage / 100))
 }
 
 const MANA_REGEN_BASE_RATE = 5 // base: 1 mana every 5 steps
@@ -138,8 +158,10 @@ export function applyLevelFromDistance(
   const oldDistance = updated.distance - stepsGained
   const currentHp = updated.hp ?? maxHp
   const mountHealBonus = updated.activeMount?.bonuses?.healRate ?? 0
+  const skills = resolveSkills(updated)
+  const healSkillBonus = getSkillBonus(skills, 'heal_rate')
   const healTicks = Math.floor(updated.distance / HEAL_RATE) - Math.floor(oldDistance / HEAL_RATE)
-  const healed = Math.min(maxHp, currentHp + Math.max(0, healTicks) + (healTicks > 0 ? mountHealBonus : 0))
+  const healed = Math.min(maxHp, currentHp + Math.max(0, healTicks) * (1 + healSkillBonus.flat) + (healTicks > 0 ? mountHealBonus : 0))
 
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1

@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
+import { computeUnlockedSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
@@ -181,6 +182,19 @@ export const useGameStore = create<GameStore>()(
               state.gameState.achievements ?? []
             )
             state.gameState.achievements = achievements
+            // Check and unlock passive skills
+            const skillIds = computeUnlockedSkillIds(updatedCharacter, achievements)
+            if (skillIds.length !== (updatedCharacter.unlockedSkills ?? []).length) {
+              const characterIndex = state.gameState.characters.findIndex(
+                char => char.id === updatedCharacter.id
+              )
+              if (characterIndex !== -1) {
+                state.gameState.characters[characterIndex] = {
+                  ...state.gameState.characters[characterIndex],
+                  unlockedSkills: skillIds,
+                }
+              }
+            }
           })
         )
       },
@@ -541,6 +555,10 @@ export const useGameStore = create<GameStore>()(
             // v10: Add activeMount
             if ((char as FantasyCharacter).activeMount === undefined) {
               ;(char as FantasyCharacter).activeMount = null
+            }
+            // v11: Add unlockedSkills
+            if ((char as FantasyCharacter).unlockedSkills === undefined) {
+              ;(char as FantasyCharacter).unlockedSkills = []
             }
           }
         }

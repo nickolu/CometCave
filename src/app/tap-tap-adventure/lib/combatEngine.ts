@@ -1,5 +1,8 @@
 import { CLASS_ABILITIES, getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
+import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { Skill } from '@/app/tap-tap-adventure/models/skill'
+import { getSkillBonus, hasSkill } from '@/app/tap-tap-adventure/lib/skillTracker'
 import {
   CombatActionRequest,
   CombatEnemy,
@@ -35,6 +38,12 @@ import {
   tickStatusEffects,
 } from './statusEffects'
 
+/** Resolve unlocked Skill objects from the character's stored skill IDs. */
+function resolveSkills(character: FantasyCharacter): Skill[] {
+  const ids = character.unlockedSkills ?? []
+  return SKILLS.filter(s => ids.includes(s.id))
+}
+
 export function initializePlayerCombatState(character: FantasyCharacter): CombatPlayerState {
   // Calculate equipment bonuses
   const equipment = character.equipment ?? { weapon: null, armor: null, accessory: null }
@@ -47,17 +56,25 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const mountIntBonus = character.activeMount?.bonuses?.intelligence ?? 0
   const mountLuckBonus = character.activeMount?.bonuses?.luck ?? 0
 
+  // Resolve passive skill bonuses
+  const skills = resolveSkills(character)
+  const attackBonus = getSkillBonus(skills, 'attack')
+  const allStatsBonus = getSkillBonus(skills, 'all_stats')
+
   // Use persistent HP from character, falling back to max if not set
   const maxHp = character.maxHp ?? (30 + character.strength * 3 + character.level * 8)
   const currentHp = character.hp ?? maxHp
   const maxMana = character.maxMana ?? calculateMaxMana(character)
   const currentMana = character.mana ?? maxMana
 
+  const baseAttack = 2 + character.strength + mountStrBonus + Math.floor(character.level / 2) + weaponBonus * 2
+  const baseDefense = 1 + Math.floor((character.intelligence + mountIntBonus) / 2) + Math.floor(character.level / 2) + armorBonus
+
   return {
     hp: currentHp,
     maxHp,
-    attack: 2 + character.strength + mountStrBonus + Math.floor(character.level / 2) + weaponBonus * 2,
-    defense: 1 + Math.floor((character.intelligence + mountIntBonus) / 2) + Math.floor(character.level / 2) + armorBonus,
+    attack: baseAttack + attackBonus.flat + allStatsBonus.flat,
+    defense: baseDefense + allStatsBonus.flat,
     isDefending: false,
     activeBuffs: [
       ...(accessoryLuckBonus > 0 ? [{ stat: 'attack' as const, value: accessoryLuckBonus, turnsRemaining: 999 }] : []),
@@ -130,7 +147,11 @@ export function calculateFleeChance(
   character: FantasyCharacter,
   enemy: CombatEnemy
 ): number {
-  const chance = 0.3 + character.luck * 0.02 - enemy.level * 0.05
+  const skills = resolveSkills(character)
+  const fleeBonus = getSkillBonus(skills, 'flee_chance')
+  const allStatsBonus = getSkillBonus(skills, 'all_stats')
+  const effectiveLuck = character.luck + allStatsBonus.flat
+  const chance = 0.3 + effectiveLuck * 0.02 - enemy.level * 0.05 + fleeBonus.percentage / 100
   return Math.max(0.1, Math.min(0.9, chance))
 }
 
@@ -815,12 +836,16 @@ export function getCombatRewards(
   character: FantasyCharacter
 ): CombatRewards {
   const { enemy } = combatState
-  const gold = enemy.goldReward
+  const skills = resolveSkills(character)
+  const goldBonus = getSkillBonus(skills, 'gold_bonus')
+  const lootBonus = getSkillBonus(skills, 'loot_chance')
+  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100))
 
   const loot: Item[] = []
   if (enemy.lootTable) {
     for (const item of enemy.lootTable) {
-      const dropChance = combatState.isBoss ? 1.0 : 0.3 + character.luck * 0.03
+      const baseDropChance = combatState.isBoss ? 1.0 : 0.3 + character.luck * 0.03
+      const dropChance = Math.min(1, baseDropChance + lootBonus.percentage / 100)
       if (Math.random() < dropChance) {
         loot.push(item)
       }
