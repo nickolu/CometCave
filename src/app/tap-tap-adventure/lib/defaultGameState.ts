@@ -16,4 +16,5 @@ export const defaultGameState: GameState = {
   shopState: null,
   activeQuest: null,
   genericMessage: null,
+  achievements: [],
 }

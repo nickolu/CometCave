@@ -1,5 +1,6 @@
 // Central re-export for all Tap Tap Adventure models and schemas (Zod-first, single source of truth)
 
+import { PlayerAchievement } from './achievement'
 import { FantasyCharacter } from './character'
 import { CombatState } from './combat'
 import { Item } from './item'
@@ -86,5 +87,7 @@ type GameState = {
   shopState: ShopState | null
   activeQuest: TimedQuest | null
   genericMessage: string | null
+  achievements: PlayerAchievement[]
 }
 export type { GameState }
+export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
