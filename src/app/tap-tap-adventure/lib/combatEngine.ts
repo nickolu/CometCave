@@ -1,4 +1,4 @@
-import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
+import { CLASS_ABILITIES, getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import {
   CombatActionRequest,
@@ -374,7 +374,9 @@ export function processPlayerAction(
     }
     case 'class_ability': {
       const classId = character.class.toLowerCase()
-      const ability = CLASS_ABILITIES[classId]
+      const ability = character.classData?.startingAbility
+        ? { name: character.classData.startingAbility.name, description: character.classData.startingAbility.description, cooldown: character.classData.startingAbility.cooldown }
+        : CLASS_ABILITIES[classId]
       if (!ability) {
         newLogs.push({
           turn: turnNumber,

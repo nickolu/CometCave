@@ -7,7 +7,7 @@ import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
-import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
+import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
@@ -45,6 +45,7 @@ const defaultCharacter: FantasyCharacter = {
   mana: 20,
   maxMana: 20,
   spellbook: [],
+  classData: undefined,
 }
 
 export interface GameStore {
@@ -417,8 +418,8 @@ export const useGameStore = create<GameStore>()(
         }
 
         // Check max slots
-        const classConfig = CLASS_SPELL_CONFIG[selectedCharacter.class.toLowerCase()]
-        const maxSlots = classConfig?.maxSlots ?? 3
+        const classConfig = getSpellConfigForCharacter(selectedCharacter.class, selectedCharacter.classData)
+        const maxSlots = classConfig.maxSlots
         const currentSpells = selectedCharacter.spellbook ?? []
         if (currentSpells.length >= maxSlots) {
           return { message: `Your spellbook is full! (${maxSlots} slots max for ${selectedCharacter.class})`, learned: false }
@@ -459,7 +460,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 7,
+      version: 8,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -494,6 +495,10 @@ export const useGameStore = create<GameStore>()(
             }
             if (!char.spellbook) {
               ;(char as FantasyCharacter).spellbook = []
+            }
+            // v8: Add classData
+            if ((char as FantasyCharacter).classData === undefined) {
+              ;(char as FantasyCharacter).classData = undefined
             }
           }
         }
