@@ -90,12 +90,12 @@ export default function GameUI() {
     setIsAutoWalking(false)
   }, [])
 
-  // Stop auto-walking when an event triggers
+  // Stop auto-walking when an event triggers or server call is pending
   useEffect(() => {
-    if (gameState.decisionPoint || gameState.combatState || gameState.shopState) {
+    if (gameState.decisionPoint || gameState.combatState || gameState.shopState || moveForwardPending) {
       clearAutoWalk()
     }
-  }, [gameState.decisionPoint, gameState.combatState, gameState.shopState, clearAutoWalk])
+  }, [gameState.decisionPoint, gameState.combatState, gameState.shopState, moveForwardPending, clearAutoWalk])
 
   // Clean up on unmount
   useEffect(() => {
