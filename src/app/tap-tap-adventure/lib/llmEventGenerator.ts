@@ -59,6 +59,7 @@ const rewardItemSchema = z.object({
     strength: z.number().optional(),
     intelligence: z.number().optional(),
     luck: z.number().optional(),
+    heal: z.number().optional(),
   }).optional(),
   spell: SpellSchema.optional(),
 })
@@ -140,6 +141,7 @@ const rewardItemSchemaForOpenAI = {
         strength: { type: 'number' },
         intelligence: { type: 'number' },
         luck: { type: 'number' },
+        heal: { type: 'number', description: 'Directly restores this amount of HP. Use for healing items instead of strength.' },
       },
     },
     spell: spellSchemaForOpenAI,
@@ -272,7 +274,7 @@ IMPORTANT — Reputation guidance:
 ${reputationGuidance}
 Tailor the tone, NPC attitudes, and available opportunities to reflect the character's reputation tier.
 
-When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts or gold. Examples: potions that grant +2 strength, scrolls that grant +2 intelligence, lucky coins that grant +1 luck.
+When rewarding items, sometimes include consumable items (type: "consumable") with effects like stat boosts or gold. For healing items, use the 'heal' effect (e.g., heal: 15 restores 15 HP). The 'strength' effect permanently increases the strength stat. Examples: healing potions with heal: 10, scrolls that grant +2 intelligence, lucky coins that grant +1 luck, strength potions with +2 strength.
 Sometimes include equipment items (type: "equipment") like weapons, armor, or accessories with stat-boosting effects. Examples: a steel sword with +2 strength, iron armor with +2 intelligence, or a lucky charm with +1 luck.
 Sometimes reward spell scrolls — items with type "spell_scroll" containing a spell with a creative name, 2-3 effects, optional conditions, and tags. The spell field should have: id, name, description, school (arcane/nature/shadow/war), manaCost, cooldown, target (enemy/self), effects array, optional conditions array, and tags array.
 
@@ -360,7 +362,7 @@ function getDefaultEvents(): LLMGeneratedEvent[] {
       options: [
         { id: `open-${s}`, text: 'Pry it open', successProbability: 0.6,
           successDescription: 'Inside you find a handful of coins and a small vial.',
-          successEffects: { gold: 8, rewardItems: processFallbackRewardItems([{ id: `vial-${s}`, name: 'Small Healing Vial', description: 'Restores a bit of vigor', quantity: 1, type: 'consumable', effects: { strength: 1 } }]) },
+          successEffects: { gold: 8, rewardItems: processFallbackRewardItems([{ id: `vial-${s}`, name: 'Small Healing Vial', description: 'Restores a bit of vigor', quantity: 1, type: 'consumable', effects: { heal: 10 } }]) },
           failureDescription: 'The chest is empty save for dust and cobwebs.',
           failureEffects: {} },
         { id: `leave-${s}`, text: 'Leave it alone', successProbability: 1.0,
@@ -394,7 +396,7 @@ function getDefaultEvents(): LLMGeneratedEvent[] {
           failureDescription: '', failureEffects: {} },
         { id: `scavenge-${s}`, text: 'Search the camp for supplies', successProbability: 0.6,
           successDescription: 'You find a potion and a few coins.',
-          successEffects: { gold: 5, rewardItems: processFallbackRewardItems([{ id: `camp-potion-${s}`, name: 'Traveler\'s Brew', description: 'A simple restorative drink', quantity: 1, type: 'consumable', effects: { strength: 1 } }]) },
+          successEffects: { gold: 5, rewardItems: processFallbackRewardItems([{ id: `camp-potion-${s}`, name: 'Traveler\'s Brew', description: 'A simple restorative drink', quantity: 1, type: 'consumable', effects: { heal: 10 } }]) },
           failureDescription: 'The camp has already been picked clean.',
           failureEffects: {} },
       ],
@@ -514,7 +516,7 @@ function getDefaultEvents(): LLMGeneratedEvent[] {
       options: [
         { id: `gather-${s}`, text: 'Gather herbs', successProbability: 0.7,
           successDescription: 'You collect useful herbs and berries.',
-          successEffects: { rewardItems: processFallbackRewardItems([{ id: `herbs-${s}`, name: 'Wild Herbs', description: 'Fresh herbs with restorative properties', quantity: 1, type: 'consumable', effects: { strength: 2 } }]) },
+          successEffects: { rewardItems: processFallbackRewardItems([{ id: `herbs-${s}`, name: 'Wild Herbs', description: 'Fresh herbs with restorative properties', quantity: 1, type: 'consumable', effects: { heal: 10 } }]) },
           failureDescription: 'Most of the plants are wilted or inedible.',
           failureEffects: {} },
         { id: `admire-${s}`, text: 'Simply admire the beauty', successProbability: 1.0,

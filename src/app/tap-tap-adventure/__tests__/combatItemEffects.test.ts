@@ -42,6 +42,18 @@ describe('combatItemEffects', () => {
       expect(isUsableInCombat(item)).toBe(true)
     })
 
+    it('returns true for consumable with heal effect', () => {
+      const item: Item = {
+        id: '1',
+        name: 'Healing Potion',
+        description: 'test',
+        quantity: 1,
+        type: 'consumable',
+        effects: { heal: 15 },
+      }
+      expect(isUsableInCombat(item)).toBe(true)
+    })
+
     it('returns false for consumable with only gold effect', () => {
       const item: Item = {
         id: '1',
@@ -79,17 +91,16 @@ describe('combatItemEffects', () => {
   })
 
   describe('applyCombatItemEffect', () => {
-    it('heals HP from strength effect', () => {
+    it('heals HP from heal effect', () => {
       const item: Item = {
         id: '1',
         name: 'Healing Potion',
         description: 'test',
         quantity: 1,
         type: 'consumable',
-        effects: { strength: 3 },
+        effects: { heal: 15 },
       }
       const { playerState, description } = applyCombatItemEffect(item, basePlayerState)
-      // strength: 3 -> heals 15 HP
       expect(playerState.hp).toBe(65)
       expect(description).toContain('restored 15 HP')
     })
@@ -102,10 +113,27 @@ describe('combatItemEffects', () => {
         description: 'test',
         quantity: 1,
         type: 'consumable',
-        effects: { strength: 10 },
+        effects: { heal: 50 },
       }
       const { playerState } = applyCombatItemEffect(item, fullHpState)
       expect(playerState.hp).toBe(100)
+    })
+
+    it('adds attack buff from strength effect', () => {
+      const item: Item = {
+        id: '1',
+        name: 'Strength Potion',
+        description: 'test',
+        quantity: 1,
+        type: 'consumable',
+        effects: { strength: 3 },
+      }
+      const { playerState, description } = applyCombatItemEffect(item, basePlayerState)
+      expect(playerState.hp).toBe(50) // HP unchanged
+      expect(playerState.activeBuffs).toHaveLength(1)
+      expect(playerState.activeBuffs![0].stat).toBe('attack')
+      expect(playerState.activeBuffs![0].value).toBe(6) // 3 * 2
+      expect(description).toContain('+6 attack for 3 turns')
     })
 
     it('adds defense buff from intelligence effect', () => {
@@ -148,11 +176,11 @@ describe('combatItemEffects', () => {
         description: 'test',
         quantity: 1,
         type: 'consumable',
-        effects: { strength: 2, intelligence: 1, luck: 1 },
+        effects: { heal: 10, strength: 2, intelligence: 1, luck: 1 },
       }
       const { playerState } = applyCombatItemEffect(item, basePlayerState)
       expect(playerState.hp).toBe(60) // healed 10
-      expect(playerState.activeBuffs).toHaveLength(2) // defense + attack buffs
+      expect(playerState.activeBuffs).toHaveLength(3) // strength attack + defense + luck attack buffs
     })
   })
 })
