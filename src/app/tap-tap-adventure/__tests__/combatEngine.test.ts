@@ -32,7 +32,7 @@ const baseChar: FantasyCharacter = {
       description: 'Heals',
       quantity: 2,
       type: 'consumable',
-      effects: { strength: 2 },
+      effects: { heal: 10 },
     },
   ],
 }
@@ -188,7 +188,7 @@ describe('Combat Engine', () => {
       )
 
       expect(consumedItemId).toBe('potion-1')
-      // Healing potion with strength: 2 heals 10 HP (2 * 5)
+      // Healing potion with heal: 10 restores 10 HP directly
       expect(result.playerState.hp).toBeGreaterThan(50)
       vi.restoreAllMocks()
     })

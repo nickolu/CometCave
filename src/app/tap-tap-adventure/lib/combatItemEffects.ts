@@ -3,8 +3,8 @@ import { Item } from '@/app/tap-tap-adventure/models/item'
 
 export function isUsableInCombat(item: Item): boolean {
   if (item.type !== 'consumable' || !item.effects) return false
-  const { strength, intelligence, luck } = item.effects
-  return !!(strength || intelligence || luck)
+  const { strength, intelligence, luck, heal } = item.effects
+  return !!(strength || intelligence || luck || heal)
 }
 
 export function applyCombatItemEffect(
@@ -18,15 +18,24 @@ export function applyCombatItemEffect(
   const updated = { ...playerState, activeBuffs: [...(playerState.activeBuffs ?? [])] }
   const parts: string[] = []
 
-  // Strength effect → heal HP
-  if (item.effects.strength) {
-    const healAmount = item.effects.strength * 5
+  // Heal effect → restore HP directly
+  if (item.effects.heal) {
     const oldHp = updated.hp
-    updated.hp = Math.min(updated.maxHp, updated.hp + healAmount)
+    updated.hp = Math.min(updated.maxHp, updated.hp + item.effects.heal)
     const actualHeal = updated.hp - oldHp
     if (actualHeal > 0) {
       parts.push(`restored ${actualHeal} HP`)
     }
+  }
+
+  // Strength effect → attack buff
+  if (item.effects.strength) {
+    updated.activeBuffs.push({
+      stat: 'attack',
+      value: item.effects.strength * 2,
+      turnsRemaining: 3,
+    })
+    parts.push(`+${item.effects.strength * 2} attack for 3 turns`)
   }
 
   // Intelligence effect → defense buff

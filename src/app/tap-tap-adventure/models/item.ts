@@ -10,6 +10,7 @@ export const ItemEffectsSchema = z.object({
   strength: z.number().optional(),
   intelligence: z.number().optional(),
   luck: z.number().optional(),
+  heal: z.number().optional(),
 })
 export type ItemEffects = z.infer<typeof ItemEffectsSchema>
 
