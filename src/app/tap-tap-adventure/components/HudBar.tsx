@@ -136,13 +136,14 @@ export function HudBar() {
   const renderStat = (key: IconType) => (
     <div key={key} className="relative">
       <button
-        className="flex items-center gap-1 text-xs sm:text-sm font-semibold"
+        className="flex flex-col items-center gap-0.5 text-xs sm:text-sm font-semibold"
         onClick={() => handleStatTap(key)}
         onMouseEnter={() => setActiveTooltip(key)}
         onMouseLeave={() => setActiveTooltip(null)}
       >
-        <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
-        <span>{stats[key]}</span>
+        <div className="flex items-center gap-1">
+          <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
+          <span>{stats[key]}</span>
         {key === 'heartIcon' && (
           <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
             <span
@@ -161,6 +162,8 @@ export function HudBar() {
             />
           </span>
         )}
+        </div>
+        <span className="text-[8px] sm:text-[9px] text-slate-500 leading-none">{STAT_LABELS[key]}</span>
       </button>
       {activeTooltip === key && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-[10px] text-slate-200 whitespace-nowrap z-50 shadow-lg">
