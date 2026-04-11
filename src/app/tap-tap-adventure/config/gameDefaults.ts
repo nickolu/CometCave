@@ -45,4 +45,5 @@ export const DEFAULT_CHARACTER = {
   mana: 20,
   maxMana: 20,
   spellbook: [],
+  classData: undefined,
 }

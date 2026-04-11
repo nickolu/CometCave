@@ -1,3 +1,5 @@
+import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+
 import { DEFAULT_STAT_MIN } from './gameDefaults'
 
 export interface StatModifiers {
@@ -117,6 +119,31 @@ export const CLASS_SPELL_CONFIG: Record<string, ClassSpellConfig> = {
   mage:    { manaMultiplier: 1.5, regenMultiplier: 2.0, maxSlots: 6, favoredSchool: 'arcane', schoolBonus: 0.2 },
   rogue:   { manaMultiplier: 0.8, regenMultiplier: 1.0, maxSlots: 3, favoredSchool: 'shadow', schoolBonus: 0.2 },
   ranger:  { manaMultiplier: 1.0, regenMultiplier: 1.0, maxSlots: 4, favoredSchool: 'nature', schoolBonus: 0.3 },
+}
+
+/**
+ * Get the spell config for a character, checking classData first and falling back to static config.
+ */
+export function getSpellConfigForCharacter(
+  className: string,
+  classData?: GeneratedClass
+): ClassSpellConfig {
+  if (classData) {
+    return {
+      manaMultiplier: classData.manaMultiplier,
+      regenMultiplier: 1.0,
+      maxSlots: classData.spellSlots,
+      favoredSchool: classData.favoredSchool,
+      schoolBonus: 0.2,
+    }
+  }
+  return CLASS_SPELL_CONFIG[className.toLowerCase()] ?? {
+    manaMultiplier: 1.0,
+    regenMultiplier: 1.0,
+    maxSlots: 3,
+    favoredSchool: 'arcane',
+    schoolBonus: 0.2,
+  }
 }
 
 export interface StartingStats {

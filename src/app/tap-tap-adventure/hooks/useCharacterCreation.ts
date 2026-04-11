@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import {
   calculateStartingStats,
@@ -17,6 +17,8 @@ import {
 import { getStartingSpell } from '@/app/tap-tap-adventure/config/startingSpells'
 import { calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 
 export function useCharacterCreation() {
@@ -24,9 +26,20 @@ export function useCharacterCreation() {
   const [character, setCharacter] = useState<Partial<FantasyCharacter>>({})
   const [selectedRace, setSelectedRace] = useState<RaceOption | null>(null)
   const [selectedClass, setSelectedClass] = useState<ClassOption | null>(null)
+  const [selectedGeneratedClass, setSelectedGeneratedClass] = useState<GeneratedClass | null>(null)
+  const [generatedClasses, setGeneratedClasses] = useState<GeneratedClass[]>([])
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
 
   const stats = useMemo(() => {
+    if (selectedRace && selectedGeneratedClass) {
+      // Use generated class stat distribution + race modifiers
+      return {
+        strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
+        intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
+        luck: selectedGeneratedClass.statDistribution.luck + (selectedRace.modifiers.luck ?? 0),
+      }
+    }
     if (selectedRace && selectedClass) {
       return calculateStartingStats(selectedRace, selectedClass)
     }
@@ -35,16 +48,50 @@ export function useCharacterCreation() {
       intelligence: DEFAULT_STAT_MIN,
       luck: DEFAULT_STAT_MIN,
     }
-  }, [selectedRace, selectedClass])
+  }, [selectedRace, selectedClass, selectedGeneratedClass])
 
   const updateCharacter = (fields: Partial<FantasyCharacter>) => {
     setCharacter(prev => ({ ...prev, ...fields }))
   }
 
-  const isValid = Boolean(character.name?.trim()) && selectedRace !== null && selectedClass !== null
+  const isValid = Boolean(character.name?.trim()) && selectedRace !== null && (selectedClass !== null || selectedGeneratedClass !== null)
+
+  const fetchGeneratedClasses = useCallback(async () => {
+    setIsLoadingClasses(true)
+    try {
+      const response = await fetch('/api/v1/tap-tap-adventure/classes/generate', {
+        method: 'POST',
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setGeneratedClasses(data.classes)
+        setSelectedGeneratedClass(null)
+        setSelectedClass(null)
+      }
+    } catch {
+      // Silently fail - UI will show fallback
+    } finally {
+      setIsLoadingClasses(false)
+    }
+  }, [])
+
+  const selectGeneratedClass = useCallback((gc: GeneratedClass) => {
+    setSelectedGeneratedClass(gc)
+    // Also set a ClassOption-compatible object so isValid passes
+    setSelectedClass({
+      id: gc.id,
+      name: gc.name,
+      description: gc.description,
+      modifiers: {
+        strength: gc.statDistribution.strength - DEFAULT_STAT_MIN,
+        intelligence: gc.statDistribution.intelligence - DEFAULT_STAT_MIN,
+        luck: gc.statDistribution.luck - DEFAULT_STAT_MIN,
+      },
+    })
+  }, [])
 
   const completeCreation = () => {
-    if (!isValid || !selectedRace || !selectedClass) return
+    if (!isValid || !selectedRace || (!selectedClass && !selectedGeneratedClass)) return
 
     const charId = crypto.randomUUID()
     const abilityId = crypto.randomUUID()
@@ -57,11 +104,43 @@ export function useCharacterCreation() {
       cooldown: DEFAULT_ABILITY_COOLDOWN,
     }
 
-    const finalStats = calculateStartingStats(selectedRace, selectedClass)
+    let finalStats: { strength: number; intelligence: number; luck: number }
+    let className: string
+    let spellbook: Spell[] = []
+    let classData: GeneratedClass | undefined
 
-    // Calculate starting mana based on class and stats
-    const startingSpell = getStartingSpell(selectedClass.id)
-    const spellbook = startingSpell ? [startingSpell] : []
+    if (selectedGeneratedClass) {
+      // Use generated class
+      finalStats = {
+        strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
+        intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
+        luck: selectedGeneratedClass.statDistribution.luck + (selectedRace.modifiers.luck ?? 0),
+      }
+      className = selectedGeneratedClass.name
+      classData = selectedGeneratedClass
+
+      // Convert starting ability to Spell format
+      const startingSpell: Spell = {
+        id: `starting-spell-${selectedGeneratedClass.id}`,
+        name: selectedGeneratedClass.startingAbility.name,
+        description: selectedGeneratedClass.startingAbility.description,
+        school: selectedGeneratedClass.favoredSchool,
+        manaCost: selectedGeneratedClass.startingAbility.manaCost,
+        cooldown: selectedGeneratedClass.startingAbility.cooldown,
+        target: selectedGeneratedClass.startingAbility.target,
+        effects: selectedGeneratedClass.startingAbility.effects,
+        tags: selectedGeneratedClass.startingAbility.tags,
+      }
+      spellbook = [startingSpell]
+    } else if (selectedClass) {
+      // Use static class (fallback path)
+      finalStats = calculateStartingStats(selectedRace, selectedClass)
+      className = selectedClass.name
+      const startingSpell = getStartingSpell(selectedClass.id)
+      spellbook = startingSpell ? [startingSpell] : []
+    } else {
+      return
+    }
 
     // Build a temp character to calculate maxMana
     const tempChar = {
@@ -69,7 +148,7 @@ export function useCharacterCreation() {
       playerId: '',
       name: character.name || DEFAULT_CHARACTER_NAME,
       race: selectedRace.name,
-      class: selectedClass.name,
+      class: className,
       level: 1,
       abilities: [defaultAbility],
       locationId: '',
@@ -83,6 +162,7 @@ export function useCharacterCreation() {
       inventory: [],
       deathCount: 0,
       pendingStatPoints: 0,
+      classData,
     }
     const maxMana = calculateMaxMana(tempChar)
 
@@ -91,7 +171,7 @@ export function useCharacterCreation() {
       id: charId,
       name: character.name || DEFAULT_CHARACTER_NAME,
       race: selectedRace.name,
-      class: selectedClass.name,
+      class: className,
       strength: finalStats.strength,
       intelligence: finalStats.intelligence,
       luck: finalStats.luck,
@@ -99,6 +179,7 @@ export function useCharacterCreation() {
       mana: maxMana,
       maxMana: maxMana,
       spellbook,
+      classData,
     }
 
     addCharacter(updatedCharacter)
@@ -109,11 +190,16 @@ export function useCharacterCreation() {
     character,
     selectedRace,
     selectedClass,
+    selectedGeneratedClass,
+    generatedClasses,
+    isLoadingClasses,
     stats,
     isValid,
     updateCharacter,
     setSelectedRace,
     setSelectedClass,
+    selectGeneratedClass,
+    fetchGeneratedClasses,
     isComplete,
     completeCreation,
   }

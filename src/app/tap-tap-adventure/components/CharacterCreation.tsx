@@ -1,14 +1,14 @@
 'use client'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import {
   ClassOption,
-  CLASSES,
-  RaceOption,
   RACES,
+  RaceOption,
   StatModifiers,
 } from '@/app/tap-tap-adventure/config/characterOptions'
 import { useCharacterCreation } from '@/app/tap-tap-adventure/hooks/useCharacterCreation'
+import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 
 function StatBadge({ label, value }: { label: string; value: number }) {
@@ -53,6 +53,45 @@ function OptionCard<T extends RaceOption | ClassOption>({
       <div className="text-slate-200 font-semibold text-sm">{option.name}</div>
       <div className="text-xs text-slate-400 mt-1">{option.description}</div>
       <ModifierBadges modifiers={option.modifiers} />
+    </button>
+  )
+}
+
+function GeneratedClassCard({
+  generatedClass,
+  selected,
+  onSelect,
+}: {
+  generatedClass: GeneratedClass
+  selected: boolean
+  onSelect: (gc: GeneratedClass) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(generatedClass)}
+      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+        selected
+          ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500'
+          : 'border-[#3a3c56] bg-[#2a2b3f] hover:border-[#5a5c76]'
+      }`}
+    >
+      <div className="text-slate-200 font-semibold text-sm">{generatedClass.name}</div>
+      <div className="text-xs text-slate-400 mt-1">{generatedClass.description}</div>
+      <div className="flex gap-2 mt-2">
+        <span className="text-xs text-amber-400">STR {generatedClass.statDistribution.strength}</span>
+        <span className="text-xs text-sky-400">INT {generatedClass.statDistribution.intelligence}</span>
+        <span className="text-xs text-emerald-400">LCK {generatedClass.statDistribution.luck}</span>
+      </div>
+      <div className="flex gap-2 mt-1 flex-wrap">
+        <span className="text-xs text-purple-400">{generatedClass.favoredSchool}</span>
+        <span className="text-xs text-slate-500">{generatedClass.spellSlots} spell slots</span>
+        <span className="text-xs text-slate-500">{generatedClass.manaMultiplier}x mana</span>
+      </div>
+      <div className="mt-2 pt-2 border-t border-[#3a3c56]">
+        <div className="text-xs text-indigo-300 font-medium">{generatedClass.startingAbility.name}</div>
+        <div className="text-xs text-slate-500 mt-0.5">{generatedClass.startingAbility.description}</div>
+      </div>
     </button>
   )
 }
@@ -102,15 +141,26 @@ export default function CharacterCreation({
     character,
     selectedRace,
     selectedClass,
+    selectedGeneratedClass,
+    generatedClasses,
+    isLoadingClasses,
     stats,
     isValid,
     updateCharacter,
     setSelectedRace,
-    setSelectedClass,
+    selectGeneratedClass,
+    fetchGeneratedClasses,
     completeCreation,
   } = useCharacterCreation()
 
   const [step, setStep] = useState(1)
+
+  // Fetch generated classes when entering step 3
+  useEffect(() => {
+    if (step === 3 && generatedClasses.length === 0 && !isLoadingClasses) {
+      fetchGeneratedClasses()
+    }
+  }, [step, generatedClasses.length, isLoadingClasses, fetchGeneratedClasses])
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -188,20 +238,37 @@ export default function CharacterCreation({
         </div>
       )}
 
-      {/* Step 3: Class */}
+      {/* Step 3: Class (Generated) */}
       {step === 3 && (
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Class</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {CLASSES.map(cls => (
-              <OptionCard
-                key={cls.id}
-                option={cls}
-                selected={selectedClass?.id === cls.id}
-                onSelect={setSelectedClass}
-              />
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-sm font-medium text-slate-300">Choose Your Class</label>
+            <button
+              type="button"
+              onClick={fetchGeneratedClasses}
+              disabled={isLoadingClasses}
+              className="text-xs text-indigo-400 hover:text-indigo-300 disabled:text-slate-500 transition-colors focus:outline-none"
+            >
+              {isLoadingClasses ? 'Generating...' : 'Reroll Classes'}
+            </button>
           </div>
+
+          {isLoadingClasses ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-slate-400 text-sm">Generating unique classes...</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {generatedClasses.map(gc => (
+                <GeneratedClassCard
+                  key={gc.id}
+                  generatedClass={gc}
+                  selected={selectedGeneratedClass?.id === gc.id}
+                  onSelect={selectGeneratedClass}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Stat Preview */}
           <div className="mt-4 p-4 bg-[#1e1f33] border border-[#3a3c56] rounded-lg">
@@ -220,9 +287,9 @@ export default function CharacterCreation({
                 <div className="text-lg font-bold text-emerald-400">{stats.luck}</div>
               </div>
             </div>
-            {selectedRace && selectedClass && (
+            {selectedRace && selectedGeneratedClass && (
               <div className="text-xs text-slate-500 mt-2 text-center">
-                Base (5) + {selectedRace.name} bonuses + {selectedClass.name} bonuses
+                {selectedGeneratedClass.name} base + {selectedRace.name} racial bonuses
               </div>
             )}
           </div>

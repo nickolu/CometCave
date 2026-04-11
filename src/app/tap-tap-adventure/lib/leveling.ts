@@ -74,8 +74,11 @@ export function calculateMaxHp(character: FantasyCharacter): number {
  */
 export function calculateMaxMana(character: FantasyCharacter): number {
   const base = 20 + (character.intelligence ?? 5) * 3 + (character.level ?? 1) * 5
-  const classConfig = CLASS_SPELL_CONFIG[character.class.toLowerCase()]
-  return Math.floor(base * (classConfig?.manaMultiplier ?? 1))
+  // Use classData manaMultiplier if available, otherwise fall back to static config
+  const manaMultiplier = character.classData?.manaMultiplier
+    ?? CLASS_SPELL_CONFIG[character.class.toLowerCase()]?.manaMultiplier
+    ?? 1
+  return Math.floor(base * manaMultiplier)
 }
 
 const MANA_REGEN_BASE_RATE = 5 // base: 1 mana every 5 steps

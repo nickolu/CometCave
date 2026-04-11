@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
 import { SpellSchema } from './spell'
 
@@ -43,6 +44,7 @@ export const FantasyCharacterSchema = z.object({
   mana: z.number().optional(),
   maxMana: z.number().optional(),
   spellbook: z.array(SpellSchema).optional(),
+  classData: GeneratedClassSchema.optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
