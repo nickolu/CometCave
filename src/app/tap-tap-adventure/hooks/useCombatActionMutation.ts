@@ -5,6 +5,7 @@ import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
 
 import { useGameStateBuilder, useGameStore } from './useGameStore'
@@ -14,6 +15,7 @@ interface CombatActionResponse {
   rewards?: {
     gold: number
     loot: Item[]
+    mountDrop?: Mount
   }
   updatedCharacter: FantasyCharacter
   consumedItemId?: string
@@ -22,7 +24,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation() {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter } = useGameStore()
+  const { getSelectedCharacter, setMount } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -104,13 +106,18 @@ export function useCombatActionMutation() {
             addItem(inferItemTypeAndEffects(lootItem))
           }
 
+          // If boss dropped a mount, equip it
+          if (data.rewards.mountDrop) {
+            setMount(data.rewards.mountDrop)
+          }
+
           addStoryEvent({
             id: `combat-victory-${Date.now()}`,
             type: 'combat_victory',
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.`,
+            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.${data.rewards.mountDrop ? ` You tamed a ${data.rewards.mountDrop.name}! ${data.rewards.mountDrop.icon}` : ''}`,
             resourceDelta: {
               gold: data.rewards.gold,
             },

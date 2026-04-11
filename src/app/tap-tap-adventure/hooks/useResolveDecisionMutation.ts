@@ -1,6 +1,7 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -24,7 +25,7 @@ export interface ResolveDecisionResponse {
 }
 
 export function useResolveDecisionMutation() {
-  const { getSelectedCharacter } = useGameStore()
+  const { getSelectedCharacter, setMount } = useGameStore()
   const { addItem, addStoryEvent, commit, setCombatState, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
@@ -87,6 +88,14 @@ export function useResolveDecisionMutation() {
       }
 
       addStoryEvent(newStoryEvent)
+
+      // Check if this event grants a mount (mount discovery events)
+      const isMountEvent = optionId.includes('tame-horse') || optionId.includes('claim-mount')
+      if (isMountEvent && data.outcomeDescription && !data.outcomeDescription.includes('bolts') && !data.outcomeDescription.includes("won't let you")) {
+        const currentChar = getSelectedCharacter()
+        const mount = getRandomMount(currentChar?.luck ?? 0)
+        setMount(mount)
+      }
 
       // If the chosen option triggers combat, start a combat encounter
       // Pass the event description so the enemy matches the narrative

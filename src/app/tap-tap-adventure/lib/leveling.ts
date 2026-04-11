@@ -137,8 +137,9 @@ export function applyLevelFromDistance(
   // Uses floor(newDist/rate) - floor(oldDist/rate) so single-step increments work
   const oldDistance = updated.distance - stepsGained
   const currentHp = updated.hp ?? maxHp
+  const mountHealBonus = updated.activeMount?.bonuses?.healRate ?? 0
   const healTicks = Math.floor(updated.distance / HEAL_RATE) - Math.floor(oldDistance / HEAL_RATE)
-  const healed = Math.min(maxHp, currentHp + Math.max(0, healTicks))
+  const healed = Math.min(maxHp, currentHp + Math.max(0, healTicks) + (healTicks > 0 ? mountHealBonus : 0))
 
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1

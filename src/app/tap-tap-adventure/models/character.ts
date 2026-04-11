@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
+import { MountSchema } from './mount'
 import { SpellSchema } from './spell'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
@@ -45,6 +46,7 @@ export const FantasyCharacterSchema = z.object({
   maxMana: z.number().optional(),
   spellbook: z.array(SpellSchema).optional(),
   classData: GeneratedClassSchema.optional(),
+  activeMount: MountSchema.nullable().optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
