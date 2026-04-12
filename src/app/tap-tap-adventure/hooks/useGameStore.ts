@@ -5,11 +5,14 @@ import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
+import { getMetaBonuses, MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
+import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
 import { computeUnlockedSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { getUpgradeById } from '@/app/tap-tap-adventure/config/eternalUpgrades'
 import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
@@ -22,6 +25,7 @@ import {
   FantasyStoryEvent,
   GameState,
   Item,
+  MetaProgressionState,
   ShopState,
 } from '@/app/tap-tap-adventure/models/types'
 import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
@@ -84,6 +88,9 @@ export interface GameStore {
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
   claimDailyReward: () => import('@/app/tap-tap-adventure/lib/dailyRewardTracker').ClaimResult | null
+  awardSoulEssence: (character: FantasyCharacter) => number
+  purchaseUpgrade: (upgradeId: string) => boolean
+  getMetaBonuses: () => MetaBonuses
 }
 
 export const useGameStore = create<GameStore>()(
@@ -171,10 +178,11 @@ export const useGameStore = create<GameStore>()(
             if (!selectedCharacter) return
             const oldDistance = selectedCharacter.distance || 0
             const newDistance = oldDistance + 1
+            const metaBonuses = get().getMetaBonuses()
             let updatedCharacter = applyLevelFromDistance({
               ...selectedCharacter,
               distance: newDistance,
-            })
+            }, 1, metaBonuses)
 
             // Mount daily upkeep: deduct gold when a new day boundary is crossed
             const oldDay = calculateDay(oldDistance)
@@ -574,6 +582,23 @@ export const useGameStore = create<GameStore>()(
             if (!character || character.status !== 'active') return
             if ((character.distance ?? 0) < 100) return
 
+            // Award soul essence before retiring
+            const essence = calculateSoulEssence(character)
+            const meta = state.gameState.metaProgression ?? {
+              soulEssence: 0,
+              totalEssenceEarned: 0,
+              totalRuns: 0,
+              bestDistance: 0,
+              bestLevel: 0,
+              upgradeLevels: {},
+            }
+            meta.soulEssence += essence
+            meta.totalEssenceEarned += essence
+            meta.totalRuns += 1
+            meta.bestDistance = Math.max(meta.bestDistance, character.distance ?? 0)
+            meta.bestLevel = Math.max(meta.bestLevel, character.level ?? 1)
+            state.gameState.metaProgression = meta
+
             character.status = 'retired'
             const heirloom = generateHeirloom(character)
             if (!state.gameState.legacyHeirlooms) {
@@ -587,6 +612,55 @@ export const useGameStore = create<GameStore>()(
             }
           })
         )
+      },
+      awardSoulEssence: (character: FantasyCharacter) => {
+        const essence = calculateSoulEssence(character)
+        set(
+          produce((state: GameStore) => {
+            const meta: MetaProgressionState = state.gameState.metaProgression ?? {
+              soulEssence: 0,
+              totalEssenceEarned: 0,
+              totalRuns: 0,
+              bestDistance: 0,
+              bestLevel: 0,
+              upgradeLevels: {},
+            }
+            meta.soulEssence += essence
+            meta.totalEssenceEarned += essence
+            meta.totalRuns += 1
+            meta.bestDistance = Math.max(meta.bestDistance, character.distance ?? 0)
+            meta.bestLevel = Math.max(meta.bestLevel, character.level ?? 1)
+            state.gameState.metaProgression = meta
+          })
+        )
+        return essence
+      },
+      purchaseUpgrade: (upgradeId: string) => {
+        const meta = get().gameState.metaProgression
+        if (!meta) return false
+
+        const upgrade = getUpgradeById(upgradeId)
+        if (!upgrade) return false
+
+        const currentLevel = meta.upgradeLevels[upgradeId] ?? 0
+        if (currentLevel >= upgrade.maxLevel) return false
+
+        const cost = upgrade.costPerLevel[currentLevel]
+        if (cost === undefined || meta.soulEssence < cost) return false
+
+        set(
+          produce((state: GameStore) => {
+            if (!state.gameState.metaProgression) return
+            state.gameState.metaProgression.soulEssence -= cost
+            state.gameState.metaProgression.upgradeLevels[upgradeId] = currentLevel + 1
+          })
+        )
+        return true
+      },
+      getMetaBonuses: () => {
+        const meta = get().gameState.metaProgression
+        if (!meta) return getMetaBonuses({})
+        return getMetaBonuses(meta.upgradeLevels)
       },
     }),
     {
@@ -660,6 +734,10 @@ export const useGameStore = create<GameStore>()(
         // v11: Add dailyReward
         if (state?.gameState && !('dailyReward' in state.gameState)) {
           (state.gameState as GameState).dailyReward = null
+        }
+        // v12: Add metaProgression
+        if (state?.gameState && !('metaProgression' in state.gameState)) {
+          (state.gameState as GameState).metaProgression = null
         }
         return state
       },

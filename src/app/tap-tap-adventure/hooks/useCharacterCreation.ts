@@ -18,13 +18,14 @@ import {
 import { getStartingSpell } from '@/app/tap-tap-adventure/config/startingSpells'
 import { calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { calculateMaxHp } from '@/app/tap-tap-adventure/lib/leveling'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 
 export function useCharacterCreation() {
-  const { addCharacter, claimHeirloom, gameState } = useGameStore()
+  const { addCharacter, claimHeirloom, gameState, getMetaBonuses } = useGameStore()
   const [character, setCharacter] = useState<Partial<FantasyCharacter>>({})
   const [selectedRace, setSelectedRace] = useState<RaceOption | null>(null)
   const [selectedClass, setSelectedClass] = useState<ClassOption | null>(null)
@@ -178,21 +179,41 @@ export function useCharacterCreation() {
       }
     }
 
+    // Apply meta-progression bonuses from eternal upgrades
+    const metaBonuses = getMetaBonuses()
+    const boostedStrength = finalStats.strength + metaBonuses.bonusStrength
+    const boostedIntelligence = finalStats.intelligence + metaBonuses.bonusIntelligence
+    const boostedLuck = finalStats.luck + metaBonuses.bonusLuck
+    const boostedGold = metaBonuses.bonusGold
+
+    // Recalculate mana/hp with boosted stats
+    const boostedTempChar = {
+      ...tempChar,
+      strength: boostedStrength,
+      intelligence: boostedIntelligence,
+      luck: boostedLuck,
+    }
+    const boostedMaxMana = calculateMaxMana(boostedTempChar) + metaBonuses.bonusMana
+    const boostedMaxHp = calculateMaxHp(boostedTempChar) + metaBonuses.bonusHp
+
     const updatedCharacter = {
       ...character,
       id: charId,
       name: character.name || DEFAULT_CHARACTER_NAME,
       race: selectedRace.name,
       class: className,
-      strength: finalStats.strength,
-      intelligence: finalStats.intelligence,
-      luck: finalStats.luck,
+      strength: boostedStrength,
+      intelligence: boostedIntelligence,
+      luck: boostedLuck,
       abilities: [defaultAbility],
-      mana: maxMana,
-      maxMana: maxMana,
+      hp: boostedMaxHp,
+      maxHp: boostedMaxHp,
+      mana: boostedMaxMana,
+      maxMana: boostedMaxMana,
       spellbook,
       classData,
       inventory: startingInventory,
+      gold: boostedGold,
       difficultyMode: selectedDifficulty.id,
     }
 
