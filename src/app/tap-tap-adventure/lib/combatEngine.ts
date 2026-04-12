@@ -1,4 +1,5 @@
-import { CLASS_ABILITIES, getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
+import { CLASS_ABILITIES, getClassElement, getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
+import { getElementalMultiplier, getEffectivenessText } from '@/app/tap-tap-adventure/config/elements'
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Skill } from '@/app/tap-tap-adventure/models/skill'
@@ -108,8 +109,9 @@ function getComboMultiplier(comboCount: number): number {
 
 export function calculatePlayerDamage(
   playerState: CombatPlayerState,
-  enemy: CombatEnemy
-): number {
+  enemy: CombatEnemy,
+  character?: FantasyCharacter
+): { damage: number; elementalMultiplier: number } {
   const buffedAttack =
     playerState.attack +
     (playerState.activeBuffs ?? [])
@@ -118,15 +120,22 @@ export function calculatePlayerDamage(
   const comboMultiplier = getComboMultiplier(playerState.comboCount)
   const berserkMultiplier = getBerserkAttackMultiplier(playerState.statusEffects)
   const enemyDefense = enemy.defense * getBurnDefenseMultiplier(enemy.statusEffects)
-  const raw = randomVariance(buffedAttack) * comboMultiplier * berserkMultiplier - enemyDefense
-  return Math.max(1, Math.round(raw))
+
+  const attackElement = character
+    ? getClassElement(character.class, character.classData)
+    : undefined
+  const elementalMultiplier = getElementalMultiplier(attackElement, enemy.element)
+
+  const raw = randomVariance(buffedAttack) * comboMultiplier * berserkMultiplier * elementalMultiplier - enemyDefense
+  return { damage: Math.max(1, Math.round(raw)), elementalMultiplier }
 }
 
 export function calculateEnemyDamage(
   enemy: CombatEnemy,
   playerState: CombatPlayerState,
-  isHeavyAttack: boolean = false
-): number {
+  isHeavyAttack: boolean = false,
+  character?: FantasyCharacter
+): { damage: number; elementalMultiplier: number } {
   const effectiveDefense = playerState.isDefending
     ? playerState.defense * 2
     : playerState.defense
@@ -138,9 +147,15 @@ export function calculateEnemyDamage(
       .filter(b => b.stat === 'defense')
       .reduce((sum, b) => sum + b.value, 0)
   const slowMultiplier = getSlowMultiplier(enemy.statusEffects)
-  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier
+
+  const defenseElement = character
+    ? getClassElement(character.class, character.classData)
+    : undefined
+  const elementalMultiplier = getElementalMultiplier(enemy.element, defenseElement)
+
+  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier * elementalMultiplier
   const raw = randomVariance(attackPower) - buffedDefense
-  return Math.max(1, Math.round(raw))
+  return { damage: Math.max(1, Math.round(raw)), elementalMultiplier }
 }
 
 export function calculateFleeChance(
@@ -224,7 +239,8 @@ function executeEnemyTelegraph(
   telegraph: EnemyTelegraph,
   enemy: CombatEnemy,
   playerState: CombatPlayerState,
-  turnNumber: number
+  turnNumber: number,
+  character?: FantasyCharacter
 ): { playerState: CombatPlayerState; logs: CombatLogEntry[]; enemyDefenseBoost: boolean } {
   const logs: CombatLogEntry[] = []
   let updatedPlayer = { ...playerState }
@@ -232,14 +248,15 @@ function executeEnemyTelegraph(
 
   switch (telegraph.action) {
     case 'heavy_attack': {
-      const dmg = calculateEnemyDamage(enemy, updatedPlayer, true)
+      const { damage: dmg, elementalMultiplier } = calculateEnemyDamage(enemy, updatedPlayer, true, character)
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
+      const elemText = getEffectivenessText(elementalMultiplier)
       logs.push({
         turn: turnNumber,
         actor: 'enemy',
         action: 'heavy_attack',
         damage: dmg,
-        description: `${enemy.name} unleashes a powerful blow for ${dmg} damage!`,
+        description: `${enemy.name} unleashes a powerful blow for ${dmg} damage!${elemText ? ` ${elemText}` : ''}`,
       })
       break
     }
@@ -275,14 +292,15 @@ function executeEnemyTelegraph(
     }
     case 'normal_attack':
     default: {
-      const dmg = calculateEnemyDamage(enemy, updatedPlayer)
+      const { damage: dmg, elementalMultiplier } = calculateEnemyDamage(enemy, updatedPlayer, false, character)
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
+      const elemText = getEffectivenessText(elementalMultiplier)
       logs.push({
         turn: turnNumber,
         actor: 'enemy',
         action: 'attack',
         damage: dmg,
-        description: `${enemy.name} attacks you for ${dmg} damage!`,
+        description: `${enemy.name} attacks you for ${dmg} damage!${elemText ? ` ${elemText}` : ''}`,
       })
       break
     }
@@ -347,16 +365,17 @@ export function processPlayerAction(
       const effectiveEnemy = enemyDefending
         ? { ...enemy, defense: enemy.defense * 2 }
         : enemy
-      const damage = calculatePlayerDamage(playerState, effectiveEnemy)
+      const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, effectiveEnemy, character)
       enemy.hp = Math.max(0, enemy.hp - damage)
       playerState.comboCount = (playerState.comboCount ?? 0) + 1
       const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
+      const elemText = getEffectivenessText(elementalMultiplier)
       newLogs.push({
         turn: turnNumber,
         actor: 'player',
         action: 'attack',
         damage,
-        description: `You strike ${enemy.name} for ${damage} damage!${comboText}`,
+        description: `You strike ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
       })
       break
     }
@@ -462,60 +481,64 @@ export function processPlayerAction(
 
       switch (classId) {
         case 'warrior': {
-          const baseDmg = calculatePlayerDamage(playerState, enemy)
+          const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
           const damage = Math.max(1, Math.round(baseDmg * 0.8))
           enemy.hp = Math.max(0, enemy.hp - damage)
           playerState.enemyStunned = true
           playerState.comboCount = (playerState.comboCount ?? 0) + 1
+          const elemText = getEffectivenessText(elementalMultiplier)
           newLogs.push({
             turn: turnNumber,
             actor: 'player',
             action: 'class_ability',
             damage,
-            description: `You bash ${enemy.name} with your shield for ${damage} damage, stunning them!`,
+            description: `You bash ${enemy.name} with your shield for ${damage} damage, stunning them!${elemText ? ` ${elemText}` : ''}`,
           })
           break
         }
         case 'mage': {
-          const baseDmg = calculatePlayerDamage(playerState, enemy)
+          const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
           const damage = Math.max(1, Math.round(baseDmg * 2))
           const recoil = Math.max(1, Math.round(playerState.maxHp * 0.2))
           enemy.hp = Math.max(0, enemy.hp - damage)
           playerState.hp = Math.max(1, playerState.hp - recoil)
           playerState.comboCount = 0
+          const elemText = getEffectivenessText(elementalMultiplier)
           newLogs.push({
             turn: turnNumber,
             actor: 'player',
             action: 'class_ability',
             damage,
-            description: `You unleash an Arcane Blast for ${damage} damage! The magical recoil deals ${recoil} damage to you.`,
+            description: `You unleash an Arcane Blast for ${damage} damage! The magical recoil deals ${recoil} damage to you.${elemText ? ` ${elemText}` : ''}`,
           })
           break
         }
         case 'rogue': {
           const combo = playerState.comboCount ?? 0
           if (combo >= 2) {
-            const baseDmg = calculatePlayerDamage(playerState, enemy)
+            const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
             const damage = Math.max(1, Math.round(baseDmg * 3))
             enemy.hp = Math.max(0, enemy.hp - damage)
             playerState.comboCount = 0
+            const elemText = getEffectivenessText(elementalMultiplier)
             newLogs.push({
               turn: turnNumber,
               actor: 'player',
               action: 'class_ability',
               damage,
-              description: `You exploit your ${combo}x combo with a devastating Backstab for ${damage} damage!`,
+              description: `You exploit your ${combo}x combo with a devastating Backstab for ${damage} damage!${elemText ? ` ${elemText}` : ''}`,
             })
           } else {
-            const damage = calculatePlayerDamage(playerState, enemy)
+            const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
             enemy.hp = Math.max(0, enemy.hp - damage)
             playerState.comboCount = (playerState.comboCount ?? 0) + 1
+            const elemText = getEffectivenessText(elementalMultiplier)
             newLogs.push({
               turn: turnNumber,
               actor: 'player',
               action: 'class_ability',
               damage,
-              description: `Your Backstab lacks setup and deals ${damage} normal damage.`,
+              description: `Your Backstab lacks setup and deals ${damage} normal damage.${elemText ? ` ${elemText}` : ''}`,
             })
           }
           break
@@ -636,7 +659,7 @@ export function processPlayerAction(
       description: `${enemy.name} is paralyzed with fear and cannot act!`,
     })
   } else if (enemyTelegraph) {
-    const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber)
+    const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber, character)
     playerState = result.playerState
     const enemyDmgLog = result.logs.find(l => l.damage && l.damage > 0)
     let actualDamageDealt = 0
@@ -702,7 +725,7 @@ export function processPlayerAction(
       }
     }
   } else {
-    const enemyDmg = calculateEnemyDamage(enemy, playerState)
+    const { damage: enemyDmg, elementalMultiplier: enemyElemMult } = calculateEnemyDamage(enemy, playerState, false, character)
     const dmgReduction = getActiveDamageReduction(playerState)
     const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
     const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
@@ -722,10 +745,11 @@ export function processPlayerAction(
       }
     }
 
+    const enemyElemText = getEffectivenessText(enemyElemMult)
     playerState.hp = Math.max(0, playerState.hp - actualDmg)
     newLogs.push({
       turn: turnNumber, actor: 'enemy', action: 'attack', damage: actualDmg,
-      description: `${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}`,
+      description: `${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
     })
 
     // Apply thorns damage back to enemy

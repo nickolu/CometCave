@@ -77,6 +77,11 @@ const enemySchemaForOpenAI = {
           },
           required: ['type', 'value', 'duration', 'chance'],
         },
+        element: {
+          type: 'string',
+          enum: ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane', 'none'],
+          description: 'The elemental affinity of the enemy. Determines weaknesses/resistances in combat.',
+        },
       },
       required: [
         'id',
@@ -115,6 +120,7 @@ Stat guidelines for a level ${character.level} character:
 - Include 1-2 loot items (potions, scrolls, gems, etc.). For healing items, use the 'heal' effect (e.g., heal: 15 restores 15 HP). The 'strength' effect permanently increases the strength stat.
 - Optionally include a special ability with cooldown of 2-4 turns
 - Some enemies can inflict status effects (poison, burn, slow, curse, fear). Include a statusAbility field with type, value (damage per turn or effect strength), duration (2-4 turns), and chance (0-1 probability of inflicting)
+- Assign an element to the enemy (fire, ice, lightning, shadow, nature, arcane, or none). Choose an element that fits the enemy's theme. For example: wolves = nature, fire elementals = fire, undead = shadow, golems = none.
 
 Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
 ${character.reputation >= 50 ? 'High reputation: the enemy might offer to surrender or parley before fighting. Consider less aggressive enemies like misguided guards or territorial creatures rather than outright villains.' : ''}${character.reputation <= -20 ? 'Low reputation: enemies are more aggressive. Consider bounty hunters, rival adventurers seeking the bounty on this character, or vengeful NPCs.' : ''}
@@ -226,10 +232,10 @@ function getDefaultBossEncounter(
   const level = character.level
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
-  const bosses = [
-    { name: 'The Iron Warden', desc: 'A colossal animated suit of armor, its eyes burning with ancient fury.', special: 'Crushing Blow', specialDesc: 'Slams the ground, sending shockwaves.' },
-    { name: 'Vexara the Cursed', desc: 'A spectral sorceress wreathed in dark flame, whispering words of ruin.', special: 'Soul Drain', specialDesc: 'Drains life force from her victims.' },
-    { name: 'Grimfang the Devourer', desc: 'A massive beast with razor teeth and impenetrable scales.', special: 'Rending Fury', specialDesc: 'Unleashes a devastating multi-strike attack.' },
+  const bosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' }> = [
+    { name: 'The Iron Warden', desc: 'A colossal animated suit of armor, its eyes burning with ancient fury.', special: 'Crushing Blow', specialDesc: 'Slams the ground, sending shockwaves.', element: 'none' },
+    { name: 'Vexara the Cursed', desc: 'A spectral sorceress wreathed in dark flame, whispering words of ruin.', special: 'Soul Drain', specialDesc: 'Drains life force from her victims.', element: 'shadow' },
+    { name: 'Grimfang the Devourer', desc: 'A massive beast with razor teeth and impenetrable scales.', special: 'Rending Fury', specialDesc: 'Unleashes a devastating multi-strike attack.', element: 'nature' },
   ]
   const boss = bosses[level % bosses.length]
 
@@ -276,6 +282,7 @@ function getDefaultBossEncounter(
         damage: Math.round((5 + level * 2) * 1.8),
         cooldown: 2,
       },
+      element: boss.element,
     },
   }
 }
@@ -332,6 +339,7 @@ function getDefaultCombatEncounter(
           : level <= 5
             ? { type: 'poison' as const, value: 3 + level, duration: 3, chance: 0.4 }
             : { type: 'curse' as const, value: 0, duration: 3, chance: 0.3 },
+      element: level <= 2 ? 'none' as const : level <= 5 ? 'nature' as const : 'shadow' as const,
     },
   }
 }
