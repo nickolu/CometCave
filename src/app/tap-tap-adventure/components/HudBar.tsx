@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useMemo, useState } from 'react'
 
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { levelProgress, stepsToNextLevel, stepsRequiredForLevel, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
@@ -85,7 +86,7 @@ const STATS_LEFT: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon', 'leafIc
 const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
 
 export function HudBar() {
-  const { gameState } = useGameStore()
+  const { gameState, setMount } = useGameStore()
   const character = gameState?.characters?.find(
     (char: FantasyCharacter) => char.id === gameState?.selectedCharacterId
   )
@@ -175,6 +176,17 @@ export function HudBar() {
 
   const activeMount = character?.activeMount
 
+  const getMountTooltip = (mount: Mount): string => {
+    const bonusParts: string[] = []
+    if (mount.bonuses.strength) bonusParts.push(`+${mount.bonuses.strength} STR`)
+    if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
+    if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
+    if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
+    if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal`)
+    const bonusStr = bonusParts.length > 0 ? bonusParts.join(', ') : 'no bonuses'
+    return `${mount.name} — ${bonusStr} (${mount.dailyCost} gp/day)`
+  }
+
   const mountRarityColor: Record<string, string> = {
     common: 'border-slate-400',
     uncommon: 'border-green-400',
@@ -189,13 +201,20 @@ export function HudBar() {
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
         {activeMount && (
-          <div className="relative">
+          <div className="relative flex items-center gap-1">
             <button
               className={`flex items-center gap-1 text-xs sm:text-sm font-semibold border rounded px-1.5 py-0.5 ${mountRarityColor[activeMount.rarity] ?? 'border-slate-400'} bg-[#2a2b3f]`}
-              title={`${activeMount.name} -- ${activeMount.description}`}
+              title={getMountTooltip(activeMount)}
             >
               <span>{activeMount.icon}</span>
               <span className="hidden sm:inline text-[10px]">{activeMount.name}</span>
+            </button>
+            <button
+              className="text-[10px] text-red-400 hover:text-red-300 border border-red-400/30 rounded px-1 py-0.5 bg-[#2a2b3f] hover:bg-[#3a3c56]"
+              title="Release mount"
+              onClick={() => setMount(null)}
+            >
+              Release
             </button>
           </div>
         )}
