@@ -373,7 +373,7 @@ export function generateManaAndSlots(style: string): {
  */
 function describeEffects(effects: SpellEffect[]): string {
   return effects.map(e => {
-    const parts = [e.type]
+    const parts: string[] = [e.type]
     if (e.value) parts.push(`value: ${e.value}`)
     if (e.element) parts.push(`element: ${e.element}`)
     if (e.stat) parts.push(`stat: ${e.stat}`)
