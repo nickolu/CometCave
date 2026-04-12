@@ -74,6 +74,12 @@ export type {
   ActiveSpellEffectSchema,
 } from './combat'
 
+type DailyRewardState = {
+  lastClaimedDate: string | null // ISO date string (YYYY-MM-DD)
+  streak: number // consecutive days claimed
+  totalDaysClaimed: number
+}
+
 type GameState = {
   player: {
     id: string
@@ -90,6 +96,7 @@ type GameState = {
   genericMessage: string | null
   achievements: PlayerAchievement[]
   legacyHeirlooms: Item[]
+  dailyReward: DailyRewardState | null
 }
-export type { GameState }
+export type { GameState, DailyRewardState }
 export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
