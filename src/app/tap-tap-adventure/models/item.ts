@@ -24,6 +24,7 @@ export const ItemSchema = z.object({
   effects: ItemEffectsSchema.optional(),
   price: z.number().optional(),
   spell: SpellSchema.optional(),
+  isHeirloom: z.boolean().optional(),
 })
 
 export type Item = z.infer<typeof ItemSchema>

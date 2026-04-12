@@ -9,7 +9,7 @@ import {
 } from '@/app/tap-tap-adventure/config/characterOptions'
 import { useCharacterCreation } from '@/app/tap-tap-adventure/hooks/useCharacterCreation'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
-import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
 
 function StatBadge({ label, value }: { label: string; value: number }) {
   const sign = value > 0 ? '+' : ''
@@ -96,8 +96,49 @@ function GeneratedClassCard({
   )
 }
 
-function StepIndicator({ currentStep }: { currentStep: number }) {
-  const steps = ['Name', 'Race', 'Class']
+function HeirloomCard({
+  item,
+  selected,
+  onSelect,
+}: {
+  item: Item
+  selected: boolean
+  onSelect: (item: Item) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(item)}
+      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+        selected
+          ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
+          : 'border-amber-700/40 bg-[#2a2b3f] hover:border-amber-600/60'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-amber-400 text-sm">&#9733;</span>
+        <span className="text-slate-200 font-semibold text-sm">{item.name}</span>
+        {item.type && (
+          <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/50 text-amber-300 rounded">
+            {item.type === 'spell_scroll' ? 'Spell Scroll' : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+          </span>
+        )}
+      </div>
+      <div className="text-xs text-slate-400 mt-1">{item.description}</div>
+      {item.effects && (
+        <div className="text-xs text-emerald-400 mt-1">
+          {Object.entries(item.effects)
+            .filter(([, v]) => v !== undefined && v !== 0)
+            .map(([k, v]) => `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`)
+            .join(', ')}
+        </div>
+      )}
+    </button>
+  )
+}
+
+function StepIndicator({ currentStep, hasHeirlooms }: { currentStep: number; hasHeirlooms: boolean }) {
+  const steps = hasHeirlooms ? ['Name', 'Race', 'Class', 'Heirloom'] : ['Name', 'Race', 'Class']
   return (
     <div className="flex items-center justify-center gap-2 mb-6">
       {steps.map((label, i) => {
@@ -151,6 +192,10 @@ export default function CharacterCreation({
     selectGeneratedClass,
     fetchGeneratedClasses,
     completeCreation,
+    legacyHeirlooms,
+    hasHeirlooms,
+    selectedHeirloom,
+    setSelectedHeirloom,
   } = useCharacterCreation()
 
   const [step, setStep] = useState(1)
@@ -176,7 +221,7 @@ export default function CharacterCreation({
 
   return (
     <form className="space-y-6 p-1" onSubmit={handleSubmit}>
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} hasHeirlooms={hasHeirlooms} />
 
       {/* Step 1: Name */}
       {step === 1 && (
@@ -302,12 +347,61 @@ export default function CharacterCreation({
             >
               Back
             </button>
+            {hasHeirlooms ? (
+              <button
+                type="button"
+                disabled={!isValid}
+                onClick={() => setStep(4)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
+              >
+                Next: Choose Heirloom
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!isValid}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
+              >
+                Create Character
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Heirloom Selection */}
+      {step === 4 && hasHeirlooms && (
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-3">Choose an Heirloom (Optional)</label>
+          <p className="text-xs text-slate-400 mb-4">
+            Previous characters left behind these items. Pick one to start your journey with, or skip to begin without one.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {legacyHeirlooms.map((item: Item) => (
+              <HeirloomCard
+                key={item.id}
+                item={item}
+                selected={selectedHeirloom?.id === item.id}
+                onSelect={(heirloom) => {
+                  setSelectedHeirloom(selectedHeirloom?.id === heirloom.id ? null : heirloom)
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setStep(3)}
+              className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
+            >
+              Back
+            </button>
             <button
               type="submit"
               disabled={!isValid}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
             >
-              Create Character
+              {selectedHeirloom ? 'Create with Heirloom' : 'Create without Heirloom'}
             </button>
           </div>
         </div>

@@ -82,9 +82,12 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             items={itemsToDisplay}
             className="space-y-0 w-full"
             renderItem={(item: Item) => (
-              <div className="bg-[#1e1f30] border border-[#3a3c56] p-4 rounded-lg space-y-2 mb-3 w-full">
+              <div className={`bg-[#1e1f30] border ${item.isHeirloom ? 'border-amber-500/60 ring-1 ring-amber-500/30' : 'border-[#3a3c56]'} p-4 rounded-lg space-y-2 mb-3 w-full`}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
+                    {item.isHeirloom && (
+                      <span className="text-amber-400 text-sm" title="Heirloom">&#9733;</span>
+                    )}
                     <div className="font-bold text-white">{item.name}</div>
                     {item.type === 'consumable' && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-green-900/50 text-green-400 rounded">

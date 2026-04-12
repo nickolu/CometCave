@@ -17,4 +17,5 @@ export const defaultGameState: GameState = {
   activeQuest: null,
   genericMessage: null,
   achievements: [],
+  legacyHeirlooms: [],
 }

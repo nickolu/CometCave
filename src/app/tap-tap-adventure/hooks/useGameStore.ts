@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
+import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { computeUnlockedSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
@@ -76,6 +77,9 @@ export interface GameStore {
   learnSpell: (itemId: string) => { message: string; learned: boolean } | null
   updateAchievements: (achievements: PlayerAchievement[]) => void
   setMount: (mount: Mount | null) => void
+  addHeirloom: (item: Item) => void
+  claimHeirloom: (itemId: string) => Item | null
+  retireCharacter: (characterId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -526,10 +530,53 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      addHeirloom: (item: Item) => {
+        set(
+          produce((state: GameStore) => {
+            if (!state.gameState.legacyHeirlooms) {
+              state.gameState.legacyHeirlooms = []
+            }
+            state.gameState.legacyHeirlooms.push(item)
+          })
+        )
+      },
+      claimHeirloom: (itemId: string) => {
+        const heirloom = get().gameState.legacyHeirlooms?.find(i => i.id === itemId) ?? null
+        if (!heirloom) return null
+        set(
+          produce((state: GameStore) => {
+            state.gameState.legacyHeirlooms = (state.gameState.legacyHeirlooms ?? []).filter(
+              i => i.id !== itemId
+            )
+          })
+        )
+        return heirloom
+      },
+      retireCharacter: (characterId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const character = state.gameState.characters.find(c => c.id === characterId)
+            if (!character || character.status !== 'active') return
+            if ((character.distance ?? 0) < 100) return
+
+            character.status = 'retired'
+            const heirloom = generateHeirloom(character)
+            if (!state.gameState.legacyHeirlooms) {
+              state.gameState.legacyHeirlooms = []
+            }
+            state.gameState.legacyHeirlooms.push(heirloom)
+
+            // Deselect if this was the active character
+            if (state.gameState.selectedCharacterId === characterId) {
+              state.gameState.selectedCharacterId = null
+            }
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 9,
+      version: 10,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -586,6 +633,10 @@ export const useGameStore = create<GameStore>()(
         // v9: Add achievements
         if (state?.gameState && !('achievements' in state.gameState)) {
           (state.gameState as GameState).achievements = []
+        }
+        // v10: Add legacyHeirlooms
+        if (state?.gameState && !('legacyHeirlooms' in state.gameState)) {
+          (state.gameState as GameState).legacyHeirlooms = []
         }
         return state
       },

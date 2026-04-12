@@ -89,6 +89,7 @@ type GameState = {
   activeQuest: TimedQuest | null
   genericMessage: string | null
   achievements: PlayerAchievement[]
+  legacyHeirlooms: Item[]
 }
 export type { GameState }
 export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
