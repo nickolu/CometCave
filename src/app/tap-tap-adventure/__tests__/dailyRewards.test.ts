@@ -52,6 +52,7 @@ function makeState(dailyReward: GameState['dailyReward'] = null): GameState {
     genericMessage: null,
     achievements: [],
     legacyHeirlooms: [],
+    metaProgression: null,
     dailyReward,
   }
 }

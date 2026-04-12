@@ -5,6 +5,7 @@ import { FantasyCharacter } from './character'
 import { CombatState } from './combat'
 import { Item } from './item'
 import { FantasyLocation } from './location'
+import { MetaProgressionState } from './metaProgression'
 import { TimedQuest } from './quest'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
 
@@ -97,6 +98,15 @@ type GameState = {
   achievements: PlayerAchievement[]
   legacyHeirlooms: Item[]
   dailyReward: DailyRewardState | null
+  metaProgression: MetaProgressionState | null
 }
 export type { GameState, DailyRewardState }
 export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
+export type {
+  EternalUpgrade,
+  EternalUpgradeSchema,
+  EternalUpgradeEffects,
+  EternalUpgradeEffectsSchema,
+  MetaProgressionState,
+  MetaProgressionStateSchema,
+} from './metaProgression'

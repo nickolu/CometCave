@@ -8,6 +8,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 import AddCharacterCard from './AddCharacterCard'
 import CharacterCard from './CharacterCard'
 import CharacterCreation from './CharacterCreation'
+import MetaProgression from './MetaProgression'
 
 const EMPTY_ARRAY: FantasyCharacter[] = []
 const selectCharacters = (s: GameStore) => s.gameState?.characters ?? EMPTY_ARRAY
@@ -16,6 +17,7 @@ const selectSelectCharacter = (s: GameStore) => s.selectCharacter
 const selectDeleteCharacter = (s: GameStore) => s.deleteCharacter
 const selectRetireCharacter = (s: GameStore) => s.retireCharacter
 const selectLegacyHeirlooms = (s: GameStore) => s.gameState?.legacyHeirlooms ?? EMPTY_ARRAY
+const selectMetaProgression = (s: GameStore) => s.gameState?.metaProgression
 
 export default function CharacterList() {
   const characters = useGameStore(selectCharacters)
@@ -24,7 +26,9 @@ export default function CharacterList() {
   const deleteCharacter = useGameStore(selectDeleteCharacter)
   const retireCharacter = useGameStore(selectRetireCharacter)
   const legacyHeirlooms = useGameStore(selectLegacyHeirlooms)
+  const metaProgression = useGameStore(selectMetaProgression)
   const [showCreation, setShowCreation] = useState(false)
+  const [showMetaProgression, setShowMetaProgression] = useState(false)
 
   const handleSelect = (character: FantasyCharacter) => {
     selectCharacter(character.id)
@@ -54,11 +58,24 @@ export default function CharacterList() {
     <div className="w-full mx-auto p-6 p-4 bg-[#161723] border border-[#3a3c56] rounded-lg mt-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-slate-200">Your Characters</h2>
-        {legacyHeirlooms.length > 0 && (
-          <span className="text-sm text-amber-400 bg-amber-900/30 border border-amber-600/40 px-3 py-1 rounded-full">
-            Legacy Items: {legacyHeirlooms.length}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowMetaProgression(true)}
+            className="text-sm text-purple-300 bg-purple-900/30 border border-purple-600/40 px-3 py-1 rounded-full hover:bg-purple-900/50 transition-colors cursor-pointer"
+          >
+            <span className="text-amber-400">&#10022;</span>{' '}
+            Eternal Upgrades
+            {(metaProgression?.soulEssence ?? 0) > 0 && (
+              <span className="ml-1 text-amber-400">({metaProgression?.soulEssence})</span>
+            )}
+          </button>
+          {legacyHeirlooms.length > 0 && (
+            <span className="text-sm text-amber-400 bg-amber-900/30 border border-amber-600/40 px-3 py-1 rounded-full">
+              Legacy Items: {legacyHeirlooms.length}
+            </span>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {characters.map((char: FantasyCharacter) => (
@@ -73,6 +90,9 @@ export default function CharacterList() {
         ))}
         {characters.length < 5 && <AddCharacterCard onClick={handleNewCharacter} />}
       </div>
+      {showMetaProgression && (
+        <MetaProgression onClose={() => setShowMetaProgression(false)} />
+      )}
       {showCreation && (
         <div className="mt-6 bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">

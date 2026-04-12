@@ -46,6 +46,9 @@ const baseGameState: GameState = {
   activeQuest: null,
   genericMessage: null,
   achievements: [],
+  legacyHeirlooms: [],
+  dailyReward: null,
+  metaProgression: null,
 }
 
 describe('Achievement Definitions', () => {

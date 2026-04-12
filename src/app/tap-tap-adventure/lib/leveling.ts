@@ -4,6 +4,7 @@ import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Skill } from '@/app/tap-tap-adventure/models/skill'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
+import type { MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
 
 /** Resolve unlocked Skill objects from the character's stored skill IDs. */
 function resolveSkills(character: FantasyCharacter): Skill[] {
@@ -121,9 +122,13 @@ export const STAT_POINTS_PER_LEVEL = 3
  */
 export function applyLevelFromDistance(
   character: FantasyCharacter,
-  stepsGained: number = 1
+  stepsGained: number = 1,
+  metaBonuses?: MetaBonuses
 ): FantasyCharacter {
-  const newLevel = calculateLevel(character.distance)
+  // Apply XP multiplier from meta bonuses: effectively increase distance for level calculation
+  const xpMultiplier = metaBonuses?.xpMultiplier ?? 1
+  const effectiveDistance = Math.floor(character.distance * xpMultiplier)
+  const newLevel = calculateLevel(effectiveDistance)
   let updated = { ...character }
 
   const leveledUp = newLevel > character.level
@@ -163,8 +168,9 @@ export function applyLevelFromDistance(
   const healSkillBonus = getSkillBonus(skills, 'heal_rate')
   const diffMods = getDifficultyModifiers(updated.difficultyMode)
   const healTicks = Math.floor(updated.distance / HEAL_RATE) - Math.floor(oldDistance / HEAL_RATE)
+  const metaHealMultiplier = metaBonuses?.healRateMultiplier ?? 1
   const baseHeal = Math.max(0, healTicks) * (1 + healSkillBonus.flat) + (healTicks > 0 ? mountHealBonus : 0)
-  const healed = Math.min(maxHp, currentHp + Math.round(baseHeal * diffMods.healRateMultiplier))
+  const healed = Math.min(maxHp, currentHp + Math.round(baseHeal * diffMods.healRateMultiplier * metaHealMultiplier))
 
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1
