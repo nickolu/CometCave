@@ -18,4 +18,5 @@ export const defaultGameState: GameState = {
   genericMessage: null,
   achievements: [],
   legacyHeirlooms: [],
+  dailyReward: null,
 }

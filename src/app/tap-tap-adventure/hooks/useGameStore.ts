@@ -24,6 +24,7 @@ import {
   Item,
   ShopState,
 } from '@/app/tap-tap-adventure/models/types'
+import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -80,6 +81,7 @@ export interface GameStore {
   addHeirloom: (item: Item) => void
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
+  claimDailyReward: () => import('@/app/tap-tap-adventure/lib/dailyRewardTracker').ClaimResult | null
 }
 
 export const useGameStore = create<GameStore>()(
@@ -552,6 +554,17 @@ export const useGameStore = create<GameStore>()(
         )
         return heirloom
       },
+      claimDailyReward: () => {
+        const state = get().gameState
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return null
+
+        const result = processDailyRewardClaim(state, selectedCharacter)
+        if (!result) return null
+
+        set({ gameState: result.updatedState })
+        return result
+      },
       retireCharacter: (characterId: string) => {
         set(
           produce((state: GameStore) => {
@@ -576,7 +589,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 10,
+      version: 11,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -637,6 +650,10 @@ export const useGameStore = create<GameStore>()(
         // v10: Add legacyHeirlooms
         if (state?.gameState && !('legacyHeirlooms' in state.gameState)) {
           (state.gameState as GameState).legacyHeirlooms = []
+        }
+        // v11: Add dailyReward
+        if (state?.gameState && !('dailyReward' in state.gameState)) {
+          (state.gameState as GameState).dailyReward = null
         }
         return state
       },
