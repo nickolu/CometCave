@@ -164,6 +164,7 @@ export function useCharacterCreation() {
       deathCount: 0,
       pendingStatPoints: 0,
       classData,
+      difficultyMode: selectedDifficulty.id,
     }
     const maxMana = calculateMaxMana(tempChar)
 

@@ -53,6 +53,7 @@ const defaultCharacter: FantasyCharacter = {
   spellbook: [],
   classData: undefined,
   activeMount: null,
+  difficultyMode: 'normal',
 }
 
 export interface GameStore {
