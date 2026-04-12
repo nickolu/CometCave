@@ -8,6 +8,7 @@ import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
+import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
 import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
@@ -161,9 +162,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
       {/* Enemy info */}
       <div className="bg-[#1e1f30] border border-red-900/30 rounded-lg p-3 space-y-2">
         <div className="flex justify-between items-center">
-          <div>
+          <div className="flex items-center gap-2">
             <span className="font-bold text-red-400">{enemy.name}</span>
-            <span className="text-xs text-slate-400 ml-2">Lv.{enemy.level}</span>
+            <span className="text-xs text-slate-400">Lv.{enemy.level}</span>
+            {enemy.element && enemy.element !== 'none' && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${ELEMENT_COLORS[enemy.element]}`}>
+                {enemy.element}
+              </span>
+            )}
           </div>
           {enemy.specialAbility && (
             <span className="text-[10px] px-1.5 py-0.5 bg-purple-900/50 text-purple-400 rounded">

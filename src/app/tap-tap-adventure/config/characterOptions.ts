@@ -1,4 +1,5 @@
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
 
 import { DEFAULT_STAT_MIN } from './gameDefaults'
 
@@ -144,6 +145,56 @@ export function getSpellConfigForCharacter(
     favoredSchool: 'arcane',
     schoolBonus: 0.2,
   }
+}
+
+/**
+ * Primary element for each built-in class's basic attacks.
+ */
+export const CLASS_ELEMENTS: Record<string, SpellElement> = {
+  warrior: 'none',
+  mage: 'arcane',
+  rogue: 'shadow',
+  ranger: 'nature',
+}
+
+const MODIFIER_ELEMENT_MAP: Record<string, SpellElement> = {
+  fire: 'fire',
+  flame: 'fire',
+  inferno: 'fire',
+  ice: 'ice',
+  frost: 'ice',
+  frozen: 'ice',
+  lightning: 'lightning',
+  thunder: 'lightning',
+  storm: 'lightning',
+  shadow: 'shadow',
+  dark: 'shadow',
+  void: 'shadow',
+  nature: 'nature',
+  earth: 'nature',
+  life: 'nature',
+  arcane: 'arcane',
+  magic: 'arcane',
+  mystic: 'arcane',
+}
+
+/**
+ * Get the primary attack element for a character based on their class.
+ * For generated classes, infer from the classData modifier.
+ */
+export function getClassElement(
+  className: string,
+  classData?: GeneratedClass
+): SpellElement {
+  if (classData?.modifier) {
+    const modLower = classData.modifier.toLowerCase()
+    for (const [keyword, element] of Object.entries(MODIFIER_ELEMENT_MAP)) {
+      if (modLower.includes(keyword)) {
+        return element
+      }
+    }
+  }
+  return CLASS_ELEMENTS[className.toLowerCase()] ?? 'none'
 }
 
 export interface StartingStats {

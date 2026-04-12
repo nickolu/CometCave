@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ItemSchema } from './item'
+import { SpellElementSchema } from './spell'
 
 export const StatusEffectTypeSchema = z.enum([
   'poison',
@@ -53,6 +54,7 @@ export const CombatEnemySchema = z.object({
     .optional(),
   statusEffects: z.array(StatusEffectSchema).optional(),
   statusAbility: StatusAbilitySchema.optional(),
+  element: SpellElementSchema.optional(),
 })
 export type CombatEnemy = z.infer<typeof CombatEnemySchema>
 

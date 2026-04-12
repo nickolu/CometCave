@@ -1,4 +1,5 @@
 import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
+import { getElementalMultiplier, getEffectivenessText } from '@/app/tap-tap-adventure/config/elements'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import {
   ActiveSpellEffect,
@@ -163,15 +164,17 @@ export function castSpell(
 
     switch (effect.type) {
       case 'damage': {
-        const baseDmg = effect.value * damageMultiplier
+        const elemMultiplier = getElementalMultiplier(effect.element, updatedEnemy.element)
+        const baseDmg = effect.value * damageMultiplier * elemMultiplier
         const dmg = Math.max(1, Math.round(baseDmg - (trueDamageBonus ? 0 : updatedEnemy.defense * 0.3)))
         updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - dmg) }
+        const elemText = getEffectivenessText(elemMultiplier)
         logs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'cast_spell',
           damage: dmg,
-          description: `${spell.name} hits ${updatedEnemy.name} for ${dmg} ${effect.element ?? ''} damage!${conditionText}`,
+          description: `${spell.name} hits ${updatedEnemy.name} for ${dmg} ${effect.element ?? ''} damage!${conditionText}${elemText ? ` ${elemText}` : ''}`,
         })
         break
       }
@@ -322,7 +325,8 @@ export function castSpell(
         break
       }
       case 'lifesteal': {
-        const lstDmg = Math.max(1, Math.round(effect.value * damageMultiplier - updatedEnemy.defense * 0.3))
+        const lstElemMultiplier = getElementalMultiplier(effect.element, updatedEnemy.element)
+        const lstDmg = Math.max(1, Math.round(effect.value * damageMultiplier * lstElemMultiplier - updatedEnemy.defense * 0.3))
         const healPct = (effect.percentage ?? 50) / 100
         const lstHeal = Math.max(1, Math.round(lstDmg * healPct))
         updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - lstDmg) }
@@ -330,12 +334,13 @@ export function castSpell(
           ...playerState,
           hp: Math.min(playerState.maxHp, playerState.hp + lstHeal),
         }
+        const lstElemText = getEffectivenessText(lstElemMultiplier)
         logs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'cast_spell',
           damage: lstDmg,
-          description: `${spell.name} drains ${lstDmg} from ${updatedEnemy.name}, healing you for ${lstHeal}!`,
+          description: `${spell.name} drains ${lstDmg} from ${updatedEnemy.name}, healing you for ${lstHeal}!${lstElemText ? ` ${lstElemText}` : ''}`,
         })
         break
       }
