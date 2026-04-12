@@ -30,6 +30,7 @@ export function useMoveForwardMutation() {
     setGenericMessage,
     setShopState,
     setActiveQuest,
+    updateSelectedCharacter,
   } = useGameStateBuilder()
 
   return useMutation({
@@ -52,6 +53,11 @@ export function useMoveForwardMutation() {
       }
 
       const data: MoveForwardResponse = await res.json()
+
+      // Update character with server response (includes incremented distance)
+      if (data.character) {
+        updateSelectedCharacter(data.character)
+      }
 
       const rewardItems: Item[] = data.event?.resourceDelta?.rewardItems ?? []
       for (const reward of rewardItems) {
