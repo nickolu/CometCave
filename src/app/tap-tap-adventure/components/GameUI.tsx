@@ -8,11 +8,13 @@ import { useMoveForwardMutation } from '@/app/tap-tap-adventure/hooks/useMoveFor
 import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useResolveDecisionMutation'
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
+import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { flipCoin } from '@/app/utils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 
+import { DailyRewardPopup } from './DailyRewardPopup'
 import { AchievementPanel } from './AchievementPanel'
 import { AchievementToastContainer } from './AchievementToast'
 import { CombatUI, CombatResult } from './CombatUI'
@@ -45,9 +47,19 @@ export default function GameUI() {
     setCombatState,
     allocateStatPoints,
     updateAchievements,
+    claimDailyReward,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
+  const [showDailyReward, setShowDailyReward] = useState(false)
+
+  // Check for daily reward on mount
+  useEffect(() => {
+    if (gameState && canClaimDailyReward(gameState)) {
+      setShowDailyReward(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { mutate: moveForwardMutation, isPending: moveForwardPending } = useMoveForwardMutation()
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
@@ -160,6 +172,14 @@ export default function GameUI() {
   return (
     <>
       <AchievementToastContainer achievementIds={newlyCompletedIds} />
+      {showDailyReward && character && (
+        <DailyRewardPopup
+          streak={gameState.dailyReward?.streak ?? 0}
+          reward={getDailyReward(gameState.dailyReward?.streak ?? 0)}
+          onClaim={() => claimDailyReward()}
+          onDismiss={() => setShowDailyReward(false)}
+        />
+      )}
       {character && (character.pendingStatPoints ?? 0) > 0 && (
         <StatAllocationScreen
           character={character}
