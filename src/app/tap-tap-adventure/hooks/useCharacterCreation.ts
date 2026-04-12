@@ -17,12 +17,13 @@ import {
 import { getStartingSpell } from '@/app/tap-tap-adventure/config/startingSpells'
 import { calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { Item } from '@/app/tap-tap-adventure/models/item'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 
 export function useCharacterCreation() {
-  const { addCharacter } = useGameStore()
+  const { addCharacter, claimHeirloom, gameState } = useGameStore()
   const [character, setCharacter] = useState<Partial<FantasyCharacter>>({})
   const [selectedRace, setSelectedRace] = useState<RaceOption | null>(null)
   const [selectedClass, setSelectedClass] = useState<ClassOption | null>(null)
@@ -30,6 +31,10 @@ export function useCharacterCreation() {
   const [generatedClasses, setGeneratedClasses] = useState<GeneratedClass[]>([])
   const [isLoadingClasses, setIsLoadingClasses] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [selectedHeirloom, setSelectedHeirloom] = useState<Item | null>(null)
+
+  const legacyHeirlooms = gameState?.legacyHeirlooms ?? []
+  const hasHeirlooms = legacyHeirlooms.length > 0
 
   const stats = useMemo(() => {
     if (selectedRace && selectedGeneratedClass) {
@@ -166,6 +171,16 @@ export function useCharacterCreation() {
     }
     const maxMana = calculateMaxMana(tempChar)
 
+    const startingInventory: Item[] = []
+
+    // Claim selected heirloom if any
+    if (selectedHeirloom) {
+      const claimed = claimHeirloom(selectedHeirloom.id)
+      if (claimed) {
+        startingInventory.push(claimed)
+      }
+    }
+
     const updatedCharacter = {
       ...character,
       id: charId,
@@ -180,6 +195,7 @@ export function useCharacterCreation() {
       maxMana: maxMana,
       spellbook,
       classData,
+      inventory: startingInventory,
     }
 
     addCharacter(updatedCharacter)
@@ -202,5 +218,9 @@ export function useCharacterCreation() {
     fetchGeneratedClasses,
     isComplete,
     completeCreation,
+    legacyHeirlooms,
+    hasHeirlooms,
+    selectedHeirloom,
+    setSelectedHeirloom,
   }
 }

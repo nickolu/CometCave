@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
+import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
@@ -24,7 +25,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation() {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter, setMount } = useGameStore()
+  const { getSelectedCharacter, setMount, addHeirloom } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -148,6 +149,10 @@ export function useCombatActionMutation() {
               reputation: penalty ? -penalty.reputationLost : undefined,
             },
           })
+
+          // Generate an heirloom from the defeated character
+          const heirloom = generateHeirloom(character)
+          addHeirloom(heirloom)
         } else if (data.combatState.status === 'fled') {
           addStoryEvent({
             id: `combat-fled-${Date.now()}`,

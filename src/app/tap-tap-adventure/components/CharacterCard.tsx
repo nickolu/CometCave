@@ -9,6 +9,7 @@ interface CharacterCardProps {
   selected?: boolean
   onSelect?: (character: FantasyCharacter) => void
   onDelete?: (e: React.MouseEvent, id: string) => void
+  onRetire?: (e: React.MouseEvent, id: string) => void
 }
 
 export default function CharacterCard({
@@ -16,7 +17,9 @@ export default function CharacterCard({
   selected,
   onSelect,
   onDelete,
+  onRetire,
 }: CharacterCardProps) {
+  const canRetire = character.status === 'active' && (character.distance ?? 0) >= 100
   return (
     <motion.div
       whileHover={{ scale: 1.04 }}
@@ -43,6 +46,25 @@ export default function CharacterCard({
           <span className="text-red-400">Deaths: {character.deathCount}</span>
         )}
       </div>
+      {character.status === 'retired' && (
+        <span className="text-xs text-amber-400 mt-1">Retired</span>
+      )}
+      {character.status === 'dead' && (
+        <span className="text-xs text-red-400 mt-1">Dead</span>
+      )}
+      {onRetire && canRetire && (
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation()
+            onRetire(e, character.id)
+          }}
+          className="mt-2 text-xs px-3 py-1 bg-amber-700/50 hover:bg-amber-600/60 text-amber-200 rounded transition-colors focus:outline-none border border-amber-600/40"
+          aria-label={`Retire ${character.name}`}
+        >
+          Retire
+        </button>
+      )}
       {onDelete && (
         <button
           type="button"
