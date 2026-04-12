@@ -6,6 +6,7 @@ import {
   ClassOption,
   RaceOption,
 } from '@/app/tap-tap-adventure/config/characterOptions'
+import { DIFFICULTY_MODES, DifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import {
   DEFAULT_ABILITY_COOLDOWN,
   DEFAULT_ABILITY_DESCRIPTION,
@@ -32,13 +33,13 @@ export function useCharacterCreation() {
   const [isLoadingClasses, setIsLoadingClasses] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [selectedHeirloom, setSelectedHeirloom] = useState<Item | null>(null)
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyMode>(DIFFICULTY_MODES[0])
 
   const legacyHeirlooms = gameState?.legacyHeirlooms ?? []
   const hasHeirlooms = legacyHeirlooms.length > 0
 
   const stats = useMemo(() => {
     if (selectedRace && selectedGeneratedClass) {
-      // Use generated class stat distribution + race modifiers
       return {
         strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
         intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
@@ -82,7 +83,6 @@ export function useCharacterCreation() {
 
   const selectGeneratedClass = useCallback((gc: GeneratedClass) => {
     setSelectedGeneratedClass(gc)
-    // Also set a ClassOption-compatible object so isValid passes
     setSelectedClass({
       id: gc.id,
       name: gc.name,
@@ -115,7 +115,6 @@ export function useCharacterCreation() {
     let classData: GeneratedClass | undefined
 
     if (selectedGeneratedClass) {
-      // Use generated class
       finalStats = {
         strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
         intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
@@ -124,7 +123,6 @@ export function useCharacterCreation() {
       className = selectedGeneratedClass.name
       classData = selectedGeneratedClass
 
-      // Convert starting ability to Spell format
       const startingSpell: Spell = {
         id: `starting-spell-${selectedGeneratedClass.id}`,
         name: selectedGeneratedClass.startingAbility.name,
@@ -138,7 +136,6 @@ export function useCharacterCreation() {
       }
       spellbook = [startingSpell]
     } else if (selectedClass) {
-      // Use static class (fallback path)
       finalStats = calculateStartingStats(selectedRace, selectedClass)
       className = selectedClass.name
       const startingSpell = getStartingSpell(selectedClass.id)
@@ -147,7 +144,6 @@ export function useCharacterCreation() {
       return
     }
 
-    // Build a temp character to calculate maxMana
     const tempChar = {
       id: charId,
       playerId: '',
@@ -173,7 +169,6 @@ export function useCharacterCreation() {
 
     const startingInventory: Item[] = []
 
-    // Claim selected heirloom if any
     if (selectedHeirloom) {
       const claimed = claimHeirloom(selectedHeirloom.id)
       if (claimed) {
@@ -196,6 +191,7 @@ export function useCharacterCreation() {
       spellbook,
       classData,
       inventory: startingInventory,
+      difficultyMode: selectedDifficulty.id,
     }
 
     addCharacter(updatedCharacter)
@@ -222,5 +218,7 @@ export function useCharacterCreation() {
     hasHeirlooms,
     selectedHeirloom,
     setSelectedHeirloom,
+    selectedDifficulty,
+    setSelectedDifficulty,
   }
 }

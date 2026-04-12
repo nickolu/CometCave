@@ -16,6 +16,8 @@ import { Item } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 
+import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
+
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
 import { calculateMaxMana } from './leveling'
 import {
@@ -863,13 +865,14 @@ export function getCombatRewards(
   const skills = resolveSkills(character)
   const goldBonus = getSkillBonus(skills, 'gold_bonus')
   const lootBonus = getSkillBonus(skills, 'loot_chance')
-  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100))
+  const diffMods = getDifficultyModifiers(character.difficultyMode)
+  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier)
 
   const loot: Item[] = []
   if (enemy.lootTable) {
     for (const item of enemy.lootTable) {
       const baseDropChance = combatState.isBoss ? 1.0 : 0.3 + character.luck * 0.03
-      const dropChance = Math.min(1, baseDropChance + lootBonus.percentage / 100)
+      const dropChance = Math.min(1, (baseDropChance + lootBonus.percentage / 100) * diffMods.lootChanceMultiplier)
       if (Math.random() < dropChance) {
         loot.push(item)
       }

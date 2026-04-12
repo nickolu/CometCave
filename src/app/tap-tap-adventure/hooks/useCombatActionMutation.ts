@@ -1,6 +1,7 @@
 'use client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
@@ -25,7 +26,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation() {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter, setMount, addHeirloom } = useGameStore()
+  const { getSelectedCharacter, setMount, addHeirloom, deleteCharacter } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -124,35 +125,56 @@ export function useCombatActionMutation() {
             },
           })
         } else if (data.combatState.status === 'defeat') {
-          const penalty = data.deathPenalty
-          const penaltyParts: string[] = []
-          if (penalty) {
-            if (penalty.goldLost > 0) penaltyParts.push(`${penalty.goldLost} gold`)
-            if (penalty.itemsLost > 0)
-              penaltyParts.push(
-                `${penalty.itemsLost} item${penalty.itemsLost !== 1 ? 's' : ''} from your inventory`
-              )
-            penaltyParts.push('some of your reputation')
+          const diffMods = getDifficultyModifiers(character.difficultyMode)
+
+          if (diffMods.permadeath) {
+            // Permadeath: delete character permanently
+            addStoryEvent({
+              id: `combat-permadeath-${Date.now()}`,
+              type: 'combat_defeat',
+              characterId: character.id,
+              locationId: character.locationId,
+              timestamp: new Date().toISOString(),
+              outcomeDescription: `${character.name} was slain by ${enemy.name}. Permadeath: this character is gone forever.`,
+              resourceDelta: {},
+            })
+
+            // Generate an heirloom before deleting
+            const heirloom = generateHeirloom(character)
+            addHeirloom(heirloom)
+
+            deleteCharacter(character.id)
+          } else {
+            const penalty = data.deathPenalty
+            const penaltyParts: string[] = []
+            if (penalty) {
+              if (penalty.goldLost > 0) penaltyParts.push(`${penalty.goldLost} gold`)
+              if (penalty.itemsLost > 0)
+                penaltyParts.push(
+                  `${penalty.itemsLost} item${penalty.itemsLost !== 1 ? 's' : ''} from your inventory`
+                )
+              penaltyParts.push('some of your reputation')
+            }
+            const lossDescription =
+              penaltyParts.length > 0 ? ` You lost ${penaltyParts.join(', ')}.` : ''
+
+            addStoryEvent({
+              id: `combat-defeat-${Date.now()}`,
+              type: 'combat_defeat',
+              characterId: character.id,
+              locationId: character.locationId,
+              timestamp: new Date().toISOString(),
+              outcomeDescription: `You were defeated by ${enemy.name}.${lossDescription} (Death #${penalty?.newDeathCount ?? '?'})`,
+              resourceDelta: {
+                gold: data.rewards?.gold,
+                reputation: penalty ? -penalty.reputationLost : undefined,
+              },
+            })
+
+            // Generate an heirloom from the defeated character
+            const heirloom = generateHeirloom(character)
+            addHeirloom(heirloom)
           }
-          const lossDescription =
-            penaltyParts.length > 0 ? ` You lost ${penaltyParts.join(', ')}.` : ''
-
-          addStoryEvent({
-            id: `combat-defeat-${Date.now()}`,
-            type: 'combat_defeat',
-            characterId: character.id,
-            locationId: character.locationId,
-            timestamp: new Date().toISOString(),
-            outcomeDescription: `You were defeated by ${enemy.name}.${lossDescription} (Death #${penalty?.newDeathCount ?? '?'})`,
-            resourceDelta: {
-              gold: data.rewards?.gold,
-              reputation: penalty ? -penalty.reputationLost : undefined,
-            },
-          })
-
-          // Generate an heirloom from the defeated character
-          const heirloom = generateHeirloom(character)
-          addHeirloom(heirloom)
         } else if (data.combatState.status === 'fled') {
           addStoryEvent({
             id: `combat-fled-${Date.now()}`,

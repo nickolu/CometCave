@@ -1,4 +1,5 @@
 import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
+import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Skill } from '@/app/tap-tap-adventure/models/skill'
@@ -160,8 +161,10 @@ export function applyLevelFromDistance(
   const mountHealBonus = updated.activeMount?.bonuses?.healRate ?? 0
   const skills = resolveSkills(updated)
   const healSkillBonus = getSkillBonus(skills, 'heal_rate')
+  const diffMods = getDifficultyModifiers(updated.difficultyMode)
   const healTicks = Math.floor(updated.distance / HEAL_RATE) - Math.floor(oldDistance / HEAL_RATE)
-  const healed = Math.min(maxHp, currentHp + Math.max(0, healTicks) * (1 + healSkillBonus.flat) + (healTicks > 0 ? mountHealBonus : 0))
+  const baseHeal = Math.max(0, healTicks) * (1 + healSkillBonus.flat) + (healTicks > 0 ? mountHealBonus : 0)
+  const healed = Math.min(maxHp, currentHp + Math.round(baseHeal * diffMods.healRateMultiplier))
 
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1

@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion'
 import React from 'react'
 
+import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
 
 interface CharacterCardProps {
@@ -20,6 +21,13 @@ export default function CharacterCard({
   onRetire,
 }: CharacterCardProps) {
   const canRetire = character.status === 'active' && (character.distance ?? 0) >= 100
+  const diffMode = getDifficultyMode(character.difficultyMode ?? 'normal')
+  const diffColorMap: Record<string, string> = {
+    normal: 'text-indigo-300',
+    hard: 'text-red-300',
+    ironman: 'text-orange-300',
+    casual: 'text-green-300',
+  }
   return (
     <motion.div
       whileHover={{ scale: 1.04 }}
@@ -35,6 +43,11 @@ export default function CharacterCard({
       </div>
       <div className="text-xs text-slate-400 mb-2">
         Lv.{character.level} {character.race} {character.class}
+        {diffMode.id !== 'normal' && (
+          <span className={`ml-1 ${diffColorMap[diffMode.id] ?? 'text-slate-300'}`}>
+            {diffMode.icon}
+          </span>
+        )}
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300 mt-1 justify-center">
         <span>Gold: {character.gold}</span>
