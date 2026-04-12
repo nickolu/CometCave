@@ -2,6 +2,7 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
@@ -175,6 +176,7 @@ export function HudBar() {
     </div>
   )
 
+  const currentRegion = getRegion(character?.currentRegion ?? 'green_meadows')
   const difficultyMode = getDifficultyMode(character?.difficultyMode ?? 'normal')
   const difficultyColorMap: Record<string, string> = {
     normal: 'border-indigo-400 text-indigo-300',
@@ -210,6 +212,12 @@ export function HudBar() {
         {STATS_LEFT.map(renderStat)}
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
+        <span
+          className="text-[10px] px-1.5 py-0.5 border rounded border-emerald-400 text-emerald-300 bg-[#2a2b3f]"
+          title={`${currentRegion.name}: ${currentRegion.description}`}
+        >
+          {currentRegion.icon} {currentRegion.name}
+        </span>
         {difficultyMode.id !== 'normal' && (
           <span
             className={`text-[10px] px-1.5 py-0.5 border rounded ${difficultyColor} bg-[#2a2b3f]`}

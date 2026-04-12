@@ -41,6 +41,42 @@ export function useResolveDecisionMutation() {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
 
+      // Handle crossroads region travel decisions client-side
+      if (optionId.startsWith('travel-')) {
+        const regionId = optionId.replace('travel-', '')
+        updateSelectedCharacter({ currentRegion: regionId })
+        const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+        addStoryEvent({
+          id: `result-${Date.now()}`,
+          type: 'region_travel',
+          characterId: character.id,
+          locationId: character.locationId,
+          timestamp: new Date().toISOString(),
+          selectedOptionId: optionId,
+          selectedOptionText: chosenOption?.text ?? '',
+          outcomeDescription: chosenOption?.successDescription ?? `You travel to a new region.`,
+        })
+        commit()
+        onSuccess?.()
+        return
+      }
+      if (optionId === 'stay') {
+        const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+        addStoryEvent({
+          id: `result-${Date.now()}`,
+          type: 'region_stay',
+          characterId: character.id,
+          locationId: character.locationId,
+          timestamp: new Date().toISOString(),
+          selectedOptionId: optionId,
+          selectedOptionText: chosenOption?.text ?? '',
+          outcomeDescription: chosenOption?.successDescription ?? 'You continue on your way.',
+        })
+        commit()
+        onSuccess?.()
+        return
+      }
+
       const res = await fetch('/api/v1/tap-tap-adventure/resolve-decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

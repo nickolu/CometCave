@@ -165,6 +165,7 @@ export function useCharacterCreation() {
       pendingStatPoints: 0,
       classData,
       difficultyMode: selectedDifficulty.id,
+      currentRegion: 'green_meadows',
     }
     const maxMana = calculateMaxMana(tempChar)
 
