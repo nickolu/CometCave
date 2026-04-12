@@ -1,4 +1,5 @@
 import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward/schemas'
+import { getRegion, getConnectedRegions, canEnterRegion, CROSSROADS_INTERVAL } from '@/app/tap-tap-adventure/config/regions'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import {
@@ -78,6 +79,68 @@ export async function moveForwardService(
       },
       decisionPoint: null,
       shopEvent: true,
+    }
+  }
+
+  // Trigger crossroads event every CROSSROADS_INTERVAL steps
+  if (crossedMilestone(character.distance, newDistance, CROSSROADS_INTERVAL)) {
+    const currentRegion = getRegion(character.currentRegion ?? 'green_meadows')
+    const connected = getConnectedRegions(currentRegion.id)
+    const crossroadsEventId = `crossroads-event-${Date.now()}`
+
+    const difficultyLabel: Record<string, string> = {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
+      very_hard: 'Very Hard',
+    }
+
+    const travelOptions = connected.map(region => {
+      const meetsLevel = canEnterRegion(region, character.level)
+      const levelWarning = meetsLevel ? '' : ` [Requires Lv.${region.minLevel}]`
+      return {
+        id: `travel-${region.id}`,
+        text: `${region.icon} ${region.name} (${difficultyLabel[region.difficulty] ?? region.difficulty})${levelWarning}`,
+        successProbability: meetsLevel ? 1.0 : 0.0,
+        successDescription: `You set out toward ${region.name}. ${region.description}`,
+        successEffects: {},
+        failureDescription: meetsLevel
+          ? `You set out toward ${region.name}.`
+          : `You are not experienced enough to enter ${region.name}. You need to be at least level ${region.minLevel}.`,
+        failureEffects: {},
+        resultDescription: meetsLevel
+          ? `You travel to ${region.name}.`
+          : `You cannot enter ${region.name} yet.`,
+      }
+    })
+
+    const stayOption = {
+      id: 'stay',
+      text: `${currentRegion.icon} Continue in ${currentRegion.name}`,
+      successProbability: 1.0,
+      successDescription: `You decide to continue exploring ${currentRegion.name}.`,
+      successEffects: {},
+      failureDescription: '',
+      failureEffects: {},
+      resultDescription: `You continue in ${currentRegion.name}.`,
+    }
+
+    return {
+      character: updatedCharacter,
+      event: {
+        id: crossroadsEventId,
+        type: 'crossroads',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      },
+      decisionPoint: {
+        id: `decision-${crossroadsEventId}`,
+        eventId: crossroadsEventId,
+        prompt: `You reach a crossroads. Multiple paths stretch before you. You are currently in ${currentRegion.icon} ${currentRegion.name}. Where will you go?`,
+        options: [...travelOptions, stayOption],
+        resolved: false,
+      },
     }
   }
 

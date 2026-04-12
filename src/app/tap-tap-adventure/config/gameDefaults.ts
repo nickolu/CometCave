@@ -46,4 +46,5 @@ export const DEFAULT_CHARACTER = {
   maxMana: 20,
   spellbook: [],
   classData: undefined,
+  currentRegion: 'green_meadows',
 }

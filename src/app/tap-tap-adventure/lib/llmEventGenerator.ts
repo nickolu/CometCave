@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
 
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { SpellSchema } from '@/app/tap-tap-adventure/models/spell'
@@ -267,10 +268,16 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
     reputationGuidance = `This character has an ${reputationTier} reputation (${character.reputation}). NPCs are hostile or fearful. Bounty hunters or rival adventurers may appear. Prices are much higher. Very few friendly encounters — most NPCs want nothing to do with this character.`
   }
 
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
+  const regionContext = `The character is currently in ${region.name}: ${region.description}. Generate events that fit this setting. ${region.enemyTypes.length > 0 ? `Enemy types common here: ${region.enemyTypes.join(', ')}.` : 'This is a safe zone with no combat.'} The dominant element is ${region.element}.`
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
       content: `Generate 3 fantasy adventure events for this character. Reference their past adventures and current state when creating events. Events should feel like a continuation of their story, not random encounters.
+
+IMPORTANT — Region context:
+${regionContext}
 
 IMPORTANT — Reputation guidance:
 ${reputationGuidance}

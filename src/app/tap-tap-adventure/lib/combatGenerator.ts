@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai'
 import { z } from 'zod'
 
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatEnemy, CombatEnemySchema } from '@/app/tap-tap-adventure/models/combat'
 
@@ -111,6 +112,8 @@ export async function generateCombatEncounter(
         {
           role: 'user',
           content: `Generate a combat encounter for this fantasy character. Create an enemy appropriate for the character's level with a vivid scenario description.
+
+Region context: Generate an enemy appropriate for the ${getRegion(character.currentRegion ?? 'green_meadows').name} region. Common enemy types: ${getRegion(character.currentRegion ?? 'green_meadows').enemyTypes.join(', ') || 'none'}. Dominant element: ${getRegion(character.currentRegion ?? 'green_meadows').element}. Setting: ${getRegion(character.currentRegion ?? 'green_meadows').theme}.
 
 Stat guidelines for a level ${character.level} character:
 - Enemy HP: ${35 + character.level * 15} (±20%)
