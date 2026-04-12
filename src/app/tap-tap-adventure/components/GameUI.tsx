@@ -9,6 +9,8 @@ import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useRes
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
+import { crossedMilestone, BOSS_MILESTONE_INTERVAL, SHOP_MILESTONE_INTERVAL } from '@/app/tap-tap-adventure/lib/leveling'
+import { CROSSROADS_INTERVAL } from '@/app/tap-tap-adventure/config/regions'
 import { flipCoin } from '@/app/utils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
@@ -86,6 +88,21 @@ export default function GameUI() {
   }
 
   const handleMoveForward = () => {
+    const character = getSelectedCharacter()
+    const distance = character?.distance ?? 0
+    const nextDistance = distance + 1
+
+    // Always call server for milestone events (crossroads, shop, boss)
+    const hitsMilestone =
+      crossedMilestone(distance, nextDistance, CROSSROADS_INTERVAL) ||
+      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL) ||
+      crossedMilestone(distance, nextDistance, BOSS_MILESTONE_INTERVAL)
+
+    if (hitsMilestone) {
+      moveForwardMutation()
+      return
+    }
+
     const shouldDoNothing = flipCoin(0.03, 0.97)
     if (shouldDoNothing) {
       const genericMessage = getGenericTravelMessage()

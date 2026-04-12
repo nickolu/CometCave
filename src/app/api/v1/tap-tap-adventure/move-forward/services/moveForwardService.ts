@@ -66,23 +66,7 @@ export async function moveForwardService(
     }
   }
 
-  // Trigger shop event every SHOP_MILESTONE_INTERVAL steps (100)
-  if (crossedMilestone(character.distance, newDistance, SHOP_MILESTONE_INTERVAL)) {
-    return {
-      character: updatedCharacter,
-      event: {
-        id: `shop-event-${Date.now()}`,
-        type: 'shop',
-        characterId: character.id,
-        locationId: character.locationId,
-        timestamp: new Date().toISOString(),
-      },
-      decisionPoint: null,
-      shopEvent: true,
-    }
-  }
-
-  // Trigger crossroads event every CROSSROADS_INTERVAL steps
+  // Trigger crossroads event every CROSSROADS_INTERVAL steps (75)
   if (crossedMilestone(character.distance, newDistance, CROSSROADS_INTERVAL)) {
     const currentRegion = getRegion(character.currentRegion ?? 'green_meadows')
     const connected = getConnectedRegions(currentRegion.id)
@@ -141,6 +125,22 @@ export async function moveForwardService(
         options: [...travelOptions, stayOption],
         resolved: false,
       },
+    }
+  }
+
+  // Trigger shop event every SHOP_MILESTONE_INTERVAL steps (100)
+  if (crossedMilestone(character.distance, newDistance, SHOP_MILESTONE_INTERVAL)) {
+    return {
+      character: updatedCharacter,
+      event: {
+        id: `shop-event-${Date.now()}`,
+        type: 'shop',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      },
+      decisionPoint: null,
+      shopEvent: true,
     }
   }
 
