@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       updatedCharacter,
       consumedItemId: result.consumedItemId,
       deathPenalty,
+      turnPhase: updatedCombat.turnPhase ?? 'player',
     })
   } catch (err) {
     console.error('Error processing combat action', err)

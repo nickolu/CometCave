@@ -91,10 +91,13 @@ export const CombatPlayerStateSchema = z.object({
   spellTagsUsed: z.array(z.string()).optional(),
   shield: z.number().default(0),
   statusEffects: z.array(StatusEffectSchema).optional(),
+  ap: z.number().default(3),
+  maxAp: z.number().default(3),
+  turnActions: z.array(z.string()).optional(),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
-export const CombatActionSchema = z.enum(['attack', 'defend', 'use_item', 'flee', 'class_ability', 'cast_spell'])
+export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn'])
 export type CombatAction = z.infer<typeof CombatActionSchema>
 
 export const CombatActionRequestSchema = z.object({
@@ -122,6 +125,9 @@ export const EnemyTelegraphSchema = z.object({
 })
 export type EnemyTelegraph = z.infer<typeof EnemyTelegraphSchema>
 
+export const TurnPhaseSchema = z.enum(['player', 'enemy_done']).default('player')
+export type TurnPhase = z.infer<typeof TurnPhaseSchema>
+
 export const CombatStateSchema = z.object({
   id: z.string(),
   eventId: z.string(),
@@ -133,5 +139,6 @@ export const CombatStateSchema = z.object({
   scenario: z.string(),
   enemyTelegraph: EnemyTelegraphSchema.optional().nullable(),
   isBoss: z.boolean().optional(),
+  turnPhase: TurnPhaseSchema.optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>

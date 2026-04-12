@@ -5,6 +5,7 @@ import { useCallback, useRef, useEffect, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions'
+import { AP_COSTS } from '@/app/tap-tap-adventure/config/apCosts'
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
@@ -268,18 +269,33 @@ export function CombatUI({ combatState }: CombatUIProps) {
         </div>
       )}
 
+      {/* AP Indicator */}
+      <div className="bg-[#1e1f30] border border-amber-900/30 rounded-lg p-2 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-xs text-slate-400">AP:</span>
+          <span className="text-amber-400 tracking-wider">
+            {Array.from({ length: playerState.maxAp ?? 3 }).map((_, i) => (
+              <span key={i} className={i < (playerState.ap ?? 3) ? 'text-amber-400' : 'text-slate-600'}>
+                {'\u25CF'}
+              </span>
+            ))}
+          </span>
+          <span className="text-xs text-amber-400">({playerState.ap ?? 3}/{playerState.maxAp ?? 3})</span>
+        </div>
+      </div>
+
       {/* Actions */}
       <div className="space-y-2">
         {/* Class Ability */}
         {classAbility && (
           <Button
             className={`w-full text-sm py-2 rounded-md transition-colors border ${
-              abilityCooldown > 0
+              abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-purple-900/50 border-purple-700 hover:bg-purple-800 text-white'
             }`}
             onClick={() => handleAction('class_ability')}
-            disabled={isPending || abilityCooldown > 0}
+            disabled={isPending || abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2)}
             title={classAbility.description}
           >
             {isPending ? (
@@ -287,45 +303,83 @@ export function CombatUI({ combatState }: CombatUIProps) {
             ) : abilityCooldown > 0 ? (
               `${classAbility.name} (${abilityCooldown} turns)`
             ) : (
-              `${classAbility.name} - Ready!`
+              `${classAbility.name} (${AP_COSTS.class_ability} AP)`
             )}
           </Button>
         )}
         <div className="grid grid-cols-2 gap-2">
           <Button
-            className="bg-red-900/50 border border-red-800 hover:bg-red-800 text-white text-sm py-2 rounded-md transition-colors"
+            className={`text-sm py-2 rounded-md transition-colors border ${
+              (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1)
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-red-900/50 border-red-800 hover:bg-red-800 text-white'
+            }`}
             onClick={() => handleAction('attack')}
-            disabled={isPending}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1)}
           >
-            {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : 'Attack'}
+            {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : `Attack (${AP_COSTS.attack} AP)`}
           </Button>
           <Button
-            className="bg-blue-900/50 border border-blue-800 hover:bg-blue-800 text-white text-sm py-2 rounded-md transition-colors"
+            className={`text-sm py-2 rounded-md transition-colors border ${
+              (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2)
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-orange-900/50 border-orange-800 hover:bg-orange-800 text-white'
+            }`}
+            onClick={() => handleAction('heavy_attack')}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2)}
+          >
+            Heavy Attack ({AP_COSTS.heavy_attack} AP)
+          </Button>
+          <Button
+            className={`text-sm py-2 rounded-md transition-colors border ${
+              (playerState.ap ?? 3) < (AP_COSTS.defend ?? 1)
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-blue-900/50 border-blue-800 hover:bg-blue-800 text-white'
+            }`}
             onClick={() => handleAction('defend')}
-            disabled={isPending}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.defend ?? 1)}
           >
-            Defend
+            Defend ({AP_COSTS.defend} AP)
           </Button>
           <Button
-            className="bg-emerald-900/50 border border-emerald-800 hover:bg-emerald-800 text-white text-sm py-2 rounded-md transition-colors relative"
+            className={`text-sm py-2 rounded-md transition-colors relative border ${
+              combatItems.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.use_item ?? 1)
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-emerald-900/50 border-emerald-800 hover:bg-emerald-800 text-white'
+            }`}
             onClick={() => { setShowItemMenu(!showItemMenu); setShowSpellMenu(false) }}
-            disabled={isPending || combatItems.length === 0}
+            disabled={isPending || combatItems.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.use_item ?? 1)}
           >
-            Use Item {combatItems.length > 0 && `(${combatItems.length})`}
+            Use Item ({AP_COSTS.use_item} AP) {combatItems.length > 0 && `[${combatItems.length}]`}
           </Button>
           <Button
-            className="bg-indigo-900/50 border border-indigo-800 hover:bg-indigo-800 text-white text-sm py-2 rounded-md transition-colors relative"
+            className={`text-sm py-2 rounded-md transition-colors relative border ${
+              spellbook.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.cast_spell ?? 2)
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-indigo-900/50 border-indigo-800 hover:bg-indigo-800 text-white'
+            }`}
             onClick={() => { setShowSpellMenu(!showSpellMenu); setShowItemMenu(false) }}
-            disabled={isPending || spellbook.length === 0}
+            disabled={isPending || spellbook.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.cast_spell ?? 2)}
           >
-            Cast Spell {spellbook.length > 0 && `(${spellbook.length})`}
+            Cast Spell ({AP_COSTS.cast_spell} AP) {spellbook.length > 0 && `[${spellbook.length}]`}
           </Button>
           <Button
-            className="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-white text-sm py-2 rounded-md transition-colors col-span-2"
+            className={`text-sm py-2 rounded-md transition-colors border ${
+              (playerState.ap ?? 3) < (AP_COSTS.flee ?? 3)
+                ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
+                : 'bg-slate-700 border-slate-600 hover:bg-slate-600 text-white'
+            }`}
             onClick={() => handleAction('flee')}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.flee ?? 3)}
+          >
+            Flee ({AP_COSTS.flee} AP)
+          </Button>
+          <Button
+            className="bg-yellow-900/50 border border-yellow-800 hover:bg-yellow-800 text-white text-sm py-2 rounded-md transition-colors"
+            onClick={() => handleAction('end_turn')}
             disabled={isPending}
           >
-            Flee
+            End Turn
           </Button>
         </div>
 

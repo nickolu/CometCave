@@ -1,4 +1,5 @@
 import { CLASS_ABILITIES, getClassElement, getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
+import { AP_COSTS, MAX_AP } from '@/app/tap-tap-adventure/config/apCosts'
 import { getElementalMultiplier, getEffectivenessText } from '@/app/tap-tap-adventure/config/elements'
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
@@ -11,6 +12,7 @@ import {
   CombatPlayerState,
   CombatState,
   EnemyTelegraph,
+  TurnPhase,
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
@@ -93,6 +95,9 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     spellTagsUsed: [],
     shield: 0,
     statusEffects: [],
+    ap: MAX_AP,
+    maxAp: MAX_AP,
+    turnActions: [],
   }
 }
 
@@ -129,7 +134,9 @@ export function calculatePlayerDamage(
   const elementalMultiplier = getElementalMultiplier(attackElement, enemy.element)
 
   const raw = randomVariance(buffedAttack) * comboMultiplier * berserkMultiplier * elementalMultiplier - enemyDefense
-  return { damage: Math.max(1, Math.round(raw)), elementalMultiplier }
+  // AP system: reduce per-action damage so 3 attacks ≈ 1.8x old single attack
+  const apScaled = raw * 0.6
+  return { damage: Math.max(1, Math.round(apScaled)), elementalMultiplier }
 }
 
 export function calculateEnemyDamage(
@@ -355,184 +362,213 @@ export function processPlayerAction(
     return { combatState }
   }
 
-  turnNumber += 1
-  playerState.isDefending = false
+  // Initialize AP fields if missing (backward compat with old combat states)
+  if (playerState.ap === undefined || playerState.ap === null) {
+    playerState.ap = MAX_AP
+  }
+  if (playerState.maxAp === undefined || playerState.maxAp === null) {
+    playerState.maxAp = MAX_AP
+  }
+  if (!playerState.turnActions) {
+    playerState.turnActions = []
+  }
+
+  // Check AP cost for the requested action
+  const apCost = AP_COSTS[action.action] ?? 1
+  const isEndTurn = action.action === 'end_turn'
+
+  if (!isEndTurn && apCost > playerState.ap) {
+    newLogs.push({
+      turn: turnNumber,
+      actor: 'player',
+      action: 'insufficient_ap',
+      description: `Not enough AP! ${action.action} costs ${apCost} AP, but you only have ${playerState.ap} AP.`,
+    })
+    return {
+      combatState: {
+        ...combatState,
+        playerState,
+        combatLog: [...combatLog, ...newLogs],
+        turnPhase: 'player',
+      },
+    }
+  }
+
+  // Deduct AP (end_turn costs 0)
+  if (!isEndTurn) {
+    playerState.ap -= apCost
+    playerState.turnActions = [...(playerState.turnActions ?? []), action.action]
+  }
+
+  // Only reset isDefending at the start of a new turn (first action after AP reset),
+  // not on every action within the same turn
+  if ((playerState.turnActions ?? []).length <= 1 && !isEndTurn) {
+    // Don't clear defending if the current action IS defend
+    if (action.action !== 'defend') {
+      playerState.isDefending = false
+    }
+  }
 
   // Track if enemy is defending this turn (from telegraph)
-  let enemyDefending = enemyTelegraph?.action === 'defend'
+  const enemyDefending = enemyTelegraph?.action === 'defend'
 
-  // Process player action
-  switch (action.action) {
-    case 'attack': {
-      const effectiveEnemy = enemyDefending
-        ? { ...enemy, defense: enemy.defense * 2 }
-        : enemy
-      const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, effectiveEnemy, character)
-      enemy.hp = Math.max(0, enemy.hp - damage)
-      playerState.comboCount = (playerState.comboCount ?? 0) + 1
-      const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
-      const elemText = getEffectivenessText(elementalMultiplier)
-      newLogs.push({
-        turn: turnNumber,
-        actor: 'player',
-        action: 'attack',
-        damage,
-        description: `You strike ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
-      })
-      break
-    }
-    case 'defend': {
-      playerState.isDefending = true
-      playerState.comboCount = 0
-      newLogs.push({
-        turn: turnNumber,
-        actor: 'player',
-        action: 'defend',
-        description: 'You brace yourself, doubling your defense for this turn.',
-      })
-      break
-    }
-    case 'use_item': {
-      playerState.comboCount = 0
-      if (!action.itemId) {
+  // Process player action (skip for end_turn)
+  if (!isEndTurn) {
+    switch (action.action) {
+      case 'attack': {
+        const effectiveEnemy = enemyDefending
+          ? { ...enemy, defense: enemy.defense * 2 }
+          : enemy
+        const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, effectiveEnemy, character)
+        enemy.hp = Math.max(0, enemy.hp - damage)
+        playerState.comboCount = (playerState.comboCount ?? 0) + 1
+        const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
+        const elemText = getEffectivenessText(elementalMultiplier)
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'attack',
+          damage,
+          description: `You strike ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
+        })
+        break
+      }
+      case 'heavy_attack': {
+        const effectiveEnemy = enemyDefending
+          ? { ...enemy, defense: enemy.defense * 2 }
+          : enemy
+        const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, effectiveEnemy, character)
+        const damage = Math.max(1, Math.round(baseDmg * 1.8))
+        enemy.hp = Math.max(0, enemy.hp - damage)
+        playerState.comboCount = (playerState.comboCount ?? 0) + 1
+        const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
+        const elemText = getEffectivenessText(elementalMultiplier)
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'heavy_attack',
+          damage,
+          description: `You deliver a powerful heavy attack on ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
+        })
+        break
+      }
+      case 'defend': {
+        // Defend stacks: defending twice in one turn should NOT double the bonus (only apply once)
+        if (!playerState.isDefending) {
+          playerState.isDefending = true
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'defend',
+            description: 'You brace yourself, doubling your defense for this turn.',
+          })
+        } else {
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'defend',
+            description: 'You reinforce your defensive stance.',
+          })
+        }
+        playerState.comboCount = 0
+        break
+      }
+      case 'use_item': {
+        playerState.comboCount = 0
+        if (!action.itemId) {
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'use_item',
+            description: 'You fumble with your pack but find nothing to use.',
+          })
+          break
+        }
+        const item = character.inventory.find(
+          i => i.id === action.itemId && i.status !== 'deleted' && isUsableInCombat(i)
+        )
+        if (!item) {
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'use_item',
+            description: 'That item cannot be used in combat.',
+          })
+          break
+        }
+        const result = applyCombatItemEffect(item, playerState)
+        playerState = result.playerState
+        consumedItemId = item.id
         newLogs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'use_item',
-          description: 'You fumble with your pack but find nothing to use.',
+          description: result.description,
         })
         break
       }
-      const item = character.inventory.find(
-        i => i.id === action.itemId && i.status !== 'deleted' && isUsableInCombat(i)
-      )
-      if (!item) {
-        newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'use_item',
-          description: 'That item cannot be used in combat.',
-        })
-        break
-      }
-      const result = applyCombatItemEffect(item, playerState)
-      playerState = result.playerState
-      consumedItemId = item.id
-      newLogs.push({
-        turn: turnNumber,
-        actor: 'player',
-        action: 'use_item',
-        description: result.description,
-      })
-      break
-    }
-    case 'flee': {
-      playerState.comboCount = 0
-      const fleeChance = calculateFleeChance(character, enemy)
-      if (Math.random() < fleeChance) {
-        status = 'fled'
+      case 'flee': {
+        playerState.comboCount = 0
+        const fleeChance = calculateFleeChance(character, enemy)
+        if (Math.random() < fleeChance) {
+          status = 'fled'
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'flee',
+            description: 'You successfully escape from combat!',
+          })
+          return {
+            combatState: {
+              ...combatState,
+              enemy,
+              playerState,
+              turnNumber,
+              combatLog: [...combatLog, ...newLogs],
+              status,
+              enemyTelegraph: null,
+              turnPhase: 'enemy_done',
+            },
+          }
+        }
         newLogs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'flee',
-          description: 'You successfully escape from combat!',
+          description: `You try to flee but ${enemy.name} blocks your escape!`,
         })
-        return {
-          combatState: {
-            ...combatState,
-            enemy,
-            playerState,
-            turnNumber,
-            combatLog: [...combatLog, ...newLogs],
-            status,
-            enemyTelegraph: null,
-          },
+        break
+      }
+      case 'class_ability': {
+        const classId = character.class.toLowerCase()
+        const ability = character.classData?.startingAbility
+          ? { name: character.classData.startingAbility.name, description: character.classData.startingAbility.description, cooldown: character.classData.startingAbility.cooldown }
+          : CLASS_ABILITIES[classId]
+        if (!ability) {
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'class_ability',
+            description: 'You have no class ability available.',
+          })
+          break
         }
-      }
-      newLogs.push({
-        turn: turnNumber,
-        actor: 'player',
-        action: 'flee',
-        description: `You try to flee but ${enemy.name} blocks your escape!`,
-      })
-      break
-    }
-    case 'class_ability': {
-      const classId = character.class.toLowerCase()
-      const ability = character.classData?.startingAbility
-        ? { name: character.classData.startingAbility.name, description: character.classData.startingAbility.description, cooldown: character.classData.startingAbility.cooldown }
-        : CLASS_ABILITIES[classId]
-      if (!ability) {
-        newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'class_ability',
-          description: 'You have no class ability available.',
-        })
-        break
-      }
-      if ((playerState.abilityCooldown ?? 0) > 0) {
-        newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'class_ability',
-          description: `${ability.name} is not ready yet! (${playerState.abilityCooldown} turns remaining)`,
-        })
-        break
-      }
+        if ((playerState.abilityCooldown ?? 0) > 0) {
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'class_ability',
+            description: `${ability.name} is not ready yet! (${playerState.abilityCooldown} turns remaining)`,
+          })
+          break
+        }
 
-      switch (classId) {
-        case 'warrior': {
-          const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
-          const damage = Math.max(1, Math.round(baseDmg * 0.8))
-          enemy.hp = Math.max(0, enemy.hp - damage)
-          playerState.enemyStunned = true
-          playerState.comboCount = (playerState.comboCount ?? 0) + 1
-          const elemText = getEffectivenessText(elementalMultiplier)
-          newLogs.push({
-            turn: turnNumber,
-            actor: 'player',
-            action: 'class_ability',
-            damage,
-            description: `You bash ${enemy.name} with your shield for ${damage} damage, stunning them!${elemText ? ` ${elemText}` : ''}`,
-          })
-          break
-        }
-        case 'mage': {
-          const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
-          const damage = Math.max(1, Math.round(baseDmg * 2))
-          const recoil = Math.max(1, Math.round(playerState.maxHp * 0.2))
-          enemy.hp = Math.max(0, enemy.hp - damage)
-          playerState.hp = Math.max(1, playerState.hp - recoil)
-          playerState.comboCount = 0
-          const elemText = getEffectivenessText(elementalMultiplier)
-          newLogs.push({
-            turn: turnNumber,
-            actor: 'player',
-            action: 'class_ability',
-            damage,
-            description: `You unleash an Arcane Blast for ${damage} damage! The magical recoil deals ${recoil} damage to you.${elemText ? ` ${elemText}` : ''}`,
-          })
-          break
-        }
-        case 'rogue': {
-          const combo = playerState.comboCount ?? 0
-          if (combo >= 2) {
+        switch (classId) {
+          case 'warrior': {
             const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
-            const damage = Math.max(1, Math.round(baseDmg * 3))
+            const damage = Math.max(1, Math.round(baseDmg * 0.8))
             enemy.hp = Math.max(0, enemy.hp - damage)
-            playerState.comboCount = 0
-            const elemText = getEffectivenessText(elementalMultiplier)
-            newLogs.push({
-              turn: turnNumber,
-              actor: 'player',
-              action: 'class_ability',
-              damage,
-              description: `You exploit your ${combo}x combo with a devastating Backstab for ${damage} damage!${elemText ? ` ${elemText}` : ''}`,
-            })
-          } else {
-            const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
-            enemy.hp = Math.max(0, enemy.hp - damage)
+            playerState.enemyStunned = true
             playerState.comboCount = (playerState.comboCount ?? 0) + 1
             const elemText = getEffectivenessText(elementalMultiplier)
             newLogs.push({
@@ -540,71 +576,118 @@ export function processPlayerAction(
               actor: 'player',
               action: 'class_ability',
               damage,
-              description: `Your Backstab lacks setup and deals ${damage} normal damage.${elemText ? ` ${elemText}` : ''}`,
+              description: `You bash ${enemy.name} with your shield for ${damage} damage, stunning them!${elemText ? ` ${elemText}` : ''}`,
             })
+            break
           }
-          break
+          case 'mage': {
+            const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
+            const damage = Math.max(1, Math.round(baseDmg * 2))
+            const recoil = Math.max(1, Math.round(playerState.maxHp * 0.2))
+            enemy.hp = Math.max(0, enemy.hp - damage)
+            playerState.hp = Math.max(1, playerState.hp - recoil)
+            playerState.comboCount = 0
+            const elemText = getEffectivenessText(elementalMultiplier)
+            newLogs.push({
+              turn: turnNumber,
+              actor: 'player',
+              action: 'class_ability',
+              damage,
+              description: `You unleash an Arcane Blast for ${damage} damage! The magical recoil deals ${recoil} damage to you.${elemText ? ` ${elemText}` : ''}`,
+            })
+            break
+          }
+          case 'rogue': {
+            const combo = playerState.comboCount ?? 0
+            if (combo >= 2) {
+              const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
+              const damage = Math.max(1, Math.round(baseDmg * 3))
+              enemy.hp = Math.max(0, enemy.hp - damage)
+              playerState.comboCount = 0
+              const elemText = getEffectivenessText(elementalMultiplier)
+              newLogs.push({
+                turn: turnNumber,
+                actor: 'player',
+                action: 'class_ability',
+                damage,
+                description: `You exploit your ${combo}x combo with a devastating Backstab for ${damage} damage!${elemText ? ` ${elemText}` : ''}`,
+              })
+            } else {
+              const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, enemy, character)
+              enemy.hp = Math.max(0, enemy.hp - damage)
+              playerState.comboCount = (playerState.comboCount ?? 0) + 1
+              const elemText = getEffectivenessText(elementalMultiplier)
+              newLogs.push({
+                turn: turnNumber,
+                actor: 'player',
+                action: 'class_ability',
+                damage,
+                description: `Your Backstab lacks setup and deals ${damage} normal damage.${elemText ? ` ${elemText}` : ''}`,
+              })
+            }
+            break
+          }
+          case 'ranger': {
+            const buffedAttack =
+              playerState.attack +
+              (playerState.activeBuffs ?? [])
+                .filter(b => b.stat === 'attack')
+                .reduce((sum, b) => sum + b.value, 0)
+            const damage = Math.max(1, Math.round(buffedAttack))
+            enemy.hp = Math.max(0, enemy.hp - damage)
+            playerState.comboCount = (playerState.comboCount ?? 0) + 1
+            newLogs.push({
+              turn: turnNumber,
+              actor: 'player',
+              action: 'class_ability',
+              damage,
+              description: `Your Precise Shot pierces through all defenses for ${damage} damage!`,
+            })
+            break
+          }
         }
-        case 'ranger': {
-          const buffedAttack =
-            playerState.attack +
-            (playerState.activeBuffs ?? [])
-              .filter(b => b.stat === 'attack')
-              .reduce((sum, b) => sum + b.value, 0)
-          const damage = Math.max(1, Math.round(buffedAttack))
-          enemy.hp = Math.max(0, enemy.hp - damage)
-          playerState.comboCount = (playerState.comboCount ?? 0) + 1
+        playerState.abilityCooldown = ability.cooldown
+        break
+      }
+      case 'cast_spell': {
+        if (!action.spellId) {
           newLogs.push({
             turn: turnNumber,
             actor: 'player',
-            action: 'class_ability',
-            damage,
-            description: `Your Precise Shot pierces through all defenses for ${damage} damage!`,
+            action: 'cast_spell',
+            description: 'No spell selected.',
           })
           break
         }
-      }
-      playerState.abilityCooldown = ability.cooldown
-      break
-    }
-    case 'cast_spell': {
-      if (!action.spellId) {
-        newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'cast_spell',
-          description: 'No spell selected.',
-        })
+        const spellbook = character.spellbook ?? []
+        const spell = spellbook.find(s => s.id === action.spellId)
+        if (!spell) {
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'cast_spell',
+            description: 'You do not know that spell.',
+          })
+          break
+        }
+        // Use the current combat state with updated turn number for condition checking
+        try {
+          const spellCombatState = { ...combatState, turnNumber, combatLog: [...combatLog, ...newLogs] }
+          const spellResult = castSpell(spell, playerState, enemy, character, spellCombatState)
+          playerState = spellResult.playerState
+          enemy = spellResult.enemy
+          newLogs.push(...spellResult.logs)
+        } catch (err) {
+          console.error('Spell casting error:', err)
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'cast_spell',
+            description: `Failed to cast ${spell.name}. The spell fizzles.`,
+          })
+        }
         break
       }
-      const spellbook = character.spellbook ?? []
-      const spell = spellbook.find(s => s.id === action.spellId)
-      if (!spell) {
-        newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'cast_spell',
-          description: 'You do not know that spell.',
-        })
-        break
-      }
-      // Use the current combat state with updated turn number for condition checking
-      try {
-        const spellCombatState = { ...combatState, turnNumber, combatLog: [...combatLog, ...newLogs] }
-        const spellResult = castSpell(spell, playerState, enemy, character, spellCombatState)
-        playerState = spellResult.playerState
-        enemy = spellResult.enemy
-        newLogs.push(...spellResult.logs)
-      } catch (err) {
-        console.error('Spell casting error:', err)
-        newLogs.push({
-          turn: turnNumber,
-          actor: 'player',
-          action: 'cast_spell',
-          description: `Failed to cast ${spell.name}. The spell fizzles.`,
-        })
-      }
-      break
     }
   }
 
@@ -637,10 +720,33 @@ export function processPlayerAction(
         combatLog: [...combatLog, ...newLogs],
         status,
         enemyTelegraph: null,
+        turnPhase: 'enemy_done',
       },
       consumedItemId,
     }
   }
+
+  // If player still has AP and didn't end turn, return for more player actions
+  if (playerState.ap > 0 && !isEndTurn) {
+    return {
+      combatState: {
+        ...combatState,
+        enemy,
+        playerState,
+        turnNumber,
+        combatLog: [...combatLog, ...newLogs],
+        status,
+        enemyTelegraph,
+        isBoss,
+        turnPhase: 'player',
+      },
+      consumedItemId,
+    }
+  }
+
+  // AP exhausted or end turn: process enemy turn
+  // Increment turn number for the enemy phase
+  turnNumber += 1
 
   // Execute enemy's telegraphed action (or normal attack if no telegraph)
   // Check fear: 50% chance to skip action
@@ -788,7 +894,7 @@ export function processPlayerAction(
     })
   }
 
-  // Tick spell effects (DOTs, HOTs, bleeds)
+  // Tick spell effects (DOTs, HOTs, bleeds) at end of full turn
   if (status === 'active') {
     const spellTickResult = tickSpellEffects(playerState, enemy, turnNumber)
     playerState = spellTickResult.playerState
@@ -820,16 +926,21 @@ export function processPlayerAction(
     }
   }
 
-  // Tick buffs
+  // Tick buffs at end of full turn
   playerState = tickBuffs(playerState)
 
-  // Tick ability cooldown
+  // Tick ability cooldown at end of full turn
   if ((playerState.abilityCooldown ?? 0) > 0) {
     playerState = { ...playerState, abilityCooldown: playerState.abilityCooldown! - 1 }
   }
 
-  // Tick spell cooldowns
+  // Tick spell cooldowns at end of full turn
   playerState = tickSpellCooldowns(playerState)
+
+  // Reset AP for next turn, clear turn actions, clear defending
+  playerState.ap = playerState.maxAp ?? MAX_AP
+  playerState.turnActions = []
+  playerState.isDefending = false
 
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'
@@ -846,6 +957,7 @@ export function processPlayerAction(
       status,
       enemyTelegraph: nextTelegraph,
       isBoss,
+      turnPhase: 'enemy_done',
     },
     consumedItemId,
   }
