@@ -48,6 +48,7 @@ export const FantasyCharacterSchema = z.object({
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),
   unlockedSkills: z.array(z.string()).optional(),
+  difficultyMode: z.string().optional().default('normal'),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

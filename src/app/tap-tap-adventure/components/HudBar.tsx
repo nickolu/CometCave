@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useMemo, useState } from 'react'
 
+import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
@@ -174,6 +175,15 @@ export function HudBar() {
     </div>
   )
 
+  const difficultyMode = getDifficultyMode(character?.difficultyMode ?? 'normal')
+  const difficultyColorMap: Record<string, string> = {
+    normal: 'border-indigo-400 text-indigo-300',
+    hard: 'border-red-400 text-red-300',
+    ironman: 'border-orange-400 text-orange-300',
+    casual: 'border-green-400 text-green-300',
+  }
+  const difficultyColor = difficultyColorMap[difficultyMode.id] ?? 'border-slate-400 text-slate-300'
+
   const activeMount = character?.activeMount
 
   const getMountTooltip = (mount: Mount): string => {
@@ -200,6 +210,14 @@ export function HudBar() {
         {STATS_LEFT.map(renderStat)}
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
+        {difficultyMode.id !== 'normal' && (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 border rounded ${difficultyColor} bg-[#2a2b3f]`}
+            title={`${difficultyMode.name}: ${difficultyMode.description}`}
+          >
+            {difficultyMode.icon} {difficultyMode.name}
+          </span>
+        )}
         {activeMount && (
           <div className="relative flex items-center gap-1">
             <button

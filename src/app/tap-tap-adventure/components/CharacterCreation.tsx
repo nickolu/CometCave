@@ -7,6 +7,7 @@ import {
   RaceOption,
   StatModifiers,
 } from '@/app/tap-tap-adventure/config/characterOptions'
+import { DIFFICULTY_MODES, DifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { useCharacterCreation } from '@/app/tap-tap-adventure/hooks/useCharacterCreation'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
@@ -137,8 +138,66 @@ function HeirloomCard({
   )
 }
 
+const DIFFICULTY_COLORS: Record<string, string> = {
+  normal: 'border-indigo-500 bg-indigo-500/10 ring-indigo-500',
+  hard: 'border-red-500 bg-red-500/10 ring-red-500',
+  ironman: 'border-orange-500 bg-orange-500/10 ring-orange-500',
+  casual: 'border-green-500 bg-green-500/10 ring-green-500',
+}
+
+function DifficultyModeCard({
+  mode,
+  selected,
+  onSelect,
+}: {
+  mode: DifficultyMode
+  selected: boolean
+  onSelect: (mode: DifficultyMode) => void
+}) {
+  const selectedColors = DIFFICULTY_COLORS[mode.id] ?? 'border-indigo-500 bg-indigo-500/10 ring-indigo-500'
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(mode)}
+      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+        selected
+          ? `${selectedColors} ring-1`
+          : 'border-[#3a3c56] bg-[#2a2b3f] hover:border-[#5a5c76]'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-lg">{mode.icon}</span>
+        <span className="text-slate-200 font-semibold text-sm">{mode.name}</span>
+      </div>
+      <div className="text-xs text-slate-400 mt-1">{mode.description}</div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-slate-500">
+        {mode.modifiers.enemyHpMultiplier !== 1 && (
+          <span>Enemy HP {mode.modifiers.enemyHpMultiplier}x</span>
+        )}
+        {mode.modifiers.enemyAttackMultiplier !== 1 && (
+          <span>Enemy ATK {mode.modifiers.enemyAttackMultiplier}x</span>
+        )}
+        {mode.modifiers.goldMultiplier !== 1 && (
+          <span>Gold {mode.modifiers.goldMultiplier}x</span>
+        )}
+        {mode.modifiers.healRateMultiplier !== 1 && (
+          <span>Heal Rate {mode.modifiers.healRateMultiplier}x</span>
+        )}
+        {mode.modifiers.lootChanceMultiplier !== 1 && (
+          <span>Loot {mode.modifiers.lootChanceMultiplier}x</span>
+        )}
+        {mode.modifiers.permadeath && (
+          <span className="text-red-400">Permadeath</span>
+        )}
+      </div>
+    </button>
+  )
+}
+
 function StepIndicator({ currentStep, hasHeirlooms }: { currentStep: number; hasHeirlooms: boolean }) {
-  const steps = hasHeirlooms ? ['Name', 'Race', 'Class', 'Heirloom'] : ['Name', 'Race', 'Class']
+  const steps = hasHeirlooms
+    ? ['Difficulty', 'Name', 'Race', 'Class', 'Heirloom']
+    : ['Difficulty', 'Name', 'Race', 'Class']
   return (
     <div className="flex items-center justify-center gap-2 mb-6">
       {steps.map((label, i) => {
@@ -196,13 +255,15 @@ export default function CharacterCreation({
     hasHeirlooms,
     selectedHeirloom,
     setSelectedHeirloom,
+    selectedDifficulty,
+    setSelectedDifficulty,
   } = useCharacterCreation()
 
   const [step, setStep] = useState(1)
 
-  // Fetch generated classes when entering step 3
+  // Fetch generated classes when entering step 4 (class selection)
   useEffect(() => {
-    if (step === 3 && generatedClasses.length === 0 && !isLoadingClasses) {
+    if (step === 4 && generatedClasses.length === 0 && !isLoadingClasses) {
       fetchGeneratedClasses()
     }
   }, [step, generatedClasses.length, isLoadingClasses, fetchGeneratedClasses])
@@ -216,15 +277,39 @@ export default function CharacterCreation({
     [completeCreation, character, onComplete]
   )
 
-  const canProceedFromStep1 = Boolean(character.name?.trim())
-  const canProceedFromStep2 = selectedRace !== null
+  const canProceedFromName = Boolean(character.name?.trim())
+  const canProceedFromRace = selectedRace !== null
 
   return (
     <form className="space-y-6 p-1" onSubmit={handleSubmit}>
       <StepIndicator currentStep={step} hasHeirlooms={hasHeirlooms} />
 
-      {/* Step 1: Name */}
+      {/* Step 1: Difficulty */}
       {step === 1 && (
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Difficulty</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {DIFFICULTY_MODES.map(mode => (
+              <DifficultyModeCard
+                key={mode.id}
+                mode={mode}
+                selected={selectedDifficulty.id === mode.id}
+                onSelect={setSelectedDifficulty}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
+          >
+            Next: Name Your Character
+          </button>
+        </div>
+      )}
+
+      {/* Step 2: Name */}
+      {step === 2 && (
         <div>
           <label htmlFor="characterName" className="block text-sm font-medium text-slate-300 mb-1">
             Character Name
@@ -238,19 +323,28 @@ export default function CharacterCreation({
             onChange={e => updateCharacter({ name: e.target.value })}
             autoFocus
           />
-          <button
-            type="button"
-            disabled={!canProceedFromStep1}
-            onClick={() => setStep(2)}
-            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-          >
-            Next: Choose Race
-          </button>
+          <div className="flex gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={!canProceedFromName}
+              onClick={() => setStep(3)}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
+            >
+              Next: Choose Race
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Step 2: Race */}
-      {step === 2 && (
+      {/* Step 3: Race */}
+      {step === 3 && (
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Race</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -266,15 +360,15 @@ export default function CharacterCreation({
           <div className="flex gap-3 mt-4">
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={() => setStep(2)}
               className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
             >
               Back
             </button>
             <button
               type="button"
-              disabled={!canProceedFromStep2}
-              onClick={() => setStep(3)}
+              disabled={!canProceedFromRace}
+              onClick={() => setStep(4)}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
             >
               Next: Choose Class
@@ -283,8 +377,8 @@ export default function CharacterCreation({
         </div>
       )}
 
-      {/* Step 3: Class (Generated) */}
-      {step === 3 && (
+      {/* Step 4: Class (Generated) */}
+      {step === 4 && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="block text-sm font-medium text-slate-300">Choose Your Class</label>
@@ -342,7 +436,7 @@ export default function CharacterCreation({
           <div className="flex gap-3 mt-4">
             <button
               type="button"
-              onClick={() => setStep(2)}
+              onClick={() => setStep(3)}
               className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
             >
               Back
@@ -351,7 +445,7 @@ export default function CharacterCreation({
               <button
                 type="button"
                 disabled={!isValid}
-                onClick={() => setStep(4)}
+                onClick={() => setStep(5)}
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
               >
                 Next: Choose Heirloom
@@ -369,8 +463,8 @@ export default function CharacterCreation({
         </div>
       )}
 
-      {/* Step 4: Heirloom Selection */}
-      {step === 4 && hasHeirlooms && (
+      {/* Step 5: Heirloom Selection */}
+      {step === 5 && hasHeirlooms && (
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-3">Choose an Heirloom (Optional)</label>
           <p className="text-xs text-slate-400 mb-4">
@@ -391,7 +485,7 @@ export default function CharacterCreation({
           <div className="flex gap-3 mt-4">
             <button
               type="button"
-              onClick={() => setStep(3)}
+              onClick={() => setStep(4)}
               className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
             >
               Back

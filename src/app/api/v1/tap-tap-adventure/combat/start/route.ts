@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { initializePlayerCombatState } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { generateCombatEncounter, generateBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
@@ -13,9 +14,19 @@ export async function POST(req: NextRequest) {
       ? `The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
       : storyContext
 
-    const { enemy, scenario } = isBoss
+    const { enemy: rawEnemy, scenario } = isBoss
       ? await generateBossEncounter(character, fullContext)
       : await generateCombatEncounter(character, fullContext)
+
+    // Apply difficulty modifiers to enemy stats
+    const diffMods = getDifficultyModifiers(character.difficultyMode)
+    const enemy = {
+      ...rawEnemy,
+      hp: Math.round(rawEnemy.hp * diffMods.enemyHpMultiplier),
+      maxHp: Math.round(rawEnemy.maxHp * diffMods.enemyHpMultiplier),
+      attack: Math.round(rawEnemy.attack * diffMods.enemyAttackMultiplier),
+    }
+
     const playerState = initializePlayerCombatState(character)
 
     const combatState: CombatState = {
