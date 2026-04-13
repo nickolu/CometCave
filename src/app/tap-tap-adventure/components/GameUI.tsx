@@ -9,8 +9,9 @@ import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useRes
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
-import { crossedMilestone, BOSS_MILESTONE_INTERVAL, SHOP_MILESTONE_INTERVAL } from '@/app/tap-tap-adventure/lib/leveling'
-import { CROSSROADS_INTERVAL } from '@/app/tap-tap-adventure/config/regions'
+import { crossedMilestone, BOSS_MILESTONE_INTERVAL, SHOP_MILESTONE_INTERVAL, STEPS_PER_DAY, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
+import { CROSSROADS_INTERVAL, getRegion } from '@/app/tap-tap-adventure/config/regions'
+import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
 import { flipCoin } from '@/app/utils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
@@ -27,6 +28,31 @@ import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { SkillPanel } from './SkillPanel'
 import { StoryFeed } from './StoryFeed'
+
+const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
+  easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
+  medium: { label: 'Medium', color: 'bg-yellow-900/50 text-yellow-300 border-yellow-600/40' },
+  hard: { label: 'Hard', color: 'bg-red-900/50 text-red-300 border-red-600/40' },
+  very_hard: { label: 'Very Hard', color: 'bg-purple-900/50 text-purple-300 border-purple-600/40' },
+}
+
+const ELEMENT_STYLES: Record<string, { color: string }> = {
+  nature: { color: 'bg-green-900/40 text-green-300' },
+  shadow: { color: 'bg-slate-800/60 text-slate-300' },
+  arcane: { color: 'bg-violet-900/40 text-violet-300' },
+  fire: { color: 'bg-orange-900/40 text-orange-300' },
+  ice: { color: 'bg-cyan-900/40 text-cyan-300' },
+  none: { color: 'bg-slate-800/40 text-slate-400' },
+}
+
+function getTimeOfDay(distance: number): string {
+  const stepInDay = distance % STEPS_PER_DAY
+  const fraction = stepInDay / STEPS_PER_DAY
+  if (fraction < 0.25) return 'Morning'
+  if (fraction < 0.5) return 'Midday'
+  if (fraction < 0.75) return 'Afternoon'
+  return 'Nightfall'
+}
 
 function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; distance: number }) {
   if (isLoading)
@@ -286,6 +312,47 @@ export default function GameUI() {
               </>
             ) : (
               <>
+                {/* Region info */}
+                {(() => {
+                  const dist = character?.distance ?? 0
+                  const region = getRegion(character?.currentRegion ?? 'green_meadows')
+                  const diff = DIFFICULTY_STYLES[region.difficulty]
+                  const elem = ELEMENT_STYLES[region.element] ?? ELEMENT_STYLES.none
+                  const day = calculateDay(dist)
+                  const timeOfDay = getTimeOfDay(dist)
+
+                  // Milestone calculations
+                  const milestones = [
+                    { label: 'Crossroads', icon: '🔀', steps: CROSSROADS_INTERVAL - (dist % CROSSROADS_INTERVAL) },
+                    { label: 'Shop', icon: '🛒', steps: SHOP_MILESTONE_INTERVAL - (dist % SHOP_MILESTONE_INTERVAL) },
+                    { label: 'Boss', icon: '💀', steps: BOSS_MILESTONE_INTERVAL - (dist % BOSS_MILESTONE_INTERVAL) },
+                  ].sort((a, b) => a.steps - b.steps).slice(0, 3)
+
+                  return (
+                    <div className="space-y-2 mb-1">
+                      {/* Region header */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold">{region.icon} {region.name}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 border rounded ${diff.color}`}>{diff.label}</span>
+                        {region.element !== 'none' && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${elem.color}`}>{region.element}</span>
+                        )}
+                      </div>
+                      {/* Atmospheric text */}
+                      <p className="text-xs text-slate-400 italic leading-snug">{region.description}</p>
+                      {/* Day / time of day */}
+                      <p className="text-xs text-slate-500">Day {day} &mdash; {timeOfDay}</p>
+                      {/* Milestone indicators */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {milestones.map(m => (
+                          <span key={m.label} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2b3f] border border-[#3a3c56] text-slate-300">
+                            {m.icon} {m.label}: {m.steps}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
                 <Button
                   className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
                     isAutoWalking
