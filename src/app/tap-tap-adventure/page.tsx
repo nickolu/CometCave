@@ -1,14 +1,19 @@
 'use client'
+import { useState } from 'react'
 import CharacterList from './components/CharacterList'
 import GameUI from './components/GameUI'
 import { HudBar } from './components/HudBar'
+import MetaProgression from './components/MetaProgression'
+import RunSummary from './components/RunSummary'
 import { PageTemplate } from './components/ui/PageTemplate'
 import { useGameStore } from './hooks/useGameStore'
 
 type initialView = 'game' | 'characters'
 
 export default function TapTapAdventurePage() {
-  const { gameState } = useGameStore()
+  const { gameState, clearRunSummary } = useGameStore()
+  const [showMetaFromSummary, setShowMetaFromSummary] = useState(false)
+  const [showCreationFromSummary, setShowCreationFromSummary] = useState(false)
 
   let initialView: initialView = 'characters'
 
@@ -16,13 +21,41 @@ export default function TapTapAdventurePage() {
     initialView = 'game'
   }
 
+  // Run summary takes priority over everything
+  const runSummary = gameState?.runSummary ?? null
+
   return (
     <PageTemplate pageId={initialView}>
       <div className="flex-1">
         <HudBar />
       </div>
-      {initialView === 'game' && <GameUI />}
-      {initialView === 'characters' && <CharacterList />}
+      {runSummary ? (
+        <>
+          <RunSummary
+            data={runSummary}
+            onViewUpgrades={() => {
+              setShowMetaFromSummary(true)
+            }}
+            onNewCharacter={() => {
+              clearRunSummary()
+              setShowCreationFromSummary(true)
+            }}
+            onBackToCharacters={() => {
+              clearRunSummary()
+            }}
+          />
+          {showMetaFromSummary && (
+            <MetaProgression onClose={() => setShowMetaFromSummary(false)} />
+          )}
+        </>
+      ) : (
+        <>
+          {initialView === 'game' && <GameUI />}
+          {initialView === 'characters' && (
+            <CharacterList defaultShowCreation={showCreationFromSummary} onCreationShown={() => setShowCreationFromSummary(false)} />
+          )}
+        </>
+      )}
     </PageTemplate>
   )
 }

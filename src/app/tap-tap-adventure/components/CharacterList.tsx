@@ -19,7 +19,12 @@ const selectRetireCharacter = (s: GameStore) => s.retireCharacter
 const selectLegacyHeirlooms = (s: GameStore) => s.gameState?.legacyHeirlooms ?? EMPTY_ARRAY
 const selectMetaProgression = (s: GameStore) => s.gameState?.metaProgression
 
-export default function CharacterList() {
+interface CharacterListProps {
+  defaultShowCreation?: boolean
+  onCreationShown?: () => void
+}
+
+export default function CharacterList({ defaultShowCreation, onCreationShown }: CharacterListProps) {
   const characters = useGameStore(selectCharacters)
   const selectedCharacterId = useGameStore(selectSelectedCharacterId)
   const selectCharacter = useGameStore(selectSelectCharacter)
@@ -27,8 +32,15 @@ export default function CharacterList() {
   const retireCharacter = useGameStore(selectRetireCharacter)
   const legacyHeirlooms = useGameStore(selectLegacyHeirlooms)
   const metaProgression = useGameStore(selectMetaProgression)
-  const [showCreation, setShowCreation] = useState(false)
+  const [showCreation, setShowCreation] = useState(defaultShowCreation ?? false)
   const [showMetaProgression, setShowMetaProgression] = useState(false)
+
+  // If defaultShowCreation was set from the parent, clear the flag
+  React.useEffect(() => {
+    if (defaultShowCreation && onCreationShown) {
+      onCreationShown()
+    }
+  }, [defaultShowCreation, onCreationShown])
 
   const handleSelect = (character: FantasyCharacter) => {
     selectCharacter(character.id)
