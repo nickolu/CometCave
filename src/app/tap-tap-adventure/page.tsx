@@ -4,6 +4,7 @@ import CharacterList from './components/CharacterList'
 import GameUI from './components/GameUI'
 import { HudBar } from './components/HudBar'
 import MetaProgression from './components/MetaProgression'
+import { PlayerStatusView } from './components/PlayerStatusView'
 import RunSummary from './components/RunSummary'
 import { PageTemplate } from './components/ui/PageTemplate'
 import { useGameStore } from './hooks/useGameStore'
@@ -14,6 +15,7 @@ export default function TapTapAdventurePage() {
   const { gameState, clearRunSummary } = useGameStore()
   const [showMetaFromSummary, setShowMetaFromSummary] = useState(false)
   const [showCreationFromSummary, setShowCreationFromSummary] = useState(false)
+  const [showStatus, setShowStatus] = useState(false)
 
   let initialView: initialView = 'characters'
 
@@ -27,8 +29,9 @@ export default function TapTapAdventurePage() {
   return (
     <PageTemplate pageId={initialView}>
       <div className="flex-1">
-        <HudBar />
+        <HudBar onOpenStatus={() => setShowStatus(true)} />
       </div>
+      {showStatus && <PlayerStatusView onClose={() => setShowStatus(false)} />}
       {runSummary ? (
         <>
           <RunSummary

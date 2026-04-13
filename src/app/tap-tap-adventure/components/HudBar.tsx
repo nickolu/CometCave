@@ -88,7 +88,11 @@ const STAT_LABELS: Record<IconType, string> = {
 const STATS_LEFT: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon', 'dayIcon']
 const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
 
-export function HudBar() {
+interface HudBarProps {
+  onOpenStatus?: () => void
+}
+
+export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   const { gameState, setMount } = useGameStore()
   const character = gameState?.characters?.find(
     (char: FantasyCharacter) => char.id === gameState?.selectedCharacterId
@@ -290,6 +294,16 @@ export function HudBar() {
           </div>
         )}
         {STATS_RIGHT.map(renderStat)}
+        {onOpenStatus && (
+          <button
+            className="text-[10px] px-1.5 py-0.5 rounded border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors text-slate-300"
+            onClick={onOpenStatus}
+            title="View character status"
+            aria-label="View character status"
+          >
+            Status
+          </button>
+        )}
         <button
           className="text-sm px-1.5 py-0.5 rounded border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors"
           onClick={toggleSound}
