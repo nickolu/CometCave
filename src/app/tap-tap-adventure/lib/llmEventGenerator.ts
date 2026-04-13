@@ -289,7 +289,8 @@ When rewarding items, sometimes include consumable items (type: "consumable") wi
 Sometimes include equipment items (type: "equipment") like weapons, armor, or accessories with stat-boosting effects. Examples: a steel sword with +2 strength, iron armor with +2 intelligence, or a lucky charm with +1 luck.
 Sometimes reward spell scrolls — items with type "spell_scroll" containing a spell with a creative name, 2-3 effects, optional conditions, and tags. The spell field should have: id, name, description, school (arcane/nature/shadow/war), manaCost, cooldown, target (enemy/self), effects array, optional conditions array, and tags array.
 
-IMPORTANT: About half of all events should involve a potential confrontation (bandits, monsters, rivals, etc.). For these events, include at least one option with "triggersCombat": true — this represents the character choosing to fight. Other options can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). This gives the player agency over whether to fight.
+IMPORTANT — Combat events:
+Exactly 1 of the 3 events MUST be a combat encounter (bandits, monsters, aggressive creatures, rivals, etc.). That event MUST include at least one option with "triggersCombat": true — this represents the character choosing to fight. The other options on that event can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). The remaining 2 events should be non-combat (exploration, social, discovery, etc.) with NO options that have triggersCombat. This ensures approximately 25% of events over time involve combat potential.
 
 Character:
 ${JSON.stringify(character, null, 2)}
