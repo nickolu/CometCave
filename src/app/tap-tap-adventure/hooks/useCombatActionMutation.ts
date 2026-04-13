@@ -26,7 +26,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation() {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence } = useGameStore()
+  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -144,7 +144,15 @@ export function useCombatActionMutation() {
             addHeirloom(heirloom)
 
             // Award soul essence for the run
-            awardSoulEssence(character)
+            const essenceEarned = awardSoulEssence(character)
+
+            // Show run summary screen
+            setRunSummary({
+              character: { ...character },
+              reason: 'permadeath',
+              essenceEarned,
+              heirloom,
+            })
 
             deleteCharacter(character.id)
           } else {
@@ -179,7 +187,15 @@ export function useCombatActionMutation() {
             addHeirloom(heirloom)
 
             // Award soul essence for the run
-            awardSoulEssence(character)
+            const essenceEarned = awardSoulEssence(character)
+
+            // Show run summary screen
+            setRunSummary({
+              character: { ...character },
+              reason: 'death',
+              essenceEarned,
+              heirloom,
+            })
           }
         } else if (data.combatState.status === 'fled') {
           addStoryEvent({

@@ -20,4 +20,5 @@ export const defaultGameState: GameState = {
   legacyHeirlooms: [],
   dailyReward: null,
   metaProgression: null,
+  runSummary: null,
 }

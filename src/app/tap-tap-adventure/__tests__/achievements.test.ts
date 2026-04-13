@@ -49,6 +49,7 @@ const baseGameState: GameState = {
   legacyHeirlooms: [],
   dailyReward: null,
   metaProgression: null,
+  runSummary: null,
 }
 
 describe('Achievement Definitions', () => {

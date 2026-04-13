@@ -81,6 +81,13 @@ type DailyRewardState = {
   totalDaysClaimed: number
 }
 
+type RunSummaryData = {
+  character: FantasyCharacter
+  reason: 'death' | 'permadeath' | 'retirement'
+  essenceEarned: number
+  heirloom: Item | null
+}
+
 type GameState = {
   player: {
     id: string
@@ -99,8 +106,9 @@ type GameState = {
   legacyHeirlooms: Item[]
   dailyReward: DailyRewardState | null
   metaProgression: MetaProgressionState | null
+  runSummary: RunSummaryData | null
 }
-export type { GameState, DailyRewardState }
+export type { GameState, DailyRewardState, RunSummaryData }
 export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
 export type {
   EternalUpgrade,

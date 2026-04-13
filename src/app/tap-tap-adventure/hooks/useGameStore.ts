@@ -26,6 +26,7 @@ import {
   GameState,
   Item,
   MetaProgressionState,
+  RunSummaryData,
   ShopState,
 } from '@/app/tap-tap-adventure/models/types'
 import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
@@ -91,6 +92,8 @@ export interface GameStore {
   awardSoulEssence: (character: FantasyCharacter) => number
   purchaseUpgrade: (upgradeId: string) => boolean
   getMetaBonuses: () => MetaBonuses
+  setRunSummary: (summary: RunSummaryData) => void
+  clearRunSummary: () => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -582,6 +585,9 @@ export const useGameStore = create<GameStore>()(
             if (!character || character.status !== 'active') return
             if ((character.distance ?? 0) < 100) return
 
+            // Snapshot character before mutation for the summary screen
+            const characterSnapshot = { ...character }
+
             // Award soul essence before retiring
             const essence = calculateSoulEssence(character)
             const meta = state.gameState.metaProgression ?? {
@@ -605,6 +611,14 @@ export const useGameStore = create<GameStore>()(
               state.gameState.legacyHeirlooms = []
             }
             state.gameState.legacyHeirlooms.push(heirloom)
+
+            // Set run summary for the end-of-run screen
+            state.gameState.runSummary = {
+              character: characterSnapshot,
+              reason: 'retirement',
+              essenceEarned: essence,
+              heirloom,
+            }
 
             // Deselect if this was the active character
             if (state.gameState.selectedCharacterId === characterId) {
@@ -662,10 +676,24 @@ export const useGameStore = create<GameStore>()(
         if (!meta) return getMetaBonuses({})
         return getMetaBonuses(meta.upgradeLevels)
       },
+      setRunSummary: (summary: RunSummaryData) => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.runSummary = summary
+          })
+        )
+      },
+      clearRunSummary: () => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.runSummary = null
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 12,
+      version: 13,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -738,6 +766,10 @@ export const useGameStore = create<GameStore>()(
         // v12: Add metaProgression
         if (state?.gameState && !('metaProgression' in state.gameState)) {
           (state.gameState as GameState).metaProgression = null
+        }
+        // v13: Add runSummary
+        if (state?.gameState && !('runSummary' in state.gameState)) {
+          (state.gameState as GameState).runSummary = null
         }
         return state
       },
