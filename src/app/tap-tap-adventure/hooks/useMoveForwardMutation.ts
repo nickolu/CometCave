@@ -71,7 +71,7 @@ export function useMoveForwardMutation() {
       }
 
       if (data.shopEvent) {
-        // Level up triggered a shop - fetch shop items from server
+        // Step milestone triggered a shop - fetch shop items from server
         const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
