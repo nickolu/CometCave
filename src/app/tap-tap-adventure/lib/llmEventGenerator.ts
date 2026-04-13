@@ -256,16 +256,22 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
   const reputationTier = getReputationTier(character.reputation)
 
   let reputationGuidance = ''
-  if (character.reputation >= 50) {
-    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be friendly and welcoming. Offer better deals, share secrets, and present important quests. Some NPCs may recognize the character by name and ask for help with critical tasks.`
+  if (character.reputation >= 150) {
+    reputationGuidance = `This character is a ${reputationTier} (${character.reputation}). They are a mythic figure — kings seek their counsel, armies rally behind them, and merchants offer their finest wares at steep discounts. NPCs should be awestruck, reverent, or even intimidated by the character's sheer fame. Present world-shaping quests and legendary encounters.`
+  } else if (character.reputation >= 100) {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs revere the character. The best deals, exclusive quests, and powerful allies seek them out. Some NPCs may recognize the character by name and ask for help with critical tasks.`
+  } else if (character.reputation >= 50) {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be friendly and welcoming. Offer better deals, share secrets, and present important quests.`
   } else if (character.reputation >= 20) {
     reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be generally positive and willing to help. Fair deals and occasional bonus opportunities.`
   } else if (character.reputation >= 0) {
     reputationGuidance = `This character has an ${reputationTier} reputation (${character.reputation}). NPCs are neutral — standard interactions and pricing.`
   } else if (character.reputation >= -20) {
     reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). NPCs should be suspicious and wary. Prices are higher, information is harder to obtain, and some may refuse to deal with the character.`
-  } else {
+  } else if (character.reputation >= -50) {
     reputationGuidance = `This character has an ${reputationTier} reputation (${character.reputation}). NPCs are hostile or fearful. Bounty hunters or rival adventurers may appear. Prices are much higher. Very few friendly encounters — most NPCs want nothing to do with this character.`
+  } else {
+    reputationGuidance = `This character is a ${reputationTier} (${character.reputation}). They are actively hunted. NPCs flee or attack on sight. Guards may attempt arrest. Bounty hunters relentlessly pursue them. Prices are extortionate if anyone will even deal with them. The world has turned against this character — present desperate, dangerous situations with few allies.`
   }
 
   const region = getRegion(character.currentRegion ?? 'green_meadows')
@@ -1153,6 +1159,91 @@ function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
           successDescription: 'You keep your head down and move on.',
           successEffects: {},
           failureDescription: '', failureEffects: {} },
+      ],
+    },
+    // Moral choice events — reputation spectrum
+    {
+      id: `fb-lost-cargo-${s}`,
+      description: 'You find a merchant\'s lost cargo scattered along the road. Crates of fine goods lie unguarded, their owner nowhere in sight.',
+      options: [
+        { id: `return-cargo-${s}`, text: 'Track down the merchant and return the cargo', successProbability: 0.8,
+          successDescription: 'You find the grateful merchant a mile down the road. "Bless you, traveler! My livelihood was in those crates." Word of your honesty spreads.',
+          successEffects: { reputation: 5 },
+          failureDescription: 'You search but cannot find the owner. You leave the goods untouched.',
+          failureEffects: { reputation: 2 } },
+        { id: `keep-cargo-${s}`, text: 'Help yourself to the goods', successProbability: 0.9,
+          successDescription: 'You pocket valuable items from the crates. Finders keepers.',
+          successEffects: { gold: 15, reputation: -5 },
+          failureDescription: 'Most of the goods are spoiled or broken. You salvage a little.',
+          failureEffects: { gold: 5, reputation: -3 } },
+      ],
+    },
+    {
+      id: `fb-beggars-plea-${s}`,
+      description: 'A ragged beggar sits by the roadside, hollow-eyed and trembling. "Please, traveler... just a few coins for bread."',
+      options: [
+        { id: `give-beggar-${s}`, text: 'Give them some gold', successProbability: 1.0,
+          successDescription: 'The beggar\'s eyes fill with tears. "You have a kind heart." Nearby villagers notice your generosity.',
+          successEffects: { gold: -5, reputation: 3 },
+          failureDescription: '', failureEffects: {} },
+        { id: `ignore-beggar-${s}`, text: 'Walk past without a word', successProbability: 1.0,
+          successDescription: 'You continue on your way. The beggar says nothing.',
+          successEffects: {},
+          failureDescription: '', failureEffects: {} },
+        { id: `rob-beggar-${s}`, text: 'Rob what little they have', successProbability: 0.7,
+          successDescription: 'You snatch a few coins from the beggar\'s cup. They cower in fear. Witnesses look on in disgust.',
+          successEffects: { gold: 2, reputation: -3 },
+          failureDescription: 'The beggar has nothing worth taking. You feel the weight of many disapproving stares.',
+          failureEffects: { reputation: -2 } },
+      ],
+    },
+    {
+      id: `fb-wanted-poster-${s}`,
+      description: 'A wanted poster flutters on a signpost. As you read it, a nervous figure steps from the bushes. "That\'s me on the poster. I swear I\'m innocent. Will you help me, or turn me in?"',
+      options: [
+        { id: `turn-in-fugitive-${s}`, text: 'Turn the fugitive in to the authorities', successProbability: 0.8,
+          successDescription: 'The guards thank you and hand over the bounty. Justice is served — or so they say.',
+          successEffects: { reputation: 5, gold: 10 },
+          failureDescription: 'The fugitive escapes before the guards arrive. They note your attempt, at least.',
+          failureEffects: { reputation: 2 } },
+        { id: `help-fugitive-${s}`, text: 'Help the fugitive escape', successProbability: 0.7,
+          successDescription: '"Thank you, friend. Take this — it\'s all I have." The fugitive presses gold into your hands before disappearing.',
+          successEffects: { reputation: -5, gold: 20 },
+          failureDescription: 'A patrol spots you helping and gives you a stern warning. The fugitive slips away in the confusion.',
+          failureEffects: { reputation: -3 } },
+      ],
+    },
+    {
+      id: `fb-corrupt-guard-${s}`,
+      description: 'A town guard pulls you aside. "Look, I know you saw what happened back there. Keep quiet about it, and this gold is yours. Report me, and... well, don\'t."',
+      options: [
+        { id: `report-guard-${s}`, text: 'Report the corrupt guard', successProbability: 0.7,
+          successDescription: 'The captain listens carefully and arrests the corrupt guard. "The town owes you a debt." Your integrity earns respect.',
+          successEffects: { reputation: 5 },
+          failureDescription: 'Your report is noted but the guard has connections. Nothing happens immediately, but people remember your courage.',
+          failureEffects: { reputation: 2 } },
+        { id: `accept-bribe-${s}`, text: 'Accept the bribe and stay silent', successProbability: 0.9,
+          successDescription: 'The guard nods and hands you a pouch of gold. "Smart choice." You feel the weight of compromise.',
+          successEffects: { gold: 10, reputation: -3 },
+          failureDescription: 'The guard shortchanges you. "Be glad I gave you anything."',
+          failureEffects: { gold: 5, reputation: -2 } },
+      ],
+    },
+    {
+      id: `fb-village-attack-${s}`,
+      description: 'Smoke rises from a village ahead. Raiders are pillaging homes while villagers flee in panic. You could help — or profit from the chaos.',
+      options: [
+        { id: `defend-village-${s}`, text: 'Rush to defend the village', triggersCombat: true,
+          successProbability: 0.5,
+          successDescription: 'You charge into the fray to protect the innocent! The raiders turn to face you.',
+          successEffects: { reputation: 8 },
+          failureDescription: 'You charge into the fray to protect the innocent! The raiders turn to face you.',
+          failureEffects: { reputation: 8 } },
+        { id: `loot-chaos-${s}`, text: 'Loot abandoned homes in the chaos', successProbability: 0.8,
+          successDescription: 'While everyone is distracted, you fill your pockets. Survivors will remember your cowardice.',
+          successEffects: { gold: 25, reputation: -10 },
+          failureDescription: 'A fleeing villager catches you looting and screams "Thief!" You grab what you can and run.',
+          failureEffects: { gold: 10, reputation: -8 } },
       ],
     },
   ]

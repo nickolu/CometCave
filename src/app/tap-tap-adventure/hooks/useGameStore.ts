@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
+import { clampReputation } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { getMetaBonuses, MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
@@ -830,6 +831,11 @@ export function useGameStateBuilder() {
 
     const charIndex = gameStateClone.characters.findIndex(c => c.id === selectedCharacterId)
     if (charIndex === -1) return
+
+    // Clamp reputation if it's being updated
+    if (characterUpdate.reputation !== undefined) {
+      characterUpdate = { ...characterUpdate, reputation: clampReputation(characterUpdate.reputation) }
+    }
 
     // Create a new character object and recalculate level from distance
     const merged = {

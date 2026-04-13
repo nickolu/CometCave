@@ -217,14 +217,15 @@ export function useCombatActionMutation() {
             })
           }
         } else if (data.combatState.status === 'fled') {
+          updateSelectedCharacter({ reputation: character.reputation - 2 })
           addStoryEvent({
             id: `combat-fled-${Date.now()}`,
             type: 'combat_fled',
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You fled from ${enemy.name}, losing some gold in your haste.`,
-            resourceDelta: { gold: data.rewards?.gold },
+            outcomeDescription: `You fled from ${enemy.name}, losing some gold and a bit of your reputation in your haste.`,
+            resourceDelta: { gold: data.rewards?.gold, reputation: -2 },
           })
         }
 

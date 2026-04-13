@@ -6,7 +6,7 @@ import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
-import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { getReputationTier, ReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { levelProgress, stepsToNextLevel, stepsRequiredForLevel, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
@@ -165,6 +165,19 @@ export function HudBar() {
     setTimeout(() => setActiveTooltip(null), 2000)
   }, [])
 
+  const reputationTier = getReputationTier(character?.reputation ?? 0)
+  const reputationTierColorMap: Record<ReputationTier, string> = {
+    'Wanted Criminal': 'text-red-400',
+    Infamous: 'text-red-400',
+    Disreputable: 'text-orange-400',
+    Unknown: 'text-slate-400',
+    Respected: 'text-blue-400',
+    Renowned: 'text-purple-400',
+    Legendary: 'text-amber-400',
+    'Living Legend': 'text-yellow-300',
+  }
+  const reputationTierColor = reputationTierColorMap[reputationTier]
+
   const renderStat = (key: IconType) => (
     <div key={key} className="relative">
       <button
@@ -176,6 +189,9 @@ export function HudBar() {
         <div className="flex items-center gap-1">
           <span className="inline-block align-middle shrink-0">{ICONS[key]}</span>
           <span>{stats[key]}</span>
+        {key === 'waterDropIcon' && (
+          <span className={`text-[8px] sm:text-[9px] ${reputationTierColor} ml-0.5`}>{reputationTier}</span>
+        )}
         {key === 'heartIcon' && (
           <span className="w-8 sm:w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden ml-1">
             <span

@@ -5,9 +5,14 @@ import { calculateEffectiveProbability } from '@/app/tap-tap-adventure/lib/event
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
 describe('getReputationTier', () => {
-  it('returns Infamous for reputation below -20', () => {
+  it('returns Wanted Criminal for reputation below -50', () => {
+    expect(getReputationTier(-51)).toBe('Wanted Criminal')
+    expect(getReputationTier(-100)).toBe('Wanted Criminal')
+  })
+
+  it('returns Infamous for reputation -50 to -21', () => {
+    expect(getReputationTier(-50)).toBe('Infamous')
     expect(getReputationTier(-21)).toBe('Infamous')
-    expect(getReputationTier(-100)).toBe('Infamous')
   })
 
   it('returns Disreputable for reputation -20 to -1', () => {
@@ -30,12 +35,19 @@ describe('getReputationTier', () => {
     expect(getReputationTier(99)).toBe('Renowned')
   })
 
-  it('returns Legendary for reputation 100+', () => {
+  it('returns Legendary for reputation 100 to 149', () => {
     expect(getReputationTier(100)).toBe('Legendary')
-    expect(getReputationTier(500)).toBe('Legendary')
+    expect(getReputationTier(149)).toBe('Legendary')
+  })
+
+  it('returns Living Legend for reputation 150+', () => {
+    expect(getReputationTier(150)).toBe('Living Legend')
+    expect(getReputationTier(500)).toBe('Living Legend')
   })
 
   it('handles boundary values correctly', () => {
+    expect(getReputationTier(-51)).toBe('Wanted Criminal')
+    expect(getReputationTier(-50)).toBe('Infamous')
     expect(getReputationTier(-21)).toBe('Infamous')
     expect(getReputationTier(-20)).toBe('Disreputable')
     expect(getReputationTier(-1)).toBe('Disreputable')
@@ -46,6 +58,8 @@ describe('getReputationTier', () => {
     expect(getReputationTier(50)).toBe('Renowned')
     expect(getReputationTier(99)).toBe('Renowned')
     expect(getReputationTier(100)).toBe('Legendary')
+    expect(getReputationTier(149)).toBe('Legendary')
+    expect(getReputationTier(150)).toBe('Living Legend')
   })
 })
 

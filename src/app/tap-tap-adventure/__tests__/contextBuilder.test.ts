@@ -110,6 +110,20 @@ describe('buildStoryContext', () => {
     expect(context).toContain('Bounty hunters')
   })
 
+  it('includes reputation tier for very negative reputation', () => {
+    const criminalChar = { ...baseChar, reputation: -60 }
+    const context = buildStoryContext(criminalChar, [])
+    expect(context).toContain('Wanted Criminal')
+    expect(context).toContain('flee or attack on sight')
+  })
+
+  it('includes reputation tier for very high reputation', () => {
+    const legendChar = { ...baseChar, reputation: 160 }
+    const context = buildStoryContext(legendChar, [])
+    expect(context).toContain('Living Legend')
+    expect(context).toContain('mythic figure')
+  })
+
   it('caps context string length', () => {
     const longEvents = Array.from({ length: 50 }, (_, i) =>
       makeEvent({

@@ -184,6 +184,9 @@ export async function generateBossEncounter(
 
 Region context: This boss guards the ${getRegion(character.currentRegion ?? 'green_meadows').name}. Theme: ${getRegion(character.currentRegion ?? 'green_meadows').theme}. The dominant element is ${getRegion(character.currentRegion ?? 'green_meadows').element}. Generate a boss that fits this setting. Common enemy types in this region: ${getRegion(character.currentRegion ?? 'green_meadows').enemyTypes.join(', ') || 'none'}.
 
+Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
+${character.reputation >= 50 ? 'High reputation: the boss might acknowledge the character\'s fame, offer a challenge of honor, or be a rival drawn by their renown.' : ''}${character.reputation <= -20 ? 'Low reputation: the boss might be a bounty hunter leader, a vengeful warlord who has heard of the character\'s crimes, or a dark entity drawn to their infamy.' : ''}
+
 This is a level ${character.level} character facing a boss fight. The boss should be significantly stronger than normal enemies:
 - Boss HP: ${Math.round((35 + character.level * 15) * 1.5)} (1.5x normal)
 - Boss attack: ${Math.round((6 + character.level * 3) * 1.3)} (1.3x normal)
