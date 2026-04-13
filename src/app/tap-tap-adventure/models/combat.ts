@@ -94,6 +94,7 @@ export const CombatPlayerStateSchema = z.object({
   ap: z.number().default(3),
   maxAp: z.number().default(3),
   turnActions: z.array(z.string()).optional(),
+  luck: z.number().default(0),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
@@ -113,6 +114,7 @@ export const CombatLogEntrySchema = z.object({
   action: z.string(),
   damage: z.number().optional(),
   description: z.string(),
+  isCritical: z.boolean().optional(),
 })
 export type CombatLogEntry = z.infer<typeof CombatLogEntrySchema>
 

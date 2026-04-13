@@ -99,7 +99,13 @@ export function useCombatActionMutation() {
 
       if (data.combatState.status === 'active') {
         // Combat continues — play sounds based on what happened
-        if (action === 'attack' || action === 'heavy_attack' || action === 'class_ability') {
+        // Check for critical hits in new log entries
+        const prevLogLen = combatState.combatLog.length
+        const newEntries = data.combatState.combatLog.slice(prevLogLen)
+        const hasCrit = newEntries.some(e => e.isCritical)
+        if (hasCrit) {
+          soundEngine.playCritical()
+        } else if (action === 'attack' || action === 'heavy_attack' || action === 'class_ability') {
           soundEngine.playHit()
         }
         // If player took damage this turn (enemy attacked), play enemy hit sound

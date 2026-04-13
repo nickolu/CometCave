@@ -267,10 +267,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
             <div
               key={i}
               className={`text-xs ${
-                entry.actor === 'player' ? 'text-blue-300' : 'text-red-300'
+                entry.isCritical
+                  ? 'text-yellow-300 font-bold'
+                  : entry.actor === 'player' ? 'text-blue-300' : 'text-red-300'
               }`}
             >
-              <span className="text-slate-500">T{entry.turn}:</span> {entry.description}
+              <span className="text-slate-500">T{entry.turn}:</span>{' '}
+              {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
+              {entry.description}
             </div>
           ))}
         </div>
