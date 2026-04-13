@@ -971,14 +971,16 @@ export interface CombatRewards {
 
 export function getCombatRewards(
   combatState: CombatState,
-  character: FantasyCharacter
+  character: FantasyCharacter,
+  regionMultiplier?: number
 ): CombatRewards {
   const { enemy } = combatState
   const skills = resolveSkills(character)
   const goldBonus = getSkillBonus(skills, 'gold_bonus')
   const lootBonus = getSkillBonus(skills, 'loot_chance')
   const diffMods = getDifficultyModifiers(character.difficultyMode)
-  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier)
+  const regionMult = regionMultiplier ?? 1
+  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
 
   const loot: Item[] = []
   if (enemy.lootTable) {
