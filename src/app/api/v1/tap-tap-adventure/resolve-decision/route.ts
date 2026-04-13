@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import {
   applyEffects,
   calculateEffectiveProbability,
@@ -39,6 +40,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid optionId' }, { status: 400 })
     }
 
+    // Scale gold rewards by region difficulty so harder regions give better non-combat rewards
+    const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+
+    function scaleGold(effects?: { gold?: number; [key: string]: unknown }) {
+      if (!effects || !effects.gold || effects.gold <= 0) return effects
+      return { ...effects, gold: Math.round(effects.gold * regionMult) }
+    }
+
     let outcome: 'success' | 'failure' = 'success'
     let resultDescription = option.resultDescription
     let appliedEffects = option.effects
@@ -55,29 +64,29 @@ export async function POST(req: NextRequest) {
       outcome = roll < prob ? 'success' : 'failure'
 
       if (outcome === 'success') {
-        const effects = option.successEffects
+        const effects = scaleGold(option.successEffects)
         updatedCharacter = applyEffects(character, effects)
         resultDescription = option.successDescription ?? option.resultDescription
-        appliedEffects = option.successEffects
+        appliedEffects = effects
         if (effects?.rewardItems) {
-          rewardItems = effects.rewardItems
+          rewardItems = (effects as { rewardItems: Item[] }).rewardItems
         }
       } else {
-        const effects = option.failureEffects
+        const effects = scaleGold(option.failureEffects)
         updatedCharacter = applyEffects(character, effects)
         resultDescription = option.failureDescription ?? option.resultDescription
-        appliedEffects = option.failureEffects
+        appliedEffects = effects
         if (effects?.rewardItems) {
-          rewardItems = effects.rewardItems
+          rewardItems = (effects as { rewardItems: Item[] }).rewardItems
         }
       }
     } else {
-      const effects = option.effects
+      const effects = scaleGold(option.effects)
       updatedCharacter = applyEffects(character, effects)
       resultDescription = option.resultDescription
-      appliedEffects = option.effects
+      appliedEffects = effects
       if (effects?.rewardItems) {
-        rewardItems = effects.rewardItems
+        rewardItems = (effects as { rewardItems: Item[] }).rewardItems
       }
     }
 

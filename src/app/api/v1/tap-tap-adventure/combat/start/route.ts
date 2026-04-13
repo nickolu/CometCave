@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
       hp: Math.round(rawEnemy.hp * diffMods.enemyHpMultiplier * regionMult),
       maxHp: Math.round(rawEnemy.maxHp * diffMods.enemyHpMultiplier * regionMult),
       attack: Math.round(rawEnemy.attack * diffMods.enemyAttackMultiplier * regionMult),
+      defense: Math.round(rawEnemy.defense * regionMult),
+      goldReward: Math.round(rawEnemy.goldReward * regionMult),
     }
 
     const playerState = initializePlayerCombatState(character)

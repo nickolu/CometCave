@@ -1,3 +1,4 @@
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
@@ -42,6 +43,13 @@ export function buildStoryContext(
     `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}.`
   )
   parts.push(`Reputation implications: ${REPUTATION_TIER_IMPLICATIONS[tier]}`)
+
+  // Region context
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
+  parts.push(
+    `Region: ${region.name} (${region.difficulty}) — ${region.theme}. ` +
+    `Dominant element: ${region.element}. Common threats: ${region.enemyTypes.join(', ') || 'none'}.`
+  )
 
   // Inventory highlights
   const activeItems = character.inventory.filter(i => i.status !== 'deleted')

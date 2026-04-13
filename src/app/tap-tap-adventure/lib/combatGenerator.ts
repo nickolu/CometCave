@@ -182,6 +182,8 @@ export async function generateBossEncounter(
           role: 'user',
           content: `Generate a BOSS combat encounter for this fantasy character. This is a major battle — the boss should be powerful, intimidating, and memorable.
 
+Region context: This boss guards the ${getRegion(character.currentRegion ?? 'green_meadows').name}. Theme: ${getRegion(character.currentRegion ?? 'green_meadows').theme}. The dominant element is ${getRegion(character.currentRegion ?? 'green_meadows').element}. Generate a boss that fits this setting. Common enemy types in this region: ${getRegion(character.currentRegion ?? 'green_meadows').enemyTypes.join(', ') || 'none'}.
+
 This is a level ${character.level} character facing a boss fight. The boss should be significantly stronger than normal enemies:
 - Boss HP: ${Math.round((35 + character.level * 15) * 1.5)} (1.5x normal)
 - Boss attack: ${Math.round((6 + character.level * 3) * 1.3)} (1.3x normal)
@@ -234,6 +236,7 @@ function getDefaultBossEncounter(
 ): { enemy: CombatEnemy; scenario: string } {
   const level = character.level
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
 
   const bosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' }> = [
     { name: 'The Iron Warden', desc: 'A colossal animated suit of armor, its eyes burning with ancient fury.', special: 'Crushing Blow', specialDesc: 'Slams the ground, sending shockwaves.', element: 'none' },
@@ -243,7 +246,7 @@ function getDefaultBossEncounter(
   const boss = bosses[level % bosses.length]
 
   return {
-    scenario: `A powerful presence blocks your path. ${boss.name} emerges — a fearsome foe that will test everything you have. This is a boss battle!`,
+    scenario: `Deep within the ${region.name}, a powerful presence blocks your path. ${boss.name} emerges — a fearsome foe that will test everything you have. This is a boss battle!`,
     enemy: {
       id: `boss-${suffix}`,
       name: boss.name,
@@ -285,7 +288,7 @@ function getDefaultBossEncounter(
         damage: Math.round((5 + level * 2) * 1.8),
         cooldown: 2,
       },
-      element: boss.element,
+      element: (region.element !== 'none' ? region.element : boss.element) as CombatEnemy['element'],
     },
   }
 }
@@ -295,18 +298,26 @@ function getDefaultCombatEncounter(
 ): { enemy: CombatEnemy; scenario: string } {
   const level = character.level
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
+
+  const enemyName = region.enemyTypes.length > 0
+    ? region.enemyTypes[Math.floor(Math.random() * region.enemyTypes.length)]
+    : (level <= 2 ? 'Wild Goblin' : level <= 5 ? 'Dark Wolf' : 'Shadow Knight')
+
+  const enemyDescription = region.enemyTypes.length > 0
+    ? `A dangerous ${enemyName} native to the ${region.name}.`
+    : (level <= 2
+        ? 'A snarling goblin wielding a rusty dagger.'
+        : level <= 5
+          ? 'A massive wolf with glowing red eyes.'
+          : 'An armored knight wreathed in dark energy.')
 
   return {
-    scenario: 'A hostile creature emerges from the shadows, blocking your path. You must fight or flee!',
+    scenario: `In the ${region.name}, a hostile creature emerges from the shadows, blocking your path. You must fight or flee!`,
     enemy: {
       id: `enemy-${suffix}`,
-      name: level <= 2 ? 'Wild Goblin' : level <= 5 ? 'Dark Wolf' : 'Shadow Knight',
-      description:
-        level <= 2
-          ? 'A snarling goblin wielding a rusty dagger.'
-          : level <= 5
-            ? 'A massive wolf with glowing red eyes.'
-            : 'An armored knight wreathed in dark energy.',
+      name: enemyName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      description: enemyDescription,
       hp: 35 + level * 15,
       maxHp: 35 + level * 15,
       attack: 6 + level * 3,
@@ -342,7 +353,7 @@ function getDefaultCombatEncounter(
           : level <= 5
             ? { type: 'poison' as const, value: 3 + level, duration: 3, chance: 0.4 }
             : { type: 'curse' as const, value: 0, duration: 3, chance: 0.3 },
-      element: level <= 2 ? 'none' as const : level <= 5 ? 'nature' as const : 'shadow' as const,
+      element: (region.element !== 'none' ? region.element : (level <= 2 ? 'none' : level <= 5 ? 'nature' : 'shadow')) as CombatEnemy['element'],
     },
   }
 }

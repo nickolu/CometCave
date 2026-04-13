@@ -247,7 +247,7 @@ export async function generateLLMEvents(
     return parseRawEvents(raw)
   } catch (err) {
     console.error('LLM event generation failed', err)
-    return getDefaultEvents()
+    return getDefaultEvents(character.currentRegion)
   }
 }
 
@@ -269,7 +269,7 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
   }
 
   const region = getRegion(character.currentRegion ?? 'green_meadows')
-  const regionContext = `The character is currently in ${region.name}: ${region.description}. Generate events that fit this setting. ${region.enemyTypes.length > 0 ? `Enemy types common here: ${region.enemyTypes.join(', ')}.` : 'This is a safe zone with no combat.'} The dominant element is ${region.element}.`
+  const regionContext = `The character is currently in ${region.name}: ${region.description}. Setting/theme: ${region.theme}. Generate events that fit this setting. ${region.enemyTypes.length > 0 ? `Enemy types common here: ${region.enemyTypes.join(', ')}.` : 'This is a safe zone with no combat.'} The dominant element is ${region.element}.`
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
@@ -362,8 +362,296 @@ function parseEventsFromToolCall(toolCall: OpenAI.Chat.Completions.ChatCompletio
   return uniqueEvents
 }
 
-function getDefaultEvents(): LLMGeneratedEvent[] {
+function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
+  const s = `rfb-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const region = getRegion(regionId)
+
+  const regionEvents: Record<string, LLMGeneratedEvent[]> = {
+    dark_forest: [
+      {
+        id: `rfb-whisper-${s}`,
+        description: 'Ancient trees whisper warnings as you venture deeper into the Dark Forest.',
+        options: [
+          { id: `listen-trees-${s}`, text: 'Listen carefully to the whispers', successProbability: 0.6,
+            successDescription: 'The trees reveal a hidden path leading to a cache of shadow-infused crystals.',
+            successEffects: { gold: 10, rewardItems: processFallbackRewardItems([{ id: `shadow-crystal-${s}`, name: 'Shadow Crystal', description: 'A dark crystal pulsing with shadow energy', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+            failureDescription: 'The whispers fade into silence, leaving you unsettled.',
+            failureEffects: {} },
+          { id: `press-on-${s}`, text: 'Ignore the whispers and press on', successProbability: 1.0,
+            successDescription: 'You steel your nerves and continue deeper into the forest.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-spectral-${s}`,
+        description: 'A spectral figure drifts between the trees, its ghostly light illuminating the fog.',
+        options: [
+          { id: `approach-spirit-${s}`, text: 'Approach the spirit', successProbability: 0.5,
+            successDescription: 'The spirit is a lost guardian. It bestows a blessing upon you before vanishing.',
+            successEffects: { reputation: 4 },
+            failureDescription: 'The spirit turns hostile and lashes out with shadow energy before fading away.',
+            failureEffects: { reputation: -2 } },
+          { id: `fight-spirit-${s}`, text: 'Ready your weapon', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The spirit solidifies into a shadow beast!',
+            successEffects: {}, failureDescription: 'The spirit solidifies into a shadow beast!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-treant-${s}`,
+        description: 'A corrupted treant blocks the path, its bark oozing dark sap. It groans menacingly.',
+        options: [
+          { id: `purify-treant-${s}`, text: 'Try to purify the corruption', successProbability: 0.4,
+            successDescription: 'Your efforts succeed! The treant calms and gifts you a branch of living wood.',
+            successEffects: { reputation: 5, rewardItems: processFallbackRewardItems([{ id: `living-branch-${s}`, name: 'Living Branch', description: 'A branch that still pulses with nature magic', quantity: 1, type: 'equipment', effects: { strength: 1 } }]) },
+            failureDescription: 'The corruption is too deep. The treant swings at you but you dodge away.',
+            failureEffects: {} },
+          { id: `fight-treant-${s}`, text: 'Cut it down', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The treant roars and attacks!',
+            successEffects: {}, failureDescription: 'The treant roars and attacks!', failureEffects: {} },
+        ],
+      },
+    ],
+    scorched_wastes: [
+      {
+        id: `rfb-sandshift-${s}`,
+        description: 'The sand shifts beneath your feet, revealing ancient ruins half-buried in the dunes.',
+        options: [
+          { id: `explore-ruins-${s}`, text: 'Explore the ruins', successProbability: 0.5,
+            successDescription: 'You find an ancient fire-enchanted relic among the rubble!',
+            successEffects: { gold: 12, rewardItems: processFallbackRewardItems([{ id: `fire-relic-${s}`, name: 'Ember Stone', description: 'A stone that radiates intense heat', quantity: 1, type: 'consumable', effects: { strength: 1 } }]) },
+            failureDescription: 'The ruins crumble further. Nothing of value remains.',
+            failureEffects: {} },
+          { id: `avoid-ruins-${s}`, text: 'Move away carefully', successProbability: 1.0,
+            successDescription: 'You skirt the unstable sands and continue safely.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-dunes-${s}`,
+        description: 'Ancient ruins emerge from the dunes as the wind shifts, revealing a sealed chamber.',
+        options: [
+          { id: `break-seal-${s}`, text: 'Break the seal', successProbability: 0.4,
+            successDescription: 'Inside you find scorched coins and a fire scroll!',
+            successEffects: { gold: 15 },
+            failureDescription: 'A fire trap triggers, singing your clothes. You escape unharmed but shaken.',
+            failureEffects: { reputation: -1 } },
+          { id: `fight-guardian-${s}`, text: 'Prepare for whatever guards it', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'A fire elemental bursts from the chamber!',
+            successEffects: {}, failureDescription: 'A fire elemental bursts from the chamber!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-wyrm-${s}`,
+        description: 'The ground trembles. A sand wyrm surfaces nearby, its scales glinting in the sun.',
+        options: [
+          { id: `fight-wyrm-${s}`, text: 'Face the sand wyrm', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The wyrm lunges at you!',
+            successEffects: {}, failureDescription: 'The wyrm lunges at you!', failureEffects: {} },
+          { id: `hide-wyrm-${s}`, text: 'Hide behind the dunes', successProbability: 0.6,
+            successDescription: 'The wyrm passes by without noticing you.',
+            successEffects: {}, failureDescription: 'It notices your movement but loses interest.',
+            failureEffects: {} },
+        ],
+      },
+    ],
+    frozen_peaks: [
+      {
+        id: `rfb-blizzard-${s}`,
+        description: 'A blizzard closes in rapidly. Visibility drops to near zero.',
+        options: [
+          { id: `endure-blizzard-${s}`, text: 'Push through the blizzard', successProbability: 0.4,
+            successDescription: 'You emerge stronger on the other side, finding a frozen cache of supplies.',
+            successEffects: { gold: 8, reputation: 3 },
+            failureDescription: 'You lose your way briefly but eventually find shelter.',
+            failureEffects: {} },
+          { id: `shelter-blizzard-${s}`, text: 'Find shelter in an ice cave', successProbability: 0.7,
+            successDescription: 'The cave is cozy. You find some frozen herbs with healing properties.',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `frost-herbs-${s}`, name: 'Frost Herbs', description: 'Frozen herbs with potent restorative properties', quantity: 1, type: 'consumable', effects: { heal: 15 } }]) },
+            failureDescription: 'The cave is empty but at least you stay warm.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-icebridge-${s}`,
+        description: 'An ice bridge spans a bottomless chasm. It groans under an unseen weight.',
+        options: [
+          { id: `cross-ice-${s}`, text: 'Cross the ice bridge carefully', successProbability: 0.5,
+            successDescription: 'You make it across! On the other side, you find a frozen treasure chest.',
+            successEffects: { gold: 12 },
+            failureDescription: 'The bridge cracks but holds. You scramble to safety on the other side.',
+            failureEffects: {} },
+          { id: `climb-around-${s}`, text: 'Find another way around', successProbability: 0.8,
+            successDescription: 'The detour reveals an ice wraith guarding a passage.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'The detour is long and tiring.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-frostgiant-${s}`,
+        description: 'A frost giant stands watch over a narrow mountain pass, its breath forming clouds of ice.',
+        options: [
+          { id: `fight-giant-${s}`, text: 'Challenge the frost giant', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The giant roars and swings its massive club!',
+            successEffects: {}, failureDescription: 'The giant roars and swings its massive club!', failureEffects: {} },
+          { id: `tribute-giant-${s}`, text: 'Offer tribute (5 gold)', successProbability: 0.7,
+            successDescription: 'The giant grunts and steps aside, letting you pass.',
+            successEffects: { gold: -5, reputation: 2 },
+            failureDescription: 'The giant takes your gold and still looks angry, but lets you pass.',
+            failureEffects: { gold: -5 } },
+        ],
+      },
+    ],
+    crystal_caves: [
+      {
+        id: `rfb-crystalhum-${s}`,
+        description: 'Crystals hum with magical energy, their light pulsing in rhythmic patterns.',
+        options: [
+          { id: `attune-crystal-${s}`, text: 'Attune to the crystal frequency', successProbability: 0.5,
+            successDescription: 'The crystals resonate with your magic, granting you arcane insight.',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `arcane-shard-${s}`, name: 'Arcane Shard', description: 'A crystal shard vibrating with arcane power', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+            failureDescription: 'The crystals dim. The resonance fades before you can grasp it.',
+            failureEffects: {} },
+          { id: `mine-crystal-${s}`, text: 'Mine the crystals for trade', successProbability: 0.6,
+            successDescription: 'You chip off a few valuable crystal fragments.',
+            successEffects: { gold: 10 },
+            failureDescription: 'The crystals are too hard to break. Your tools are insufficient.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-underground-${s}`,
+        description: 'An underground river blocks your path. Glowing crystals illuminate the dark water.',
+        options: [
+          { id: `swim-across-${s}`, text: 'Swim across', successProbability: 0.5,
+            successDescription: 'You swim across safely and find a gem-encrusted alcove on the other side!',
+            successEffects: { gold: 14 },
+            failureDescription: 'The current is strong. You make it across but lose some supplies.',
+            failureEffects: { gold: -3 } },
+          { id: `follow-river-${s}`, text: 'Follow the river downstream', successProbability: 0.7,
+            successDescription: 'The river leads to a cave opening with a gentle slope across.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'A dead end. You have to backtrack.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-golem-${s}`,
+        description: 'A crystal golem activates as you step too close, its body crackling with arcane energy.',
+        options: [
+          { id: `fight-golem-${s}`, text: 'Fight the crystal golem', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The golem charges with crystalline fists!',
+            successEffects: {}, failureDescription: 'The golem charges with crystalline fists!', failureEffects: {} },
+          { id: `deactivate-golem-${s}`, text: 'Try to find its off switch', successProbability: 0.3,
+            successDescription: 'You find a rune on its back and deactivate it. A crystal core drops to the ground.',
+            successEffects: { gold: 8, reputation: 3 },
+            failureDescription: 'No luck. It swings at you but you dodge away as it powers down on its own.',
+            failureEffects: {} },
+        ],
+      },
+    ],
+    shadow_realm: [
+      {
+        id: `rfb-warp-${s}`,
+        description: 'Reality warps around you. The ground shifts between solid stone and void.',
+        options: [
+          { id: `navigate-warp-${s}`, text: 'Navigate by instinct', successProbability: 0.4,
+            successDescription: 'Your instincts guide you through the distortion. You find a rift cache of shadow-gold.',
+            successEffects: { gold: 20 },
+            failureDescription: 'You stumble through but lose your bearings. Nothing gained, nothing lost.',
+            failureEffects: {} },
+          { id: `anchor-warp-${s}`, text: 'Anchor yourself with willpower', successProbability: 0.6,
+            successDescription: 'You stabilize the area around you, earning respect from watchers in the void.',
+            successEffects: { reputation: 4 },
+            failureDescription: 'The distortion persists but eventually fades on its own.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-nightmare-${s}`,
+        description: 'Nightmarish visions assail your mind — twisted versions of past battles and fallen friends.',
+        options: [
+          { id: `resist-nightmare-${s}`, text: 'Resist the visions with willpower', successProbability: 0.5,
+            successDescription: 'You shatter the illusions and find clarity. A shadow gem materializes before you.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `shadow-gem-${s}`, name: 'Shadow Gem', description: 'A gem born from conquered nightmares', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'The visions fade slowly, leaving you shaken but unharmed.',
+            failureEffects: {} },
+          { id: `fight-nightmare-${s}`, text: 'Fight the nightmare manifestation', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'A nightmare demon takes physical form!',
+            successEffects: {}, failureDescription: 'A nightmare demon takes physical form!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-undead-${s}`,
+        description: 'An undead knight kneels before a corrupted altar, its armor still bearing noble insignia.',
+        options: [
+          { id: `fight-undead-${s}`, text: 'Destroy the undead knight', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The knight rises, drawing a cursed blade!',
+            successEffects: {}, failureDescription: 'The knight rises, drawing a cursed blade!', failureEffects: {} },
+          { id: `purify-altar-${s}`, text: 'Try to purify the altar', successProbability: 0.3,
+            successDescription: 'The altar cracks and the knight crumbles to peace. Its armor drops valuable gems.',
+            successEffects: { gold: 18, reputation: 5 },
+            failureDescription: 'The corruption is too strong. The knight stirs but ignores you.',
+            failureEffects: { reputation: -1 } },
+        ],
+      },
+    ],
+    sky_citadel: [
+      {
+        id: `rfb-lightning-${s}`,
+        description: 'Lightning crackles between floating platforms. The path ahead is electrified.',
+        options: [
+          { id: `time-jump-${s}`, text: 'Time your jumps between strikes', successProbability: 0.4,
+            successDescription: 'You leap perfectly between bolts! On the far platform, you find arcane relics.',
+            successEffects: { gold: 15, reputation: 3 },
+            failureDescription: 'A near miss singes your cloak, but you make it across.',
+            failureEffects: {} },
+          { id: `find-path-${s}`, text: 'Look for a safer route', successProbability: 0.7,
+            successDescription: 'You find a shielded walkway beneath the main platform.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'No alternative route exists. You wait for the storm to pass.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-machinery-${s}`,
+        description: 'Ancient arcane machinery whirs to life as you approach. Gears turn and runes glow.',
+        options: [
+          { id: `activate-machine-${s}`, text: 'Interact with the machinery', successProbability: 0.5,
+            successDescription: 'The machine produces a powerful arcane component!',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `arcane-component-${s}`, name: 'Arcane Component', description: 'A precision-crafted magical component', quantity: 1, type: 'equipment', effects: { intelligence: 2 } }]) },
+            failureDescription: 'The machine sputters and shuts down. Nothing useful comes out.',
+            failureEffects: {} },
+          { id: `fight-sentinel-${s}`, text: 'Prepare for the sentinel it summons', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'An arcane sentinel materializes from the machinery!',
+            successEffects: {}, failureDescription: 'An arcane sentinel materializes from the machinery!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-skydragon-${s}`,
+        description: 'An ancient dragon perches atop a crumbling tower, surveying the clouds below.',
+        options: [
+          { id: `challenge-dragon-${s}`, text: 'Challenge the dragon', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The dragon unleashes a torrent of arcane fire!',
+            successEffects: {}, failureDescription: 'The dragon unleashes a torrent of arcane fire!', failureEffects: {} },
+          { id: `parley-dragon-${s}`, text: 'Attempt to parley', successProbability: 0.3,
+            successDescription: 'The dragon is impressed by your courage and shares ancient wisdom.',
+            successEffects: { reputation: 6, gold: 20 },
+            failureDescription: 'The dragon snorts dismissively but lets you pass.',
+            failureEffects: {} },
+        ],
+      },
+    ],
+  }
+
+  return regionEvents[regionId] ?? []
+}
+
+function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
   const s = `fallback-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+
+  // Add region-specific events to the pool if available
+  const regionSpecificEvents = regionId ? getRegionFallbackEvents(regionId) : []
 
   const pool: LLMGeneratedEvent[] = [
     // Discovery events
@@ -868,8 +1156,11 @@ function getDefaultEvents(): LLMGeneratedEvent[] {
     },
   ]
 
-  // Randomly pick 3 events from the pool
-  const shuffled = pool.sort(() => Math.random() - 0.5)
+  // Add region-specific events to the pool for non-generic regions
+  const combinedPool = [...regionSpecificEvents, ...pool]
+
+  // Randomly pick 3 events from the combined pool (region events are at front so they're more likely)
+  const shuffled = combinedPool.sort(() => Math.random() - 0.5)
   return shuffled.slice(0, 3)
 }
 

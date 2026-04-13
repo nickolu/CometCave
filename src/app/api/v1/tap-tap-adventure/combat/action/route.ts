@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { processPlayerAction, getCombatRewards } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { applyDeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { CombatActionRequestSchema } from '@/app/tap-tap-adventure/models/combat'
@@ -17,7 +18,8 @@ export async function POST(req: NextRequest) {
     let deathPenalty = undefined
 
     if (updatedCombat.status === 'victory') {
-      rewards = getCombatRewards(updatedCombat, character)
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      rewards = getCombatRewards(updatedCombat, character, regionMult)
       updatedCharacter = {
         ...character,
         gold: character.gold + rewards.gold,
