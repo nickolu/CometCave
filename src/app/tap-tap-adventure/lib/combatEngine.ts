@@ -75,6 +75,9 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const baseAttack = 2 + character.strength + mountStrBonus + Math.floor(character.level / 2) + weaponBonus * 2
   const baseDefense = 1 + Math.floor((character.intelligence + mountIntBonus) / 2) + Math.floor(character.level / 2) + armorBonus
 
+  // Calculate total luck for crit chance
+  const totalLuck = character.luck + mountLuckBonus + accessoryLuckBonus
+
   return {
     hp: currentHp,
     maxHp,
@@ -98,6 +101,7 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     ap: MAX_AP,
     maxAp: MAX_AP,
     turnActions: [],
+    luck: totalLuck,
   }
 }
 
@@ -114,11 +118,21 @@ function getComboMultiplier(comboCount: number): number {
   return Math.min(1.75, 1 + comboCount * 0.25)
 }
 
+/**
+ * Calculate the player's crit chance based on luck.
+ * Base 5% + 1% per luck point, capped at 40%.
+ */
+function getPlayerCritChance(luck: number, bonusCritChance: number = 0): number {
+  const baseCritChance = 0.05 + luck * 0.01 + bonusCritChance
+  return Math.min(0.4, baseCritChance)
+}
+
 export function calculatePlayerDamage(
   playerState: CombatPlayerState,
   enemy: CombatEnemy,
-  character?: FantasyCharacter
-): { damage: number; elementalMultiplier: number } {
+  character?: FantasyCharacter,
+  bonusCritChance: number = 0
+): { damage: number; elementalMultiplier: number; isCritical: boolean } {
   const buffedAttack =
     playerState.attack +
     (playerState.activeBuffs ?? [])
@@ -136,15 +150,26 @@ export function calculatePlayerDamage(
   const raw = randomVariance(buffedAttack) * comboMultiplier * berserkMultiplier * elementalMultiplier - enemyDefense
   // AP system: reduce per-action damage so 3 attacks ≈ 1.8x old single attack
   const apScaled = raw * 0.6
-  return { damage: Math.max(1, Math.round(apScaled)), elementalMultiplier }
+
+  // Critical strike check
+  const luck = playerState.luck ?? 0
+  const critChance = getPlayerCritChance(luck, bonusCritChance)
+  const isCritical = Math.random() < critChance
+  const critMultiplier = isCritical ? 2.0 : 1.0
+
+  return { damage: Math.max(1, Math.round(apScaled * critMultiplier)), elementalMultiplier, isCritical }
 }
+
+/** Flat 5% crit chance for enemies, dealing 1.5x damage. */
+const ENEMY_CRIT_CHANCE = 0.05
+const ENEMY_CRIT_MULTIPLIER = 1.5
 
 export function calculateEnemyDamage(
   enemy: CombatEnemy,
   playerState: CombatPlayerState,
   isHeavyAttack: boolean = false,
   character?: FantasyCharacter
-): { damage: number; elementalMultiplier: number } {
+): { damage: number; elementalMultiplier: number; isCritical: boolean } {
   const effectiveDefense = playerState.isDefending
     ? playerState.defense * 2
     : playerState.defense
@@ -164,7 +189,12 @@ export function calculateEnemyDamage(
 
   const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier * elementalMultiplier
   const raw = randomVariance(attackPower) - buffedDefense
-  return { damage: Math.max(1, Math.round(raw)), elementalMultiplier }
+
+  // Enemy critical strike check
+  const isCritical = Math.random() < ENEMY_CRIT_CHANCE
+  const critMultiplier = isCritical ? ENEMY_CRIT_MULTIPLIER : 1.0
+
+  return { damage: Math.max(1, Math.round(raw * critMultiplier)), elementalMultiplier, isCritical }
 }
 
 export function calculateFleeChance(
@@ -257,7 +287,7 @@ function executeEnemyTelegraph(
 
   switch (telegraph.action) {
     case 'heavy_attack': {
-      const { damage: dmg, elementalMultiplier } = calculateEnemyDamage(enemy, updatedPlayer, true, character)
+      const { damage: dmg, elementalMultiplier, isCritical } = calculateEnemyDamage(enemy, updatedPlayer, true, character)
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
       const elemText = getEffectivenessText(elementalMultiplier)
       logs.push({
@@ -265,7 +295,8 @@ function executeEnemyTelegraph(
         actor: 'enemy',
         action: 'heavy_attack',
         damage: dmg,
-        description: `${enemy.name} unleashes a powerful blow for ${dmg} damage!${elemText ? ` ${elemText}` : ''}`,
+        description: `${isCritical ? 'CRITICAL! ' : ''}${enemy.name} unleashes a powerful blow for ${dmg} damage!${elemText ? ` ${elemText}` : ''}`,
+        isCritical,
       })
       break
     }
@@ -301,7 +332,7 @@ function executeEnemyTelegraph(
     }
     case 'normal_attack':
     default: {
-      const { damage: dmg, elementalMultiplier } = calculateEnemyDamage(enemy, updatedPlayer, false, character)
+      const { damage: dmg, elementalMultiplier, isCritical } = calculateEnemyDamage(enemy, updatedPlayer, false, character)
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
       const elemText = getEffectivenessText(elementalMultiplier)
       logs.push({
@@ -309,7 +340,8 @@ function executeEnemyTelegraph(
         actor: 'enemy',
         action: 'attack',
         damage: dmg,
-        description: `${enemy.name} attacks you for ${dmg} damage!${elemText ? ` ${elemText}` : ''}`,
+        description: `${isCritical ? 'CRITICAL! ' : ''}${enemy.name} attacks you for ${dmg} damage!${elemText ? ` ${elemText}` : ''}`,
+        isCritical,
       })
       break
     }
@@ -419,17 +451,19 @@ export function processPlayerAction(
         const effectiveEnemy = enemyDefending
           ? { ...enemy, defense: enemy.defense * 2 }
           : enemy
-        const { damage, elementalMultiplier } = calculatePlayerDamage(playerState, effectiveEnemy, character)
+        const { damage, elementalMultiplier, isCritical } = calculatePlayerDamage(playerState, effectiveEnemy, character)
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
         const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
         const elemText = getEffectivenessText(elementalMultiplier)
+        const critText = isCritical ? ' CRITICAL HIT!' : ''
         newLogs.push({
           turn: turnNumber,
           actor: 'player',
           action: 'attack',
           damage,
-          description: `You strike ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
+          description: `${critText ? 'CRITICAL HIT! ' : ''}You strike ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
+          isCritical,
         })
         break
       }
@@ -437,7 +471,7 @@ export function processPlayerAction(
         const effectiveEnemy = enemyDefending
           ? { ...enemy, defense: enemy.defense * 2 }
           : enemy
-        const { damage: baseDmg, elementalMultiplier } = calculatePlayerDamage(playerState, effectiveEnemy, character)
+        const { damage: baseDmg, elementalMultiplier, isCritical } = calculatePlayerDamage(playerState, effectiveEnemy, character, 0.05)
         const damage = Math.max(1, Math.round(baseDmg * 1.8))
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
@@ -448,7 +482,8 @@ export function processPlayerAction(
           actor: 'player',
           action: 'heavy_attack',
           damage,
-          description: `You deliver a powerful heavy attack on ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
+          description: `${isCritical ? 'CRITICAL HIT! ' : ''}You deliver a powerful heavy attack on ${enemy.name} for ${damage} damage!${comboText}${elemText ? ` ${elemText}` : ''}`,
+          isCritical,
         })
         break
       }
@@ -833,7 +868,7 @@ export function processPlayerAction(
       }
     }
   } else {
-    const { damage: enemyDmg, elementalMultiplier: enemyElemMult } = calculateEnemyDamage(enemy, playerState, false, character)
+    const { damage: enemyDmg, elementalMultiplier: enemyElemMult, isCritical: enemyCrit } = calculateEnemyDamage(enemy, playerState, false, character)
     const dmgReduction = getActiveDamageReduction(playerState)
     const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
     const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
@@ -857,7 +892,8 @@ export function processPlayerAction(
     playerState.hp = Math.max(0, playerState.hp - actualDmg)
     newLogs.push({
       turn: turnNumber, actor: 'enemy', action: 'attack', damage: actualDmg,
-      description: `${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
+      description: `${enemyCrit ? 'CRITICAL! ' : ''}${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
+      isCritical: enemyCrit,
     })
 
     // Apply thorns damage back to enemy
@@ -1006,4 +1042,4 @@ export function getCombatRewards(
 }
 
 // Re-export for tests
-export { getComboMultiplier, generateEnemyTelegraph, checkBossPhaseChange }
+export { getComboMultiplier, generateEnemyTelegraph, checkBossPhaseChange, getPlayerCritChance }

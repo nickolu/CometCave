@@ -322,6 +322,31 @@ class SoundEngine {
     }
   }
 
+  /** Critical hit: sharp high note (1000Hz) with metallic ring (detuned 1005Hz), 150ms, gain 0.25 */
+  playCritical() {
+    try {
+      if (!this.enabled) return
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
+      const freqs = [1000, 1005]
+      freqs.forEach((freq) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, now)
+        gain.gain.setValueAtTime(0.25, now)
+        gain.gain.linearRampToValueAtTime(0, now + 0.15)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(now)
+        osc.stop(now + 0.15)
+      })
+    } catch {
+      // fail silently
+    }
+  }
+
   /** Descending G5/E5/C5, 100ms each overlapped, gain 0.1 */
   playCrossroads() {
     try {
