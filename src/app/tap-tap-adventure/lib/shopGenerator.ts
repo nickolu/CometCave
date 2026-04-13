@@ -148,17 +148,32 @@ export function getFallbackShopItems(level: number): Item[] {
     },
   ]
 
-  // Add a spell scroll to the shop
-  const spell = generateSpellForLevel(level)
+  // Add 1-2 spell scrolls to the shop
+  const spellPrice = 20 + level * 10
+  const spell1 = generateSpellForLevel(level)
   items.push({
     id: `shop-spell-${suffix}`,
-    name: `Scroll of ${spell.name}`,
-    description: `A magical scroll containing the spell ${spell.name}.`,
+    name: `Scroll of ${spell1.name}`,
+    description: `A magical scroll containing the spell ${spell1.name}.`,
     quantity: 1,
     type: 'spell_scroll',
-    price: Math.round(basePrice * 2),
-    spell,
+    price: spellPrice,
+    spell: spell1,
   })
+
+  // 50% chance for a second spell scroll
+  if (Math.random() < 0.5) {
+    const spell2 = generateSpellForLevel(level)
+    items.push({
+      id: `shop-spell2-${suffix}`,
+      name: `Scroll of ${spell2.name}`,
+      description: `A magical scroll containing the spell ${spell2.name}.`,
+      quantity: 1,
+      type: 'spell_scroll',
+      price: spellPrice,
+      spell: spell2,
+    })
+  }
 
   return items.map(inferItemTypeAndEffects)
 }

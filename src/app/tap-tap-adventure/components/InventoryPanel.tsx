@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { List } from '@/app/tap-tap-adventure/components/ui/list'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { getEquipmentSlot } from '@/app/tap-tap-adventure/models/equipment'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -33,6 +34,9 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const handleLearnSpell = useCallback((item: Item) => {
     const result = useGameStore.getState().learnSpell(item.id)
     if (result) {
+      if (result.learned) {
+        soundEngine.playSpellLearn()
+      }
       setFeedbackMessage(result.message)
       setTimeout(() => setFeedbackMessage(null), 3000)
     }

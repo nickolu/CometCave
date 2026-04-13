@@ -22,6 +22,7 @@ import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficult
 
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
 import { calculateMaxMana } from './leveling'
+import { generateSpellForLevel } from './spellGenerator'
 import {
   applyShieldAbsorption,
   castSpell,
@@ -1026,6 +1027,23 @@ export function getCombatRewards(
       if (Math.random() < dropChance) {
         loot.push(item)
       }
+    }
+  }
+
+  // Regular (non-boss) enemies have a chance to drop a spell scroll
+  if (!combatState.isBoss) {
+    const spellDropChance = 0.05 + character.level * 0.01
+    if (Math.random() < spellDropChance) {
+      const spell = generateSpellForLevel(character.level)
+      const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+      loot.push({
+        id: `spell-drop-${suffix}`,
+        name: `Scroll of ${spell.name}`,
+        description: `A spell scroll found on the battlefield containing the spell ${spell.name}.`,
+        quantity: 1,
+        type: 'spell_scroll',
+        spell,
+      })
     }
   }
 
