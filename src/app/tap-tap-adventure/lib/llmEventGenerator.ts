@@ -8,6 +8,7 @@ import { SpellSchema } from '@/app/tap-tap-adventure/models/spell'
 
 import { getReputationTier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
+import { generateSpellForLevel } from './spellGenerator'
 
 const processFallbackRewardItems = (
   items?: { id: string; name?: string; description?: string; quantity: number; type?: string; effects?: Record<string, number> }[]
@@ -420,6 +421,20 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
     ],
     scorched_wastes: [
       {
+        id: `rfb-fire-convergence-${s}`,
+        description: 'Flames erupt from cracks in the scorched earth, spiraling upward into a vortex of pure fire magic. The heat is intense but the energy feels... learnable.',
+        options: [
+          { id: `channel-fire-${s}`, text: 'Channel the fire energy', successProbability: 0.5,
+            successDescription: 'The fire energy condenses into a spell scroll in your hands! The vortex dissipates.',
+            successEffects: { rewardItems: [createSpellScrollRewardItem(5, `fire-convergence-${s}`)] },
+            failureDescription: 'The fire is too intense to control. It scorches the ground and fades.',
+            failureEffects: {} },
+          { id: `retreat-fire-${s}`, text: 'Keep your distance', successProbability: 1.0,
+            successDescription: 'You watch the spectacular display from safety as it eventually burns out.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
         id: `rfb-sandshift-${s}`,
         description: 'The sand shifts beneath your feet, revealing ancient ruins half-buried in the dunes.',
         options: [
@@ -462,6 +477,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
       },
     ],
     frozen_peaks: [
+      {
+        id: `rfb-ice-convergence-${s}`,
+        description: 'Frost crystals spiral in mid-air, drawn together by an unseen force. The convergence of ice magic forms glowing runes that hang in the freezing air.',
+        options: [
+          { id: `grasp-ice-${s}`, text: 'Grasp the ice runes', successProbability: 0.5,
+            successDescription: 'The runes solidify into a frost-covered spell scroll! The convergence shatters into snowflakes.',
+            successEffects: { rewardItems: [createSpellScrollRewardItem(5, `ice-convergence-${s}`)] },
+            failureDescription: 'The runes shatter before you can reach them, leaving only frost on your fingertips.',
+            failureEffects: {} },
+          { id: `wait-ice-${s}`, text: 'Observe the phenomenon', successProbability: 0.8,
+            successDescription: 'You watch in awe as the magic plays out, learning something about the nature of ice magic.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The convergence fades quickly, leaving nothing behind.',
+            failureEffects: {} },
+        ],
+      },
       {
         id: `rfb-blizzard-${s}`,
         description: 'A blizzard closes in rapidly. Visibility drops to near zero.',
@@ -510,6 +541,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
       },
     ],
     crystal_caves: [
+      {
+        id: `rfb-crystal-library-${s}`,
+        description: 'Deep within the caves, crystalline shelves hold preserved spell tomes, their pages protected by arcane resonance.',
+        options: [
+          { id: `read-crystal-tome-${s}`, text: 'Study a glowing tome', successProbability: 0.6,
+            successDescription: 'The crystal-preserved text reveals a powerful spell! You carefully transcribe it.',
+            successEffects: { rewardItems: [createSpellScrollRewardItem(5, `crystal-tome-${s}`)] },
+            failureDescription: 'The arcane resonance makes the text swim before your eyes. You cannot focus.',
+            failureEffects: {} },
+          { id: `harvest-crystals-${s}`, text: 'Harvest the crystal shelves', successProbability: 0.7,
+            successDescription: 'You break off valuable crystal fragments.',
+            successEffects: { gold: 10 },
+            failureDescription: 'The crystals shatter into worthless dust.',
+            failureEffects: {} },
+        ],
+      },
       {
         id: `rfb-crystalhum-${s}`,
         description: 'Crystals hum with magical energy, their light pulsing in rhythmic patterns.',
@@ -605,6 +652,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
     ],
     sky_citadel: [
       {
+        id: `rfb-arcane-archive-${s}`,
+        description: 'You discover an intact arcane archive, its floating bookshelves still maintained by ancient enchantments. Spell formulae shimmer on ethereal pages.',
+        options: [
+          { id: `study-archive-${s}`, text: 'Study the spell formulae', successProbability: 0.6,
+            successDescription: 'You master one of the archived spells and record it on a scroll!',
+            successEffects: { rewardItems: [createSpellScrollRewardItem(5, `archive-spell-${s}`)] },
+            failureDescription: 'The formulae are too advanced for your current understanding.',
+            failureEffects: {} },
+          { id: `loot-archive-${s}`, text: 'Take the enchanted books to sell', successProbability: 0.7,
+            successDescription: 'The enchanted tomes fetch a fine price.',
+            successEffects: { gold: 15 },
+            failureDescription: 'The books lose their enchantment once removed from the shelves.',
+            failureEffects: {} },
+        ],
+      },
+      {
         id: `rfb-lightning-${s}`,
         description: 'Lightning crackles between floating platforms. The path ahead is electrified.',
         options: [
@@ -652,6 +715,18 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
   }
 
   return regionEvents[regionId] ?? []
+}
+
+function createSpellScrollRewardItem(level: number, suffix: string): Item {
+  const spell = generateSpellForLevel(level)
+  return inferItemTypeAndEffects({
+    id: `spell-scroll-${suffix}`,
+    name: `Scroll of ${spell.name}`,
+    description: `A magical scroll containing the spell ${spell.name}.`,
+    quantity: 1,
+    type: 'spell_scroll',
+    spell,
+  })
 }
 
 function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
@@ -844,6 +919,59 @@ function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
           successDescription: 'The stone hums faintly. You feel a brief surge of energy.',
           successEffects: { reputation: 2 },
           failureDescription: 'Nothing happens. It\'s just a stone.',
+          failureEffects: {} },
+      ],
+    },
+    // Spell discovery events
+    {
+      id: `fb-dying-mage-${s}`,
+      description: 'A wounded mage lies by the roadside, clutching a glowing tome. "Please... help me bandage this wound, and I will teach you a spell in return."',
+      options: [
+        { id: `help-mage-${s}`, text: 'Help the mage', successProbability: 0.8,
+          successDescription: 'You tend to the mage\'s wounds. Grateful, they inscribe a spell onto a scroll and hand it to you.',
+          successEffects: { reputation: 3, rewardItems: [createSpellScrollRewardItem(5, `mage-spell-${s}`)] },
+          failureDescription: 'Despite your efforts, the mage\'s wounds are beyond your skill. They thank you for trying.',
+          failureEffects: { reputation: 2 } },
+        { id: `rob-mage-${s}`, text: 'Take the tome and leave', successProbability: 0.5,
+          successDescription: 'You snatch the tome. Inside you find a spell inscribed on loose parchment.',
+          successEffects: { reputation: -6, rewardItems: [createSpellScrollRewardItem(5, `stolen-spell-${s}`)] },
+          failureDescription: 'The mage clings to the tome with surprising strength. You give up and walk away.',
+          failureEffects: { reputation: -3 } },
+        { id: `ignore-mage-${s}`, text: 'Walk past', successProbability: 1.0,
+          successDescription: 'You continue on your way without stopping.',
+          successEffects: { reputation: -1 },
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-ancient-library-${s}`,
+      description: 'Hidden behind a waterfall, you discover the entrance to an ancient library. Dusty tomes line the shelves, and magical light still flickers from enchanted sconces.',
+      options: [
+        { id: `search-tomes-${s}`, text: 'Search the tomes for spells', successProbability: 0.6,
+          successDescription: 'After careful study, you find a tome containing a spell you can learn! You transcribe it onto a scroll.',
+          successEffects: { rewardItems: [createSpellScrollRewardItem(5, `library-spell-${s}`)] },
+          failureDescription: 'The tomes are written in a language you cannot decipher. Perhaps with more experience...',
+          failureEffects: {} },
+        { id: `take-books-${s}`, text: 'Gather books to sell', successProbability: 0.7,
+          successDescription: 'You collect several valuable volumes that a scholar would pay well for.',
+          successEffects: { gold: 12 },
+          failureDescription: 'The books crumble to dust when you try to move them.',
+          failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-elemental-convergence-${s}`,
+      description: 'The air crackles with raw magical energy. Elemental forces swirl together at a nexus point, forming brief shapes and symbols in the air.',
+      options: [
+        { id: `absorb-magic-${s}`, text: 'Reach into the convergence', successProbability: 0.5,
+          successDescription: 'The magical energy coalesces into a spell scroll in your hand! The convergence fades.',
+          successEffects: { rewardItems: [createSpellScrollRewardItem(5, `convergence-spell-${s}`)] },
+          failureDescription: 'The energy is too wild to contain. It disperses harmlessly.',
+          failureEffects: {} },
+        { id: `observe-magic-${s}`, text: 'Observe from a safe distance', successProbability: 0.9,
+          successDescription: 'Watching the convergence teaches you something about the nature of magic.',
+          successEffects: { reputation: 2 },
+          failureDescription: 'The convergence fades before you can learn anything useful.',
           failureEffects: {} },
       ],
     },

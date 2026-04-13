@@ -373,6 +373,33 @@ class SoundEngine {
       // fail silently
     }
   }
+
+  /** Mystical ascending shimmer — two detuned sines sweeping 300->600Hz over 300ms, gain 0.15 */
+  playSpellLearn() {
+    try {
+      if (!this.enabled) return
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
+      const freqs = [300, 305] // Detuned pair for shimmer effect
+      freqs.forEach((startFreq) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(startFreq, now)
+        osc.frequency.linearRampToValueAtTime(startFreq * 2, now + 0.3)
+        gain.gain.setValueAtTime(0.15, now)
+        gain.gain.linearRampToValueAtTime(0.08, now + 0.3)
+        gain.gain.linearRampToValueAtTime(0, now + 0.5) // Reverb-like tail
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(now)
+        osc.stop(now + 0.5)
+      })
+    } catch {
+      // fail silently
+    }
+  }
 }
 
 export const soundEngine = new SoundEngine()

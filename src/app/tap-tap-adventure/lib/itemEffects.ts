@@ -8,6 +8,14 @@ export interface UseItemResult {
 }
 
 export function useItem(character: FantasyCharacter, item: Item): UseItemResult {
+  if (item.type === 'spell_scroll') {
+    return {
+      character,
+      consumed: false,
+      message: `${item.name} contains a spell. Use "Learn Spell" to add it to your spellbook.`,
+    }
+  }
+
   if (item.type !== 'consumable' || !item.effects) {
     return {
       character,
