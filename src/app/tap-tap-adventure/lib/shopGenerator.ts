@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item, ItemSchema } from '@/app/tap-tap-adventure/models/item'
 
+import { getReputationPriceMultiplier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 import { generateSpellForLevel } from './spellGenerator'
 
@@ -95,18 +96,23 @@ ${JSON.stringify({ name: character.name, race: character.race, class: character.
     if (toolCall && toolCall.function?.name === 'generate_shop') {
       const parsed = JSON.parse(toolCall.function.arguments)
       const validated = shopResponseSchema.parse(parsed)
-      return validated.items.map(inferItemTypeAndEffects)
+      const reputationMultiplier = getReputationPriceMultiplier(character.reputation)
+      return validated.items.map(item => inferItemTypeAndEffects({
+        ...item,
+        price: item.price !== undefined ? Math.round(item.price * reputationMultiplier) : undefined,
+      }))
     }
 
     throw new Error('No tool call in response')
   } catch (err) {
     console.error('Shop generation failed, using fallback', err)
-    return getFallbackShopItems(character.level)
+    return getFallbackShopItems(character.level, character.reputation)
   }
 }
 
-export function getFallbackShopItems(level: number): Item[] {
+export function getFallbackShopItems(level: number, reputation: number = 0): Item[] {
   const basePrice = 10 + level * 5
+  const reputationMultiplier = getReputationPriceMultiplier(reputation)
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
   const items: Item[] = [
@@ -116,7 +122,7 @@ export function getFallbackShopItems(level: number): Item[] {
       description: 'A warm, glowing vial that restores vitality.',
       quantity: 1,
       type: 'consumable',
-      price: Math.round(basePrice * 0.8),
+      price: Math.round(basePrice * 0.8 * reputationMultiplier),
       effects: { heal: 10 + level * 5 },
     },
     {
@@ -125,7 +131,7 @@ export function getFallbackShopItems(level: number): Item[] {
       description: 'A thick, crimson brew that bolsters raw power.',
       quantity: 1,
       type: 'consumable',
-      price: Math.round(basePrice * 1.5),
+      price: Math.round(basePrice * 1.5 * reputationMultiplier),
       effects: { strength: 2 + Math.floor(level / 2) },
     },
     {
@@ -134,7 +140,7 @@ export function getFallbackShopItems(level: number): Item[] {
       description: 'Ancient parchment inscribed with arcane knowledge.',
       quantity: 1,
       type: 'consumable',
-      price: Math.round(basePrice * 1.5),
+      price: Math.round(basePrice * 1.5 * reputationMultiplier),
       effects: { intelligence: 2 + Math.floor(level / 2) },
     },
     {
@@ -143,7 +149,7 @@ export function getFallbackShopItems(level: number): Item[] {
       description: 'A small trinket that seems to shimmer with fortune.',
       quantity: 1,
       type: 'consumable',
-      price: basePrice,
+      price: Math.round(basePrice * reputationMultiplier),
       effects: { luck: 2 + Math.floor(level / 3) },
     },
   ]
@@ -157,7 +163,7 @@ export function getFallbackShopItems(level: number): Item[] {
     description: `A magical scroll containing the spell ${spell1.name}.`,
     quantity: 1,
     type: 'spell_scroll',
-    price: spellPrice,
+    price: Math.round(spellPrice * reputationMultiplier),
     spell: spell1,
   })
 
@@ -170,7 +176,7 @@ export function getFallbackShopItems(level: number): Item[] {
       description: `A magical scroll containing the spell ${spell2.name}.`,
       quantity: 1,
       type: 'spell_scroll',
-      price: spellPrice,
+      price: Math.round(spellPrice * reputationMultiplier),
       spell: spell2,
     })
   }

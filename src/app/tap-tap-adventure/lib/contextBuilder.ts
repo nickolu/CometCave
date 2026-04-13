@@ -4,24 +4,47 @@ import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
 const MAX_CONTEXT_LENGTH = 1500
 
-export type ReputationTier = 'Infamous' | 'Disreputable' | 'Unknown' | 'Respected' | 'Renowned' | 'Legendary'
+export type ReputationTier = 'Wanted Criminal' | 'Infamous' | 'Disreputable' | 'Unknown' | 'Respected' | 'Renowned' | 'Legendary' | 'Living Legend'
 
 const REPUTATION_TIER_IMPLICATIONS: Record<ReputationTier, string> = {
+  'Wanted Criminal': 'NPCs flee or attack on sight. Bounty hunters relentlessly pursue the character. Prices are extortionate. Guards may arrest the character. Almost no one will offer aid.',
   Infamous: 'NPCs are hostile or fearful. Bounty hunters pursue the character. Prices are much higher. Few will offer aid.',
   Disreputable: 'NPCs are suspicious and distrustful. Prices are higher. Fewer friendly encounters.',
   Unknown: 'NPCs are neutral. Standard pricing and interactions.',
   Respected: 'NPCs are friendly and helpful. Better deals available. Some share useful information.',
   Renowned: 'NPCs eagerly offer help, share secrets, and propose important quests. Excellent prices.',
   Legendary: 'NPCs revere the character. The best deals, exclusive quests, and powerful allies seek them out.',
+  'Living Legend': 'The character is a mythic figure. Kings seek their counsel, entire armies rally behind them, and merchants offer their finest wares at steep discounts just for the honor.',
 }
 
 export function getReputationTier(reputation: number): ReputationTier {
+  if (reputation < -50) return 'Wanted Criminal'
   if (reputation < -20) return 'Infamous'
   if (reputation < 0) return 'Disreputable'
   if (reputation < 20) return 'Unknown'
   if (reputation < 50) return 'Respected'
   if (reputation < 100) return 'Renowned'
-  return 'Legendary'
+  if (reputation < 150) return 'Legendary'
+  return 'Living Legend'
+}
+
+export function getReputationPriceMultiplier(reputation: number): number {
+  const tier = getReputationTier(reputation)
+  const multipliers: Record<ReputationTier, number> = {
+    'Wanted Criminal': 1.30,
+    Infamous: 1.30,
+    Disreputable: 1.15,
+    Unknown: 1.00,
+    Respected: 0.95,
+    Renowned: 0.90,
+    Legendary: 0.85,
+    'Living Legend': 0.80,
+  }
+  return multipliers[tier]
+}
+
+export function clampReputation(value: number): number {
+  return Math.max(-100, Math.min(200, value))
 }
 
 export function buildStoryContext(
