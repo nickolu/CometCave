@@ -92,6 +92,8 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const { mutate: combatAction, isPending } = useCombatActionMutation()
   const [showItemMenu, setShowItemMenu] = useState(false)
   const [showSpellMenu, setShowSpellMenu] = useState(false)
+  const [showFullLog, setShowFullLog] = useState(false)
+  const [showEnemyDesc, setShowEnemyDesc] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
 
   const character = getSelectedCharacter()
@@ -167,25 +169,31 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <p className="text-sm text-slate-300 italic">{scenario}</p>
       </div>
 
-      {/* Enemy info */}
-      <div className="bg-[#1e1f30] border border-red-900/30 rounded-lg p-3 space-y-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-red-400">{enemy.name}</span>
-            <span className="text-xs text-slate-400">Lv.{enemy.level}</span>
-            {enemy.element && enemy.element !== 'none' && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${ELEMENT_COLORS[enemy.element]}`}>
-                {enemy.element}
-              </span>
-            )}
-          </div>
+      {/* Enemy info — condensed for mobile */}
+      <div className="bg-[#1e1f30] border border-red-900/30 rounded-lg p-2 sm:p-3 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-red-400 text-sm">{enemy.name}</span>
+          <span className="text-xs text-slate-400">Lv.{enemy.level}</span>
+          {enemy.element && enemy.element !== 'none' && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${ELEMENT_COLORS[enemy.element]}`}>
+              {enemy.element}
+            </span>
+          )}
           {enemy.specialAbility && (
             <span className="text-[10px] px-1.5 py-0.5 bg-purple-900/50 text-purple-400 rounded">
               {enemy.specialAbility.name}
             </span>
           )}
+          <button
+            className="text-[10px] text-slate-500 underline ml-auto"
+            onClick={() => setShowEnemyDesc(!showEnemyDesc)}
+          >
+            {showEnemyDesc ? 'Hide' : 'Info'}
+          </button>
         </div>
-        <p className="text-xs text-slate-400">{enemy.description}</p>
+        {showEnemyDesc && (
+          <p className="text-xs text-slate-400">{enemy.description}</p>
+        )}
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
         <StatusEffectBadges effects={enemy.statusEffects ?? []} label="Enemy" />
       </div>
@@ -203,11 +211,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
         </div>
       )}
 
-      {/* Player info */}
-      <div className="bg-[#1e1f30] border border-blue-900/30 rounded-lg p-3 space-y-2">
+      {/* Player info — compact for mobile */}
+      <div className="bg-[#1e1f30] border border-blue-900/30 rounded-lg p-2 sm:p-3 space-y-1">
         <div className="flex justify-between items-center">
-          <span className="font-bold text-blue-400">{character?.name ?? 'You'}</span>
-          <div className="flex gap-2">
+          <span className="font-bold text-blue-400 text-sm">{character?.name ?? 'You'}</span>
+          <div className="flex gap-1 flex-wrap">
             {(playerState.comboCount ?? 0) > 0 && (
               <span className="text-[10px] px-1.5 py-0.5 bg-orange-900/50 text-orange-400 rounded font-bold">
                 {playerState.comboCount}x Combo
@@ -218,23 +226,23 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 Defending
               </span>
             )}
+            {(playerState.shield ?? 0) > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-cyan-900/50 text-cyan-400 rounded">
+                Shield: {playerState.shield}
+              </span>
+            )}
           </div>
         </div>
+        {/* HP + Mana on compact rows */}
         <HpBar current={playerState.hp} max={playerState.maxHp} label="You" color="text-blue-400" />
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}
-        {(playerState.shield ?? 0) > 0 && (
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] px-1.5 py-0.5 bg-cyan-900/50 text-cyan-400 rounded">
-              Shield: {playerState.shield}
-            </span>
-          </div>
-        )}
-        {(playerState.activeSpellEffects ?? []).length > 0 && (
+        {/* Status badges row */}
+        {((playerState.activeSpellEffects ?? []).length > 0 || (playerState.activeBuffs ?? []).length > 0 || (playerState.statusEffects ?? []).length > 0) && (
           <div className="flex gap-1 flex-wrap">
             {(playerState.activeSpellEffects ?? []).map((effect, i) => (
-              <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${
+              <span key={`spell-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded ${
                 effect.effectType === 'heal_over_time' ? 'bg-green-900/50 text-green-400' :
                 effect.effectType === 'damage_reduction' ? 'bg-cyan-900/50 text-cyan-400' :
                 effect.effectType === 'damage_over_time' || effect.effectType === 'bleed' ? 'bg-red-900/50 text-red-400' :
@@ -243,40 +251,66 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 {effect.effectType.replace(/_/g, ' ')} ({effect.turnsRemaining}t)
               </span>
             ))}
-          </div>
-        )}
-        {playerState.activeBuffs && playerState.activeBuffs.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {playerState.activeBuffs.map((buff, i) => (
-              <span key={i} className="text-[10px] px-1.5 py-0.5 bg-emerald-900/50 text-emerald-400 rounded">
+            {(playerState.activeBuffs ?? []).map((buff, i) => (
+              <span key={`buff-${i}`} className="text-[10px] px-1.5 py-0.5 bg-emerald-900/50 text-emerald-400 rounded">
                 +{buff.value} {buff.stat} ({buff.turnsRemaining}t)
               </span>
             ))}
+            {(playerState.statusEffects ?? []).map((effect, i) => {
+              const colorMap: Record<string, string> = {
+                poison: 'bg-green-900/50 text-green-400',
+                burn: 'bg-orange-900/50 text-orange-400',
+                slow: 'bg-blue-900/50 text-blue-400',
+                curse: 'bg-purple-900/50 text-purple-400',
+                thorns: 'bg-green-900/50 text-green-400',
+                berserk: 'bg-red-900/50 text-red-400',
+                fear: 'bg-yellow-900/50 text-yellow-400',
+                reflect: 'bg-slate-700/50 text-slate-300',
+              }
+              return (
+                <span
+                  key={`status-${i}`}
+                  className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
+                  title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
+                >
+                  {effect.name} ({effect.turnsRemaining}t)
+                </span>
+              )
+            })}
           </div>
         )}
-        <StatusEffectBadges effects={playerState.statusEffects ?? []} label="Player" />
       </div>
 
-      {/* Combat Log */}
+      {/* Combat Log — collapsed by default on mobile, show last 2 entries */}
       {combatLog.length > 0 && (
-        <div
-          ref={logRef}
-          className="bg-slate-900 border border-slate-700 rounded-lg p-2 max-h-40 overflow-y-auto space-y-1"
-        >
-          {combatLog.map((entry, i) => (
-            <div
-              key={i}
-              className={`text-xs ${
-                entry.isCritical
-                  ? 'text-yellow-300 font-bold'
-                  : entry.actor === 'player' ? 'text-blue-300' : 'text-red-300'
-              }`}
+        <div className="bg-slate-900 border border-slate-700 rounded-lg p-2 space-y-1">
+          <div
+            ref={logRef}
+            className={showFullLog ? 'max-h-40 overflow-y-auto space-y-1' : 'space-y-1'}
+          >
+            {(showFullLog ? combatLog : combatLog.slice(-2)).map((entry, i) => (
+              <div
+                key={i}
+                className={`text-xs ${
+                  entry.isCritical
+                    ? 'text-yellow-300 font-bold'
+                    : entry.actor === 'player' ? 'text-blue-300' : 'text-red-300'
+                }`}
+              >
+                <span className="text-slate-500">T{entry.turn}:</span>{' '}
+                {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
+                {entry.description}
+              </div>
+            ))}
+          </div>
+          {combatLog.length > 2 && (
+            <button
+              className="text-[10px] text-slate-400 hover:text-slate-200 w-full text-center pt-1"
+              onClick={() => setShowFullLog(!showFullLog)}
             >
-              <span className="text-slate-500">T{entry.turn}:</span>{' '}
-              {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
-              {entry.description}
-            </div>
-          ))}
+              {showFullLog ? 'Collapse log' : `Show full log (${combatLog.length} entries)`}
+            </button>
+          )}
         </div>
       )}
 
@@ -295,12 +329,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="space-y-2">
+      {/* Actions — sticky on mobile for always-visible buttons */}
+      <div className="space-y-2 sticky bottom-0 bg-[#161723] pt-2 pb-1 -mx-4 px-4 border-t border-slate-700/50 md:static md:bg-transparent md:border-0 md:mx-0 md:px-0 md:pt-0 md:pb-0">
         {/* Class Ability */}
         {classAbility && (
           <Button
-            className={`w-full text-sm py-2 rounded-md transition-colors border ${
+            className={`w-full text-base py-3 rounded-md transition-colors border ${
               abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-purple-900/50 border-purple-700 hover:bg-purple-800 text-white'
@@ -320,7 +354,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
         )}
         <div className="grid grid-cols-2 gap-2">
           <Button
-            className={`text-sm py-2 rounded-md transition-colors border ${
+            className={`text-base py-3 rounded-md transition-colors border ${
               (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-red-900/50 border-red-800 hover:bg-red-800 text-white'
@@ -331,7 +365,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : `Attack (${AP_COSTS.attack} AP)`}
           </Button>
           <Button
-            className={`text-sm py-2 rounded-md transition-colors border ${
+            className={`text-base py-3 rounded-md transition-colors border ${
               (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-orange-900/50 border-orange-800 hover:bg-orange-800 text-white'
@@ -342,7 +376,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             Heavy Attack ({AP_COSTS.heavy_attack} AP)
           </Button>
           <Button
-            className={`text-sm py-2 rounded-md transition-colors border ${
+            className={`text-base py-3 rounded-md transition-colors border ${
               (playerState.ap ?? 3) < (AP_COSTS.defend ?? 1)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-blue-900/50 border-blue-800 hover:bg-blue-800 text-white'
@@ -353,7 +387,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             Defend ({AP_COSTS.defend} AP)
           </Button>
           <Button
-            className={`text-sm py-2 rounded-md transition-colors relative border ${
+            className={`text-base py-3 rounded-md transition-colors relative border ${
               combatItems.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.use_item ?? 1)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-emerald-900/50 border-emerald-800 hover:bg-emerald-800 text-white'
@@ -364,7 +398,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             Use Item ({AP_COSTS.use_item} AP) {combatItems.length > 0 && `[${combatItems.length}]`}
           </Button>
           <Button
-            className={`text-sm py-2 rounded-md transition-colors relative border ${
+            className={`text-base py-3 rounded-md transition-colors relative border ${
               spellbook.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.cast_spell ?? 2)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-indigo-900/50 border-indigo-800 hover:bg-indigo-800 text-white'
@@ -375,7 +409,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             Cast Spell ({AP_COSTS.cast_spell} AP) {spellbook.length > 0 && `[${spellbook.length}]`}
           </Button>
           <Button
-            className={`text-sm py-2 rounded-md transition-colors border ${
+            className={`text-base py-3 rounded-md transition-colors border ${
               (playerState.ap ?? 3) < (AP_COSTS.flee ?? 3)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-slate-700 border-slate-600 hover:bg-slate-600 text-white'
@@ -386,7 +420,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             Flee ({AP_COSTS.flee} AP)
           </Button>
           <Button
-            className="bg-yellow-900/50 border border-yellow-800 hover:bg-yellow-800 text-white text-sm py-2 rounded-md transition-colors"
+            className="col-span-2 bg-yellow-900/50 border border-yellow-800 hover:bg-yellow-800 text-white text-base py-3 rounded-md transition-colors"
             onClick={() => handleAction('end_turn')}
             disabled={isPending}
           >

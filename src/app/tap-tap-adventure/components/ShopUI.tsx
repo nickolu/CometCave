@@ -196,7 +196,7 @@ export function ShopUI() {
                 <div className="text-xs text-gray-400">{item.description}</div>
                 <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
                 <Button
-                  className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 border border-yellow-400/30 text-white font-bold text-sm py-2 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 border border-yellow-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                   disabled={!canAfford || busy}
                   onClick={() => handlePurchase(item)}
                 >
@@ -236,7 +236,7 @@ export function ShopUI() {
                 <div className="text-xs text-gray-400">{item.description}</div>
                 <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
                 <Button
-                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-sm py-2 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                   disabled={busy}
                   onClick={() => handleSell(item)}
                 >
