@@ -125,7 +125,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                 <div className="flex space-x-2 mt-3">
                   {activeTab === 'active' && item.type === 'consumable' && (
                     <Button
-                      className="flex-1 bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      className="flex-1 bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleUse(item)}
                       title="Use one of this item"
                     >
@@ -134,7 +134,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                   )}
                   {activeTab === 'active' && item.type === 'spell_scroll' && (
                     <Button
-                      className="flex-1 bg-purple-700 hover:bg-purple-800 text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      className="flex-1 bg-purple-700 hover:bg-purple-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleLearnSpell(item)}
                       title="Learn the spell from this scroll"
                     >
@@ -143,7 +143,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                   )}
                   {activeTab === 'active' && item.type === 'equipment' && (
                     <Button
-                      className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleEquip(item)}
                       title={`Equip to ${getEquipmentSlot(item)} slot`}
                     >
@@ -152,7 +152,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                   )}
                   {activeTab === 'active' ? (
                     <Button
-                      className="flex-1 bg-red-700 hover:bg-red-800 text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      className="flex-1 bg-red-700 hover:bg-red-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleDiscard(item)}
                       title="Discard all of this item"
                     >
@@ -160,7 +160,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                     </Button>
                   ) : (
                     <Button
-                      className="flex-1 bg-blue-700 hover:bg-blue-800 text-white text-xs py-2 px-3 rounded-md transition-colors"
+                      className="flex-1 bg-blue-700 hover:bg-blue-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleRestore(item)}
                       title="Restore this item"
                     >

@@ -66,6 +66,8 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
+type MobilePanel = 'equipment' | 'inventory' | 'skills' | 'quest' | null
+
 export default function GameUI() {
   const {
     gameState,
@@ -81,6 +83,7 @@ export default function GameUI() {
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null)
 
   // Check for daily reward on mount
   useEffect(() => {
@@ -297,7 +300,7 @@ export default function GameUI() {
                           return (
                             <Button
                               key={option.id}
-                              className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-2 mt-2 rounded disabled:opacity-60"
+                              className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-3 text-base mt-2 rounded disabled:opacity-60"
                               disabled={resolveDecisionPending}
                               onClick={() => {
                                 handleResolveDecision(option.id)
@@ -386,8 +389,8 @@ export default function GameUI() {
               </>
             )}
           </div>
-          {/* Right column: Quest, Equipment, Achievements & Inventory Panel */}
-          <div className="p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
+          {/* Right column: Quest, Equipment, Achievements & Inventory Panel — hidden on mobile */}
+          <div className="hidden md:block p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
             <QuestPanel />
             <SkillPanel unlockedSkillIds={character?.unlockedSkills ?? []} />
             <AchievementPanel achievements={gameState.achievements ?? []} />
@@ -402,6 +405,69 @@ export default function GameUI() {
         {/* Two-column grid END */}
       </div>
       {/* Main content wrapper END */}
+
+      {/* Mobile bottom drawer overlay */}
+      {mobilePanel && (
+        <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobilePanel(null)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="absolute bottom-14 left-0 right-0 max-h-[70vh] overflow-y-auto bg-[#161723] border-t border-[#3a3c56] rounded-t-xl p-4 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase">
+                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'skills' ? 'Skills' : 'Quest'}
+              </h3>
+              <button
+                className="text-slate-400 hover:text-white text-sm px-2 py-1"
+                onClick={() => setMobilePanel(null)}
+              >
+                Close
+              </button>
+            </div>
+            {mobilePanel === 'quest' && <QuestPanel />}
+            {mobilePanel === 'equipment' && (
+              <>
+                <EquipmentPanel
+                  equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
+                />
+                <AchievementPanel achievements={gameState.achievements ?? []} />
+              </>
+            )}
+            {mobilePanel === 'inventory' && (
+              <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
+            )}
+            {mobilePanel === 'skills' && (
+              <SkillPanel unlockedSkillIds={character?.unlockedSkills ?? []} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile bottom tab bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex bg-[#1a1b2e] border-t border-slate-700">
+        {([
+          { id: 'equipment' as MobilePanel, label: 'Equip', icon: '\u2694' },
+          { id: 'inventory' as MobilePanel, label: 'Items', icon: '\uD83C\uDF92' },
+          { id: 'skills' as MobilePanel, label: 'Skills', icon: '\u2728' },
+          { id: 'quest' as MobilePanel, label: 'Quest', icon: '\uD83D\uDCDC' },
+        ]).map(tab => (
+          <button
+            key={tab.id}
+            className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
+              mobilePanel === tab.id
+                ? 'text-indigo-400 bg-[#2a2b3f]'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            onClick={() => setMobilePanel(mobilePanel === tab.id ? null : tab.id)}
+          >
+            <span className="text-lg leading-none">{tab.icon}</span>
+            <span className="mt-0.5">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+      {/* Bottom padding spacer for mobile tab bar */}
+      <div className="md:hidden h-14" />
     </div>
     </>
   )

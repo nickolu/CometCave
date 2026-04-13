@@ -193,7 +193,7 @@ export function StoryFeed({
   return (
     <div
       ref={feedRef}
-      className="border border-slate-700 rounded-lg max-h-[calc(100vh-479px)] overflow-y-auto flex p-2 space-y-2 flex-col bg-slate-900"
+      className="border border-slate-700 rounded-lg max-h-48 sm:max-h-64 md:max-h-[calc(100vh-479px)] overflow-y-auto flex p-2 space-y-2 flex-col bg-slate-900"
     >
       {filteredEvents.reverse().map(storyEvent => {
         const isHighlighted = highlightedEventId === storyEvent.id
@@ -209,7 +209,7 @@ export function StoryFeed({
           >
             <div className="flex justify-between items-center mb-2">
               <span className={`text-xs ${isHighlighted ? 'text-slate-300' : 'text-slate-400'}`}>
-                {new Date(storyEvent.timestamp).toISOString().replace('T', ' ').slice(0, 16)}
+                {new Date(storyEvent.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
 

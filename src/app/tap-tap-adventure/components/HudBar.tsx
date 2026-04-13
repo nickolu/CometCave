@@ -256,11 +256,11 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   }
 
   return (
-    <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-2 px-3 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white select-none">
-      <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+    <div className="w-full flex flex-wrap justify-between items-center gap-x-1 sm:gap-x-3 gap-y-2 px-2 sm:px-3 py-2 rounded-lg shadow-md bg-[#161723] border border-[#3a3c56] text-white select-none overflow-hidden">
+      <div className="flex items-center gap-1 sm:gap-4 flex-wrap">
         {STATS_LEFT.map(renderStat)}
       </div>
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-1 sm:gap-4">
         <span
           className="text-[10px] px-1.5 py-0.5 border rounded border-emerald-400 text-emerald-300 bg-[#2a2b3f]"
           title={`${currentRegion.name}: ${currentRegion.description}`}
@@ -285,7 +285,7 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
               <span className="hidden sm:inline text-[10px]">{activeMount.name}</span>
             </button>
             <button
-              className="text-[10px] text-red-400 hover:text-red-300 border border-red-400/30 rounded px-1 py-0.5 bg-[#2a2b3f] hover:bg-[#3a3c56]"
+              className="hidden sm:inline text-[10px] text-red-400 hover:text-red-300 border border-red-400/30 rounded px-1 py-0.5 bg-[#2a2b3f] hover:bg-[#3a3c56]"
               title="Release mount"
               onClick={() => setMount(null)}
             >
@@ -293,7 +293,9 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
             </button>
           </div>
         )}
-        {STATS_RIGHT.map(renderStat)}
+        <div className="hidden sm:flex items-center gap-1 sm:gap-4">
+          {STATS_RIGHT.map(renderStat)}
+        </div>
         {onOpenStatus && (
           <button
             className="text-[10px] px-1.5 py-0.5 rounded border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors text-slate-300"
@@ -301,7 +303,8 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
             title="View character status"
             aria-label="View character status"
           >
-            Status
+            <span className="sm:hidden">{'\u2139'}</span>
+            <span className="hidden sm:inline">Status</span>
           </button>
         )}
         <button
