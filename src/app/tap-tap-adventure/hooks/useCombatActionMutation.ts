@@ -26,7 +26,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation() {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter, setMount, addHeirloom, deleteCharacter, awardSoulEssence } = useGameStore()
+  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -108,9 +108,9 @@ export function useCombatActionMutation() {
             addItem(inferItemTypeAndEffects(lootItem))
           }
 
-          // If boss dropped a mount, equip it
+          // If boss dropped a mount, equip it (via builder so commit() includes it)
           if (data.rewards.mountDrop) {
-            setMount(data.rewards.mountDrop)
+            updateSelectedCharacter({ activeMount: data.rewards.mountDrop })
           }
 
           addStoryEvent({
