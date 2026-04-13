@@ -10,6 +10,8 @@ import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
 
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+
 import { useGameStateBuilder, useGameStore } from './useGameStore'
 
 interface CombatActionResponse {
@@ -96,13 +98,23 @@ export function useCombatActionMutation() {
       })
 
       if (data.combatState.status === 'active') {
-        // Combat continues
+        // Combat continues — play sounds based on what happened
+        if (action === 'attack' || action === 'heavy_attack' || action === 'class_ability') {
+          soundEngine.playHit()
+        }
+        // If player took damage this turn (enemy attacked), play enemy hit sound
+        const prevHp = combatState.playerState.hp
+        const newHp = data.combatState.playerState.hp
+        if (newHp < prevHp) {
+          soundEngine.playEnemyHit()
+        }
         setCombatState(data.combatState)
       } else {
         // Combat ended
         const enemy = combatState.enemy
 
         if (data.combatState.status === 'victory' && data.rewards) {
+          soundEngine.playVictory()
           // Add loot items
           for (const lootItem of data.rewards.loot) {
             addItem(inferItemTypeAndEffects(lootItem))
@@ -125,6 +137,7 @@ export function useCombatActionMutation() {
             },
           })
         } else if (data.combatState.status === 'defeat') {
+          soundEngine.playDefeat()
           const diffMods = getDifficultyModifiers(character.difficultyMode)
 
           if (diffMods.permadeath) {

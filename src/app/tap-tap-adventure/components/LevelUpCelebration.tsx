@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
 interface LevelUpCelebrationProps {
   level: number
@@ -11,6 +12,8 @@ export function LevelUpCelebration({ level, onDismiss }: LevelUpCelebrationProps
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
+    // Play level up sound
+    soundEngine.playLevelUp()
     // Trigger entrance animation
     requestAnimationFrame(() => setIsVisible(true))
 

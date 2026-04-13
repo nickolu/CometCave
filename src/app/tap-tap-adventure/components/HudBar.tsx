@@ -1,10 +1,11 @@
 'use client'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { levelProgress, stepsToNextLevel, stepsRequiredForLevel, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
@@ -117,6 +118,34 @@ export function HudBar() {
     }),
     [character]
   ) as Record<IconType, number | string>
+
+  const [soundEnabled, setSoundEnabled] = useState(true)
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('tap-tap-sound-enabled')
+      if (stored !== null) {
+        const val = stored === 'true'
+        setSoundEnabled(val)
+        soundEngine.setEnabled(val)
+      }
+    } catch {
+      // localStorage unavailable, keep default
+    }
+  }, [])
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => {
+      const next = !prev
+      soundEngine.setEnabled(next)
+      try {
+        localStorage.setItem('tap-tap-sound-enabled', String(next))
+      } catch {
+        // fail silently
+      }
+      return next
+    })
+  }, [])
 
   const [activeTooltip, setActiveTooltip] = useState<IconType | null>(null)
 
@@ -245,6 +274,14 @@ export function HudBar() {
           </div>
         )}
         {STATS_RIGHT.map(renderStat)}
+        <button
+          className="text-sm px-1.5 py-0.5 rounded border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors"
+          onClick={toggleSound}
+          title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+          aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+        >
+          <span>{soundEnabled ? '\u{1F50A}' : '\u{1F507}'}</span>
+        </button>
       </div>
     </div>
   )
