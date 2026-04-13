@@ -10,6 +10,7 @@ import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombat
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
@@ -122,15 +123,21 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
   const handleUseItem = useCallback(
     (itemId: string) => {
+      // Check if the item has healing effects
+      const item = combatItems.find((i: Item) => i.id === itemId)
+      if (item?.effects?.heal && item.effects.heal > 0) {
+        soundEngine.playHeal()
+      }
       setShowItemMenu(false)
       setShowSpellMenu(false)
       combatAction({ action: 'use_item', itemId })
     },
-    [combatAction]
+    [combatAction, combatItems]
   )
 
   const handleCastSpell = useCallback(
     (spellId: string) => {
+      soundEngine.playSpellCast()
       setShowSpellMenu(false)
       setShowItemMenu(false)
       combatAction({ action: 'cast_spell', spellId })

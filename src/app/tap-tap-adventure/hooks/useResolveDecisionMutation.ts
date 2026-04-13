@@ -5,6 +5,8 @@ import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
 
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+
 import { useGameStateBuilder, useGameStore } from './useGameStore'
 
 export interface ResolveDecisionResponse {
@@ -43,6 +45,7 @@ export function useResolveDecisionMutation() {
 
       // Handle crossroads region travel decisions client-side
       if (optionId.startsWith('travel-')) {
+        soundEngine.playCrossroads()
         const regionId = optionId.replace('travel-', '')
         updateSelectedCharacter({ currentRegion: regionId })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
@@ -136,6 +139,7 @@ export function useResolveDecisionMutation() {
       // If the chosen option triggers combat, start a combat encounter
       // Pass the event description so the enemy matches the narrative
       if (data.triggersCombat) {
+        soundEngine.playBoss()
         const { gameState } = useGameStore.getState()
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true

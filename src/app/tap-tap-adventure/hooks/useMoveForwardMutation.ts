@@ -10,6 +10,8 @@ import {
   Item,
 } from '@/app/tap-tap-adventure/models/types'
 
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+
 import { useGameStateBuilder, useGameStore } from './useGameStore'
 
 export interface MoveForwardResponse {
@@ -71,6 +73,7 @@ export function useMoveForwardMutation() {
       }
 
       if (data.shopEvent) {
+        soundEngine.playGold()
         // Step milestone triggered a shop - fetch shop items from server
         const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
           method: 'POST',
@@ -84,6 +87,7 @@ export function useMoveForwardMutation() {
           setShopState({ items: shopData.shopItems, isOpen: true })
         }
       } else if (data.decisionPoint) {
+        soundEngine.playEvent()
         setGenericMessage(null)
         setDecisionPoint(data.decisionPoint)
       }

@@ -16,6 +16,7 @@ import { flipCoin } from '@/app/utils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
 import { DailyRewardPopup } from './DailyRewardPopup'
 import { AchievementPanel } from './AchievementPanel'
@@ -114,6 +115,7 @@ export default function GameUI() {
   }
 
   const handleMoveForward = () => {
+    soundEngine.playTap()
     const character = getSelectedCharacter()
     const distance = character?.distance ?? 0
     const nextDistance = distance + 1
