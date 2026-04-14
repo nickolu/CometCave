@@ -118,6 +118,7 @@ export default function GameUI() {
   }
 
   const handleMoveForward = () => {
+    if (moveForwardPending) return
     soundEngine.playTap()
     const character = getSelectedCharacter()
     const distance = character?.distance ?? 0
