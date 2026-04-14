@@ -801,8 +801,13 @@ export function useGameStateBuilder() {
     selectedCharacter.inventory.push(item)
   }
 
+  const MAX_STORY_EVENTS = 200
+
   const addStoryEvent = (event: FantasyStoryEvent) => {
     gameStateClone.storyEvents.push(event)
+    if (gameStateClone.storyEvents.length > MAX_STORY_EVENTS) {
+      gameStateClone.storyEvents = gameStateClone.storyEvents.slice(-MAX_STORY_EVENTS)
+    }
   }
 
   const setCombatState = (combatState: CombatState | null) => {
