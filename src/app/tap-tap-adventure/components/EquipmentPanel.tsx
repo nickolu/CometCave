@@ -51,10 +51,30 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                       {item.effects && (
                         <div className="text-xs text-emerald-400">
                           {Object.entries(item.effects)
-                            .filter(([, v]) => v !== undefined && v !== 0)
-                            .map(([k, v]) => `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`)
+                            .filter(
+                              ([k, v]) => v !== undefined && v !== 0 && k !== 'range'
+                            )
+                            .map(
+                              ([k, v]) =>
+                                `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`
+                            )
                             .join(', ')}
                         </div>
+                      )}
+                      {slot === 'weapon' && item.effects?.range && (
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded mt-0.5 inline-block ${
+                            item.effects.range === 'far'
+                              ? 'bg-blue-900/50 text-blue-400'
+                              : item.effects.range === 'mid'
+                                ? 'bg-yellow-900/50 text-yellow-400'
+                                : 'bg-red-900/50 text-red-400'
+                          }`}
+                        >
+                          {item.effects.range.charAt(0).toUpperCase() +
+                            item.effects.range.slice(1)}{' '}
+                          Range
+                        </span>
                       )}
                     </>
                   ) : (

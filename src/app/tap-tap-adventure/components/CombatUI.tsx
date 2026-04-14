@@ -185,6 +185,15 @@ export function CombatUI({ combatState }: CombatUIProps) {
     prevComboRef.current = currentCombo
   }, [playerState.comboCount])
 
+  // Determine if player can attack at current distance based on weapon range
+  const weaponRange = character?.equipment?.weapon?.effects?.range ?? 'close'
+  const distanceOrder = ['close', 'mid', 'far'] as const
+  const weaponReach = distanceOrder.indexOf(weaponRange as (typeof distanceOrder)[number])
+  const currentDistIdx = distanceOrder.indexOf(
+    (combatState.combatDistance ?? 'mid') as (typeof distanceOrder)[number]
+  )
+  const canAttackAtDistance = currentDistIdx <= weaponReach
+
   const combatItems = (character?.inventory ?? []).filter(
     (i: Item) => i.status !== 'deleted' && isUsableInCombat(i)
   )
@@ -220,10 +229,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
       const ap = playerState.ap ?? 3
       switch (e.key.toLowerCase()) {
         case 'a': // Attack
-          if (ap >= (AP_COSTS.attack ?? 1) && (combatState.combatDistance ?? 'mid') === 'close') { e.preventDefault(); handleAction('attack') }
+          if (ap >= (AP_COSTS.attack ?? 1) && canAttackAtDistance) { e.preventDefault(); handleAction('attack') }
           break
         case 'h': // Heavy Attack
-          if (ap >= (AP_COSTS.heavy_attack ?? 2) && (combatState.combatDistance ?? 'mid') === 'close') { e.preventDefault(); handleAction('heavy_attack') }
+          if (ap >= (AP_COSTS.heavy_attack ?? 2) && canAttackAtDistance) { e.preventDefault(); handleAction('heavy_attack') }
           break
         case 'd': // Defend
           if (ap >= (AP_COSTS.defend ?? 1)) { e.preventDefault(); handleAction('defend') }
@@ -241,7 +250,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
           e.preventDefault(); handleAction('end_turn')
           break
         case '5': // Class Ability
-          if (classAbility && abilityCooldown === 0 && ap >= (AP_COSTS.class_ability ?? 2) && (combatState.combatDistance ?? 'mid') === 'close') {
+          if (classAbility && abilityCooldown === 0 && ap >= (AP_COSTS.class_ability ?? 2) && canAttackAtDistance) {
             e.preventDefault(); handleAction('class_ability')
           }
           break
@@ -513,12 +522,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {classAbility && (
           <Button
             className={`w-full text-base py-3 rounded-md transition-colors border ${
-              abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'
+              abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || !canAttackAtDistance
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-purple-900/50 border-purple-700 hover:bg-purple-800 text-white'
             }`}
             onClick={() => handleAction('class_ability')}
-            disabled={isPending || abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'}
+            disabled={isPending || abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || !canAttackAtDistance}
             title={classAbility.description}
           >
             {isPending ? (
@@ -533,23 +542,23 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <div className="grid grid-cols-2 gap-2">
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || (combatState.combatDistance ?? 'mid') !== 'close'
+              (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || !canAttackAtDistance
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-red-900/50 border-red-800 hover:bg-red-800 text-white'
             }`}
             onClick={() => handleAction('attack')}
-            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || (combatState.combatDistance ?? 'mid') !== 'close'}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || !canAttackAtDistance}
           >
             {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : `Attack (${AP_COSTS.attack} AP)`}
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'
+              (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || !canAttackAtDistance
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-orange-900/50 border-orange-800 hover:bg-orange-800 text-white'
             }`}
             onClick={() => handleAction('heavy_attack')}
-            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || !canAttackAtDistance}
           >
             Heavy Attack ({AP_COSTS.heavy_attack} AP)
           </Button>

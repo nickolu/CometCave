@@ -55,6 +55,7 @@ export const CombatEnemySchema = z.object({
   statusEffects: z.array(StatusEffectSchema).optional(),
   statusAbility: StatusAbilitySchema.optional(),
   element: SpellElementSchema.optional(),
+  range: z.enum(['melee', 'ranged']).optional(),
 })
 export type CombatEnemy = z.infer<typeof CombatEnemySchema>
 
