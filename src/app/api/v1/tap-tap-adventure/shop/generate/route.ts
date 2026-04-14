@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { generateShopItems } from '@/app/tap-tap-adventure/lib/shopGenerator'
+import { generateShopItems, generateShopMount } from '@/app/tap-tap-adventure/lib/shopGenerator'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
     }
 
     const shopItems = await generateShopItems(character)
-    return NextResponse.json({ shopItems })
+    const shopMount = generateShopMount(character)
+    return NextResponse.json({ shopItems, shopMount })
   } catch (err) {
     console.error('Error generating shop', err)
     return NextResponse.json(

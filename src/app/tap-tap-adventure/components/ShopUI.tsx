@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -131,6 +132,34 @@ export function ShopUI() {
     }
   }
 
+  const handleBuyMount = () => {
+    const mountData = shopState.shopMount
+    if (!mountData || character.gold < mountData.price) return
+    setBusy(true)
+    setFeedback(null)
+
+    const oldMount = character.activeMount
+    const updatedCharacters = gameState.characters.map(c => {
+      if (c.id !== character.id) return c
+      return {
+        ...c,
+        gold: c.gold - mountData.price,
+        activeMount: mountData.mount,
+      }
+    })
+
+    setGameState({
+      ...gameState,
+      characters: updatedCharacters,
+      shopState: { ...shopState, shopMount: null },
+    })
+
+    soundEngine.playMountAcquired()
+    const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
+    setFeedback(`Purchased ${mountData.mount.name}!${replacedText}`)
+    setBusy(false)
+  }
+
   const handleLeaveShop = () => {
     setShopState(null)
   }
@@ -180,6 +209,54 @@ export function ShopUI() {
       {/* Buy tab */}
       {activeTab === 'buy' && (
         <div className="space-y-3">
+          {/* Mount for sale */}
+          {shopState.shopMount && (() => {
+            const { mount, price } = shopState.shopMount
+            const canAffordMount = character.gold >= price
+            const rarityColors: Record<string, string> = {
+              common: 'text-gray-300',
+              uncommon: 'text-green-400',
+              rare: 'text-blue-400',
+              legendary: 'text-yellow-400',
+            }
+            const bonusParts: string[] = []
+            if (mount.bonuses.strength) bonusParts.push(`+${mount.bonuses.strength} STR`)
+            if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
+            if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
+            if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
+            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/step`)
+            return (
+              <div className="border border-purple-500/40 bg-[#2a2040] rounded-lg p-3 space-y-1">
+                <div className="flex justify-between items-start">
+                  <div className="font-semibold text-white">
+                    {mount.icon} {mount.name}
+                    <span className={`ml-2 text-xs uppercase ${rarityColors[mount.rarity]}`}>
+                      {mount.rarity}
+                    </span>
+                  </div>
+                  <div className="text-yellow-400 font-bold text-sm whitespace-nowrap ml-2">
+                    {price} gold
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">{mount.description}</div>
+                <div className="text-xs text-purple-300">{bonusParts.join(', ')}</div>
+                <div className="text-xs text-gray-500">Daily upkeep: {mount.dailyCost} gold</div>
+                {character.activeMount && (
+                  <div className="text-xs text-amber-400">
+                    Replaces current mount: {character.activeMount.icon} {character.activeMount.name}
+                  </div>
+                )}
+                <Button
+                  className="w-full mt-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border border-purple-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={!canAffordMount || busy}
+                  onClick={handleBuyMount}
+                >
+                  {canAffordMount ? 'Buy Mount' : 'Not enough gold'}
+                </Button>
+              </div>
+            )
+          })()}
+
           {shopState.items.map(item => {
             const canAfford = character.gold >= (item.price ?? 0)
             return (

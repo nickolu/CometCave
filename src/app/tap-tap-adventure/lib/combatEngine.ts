@@ -1047,11 +1047,16 @@ export function getCombatRewards(
     }
   }
 
-  // Bosses have a chance to drop a mount
+  // Bosses have a 25% chance to drop a mount; non-boss enemies have a 3% chance
   let mountDrop: Mount | undefined
   if (combatState.isBoss) {
     const mountDropChance = 0.25 + character.luck * 0.02
     if (Math.random() < mountDropChance) {
+      mountDrop = getRandomMount(character.luck)
+    }
+  } else {
+    const nonBossMountChance = 0.03 + character.luck * 0.005
+    if (Math.random() < nonBossMountChance) {
       mountDrop = getRandomMount(character.luck)
     }
   }

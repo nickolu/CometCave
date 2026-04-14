@@ -20,6 +20,28 @@ export function getMountsByRarity(rarity: Mount['rarity']): Mount[] {
   return MOUNT_DEFINITIONS.filter(m => m.rarity === rarity)
 }
 
+export function getMountPrice(rarity: Mount['rarity']): number {
+  switch (rarity) {
+    case 'common': return 30
+    case 'uncommon': return 60
+    case 'rare': return 120
+    case 'legendary': return 300
+  }
+}
+
+/** Returns a mount appropriate for the character's level (never legendary in shops). */
+export function getShopMount(characterLevel: number): Mount {
+  let pool: Mount[]
+  if (characterLevel >= 7) {
+    pool = [...getMountsByRarity('uncommon'), ...getMountsByRarity('rare')]
+  } else if (characterLevel >= 4) {
+    pool = [...getMountsByRarity('common'), ...getMountsByRarity('uncommon')]
+  } else {
+    pool = getMountsByRarity('common')
+  }
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
 export function getRandomMount(luckBonus: number = 0): Mount {
   const roll = Math.random() + luckBonus * 0.02
   let pool: Mount[]

@@ -374,6 +374,41 @@ class SoundEngine {
     }
   }
 
+  /** Mount acquired fanfare — low note (200Hz) + high sweep (400->800Hz), 300ms, gain 0.2 */
+  playMountAcquired() {
+    try {
+      if (!this.enabled) return
+      const ctx = this.getContext()
+      if (!ctx) return
+      const now = ctx.currentTime
+      // Low note
+      const oscLow = ctx.createOscillator()
+      const gainLow = ctx.createGain()
+      oscLow.type = 'sine'
+      oscLow.frequency.setValueAtTime(200, now)
+      gainLow.gain.setValueAtTime(0.2, now)
+      gainLow.gain.linearRampToValueAtTime(0, now + 0.3)
+      oscLow.connect(gainLow)
+      gainLow.connect(ctx.destination)
+      oscLow.start(now)
+      oscLow.stop(now + 0.3)
+      // High sweep
+      const oscHigh = ctx.createOscillator()
+      const gainHigh = ctx.createGain()
+      oscHigh.type = 'sine'
+      oscHigh.frequency.setValueAtTime(400, now)
+      oscHigh.frequency.linearRampToValueAtTime(800, now + 0.3)
+      gainHigh.gain.setValueAtTime(0.2, now)
+      gainHigh.gain.linearRampToValueAtTime(0, now + 0.3)
+      oscHigh.connect(gainHigh)
+      gainHigh.connect(ctx.destination)
+      oscHigh.start(now)
+      oscHigh.stop(now + 0.3)
+    } catch {
+      // fail silently
+    }
+  }
+
   /** Mystical ascending shimmer — two detuned sines sweeping 300->600Hz over 300ms, gain 0.15 */
   playSpellLearn() {
     try {

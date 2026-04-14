@@ -126,9 +126,14 @@ export function useCombatActionMutation() {
             addItem(inferItemTypeAndEffects(lootItem))
           }
 
-          // If boss dropped a mount, equip it (via builder so commit() includes it)
+          // If combat dropped a mount, equip it
+          let mountText = ''
           if (data.rewards.mountDrop) {
+            const oldMount = character.activeMount
             updateSelectedCharacter({ activeMount: data.rewards.mountDrop })
+            soundEngine.playMountAcquired()
+            const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
+            mountText = ` You tamed a ${data.rewards.mountDrop.name}! ${data.rewards.mountDrop.icon}${replacedText}`
           }
 
           addStoryEvent({
@@ -137,7 +142,7 @@ export function useCombatActionMutation() {
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.${data.rewards.mountDrop ? ` You tamed a ${data.rewards.mountDrop.name}! ${data.rewards.mountDrop.icon}` : ''}`,
+            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.${mountText}`,
             resourceDelta: {
               gold: data.rewards.gold,
             },
