@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { List } from '@/app/tap-tap-adventure/components/ui/list'
@@ -12,9 +12,23 @@ interface InventoryPanelProps {
   inventory: Item[]
 }
 
+const TYPE_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'consumable', label: 'Consumable' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'spell_scroll', label: 'Spell' },
+  { value: 'quest', label: 'Quest' },
+  { value: 'misc', label: 'Misc' },
+]
+
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'default' | 'name' | 'type' | 'value'>('default')
+  const [detailItem, setDetailItem] = useState<Item | null>(null)
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
+
   const character = useGameStore(s => s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId))
   const equipment = (character?.equipment ?? { weapon: null, armor: null, accessory: null }) as EquipmentSlots
 
@@ -52,11 +66,40 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
     useGameStore.getState().restoreItem(item.id)
   }, [])
 
+  const handlePointerDown = useCallback((item: Item) => {
+    longPressTimerRef.current = setTimeout(() => {
+      setDetailItem(item)
+    }, 500)
+  }, [])
+
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }, [])
+
   const itemsToDisplay = (inventory ?? []).filter(item => {
     if (activeTab === 'active') {
-      return item.status !== 'deleted'
+      if (item.status === 'deleted') return false
+    } else {
+      if (item.status !== 'deleted') return false
     }
-    return item.status === 'deleted'
+    if (typeFilter !== 'all' && item.type !== typeFilter) return false
+    return true
+  })
+
+  const sortedItems = [...itemsToDisplay].sort((a, b) => {
+    switch (sortBy) {
+      case 'name': return a.name.localeCompare(b.name)
+      case 'type': return (a.type ?? 'misc').localeCompare(b.type ?? 'misc')
+      case 'value': {
+        const aVal = Object.values(a.effects ?? {}).reduce((sum: number, v) => sum + (typeof v === 'number' ? Math.abs(v) : 0), 0)
+        const bVal = Object.values(b.effects ?? {}).reduce((sum: number, v) => sum + (typeof v === 'number' ? Math.abs(v) : 0), 0)
+        return bVal - aVal
+      }
+      default: return 0
+    }
   })
 
   return (
@@ -65,6 +108,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
         <h3 className="text-lg font-semibold text-white">
           {activeTab === 'active' ? 'Inventory' : 'Deleted Items'}
         </h3>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as typeof sortBy)}
+          className="bg-[#2a2b3f] border border-[#3a3c56] text-gray-300 text-xs rounded px-2 py-1"
+        >
+          <option value="default">Sort: Default</option>
+          <option value="name">Sort: Name</option>
+          <option value="type">Sort: Type</option>
+          <option value="value">Sort: Value</option>
+        </select>
         <Button
           onClick={() => setActiveTab(activeTab === 'active' ? 'deleted' : 'active')}
           variant="link"
@@ -73,22 +126,49 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           {activeTab === 'active' ? 'Show Deleted' : 'Show Active'}
         </Button>
       </div>
+      {activeTab === 'active' && (
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+          {TYPE_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setTypeFilter(f.value)}
+              className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                typeFilter === f.value
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-[#2a2b3f] text-gray-400 hover:text-white'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
       {feedbackMessage && (
         <div className="mb-2 p-2 bg-green-900/50 border border-green-700 rounded-md text-green-300 text-sm animate-pulse">
           {feedbackMessage}
         </div>
       )}
       <div className="overflow-auto flex-1">
-        {itemsToDisplay.length === 0 ? (
+        {sortedItems.length === 0 ? (
           <div className="text-gray-400">
             {activeTab === 'active' ? 'Your inventory is empty.' : 'No deleted items.'}
           </div>
         ) : (
           <List
-            items={itemsToDisplay}
+            items={sortedItems}
             className="space-y-0 w-full"
             renderItem={(item: Item) => (
-              <div className={`bg-[#1e1f30] border ${item.isHeirloom ? 'border-amber-500/60 ring-1 ring-amber-500/30' : 'border-[#3a3c56]'} p-4 rounded-lg space-y-2 mb-3 w-full`}>
+              <div
+                className={`relative bg-[#1e1f30] border ${item.isHeirloom ? 'border-amber-500/60 ring-1 ring-amber-500/30' : 'border-[#3a3c56]'} p-4 rounded-lg space-y-2 mb-3 w-full`}
+                onPointerDown={() => handlePointerDown(item)}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+              >
+                {item.quantity > 1 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                    x{item.quantity}
+                  </span>
+                )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     {item.isHeirloom && (
@@ -141,9 +221,6 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       </div>
                     )
                   })()}
-                  {item.quantity > 1 && (
-                    <div className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity}</div>
-                  )}
                 </div>
                 <div className="flex space-x-2 mt-3">
                   {activeTab === 'active' && item.type === 'consumable' && (
@@ -196,6 +273,88 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           />
         )}
       </div>
+      {detailItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setDetailItem(null)}
+        >
+          <div
+            className="bg-[#1e1f30] border border-[#3a3c56] rounded-xl p-5 max-w-sm w-full mx-4 space-y-3"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2">
+              {detailItem.isHeirloom && <span className="text-amber-400">&#9733;</span>}
+              <h4 className="text-white font-bold text-lg">{detailItem.name}</h4>
+              {detailItem.type && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  detailItem.type === 'consumable' ? 'bg-green-900/50 text-green-400' :
+                  detailItem.type === 'equipment' ? 'bg-indigo-900/50 text-indigo-400' :
+                  detailItem.type === 'spell_scroll' ? 'bg-purple-900/50 text-purple-400' :
+                  detailItem.type === 'quest' ? 'bg-yellow-900/50 text-yellow-400' :
+                  'bg-gray-900/50 text-gray-400'
+                }`}>
+                  {detailItem.type === 'spell_scroll' ? 'Spell Scroll' : detailItem.type.charAt(0).toUpperCase() + detailItem.type.slice(1)}
+                </span>
+              )}
+            </div>
+            <p className="text-gray-300 text-sm">{detailItem.description}</p>
+            {detailItem.quantity > 1 && (
+              <div className="text-xs text-gray-400">Quantity: {detailItem.quantity}</div>
+            )}
+            {detailItem.effects && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 uppercase font-semibold">Effects</div>
+                {Object.entries(detailItem.effects)
+                  .filter(([, v]) => v !== undefined && v !== 0)
+                  .map(([k, v]) => (
+                    <div key={k} className="flex justify-between text-sm">
+                      <span className="text-gray-300">{k.charAt(0).toUpperCase() + k.slice(1)}</span>
+                      <span className={(v as number) > 0 ? 'text-green-400' : 'text-red-400'}>
+                        {(v as number) > 0 ? '+' : ''}{v as number}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
+            {detailItem.type === 'equipment' && (() => {
+              const slot = getEquipmentSlot(detailItem)
+              const equipped = equipment[slot]
+              if (!equipped) return <div className="text-xs text-green-400">No item equipped in {slot} slot</div>
+              const stats = ['strength', 'intelligence', 'luck'] as const
+              const deltas = stats.map(key => {
+                const diff = (detailItem.effects?.[key] ?? 0) - (equipped.effects?.[key] ?? 0)
+                return diff !== 0 ? { label: key.charAt(0).toUpperCase() + key.slice(1), diff } : null
+              }).filter(Boolean) as { label: string; diff: number }[]
+              if (deltas.length === 0) return <div className="text-xs text-gray-500">Same stats as equipped {equipped.name}</div>
+              return (
+                <div className="space-y-1">
+                  <div className="text-xs text-gray-500 uppercase font-semibold">vs {equipped.name}</div>
+                  {deltas.map(d => (
+                    <div key={d.label} className="flex justify-between text-sm">
+                      <span className="text-gray-300">{d.label}</span>
+                      <span className={d.diff > 0 ? 'text-green-400' : 'text-red-400'}>
+                        {d.diff > 0 ? '+' : ''}{d.diff}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+            {detailItem.spell && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 uppercase font-semibold">Spell: {detailItem.spell.name}</div>
+                <div className="text-sm text-gray-300">{detailItem.spell.description}</div>
+              </div>
+            )}
+            <button
+              onClick={() => setDetailItem(null)}
+              className="w-full mt-2 py-2 bg-[#2a2b3f] border border-[#3a3c56] text-gray-300 rounded-lg text-sm hover:bg-[#3a3c56] transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
