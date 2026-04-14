@@ -8,6 +8,8 @@ import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostPro
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
 import { Item } from '@/app/tap-tap-adventure/models/types'
+import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
+import { ItemEffects } from '@/app/tap-tap-adventure/models/item'
 
 type ShopTab = 'buy' | 'sell'
 
@@ -20,6 +22,41 @@ function formatEffects(effects?: Item['effects']): string {
   if (effects.gold) parts.push(`+${effects.gold} Gold`)
   if (effects.reputation) parts.push(`+${effects.reputation} Rep`)
   return parts.length > 0 ? parts.join(', ') : 'No effects'
+}
+
+const STAT_KEYS: { key: keyof ItemEffects; label: string }[] = [
+  { key: 'strength', label: 'STR' },
+  { key: 'intelligence', label: 'INT' },
+  { key: 'luck', label: 'LCK' },
+]
+
+function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentSlots }) {
+  if (item.type !== 'equipment') return null
+  const slot = getEquipmentSlot(item)
+  const equipped = equipment[slot]
+  if (!equipped) {
+    return <div className="text-xs text-green-400">No item in {slot} slot — direct upgrade</div>
+  }
+  const deltas = STAT_KEYS.map(({ key, label }) => {
+    const newVal = item.effects?.[key] ?? 0
+    const oldVal = equipped.effects?.[key] ?? 0
+    const diff = newVal - oldVal
+    if (diff === 0) return null
+    return { label, diff }
+  }).filter(Boolean) as { label: string; diff: number }[]
+
+  if (deltas.length === 0) return <div className="text-xs text-gray-500">Same stats as equipped {equipped.name}</div>
+
+  return (
+    <div className="text-xs space-x-2">
+      <span className="text-gray-500">vs {equipped.name}:</span>
+      {deltas.map(d => (
+        <span key={d.label} className={d.diff > 0 ? 'text-green-400' : 'text-red-400'}>
+          {d.diff > 0 ? '+' : ''}{d.diff} {d.label}
+        </span>
+      ))}
+    </div>
+  )
 }
 
 export function ShopUI() {
@@ -272,6 +309,9 @@ export function ShopUI() {
                 </div>
                 <div className="text-xs text-gray-400">{item.description}</div>
                 <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
+                {character.equipment && (
+                  <ItemComparison item={item} equipment={character.equipment as EquipmentSlots} />
+                )}
                 <Button
                   className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 border border-yellow-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                   disabled={!canAfford || busy}

@@ -5,7 +5,7 @@ import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { List } from '@/app/tap-tap-adventure/components/ui/list'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
-import { getEquipmentSlot } from '@/app/tap-tap-adventure/models/equipment'
+import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
 interface InventoryPanelProps {
@@ -15,6 +15,8 @@ interface InventoryPanelProps {
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const character = useGameStore(s => s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId))
+  const equipment = (character?.equipment ?? { weapon: null, armor: null, accessory: null }) as EquipmentSlots
 
   const handleUse = useCallback((item: Item) => {
     const result = useGameStore.getState().useItem(item.id)
@@ -118,6 +120,27 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                         .join(', ')}
                     </div>
                   )}
+                  {item.type === 'equipment' && (() => {
+                    const slot = getEquipmentSlot(item)
+                    const equipped = equipment[slot]
+                    if (!equipped) return <div className="text-xs text-green-400 mt-0.5">No item in {slot} slot</div>
+                    const stats = ['strength', 'intelligence', 'luck'] as const
+                    const deltas = stats.map(key => {
+                      const diff = (item.effects?.[key] ?? 0) - (equipped.effects?.[key] ?? 0)
+                      return diff !== 0 ? { label: key.slice(0, 3).toUpperCase(), diff } : null
+                    }).filter(Boolean) as { label: string; diff: number }[]
+                    if (deltas.length === 0) return <div className="text-xs text-gray-500 mt-0.5">Same stats as equipped {equipped.name}</div>
+                    return (
+                      <div className="text-xs mt-0.5 space-x-2">
+                        <span className="text-gray-500">vs {equipped.name}:</span>
+                        {deltas.map(d => (
+                          <span key={d.label} className={d.diff > 0 ? 'text-green-400' : 'text-red-400'}>
+                            {d.diff > 0 ? '+' : ''}{d.diff} {d.label}
+                          </span>
+                        ))}
+                      </div>
+                    )
+                  })()}
                   {item.quantity > 1 && (
                     <div className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity}</div>
                   )}
