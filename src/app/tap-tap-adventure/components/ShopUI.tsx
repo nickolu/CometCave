@@ -7,6 +7,7 @@ import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
+import { getMountSellPrice } from '@/app/tap-tap-adventure/config/mounts'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
 import { ItemEffects } from '@/app/tap-tap-adventure/models/item'
@@ -60,7 +61,7 @@ function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentS
 }
 
 export function ShopUI() {
-  const { gameState, setShopState, setGameState } = useGameStore()
+  const { gameState, setShopState, setGameState, setMount } = useGameStore()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState<ShopTab>('buy')
@@ -201,6 +202,29 @@ export function ShopUI() {
     setShopState(null)
   }
 
+  const handleSellMount = () => {
+    if (!character.activeMount) return
+    const sellPrice = getMountSellPrice(character.activeMount.rarity)
+    const mountName = character.activeMount.name
+
+    const updatedCharacters = gameState.characters.map(c => {
+      if (c.id !== character.id) return c
+      return {
+        ...c,
+        gold: c.gold + sellPrice,
+        activeMount: null,
+      }
+    })
+
+    setGameState({
+      ...gameState,
+      characters: updatedCharacters,
+    })
+
+    soundEngine.playGold()
+    setFeedback(`Sold ${mountName} for ${sellPrice} gold!`)
+  }
+
   const sellableItems = character.inventory.filter(i => i.status !== 'deleted' && i.quantity > 0)
 
   return (
@@ -332,6 +356,49 @@ export function ShopUI() {
       {/* Sell tab */}
       {activeTab === 'sell' && (
         <div className="space-y-3">
+          {/* Sell Mount */}
+          {character.activeMount && (() => {
+            const mount = character.activeMount
+            const sellPrice = getMountSellPrice(mount.rarity)
+            const rarityColors: Record<string, string> = {
+              common: 'text-gray-300',
+              uncommon: 'text-green-400',
+              rare: 'text-blue-400',
+              legendary: 'text-yellow-400',
+            }
+            const bonusParts: string[] = []
+            if (mount.bonuses.strength) bonusParts.push(`+${mount.bonuses.strength} STR`)
+            if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
+            if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
+            if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
+            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/step`)
+            return (
+              <div className="border border-purple-500/40 bg-[#2a2040] rounded-lg p-3 space-y-1">
+                <div className="flex justify-between items-start">
+                  <div className="font-semibold text-white">
+                    {mount.icon} {mount.name}
+                    <span className={`ml-2 text-xs uppercase ${rarityColors[mount.rarity]}`}>
+                      {mount.rarity}
+                    </span>
+                  </div>
+                  <div className="text-emerald-400 font-bold text-sm whitespace-nowrap ml-2">
+                    {sellPrice} gold
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400">{mount.description}</div>
+                <div className="text-xs text-purple-300">{bonusParts.join(', ')}</div>
+                <div className="text-xs text-gray-500">Daily upkeep: {mount.dailyCost} gold</div>
+                <Button
+                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={busy}
+                  onClick={handleSellMount}
+                >
+                  Sell Mount
+                </Button>
+              </div>
+            )
+          })()}
+
           {sellableItems.map(item => {
             const sellPrice = calculateSellPrice(item)
             return (
@@ -363,7 +430,7 @@ export function ShopUI() {
             )
           })}
 
-          {sellableItems.length === 0 && (
+          {sellableItems.length === 0 && !character.activeMount && (
             <div className="text-sm text-gray-500 text-center">You have nothing to sell.</div>
           )}
         </div>
