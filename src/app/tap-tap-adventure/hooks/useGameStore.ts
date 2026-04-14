@@ -61,6 +61,7 @@ const defaultCharacter: FantasyCharacter = {
   activeMount: null,
   difficultyMode: 'normal',
   currentRegion: 'green_meadows',
+  visitedRegions: ['green_meadows'],
 }
 
 export interface GameStore {
@@ -694,7 +695,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 13,
+      version: 14,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -745,6 +746,10 @@ export const useGameStore = create<GameStore>()(
             // v12: Add currentRegion
             if ((char as FantasyCharacter).currentRegion === undefined) {
               ;(char as FantasyCharacter).currentRegion = 'green_meadows'
+            }
+            // v14: Add visitedRegions
+            if (!(char as FantasyCharacter).visitedRegions) {
+              ;(char as FantasyCharacter).visitedRegions = [(char as FantasyCharacter).currentRegion ?? 'green_meadows']
             }
           }
         }

@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -45,8 +46,47 @@ export function useResolveDecisionMutation() {
 
       // Handle crossroads region travel decisions client-side
       if (optionId.startsWith('travel-')) {
-        soundEngine.playCrossroads()
         const regionId = optionId.replace('travel-', '')
+        const visitedRegions = character.visitedRegions ?? ['green_meadows']
+        const isUnvisited = !visitedRegions.includes(regionId)
+
+        // Boss-gated travel: unvisited regions require defeating a boss guardian
+        if (isUnvisited) {
+          soundEngine.playBoss()
+          const destRegion = getRegion(regionId)
+          const { gameState: gs } = useGameStore.getState()
+          const bossContext = `A powerful guardian of ${destRegion.name} blocks the path. This ${destRegion.element !== 'none' ? destRegion.element + '-aligned ' : ''}boss protects the entrance to ${destRegion.name} (${destRegion.theme}). Enemy types in this region: ${destRegion.enemyTypes.join(', ')}. The boss should be a powerful version of these creatures.`
+          const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              character,
+              storyEvents: gs.storyEvents,
+              eventContext: bossContext,
+              isBoss: true,
+              pendingRegionId: regionId,
+            }),
+          })
+          if (combatRes.ok) {
+            const combatData = await combatRes.json()
+            setCombatState(combatData.combatState)
+          }
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'boss_guardian',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: `Challenge the guardian of ${destRegion.name}`,
+            outcomeDescription: `A fearsome guardian blocks the path to ${destRegion.name}! You must defeat it to enter.`,
+          })
+          commit()
+          onSuccess?.()
+          return
+        }
+
+        soundEngine.playCrossroads()
         updateSelectedCharacter({ currentRegion: regionId })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         addStoryEvent({

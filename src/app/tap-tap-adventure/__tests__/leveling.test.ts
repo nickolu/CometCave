@@ -8,7 +8,6 @@ import {
   levelProgress,
   stepsRequiredForLevel,
   stepsToNextLevel,
-  BOSS_MILESTONE_INTERVAL,
   SHOP_MILESTONE_INTERVAL,
   STEPS_PER_DAY,
 } from '@/app/tap-tap-adventure/lib/leveling'
@@ -120,8 +119,8 @@ describe('Distance-Based Leveling (rebalanced)', () => {
       expect(crossedMilestone(50, 51, SHOP_MILESTONE_INTERVAL)).toBe(false)
     })
 
-    it('detects boss milestone at 500', () => {
-      expect(crossedMilestone(499, 500, BOSS_MILESTONE_INTERVAL)).toBe(true)
+    it('detects milestone at 500', () => {
+      expect(crossedMilestone(499, 500, 500)).toBe(true)
     })
   })
 
@@ -129,7 +128,6 @@ describe('Distance-Based Leveling (rebalanced)', () => {
     it('has expected milestone values', () => {
       expect(STEPS_PER_DAY).toBe(50)
       expect(SHOP_MILESTONE_INTERVAL).toBe(75)
-      expect(BOSS_MILESTONE_INTERVAL).toBe(500)
     })
   })
 

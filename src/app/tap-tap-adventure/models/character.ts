@@ -50,6 +50,7 @@ export const FantasyCharacterSchema = z.object({
   unlockedSkills: z.array(z.string()).optional(),
   difficultyMode: z.string().optional().default('normal'),
   currentRegion: z.string().optional().default('green_meadows'),
+  visitedRegions: z.array(z.string()).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

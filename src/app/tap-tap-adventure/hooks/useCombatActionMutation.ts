@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
@@ -136,13 +137,29 @@ export function useCombatActionMutation() {
             mountText = ` You tamed a ${data.rewards.mountDrop.name}! ${data.rewards.mountDrop.icon}${replacedText}`
           }
 
+          // Handle boss-gated region travel on victory
+          let regionTravelText = ''
+          const pendingRegionId = combatState.pendingRegionId
+          if (pendingRegionId) {
+            const destRegion = getRegion(pendingRegionId)
+            const visitedRegions = character.visitedRegions ?? ['green_meadows']
+            const updatedVisited = visitedRegions.includes(pendingRegionId)
+              ? visitedRegions
+              : [...visitedRegions, pendingRegionId]
+            updateSelectedCharacter({
+              currentRegion: pendingRegionId,
+              visitedRegions: updatedVisited,
+            })
+            regionTravelText = ` You conquered the guardian and entered ${destRegion.icon} ${destRegion.name}!`
+          }
+
           addStoryEvent({
             id: `combat-victory-${Date.now()}`,
-            type: 'combat_victory',
+            type: pendingRegionId ? 'boss_guardian_victory' : 'combat_victory',
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.${mountText}`,
+            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.${mountText}${regionTravelText}`,
             resourceDelta: {
               gold: data.rewards.gold,
             },
@@ -150,6 +167,10 @@ export function useCombatActionMutation() {
         } else if (data.combatState.status === 'defeat') {
           soundEngine.playDefeat()
           const diffMods = getDifficultyModifiers(character.difficultyMode)
+          const defeatPendingRegion = combatState.pendingRegionId
+          const guardianDefeatText = defeatPendingRegion
+            ? ` The guardian of ${getRegion(defeatPendingRegion).name} remains undefeated.`
+            : ''
 
           if (diffMods.permadeath) {
             // Permadeath: delete character permanently
@@ -159,7 +180,7 @@ export function useCombatActionMutation() {
               characterId: character.id,
               locationId: character.locationId,
               timestamp: new Date().toISOString(),
-              outcomeDescription: `${character.name} was slain by ${enemy.name}. Permadeath: this character is gone forever.`,
+              outcomeDescription: `${character.name} was slain by ${enemy.name}. Permadeath: this character is gone forever.${guardianDefeatText}`,
               resourceDelta: {},
             })
 
@@ -199,7 +220,7 @@ export function useCombatActionMutation() {
               characterId: character.id,
               locationId: character.locationId,
               timestamp: new Date().toISOString(),
-              outcomeDescription: `You were defeated by ${enemy.name}.${lossDescription} (Death #${penalty?.newDeathCount ?? '?'})`,
+              outcomeDescription: `You were defeated by ${enemy.name}.${lossDescription}${guardianDefeatText} (Death #${penalty?.newDeathCount ?? '?'})`,
               resourceDelta: {
                 gold: data.rewards?.gold,
                 reputation: penalty ? -penalty.reputationLost : undefined,
@@ -223,13 +244,17 @@ export function useCombatActionMutation() {
           }
         } else if (data.combatState.status === 'fled') {
           updateSelectedCharacter({ reputation: character.reputation - 2 })
+          const fledPendingRegion = combatState.pendingRegionId
+          const fledRegionText = fledPendingRegion
+            ? ` The guardian of ${getRegion(fledPendingRegion).name} still blocks the path.`
+            : ''
           addStoryEvent({
             id: `combat-fled-${Date.now()}`,
-            type: 'combat_fled',
+            type: fledPendingRegion ? 'boss_guardian_fled' : 'combat_fled',
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You fled from ${enemy.name}, losing some gold and a bit of your reputation in your haste.`,
+            outcomeDescription: `You fled from ${enemy.name}, losing some gold and a bit of your reputation in your haste.${fledRegionText}`,
             resourceDelta: { gold: data.rewards?.gold, reputation: -2 },
           })
         }

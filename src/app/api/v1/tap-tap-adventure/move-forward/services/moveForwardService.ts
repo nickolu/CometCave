@@ -4,7 +4,6 @@ import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import {
   crossedMilestone,
-  BOSS_MILESTONE_INTERVAL,
   SHOP_MILESTONE_INTERVAL,
   calculateDay,
 } from '@/app/tap-tap-adventure/lib/leveling'
@@ -21,51 +20,6 @@ export async function moveForwardService(
   const updatedCharacter = { ...character, distance: newDistance }
   const day = calculateDay(newDistance)
 
-  // Trigger boss event every BOSS_MILESTONE_INTERVAL steps (500)
-  if (crossedMilestone(character.distance, newDistance, BOSS_MILESTONE_INTERVAL)) {
-    const bossEventId = `boss-event-${Date.now()}`
-    return {
-      character: updatedCharacter,
-      event: {
-        id: bossEventId,
-        type: 'boss_available',
-        characterId: character.id,
-        locationId: character.locationId,
-        timestamp: new Date().toISOString(),
-      },
-      decisionPoint: {
-        id: `decision-${bossEventId}`,
-        eventId: bossEventId,
-        prompt: `You sense a powerful presence ahead. A formidable guardian blocks the path forward. You have traveled ${newDistance} steps on day ${day} — do you feel ready to face this challenge?`,
-        options: [
-          {
-            id: `boss-fight-${bossEventId}`,
-            text: 'Challenge the boss!',
-            triggersCombat: true,
-            isBoss: true,
-            successProbability: 0.5,
-            successDescription: 'You prepare for an epic battle!',
-            successEffects: {},
-            failureDescription: 'You prepare for an epic battle!',
-            failureEffects: {},
-            resultDescription: 'You prepare for an epic battle!',
-          },
-          {
-            id: `boss-skip-${bossEventId}`,
-            text: 'Not yet — keep traveling and grow stronger',
-            successProbability: 1.0,
-            successDescription: 'You wisely decide to prepare more before facing this challenge. The boss will still be here when you return.',
-            successEffects: { reputation: 0 },
-            failureDescription: 'You continue your journey.',
-            failureEffects: {},
-            resultDescription: 'You wisely decide to prepare more before facing this challenge.',
-          },
-        ],
-        resolved: false,
-      },
-    }
-  }
-
   // Trigger crossroads event every CROSSROADS_INTERVAL steps (75)
   if (crossedMilestone(character.distance, newDistance, CROSSROADS_INTERVAL)) {
     const currentRegion = getRegion(character.currentRegion ?? 'green_meadows')
@@ -79,12 +33,17 @@ export async function moveForwardService(
       very_hard: 'Very Hard',
     }
 
+    const visitedRegions = character.visitedRegions ?? ['green_meadows']
+
     const travelOptions = connected.map(region => {
       const meetsLevel = canEnterRegion(region, character.level)
       const levelWarning = meetsLevel ? '' : ` [Requires Lv.${region.minLevel}]`
+      const isVisited = visitedRegions.includes(region.id)
+      const bossTag = !isVisited && meetsLevel ? ' — ⚔️ BOSS GUARDIAN' : ''
       return {
         id: `travel-${region.id}`,
-        text: `${region.icon} ${region.name} (${difficultyLabel[region.difficulty] ?? region.difficulty})${levelWarning}`,
+        text: `${!isVisited && meetsLevel ? '⚔️ ' : ''}${region.icon} ${region.name} (${difficultyLabel[region.difficulty] ?? region.difficulty})${levelWarning}${bossTag}`,
+        requiresBoss: !isVisited && meetsLevel,
         successProbability: meetsLevel ? 1.0 : 0.0,
         successDescription: `You set out toward ${region.name}. ${region.description}`,
         successEffects: {},

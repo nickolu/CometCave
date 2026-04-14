@@ -142,5 +142,6 @@ export const CombatStateSchema = z.object({
   enemyTelegraph: EnemyTelegraphSchema.optional().nullable(),
   isBoss: z.boolean().optional(),
   turnPhase: TurnPhaseSchema.optional(),
+  pendingRegionId: z.string().optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>
