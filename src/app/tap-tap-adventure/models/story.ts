@@ -46,6 +46,7 @@ export const FantasyDecisionPointSchema = z.object({
   options: z.array(FantasyDecisionOptionSchema),
   resolved: z.boolean(),
   chosenOptionId: z.string().optional(),
+  isLegendary: z.boolean().optional(),
 })
 export type FantasyDecisionPoint = z.infer<typeof FantasyDecisionPointSchema>
 

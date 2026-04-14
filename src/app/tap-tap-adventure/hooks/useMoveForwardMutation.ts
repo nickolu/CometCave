@@ -87,7 +87,11 @@ export function useMoveForwardMutation() {
           setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
         }
       } else if (data.decisionPoint) {
-        soundEngine.playEvent()
+        if (data.decisionPoint.isLegendary) {
+          soundEngine.playBoss()  // Use boss sound for legendary — it's the most dramatic available
+        } else {
+          soundEngine.playEvent()
+        }
         setGenericMessage(null)
         setDecisionPoint(data.decisionPoint)
       }
