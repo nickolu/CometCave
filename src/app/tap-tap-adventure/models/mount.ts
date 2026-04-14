@@ -21,6 +21,7 @@ export const MountSchema = z.object({
   bonuses: MountBonusesSchema,
   icon: z.string(),
   dailyCost: z.number(),
+  customName: z.string().optional(),
 })
 
 export type Mount = z.infer<typeof MountSchema>

@@ -8,10 +8,12 @@ import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions
 import { AP_COSTS } from '@/app/tap-tap-adventure/config/apCosts'
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 import { getDeathFlavorText, getStoryContext, getPermadeathEpitaph } from '@/app/tap-tap-adventure/lib/deathFlavorText'
@@ -101,8 +103,11 @@ interface CombatUIProps {
 }
 
 export function CombatUI({ combatState }: CombatUIProps) {
-  const { getSelectedCharacter } = useGameStore()
-  const { mutate: combatAction, isPending } = useCombatActionMutation()
+  const { getSelectedCharacter, setMount } = useGameStore()
+  const [pendingMountDrop, setPendingMountDrop] = useState<Mount | null>(null)
+  const { mutate: combatAction, isPending } = useCombatActionMutation({
+    onMountDrop: (mount) => setPendingMountDrop(mount),
+  })
   const [showItemMenu, setShowItemMenu] = useState(false)
   const [showSpellMenu, setShowSpellMenu] = useState(false)
   const [showFullLog, setShowFullLog] = useState(false)
@@ -714,6 +719,18 @@ export function CombatUI({ combatState }: CombatUIProps) {
       <div className="text-center text-xs text-slate-500">
         Turn {combatState.turnNumber}
       </div>
+
+      {pendingMountDrop && (
+        <MountNamingModal
+          mount={pendingMountDrop}
+          isOpen={true}
+          onConfirm={(customName) => {
+            setMount(pendingMountDrop, customName)
+            soundEngine.playMountAcquired()
+            setPendingMountDrop(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier, ReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { calculateDay, levelProgress, stepsToNextLevel, stepsRequiredForLevel } from '@/app/tap-tap-adventure/lib/leveling'
@@ -8,6 +9,8 @@ import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyMode
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
+import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 
 interface PlayerStatusViewProps {
   onClose: () => void
@@ -111,7 +114,8 @@ function getMetaBonusDescriptions(bonuses: ReturnType<typeof useGameStore.getSta
 }
 
 export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
-  const { getSelectedCharacter, getMetaBonuses: getMetaBonusesFn } = useGameStore()
+  const { getSelectedCharacter, getMetaBonuses: getMetaBonusesFn, setMount } = useGameStore()
+  const [showRenameModal, setShowRenameModal] = useState(false)
 
   const character = getSelectedCharacter()
   if (!character) return null
@@ -361,11 +365,15 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
             {!mount ? (
               <p className="text-sm text-slate-500 italic">No mount</p>
             ) : (
+              <>
               <div className={`bg-[#161723] border rounded-lg p-3 ${MOUNT_RARITY_COLORS[mount.rarity] ?? 'border-slate-700/30 text-slate-300'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-2xl">{mount.icon}</span>
                   <div>
-                    <div className="font-bold text-sm">{mount.name}</div>
+                    <div className="font-bold text-sm">{getMountDisplayName(mount)}</div>
+                    {mount.customName && (
+                      <div className="text-[10px] text-slate-500 italic">{mount.name}</div>
+                    )}
                     <div className="text-[10px] uppercase tracking-wider opacity-70">{mount.rarity}</div>
                   </div>
                 </div>
@@ -388,6 +396,23 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                 </div>
                 <div className="text-xs text-slate-400 mt-2">{mount.dailyCost} gp/day upkeep</div>
               </div>
+              <button
+                className="mt-2 text-xs px-3 py-1.5 rounded border border-amber-500/40 bg-[#2a2b3f] hover:bg-[#3a3c56] text-amber-300 transition-colors"
+                onClick={() => setShowRenameModal(true)}
+              >
+                Rename Mount
+              </button>
+              {showRenameModal && (
+                <MountNamingModal
+                  mount={mount}
+                  isOpen={showRenameModal}
+                  onConfirm={(customName) => {
+                    setMount(mount, customName)
+                    setShowRenameModal(false)
+                  }}
+                />
+              )}
+              </>
             )}
           </SectionCard>
 

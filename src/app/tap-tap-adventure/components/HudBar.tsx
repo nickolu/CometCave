@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { getReputationTier, ReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
@@ -245,7 +246,7 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
     if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
     if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal`)
     const bonusStr = bonusParts.length > 0 ? bonusParts.join(', ') : 'no bonuses'
-    return `${mount.name} — ${bonusStr} (${mount.dailyCost} gp/day)`
+    return `${getMountDisplayName(mount)} — ${bonusStr} (${mount.dailyCost} gp/day)`
   }
 
   const mountRarityColor: Record<string, string> = {
@@ -282,7 +283,7 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
               title={getMountTooltip(activeMount)}
             >
               <span>{activeMount.icon}</span>
-              <span className="hidden sm:inline text-[10px]">{activeMount.name}</span>
+              <span className="hidden sm:inline text-[10px]">{getMountDisplayName(activeMount)}</span>
             </button>
             <button
               className="hidden sm:inline text-[10px] text-red-400 hover:text-red-300 border border-red-400/30 rounded px-1 py-0.5 bg-[#2a2b3f] hover:bg-[#3a3c56]"

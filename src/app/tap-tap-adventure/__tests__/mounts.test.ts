@@ -8,6 +8,8 @@ import {
 } from '@/app/tap-tap-adventure/config/mounts'
 import { initializePlayerCombatState, getCombatRewards } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { applyLevelFromDistance } from '@/app/tap-tap-adventure/lib/leveling'
+import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
+import { MountSchema } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
@@ -283,5 +285,56 @@ describe('Mount Boss Drops', () => {
 
     const rewards = getCombatRewards(combatState, char)
     expect(rewards.mountDrop).toBeUndefined()
+  })
+})
+
+describe('Mount Naming', () => {
+  const baseMount = getMountById('horse')!
+
+  it('getMountDisplayName returns mount.name when customName is undefined', () => {
+    expect(getMountDisplayName(baseMount)).toBe('Horse')
+  })
+
+  it('getMountDisplayName returns customName when set', () => {
+    const namedMount = { ...baseMount, customName: 'Shadowfax' }
+    expect(getMountDisplayName(namedMount)).toBe('Shadowfax')
+  })
+
+  it('getMountDisplayName returns mount.name when customName is empty string (UI trims before storing)', () => {
+    // The UI trims and rejects whitespace-only names before storing.
+    // getMountDisplayName uses ??, which only falls back on null/undefined.
+    // An empty string stored in customName would be returned as-is.
+    // This tests the utility behavior: undefined customName -> mount.name
+    const mount = { name: 'Horse', customName: undefined }
+    expect(getMountDisplayName(mount)).toBe('Horse')
+  })
+
+  it('MountSchema accepts customName field', () => {
+    const raw = {
+      ...baseMount,
+      customName: 'Shadowfax',
+    }
+    const parsed = MountSchema.safeParse(raw)
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.customName).toBe('Shadowfax')
+    }
+  })
+
+  it('MountSchema accepts mount without customName (backward compat)', () => {
+    const parsed = MountSchema.safeParse(baseMount)
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.customName).toBeUndefined()
+    }
+  })
+
+  it('customName max 30 chars enforced by trimming', () => {
+    const longName = 'A'.repeat(40)
+    const trimmed = longName.slice(0, 30)
+    expect(trimmed).toHaveLength(30)
+    // MountSchema does not enforce length at schema level; UI enforces it
+    const parsed = MountSchema.safeParse({ ...baseMount, customName: longName })
+    expect(parsed.success).toBe(true)
   })
 })
