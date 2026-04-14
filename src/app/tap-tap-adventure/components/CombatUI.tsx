@@ -246,10 +246,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
           if (ap >= (AP_COSTS.flee ?? 3)) { e.preventDefault(); handleAction('flee') }
           break
         case 'q': // Move Closer
-          if (ap >= (AP_COSTS.move_closer ?? 1) && combatState.combatDistance !== 'close') { e.preventDefault(); handleAction('move_closer') }
+          if ((ap >= (AP_COSTS.move_closer ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'close') { e.preventDefault(); handleAction('move_closer') }
           break
         case 'e': // Move Away
-          if (ap >= (AP_COSTS.move_away ?? 1) && combatState.combatDistance !== 'far') { e.preventDefault(); handleAction('move_away') }
+          if ((ap >= (AP_COSTS.move_away ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'far') { e.preventDefault(); handleAction('move_away') }
           break
         case 'z': // End Turn
           e.preventDefault(); handleAction('end_turn')
@@ -518,6 +518,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
             ))}
           </span>
           <span className="text-xs text-amber-400">({playerState.ap ?? 3}/{playerState.maxAp ?? 3})</span>
+          {(playerState.mountMovesRemaining ?? 0) > 0 && (
+            <span className="text-xs text-cyan-400 ml-2">| Mount: {playerState.mountMovesRemaining} free move{(playerState.mountMovesRemaining ?? 0) !== 1 ? 's' : ''}</span>
+          )}
         </div>
       </div>
 
@@ -602,25 +605,25 @@ export function CombatUI({ combatState }: CombatUIProps) {
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'close' || (playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1)
+              combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-cyan-900/50 border-cyan-800 hover:bg-cyan-800 text-white'
             }`}
             onClick={() => handleAction('move_closer')}
-            disabled={isPending || combatState.combatDistance === 'close' || (playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1)}
+            disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Close In ({AP_COSTS.move_closer} AP)
+            Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'far' || (playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1)
+              combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-teal-900/50 border-teal-800 hover:bg-teal-800 text-white'
             }`}
             onClick={() => handleAction('move_away')}
-            disabled={isPending || combatState.combatDistance === 'far' || (playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1)}
+            disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Back Away ({AP_COSTS.move_away} AP)
+            Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${

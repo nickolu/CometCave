@@ -17,7 +17,7 @@ import {
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
+import { getRandomMount, getMountFreeMoves, getMountFleeBonus } from '@/app/tap-tap-adventure/config/mounts'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 
@@ -80,6 +80,10 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   // Calculate total luck for crit chance
   const totalLuck = character.luck + mountLuckBonus + accessoryLuckBonus
 
+  const mountFreeMoves = character.activeMount
+    ? getMountFreeMoves(character.activeMount.rarity)
+    : 0
+
   return {
     hp: currentHp,
     maxHp,
@@ -104,6 +108,7 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     maxAp: MAX_AP,
     turnActions: [],
     luck: totalLuck,
+    mountMovesRemaining: mountFreeMoves,
   }
 }
 
@@ -239,7 +244,10 @@ export function calculateFleeChance(
   const fleeBonus = getSkillBonus(skills, 'flee_chance')
   const allStatsBonus = getSkillBonus(skills, 'all_stats')
   const effectiveLuck = character.luck + allStatsBonus.flat
-  const chance = 0.3 + effectiveLuck * 0.02 - enemy.level * 0.05 + fleeBonus.percentage / 100
+  const mountFleeBonus = character.activeMount
+    ? getMountFleeBonus(character.activeMount.rarity) / 100
+    : 0
+  const chance = 0.3 + effectiveLuck * 0.02 - enemy.level * 0.05 + fleeBonus.percentage / 100 + mountFleeBonus
   return Math.max(0.1, Math.min(0.9, chance))
 }
 
@@ -869,8 +877,18 @@ export function processPlayerAction(
           playerState.ap += apCost
           playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
         } else {
+          const usedMountMove = (playerState.mountMovesRemaining ?? 0) > 0
+          if (usedMountMove) {
+            // Refund the AP cost — this move is free via mount
+            playerState.ap += apCost
+            playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+            playerState.mountMovesRemaining = (playerState.mountMovesRemaining ?? 1) - 1
+          }
           combatDistance = combatDistance === 'far' ? 'mid' : 'close'
-          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: `You close the distance to ${combatDistance} range!` })
+          const moveDesc = usedMountMove
+            ? `Your mount carries you to ${combatDistance} range!`
+            : `You close the distance to ${combatDistance} range!`
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: moveDesc })
         }
         break
       }
@@ -881,8 +899,18 @@ export function processPlayerAction(
           playerState.ap += apCost
           playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
         } else {
+          const usedMountMove = (playerState.mountMovesRemaining ?? 0) > 0
+          if (usedMountMove) {
+            // Refund the AP cost — this move is free via mount
+            playerState.ap += apCost
+            playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+            playerState.mountMovesRemaining = (playerState.mountMovesRemaining ?? 1) - 1
+          }
           combatDistance = combatDistance === 'close' ? 'mid' : 'far'
-          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: `You move back to ${combatDistance} range!` })
+          const moveDesc = usedMountMove
+            ? `Your mount swiftly carries you back to ${combatDistance} range!`
+            : `You move back to ${combatDistance} range!`
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: moveDesc })
         }
         break
       }
@@ -1194,6 +1222,10 @@ export function processPlayerAction(
   playerState.ap = playerState.maxAp ?? MAX_AP
   playerState.turnActions = []
   playerState.isDefending = false
+  // Reset mount free moves for next turn
+  if (character.activeMount) {
+    playerState.mountMovesRemaining = getMountFreeMoves(character.activeMount.rarity)
+  }
 
   // Enemy may try to change distance based on their range type
   if (status === 'active' && combatDistance !== 'close' && enemy.range !== 'ranged') {
