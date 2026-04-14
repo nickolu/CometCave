@@ -14,6 +14,7 @@ export interface Region {
   connectedRegions: string[]
   minLevel: number
   icon: string
+  startingCombatDistance?: 'close' | 'mid' | 'far'
 }
 
 export const REGIONS: Record<string, Region> = {
@@ -42,6 +43,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['starting_village', 'dark_forest', 'crystal_caves', 'sunken_ruins', 'feywild_grove'],
     minLevel: 0,
     icon: '\u{1F33F}',
+    startingCombatDistance: 'far',
   },
   dark_forest: {
     id: 'dark_forest',
@@ -55,6 +57,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['green_meadows', 'scorched_wastes', 'shadow_realm', 'feywild_grove'],
     minLevel: 0,
     icon: '\u{1F332}',
+    startingCombatDistance: 'close',
   },
   crystal_caves: {
     id: 'crystal_caves',
@@ -68,6 +71,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['green_meadows', 'frozen_peaks', 'sunken_ruins'],
     minLevel: 0,
     icon: '\u{1F48E}',
+    startingCombatDistance: 'close',
   },
   scorched_wastes: {
     id: 'scorched_wastes',
@@ -81,6 +85,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['dark_forest', 'sky_citadel', 'volcanic_forge'],
     minLevel: 3,
     icon: '\u{1F525}',
+    startingCombatDistance: 'far',
   },
   frozen_peaks: {
     id: 'frozen_peaks',
@@ -94,6 +99,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['crystal_caves', 'sky_citadel'],
     minLevel: 3,
     icon: '\u{2744}\u{FE0F}',
+    startingCombatDistance: 'far',
   },
   shadow_realm: {
     id: 'shadow_realm',
@@ -107,6 +113,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['dark_forest', 'sky_citadel', 'bone_wastes'],
     minLevel: 5,
     icon: '\u{1F311}',
+    startingCombatDistance: 'close',
   },
   sky_citadel: {
     id: 'sky_citadel',
@@ -120,6 +127,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['scorched_wastes', 'frozen_peaks', 'shadow_realm', 'dragons_spine'],
     minLevel: 7,
     icon: '\u{26C5}',
+    startingCombatDistance: 'mid',
   },
   sunken_ruins: {
     id: 'sunken_ruins',
@@ -133,6 +141,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['green_meadows', 'crystal_caves', 'volcanic_forge'],
     minLevel: 2,
     icon: '\u{1F3DB}\u{FE0F}',
+    startingCombatDistance: 'mid',
   },
   volcanic_forge: {
     id: 'volcanic_forge',
@@ -146,6 +155,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['sunken_ruins', 'scorched_wastes', 'dragons_spine'],
     minLevel: 4,
     icon: '\u{1F30B}',
+    startingCombatDistance: 'close',
   },
   feywild_grove: {
     id: 'feywild_grove',
@@ -159,6 +169,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['green_meadows', 'dark_forest', 'bone_wastes'],
     minLevel: 2,
     icon: '\u{1F344}',
+    startingCombatDistance: 'mid',
   },
   bone_wastes: {
     id: 'bone_wastes',
@@ -172,6 +183,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['feywild_grove', 'shadow_realm', 'dragons_spine'],
     minLevel: 4,
     icon: '\u{1F480}',
+    startingCombatDistance: 'mid',
   },
   dragons_spine: {
     id: 'dragons_spine',
@@ -185,6 +197,7 @@ export const REGIONS: Record<string, Region> = {
     connectedRegions: ['volcanic_forge', 'bone_wastes', 'sky_citadel'],
     minLevel: 8,
     icon: '\u{1F409}',
+    startingCombatDistance: 'far',
   },
 }
 

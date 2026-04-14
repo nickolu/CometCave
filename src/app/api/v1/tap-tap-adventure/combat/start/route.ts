@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       scenario,
       isBoss,
       isMiniBoss,
+      combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
     }
 

@@ -7,6 +7,7 @@ import { Skill } from '@/app/tap-tap-adventure/models/skill'
 import { getSkillBonus, hasSkill } from '@/app/tap-tap-adventure/lib/skillTracker'
 import {
   CombatActionRequest,
+  CombatDistance,
   CombatEnemy,
   CombatLogEntry,
   CombatPlayerState,
@@ -390,6 +391,10 @@ export function processPlayerAction(
   const newLogs: CombatLogEntry[] = []
   let consumedItemId: string | undefined
   const bossAlreadyPhased = isBoss ? enemy.name.includes('(Enraged)') : false
+  let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
+  // Only propagate combatDistance in returns if the original state had it set
+  // This ensures backward compatibility with combat states created before range was added
+  let rangeSystemActive = combatState.combatDistance !== undefined
 
   if (status !== 'active') {
     return { combatState }
@@ -422,6 +427,7 @@ export function processPlayerAction(
         ...combatState,
         playerState,
         combatLog: [...combatLog, ...newLogs],
+        ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
       },
     }
@@ -444,6 +450,32 @@ export function processPlayerAction(
 
   // Track if enemy is defending this turn (from telegraph)
   const enemyDefending = enemyTelegraph?.action === 'defend'
+
+  // Range check: melee attacks require close range (only enforced when combatDistance is set)
+  if (!isEndTurn && rangeSystemActive) {
+    const meleeActions = ['attack', 'heavy_attack', 'class_ability']
+    if (meleeActions.includes(action.action) && combatDistance !== 'close') {
+      const actionLabel = action.action === 'heavy_attack' ? 'Heavy attack' : action.action === 'class_ability' ? 'Class ability' : 'Attack'
+      newLogs.push({
+        turn: turnNumber, actor: 'player', action: 'out_of_range',
+        description: `${actionLabel} requires close range! Move closer first. (${combatDistance} range)`,
+      })
+      // Refund AP
+      playerState.ap += apCost
+      playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+      return {
+        combatState: {
+          ...combatState,
+          enemy, playerState, turnNumber,
+          combatLog: [...combatLog, ...newLogs],
+          status, enemyTelegraph, isBoss,
+          ...(rangeSystemActive ? { combatDistance } : {}),
+          turnPhase: 'player',
+        },
+        consumedItemId,
+      }
+    }
+  }
 
   // Process player action (skip for end_turn)
   if (!isEndTurn) {
@@ -563,6 +595,7 @@ export function processPlayerAction(
               combatLog: [...combatLog, ...newLogs],
               status,
               enemyTelegraph: null,
+              ...(rangeSystemActive ? { combatDistance } : {}),
               turnPhase: 'enemy_done',
             },
           }
@@ -724,6 +757,30 @@ export function processPlayerAction(
         }
         break
       }
+      case 'move_closer': {
+        rangeSystemActive = true
+        if (combatDistance === 'close') {
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: 'You are already at close range!' })
+          playerState.ap += apCost
+          playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+        } else {
+          combatDistance = combatDistance === 'far' ? 'mid' : 'close'
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: `You close the distance to ${combatDistance} range!` })
+        }
+        break
+      }
+      case 'move_away': {
+        rangeSystemActive = true
+        if (combatDistance === 'far') {
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: 'You are already at maximum distance!' })
+          playerState.ap += apCost
+          playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+        } else {
+          combatDistance = combatDistance === 'close' ? 'mid' : 'far'
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: `You move back to ${combatDistance} range!` })
+        }
+        break
+      }
     }
   }
 
@@ -756,6 +813,7 @@ export function processPlayerAction(
         combatLog: [...combatLog, ...newLogs],
         status,
         enemyTelegraph: null,
+        ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'enemy_done',
       },
       consumedItemId,
@@ -774,6 +832,7 @@ export function processPlayerAction(
         status,
         enemyTelegraph,
         isBoss,
+        ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
       },
       consumedItemId,
@@ -979,6 +1038,29 @@ export function processPlayerAction(
   playerState.turnActions = []
   playerState.isDefending = false
 
+  // Enemy may try to change distance based on their combat style
+  if (status === 'active' && combatDistance !== 'close') {
+    const enemyIsRanged = enemy.element === 'arcane' || enemy.element === 'shadow' || enemy.name.toLowerCase().includes('mage') || enemy.name.toLowerCase().includes('archer') || enemy.name.toLowerCase().includes('caster')
+    if (!enemyIsRanged) {
+      // Melee enemy closes distance one step
+      combatDistance = combatDistance === 'far' ? 'mid' : 'close'
+      newLogs.push({
+        turn: turnNumber, actor: 'enemy', action: 'move',
+        description: `${enemy.name} closes in to ${combatDistance} range!`,
+      })
+    }
+  } else if (status === 'active' && combatDistance === 'close') {
+    // Ranged enemies try to back away
+    const enemyIsRanged = enemy.element === 'arcane' || enemy.element === 'shadow' || enemy.name.toLowerCase().includes('mage') || enemy.name.toLowerCase().includes('archer') || enemy.name.toLowerCase().includes('caster')
+    if (enemyIsRanged && Math.random() < 0.3) {
+      combatDistance = 'mid'
+      newLogs.push({
+        turn: turnNumber, actor: 'enemy', action: 'move',
+        description: `${enemy.name} backs away to mid range!`,
+      })
+    }
+  }
+
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'
     ? generateEnemyTelegraph(enemy, turnNumber, !!isBoss)
@@ -994,6 +1076,7 @@ export function processPlayerAction(
       status,
       enemyTelegraph: nextTelegraph,
       isBoss,
+      ...(rangeSystemActive ? { combatDistance } : {}),
       turnPhase: 'enemy_done',
     },
     consumedItemId,

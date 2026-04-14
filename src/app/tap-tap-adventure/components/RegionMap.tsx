@@ -23,14 +23,19 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 
 // Fixed positions for the map layout (percentage-based)
 const POSITIONS: Record<string, { x: number; y: number }> = {
-  sky_citadel:     { x: 50, y: 5 },
-  scorched_wastes: { x: 18, y: 28 },
-  frozen_peaks:    { x: 50, y: 28 },
-  shadow_realm:    { x: 82, y: 28 },
-  dark_forest:     { x: 25, y: 55 },
-  crystal_caves:   { x: 75, y: 55 },
-  green_meadows:   { x: 50, y: 75 },
-  starting_village:{ x: 50, y: 95 },
+  sky_citadel:      { x: 50, y: 3 },
+  dragons_spine:    { x: 82, y: 10 },
+  scorched_wastes:  { x: 15, y: 22 },
+  frozen_peaks:     { x: 50, y: 18 },
+  shadow_realm:     { x: 85, y: 28 },
+  volcanic_forge:   { x: 15, y: 40 },
+  bone_wastes:      { x: 85, y: 45 },
+  dark_forest:      { x: 30, y: 55 },
+  crystal_caves:    { x: 70, y: 55 },
+  feywild_grove:    { x: 30, y: 70 },
+  sunken_ruins:     { x: 70, y: 70 },
+  green_meadows:    { x: 50, y: 82 },
+  starting_village: { x: 50, y: 95 },
 }
 
 function ConnectionLine({ from, to }: { from: { x: number; y: number }; to: { x: number; y: number } }) {
@@ -69,18 +74,24 @@ export function RegionMap({ currentRegionId, characterLevel }: RegionMapProps) {
       <div className="relative w-full" style={{ paddingBottom: '110%' }}>
         {/* Connection lines */}
         <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-          {connections.map(({ from, to }) => (
-            <ConnectionLine
-              key={`${from}-${to}`}
-              from={POSITIONS[from]}
-              to={POSITIONS[to]}
-            />
-          ))}
+          {connections.map(({ from, to }) => {
+            const fromPos = POSITIONS[from]
+            const toPos = POSITIONS[to]
+            if (!fromPos || !toPos) return null
+            return (
+              <ConnectionLine
+                key={`${from}-${to}`}
+                from={fromPos}
+                to={toPos}
+              />
+            )
+          })}
         </svg>
 
         {/* Region nodes */}
         {regions.map((region: Region) => {
           const pos = POSITIONS[region.id]
+          if (!pos) return null
           const isCurrent = region.id === currentRegionId
           const accessible = canEnterRegion(region, characterLevel)
 
