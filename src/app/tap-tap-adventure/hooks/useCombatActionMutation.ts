@@ -27,7 +27,7 @@ interface CombatActionResponse {
   deathPenalty?: DeathPenalty
 }
 
-export function useCombatActionMutation() {
+export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount) => void }) {
   const queryClient = useQueryClient()
   const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary } = useGameStore()
   const {
@@ -127,14 +127,21 @@ export function useCombatActionMutation() {
             addItem(inferItemTypeAndEffects(lootItem))
           }
 
-          // If combat dropped a mount, equip it
+          // If combat dropped a mount, trigger naming modal or equip directly
           let mountText = ''
           if (data.rewards.mountDrop) {
-            const oldMount = character.activeMount
-            updateSelectedCharacter({ activeMount: data.rewards.mountDrop })
-            soundEngine.playMountAcquired()
-            const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
-            mountText = ` You tamed a ${data.rewards.mountDrop.name}! ${data.rewards.mountDrop.icon}${replacedText}`
+            const mountDrop = data.rewards.mountDrop
+            if (options?.onMountDrop) {
+              // Defer equipping until the naming modal resolves
+              options.onMountDrop(mountDrop)
+              mountText = ` You tamed a ${mountDrop.name}! ${mountDrop.icon}`
+            } else {
+              const oldMount = character.activeMount
+              updateSelectedCharacter({ activeMount: mountDrop })
+              soundEngine.playMountAcquired()
+              const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
+              mountText = ` You tamed a ${mountDrop.name}! ${mountDrop.icon}${replacedText}`
+            }
           }
 
           // Handle boss-gated region travel on victory

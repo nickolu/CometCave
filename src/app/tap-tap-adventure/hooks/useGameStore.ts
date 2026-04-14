@@ -86,7 +86,7 @@ export interface GameStore {
   unequipItem: (slot: EquipmentSlotType) => void
   learnSpell: (itemId: string) => { message: string; learned: boolean } | null
   updateAchievements: (achievements: PlayerAchievement[]) => void
-  setMount: (mount: Mount | null) => void
+  setMount: (mount: Mount | null, customName?: string) => void
   addHeirloom: (item: Item) => void
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
@@ -529,7 +529,7 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
-      setMount: (mount: Mount | null) => {
+      setMount: (mount: Mount | null, customName?: string) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
@@ -540,9 +540,13 @@ export const useGameStore = create<GameStore>()(
             )
             if (characterIndex === -1) return
 
+            const activeMount = mount && customName
+              ? { ...mount, customName }
+              : mount
+
             state.gameState.characters[characterIndex] = {
               ...selectedCharacter,
-              activeMount: mount,
+              activeMount,
             }
           })
         )
@@ -695,7 +699,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 14,
+      version: 15,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -751,6 +755,7 @@ export const useGameStore = create<GameStore>()(
             if (!(char as FantasyCharacter).visitedRegions) {
               ;(char as FantasyCharacter).visitedRegions = [(char as FantasyCharacter).currentRegion ?? 'green_meadows']
             }
+            // v15: customName is optional on activeMount; no action needed for backward compat
           }
         }
         // v6: Add activeQuest

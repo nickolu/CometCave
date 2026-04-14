@@ -3,12 +3,14 @@
 import { useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
 import { getMountSellPrice } from '@/app/tap-tap-adventure/config/mounts'
 import { Item } from '@/app/tap-tap-adventure/models/types'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
 import { ItemEffects } from '@/app/tap-tap-adventure/models/item'
 
@@ -25,7 +27,8 @@ function formatEffects(effects?: Item['effects']): string {
   return parts.length > 0 ? parts.join(', ') : 'No effects'
 }
 
-const STAT_KEYS: { key: keyof ItemEffects; label: string }[] = [
+type NumericEffectKey = 'strength' | 'intelligence' | 'luck'
+const STAT_KEYS: { key: NumericEffectKey; label: string }[] = [
   { key: 'strength', label: 'STR' },
   { key: 'intelligence', label: 'INT' },
   { key: 'luck', label: 'LCK' },
@@ -65,6 +68,7 @@ export function ShopUI() {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState<ShopTab>('buy')
+  const [pendingMount, setPendingMount] = useState<{ mount: Mount; oldMountName?: string } | null>(null)
 
   const shopState = gameState.shopState
   if (!shopState || !shopState.isOpen) return null
@@ -177,12 +181,12 @@ export function ShopUI() {
     setFeedback(null)
 
     const oldMount = character.activeMount
+    // Deduct gold and clear the shop mount; equip happens after naming
     const updatedCharacters = gameState.characters.map(c => {
       if (c.id !== character.id) return c
       return {
         ...c,
         gold: c.gold - mountData.price,
-        activeMount: mountData.mount,
       }
     })
 
@@ -192,10 +196,25 @@ export function ShopUI() {
       shopState: { ...shopState, shopMount: null },
     })
 
-    soundEngine.playMountAcquired()
-    const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
-    setFeedback(`Purchased ${mountData.mount.name}!${replacedText}`)
     setBusy(false)
+    setPendingMount({ mount: mountData.mount, oldMountName: oldMount?.name })
+  }
+
+  const handleMountNamed = (customName?: string) => {
+    if (!pendingMount) return
+    const mount = pendingMount.mount
+    const namedMount = customName ? { ...mount, customName } : mount
+    const oldMountName = pendingMount.oldMountName
+    const updatedCharacters = gameState.characters.map(c => {
+      if (c.id !== character.id) return c
+      return { ...c, activeMount: namedMount }
+    })
+    setGameState({ ...gameState, characters: updatedCharacters })
+    soundEngine.playMountAcquired()
+    const displayName = customName ?? mount.name
+    const replacedText = oldMountName ? ` (Replaced ${oldMountName})` : ''
+    setFeedback(`Purchased ${displayName}!${replacedText}`)
+    setPendingMount(null)
   }
 
   const handleLeaveShop = () => {
@@ -442,6 +461,14 @@ export function ShopUI() {
       >
         Leave Shop
       </Button>
+
+      {pendingMount && (
+        <MountNamingModal
+          mount={pendingMount.mount}
+          isOpen={true}
+          onConfirm={handleMountNamed}
+        />
+      )}
     </div>
   )
 }

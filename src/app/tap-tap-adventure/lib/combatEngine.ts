@@ -162,6 +162,38 @@ export function calculatePlayerDamage(
   return { damage: Math.max(1, Math.round(apScaled * critMultiplier)), elementalMultiplier, isCritical }
 }
 
+/**
+ * Weapon range damage multiplier.
+ * close weapon at close: 1.0x, mid/far: can't attack (blocked earlier)
+ * mid weapon at close: 0.9x, mid: 1.0x, far: can't attack
+ * far weapon at close: 0.8x, mid: 0.9x, far: 1.0x
+ */
+function getWeaponRangeMultiplier(weaponRange: string, combatDist: string): number {
+  const order = ['close', 'mid', 'far']
+  const wIdx = order.indexOf(weaponRange)
+  const dIdx = order.indexOf(combatDist)
+  if (wIdx < 0 || dIdx < 0) return 1.0
+  const diff = wIdx - dIdx
+  if (diff <= 0) return 1.0
+  if (diff === 1) return 0.9
+  return 0.8
+}
+
+/**
+ * Enemy range damage multiplier.
+ * Ranged enemies deal reduced damage at distance:
+ * far: 0.7x, mid: 0.85x, close: 1.0x
+ */
+function getEnemyRangeMultiplier(
+  enemyRange: string | undefined,
+  combatDist: string
+): number {
+  if (enemyRange !== 'ranged') return 1.0
+  if (combatDist === 'far') return 0.7
+  if (combatDist === 'mid') return 0.85
+  return 1.0
+}
+
 /** Flat 5% crit chance for enemies, dealing 1.5x damage. */
 const ENEMY_CRIT_CHANCE = 0.05
 const ENEMY_CRIT_MULTIPLIER = 1.5
@@ -281,15 +313,42 @@ function executeEnemyTelegraph(
   enemy: CombatEnemy,
   playerState: CombatPlayerState,
   turnNumber: number,
-  character?: FantasyCharacter
-): { playerState: CombatPlayerState; logs: CombatLogEntry[]; enemyDefenseBoost: boolean } {
+  character?: FantasyCharacter,
+  combatDist?: CombatDistance
+): {
+  playerState: CombatPlayerState
+  logs: CombatLogEntry[]
+  enemyDefenseBoost: boolean
+  moveCloser: boolean
+} {
   const logs: CombatLogEntry[] = []
   let updatedPlayer = { ...playerState }
   let enemyDefenseBoost = false
+  const dist = combatDist ?? 'mid'
+
+  // Melee enemies can't attack from non-close range — they move closer instead
+  if (enemy.range !== 'ranged' && dist !== 'close' && telegraph.action !== 'defend') {
+    logs.push({
+      turn: turnNumber,
+      actor: 'enemy',
+      action: 'move',
+      description: `${enemy.name} closes the distance!`,
+    })
+    return { playerState: updatedPlayer, logs, enemyDefenseBoost: false, moveCloser: true }
+  }
+
+  // Ranged enemy damage multiplier
+  const rangeMult = getEnemyRangeMultiplier(enemy.range, dist)
 
   switch (telegraph.action) {
     case 'heavy_attack': {
-      const { damage: dmg, elementalMultiplier, isCritical } = calculateEnemyDamage(enemy, updatedPlayer, true, character)
+      const { damage: rawDmg, elementalMultiplier, isCritical } = calculateEnemyDamage(
+        enemy,
+        updatedPlayer,
+        true,
+        character
+      )
+      const dmg = Math.max(1, Math.round(rawDmg * rangeMult))
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
       const elemText = getEffectivenessText(elementalMultiplier)
       logs.push({
@@ -308,7 +367,7 @@ function executeEnemyTelegraph(
           1,
           Math.round(
             randomVariance(enemy.specialAbility.damage) -
-            (updatedPlayer.isDefending ? updatedPlayer.defense : updatedPlayer.defense / 2)
+              (updatedPlayer.isDefending ? updatedPlayer.defense : updatedPlayer.defense / 2)
           )
         )
         updatedPlayer.hp = Math.max(0, updatedPlayer.hp - specialDmg)
@@ -334,7 +393,13 @@ function executeEnemyTelegraph(
     }
     case 'normal_attack':
     default: {
-      const { damage: dmg, elementalMultiplier, isCritical } = calculateEnemyDamage(enemy, updatedPlayer, false, character)
+      const { damage: rawNormalDmg, elementalMultiplier, isCritical } = calculateEnemyDamage(
+        enemy,
+        updatedPlayer,
+        false,
+        character
+      )
+      const dmg = Math.max(1, Math.round(rawNormalDmg * rangeMult))
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
       const elemText = getEffectivenessText(elementalMultiplier)
       logs.push({
@@ -349,7 +414,7 @@ function executeEnemyTelegraph(
     }
   }
 
-  return { playerState: updatedPlayer, logs, enemyDefenseBoost }
+  return { playerState: updatedPlayer, logs, enemyDefenseBoost, moveCloser: false }
 }
 
 /**
@@ -451,28 +516,45 @@ export function processPlayerAction(
   // Track if enemy is defending this turn (from telegraph)
   const enemyDefending = enemyTelegraph?.action === 'defend'
 
-  // Range check: melee attacks require close range (only enforced when combatDistance is set)
+  // Range check: attacks are blocked when target is farther than weapon's range
   if (!isEndTurn && rangeSystemActive) {
-    const meleeActions = ['attack', 'heavy_attack', 'class_ability']
-    if (meleeActions.includes(action.action) && combatDistance !== 'close') {
-      const actionLabel = action.action === 'heavy_attack' ? 'Heavy attack' : action.action === 'class_ability' ? 'Class ability' : 'Attack'
-      newLogs.push({
-        turn: turnNumber, actor: 'player', action: 'out_of_range',
-        description: `${actionLabel} requires close range! Move closer first. (${combatDistance} range)`,
-      })
-      // Refund AP
-      playerState.ap += apCost
-      playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
-      return {
-        combatState: {
-          ...combatState,
-          enemy, playerState, turnNumber,
-          combatLog: [...combatLog, ...newLogs],
-          status, enemyTelegraph, isBoss,
-          ...(rangeSystemActive ? { combatDistance } : {}),
-          turnPhase: 'player',
-        },
-        consumedItemId,
+    const physicalActions = ['attack', 'heavy_attack', 'class_ability']
+    if (physicalActions.includes(action.action)) {
+      const weaponRange = character.equipment?.weapon?.effects?.range ?? 'close'
+      const distOrder = ['close', 'mid', 'far'] as const
+      const wReach = distOrder.indexOf(weaponRange as (typeof distOrder)[number])
+      const curDist = distOrder.indexOf(combatDistance)
+      if (curDist > wReach) {
+        const actionLabel =
+          action.action === 'heavy_attack'
+            ? 'Heavy attack'
+            : action.action === 'class_ability'
+              ? 'Class ability'
+              : 'Attack'
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'out_of_range',
+          description: `${actionLabel} requires ${weaponRange} range or closer! Move closer first. (${combatDistance} range)`,
+        })
+        // Refund AP
+        playerState.ap += apCost
+        playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+        return {
+          combatState: {
+            ...combatState,
+            enemy,
+            playerState,
+            turnNumber,
+            combatLog: [...combatLog, ...newLogs],
+            status,
+            enemyTelegraph,
+            isBoss,
+            ...(rangeSystemActive ? { combatDistance } : {}),
+            turnPhase: 'player',
+          },
+          consumedItemId,
+        }
       }
     }
   }
@@ -484,10 +566,22 @@ export function processPlayerAction(
         const effectiveEnemy = enemyDefending
           ? { ...enemy, defense: enemy.defense * 2 }
           : enemy
-        const { damage, elementalMultiplier, isCritical } = calculatePlayerDamage(playerState, effectiveEnemy, character)
+        const { damage: rawAtkDmg, elementalMultiplier, isCritical } = calculatePlayerDamage(
+          playerState,
+          effectiveEnemy,
+          character
+        )
+        const wRangeMult = rangeSystemActive
+          ? getWeaponRangeMultiplier(
+              character.equipment?.weapon?.effects?.range ?? 'close',
+              combatDistance
+            )
+          : 1.0
+        const damage = Math.max(1, Math.round(rawAtkDmg * wRangeMult))
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
-        const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
+        const comboText =
+          playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
         const elemText = getEffectivenessText(elementalMultiplier)
         const critText = isCritical ? ' CRITICAL HIT!' : ''
         newLogs.push({
@@ -504,8 +598,19 @@ export function processPlayerAction(
         const effectiveEnemy = enemyDefending
           ? { ...enemy, defense: enemy.defense * 2 }
           : enemy
-        const { damage: baseDmg, elementalMultiplier, isCritical } = calculatePlayerDamage(playerState, effectiveEnemy, character, 0.05)
-        const damage = Math.max(1, Math.round(baseDmg * 1.8))
+        const { damage: baseDmg, elementalMultiplier, isCritical } = calculatePlayerDamage(
+          playerState,
+          effectiveEnemy,
+          character,
+          0.05
+        )
+        const heavyWRangeMult = rangeSystemActive
+          ? getWeaponRangeMultiplier(
+              character.equipment?.weapon?.effects?.range ?? 'close',
+              combatDistance
+            )
+          : 1.0
+        const damage = Math.max(1, Math.round(baseDmg * 1.8 * heavyWRangeMult))
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
         const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
@@ -862,9 +967,23 @@ export function processPlayerAction(
       description: `${enemy.name} is paralyzed with fear and cannot act!`,
     })
   } else if (enemyTelegraph) {
-    const result = executeEnemyTelegraph(enemyTelegraph, enemy, playerState, turnNumber, character)
+    const result = executeEnemyTelegraph(
+      enemyTelegraph,
+      enemy,
+      playerState,
+      turnNumber,
+      character,
+      combatDistance
+    )
     playerState = result.playerState
-    const enemyDmgLog = result.logs.find(l => l.damage && l.damage > 0)
+    if (result.moveCloser) {
+      // Melee enemy moved closer instead of attacking
+      combatDistance = combatDistance === 'far' ? 'mid' : 'close'
+      newLogs.push(...result.logs)
+    }
+    const enemyDmgLog = result.moveCloser
+      ? undefined
+      : result.logs.find(l => l.damage && l.damage > 0)
     let actualDamageDealt = 0
     if (enemyDmgLog && enemyDmgLog.damage) {
       const originalDmg = enemyDmgLog.damage
@@ -912,7 +1031,9 @@ export function processPlayerAction(
         })
       }
     }
-    newLogs.push(...result.logs)
+    if (!result.moveCloser) {
+      newLogs.push(...result.logs)
+    }
 
     // Enemy status ability: chance to inflict status effect on player
     if (enemy.statusAbility && actualDamageDealt > 0) {
@@ -928,55 +1049,91 @@ export function processPlayerAction(
       }
     }
   } else {
-    const { damage: enemyDmg, elementalMultiplier: enemyElemMult, isCritical: enemyCrit } = calculateEnemyDamage(enemy, playerState, false, character)
-    const dmgReduction = getActiveDamageReduction(playerState)
-    const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
-    const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
-    playerState = shieldResult.playerState
-    const actualDmg = shieldResult.damageAfterShield
+    // Fallback attack (no telegraph) — check enemy range
+    const fallbackMelee = enemy.range !== 'ranged'
+    if (fallbackMelee && combatDistance !== 'close') {
+      // Melee enemy can't reach — move closer instead
+      combatDistance = combatDistance === 'far' ? 'mid' : 'close'
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'enemy',
+        action: 'move',
+        description: `${enemy.name} closes the distance to ${combatDistance} range!`,
+      })
+    } else {
+      const fbRangeMult = getEnemyRangeMultiplier(enemy.range, combatDistance)
+      const {
+        damage: enemyRawDmg,
+        elementalMultiplier: enemyElemMult,
+        isCritical: enemyCrit,
+      } = calculateEnemyDamage(enemy, playerState, false, character)
+      const enemyDmg = Math.max(1, Math.round(enemyRawDmg * fbRangeMult))
+      const dmgReduction = getActiveDamageReduction(playerState)
+      const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
+      const shieldResult = applyShieldAbsorption(playerState, reducedDmg)
+      playerState = shieldResult.playerState
+      const actualDmg = shieldResult.damageAfterShield
 
-    // Apply reflect
-    if (hasStatusEffect(playerState.statusEffects, 'reflect')) {
-      const reflectResult = processReflect(playerState.statusEffects ?? [], actualDmg)
-      if (reflectResult.reflectedDamage > 0) {
-        enemy.hp = Math.max(0, enemy.hp - reflectResult.reflectedDamage)
-        playerState = { ...playerState, statusEffects: reflectResult.updatedEffects }
+      // Apply reflect
+      if (hasStatusEffect(playerState.statusEffects, 'reflect')) {
+        const reflectResult = processReflect(playerState.statusEffects ?? [], actualDmg)
+        if (reflectResult.reflectedDamage > 0) {
+          enemy.hp = Math.max(0, enemy.hp - reflectResult.reflectedDamage)
+          playerState = { ...playerState, statusEffects: reflectResult.updatedEffects }
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'player',
+            action: 'reflect',
+            damage: reflectResult.reflectedDamage,
+            description: `Your reflect barrier sends ${reflectResult.reflectedDamage} damage back to ${enemy.name}!`,
+          })
+        }
+      }
+
+      const enemyElemText = getEffectivenessText(enemyElemMult)
+      playerState.hp = Math.max(0, playerState.hp - actualDmg)
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'enemy',
+        action: 'attack',
+        damage: actualDmg,
+        description: `${enemyCrit ? 'CRITICAL! ' : ''}${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
+        isCritical: enemyCrit,
+      })
+
+      // Apply thorns damage back to enemy
+      const thornsDmg = getThornsDamage(playerState.statusEffects)
+      if (thornsDmg > 0) {
+        enemy.hp = Math.max(0, enemy.hp - thornsDmg)
         newLogs.push({
-          turn: turnNumber, actor: 'player', action: 'reflect', damage: reflectResult.reflectedDamage,
-          description: `Your reflect barrier sends ${reflectResult.reflectedDamage} damage back to ${enemy.name}!`,
+          turn: turnNumber,
+          actor: 'player',
+          action: 'thorns',
+          damage: thornsDmg,
+          description: `Thorns deal ${thornsDmg} damage back to ${enemy.name}!`,
         })
       }
-    }
 
-    const enemyElemText = getEffectivenessText(enemyElemMult)
-    playerState.hp = Math.max(0, playerState.hp - actualDmg)
-    newLogs.push({
-      turn: turnNumber, actor: 'enemy', action: 'attack', damage: actualDmg,
-      description: `${enemyCrit ? 'CRITICAL! ' : ''}${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
-      isCritical: enemyCrit,
-    })
-
-    // Apply thorns damage back to enemy
-    const thornsDmg = getThornsDamage(playerState.statusEffects)
-    if (thornsDmg > 0) {
-      enemy.hp = Math.max(0, enemy.hp - thornsDmg)
-      newLogs.push({
-        turn: turnNumber, actor: 'player', action: 'thorns', damage: thornsDmg,
-        description: `Thorns deal ${thornsDmg} damage back to ${enemy.name}!`,
-      })
-    }
-
-    // Enemy status ability: chance to inflict status effect on player
-    if (enemy.statusAbility) {
-      if (Math.random() < enemy.statusAbility.chance) {
-        const statusEffect = createStatusEffectFromAbility(
-          enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
-        )
-        playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
-        newLogs.push({
-          turn: turnNumber, actor: 'enemy', action: 'status_effect',
-          description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
-        })
+      // Enemy status ability: chance to inflict status effect on player
+      if (enemy.statusAbility) {
+        if (Math.random() < enemy.statusAbility.chance) {
+          const statusEffect = createStatusEffectFromAbility(
+            enemy.statusAbility.type,
+            enemy.statusAbility.value,
+            enemy.statusAbility.duration,
+            'enemy'
+          )
+          playerState = {
+            ...playerState,
+            statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect),
+          }
+          newLogs.push({
+            turn: turnNumber,
+            actor: 'enemy',
+            action: 'status_effect',
+            description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+          })
+        }
       }
     }
   }
@@ -1038,24 +1195,24 @@ export function processPlayerAction(
   playerState.turnActions = []
   playerState.isDefending = false
 
-  // Enemy may try to change distance based on their combat style
-  if (status === 'active' && combatDistance !== 'close') {
-    const enemyIsRanged = enemy.element === 'arcane' || enemy.element === 'shadow' || enemy.name.toLowerCase().includes('mage') || enemy.name.toLowerCase().includes('archer') || enemy.name.toLowerCase().includes('caster')
-    if (!enemyIsRanged) {
-      // Melee enemy closes distance one step
-      combatDistance = combatDistance === 'far' ? 'mid' : 'close'
-      newLogs.push({
-        turn: turnNumber, actor: 'enemy', action: 'move',
-        description: `${enemy.name} closes in to ${combatDistance} range!`,
-      })
-    }
-  } else if (status === 'active' && combatDistance === 'close') {
+  // Enemy may try to change distance based on their range type
+  if (status === 'active' && combatDistance !== 'close' && enemy.range !== 'ranged') {
+    // Melee enemy closes distance one step
+    combatDistance = combatDistance === 'far' ? 'mid' : 'close'
+    newLogs.push({
+      turn: turnNumber,
+      actor: 'enemy',
+      action: 'move',
+      description: `${enemy.name} closes in to ${combatDistance} range!`,
+    })
+  } else if (status === 'active' && combatDistance === 'close' && enemy.range === 'ranged') {
     // Ranged enemies try to back away
-    const enemyIsRanged = enemy.element === 'arcane' || enemy.element === 'shadow' || enemy.name.toLowerCase().includes('mage') || enemy.name.toLowerCase().includes('archer') || enemy.name.toLowerCase().includes('caster')
-    if (enemyIsRanged && Math.random() < 0.3) {
+    if (Math.random() < 0.3) {
       combatDistance = 'mid'
       newLogs.push({
-        turn: turnNumber, actor: 'enemy', action: 'move',
+        turn: turnNumber,
+        actor: 'enemy',
+        action: 'move',
         description: `${enemy.name} backs away to mid range!`,
       })
     }
