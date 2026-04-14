@@ -29,6 +29,10 @@ export function getMountPrice(rarity: Mount['rarity']): number {
   }
 }
 
+export function getMountSellPrice(rarity: Mount['rarity']): number {
+  return Math.floor(getMountPrice(rarity) / 2)
+}
+
 /** Returns a mount appropriate for the character's level (never legendary in shops). */
 export function getShopMount(characterLevel: number): Mount {
   let pool: Mount[]

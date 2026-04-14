@@ -111,7 +111,7 @@ function getMetaBonusDescriptions(bonuses: ReturnType<typeof useGameStore.getSta
 }
 
 export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
-  const { getSelectedCharacter, getMetaBonuses: getMetaBonusesFn } = useGameStore()
+  const { getSelectedCharacter, getMetaBonuses: getMetaBonusesFn, setMount } = useGameStore()
 
   const character = getSelectedCharacter()
   if (!character) return null
@@ -387,6 +387,12 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   ) : null}
                 </div>
                 <div className="text-xs text-slate-400 mt-2">{mount.dailyCost} gp/day upkeep</div>
+                <button
+                  className="mt-2 text-xs text-red-400 hover:text-red-300 border border-red-400/30 rounded px-2 py-1 bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors"
+                  onClick={() => setMount(null)}
+                >
+                  Release Mount
+                </button>
               </div>
             )}
           </SectionCard>
