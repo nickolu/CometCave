@@ -395,6 +395,12 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   ) : null}
                 </div>
                 <div className="text-xs text-slate-400 mt-2">{mount.dailyCost} gp/day upkeep</div>
+                <button
+                  className="mt-2 text-xs text-red-400 hover:text-red-300 border border-red-400/30 rounded px-2 py-1 bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors"
+                  onClick={() => setMount(null)}
+                >
+                  Release Mount
+                </button>
               </div>
               <button
                 className="mt-2 text-xs px-3 py-1.5 rounded border border-amber-500/40 bg-[#2a2b3f] hover:bg-[#3a3c56] text-amber-300 transition-colors"
