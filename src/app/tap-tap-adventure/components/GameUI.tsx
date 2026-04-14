@@ -9,7 +9,7 @@ import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useRes
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
-import { crossedMilestone, BOSS_MILESTONE_INTERVAL, SHOP_MILESTONE_INTERVAL, STEPS_PER_DAY, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
+import { crossedMilestone, SHOP_MILESTONE_INTERVAL, STEPS_PER_DAY, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { CROSSROADS_INTERVAL, getRegion } from '@/app/tap-tap-adventure/config/regions'
 import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
 import { flipCoin } from '@/app/utils'
@@ -164,11 +164,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     const distance = character?.distance ?? 0
     const nextDistance = distance + 1
 
-    // Always call server for milestone events (crossroads, shop, boss)
+    // Always call server for milestone events (crossroads, shop)
     const hitsMilestone =
       crossedMilestone(distance, nextDistance, CROSSROADS_INTERVAL) ||
-      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL) ||
-      crossedMilestone(distance, nextDistance, BOSS_MILESTONE_INTERVAL)
+      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL)
 
     if (hitsMilestone) {
       moveForwardMutation()
@@ -423,8 +422,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   const milestones = [
                     { label: 'Crossroads', icon: '🔀', steps: CROSSROADS_INTERVAL - (dist % CROSSROADS_INTERVAL) },
                     { label: 'Shop', icon: '🛒', steps: SHOP_MILESTONE_INTERVAL - (dist % SHOP_MILESTONE_INTERVAL) },
-                    { label: 'Boss', icon: '💀', steps: BOSS_MILESTONE_INTERVAL - (dist % BOSS_MILESTONE_INTERVAL) },
-                  ].sort((a, b) => a.steps - b.steps).slice(0, 3)
+                  ].sort((a, b) => a.steps - b.steps)
 
                   return (
                     <div className="space-y-2 mb-1">
