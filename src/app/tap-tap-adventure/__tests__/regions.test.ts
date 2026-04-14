@@ -19,6 +19,11 @@ describe('Region definitions', () => {
       'frozen_peaks',
       'shadow_realm',
       'sky_citadel',
+      'sunken_ruins',
+      'volcanic_forge',
+      'feywild_grove',
+      'bone_wastes',
+      'dragons_spine',
     ]
     for (const id of expectedIds) {
       expect(REGIONS[id]).toBeDefined()
@@ -58,6 +63,11 @@ describe('Region definitions', () => {
     expect(REGIONS.frozen_peaks.difficultyMultiplier).toBe(1.5)
     expect(REGIONS.shadow_realm.difficultyMultiplier).toBe(2.0)
     expect(REGIONS.sky_citadel.difficultyMultiplier).toBe(2.0)
+    expect(REGIONS.sunken_ruins.difficultyMultiplier).toBe(1.0)
+    expect(REGIONS.volcanic_forge.difficultyMultiplier).toBe(1.5)
+    expect(REGIONS.feywild_grove.difficultyMultiplier).toBe(1.2)
+    expect(REGIONS.bone_wastes.difficultyMultiplier).toBe(1.5)
+    expect(REGIONS.dragons_spine.difficultyMultiplier).toBe(2.0)
   })
 
   it('should have valid difficulty multipliers (positive numbers)', () => {
@@ -126,8 +136,71 @@ describe('getConnectedRegions', () => {
 
   it('should return correct number of connections', () => {
     expect(getConnectedRegions('starting_village')).toHaveLength(1)
-    expect(getConnectedRegions('green_meadows')).toHaveLength(3)
-    expect(getConnectedRegions('sky_citadel')).toHaveLength(3)
+    expect(getConnectedRegions('green_meadows')).toHaveLength(5)
+    expect(getConnectedRegions('sky_citadel')).toHaveLength(4)
+  })
+})
+
+describe('New regions', () => {
+  const newRegionIds = ['sunken_ruins', 'volcanic_forge', 'feywild_grove', 'bone_wastes', 'dragons_spine']
+
+  it('all 5 new regions should exist in REGIONS', () => {
+    for (const id of newRegionIds) {
+      expect(REGIONS[id], `Region "${id}" should be defined`).toBeDefined()
+      expect(REGIONS[id].id).toBe(id)
+    }
+  })
+
+  it('new regions should have valid fields', () => {
+    const validDifficulties = ['easy', 'medium', 'hard', 'very_hard']
+    const validElements = ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane', 'none']
+    for (const id of newRegionIds) {
+      const region = REGIONS[id]
+      expect(region.name).toBeTruthy()
+      expect(region.description).toBeTruthy()
+      expect(validDifficulties).toContain(region.difficulty)
+      expect(region.difficultyMultiplier).toBeGreaterThan(0)
+      expect(region.theme).toBeTruthy()
+      expect(region.enemyTypes.length).toBeGreaterThan(0)
+      expect(validElements).toContain(region.element)
+      expect(region.connectedRegions.length).toBeGreaterThan(0)
+      expect(typeof region.minLevel).toBe('number')
+      expect(region.icon).toBeTruthy()
+    }
+  })
+
+  it('new region connections should be bidirectional', () => {
+    for (const id of newRegionIds) {
+      const region = REGIONS[id]
+      for (const connectedId of region.connectedRegions) {
+        const connected = REGIONS[connectedId]
+        expect(
+          connected,
+          `Region "${id}" references non-existent connected region "${connectedId}"`
+        ).toBeDefined()
+        expect(
+          connected.connectedRegions,
+          `Region "${connectedId}" should connect back to "${id}"`
+        ).toContain(id)
+      }
+    }
+  })
+
+  it('new regions should have correct min levels', () => {
+    expect(REGIONS.sunken_ruins.minLevel).toBe(2)
+    expect(REGIONS.volcanic_forge.minLevel).toBe(4)
+    expect(REGIONS.feywild_grove.minLevel).toBe(2)
+    expect(REGIONS.bone_wastes.minLevel).toBe(4)
+    expect(REGIONS.dragons_spine.minLevel).toBe(8)
+  })
+
+  it('canEnterRegion should work for new regions', () => {
+    expect(canEnterRegion(REGIONS.sunken_ruins, 1)).toBe(false)
+    expect(canEnterRegion(REGIONS.sunken_ruins, 2)).toBe(true)
+    expect(canEnterRegion(REGIONS.volcanic_forge, 3)).toBe(false)
+    expect(canEnterRegion(REGIONS.volcanic_forge, 4)).toBe(true)
+    expect(canEnterRegion(REGIONS.dragons_spine, 7)).toBe(false)
+    expect(canEnterRegion(REGIONS.dragons_spine, 8)).toBe(true)
   })
 })
 
