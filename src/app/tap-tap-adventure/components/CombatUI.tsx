@@ -301,6 +301,8 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <h4 className="font-semibold uppercase border-b border-red-900/50 pb-2 mb-2">
           {combatState.isBoss ? (
             <span className="text-yellow-400">Boss Battle</span>
+          ) : combatState.isMiniBoss ? (
+            <span className="text-orange-400">Mini-Boss</span>
           ) : (
             <span className="text-red-400">Combat</span>
           )}

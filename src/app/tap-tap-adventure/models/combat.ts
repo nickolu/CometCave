@@ -141,6 +141,7 @@ export const CombatStateSchema = z.object({
   scenario: z.string(),
   enemyTelegraph: EnemyTelegraphSchema.optional().nullable(),
   isBoss: z.boolean().optional(),
+  isMiniBoss: z.boolean().optional(),
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),
 })
