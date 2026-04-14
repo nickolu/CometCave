@@ -31,6 +31,7 @@ import { SkillPanel } from './SkillPanel'
 import { StoryFeed } from './StoryFeed'
 import { RegionMap } from './RegionMap'
 import { SettingsPanel } from './SettingsPanel'
+import { KeyboardHelp } from './KeyboardHelp'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -86,6 +87,7 @@ export default function GameUI() {
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null)
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
 
   // Check for daily reward on mount
   useEffect(() => {
@@ -204,8 +206,15 @@ export default function GameUI() {
       // Ignore when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
 
-      // Escape — close mobile panel
+      // ? — toggle keyboard help
+      if (e.key === '?') {
+        setShowKeyboardHelp(prev => !prev)
+        return
+      }
+
+      // Escape — close overlays
       if (e.key === 'Escape') {
+        if (showKeyboardHelp) { setShowKeyboardHelp(false); return }
         setMobilePanel(null)
         return
       }
@@ -259,6 +268,7 @@ export default function GameUI() {
   return (
     <>
       <AchievementToastContainer achievementIds={newlyCompletedIds} />
+      {showKeyboardHelp && <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />}
       {showDailyReward && character && (
         <DailyRewardPopup
           streak={gameState.dailyReward?.streak ?? 0}
