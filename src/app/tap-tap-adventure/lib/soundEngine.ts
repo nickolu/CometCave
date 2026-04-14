@@ -4,6 +4,17 @@ class SoundEngine {
   private ctx: AudioContext | null = null
   private enabled: boolean = true
 
+  constructor() {
+    try {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('tta-sound-enabled')
+        if (stored !== null) this.enabled = JSON.parse(stored)
+      }
+    } catch {
+      // localStorage may not be available during SSR
+    }
+  }
+
   private getContext(): AudioContext | null {
     if (!this.ctx) {
       try {
