@@ -196,6 +196,42 @@ export default function GameUI() {
     }
   }, [clearAutoWalk])
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      // Escape — close mobile panel
+      if (e.key === 'Escape') {
+        setMobilePanel(null)
+        return
+      }
+
+      // During decision point — 1-4 to pick options
+      if (gameState.decisionPoint && !gameState.decisionPoint.resolved && !resolveDecisionPending) {
+        const num = parseInt(e.key, 10)
+        if (num >= 1 && num <= gameState.decisionPoint.options.length) {
+          e.preventDefault()
+          handleResolveDecision(gameState.decisionPoint.options[num - 1].id)
+        }
+        return
+      }
+
+      // During combat or shop — let those components handle their own shortcuts
+      if (gameState.combatState?.status === 'active' || gameState.shopState?.isOpen) return
+
+      // Travel mode — Space or Enter to move forward
+      if ((e.key === ' ' || e.key === 'Enter') && !moveForwardPending) {
+        e.preventDefault()
+        handleMoveForward()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
+
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault()
     const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
@@ -295,7 +331,7 @@ export default function GameUI() {
                       </div>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        {gameState.decisionPoint.options.map((option: { id: string; text: string }) => {
+                        {gameState.decisionPoint.options.map((option: { id: string; text: string }, index: number) => {
                           if (!option) return null
                           if (!gameState.decisionPoint) return null
                           return (
@@ -307,6 +343,7 @@ export default function GameUI() {
                                 handleResolveDecision(option.id)
                               }}
                             >
+                              <span className="hidden sm:inline text-slate-400 mr-2 text-xs font-mono">[{index + 1}]</span>
                               {option.text}
                             </Button>
                           )

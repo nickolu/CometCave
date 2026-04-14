@@ -123,6 +123,43 @@ export function CombatUI({ combatState }: CombatUIProps) {
     [combatAction]
   )
 
+  // Keyboard shortcuts for combat actions
+  useEffect(() => {
+    if (status !== 'active') return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isPending) return
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      const ap = playerState.ap ?? 3
+      switch (e.key.toLowerCase()) {
+        case 'a': // Attack
+          if (ap >= (AP_COSTS.attack ?? 1)) { e.preventDefault(); handleAction('attack') }
+          break
+        case 'h': // Heavy Attack
+          if (ap >= (AP_COSTS.heavy_attack ?? 2)) { e.preventDefault(); handleAction('heavy_attack') }
+          break
+        case 'd': // Defend
+          if (ap >= (AP_COSTS.defend ?? 1)) { e.preventDefault(); handleAction('defend') }
+          break
+        case 'f': // Flee
+          if (ap >= (AP_COSTS.flee ?? 3)) { e.preventDefault(); handleAction('flee') }
+          break
+        case 'q': // Class Ability
+          if (classAbility && abilityCooldown === 0 && ap >= (AP_COSTS.class_ability ?? 2)) {
+            e.preventDefault(); handleAction('class_ability')
+          }
+          break
+        case 'e': // End Turn
+          e.preventDefault(); handleAction('end_turn')
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
+
   const handleUseItem = useCallback(
     (itemId: string) => {
       // Check if the item has healing effects
