@@ -234,6 +234,128 @@ ${context}`,
   }
 }
 
+export async function generateMiniBossEncounter(
+  character: FantasyCharacter,
+  context: string
+): Promise<{ enemy: CombatEnemy; scenario: string }> {
+  try {
+    const response = await getOpenAI().chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: `Generate a MINI-BOSS combat encounter for this fantasy character. This is a tough elite enemy — stronger than a regular foe but not a region guardian. It should feel dangerous and memorable without being the final challenge of the area.
+
+Region context: Generate a mini-boss appropriate for the ${getRegion(character.currentRegion ?? 'green_meadows').name} region. Theme: ${getRegion(character.currentRegion ?? 'green_meadows').theme}. The dominant element is ${getRegion(character.currentRegion ?? 'green_meadows').element}. Common enemy types: ${getRegion(character.currentRegion ?? 'green_meadows').enemyTypes.join(', ') || 'none'}.
+
+Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
+${character.reputation >= 50 ? 'High reputation: the mini-boss might be a rival or challenger drawn by the character\'s fame.' : ''}${character.reputation <= -20 ? 'Low reputation: the mini-boss might be a bounty hunter or vengeful enforcer.' : ''}
+
+This is a level ${character.level} character facing a mini-boss fight. The mini-boss should be notably stronger than normal enemies:
+- Mini-boss HP: ${Math.round((35 + character.level * 15) * 1.2)} (1.2x normal)
+- Mini-boss attack: ${Math.round((6 + character.level * 3) * 1.15)} (1.15x normal)
+- Mini-boss defense: ${Math.round((2 + character.level) * 1.15)} (1.15x normal)
+- Gold reward: ${Math.round((5 + character.level * 5) * 2)} (2x normal)
+- Include 2 good-quality loot items (quality between regular drops and boss drops)
+- MUST include a special ability with cooldown of 2-4 turns — this is a mini-boss!
+- Should have a status ability (poison, burn, slow, curse, or fear)
+- Give it an imposing name with a title like 'the Ravager' or 'Bane of X'
+
+Character:
+${JSON.stringify(character, null, 2)}
+
+Context:
+${context}`,
+        },
+      ],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'generate_combat',
+            description: 'Generate a mini-boss combat encounter.',
+            parameters: enemySchemaForOpenAI,
+          },
+        },
+      ],
+      tool_choice: { type: 'function', function: { name: 'generate_combat' } },
+      temperature: 0.8,
+      max_tokens: 800,
+    })
+
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+    if (toolCall && toolCall.function?.name === 'generate_combat') {
+      const parsed = JSON.parse(toolCall.function.arguments)
+      const validated = combatResponseSchema.parse(parsed)
+      if (validated.enemy.lootTable) {
+        validated.enemy.lootTable = validated.enemy.lootTable.map(inferItemTypeAndEffects)
+      }
+      return validated
+    }
+    throw new Error('No tool call in response')
+  } catch (err) {
+    console.error('Mini-boss generation failed, using fallback', err)
+    return getDefaultMiniBossEncounter(character)
+  }
+}
+
+function getDefaultMiniBossEncounter(
+  character: FantasyCharacter
+): { enemy: CombatEnemy; scenario: string } {
+  const level = character.level
+  const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
+
+  const miniBosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' | 'fire' }> = [
+    { name: 'Goretusk the Ravager', desc: 'A hulking beast covered in battle scars, its tusks dripping with venom.', special: 'Tusked Charge', specialDesc: 'Charges forward with devastating force.', element: 'nature' },
+    { name: 'Whisper, the Shadow Stalker', desc: 'A silent assassin wreathed in living darkness, striking from impossible angles.', special: 'Shadow Step', specialDesc: 'Teleports behind the target for a critical strike.', element: 'shadow' },
+    { name: 'Cindermaw the Scorched', desc: 'A fire-scarred drake that breathes superheated ash and embers.', special: 'Ember Breath', specialDesc: 'Unleashes a cone of burning embers.', element: 'fire' },
+  ]
+  const miniBoss = miniBosses[level % miniBosses.length]
+
+  return {
+    scenario: `In the ${region.name}, a powerful elite enemy bars your way. ${miniBoss.name} steps forward — far stronger than the common rabble you've faced. A mini-boss encounter!`,
+    enemy: {
+      id: `mini-boss-${suffix}`,
+      name: miniBoss.name,
+      description: miniBoss.desc,
+      hp: Math.round((35 + level * 15) * 1.2),
+      maxHp: Math.round((35 + level * 15) * 1.2),
+      attack: Math.round((6 + level * 3) * 1.15),
+      defense: Math.round((2 + level) * 1.15),
+      level: level + 1,
+      goldReward: Math.round((5 + level * 5) * 2),
+      lootTable: [
+        inferItemTypeAndEffects({
+          id: `mini-boss-loot-1-${suffix}`,
+          name: 'Superior Healing Potion',
+          description: 'A high-quality restorative brew.',
+          quantity: 1,
+        }),
+        inferItemTypeAndEffects({
+          id: `mini-boss-loot-2-${suffix}`,
+          name: 'Elite Trophy',
+          description: `A trophy taken from ${miniBoss.name}.`,
+          quantity: 1,
+        }),
+      ],
+      specialAbility: {
+        name: miniBoss.special,
+        description: miniBoss.specialDesc,
+        damage: Math.round((5 + level * 2) * 1.4),
+        cooldown: 3,
+      },
+      statusAbility: {
+        type: 'poison' as const,
+        value: 3 + level,
+        duration: 3,
+        chance: 0.4,
+      },
+      element: (region.element !== 'none' ? region.element : miniBoss.element) as CombatEnemy['element'],
+    },
+  }
+}
+
 function getDefaultBossEncounter(
   character: FantasyCharacter
 ): { enemy: CombatEnemy; scenario: string } {

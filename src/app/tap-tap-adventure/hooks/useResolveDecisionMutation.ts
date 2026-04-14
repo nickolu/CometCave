@@ -188,6 +188,8 @@ export function useResolveDecisionMutation() {
         const { gameState } = useGameStore.getState()
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true
+        // Mini-boss: 5% chance on non-boss combat when distance > 100
+        const isMiniBoss = !isBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -196,6 +198,7 @@ export function useResolveDecisionMutation() {
             storyEvents: gameState.storyEvents,
             eventContext: decisionPoint.prompt,
             isBoss,
+            isMiniBoss,
           }),
         })
         if (combatRes.ok) {
