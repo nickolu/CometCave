@@ -1,52 +1,116 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
+import { calculateDay, STEPS_PER_DAY } from '@/app/tap-tap-adventure/lib/leveling'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
+import { QuestCelebration } from './QuestCelebration'
+
+function getUrgencyStyle(daysLeft: number): { badge: string; bar: string; border: string } {
+  if (daysLeft >= 3) return {
+    badge: 'bg-emerald-900/50 text-emerald-400',
+    bar: 'bg-emerald-500',
+    border: 'border-emerald-700/30',
+  }
+  if (daysLeft === 2) return {
+    badge: 'bg-yellow-900/50 text-yellow-400',
+    bar: 'bg-yellow-500',
+    border: 'border-yellow-700/30',
+  }
+  return {
+    badge: 'bg-red-900/50 text-red-400',
+    bar: 'bg-red-500',
+    border: 'border-red-700/30',
+  }
+}
+
+function RewardPreview({ quest }: { quest: TimedQuest }) {
+  const hasRewards = quest.rewards.gold || quest.rewards.reputation || (quest.rewards.items && quest.rewards.items.length > 0)
+  if (!hasRewards) return null
+
+  return (
+    <div className="bg-slate-800/50 rounded p-2 space-y-0.5">
+      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Rewards</p>
+      <div className="flex flex-wrap gap-2">
+        {quest.rewards.gold && (
+          <span className="text-[10px] text-yellow-400">+{quest.rewards.gold} Gold</span>
+        )}
+        {quest.rewards.reputation && (
+          <span className="text-[10px] text-blue-400">+{quest.rewards.reputation} Rep</span>
+        )}
+        {quest.rewards.items?.map(item => (
+          <span key={item.id} className="text-[10px] text-purple-400">+ {item.name}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function QuestPanel() {
   const { gameState, getSelectedCharacter, setActiveQuest } = useGameStore()
   const quest = gameState.activeQuest
   const character = getSelectedCharacter()
+  const [showCelebration, setShowCelebration] = useState(false)
+  const failSoundPlayed = useRef(false)
+
+  // Play defeat sound once when quest fails
+  useEffect(() => {
+    if (quest?.status === 'failed' && !failSoundPlayed.current) {
+      soundEngine.playDefeat()
+      failSoundPlayed.current = true
+    }
+    if (quest?.status !== 'failed') {
+      failSoundPlayed.current = false
+    }
+  }, [quest?.status])
+
+  // Show celebration modal when quest completes
+  useEffect(() => {
+    if (quest?.status === 'completed') {
+      setShowCelebration(true)
+    }
+  }, [quest?.status])
+
+  const handleClaimRewards = useCallback(() => {
+    if (!quest || !character) return
+    const rewards = quest.rewards
+    const updatedGold = character.gold + (rewards.gold ?? 0)
+    const updatedRep = character.reputation + (rewards.reputation ?? 0)
+
+    const { gameState: gs, setGameState } = useGameStore.getState()
+    const updatedChars = gs.characters.map(c => {
+      if (c.id !== character.id) return c
+      const updatedInventory = [...c.inventory, ...(rewards.items ?? [])]
+      return { ...c, gold: updatedGold, reputation: updatedRep, inventory: updatedInventory }
+    })
+    setGameState({ ...gs, characters: updatedChars, activeQuest: null })
+    setShowCelebration(false)
+  }, [quest, character])
 
   const handleDismiss = useCallback(() => {
-    if (!quest) return
-    if (quest.status === 'completed' && character) {
-      // Apply rewards
-      const rewards = quest.rewards
-      const updatedGold = character.gold + (rewards.gold ?? 0)
-      const updatedRep = character.reputation + (rewards.reputation ?? 0)
-
-      // Update character with rewards via store
-      const { gameState: gs, setGameState } = useGameStore.getState()
-      const updatedChars = gs.characters.map(c => {
-        if (c.id !== character.id) return c
-        const updatedInventory = [...c.inventory, ...(rewards.items ?? [])]
-        return { ...c, gold: updatedGold, reputation: updatedRep, inventory: updatedInventory }
-      })
-      setGameState({ ...gs, characters: updatedChars, activeQuest: null })
-    } else {
-      setActiveQuest(null)
-    }
-  }, [quest, character, setActiveQuest])
+    setActiveQuest(null)
+  }, [setActiveQuest])
 
   if (!quest || !character) return null
 
   const currentDay = calculateDay(character.distance)
   const daysLeft = Math.max(0, quest.deadlineDay - currentDay)
+  const stepsUntilDeadline = Math.max(0, quest.deadlineDay * STEPS_PER_DAY - character.distance)
 
   // Progress calculation
   let progress = 0
   let progressText = ''
+  let targetDescription = ''
   switch (quest.type) {
     case 'reach_distance': {
       const needed = quest.target - quest.startValue
       const done = Math.max(0, character.distance - quest.startValue)
       progress = Math.min(1, done / needed)
       progressText = `${character.distance} / ${quest.target} steps`
+      targetDescription = `Travel to ${quest.target} steps`
       break
     }
     case 'collect_gold': {
@@ -54,21 +118,30 @@ export function QuestPanel() {
       const done = Math.max(0, character.gold - quest.startValue)
       progress = Math.min(1, done / needed)
       progressText = `${character.gold} / ${quest.target} gold`
+      targetDescription = `Collect ${quest.target} gold`
       break
     }
     case 'win_combat':
       progress = quest.status === 'completed' ? 1 : 0
       progressText = quest.status === 'completed' ? 'Completed!' : 'Win a fight'
+      targetDescription = 'Win a combat encounter'
       break
     case 'gain_reputation': {
       const needed = quest.target - quest.startValue
       const done = Math.max(0, character.reputation - quest.startValue)
       progress = Math.min(1, done / needed)
       progressText = `${character.reputation} / ${quest.target} reputation`
+      targetDescription = `Reach ${quest.target} reputation`
       break
     }
   }
 
+  // Celebration modal for completed quests
+  if (quest.status === 'completed' && showCelebration) {
+    return <QuestCelebration quest={quest} onClaim={handleClaimRewards} />
+  }
+
+  // Completed but celebration dismissed (fallback)
   if (quest.status === 'completed') {
     return (
       <div className="bg-emerald-950/30 border border-emerald-700/50 rounded-lg p-3 space-y-2">
@@ -85,7 +158,7 @@ export function QuestPanel() {
         </div>
         <Button
           className="w-full bg-emerald-700 hover:bg-emerald-600 text-white text-xs py-1.5 rounded"
-          onClick={handleDismiss}
+          onClick={handleClaimRewards}
         >
           Claim Rewards
         </Button>
@@ -93,14 +166,36 @@ export function QuestPanel() {
     )
   }
 
+  // Failed quest — detailed feedback
   if (quest.status === 'failed') {
+    const daysOverdue = currentDay - quest.deadlineDay
+    const questDuration = quest.deadlineDay - quest.startDay
     return (
       <div className="bg-red-950/30 border border-red-700/50 rounded-lg p-3 space-y-2">
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-red-400">Quest Failed</span>
+          <span className="text-[10px] px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded">
+            {daysOverdue > 0 ? `${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue` : 'Expired'}
+          </span>
         </div>
-        <p className="text-xs text-red-300">{quest.title}</p>
-        <p className="text-xs text-slate-400">The deadline has passed.</p>
+        <p className="text-xs text-white font-semibold">{quest.title}</p>
+        <div className="bg-red-950/40 rounded p-2 space-y-1">
+          <p className="text-[10px] text-red-300">
+            <span className="text-slate-400">Objective:</span> {targetDescription}
+          </p>
+          <p className="text-[10px] text-red-300">
+            <span className="text-slate-400">Progress:</span> {progressText} ({Math.round(progress * 100)}%)
+          </p>
+          <p className="text-[10px] text-red-300">
+            <span className="text-slate-400">Time given:</span> {questDuration} day{questDuration !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-red-500 rounded-full"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
         <Button
           className="w-full bg-red-900 hover:bg-red-800 text-white text-xs py-1.5 rounded"
           onClick={handleDismiss}
@@ -111,19 +206,25 @@ export function QuestPanel() {
     )
   }
 
-  // Active quest
+  // Active quest — enhanced with urgency, rewards, and steps
+  const urgency = getUrgencyStyle(daysLeft)
+
   return (
-    <div className="bg-[#1e1f30] border border-amber-700/30 rounded-lg p-3 space-y-2">
+    <div className={`bg-[#1e1f30] border ${urgency.border} rounded-lg p-3 space-y-2`}>
       <div className="flex justify-between items-center">
         <span className="text-sm font-bold text-amber-400">Active Quest</span>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-          daysLeft <= 1 ? 'bg-red-900/50 text-red-400' : 'bg-amber-900/50 text-amber-400'
-        }`}>
+        <span className={`text-[10px] px-1.5 py-0.5 rounded ${urgency.badge}`}>
           {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
         </span>
       </div>
       <p className="text-xs text-white font-semibold">{quest.title}</p>
       <p className="text-[10px] text-slate-400">{quest.description}</p>
+
+      {/* Deadline detail */}
+      <p className="text-[10px] text-slate-500">
+        ~{stepsUntilDeadline} steps until deadline
+      </p>
+
       {/* Progress bar */}
       <div className="space-y-1">
         <div className="flex justify-between text-[10px] text-slate-400">
@@ -132,11 +233,14 @@ export function QuestPanel() {
         </div>
         <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-amber-500 rounded-full transition-all duration-300"
+            className={`h-full ${urgency.bar} rounded-full transition-all duration-300`}
             style={{ width: `${progress * 100}%` }}
           />
         </div>
       </div>
+
+      {/* Reward preview */}
+      <RewardPreview quest={quest} />
     </div>
   )
 }
