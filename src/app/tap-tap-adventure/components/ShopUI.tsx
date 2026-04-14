@@ -26,7 +26,8 @@ function formatEffects(effects?: Item['effects']): string {
   return parts.length > 0 ? parts.join(', ') : 'No effects'
 }
 
-const STAT_KEYS: { key: keyof ItemEffects; label: string }[] = [
+type NumericEffectKey = 'strength' | 'intelligence' | 'luck'
+const STAT_KEYS: { key: NumericEffectKey; label: string }[] = [
   { key: 'strength', label: 'STR' },
   { key: 'intelligence', label: 'INT' },
   { key: 'luck', label: 'LCK' },
