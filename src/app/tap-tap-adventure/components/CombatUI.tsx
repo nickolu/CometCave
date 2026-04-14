@@ -14,6 +14,7 @@ import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
+import { getDeathFlavorText, getStoryContext, getPermadeathEpitaph } from '@/app/tap-tap-adventure/lib/deathFlavorText'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
   const pct = Math.max(0, Math.min(100, (current / max) * 100))
@@ -563,6 +564,19 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
       ? [...lastStoryEvents].reverse().find(e => e.type === 'combat_defeat')
       : null
 
+  const [showPenalties, setShowPenalties] = useState(status !== 'defeat')
+
+  useEffect(() => {
+    if (status === 'defeat') {
+      const timer = setTimeout(() => setShowPenalties(true), 1200)
+      return () => clearTimeout(timer)
+    }
+  }, [status])
+
+  const flavorText = status === 'defeat' ? getDeathFlavorText(character, enemy, combatState.combatLog) : null
+  const storyContext = status === 'defeat' ? getStoryContext(character, lastStoryEvents) : null
+  const epitaph = status === 'defeat' ? getPermadeathEpitaph(character, lastStoryEvents) : null
+
   const config = {
     victory: {
       title: 'Victory!',
@@ -604,20 +618,45 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
     <div className={`${c.bgColor} border ${c.borderColor} rounded-lg p-6 text-center space-y-4`}>
       <h4 className={`text-xl font-bold ${c.color}`}>{c.title}</h4>
       <p className="text-slate-300">{c.message}</p>
-      {status === 'defeat' && lastDefeatEvent && (
-        <div className="text-sm text-red-300 space-y-1 bg-red-950/30 rounded p-3">
-          <p className="font-semibold">Penalties suffered:</p>
-          {lastDefeatEvent.resourceDelta?.gold && (
-            <p>{Math.abs(lastDefeatEvent.resourceDelta.gold)} gold lost</p>
+      {status === 'defeat' && (
+        <>
+          {/* Flavor text - visible immediately */}
+          {flavorText && (
+            <div className="bg-red-950/40 border border-red-900/40 rounded-lg p-4">
+              <p className="text-red-200 italic text-sm">{flavorText}</p>
+              {storyContext && (
+                <p className="text-red-300/70 text-xs mt-2">{storyContext}</p>
+              )}
+            </div>
           )}
-          {lastDefeatEvent.resourceDelta?.reputation && (
-            <p>{Math.abs(lastDefeatEvent.resourceDelta.reputation)} reputation lost</p>
+
+          {/* Permadeath memorial */}
+          {epitaph && (
+            <div className="bg-red-950/60 border border-red-800/50 rounded-lg p-4">
+              <p className="text-xs text-red-400 font-semibold uppercase tracking-wider mb-2">In Memoriam</p>
+              <p className="text-red-200 text-sm italic">{epitaph}</p>
+            </div>
           )}
-          <p>Inventory scattered and lost</p>
-          {character && (character.deathCount ?? 0) > 0 && (
-            <p className="text-xs text-red-400 mt-2">Total deaths: {character.deathCount}</p>
-          )}
-        </div>
+
+          {/* Penalties - fade in after delay */}
+          <div className={`transition-opacity duration-500 ${showPenalties ? 'opacity-100' : 'opacity-0'}`}>
+            {lastDefeatEvent && (
+              <div className="text-sm text-red-300 space-y-1 bg-red-950/30 rounded p-3">
+                <p className="font-semibold">Penalties suffered:</p>
+                {lastDefeatEvent.resourceDelta?.gold && (
+                  <p>{Math.abs(lastDefeatEvent.resourceDelta.gold)} gold lost</p>
+                )}
+                {lastDefeatEvent.resourceDelta?.reputation && (
+                  <p>{Math.abs(lastDefeatEvent.resourceDelta.reputation)} reputation lost</p>
+                )}
+                <p>Inventory scattered and lost</p>
+                {character && (character.deathCount ?? 0) > 0 && (
+                  <p className="text-xs text-red-400 mt-2">Total deaths: {character.deathCount}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </>
       )}
       <Button
         className="bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white px-6 py-2 rounded-md"
