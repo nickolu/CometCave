@@ -15,6 +15,7 @@ import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 import { getDeathFlavorText, getStoryContext, getPermadeathEpitaph } from '@/app/tap-tap-adventure/lib/deathFlavorText'
+import { FloatingDamage, DamageEvent } from './FloatingDamage'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
   const pct = Math.max(0, Math.min(100, (current / max) * 100))
@@ -96,9 +97,54 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const [showFullLog, setShowFullLog] = useState(false)
   const [showEnemyDesc, setShowEnemyDesc] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
+  const [damageEvents, setDamageEvents] = useState<DamageEvent[]>([])
+  const [showCritFlash, setShowCritFlash] = useState(false)
+  const [comboKey, setComboKey] = useState(0)
+  const prevLogLenRef = useRef(0)
+  const prevComboRef = useRef(0)
 
   const character = getSelectedCharacter()
   const { enemy, playerState, combatLog, scenario, status } = combatState
+
+  // Detect new combat log entries and create floating damage events
+  useEffect(() => {
+    const prevLen = prevLogLenRef.current
+    if (combatLog.length > prevLen) {
+      const newEntries = combatLog.slice(prevLen)
+      const newDamageEvents: DamageEvent[] = newEntries
+        .filter(entry => entry.damage && entry.damage > 0)
+        .map((entry, i) => ({
+          id: `${combatLog.length}-${i}-${Date.now()}`,
+          amount: entry.damage!,
+          isCritical: entry.isCritical ?? false,
+          target: entry.actor === 'enemy' ? 'player' : 'enemy',
+        }))
+
+      if (newDamageEvents.length > 0) {
+        setDamageEvents(prev => [...prev, ...newDamageEvents])
+        // Auto-cleanup after animation
+        setTimeout(() => {
+          setDamageEvents(prev => prev.filter(e => !newDamageEvents.some(ne => ne.id === e.id)))
+        }, 1100)
+      }
+
+      // Critical hit flash
+      if (newEntries.some(e => e.isCritical)) {
+        setShowCritFlash(true)
+        setTimeout(() => setShowCritFlash(false), 500)
+      }
+    }
+    prevLogLenRef.current = combatLog.length
+  }, [combatLog])
+
+  // Combo pulse detection
+  useEffect(() => {
+    const currentCombo = playerState.comboCount ?? 0
+    if (currentCombo > prevComboRef.current && currentCombo > 0) {
+      setComboKey(k => k + 1)
+    }
+    prevComboRef.current = currentCombo
+  }, [playerState.comboCount])
 
   const combatItems = (character?.inventory ?? []).filter(
     (i: Item) => i.status !== 'deleted' && isUsableInCombat(i)
@@ -195,6 +241,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
   return (
     <div className="space-y-4">
+      {/* Critical hit flash overlay */}
+      {showCritFlash && (
+        <div className="fixed inset-0 z-[55] pointer-events-none bg-yellow-400/20 animate-crit-flash" />
+      )}
       {/* Header */}
       <div className="text-center">
         <h4 className="font-semibold uppercase border-b border-red-900/50 pb-2 mb-2">
@@ -208,7 +258,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
       </div>
 
       {/* Enemy info — condensed for mobile */}
-      <div className="bg-[#1e1f30] border border-red-900/30 rounded-lg p-2 sm:p-3 space-y-1">
+      <div className="relative bg-[#1e1f30] border border-red-900/30 rounded-lg p-2 sm:p-3 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-bold text-red-400 text-sm">{enemy.name}</span>
           <span className="text-xs text-slate-400">Lv.{enemy.level}</span>
@@ -234,6 +284,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
         )}
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
         <StatusEffectBadges effects={enemy.statusEffects ?? []} label="Enemy" />
+        <FloatingDamage events={damageEvents.filter(e => e.target === 'enemy')} />
       </div>
 
       {/* Enemy telegraph warning */}
@@ -250,12 +301,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
       )}
 
       {/* Player info — compact for mobile */}
-      <div className="bg-[#1e1f30] border border-blue-900/30 rounded-lg p-2 sm:p-3 space-y-1">
+      <div className="relative bg-[#1e1f30] border border-blue-900/30 rounded-lg p-2 sm:p-3 space-y-1">
         <div className="flex justify-between items-center">
           <span className="font-bold text-blue-400 text-sm">{character?.name ?? 'You'}</span>
           <div className="flex gap-1 flex-wrap">
             {(playerState.comboCount ?? 0) > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-orange-900/50 text-orange-400 rounded font-bold">
+              <span key={comboKey} className="text-[10px] px-1.5 py-0.5 bg-orange-900/50 text-orange-400 rounded font-bold animate-combo-pulse">
                 {playerState.comboCount}x Combo
               </span>
             )}
@@ -317,6 +368,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             })}
           </div>
         )}
+        <FloatingDamage events={damageEvents.filter(e => e.target === 'player')} />
       </div>
 
       {/* Combat Log — collapsed by default on mobile, show last 2 entries */}
