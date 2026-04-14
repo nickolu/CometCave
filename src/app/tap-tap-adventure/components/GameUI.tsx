@@ -29,6 +29,7 @@ import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { SkillPanel } from './SkillPanel'
 import { StoryFeed } from './StoryFeed'
+import { RegionMap } from './RegionMap'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -66,7 +67,7 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'skills' | 'quest' | null
+type MobilePanel = 'equipment' | 'inventory' | 'skills' | 'quest' | 'map' | null
 
 export default function GameUI() {
   const {
@@ -438,6 +439,12 @@ export default function GameUI() {
             <div className="border-t border-[#3a3c56] pt-4">
               <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
             </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <RegionMap
+                currentRegionId={character?.currentRegion ?? 'green_meadows'}
+                characterLevel={character?.level ?? 1}
+              />
+            </div>
           </div>
         </div>
         {/* Two-column grid END */}
@@ -454,7 +461,7 @@ export default function GameUI() {
           >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'skills' ? 'Skills' : 'Quest'}
+                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'skills' ? 'Skills' : mobilePanel === 'map' ? 'Map' : 'Quest'}
               </h3>
               <button
                 className="text-slate-400 hover:text-white text-sm px-2 py-1"
@@ -478,6 +485,12 @@ export default function GameUI() {
             {mobilePanel === 'skills' && (
               <SkillPanel unlockedSkillIds={character?.unlockedSkills ?? []} />
             )}
+            {mobilePanel === 'map' && (
+              <RegionMap
+                currentRegionId={character?.currentRegion ?? 'green_meadows'}
+                characterLevel={character?.level ?? 1}
+              />
+            )}
           </div>
         </div>
       )}
@@ -489,6 +502,7 @@ export default function GameUI() {
           { id: 'inventory' as MobilePanel, label: 'Items', icon: '\uD83C\uDF92' },
           { id: 'skills' as MobilePanel, label: 'Skills', icon: '\u2728' },
           { id: 'quest' as MobilePanel, label: 'Quest', icon: '\uD83D\uDCDC' },
+          { id: 'map' as MobilePanel, label: 'Map', icon: '\uD83D\uDDFA' },
         ]).map(tab => (
           <button
             key={tab.id}
