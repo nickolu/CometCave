@@ -53,7 +53,7 @@ export default function TapTapAdventurePage() {
         </>
       ) : (
         <>
-          {initialView === 'game' && <GameUI />}
+          {initialView === 'game' && <GameUI onOpenStatus={() => setShowStatus(true)} />}
           {initialView === 'characters' && (
             <CharacterList defaultShowCreation={showCreationFromSummary} onCreationShown={() => setShowCreationFromSummary(false)} />
           )}
