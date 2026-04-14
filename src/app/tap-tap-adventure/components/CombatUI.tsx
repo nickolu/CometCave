@@ -58,6 +58,17 @@ function ManaBar({ current, max }: { current: number; max: number }) {
 function StatusEffectBadges({ effects, label }: { effects: StatusEffect[]; label: string }) {
   if (effects.length === 0) return null
 
+  const iconMap: Record<string, string> = {
+    poison: '☠️',
+    burn: '🔥',
+    slow: '🐌',
+    curse: '💀',
+    thorns: '🌿',
+    berserk: '😡',
+    fear: '😨',
+    reflect: '🪞',
+  }
+
   const colorMap: Record<string, string> = {
     poison: 'bg-green-900/50 text-green-400',
     burn: 'bg-orange-900/50 text-orange-400',
@@ -77,7 +88,7 @@ function StatusEffectBadges({ effects, label }: { effects: StatusEffect[]; label
           className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
           title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
         >
-          {effect.name} ({effect.turnsRemaining}t)
+          {iconMap[effect.type] ?? '⬡'} {effect.name} ({effect.turnsRemaining}t)
         </span>
       ))}
     </div>
@@ -102,6 +113,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const [comboKey, setComboKey] = useState(0)
   const prevLogLenRef = useRef(0)
   const prevComboRef = useRef(0)
+  const [effectivenessFlash, setEffectivenessFlash] = useState<'super' | 'resisted' | null>(null)
 
   const character = getSelectedCharacter()
   const { enemy, playerState, combatLog, scenario, status } = combatState
@@ -113,12 +125,29 @@ export function CombatUI({ combatState }: CombatUIProps) {
       const newEntries = combatLog.slice(prevLen)
       const newDamageEvents: DamageEvent[] = newEntries
         .filter(entry => entry.damage && entry.damage > 0)
-        .map((entry, i) => ({
-          id: `${combatLog.length}-${i}-${Date.now()}`,
-          amount: entry.damage!,
-          isCritical: entry.isCritical ?? false,
-          target: entry.actor === 'enemy' ? 'player' : 'enemy',
-        }))
+        .map((entry, i) => {
+          const isDot = entry.action === 'status_effect'
+          const dotType = isDot
+            ? entry.description.toLowerCase().includes('poison') ? 'poison' as const
+              : entry.description.toLowerCase().includes('burn') ? 'burn' as const
+              : undefined
+            : undefined
+
+          // Detect elemental effectiveness from description
+          let effectiveness: 'super' | 'resisted' | null = null
+          if (entry.description.includes('Super effective')) effectiveness = 'super'
+          else if (entry.description.includes('Resisted')) effectiveness = 'resisted'
+
+          return {
+            id: `${combatLog.length}-${i}-${Date.now()}`,
+            amount: entry.damage!,
+            isCritical: entry.isCritical ?? false,
+            target: (entry.actor === 'enemy' ? 'player' : 'enemy') as 'player' | 'enemy',
+            isDot,
+            dotType,
+            effectiveness,
+          }
+        })
 
       if (newDamageEvents.length > 0) {
         setDamageEvents(prev => [...prev, ...newDamageEvents])
@@ -132,6 +161,16 @@ export function CombatUI({ combatState }: CombatUIProps) {
       if (newEntries.some(e => e.isCritical)) {
         setShowCritFlash(true)
         setTimeout(() => setShowCritFlash(false), 500)
+      }
+
+      // Elemental effectiveness flash
+      const effectivenessEntry = newEntries.find(e =>
+        e.description.includes('Super effective') || e.description.includes('Resisted')
+      )
+      if (effectivenessEntry) {
+        const type = effectivenessEntry.description.includes('Super effective') ? 'super' : 'resisted'
+        setEffectivenessFlash(type)
+        setTimeout(() => setEffectivenessFlash(null), 1200)
       }
     }
     prevLogLenRef.current = combatLog.length
@@ -244,6 +283,18 @@ export function CombatUI({ combatState }: CombatUIProps) {
       {/* Critical hit flash overlay */}
       {showCritFlash && (
         <div className="fixed inset-0 z-[55] pointer-events-none bg-yellow-400/20 animate-crit-flash" />
+      )}
+      {/* Elemental effectiveness flash */}
+      {effectivenessFlash && (
+        <div className="absolute inset-x-0 top-1 z-10 flex justify-center pointer-events-none">
+          <span className={`text-sm font-bold px-3 py-1 rounded-full animate-float-up ${
+            effectivenessFlash === 'super'
+              ? 'text-yellow-300 bg-yellow-900/60 border border-yellow-500/40'
+              : 'text-blue-300 bg-blue-900/60 border border-blue-500/40'
+          }`}>
+            {effectivenessFlash === 'super' ? '⚡ Super Effective!' : '🛡️ Resisted!'}
+          </span>
+        </div>
       )}
       {/* Header */}
       <div className="text-center">
@@ -389,7 +440,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
               >
                 <span className="text-slate-500">T{entry.turn}:</span>{' '}
                 {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
-                {entry.description}
+                {entry.action === 'status_effect' && <span className="mr-1">{entry.description.toLowerCase().includes('poison') ? '☠️' : '🔥'}</span>}
+                {entry.description.includes('Super effective') ? (
+                  <>{entry.description.replace('Super effective!', '')}<span className="text-yellow-400 font-bold"> Super effective!</span></>
+                ) : entry.description.includes('Resisted') ? (
+                  <>{entry.description.replace('Resisted!', '')}<span className="text-blue-400 font-bold"> Resisted!</span></>
+                ) : (
+                  entry.description
+                )}
               </div>
             ))}
           </div>

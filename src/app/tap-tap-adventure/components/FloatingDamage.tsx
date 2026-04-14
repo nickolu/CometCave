@@ -7,6 +7,9 @@ export interface DamageEvent {
   amount: number
   isCritical: boolean
   target: 'player' | 'enemy'
+  isDot: boolean        // true for poison/burn tick damage
+  dotType?: 'poison' | 'burn'  // which status effect
+  effectiveness?: 'super' | 'resisted' | null  // elemental matchup
 }
 
 interface FloatingDamageProps {
@@ -34,12 +37,22 @@ function FloatingNumber({ event }: { event: DamageEvent }) {
   if (!visible) return null
 
   const isPlayer = event.target === 'player'
+  // Color by damage type
   const color = event.isCritical
     ? 'text-yellow-300'
-    : isPlayer
-      ? 'text-red-400'
-      : 'text-green-400'
-  const size = event.isCritical ? 'text-lg font-black' : 'text-sm font-bold'
+    : event.isDot && event.dotType === 'poison'
+      ? 'text-green-400'
+      : event.isDot && event.dotType === 'burn'
+        ? 'text-orange-400'
+        : isPlayer
+          ? 'text-red-400'
+          : 'text-green-400'
+
+  const size = event.isCritical
+    ? 'text-lg font-black'
+    : event.isDot
+      ? 'text-xs font-semibold italic'
+      : 'text-sm font-bold'
   // Stagger horizontal position slightly based on id hash
   const offset = ((event.id.charCodeAt(0) ?? 0) % 5) * 10 - 20
 
@@ -48,11 +61,11 @@ function FloatingNumber({ event }: { event: DamageEvent }) {
       className={`absolute animate-float-up pointer-events-none ${color} ${size} drop-shadow-lg`}
       style={{
         left: `calc(50% + ${offset}px)`,
-        top: isPlayer ? '0' : '0',
+        top: '0',
       }}
     >
       {event.isCritical && '★ '}
-      {isPlayer ? `-${event.amount}` : `-${event.amount}`}
+      {event.isDot ? `${event.amount} ${event.dotType}` : `-${event.amount}`}
       {event.isCritical && ' ★'}
     </span>
   )
