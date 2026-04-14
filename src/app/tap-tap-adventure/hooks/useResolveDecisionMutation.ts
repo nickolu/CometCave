@@ -129,11 +129,16 @@ export function useResolveDecisionMutation() {
       addStoryEvent(newStoryEvent)
 
       // Check if this event grants a mount (mount discovery events)
-      const isMountEvent = optionId.includes('tame-horse') || optionId.includes('claim-mount')
+      const isMountEvent = optionId.includes('tame-') || optionId.includes('claim-mount')
       if (isMountEvent && data.outcomeDescription && !data.outcomeDescription.includes('bolts') && !data.outcomeDescription.includes("won't let you")) {
         const currentChar = getSelectedCharacter()
+        const oldMount = currentChar?.activeMount
         const mount = getRandomMount(currentChar?.luck ?? 0)
         updateSelectedCharacter({ activeMount: mount })
+        soundEngine.playMountAcquired()
+        // Update the story event to note the mount gained (and any replacement)
+        const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
+        newStoryEvent.outcomeDescription = `${data.outcomeDescription} You gained a ${mount.name}! ${mount.icon}${replacedText}`
       }
 
       // If the chosen option triggers combat, start a combat encounter

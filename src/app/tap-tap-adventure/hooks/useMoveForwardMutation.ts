@@ -84,7 +84,7 @@ export function useMoveForwardMutation() {
           const shopData = await shopRes.json()
           setGenericMessage(null)
           setDecisionPoint(null)
-          setShopState({ items: shopData.shopItems, isOpen: true })
+          setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
         }
       } else if (data.decisionPoint) {
         soundEngine.playEvent()

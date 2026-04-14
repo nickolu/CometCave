@@ -405,6 +405,20 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
         ],
       },
       {
+        id: `rfb-shadow-wolves-${s}`,
+        description: 'A pack of shadow wolves slinks through the dark undergrowth, their eyes glowing with an eerie violet light. The alpha pauses and locks eyes with you.',
+        options: [
+          { id: `tame-shadow-wolf-${s}`, text: 'Offer your hand to the alpha (taming attempt)', successProbability: 0.5,
+            successDescription: 'The shadow wolf sniffs your hand, then nuzzles against it. The alpha accepts you as its pack leader! You have gained a new mount.',
+            successEffects: { reputation: 3 },
+            failureDescription: 'The wolf snarls and bolts into the shadows. It won\'t let you near.',
+            failureEffects: {} },
+          { id: `leave-wolves-${s}`, text: 'Back away slowly', successProbability: 1.0,
+            successDescription: 'The pack watches you retreat before melting back into the darkness.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
         id: `rfb-treant-${s}`,
         description: 'A corrupted treant blocks the path, its bark oozing dark sap. It groans menacingly.',
         options: [
@@ -432,6 +446,20 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
           { id: `retreat-fire-${s}`, text: 'Keep your distance', successProbability: 1.0,
             successDescription: 'You watch the spectacular display from safety as it eventually burns out.',
             successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-phoenix-feather-${s}`,
+        description: 'Among the scorched sands, you spot a single feather blazing with living flame. It hovers above the ground, radiating intense heat and pulsing with rebirth energy.',
+        options: [
+          { id: `claim-mount-phoenix-${s}`, text: 'Grasp the phoenix feather (taming attempt)', successProbability: 0.3,
+            successDescription: 'The feather flares brilliantly and transforms into a majestic phoenix that bows before you. It has chosen you as its rider! You have gained a new mount.',
+            successEffects: { reputation: 5 },
+            failureDescription: 'The feather burns white-hot and disintegrates. The phoenix bolts skyward in a column of fire. It won\'t let you claim it.',
+            failureEffects: {} },
+          { id: `leave-feather-${s}`, text: 'Admire the feather from a safe distance', successProbability: 1.0,
+            successDescription: 'The feather eventually burns out, leaving a small pile of warm ash.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
         ],
       },
       {
@@ -491,6 +519,20 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { reputation: 2 },
             failureDescription: 'The convergence fades quickly, leaving nothing behind.',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-ice-griffin-${s}`,
+        description: 'High on a frozen ledge, you spot an abandoned griffin nest. Inside, a lone griffin chick chirps weakly, its frost-blue feathers ruffled against the cold.',
+        options: [
+          { id: `tame-griffin-chick-${s}`, text: 'Wrap the chick in your cloak and raise it (taming attempt)', successProbability: 0.4,
+            successDescription: 'The griffin chick bonds with you instantly, nuzzling into your warmth. As you care for it, it grows rapidly into a majestic ice griffin mount! You have gained a new mount.',
+            successEffects: { reputation: 4 },
+            failureDescription: 'The chick screeches in alarm and bolts away. It won\'t let you near.',
+            failureEffects: {} },
+          { id: `leave-nest-${s}`, text: 'Leave the nest undisturbed', successProbability: 1.0,
+            successDescription: 'You leave the chick, hoping its parent will return.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
         ],
       },
       {
@@ -555,6 +597,20 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { gold: 10 },
             failureDescription: 'The crystals shatter into worthless dust.',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-glowing-owl-${s}`,
+        description: 'A luminous owl perches on a crystal stalactite above you, its feathers shimmering with arcane light. It tilts its head and hoots softly, studying you with intelligent eyes.',
+        options: [
+          { id: `tame-glowing-owl-${s}`, text: 'Extend your arm and whistle gently (taming attempt)', successProbability: 0.6,
+            successDescription: 'The owl flutters down and lands on your arm, its warm glow enveloping you. It has chosen you as its companion! You have gained a new mount.',
+            successEffects: { reputation: 3 },
+            failureDescription: 'The owl hoots dismissively and bolts deeper into the caves. It won\'t let you near.',
+            failureEffects: {} },
+          { id: `watch-owl-${s}`, text: 'Watch the owl in wonder', successProbability: 1.0,
+            successDescription: 'The owl takes flight, trailing sparkles through the dark cavern. A beautiful sight.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
         ],
       },
       {

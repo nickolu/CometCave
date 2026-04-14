@@ -3,10 +3,17 @@ import { z } from 'zod'
 
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item, ItemSchema } from '@/app/tap-tap-adventure/models/item'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { getMountPrice, getShopMount } from '@/app/tap-tap-adventure/config/mounts'
 
 import { getReputationPriceMultiplier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 import { generateSpellForLevel } from './spellGenerator'
+
+export interface ShopMount {
+  mount: Mount
+  price: number
+}
 
 function getOpenAIClient() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -47,6 +54,13 @@ const shopSchemaForOpenAI = {
     },
   },
   required: ['items'],
+}
+
+export function generateShopMount(character: FantasyCharacter): ShopMount | null {
+  if (Math.random() > 0.3) return null // 30% chance
+  const mount = getShopMount(character.level)
+  const price = getMountPrice(mount.rarity)
+  return { mount, price }
 }
 
 export async function generateShopItems(character: FantasyCharacter): Promise<Item[]> {

@@ -6,12 +6,19 @@ import { CombatState } from './combat'
 import { Item } from './item'
 import { FantasyLocation } from './location'
 import { MetaProgressionState } from './metaProgression'
+import { Mount } from './mount'
 import { TimedQuest } from './quest'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
+
+export type ShopMountData = {
+  mount: Mount
+  price: number
+}
 
 export type ShopState = {
   items: Item[]
   isOpen: boolean
+  shopMount?: ShopMountData | null
 }
 
 export type {
