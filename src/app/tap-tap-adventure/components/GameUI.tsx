@@ -27,7 +27,6 @@ import { InventoryPanel } from './InventoryPanel'
 import { QuestPanel } from './QuestPanel'
 import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
-import { SkillPanel } from './SkillPanel'
 import { StoryFeed } from './StoryFeed'
 import { RegionMap } from './RegionMap'
 import { SettingsPanel } from './SettingsPanel'
@@ -69,9 +68,13 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'skills' | 'quest' | 'map' | 'settings' | null
+type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | null
 
-export default function GameUI() {
+interface GameUIProps {
+  onOpenStatus?: () => void
+}
+
+export default function GameUI({ onOpenStatus }: GameUIProps) {
   const {
     gameState,
     getSelectedCharacter,
@@ -442,7 +445,6 @@ export default function GameUI() {
           {/* Right column: Quest, Equipment, Achievements & Inventory Panel — hidden on mobile */}
           <div className="hidden md:block p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
             <QuestPanel />
-            <SkillPanel unlockedSkillIds={character?.unlockedSkills ?? []} />
             <AchievementPanel achievements={gameState.achievements ?? []} />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
@@ -475,7 +477,7 @@ export default function GameUI() {
           >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'skills' ? 'Skills' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : 'Quest'}
+                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : 'Quest'}
               </h3>
               <button
                 className="text-slate-400 hover:text-white text-sm px-2 py-1"
@@ -496,9 +498,6 @@ export default function GameUI() {
             {mobilePanel === 'inventory' && (
               <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
             )}
-            {mobilePanel === 'skills' && (
-              <SkillPanel unlockedSkillIds={character?.unlockedSkills ?? []} />
-            )}
             {mobilePanel === 'map' && (
               <RegionMap
                 currentRegionId={character?.currentRegion ?? 'green_meadows'}
@@ -515,7 +514,6 @@ export default function GameUI() {
         {([
           { id: 'equipment' as MobilePanel, label: 'Equip', icon: '\u2694' },
           { id: 'inventory' as MobilePanel, label: 'Items', icon: '\uD83C\uDF92' },
-          { id: 'skills' as MobilePanel, label: 'Skills', icon: '\u2728' },
           { id: 'quest' as MobilePanel, label: 'Quest', icon: '\uD83D\uDCDC' },
           { id: 'map' as MobilePanel, label: 'Map', icon: '\uD83D\uDDFA' },
           { id: 'settings' as MobilePanel, label: 'Settings', icon: '\u2699' },
@@ -533,6 +531,13 @@ export default function GameUI() {
             <span className="mt-0.5">{tab.label}</span>
           </button>
         ))}
+        <button
+          className="flex-1 flex flex-col items-center py-2 text-xs transition-colors text-slate-400 hover:text-slate-200"
+          onClick={() => onOpenStatus?.()}
+        >
+          <span className="text-lg leading-none">&#x1F4CA;</span>
+          <span className="mt-0.5">Status</span>
+        </button>
       </div>
       {/* Bottom padding spacer for mobile tab bar */}
       <div className="md:hidden h-14" />
