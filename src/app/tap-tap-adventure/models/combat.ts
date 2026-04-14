@@ -98,7 +98,7 @@ export const CombatPlayerStateSchema = z.object({
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
-export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn'])
+export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn', 'move_closer', 'move_away'])
 export type CombatAction = z.infer<typeof CombatActionSchema>
 
 export const CombatActionRequestSchema = z.object({
@@ -130,6 +130,9 @@ export type EnemyTelegraph = z.infer<typeof EnemyTelegraphSchema>
 export const TurnPhaseSchema = z.enum(['player', 'enemy_done']).default('player')
 export type TurnPhase = z.infer<typeof TurnPhaseSchema>
 
+export const CombatDistanceSchema = z.enum(['close', 'mid', 'far']).default('mid')
+export type CombatDistance = z.infer<typeof CombatDistanceSchema>
+
 export const CombatStateSchema = z.object({
   id: z.string(),
   eventId: z.string(),
@@ -142,6 +145,7 @@ export const CombatStateSchema = z.object({
   enemyTelegraph: EnemyTelegraphSchema.optional().nullable(),
   isBoss: z.boolean().optional(),
   isMiniBoss: z.boolean().optional(),
+  combatDistance: CombatDistanceSchema.optional(),
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),
 })
