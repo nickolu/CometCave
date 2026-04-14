@@ -31,6 +31,8 @@ import { StoryFeed } from './StoryFeed'
 import { RegionMap } from './RegionMap'
 import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
+import { OnboardingHint } from './OnboardingHint'
+import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -46,6 +48,25 @@ const ELEMENT_STYLES: Record<string, { color: string }> = {
   fire: { color: 'bg-orange-900/40 text-orange-300' },
   ice: { color: 'bg-cyan-900/40 text-cyan-300' },
   none: { color: 'bg-slate-800/40 text-slate-400' },
+}
+
+const ONBOARDING_HINTS: Record<HintKey, { title: string; body: string }> = {
+  'first-tap': {
+    title: 'Welcome, Adventurer!',
+    body: 'Tap or hold the travel button to explore the world. Events will appear as you journey forward!',
+  },
+  'first-combat': {
+    title: 'Combat Begins!',
+    body: 'You have Action Points (AP) each turn. Attacks, spells, and abilities each cost AP. Plan your moves carefully — when your AP runs out, your turn ends!',
+  },
+  'first-item': {
+    title: 'Item Found!',
+    body: 'Check your inventory to equip or use items. Weapons and armor make you stronger — open your equipment panel to gear up!',
+  },
+  'first-crossroads': {
+    title: 'Choose Your Path',
+    body: 'A decision lies ahead! Choose wisely — harder paths offer better rewards, but greater danger.',
+  },
 }
 
 function getTimeOfDay(distance: number): string {
@@ -105,6 +126,18 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     useResolveDecisionMutation()
 
   const character = getSelectedCharacter()
+
+  const { hasSeenHint, markHintSeen } = useOnboarding(character?.id)
+
+  // Determine which onboarding hint to show (priority order)
+  const activeHint: HintKey | null = (() => {
+    if (!character) return null
+    if (gameState.combatState?.status === 'active' && !hasSeenHint('first-combat')) return 'first-combat'
+    if (gameState.decisionPoint && !hasSeenHint('first-crossroads')) return 'first-crossroads'
+    if (character.inventory.length > 0 && !hasSeenHint('first-item')) return 'first-item'
+    if (character.distance === 0 && !hasSeenHint('first-tap')) return 'first-tap'
+    return null
+  })()
 
   const handleResolveDecision = (optionId: string) => {
     resolveDecisionMutation({
@@ -278,6 +311,13 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           reward={getDailyReward(gameState.dailyReward?.streak ?? 0)}
           onClaim={() => claimDailyReward()}
           onDismiss={() => setShowDailyReward(false)}
+        />
+      )}
+      {activeHint && (
+        <OnboardingHint
+          title={ONBOARDING_HINTS[activeHint].title}
+          body={ONBOARDING_HINTS[activeHint].body}
+          onDismiss={() => markHintSeen(activeHint)}
         />
       )}
       {character && (character.pendingStatPoints ?? 0) > 0 && (
