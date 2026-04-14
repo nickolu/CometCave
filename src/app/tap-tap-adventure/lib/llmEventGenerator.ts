@@ -1703,3 +1703,343 @@ function parseRawEvents(raw?: string) {
   })
   return uniqueEvents
 }
+
+const legendaryToolSchema = {
+  type: 'object',
+  properties: {
+    event: eventSchemaForOpenAI,
+  },
+  required: ['event'],
+}
+
+export async function generateLegendaryEvent(
+  character: FantasyCharacter,
+  context: string
+): Promise<LLMGeneratedEvent> {
+  const reputationTier = getReputationTier(character.reputation)
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
+  const regionContext = `The character is currently in ${region.name}: ${region.description}. Setting/theme: ${region.theme}. The dominant element is ${region.element}.`
+
+  let reputationGuidance = ''
+  if (character.reputation >= 150) {
+    reputationGuidance = `This character is a ${reputationTier} (${character.reputation}). They are a mythic figure — the legendary encounter should reflect their world-shaking fame.`
+  } else if (character.reputation >= 50) {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). The legendary encounter should reflect their growing renown.`
+  } else {
+    reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). Even unknown adventurers can stumble upon legendary moments of fate.`
+  }
+
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    {
+      role: 'user',
+      content: `Generate a LEGENDARY encounter for this fantasy character. This is an extremely rare, once-in-a-lifetime event — it should be dramatic, memorable, and rewarding. Think: discovering an ancient dragon's hidden hoard, meeting a legendary hero who gifts their weapon, finding a portal to another realm, encountering a dying god who bestows a blessing, or discovering a mythical artifact.
+
+IMPORTANT: This is NOT a combat encounter. This is a discovery/social/mystical event. Options should NOT have triggersCombat.
+
+The rewards should be exceptional:
+- Gold: ${30 + character.level * 10} to ${50 + character.level * 15}
+- Reputation: +5 to +10
+- Include 1-2 legendary-quality items with strong effects (equipment with +3 to +5 stat boosts, powerful consumables, or spell scrolls with unique spells)
+- At least one option should have a guaranteed success (probability 1.0)
+- Another option should be risky but with even greater rewards (probability 0.3-0.5)
+
+IMPORTANT — Region context:
+${regionContext}
+
+IMPORTANT — Reputation guidance:
+${reputationGuidance}
+
+Character:
+${JSON.stringify(character, null, 2)}
+
+Recent History & Context:
+${context || 'No prior adventures yet — this is the beginning of their journey.'}`,
+    },
+  ]
+
+  const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+    {
+      type: 'function',
+      function: {
+        name: 'generate_legendary_event',
+        description: 'Generate a single legendary fantasy adventure event object.',
+        parameters: legendaryToolSchema,
+      },
+    },
+  ]
+
+  try {
+    const response = await getOpenAI().chat.completions.create({
+      model: 'gpt-4o',
+      messages,
+      tools,
+      tool_choice: { type: 'function', function: { name: 'generate_legendary_event' } },
+      temperature: 0.9,
+      max_tokens: 1000,
+    })
+
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+    if (toolCall && toolCall.function?.name === 'generate_legendary_event') {
+      const toolArgs = JSON.parse(toolCall.function.arguments)
+      const parsed = eventSchema.parse(toolArgs.event)
+      const processedOptions: LLMEventOption[] = parsed.options.map(option => ({
+        ...option,
+        successEffects: {
+          ...option.successEffects,
+          rewardItems: processFallbackRewardItems(option.successEffects.rewardItems),
+        },
+        failureEffects: {
+          ...option.failureEffects,
+          rewardItems: processFallbackRewardItems(option.failureEffects.rewardItems),
+        },
+      }))
+      return { ...parsed, options: processedOptions }
+    }
+
+    throw new Error('No valid tool call in legendary event response')
+  } catch (err) {
+    console.error('Legendary event LLM generation failed, using fallback', err)
+    return getDefaultLegendaryEvent(character)
+  }
+}
+
+function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEvent {
+  const s = `leg-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+
+  const pool: LLMGeneratedEvent[] = [
+    // 1. The Ancient Vault
+    {
+      id: `leg-vault-${s}`,
+      description: 'Beneath the roots of an ancient tree, you discover a sealed vault from a forgotten civilization. Runes pulse with power across its stone surface, and a low hum vibrates the air around it.',
+      options: [
+        {
+          id: `break-seal-vault-${s}`,
+          text: 'Break the seal and enter the vault',
+          successProbability: 0.5,
+          successDescription: 'The seal shatters and you step into a chamber filled with treasure beyond imagining — ancient gold, gemstones, and a legendary artifact of immense power!',
+          successEffects: {
+            gold: 40 + character.level * 10,
+            reputation: 7,
+            rewardItems: processFallbackRewardItems([
+              { id: `vault-sword-${s}`, name: 'Blade of the Ancients', description: 'A legendary sword forged by a forgotten civilization, pulsing with ancient power', quantity: 1, type: 'equipment', effects: { strength: 4, luck: 2 } },
+            ]),
+          },
+          failureDescription: 'A protective curse triggers as the seal breaks — you are flung back. The vault seals itself deeper underground. Nothing to show for it but singed hands.',
+          failureEffects: {},
+        },
+        {
+          id: `study-inscriptions-${s}`,
+          text: 'Study the rune inscriptions carefully',
+          successProbability: 1.0,
+          successDescription: 'You spend time deciphering the runes. Their wisdom floods your mind, and a secret compartment opens revealing scrolls and coin.',
+          successEffects: {
+            gold: 20 + character.level * 5,
+            reputation: 5,
+            rewardItems: [createSpellScrollRewardItem(character.level + 3, `vault-scroll-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `leave-sealed-${s}`,
+          text: 'Leave it sealed — some things are better undisturbed',
+          successProbability: 1.0,
+          successDescription: 'You walk away. Later, travelers speak of a wandering hero who respected the old seals. Your reputation grows.',
+          successEffects: { reputation: 5 },
+          failureDescription: '',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 2. The Celestial Visitor
+    {
+      id: `leg-celestial-${s}`,
+      description: 'The sky tears open and a being of pure starlight descends before you. Its voice resonates like distant bells: "Mortal. I have watched your journey. I come to offer a gift."',
+      options: [
+        {
+          id: `accept-blessing-${s}`,
+          text: 'Accept the celestial blessing',
+          successProbability: 1.0,
+          successDescription: 'Light pours through you. You feel every aspect of yourself elevated — strength, mind, and fortune all transformed by divine grace.',
+          successEffects: {
+            reputation: 8,
+            rewardItems: processFallbackRewardItems([
+              { id: `celestial-str-${s}`, name: 'Celestial Strength Essence', description: 'A vial of starlight that permanently strengthens the body', quantity: 1, type: 'consumable', effects: { strength: 3 } },
+              { id: `celestial-int-${s}`, name: 'Celestial Wisdom Essence', description: 'A vial of starlight that expands the mind', quantity: 1, type: 'consumable', effects: { intelligence: 3 } },
+              { id: `celestial-luck-${s}`, name: 'Celestial Fortune Essence', description: 'A vial of starlight that blesses with fortune', quantity: 1, type: 'consumable', effects: { luck: 3 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `ask-knowledge-${s}`,
+          text: 'Ask for knowledge instead',
+          successProbability: 0.7,
+          successDescription: 'The being smiles and imparts arcane secrets. A scroll materializes, inscribed with a spell never before seen by mortal eyes.',
+          successEffects: {
+            reputation: 6,
+            rewardItems: [createSpellScrollRewardItem(character.level + 5, `celestial-scroll-${s}`)],
+          },
+          failureDescription: 'The being looks thoughtful, then fades: "You seek more than you are ready to receive." You are left with only the memory of starlight.',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `ask-riches-${s}`,
+          text: 'Ask for material riches',
+          successProbability: 0.6,
+          successDescription: 'The being pauses, then rains golden coins from the stars. "So be it, mortal. Use it well."',
+          successEffects: { gold: 50 + character.level * 15, reputation: 3 },
+          failureDescription: 'The being shakes its luminous head. "Wealth was not what you needed." It vanishes without a gift.',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 3. The Dragon's Bargain
+    {
+      id: `leg-dragon-bargain-${s}`,
+      description: 'An ancient dragon of impossible size lands before you, its scales gleaming like burnished copper. It regards you with intelligent amber eyes and rumbles: "Brave or foolish, little mortal — I cannot yet tell which. I offer a bargain."',
+      options: [
+        {
+          id: `trade-gold-dragon-${s}`,
+          text: 'Trade gold for a dragon scale weapon (costs 20 gold)',
+          successProbability: 1.0,
+          successDescription: 'The dragon breathes fire into a scale from its own body, forging it into a legendary weapon. You pay 20 gold and receive something priceless.',
+          successEffects: {
+            gold: -20,
+            reputation: 7,
+            rewardItems: processFallbackRewardItems([
+              { id: `dragon-scale-blade-${s}`, name: 'Dragon Scale Blade', description: 'A legendary weapon forged from a living dragon scale — nearly indestructible', quantity: 1, type: 'equipment', effects: { strength: 5 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `riddle-dragon-${s}`,
+          text: 'Challenge the dragon to a riddle contest',
+          successProbability: 0.4,
+          successDescription: 'The dragon is delighted by the challenge. After three riddles, you stump it. It roars with laughter and presents you with an even greater gift.',
+          successEffects: {
+            reputation: 10,
+            rewardItems: processFallbackRewardItems([
+              { id: `dragon-heart-gem-${s}`, name: 'Dragon Heart Gem', description: 'A gem said to contain a fragment of the dragon\'s soul — its power is immense', quantity: 1, type: 'equipment', effects: { strength: 3, intelligence: 3, luck: 2 } },
+            ]),
+          },
+          failureDescription: 'The dragon answers each riddle with ease and poses ones you cannot solve. It shakes its head: "Perhaps in a few more centuries, little one." It departs without a gift.',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `decline-dragon-${s}`,
+          text: 'Decline respectfully and bow',
+          successProbability: 1.0,
+          successDescription: 'The dragon appraises you for a long moment. "Wisdom is knowing when not to bargain. You have earned my respect." It leaves a single scale on the ground.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: processFallbackRewardItems([
+              { id: `dragon-scale-${s}`, name: 'Dragon Scale', description: 'A shed scale from an ancient dragon, still radiating power', quantity: 1, type: 'equipment', effects: { strength: 2, luck: 1 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 4. The Temporal Rift
+    {
+      id: `leg-temporal-${s}`,
+      description: 'The air before you splits like torn fabric. A shimmering crack in time floats at eye level, and through it you glimpse a world of impossible treasures — artifacts from another era, glowing with power.',
+      options: [
+        {
+          id: `reach-through-rift-${s}`,
+          text: 'Reach through the temporal rift',
+          successProbability: 0.5,
+          successDescription: 'Your hands close around objects of immense power from another age. You pull two legendary items through before the rift snaps shut.',
+          successEffects: {
+            reputation: 6,
+            rewardItems: processFallbackRewardItems([
+              { id: `temporal-helm-${s}`, name: 'Helm of Lost Ages', description: 'Ancient armor from an age of heroes, its enchantments still potent', quantity: 1, type: 'equipment', effects: { intelligence: 3, luck: 2 } },
+              { id: `temporal-ring-${s}`, name: 'Chrono Ring', description: 'A ring that bends time slightly in its wearer\'s favor', quantity: 1, type: 'equipment', effects: { luck: 3, strength: 1 } },
+            ]),
+          },
+          failureDescription: 'The rift snaps shut before you can grasp anything. Your hands tingle with temporal energy but you walk away empty-handed.',
+          failureEffects: {},
+        },
+        {
+          id: `observe-rift-${s}`,
+          text: 'Observe the rift safely',
+          successProbability: 1.0,
+          successDescription: 'You study the phenomenon carefully. Patterns within the rift resolve into arcane knowledge. A scroll materializes at your feet as the rift closes.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: [createSpellScrollRewardItem(character.level + 4, `temporal-scroll-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `close-rift-${s}`,
+          text: 'Heroically close the rift before it destabilizes reality',
+          successProbability: 1.0,
+          successDescription: 'You pour your will into sealing the temporal wound. With a thunderous crack it closes. Those nearby witnessed your heroic act — word spreads fast.',
+          successEffects: { reputation: 8 },
+          failureDescription: '',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 5. The Forgotten Shrine of Power
+    {
+      id: `leg-shrine-${s}`,
+      description: 'Hidden in a clearing of impossibly ancient trees, you find a shrine of polished obsidian glowing with pulsing golden light. The inscription reads: "Power awaits those who approach with purpose."',
+      options: [
+        {
+          id: `kneel-pray-shrine-${s}`,
+          text: 'Kneel and pray at the shrine',
+          successProbability: 1.0,
+          successDescription: 'The shrine accepts your humility. Golden light washes over you, filling you with strength. Gold coins materialize at the shrine base.',
+          successEffects: {
+            gold: 25 + character.level * 5,
+            reputation: 5,
+            rewardItems: processFallbackRewardItems([
+              { id: `shrine-str-essence-${s}`, name: 'Essence of the Shrine', description: 'A glowing essence that strengthens the body and sharpens the mind', quantity: 2, type: 'consumable', effects: { strength: 2, intelligence: 1 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `claim-shrine-power-${s}`,
+          text: 'Claim the shrine\'s full power for yourself',
+          successProbability: 0.4,
+          successDescription: 'You channel the shrine\'s full might into yourself. The power is overwhelming but you hold on — and are transformed!',
+          successEffects: {
+            reputation: 7,
+            rewardItems: processFallbackRewardItems([
+              { id: `shrine-power-str-${s}`, name: 'Potion of Immense Strength', description: 'The distilled power of the shrine, imbuing tremendous strength', quantity: 1, type: 'consumable', effects: { strength: 3 } },
+              { id: `shrine-power-int-${s}`, name: 'Potion of Ancient Wisdom', description: 'The distilled power of the shrine, sharpening the mind to a razor edge', quantity: 1, type: 'consumable', effects: { intelligence: 3 } },
+            ]),
+          },
+          failureDescription: 'The power is too vast. It rejects you violently, hurling you back. You survive but gain nothing.',
+          failureEffects: {},
+        },
+        {
+          id: `make-offering-shrine-${s}`,
+          text: 'Make an offering of 10 gold to the shrine',
+          successProbability: 0.8,
+          successDescription: 'The shrine accepts your offering and responds with tenfold generosity. A powerful spell scroll floats down from the golden light.',
+          successEffects: {
+            gold: -10,
+            reputation: 6,
+            rewardItems: [createSpellScrollRewardItem(character.level + 4, `shrine-scroll-${s}`)],
+          },
+          failureDescription: 'The shrine absorbs your gold silently. Nothing else happens — perhaps it simply was not the right time.',
+          failureEffects: { gold: -10 },
+        },
+      ],
+    },
+  ]
+
+  const randomIndex = Math.floor(Math.random() * pool.length)
+  return pool[randomIndex]
+}

@@ -372,8 +372,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <ShopUI />
             ) : gameState.decisionPoint ? (
               <>
-                <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
-                  Event
+                <h4 className={`font-semibold w-full text-center uppercase border-b pb-2 mb-4 ${
+                  gameState.decisionPoint?.isLegendary
+                    ? 'text-amber-400 border-amber-500/50'
+                    : 'border-[#3a3c56]'
+                }`}>
+                  {gameState.decisionPoint?.isLegendary ? '✨ Legendary Encounter ✨' : 'Event'}
                 </h4>
                 {!gameState.decisionPoint.resolved && (
                   <div>

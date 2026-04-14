@@ -1,7 +1,7 @@
 import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward/schemas'
 import { getRegion, getConnectedRegions, canEnterRegion, CROSSROADS_INTERVAL } from '@/app/tap-tap-adventure/config/regions'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
-import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
+import { generateLLMEvents, generateLegendaryEvent } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import {
   crossedMilestone,
   SHOP_MILESTONE_INTERVAL,
@@ -117,6 +117,46 @@ export async function moveForwardService(
       },
       decisionPoint: null,
       shopEvent: true,
+    }
+  }
+
+  // Rare legendary encounter: ~1% chance every step after distance 150
+  if (newDistance > 150 && Math.random() < 0.01) {
+    try {
+      const context = buildStoryContext(character, storyEvents)
+      const legendaryEvent = await generateLegendaryEvent(character, context)
+
+      return {
+        character: updatedCharacter,
+        event: {
+          id: legendaryEvent.id,
+          type: 'legendary_encounter',
+          characterId: character.id,
+          locationId: character.locationId,
+          timestamp: new Date().toISOString(),
+        },
+        decisionPoint: {
+          id: `decision-${legendaryEvent.id}`,
+          eventId: legendaryEvent.id,
+          prompt: legendaryEvent.description,
+          options: legendaryEvent.options.map(opt => ({
+            id: opt.id,
+            text: opt.text,
+            successProbability: opt.successProbability,
+            successDescription: opt.successDescription,
+            successEffects: opt.successEffects,
+            failureDescription: opt.failureDescription,
+            failureEffects: opt.failureEffects,
+            resultDescription: opt.successDescription,
+            triggersCombat: opt.triggersCombat,
+          })),
+          resolved: false,
+          isLegendary: true,
+        },
+      }
+    } catch (err) {
+      console.error('Legendary encounter generation failed, falling back to normal events', err)
+      // Fall through to normal event generation
     }
   }
 
