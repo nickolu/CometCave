@@ -18,6 +18,9 @@ import { useDailyCardGameStore } from '@/app/daily-card-game/store'
 import { useGameState } from '@/app/daily-card-game/useGameState'
 import { Button } from '@/components/ui/button'
 
+import { AnimatedScoreDisplay } from '@/app/daily-card-game/components/animations/animated-score-display'
+import { ScoringFeed } from '@/app/daily-card-game/components/animations/scoring-feed'
+
 import { ViewTemplate } from './view-template'
 
 const SelectedHandScore = ({ hand }: { hand: PokerHandState }) => {
@@ -106,10 +109,9 @@ export function GamePlayView() {
     <ViewTemplate
       sidebarContentBottom={
         <>
+          <ScoringFeed />
           <div className="pl-2">
-            <div>
-              <strong>Chips x Mult:</strong> {score.chips} x {score.mult}
-            </div>
+            <AnimatedScoreDisplay chips={score.chips} mult={score.mult} />
             <div>
               <strong>Your Score:</strong> {currentBlind?.score.toString()}
             </div>
