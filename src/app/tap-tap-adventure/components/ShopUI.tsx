@@ -42,8 +42,8 @@ function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentS
     return <div className="text-xs text-green-400">No item in {slot} slot — direct upgrade</div>
   }
   const deltas = STAT_KEYS.map(({ key, label }) => {
-    const newVal = item.effects?.[key] ?? 0
-    const oldVal = equipped.effects?.[key] ?? 0
+    const newVal = Number(item.effects?.[key] ?? 0)
+    const oldVal = Number(equipped.effects?.[key] ?? 0)
     const diff = newVal - oldVal
     if (diff === 0) return null
     return { label, diff }
