@@ -25,6 +25,7 @@ import { CombatUI, CombatResult } from './CombatUI'
 import { EquipmentPanel } from './EquipmentPanel'
 import { InventoryPanel } from './InventoryPanel'
 import { QuestPanel } from './QuestPanel'
+import { MainQuestPanel } from './MainQuestPanel'
 import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
@@ -497,6 +498,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           </div>
           {/* Right column: Quest, Equipment, Achievements & Inventory Panel — hidden on mobile */}
           <div className="hidden md:block p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
+            {character && <MainQuestPanel character={character} />}
             <QuestPanel />
             <AchievementPanel achievements={gameState.achievements ?? []} />
             <EquipmentPanel
@@ -539,6 +541,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 Close
               </button>
             </div>
+            {mobilePanel === 'quest' && character && <MainQuestPanel character={character} />}
             {mobilePanel === 'quest' && <QuestPanel />}
             {mobilePanel === 'equipment' && (
               <>

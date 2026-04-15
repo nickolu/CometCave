@@ -7,6 +7,7 @@ import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { claimNewMilestones, getConqueredCount } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
@@ -166,6 +167,25 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
           // Reputation gain for combat victory
           const repGain = pendingRegionId ? 3 : 1
           updateSelectedCharacter({ reputation: (character.reputation ?? 0) + repGain })
+
+          // Check main quest milestones
+          if (character.mainQuest && character.mainQuest.status === 'active') {
+            const updatedVisited = pendingRegionId
+              ? [...(character.visitedRegions ?? ['green_meadows']), pendingRegionId]
+              : (character.visitedRegions ?? ['green_meadows'])
+            const conquered = getConqueredCount(updatedVisited)
+            const milestoneGold = claimNewMilestones(character.mainQuest, conquered)
+            if (milestoneGold > 0) {
+              updateSelectedCharacter({ mainQuest: character.mainQuest })
+              // Use fresh gold from store since updateSelectedCharacter has been called multiple times
+              const freshChar = useGameStore.getState().gameState.characters.find(c => c.id === character.id)
+              if (freshChar) {
+                updateSelectedCharacter({ gold: freshChar.gold + milestoneGold })
+              }
+            } else {
+              updateSelectedCharacter({ mainQuest: character.mainQuest })
+            }
+          }
 
           addStoryEvent({
             id: `combat-victory-${Date.now()}`,

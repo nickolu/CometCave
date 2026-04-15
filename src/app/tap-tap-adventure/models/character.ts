@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
 import { MountSchema } from './mount'
+import { MainQuestSchema } from './quest'
 import { SpellSchema } from './spell'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
@@ -51,6 +52,7 @@ export const FantasyCharacterSchema = z.object({
   difficultyMode: z.string().optional().default('normal'),
   currentRegion: z.string().optional().default('green_meadows'),
   visitedRegions: z.array(z.string()).optional(),
+  mainQuest: MainQuestSchema.optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
