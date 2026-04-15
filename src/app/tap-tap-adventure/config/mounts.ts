@@ -1,4 +1,4 @@
-import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { Mount, MountPersonality } from '@/app/tap-tap-adventure/models/mount'
 
 export const MOUNT_DEFINITIONS: Mount[] = [
   { id: 'horse', name: 'Horse', description: 'A reliable steed.', rarity: 'common', bonuses: { strength: 1, autoWalkSpeed: 1.5 }, icon: '🐴', dailyCost: 1 },
@@ -53,6 +53,28 @@ export function getMountFleeBonus(rarity: Mount['rarity']): number {
   }
 }
 
+export const MOUNT_PERSONALITY_INFO: Record<MountPersonality, { label: string; description: string; icon: string }> = {
+  loyal: { label: 'Loyal', description: 'Never abandons you. +5% flee chance.', icon: '🤝' },
+  skittish: { label: 'Skittish', description: 'Nervous in combat. -5% flee chance.', icon: '😰' },
+  aggressive: { label: 'Aggressive', description: '+2 bonus damage at close range.', icon: '😤' },
+  cautious: { label: 'Cautious', description: 'Prefers safety. +15% flee chance.', icon: '🛡️' },
+  prideful: { label: 'Prideful', description: 'Prideful nature. +10% damage at high reputation.', icon: '👑' },
+  wild: { label: 'Wild', description: 'Untamed spirit. Occasionally disobeys.', icon: '🌪️' },
+  gentle: { label: 'Gentle', description: '+1 heal rate while traveling.', icon: '🌿' },
+  fierce: { label: 'Fierce', description: 'Reflects 10% damage back to attackers.', icon: '🔥' },
+  stubborn: { label: 'Stubborn', description: 'Immune to fear effects.', icon: '🪨' },
+  greedy: { label: 'Greedy', description: '+10% gold from combat.', icon: '💰' },
+}
+
+const PERSONALITY_POOL: MountPersonality[] = [
+  'loyal', 'skittish', 'aggressive', 'cautious', 'prideful',
+  'wild', 'gentle', 'fierce', 'stubborn', 'greedy',
+]
+
+export function assignMountPersonality(): MountPersonality {
+  return PERSONALITY_POOL[Math.floor(Math.random() * PERSONALITY_POOL.length)]
+}
+
 /** Returns a mount appropriate for the character's level (never legendary in shops). */
 export function getShopMount(characterLevel: number): Mount {
   let pool: Mount[]
@@ -63,7 +85,8 @@ export function getShopMount(characterLevel: number): Mount {
   } else {
     pool = getMountsByRarity('common')
   }
-  return pool[Math.floor(Math.random() * pool.length)]
+  const mount = pool[Math.floor(Math.random() * pool.length)]
+  return { ...mount, personality: assignMountPersonality() }
 }
 
 export function getRandomMount(luckBonus: number = 0): Mount {
@@ -73,5 +96,6 @@ export function getRandomMount(luckBonus: number = 0): Mount {
   else if (roll > 0.8) { pool = getMountsByRarity('rare') }
   else if (roll > 0.5) { pool = getMountsByRarity('uncommon') }
   else { pool = getMountsByRarity('common') }
-  return pool[Math.floor(Math.random() * pool.length)]
+  const mount = pool[Math.floor(Math.random() * pool.length)]
+  return { ...mount, personality: assignMountPersonality() }
 }

@@ -247,7 +247,14 @@ export function calculateFleeChance(
   const mountFleeBonus = character.activeMount
     ? getMountFleeBonus(character.activeMount.rarity) / 100
     : 0
-  const chance = 0.3 + effectiveLuck * 0.02 - enemy.level * 0.05 + fleeBonus.percentage / 100 + mountFleeBonus
+  const personalityFleeBonus = (() => {
+    const p = character.activeMount?.personality
+    if (p === 'loyal') return 0.05
+    if (p === 'skittish') return -0.05
+    if (p === 'cautious') return 0.15
+    return 0
+  })()
+  const chance = 0.3 + effectiveLuck * 0.02 - enemy.level * 0.05 + fleeBonus.percentage / 100 + mountFleeBonus + personalityFleeBonus
   return Math.max(0.1, Math.min(0.9, chance))
 }
 
@@ -585,7 +592,8 @@ export function processPlayerAction(
               combatDistance
             )
           : 1.0
-        const damage = Math.max(1, Math.round(rawAtkDmg * wRangeMult))
+        const aggressiveBonus = (character.activeMount?.personality === 'aggressive' && combatDistance === 'close') ? 2 : 0
+        const damage = Math.max(1, Math.round(rawAtkDmg * wRangeMult) + aggressiveBonus)
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
         const comboText =
@@ -618,7 +626,8 @@ export function processPlayerAction(
               combatDistance
             )
           : 1.0
-        const damage = Math.max(1, Math.round(baseDmg * 1.8 * heavyWRangeMult))
+        const heavyAggressiveBonus = (character.activeMount?.personality === 'aggressive' && combatDistance === 'close') ? 2 : 0
+        const damage = Math.max(1, Math.round(baseDmg * 1.8 * heavyWRangeMult) + heavyAggressiveBonus)
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
         const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
@@ -1058,6 +1067,15 @@ export function processPlayerAction(
           description: `Thorns deal ${thornsDmg} damage back to ${enemy.name}!`,
         })
       }
+      // Fierce mount personality: reflect 10% damage
+      if (character.activeMount?.personality === 'fierce' && actualDamageDealt > 0) {
+        const fierceReflect = Math.max(1, Math.round(actualDamageDealt * 0.1))
+        enemy.hp = Math.max(0, enemy.hp - fierceReflect)
+        newLogs.push({
+          turn: turnNumber, actor: 'player', action: 'reflect', damage: fierceReflect,
+          description: `Your mount retaliates, dealing ${fierceReflect} damage to ${enemy.name}!`,
+        })
+      }
     }
     if (!result.moveCloser) {
       newLogs.push(...result.logs)
@@ -1139,6 +1157,15 @@ export function processPlayerAction(
           action: 'thorns',
           damage: thornsDmg,
           description: `Thorns deal ${thornsDmg} damage back to ${enemy.name}!`,
+        })
+      }
+      // Fierce mount personality: reflect 10% damage
+      if (character.activeMount?.personality === 'fierce' && actualDmg > 0) {
+        const fierceReflect = Math.max(1, Math.round(actualDmg * 0.1))
+        enemy.hp = Math.max(0, enemy.hp - fierceReflect)
+        newLogs.push({
+          turn: turnNumber, actor: 'player', action: 'reflect', damage: fierceReflect,
+          description: `Your mount retaliates, dealing ${fierceReflect} damage to ${enemy.name}!`,
         })
       }
 
