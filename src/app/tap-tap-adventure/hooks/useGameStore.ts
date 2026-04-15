@@ -21,7 +21,7 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { assignMountPersonality } from '@/app/tap-tap-adventure/config/mounts'
+import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
   FantasyDecisionPoint,
@@ -702,7 +702,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 17,
+      version: 18,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -773,6 +773,13 @@ export const useGameStore = create<GameStore>()(
             // v17: Add mount personality
             if ((char as FantasyCharacter).activeMount && !(char as FantasyCharacter).activeMount!.personality) {
               ;(char as FantasyCharacter).activeMount!.personality = assignMountPersonality()
+            }
+            // v18: Add mount HP
+            if ((char as FantasyCharacter).activeMount && (char as FantasyCharacter).activeMount!.hp === undefined) {
+              const rarity = (char as FantasyCharacter).activeMount!.rarity
+              const hp = getMountMaxHp(rarity)
+              ;(char as FantasyCharacter).activeMount!.hp = hp
+              ;(char as FantasyCharacter).activeMount!.maxHp = hp
             }
           }
         }

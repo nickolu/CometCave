@@ -38,6 +38,11 @@ export async function POST(req: NextRequest) {
       rewards = { gold: -goldLoss, loot: [] }
     }
 
+    // If mount died in combat, remove it from character
+    if (result.mountDied) {
+      updatedCharacter = { ...updatedCharacter, activeMount: null }
+    }
+
     return NextResponse.json({
       combatState: updatedCombat,
       rewards,

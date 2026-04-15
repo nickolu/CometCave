@@ -419,6 +419,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
         </div>
         {/* HP + Mana on compact rows */}
         <HpBar current={playerState.hp} max={playerState.maxHp} label="You" color="text-blue-400" />
+        {playerState.mountHp !== undefined && playerState.mountMaxHp !== undefined && playerState.mountHp > 0 && (
+          <HpBar current={playerState.mountHp} max={playerState.mountMaxHp} label={`${character?.activeMount?.icon ?? '🐴'} Mount`} color="text-amber-400" />
+        )}
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}

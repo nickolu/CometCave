@@ -29,6 +29,8 @@ export const MountSchema = z.object({
   dailyCost: z.number(),
   customName: z.string().optional(),
   personality: MountPersonalitySchema.optional(),
+  hp: z.number().optional(),
+  maxHp: z.number().optional(),
 })
 
 export type Mount = z.infer<typeof MountSchema>

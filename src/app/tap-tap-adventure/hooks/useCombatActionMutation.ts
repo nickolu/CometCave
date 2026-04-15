@@ -99,6 +99,18 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
         maxMana: data.combatState.playerState.maxMana,
       })
 
+      // Sync mount HP back to character
+      if (data.combatState.playerState.mountHp !== undefined && character.activeMount) {
+        if (data.combatState.playerState.mountHp <= 0) {
+          // Mount died in combat
+          updateSelectedCharacter({ activeMount: null })
+        } else {
+          updateSelectedCharacter({
+            activeMount: { ...character.activeMount, hp: data.combatState.playerState.mountHp },
+          })
+        }
+      }
+
       if (data.combatState.status === 'active') {
         // Combat continues — play sounds based on what happened
         // Check for critical hits in new log entries
