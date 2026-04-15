@@ -90,6 +90,8 @@ export interface GameStore {
   learnSpell: (itemId: string) => { message: string; learned: boolean } | null
   updateAchievements: (achievements: PlayerAchievement[]) => void
   setMount: (mount: Mount | null, customName?: string) => void
+  damageMountHp: (damage: number) => void
+  killMount: () => void
   addHeirloom: (item: Item) => void
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
@@ -550,6 +552,47 @@ export const useGameStore = create<GameStore>()(
             state.gameState.characters[characterIndex] = {
               ...selectedCharacter,
               activeMount,
+            }
+          })
+        )
+      },
+      damageMountHp: (damage: number) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+
+            const mount = state.gameState.characters[characterIndex].activeMount
+            if (!mount) return
+
+            const currentHp = mount.hp ?? mount.maxHp ?? 1
+            const newHp = Math.max(0, currentHp - damage)
+            state.gameState.characters[characterIndex] = {
+              ...state.gameState.characters[characterIndex],
+              activeMount: newHp <= 0 ? null : { ...mount, hp: newHp },
+            }
+          })
+        )
+      },
+      killMount: () => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+
+            state.gameState.characters[characterIndex] = {
+              ...state.gameState.characters[characterIndex],
+              activeMount: null,
             }
           })
         )

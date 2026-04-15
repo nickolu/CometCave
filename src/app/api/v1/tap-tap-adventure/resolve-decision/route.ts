@@ -28,6 +28,8 @@ type ResolveDecisionResponse = {
     distance?: number
     statusChange?: string
   }
+  mountDamage?: number
+  mountDied?: boolean
 }
 
 export async function POST(req: NextRequest) {
@@ -103,6 +105,13 @@ export async function POST(req: NextRequest) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems]
     }
 
+    const mountDied = !!character.activeMount && !updatedCharacter.activeMount
+    const mountDamageAmt =
+      character.activeMount && updatedCharacter.activeMount
+        ? (character.activeMount.hp ?? character.activeMount.maxHp ?? 0) -
+          (updatedCharacter.activeMount.hp ?? 0)
+        : undefined
+
     const response: ResolveDecisionResponse & { rewardItems?: Item[]; triggersCombat?: boolean } = {
       updatedCharacter,
       resultDescription: resultDescription,
@@ -113,6 +122,8 @@ export async function POST(req: NextRequest) {
       resourceDelta: appliedEffects,
       rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
       triggersCombat: typedOption.triggersCombat,
+      mountDied: mountDied || undefined,
+      mountDamage: mountDamageAmt && mountDamageAmt > 0 ? mountDamageAmt : undefined,
     }
 
     return NextResponse.json(response)

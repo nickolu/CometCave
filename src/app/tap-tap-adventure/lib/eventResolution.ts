@@ -8,10 +8,12 @@ export function applyEffects(
     reputation?: number
     distance?: number
     statusChange?: string
+    mountDamage?: number
+    mountDeath?: boolean
   }
 ): FantasyCharacter {
   if (!effects) return character
-  return {
+  let updatedCharacter: FantasyCharacter = {
     ...character,
     gold: character.gold + (effects.gold ?? 0),
     reputation: character.reputation + (effects.reputation ?? 0),
@@ -20,6 +22,21 @@ export function applyEffects(
       ? (effects.statusChange as FantasyCharacter['status'])
       : character.status,
   }
+
+  // Mount damage handling
+  if (updatedCharacter.activeMount && (effects.mountDeath || effects.mountDamage)) {
+    if (effects.mountDeath) {
+      updatedCharacter = { ...updatedCharacter, activeMount: null }
+    } else if (effects.mountDamage) {
+      const currentHp = updatedCharacter.activeMount.hp ?? updatedCharacter.activeMount.maxHp ?? 1
+      const newHp = Math.max(0, currentHp - effects.mountDamage)
+      updatedCharacter = newHp <= 0
+        ? { ...updatedCharacter, activeMount: null }
+        : { ...updatedCharacter, activeMount: { ...updatedCharacter.activeMount, hp: newHp } }
+    }
+  }
+
+  return updatedCharacter
 }
 
 export function calculateEffectiveProbability(
