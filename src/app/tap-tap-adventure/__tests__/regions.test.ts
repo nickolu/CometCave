@@ -77,7 +77,7 @@ describe('Region definitions', () => {
   })
 
   it('should have valid difficulty levels', () => {
-    const validDifficulties = ['easy', 'medium', 'hard', 'very_hard']
+    const validDifficulties = ['easy', 'medium', 'hard', 'very_hard', 'extreme']
     for (const region of Object.values(REGIONS)) {
       expect(validDifficulties).toContain(region.difficulty)
     }
@@ -138,7 +138,7 @@ describe('getConnectedRegions', () => {
   it('should return correct number of connections', () => {
     expect(getConnectedRegions('starting_village')).toHaveLength(1)
     expect(getConnectedRegions('green_meadows')).toHaveLength(3)
-    expect(getConnectedRegions('sky_citadel')).toHaveLength(1)
+    expect(getConnectedRegions('sky_citadel')).toHaveLength(2) // dragons_spine + abyssal_depths
   })
 })
 

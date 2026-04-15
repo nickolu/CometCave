@@ -2,6 +2,7 @@
 
 import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
+import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import type { RunSummaryData } from '@/app/tap-tap-adventure/models/types'
 
 interface RunSummaryProps {
@@ -11,13 +12,12 @@ interface RunSummaryProps {
   onBackToCharacters: () => void
 }
 
-function EssenceBreakdown({ character }: { character: RunSummaryData['character'] }) {
+function EssenceBreakdown({ character, isVictory, essenceEarned }: { character: RunSummaryData['character']; isVictory?: boolean; essenceEarned?: number }) {
   const baseEssence = Math.floor(character.distance / 10)
   const levelBonus = character.level * 5
   const subtotal = baseEssence + levelBonus
 
   const deathPenaltyMultiplier = Math.max(0.5, 1 - character.deathCount * 0.1)
-  const afterDeathPenalty = Math.floor(subtotal * deathPenaltyMultiplier)
 
   const diffMultipliers: Record<string, number> = {
     casual: 0.5,
@@ -30,6 +30,8 @@ function EssenceBreakdown({ character }: { character: RunSummaryData['character'
     character.difficultyMode
       ? character.difficultyMode.charAt(0).toUpperCase() + character.difficultyMode.slice(1)
       : 'Normal'
+
+  const displayTotal = isVictory && essenceEarned !== undefined ? essenceEarned : calculateSoulEssence(character)
 
   return (
     <div className="space-y-1 text-sm text-slate-400">
@@ -55,9 +57,15 @@ function EssenceBreakdown({ character }: { character: RunSummaryData['character'
           </span>
         </div>
       )}
+      {isVictory && (
+        <div className="flex justify-between">
+          <span>Victory bonus</span>
+          <span className="text-yellow-400">x5</span>
+        </div>
+      )}
       <div className="flex justify-between border-t border-slate-700 pt-1 font-semibold text-amber-400">
         <span>Total</span>
-        <span>{calculateSoulEssence(character)}</span>
+        <span>{displayTotal}</span>
       </div>
     </div>
   )
@@ -72,13 +80,20 @@ export default function RunSummary({
   const { character, reason, essenceEarned, heirloom } = data
 
   const isRetirement = reason === 'retirement'
-  const headerText = isRetirement ? 'Run Complete' : 'Fallen in Battle'
-  const headerColor = isRetirement
-    ? 'text-purple-300'
-    : 'text-red-400'
-  const headerBorder = isRetirement
-    ? 'border-purple-500/30'
-    : 'border-red-500/30'
+  const isVictory = reason === 'victory'
+  const headerText = isVictory ? 'World Conquered!' : isRetirement ? 'Run Complete' : 'Fallen in Battle'
+  const headerColor = isVictory
+    ? 'text-yellow-300'
+    : isRetirement
+      ? 'text-purple-300'
+      : 'text-red-400'
+  const headerBorder = isVictory
+    ? 'border-yellow-500/30'
+    : isRetirement
+      ? 'border-purple-500/30'
+      : 'border-red-500/30'
+
+  const regionsConquered = character.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)).length ?? 0
 
   const daysSurvived = calculateDay(character.distance)
 
@@ -95,6 +110,9 @@ export default function RunSummary({
         <p className="text-slate-400 mt-2 text-lg">
           {character.name} &mdash; Level {character.level} {character.race} {character.class}
         </p>
+        {reason === 'victory' && (
+          <p className="text-yellow-400 mt-2 font-semibold">You have united all lands under your banner.</p>
+        )}
         {reason === 'permadeath' && (
           <p className="text-red-500 text-sm mt-1 italic">This character is gone forever.</p>
         )}
@@ -124,6 +142,11 @@ export default function RunSummary({
                 : 'Normal'
             }
           />
+          <StatCard
+            label="Regions Conquered"
+            value={String(regionsConquered)}
+            highlight={regionsConquered >= 14 ? 'green' : undefined}
+          />
         </div>
       </div>
 
@@ -138,7 +161,7 @@ export default function RunSummary({
           </span>
           <p className="text-amber-500/70 text-sm mt-1">Soul Essence</p>
         </div>
-        <EssenceBreakdown character={character} />
+        <EssenceBreakdown character={character} isVictory={isVictory} essenceEarned={essenceEarned} />
       </div>
 
       {/* Heirloom Section */}
@@ -164,6 +187,15 @@ export default function RunSummary({
 
       {/* Call to Action Buttons */}
       <div className="space-y-3">
+        {isVictory && (
+          <button
+            type="button"
+            onClick={onBackToCharacters}
+            className="w-full py-3 px-4 rounded-lg bg-yellow-600/20 border border-yellow-500/40 text-yellow-300 font-semibold text-lg hover:bg-yellow-600/30 transition-colors cursor-pointer"
+          >
+            Continue Playing (Post-Game)
+          </button>
+        )}
         <button
           type="button"
           onClick={onViewUpgrades}
@@ -178,13 +210,15 @@ export default function RunSummary({
         >
           Create New Character
         </button>
-        <button
-          type="button"
-          onClick={onBackToCharacters}
-          className="w-full py-3 px-4 rounded-lg bg-slate-700/30 border border-slate-600/40 text-slate-300 font-semibold text-lg hover:bg-slate-700/50 transition-colors cursor-pointer"
-        >
-          Back to Characters
-        </button>
+        {!isVictory && (
+          <button
+            type="button"
+            onClick={onBackToCharacters}
+            className="w-full py-3 px-4 rounded-lg bg-slate-700/30 border border-slate-600/40 text-slate-300 font-semibold text-lg hover:bg-slate-700/50 transition-colors cursor-pointer"
+          >
+            Back to Characters
+          </button>
+        )}
       </div>
     </div>
   )

@@ -40,6 +40,7 @@ const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string
   medium: { label: 'Medium', color: 'bg-yellow-900/50 text-yellow-300 border-yellow-600/40' },
   hard: { label: 'Hard', color: 'bg-red-900/50 text-red-300 border-red-600/40' },
   very_hard: { label: 'Very Hard', color: 'bg-purple-900/50 text-purple-300 border-purple-600/40' },
+  extreme: { label: 'Extreme', color: 'bg-purple-950/70 text-purple-200 border-purple-400/50' },
 }
 
 const ELEMENT_STYLES: Record<string, { color: string }> = {

@@ -96,7 +96,7 @@ export interface GameStore {
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
   claimDailyReward: () => import('@/app/tap-tap-adventure/lib/dailyRewardTracker').ClaimResult | null
-  awardSoulEssence: (character: FantasyCharacter) => number
+  awardSoulEssence: (character: FantasyCharacter, bonusMultiplier?: number) => number
   purchaseUpgrade: (upgradeId: string) => boolean
   getMetaBonuses: () => MetaBonuses
   setRunSummary: (summary: RunSummaryData) => void
@@ -679,8 +679,8 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
-      awardSoulEssence: (character: FantasyCharacter) => {
-        const essence = calculateSoulEssence(character)
+      awardSoulEssence: (character: FantasyCharacter, bonusMultiplier?: number) => {
+        const essence = calculateSoulEssence(character) * (bonusMultiplier ?? 1)
         set(
           produce((state: GameStore) => {
             const meta: MetaProgressionState = state.gameState.metaProgression ?? {

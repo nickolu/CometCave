@@ -197,6 +197,21 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             } else {
               updateSelectedCharacter({ mainQuest: character.mainQuest })
             }
+
+            // Check if the main quest just completed (final boss victory)
+            // claimNewMilestones mutates the mainQuest object in place, so status may now be 'completed'
+            const questStatus = (character.mainQuest as { status: string }).status
+            if (questStatus === 'completed') {
+              const freshChar = useGameStore.getState().gameState.characters.find(c => c.id === character.id)
+              const victoryEssence = awardSoulEssence(freshChar ?? character, 5)
+              setRunSummary({
+                character: freshChar ? { ...freshChar } : { ...character },
+                reason: 'victory',
+                essenceEarned: victoryEssence,
+                heirloom: null,
+              })
+              // Do NOT delete the character — post-game character persists
+            }
           }
 
           addStoryEvent({

@@ -1199,6 +1199,92 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
         ],
       },
     ],
+    abyssal_depths: [
+      {
+        id: `rfb-tentacle-${s}`,
+        description: 'A colossal tentacle erupts from the abyss below your feet, slamming against the obsidian floor where you stand.',
+        options: [
+          { id: `dodge-tentacle-${s}`, text: 'Dive and dodge the tentacle', successProbability: 0.7,
+            successDescription: 'You roll clear as the tentacle crashes down. In the impact zone you spot scattered abyssal coins and a strange glowing shard.',
+            successEffects: { gold: 20, reputation: 2, rewardItems: processFallbackRewardItems([{ id: `void-shard-${s}`, name: 'Void Shard', description: 'A fragment of solidified void energy', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+            failureDescription: 'The tentacle grazes you as you dodge, knocking you back. You scramble away unharmed but shaken.',
+            failureEffects: { reputation: -1 } },
+          { id: `fight-tentacle-${s}`, text: 'Draw your weapon and fight the creature', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The void creature drags itself fully from the depths, ready to fight!',
+            successEffects: {}, failureDescription: 'The void creature drags itself fully from the depths, ready to fight!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-jellyfish-${s}`,
+        description: 'Bioluminescent jellyfish drift around you, their soft glow revealing an ancient chest resting on the seafloor below a translucent membrane.',
+        options: [
+          { id: `dive-chest-${s}`, text: 'Dive through the membrane to reach the chest', successProbability: 0.6,
+            successDescription: 'You breach the membrane and pry open the chest. Inside: ancient coins and an intact scroll of abyssal knowledge.',
+            successEffects: { gold: 35, rewardItems: [createSpellScrollRewardItem(8, `abyssal-scroll-${s}`)] },
+            failureDescription: 'The membrane resists your entry and the pressure forces you back. The chest remains out of reach.',
+            failureEffects: {} },
+          { id: `ignore-chest-${s}`, text: 'Admire the view and move on', successProbability: 1.0,
+            successDescription: 'The jellyfish pulse gently as you pass, their bioluminescence lighting your way through the dark.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-titan-skull-${s}`,
+        description: 'The skull of a drowned titan towers above you, its hollow eye sockets filled with pulsing shadow energy. Smaller void creatures nest within its jaw.',
+        options: [
+          { id: `search-skull-${s}`, text: 'Search the skull for treasure', successProbability: 0.5,
+            successDescription: 'Wedged between massive teeth you find a cache of gold coins preserved for eons.',
+            successEffects: { gold: 30, reputation: 2 },
+            failureDescription: 'The shadow energy flares as you approach, driving you back empty-handed.',
+            failureEffects: {} },
+          { id: `channel-shadow-${s}`, text: 'Channel the shadow energy emanating from the eye sockets', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The shadow energy coalesces into a hostile void entity that lashes out!',
+            successEffects: {}, failureDescription: 'The shadow energy coalesces into a hostile void entity that lashes out!', failureEffects: {} },
+        ],
+      },
+    ],
+    celestial_throne: [
+      {
+        id: `rfb-divine-sentinel-${s}`,
+        description: 'A divine sentinel in gleaming white armor bars your path, its celestial eyes boring into your soul. "Prove your worth, mortal, or turn back."',
+        options: [
+          { id: `challenge-sentinel-${s}`, text: 'Challenge the sentinel to single combat', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The sentinel raises its blade and lunges forward!',
+            successEffects: {}, failureDescription: 'The sentinel raises its blade and lunges forward!', failureEffects: {} },
+          { id: `diplomatic-pass-${s}`, text: 'Invoke your deeds and conquests to earn passage', successProbability: 0.3,
+            successDescription: 'The sentinel considers your words, then steps aside. "Your legend precedes you. Pass, champion."',
+            successEffects: { reputation: 8 },
+            failureDescription: 'The sentinel shakes its head. "Words alone are not enough. Prove yourself with action."',
+            failureEffects: { reputation: -2 } },
+        ],
+      },
+      {
+        id: `rfb-celestial-light-${s}`,
+        description: 'A blinding pillar of celestial light descends before you, humming with divine energy. You feel it could grant great power — or destroy you.',
+        options: [
+          { id: `step-into-light-${s}`, text: 'Step into the celestial light', successProbability: 0.7,
+            successDescription: 'The divine energy surges through you, filling you with clarity. A blessed scroll materializes in your hands.',
+            successEffects: { reputation: 6, rewardItems: [createSpellScrollRewardItem(10, `celestial-scroll-${s}`)] },
+            failureDescription: 'The light is too intense. You are blinded temporarily and stagger back, dazed but unharmed.',
+            failureEffects: { reputation: -1 } },
+          { id: `avoid-light-${s}`, text: 'Step around the pillar carefully', successProbability: 1.0,
+            successDescription: 'You give the pillar wide berth. It eventually fades, leaving only a warm impression on the air.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-archangel-trial-${s}`,
+        description: 'A corrupted archangel descends from the spires above, its once-white wings now streaked with void. It offers you a trial of strength.',
+        options: [
+          { id: `accept-trial-${s}`, text: 'Accept the archangel\'s trial', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The archangel spreads its massive wings and attacks!',
+            successEffects: {}, failureDescription: 'The archangel spreads its massive wings and attacks!', failureEffects: {} },
+          { id: `decline-trial-${s}`, text: 'Decline and move on', successProbability: 1.0,
+            successDescription: 'The archangel watches you pass with cold, appraising eyes, then returns to the spires above.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+    ],
   }
 
   return regionEvents[regionId] ?? []

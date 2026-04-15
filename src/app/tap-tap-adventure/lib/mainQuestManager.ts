@@ -5,15 +5,17 @@ export const CONQUERABLE_REGIONS = [
   'green_meadows', 'dark_forest', 'crystal_caves', 'scorched_wastes',
   'frozen_peaks', 'shadow_realm', 'sky_citadel', 'sunken_ruins',
   'volcanic_forge', 'feywild_grove', 'bone_wastes', 'dragons_spine',
+  'abyssal_depths', 'celestial_throne',
 ]
 
-export const TOTAL_CONQUERABLE = CONQUERABLE_REGIONS.length // 12
+export const TOTAL_CONQUERABLE = CONQUERABLE_REGIONS.length // 14
 
 const MILESTONES = [
   { regionsRequired: 3, title: 'First Frontiers', goldReward: 150 },
   { regionsRequired: 6, title: 'Halfway There', goldReward: 300 },
   { regionsRequired: 9, title: 'Almost Supreme', goldReward: 500 },
-  { regionsRequired: TOTAL_CONQUERABLE, title: 'World Conqueror', goldReward: 1000 },
+  { regionsRequired: 12, title: 'World Conqueror', goldReward: 1000 },
+  { regionsRequired: TOTAL_CONQUERABLE, title: 'World Domination', goldReward: 2000 },
 ]
 
 export function createMainQuest(): MainQuest {

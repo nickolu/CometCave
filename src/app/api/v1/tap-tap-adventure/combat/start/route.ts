@@ -4,7 +4,7 @@ import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficult
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { initializePlayerCombatState } from '@/app/tap-tap-adventure/lib/combatEngine'
-import { generateCombatEncounter, generateBossEncounter, generateMiniBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
+import { generateCombatEncounter, generateBossEncounter, generateMiniBossEncounter, generateFinalBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
@@ -15,11 +15,15 @@ export async function POST(req: NextRequest) {
       ? `The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
       : storyContext
 
-    const { enemy: rawEnemy, scenario } = isMiniBoss
-      ? await generateMiniBossEncounter(character, fullContext)
-      : isBoss
-        ? await generateBossEncounter(character, fullContext)
-        : await generateCombatEncounter(character, fullContext)
+    const isFinalBoss = pendingRegionId === 'celestial_throne'
+
+    const { enemy: rawEnemy, scenario } = isFinalBoss
+      ? await generateFinalBossEncounter(character, fullContext)
+      : isMiniBoss
+        ? await generateMiniBossEncounter(character, fullContext)
+        : isBoss
+          ? await generateBossEncounter(character, fullContext)
+          : await generateCombatEncounter(character, fullContext)
 
     // Apply difficulty modifiers and region difficulty multiplier to enemy stats
     const diffMods = getDifficultyModifiers(character.difficultyMode)
@@ -54,8 +58,9 @@ export async function POST(req: NextRequest) {
       combatLog: [],
       status: 'active',
       scenario,
-      isBoss,
+      isBoss: isFinalBoss ? true : isBoss,
       isMiniBoss,
+      isFinalBoss: isFinalBoss || undefined,
       combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
     }
