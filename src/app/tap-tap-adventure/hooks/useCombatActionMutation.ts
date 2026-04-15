@@ -163,6 +163,10 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             regionTravelText = ` You conquered the guardian and entered ${destRegion.icon} ${destRegion.name}!`
           }
 
+          // Reputation gain for combat victory
+          const repGain = pendingRegionId ? 3 : 1
+          updateSelectedCharacter({ reputation: (character.reputation ?? 0) + repGain })
+
           addStoryEvent({
             id: `combat-victory-${Date.now()}`,
             type: pendingRegionId ? 'boss_guardian_victory' : 'combat_victory',
@@ -172,6 +176,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             outcomeDescription: `You defeated ${enemy.name}!${mountText}${regionTravelText}`,
             resourceDelta: {
               gold: data.rewards.gold,
+              reputation: repGain,
             },
             rewardItems: processedLoot.length > 0 ? processedLoot : undefined,
           })

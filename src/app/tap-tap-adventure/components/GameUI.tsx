@@ -389,7 +389,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                       </div>
                     ) : (
                       <div className="space-y-2 mt-2">
-                        {gameState.decisionPoint.options.map((option: { id: string; text: string }, index: number) => {
+                        {gameState.decisionPoint.options.map((option: { id: string; text: string; successEffects?: { reputation?: number }; failureEffects?: { reputation?: number }; effects?: { reputation?: number } }, index: number) => {
                           if (!option) return null
                           if (!gameState.decisionPoint) return null
                           return (
@@ -403,6 +403,17 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                             >
                               <span className="hidden sm:inline text-slate-400 mr-2 text-xs font-mono">[{index + 1}]</span>
                               {option.text}
+                              {(() => {
+                                const sRep = option.successEffects?.reputation ?? option.effects?.reputation
+                                const fRep = option.failureEffects?.reputation
+                                if (sRep === undefined && fRep === undefined) return null
+                                if (sRep !== undefined && fRep !== undefined && sRep !== fRep) {
+                                  return <span className={`ml-2 text-xs ${sRep > 0 ? 'text-green-400' : 'text-red-400'}`}>({sRep > 0 ? '+' : ''}{sRep}/{fRep > 0 ? '+' : ''}{fRep} Rep)</span>
+                                }
+                                const rep = sRep ?? fRep ?? 0
+                                const color = rep > 0 ? 'text-green-400' : rep < 0 ? 'text-red-400' : 'text-slate-400'
+                                return <span className={`ml-2 text-xs ${color}`}>({rep > 0 ? '+' : ''}{rep} Rep)</span>
+                              })()}
                             </Button>
                           )
                         })}
