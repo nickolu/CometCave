@@ -8,10 +8,12 @@ import { CLASS_ABILITIES } from '@/app/tap-tap-adventure/config/characterOptions
 import { AP_COSTS } from '@/app/tap-tap-adventure/config/apCosts'
 import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombatActionMutation'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 import { getDeathFlavorText, getStoryContext, getPermadeathEpitaph } from '@/app/tap-tap-adventure/lib/deathFlavorText'
@@ -101,8 +103,11 @@ interface CombatUIProps {
 }
 
 export function CombatUI({ combatState }: CombatUIProps) {
-  const { getSelectedCharacter } = useGameStore()
-  const { mutate: combatAction, isPending } = useCombatActionMutation()
+  const { getSelectedCharacter, setMount } = useGameStore()
+  const [pendingMountDrop, setPendingMountDrop] = useState<Mount | null>(null)
+  const { mutate: combatAction, isPending } = useCombatActionMutation({
+    onMountDrop: (mount) => setPendingMountDrop(mount),
+  })
   const [showItemMenu, setShowItemMenu] = useState(false)
   const [showSpellMenu, setShowSpellMenu] = useState(false)
   const [showFullLog, setShowFullLog] = useState(false)
@@ -185,6 +190,15 @@ export function CombatUI({ combatState }: CombatUIProps) {
     prevComboRef.current = currentCombo
   }, [playerState.comboCount])
 
+  // Determine if player can attack at current distance based on weapon range
+  const weaponRange = character?.equipment?.weapon?.effects?.range ?? 'close'
+  const distanceOrder = ['close', 'mid', 'far'] as const
+  const weaponReach = distanceOrder.indexOf(weaponRange as (typeof distanceOrder)[number])
+  const currentDistIdx = distanceOrder.indexOf(
+    (combatState.combatDistance ?? 'mid') as (typeof distanceOrder)[number]
+  )
+  const canAttackAtDistance = currentDistIdx <= weaponReach
+
   const combatItems = (character?.inventory ?? []).filter(
     (i: Item) => i.status !== 'deleted' && isUsableInCombat(i)
   )
@@ -220,10 +234,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
       const ap = playerState.ap ?? 3
       switch (e.key.toLowerCase()) {
         case 'a': // Attack
-          if (ap >= (AP_COSTS.attack ?? 1) && (combatState.combatDistance ?? 'mid') === 'close') { e.preventDefault(); handleAction('attack') }
+          if (ap >= (AP_COSTS.attack ?? 1) && canAttackAtDistance) { e.preventDefault(); handleAction('attack') }
           break
         case 'h': // Heavy Attack
-          if (ap >= (AP_COSTS.heavy_attack ?? 2) && (combatState.combatDistance ?? 'mid') === 'close') { e.preventDefault(); handleAction('heavy_attack') }
+          if (ap >= (AP_COSTS.heavy_attack ?? 2) && canAttackAtDistance) { e.preventDefault(); handleAction('heavy_attack') }
           break
         case 'd': // Defend
           if (ap >= (AP_COSTS.defend ?? 1)) { e.preventDefault(); handleAction('defend') }
@@ -232,16 +246,16 @@ export function CombatUI({ combatState }: CombatUIProps) {
           if (ap >= (AP_COSTS.flee ?? 3)) { e.preventDefault(); handleAction('flee') }
           break
         case 'q': // Move Closer
-          if (ap >= (AP_COSTS.move_closer ?? 1) && combatState.combatDistance !== 'close') { e.preventDefault(); handleAction('move_closer') }
+          if ((ap >= (AP_COSTS.move_closer ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'close') { e.preventDefault(); handleAction('move_closer') }
           break
         case 'e': // Move Away
-          if (ap >= (AP_COSTS.move_away ?? 1) && combatState.combatDistance !== 'far') { e.preventDefault(); handleAction('move_away') }
+          if ((ap >= (AP_COSTS.move_away ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'far') { e.preventDefault(); handleAction('move_away') }
           break
         case 'z': // End Turn
           e.preventDefault(); handleAction('end_turn')
           break
         case '5': // Class Ability
-          if (classAbility && abilityCooldown === 0 && ap >= (AP_COSTS.class_ability ?? 2) && (combatState.combatDistance ?? 'mid') === 'close') {
+          if (classAbility && abilityCooldown === 0 && ap >= (AP_COSTS.class_ability ?? 2) && canAttackAtDistance) {
             e.preventDefault(); handleAction('class_ability')
           }
           break
@@ -504,6 +518,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
             ))}
           </span>
           <span className="text-xs text-amber-400">({playerState.ap ?? 3}/{playerState.maxAp ?? 3})</span>
+          {(playerState.mountMovesRemaining ?? 0) > 0 && (
+            <span className="text-xs text-cyan-400 ml-2">| Mount: {playerState.mountMovesRemaining} free move{(playerState.mountMovesRemaining ?? 0) !== 1 ? 's' : ''}</span>
+          )}
         </div>
       </div>
 
@@ -513,12 +530,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {classAbility && (
           <Button
             className={`w-full text-base py-3 rounded-md transition-colors border ${
-              abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'
+              abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || !canAttackAtDistance
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-purple-900/50 border-purple-700 hover:bg-purple-800 text-white'
             }`}
             onClick={() => handleAction('class_ability')}
-            disabled={isPending || abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'}
+            disabled={isPending || abilityCooldown > 0 || (playerState.ap ?? 3) < (AP_COSTS.class_ability ?? 2) || !canAttackAtDistance}
             title={classAbility.description}
           >
             {isPending ? (
@@ -533,23 +550,23 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <div className="grid grid-cols-2 gap-2">
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || (combatState.combatDistance ?? 'mid') !== 'close'
+              (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || !canAttackAtDistance
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-red-900/50 border-red-800 hover:bg-red-800 text-white'
             }`}
             onClick={() => handleAction('attack')}
-            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || (combatState.combatDistance ?? 'mid') !== 'close'}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || !canAttackAtDistance}
           >
             {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : `Attack (${AP_COSTS.attack} AP)`}
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'
+              (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || !canAttackAtDistance
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-orange-900/50 border-orange-800 hover:bg-orange-800 text-white'
             }`}
             onClick={() => handleAction('heavy_attack')}
-            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || (combatState.combatDistance ?? 'mid') !== 'close'}
+            disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || !canAttackAtDistance}
           >
             Heavy Attack ({AP_COSTS.heavy_attack} AP)
           </Button>
@@ -588,25 +605,25 @@ export function CombatUI({ combatState }: CombatUIProps) {
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'close' || (playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1)
+              combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-cyan-900/50 border-cyan-800 hover:bg-cyan-800 text-white'
             }`}
             onClick={() => handleAction('move_closer')}
-            disabled={isPending || combatState.combatDistance === 'close' || (playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1)}
+            disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Close In ({AP_COSTS.move_closer} AP)
+            Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'far' || (playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1)
+              combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-teal-900/50 border-teal-800 hover:bg-teal-800 text-white'
             }`}
             onClick={() => handleAction('move_away')}
-            disabled={isPending || combatState.combatDistance === 'far' || (playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1)}
+            disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Back Away ({AP_COSTS.move_away} AP)
+            Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -705,6 +722,18 @@ export function CombatUI({ combatState }: CombatUIProps) {
       <div className="text-center text-xs text-slate-500">
         Turn {combatState.turnNumber}
       </div>
+
+      {pendingMountDrop && (
+        <MountNamingModal
+          mount={pendingMountDrop}
+          isOpen={true}
+          onConfirm={(customName) => {
+            setMount(pendingMountDrop, customName)
+            soundEngine.playMountAcquired()
+            setPendingMountDrop(null)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -724,6 +753,10 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
   const lastDefeatEvent =
     status === 'defeat'
       ? [...lastStoryEvents].reverse().find(e => e.type === 'combat_defeat')
+      : null
+  const lastVictoryEvent =
+    status === 'victory'
+      ? [...lastStoryEvents].reverse().find(e => e.type === 'combat_victory' || e.type === 'boss_guardian_victory')
       : null
 
   const [showPenalties, setShowPenalties] = useState(status !== 'defeat')
@@ -780,6 +813,34 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
     <div className={`${c.bgColor} border ${c.borderColor} rounded-lg p-6 text-center space-y-4`}>
       <h4 className={`text-xl font-bold ${c.color}`}>{c.title}</h4>
       <p className="text-slate-300">{c.message}</p>
+      {status === 'victory' && lastVictoryEvent && (
+        <div className="space-y-3">
+          {lastVictoryEvent.resourceDelta?.gold ? (
+            <p className="text-yellow-400 font-semibold">+{lastVictoryEvent.resourceDelta.gold} Gold</p>
+          ) : null}
+          {(() => {
+            const allItems = [
+              ...(lastVictoryEvent.resourceDelta?.rewardItems || []),
+              ...(lastVictoryEvent.rewardItems || []),
+            ]
+            return allItems.length > 0 ? (
+              <div className="text-sm text-yellow-200 space-y-1 bg-yellow-950/30 rounded p-3">
+                <p className="font-semibold text-yellow-300">Rewards gained:</p>
+                {allItems.map((item, idx) => (
+                  <p key={item.id + idx}>
+                    <span className="text-yellow-200">{item.name}</span>
+                    {item.quantity > 1 && <span className="text-yellow-400"> x{item.quantity}</span>}
+                    {item.type === 'spell_scroll' && <span className="text-purple-400 ml-1">(Scroll)</span>}
+                  </p>
+                ))}
+              </div>
+            ) : null
+          })()}
+          {lastVictoryEvent.outcomeDescription && (
+            <p className="text-slate-400 text-sm italic">{lastVictoryEvent.outcomeDescription}</p>
+          )}
+        </div>
+      )}
       {status === 'defeat' && (
         <>
           {/* Flavor text - visible immediately */}

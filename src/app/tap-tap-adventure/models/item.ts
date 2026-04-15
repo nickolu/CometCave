@@ -11,6 +11,7 @@ export const ItemEffectsSchema = z.object({
   intelligence: z.number().optional(),
   luck: z.number().optional(),
   heal: z.number().optional(),
+  range: z.enum(['close', 'mid', 'far']).optional(),
 })
 export type ItemEffects = z.infer<typeof ItemEffectsSchema>
 

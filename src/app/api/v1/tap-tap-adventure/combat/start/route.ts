@@ -25,6 +25,14 @@ export async function POST(req: NextRequest) {
     const diffMods = getDifficultyModifiers(character.difficultyMode)
     const region = getRegion(character.currentRegion ?? 'green_meadows')
     const regionMult = region.difficultyMultiplier
+    // Determine enemy range type based on element and name
+    const enemyNameLower = rawEnemy.name.toLowerCase()
+    const rangedByElement = rawEnemy.element === 'arcane' || rawEnemy.element === 'shadow'
+    const rangedByName = ['mage', 'archer', 'caster', 'wizard', 'sorcerer', 'shaman'].some(k =>
+      enemyNameLower.includes(k)
+    )
+    const enemyRange: 'melee' | 'ranged' = rangedByElement || rangedByName ? 'ranged' : 'melee'
+
     const enemy = {
       ...rawEnemy,
       hp: Math.round(rawEnemy.hp * diffMods.enemyHpMultiplier * regionMult),
@@ -32,6 +40,7 @@ export async function POST(req: NextRequest) {
       attack: Math.round(rawEnemy.attack * diffMods.enemyAttackMultiplier * regionMult),
       defense: Math.round(rawEnemy.defense * regionMult),
       goldReward: Math.round(rawEnemy.goldReward * regionMult),
+      range: enemyRange,
     }
 
     const playerState = initializePlayerCombatState(character)

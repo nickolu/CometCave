@@ -106,13 +106,30 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
   }
 
   // Equipment: Weapons
-  if (matchesAny(name, ['sword', 'axe', 'dagger', 'bow', 'staff', 'blade', 'hammer', 'spear', 'mace', 'wand'])) {
-    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'mighty', 'ancient']) ? 3
-      : matchesAny(name, ['fine', 'sharp', 'sturdy', 'steel']) ? 2 : 1
+  if (
+    matchesAny(name, [
+      'sword', 'axe', 'dagger', 'bow', 'staff', 'blade', 'hammer', 'spear', 'mace', 'wand',
+      'crossbow', 'scepter', 'polearm', 'whip', 'chain', 'halberd', 'lance', 'javelin', 'club',
+      'fist',
+    ])
+  ) {
+    const quality = matchesAny(name, ['greater', 'enchanted', 'legendary', 'mighty', 'ancient'])
+      ? 3
+      : matchesAny(name, ['fine', 'sharp', 'sturdy', 'steel'])
+        ? 2
+        : 1
+    const weaponRange: 'close' | 'mid' | 'far' = matchesAny(name, [
+      'bow', 'crossbow', 'wand', 'scepter', 'thrown', 'javelin',
+    ])
+      ? 'far'
+      : matchesAny(name, ['spear', 'polearm', 'whip', 'chain', 'halberd', 'lance'])
+        ? 'mid'
+        : 'close'
+    const baseEffects = item.effects ?? { strength: quality }
     return {
       ...item,
       type: 'equipment',
-      effects: item.effects ?? { strength: quality },
+      effects: { ...baseEffects, range: baseEffects.range ?? weaponRange },
     }
   }
 

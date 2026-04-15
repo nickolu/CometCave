@@ -29,6 +29,30 @@ export function getMountPrice(rarity: Mount['rarity']): number {
   }
 }
 
+export function getMountSellPrice(rarity: Mount['rarity']): number {
+  return Math.floor(getMountPrice(rarity) / 2)
+}
+
+/** Returns the number of free movement actions per turn based on mount rarity. */
+export function getMountFreeMoves(rarity: Mount['rarity']): number {
+  switch (rarity) {
+    case 'common': return 0
+    case 'uncommon': return 1
+    case 'rare': return 2
+    case 'legendary': return 4
+  }
+}
+
+/** Returns the flee chance bonus (as a percentage, e.g. 10 = +10%) based on mount rarity. */
+export function getMountFleeBonus(rarity: Mount['rarity']): number {
+  switch (rarity) {
+    case 'common': return 10
+    case 'uncommon': return 20
+    case 'rare': return 30
+    case 'legendary': return 50
+  }
+}
+
 /** Returns a mount appropriate for the character's level (never legendary in shops). */
 export function getShopMount(characterLevel: number): Mount {
   let pool: Mount[]

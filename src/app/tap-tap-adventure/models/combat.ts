@@ -55,6 +55,7 @@ export const CombatEnemySchema = z.object({
   statusEffects: z.array(StatusEffectSchema).optional(),
   statusAbility: StatusAbilitySchema.optional(),
   element: SpellElementSchema.optional(),
+  range: z.enum(['melee', 'ranged']).optional(),
 })
 export type CombatEnemy = z.infer<typeof CombatEnemySchema>
 
@@ -95,6 +96,7 @@ export const CombatPlayerStateSchema = z.object({
   maxAp: z.number().default(3),
   turnActions: z.array(z.string()).optional(),
   luck: z.number().default(0),
+  mountMovesRemaining: z.number().optional(),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
