@@ -32,6 +32,8 @@ export interface LLMEventOption {
     reputation?: number
     statusChange?: string
     rewardItems?: Item[]
+    mountDamage?: number
+    mountDeath?: boolean
   }
   failureDescription: string
   failureEffects: {
@@ -39,6 +41,8 @@ export interface LLMEventOption {
     reputation?: number
     statusChange?: string
     rewardItems?: Item[]
+    mountDamage?: number
+    mountDeath?: boolean
   }
   triggersCombat?: boolean
 }
@@ -76,6 +80,8 @@ const eventOptionSchema = z.object({
     reputation: z.number().optional(),
     statusChange: z.string().optional(),
     rewardItems: z.array(rewardItemSchema).optional(),
+    mountDamage: z.number().optional(),
+    mountDeath: z.boolean().optional(),
   }),
   failureDescription: z.string(),
   failureEffects: z.object({
@@ -83,6 +89,8 @@ const eventOptionSchema = z.object({
     reputation: z.number().optional(),
     statusChange: z.string().optional(),
     rewardItems: z.array(rewardItemSchema).optional(),
+    mountDamage: z.number().optional(),
+    mountDeath: z.boolean().optional(),
   }),
   triggersCombat: z.boolean().optional(),
 })
@@ -170,6 +178,8 @@ const eventOptionSchemaForOpenAI = {
           type: 'array',
           items: rewardItemSchemaForOpenAI,
         },
+        mountDamage: { type: 'number', description: 'HP damage dealt to the character\'s mount (if they have one). Use 3-10 for minor damage, 10-20 for serious damage.' },
+        mountDeath: { type: 'boolean', description: 'Set to true only if the mount is killed outright by the event outcome.' },
       },
     },
     failureDescription: { type: 'string' },
@@ -183,6 +193,8 @@ const eventOptionSchemaForOpenAI = {
           type: 'array',
           items: rewardItemSchemaForOpenAI,
         },
+        mountDamage: { type: 'number', description: 'HP damage dealt to the character\'s mount (if they have one). Use 3-10 for minor damage, 10-20 for serious damage.' },
+        mountDeath: { type: 'boolean', description: 'Set to true only if the mount is killed outright by the event outcome.' },
       },
     },
     triggersCombat: { type: 'boolean', description: 'Set to true if this option leads to a fight' },
@@ -298,6 +310,9 @@ Sometimes reward spell scrolls — items with type "spell_scroll" containing a s
 
 IMPORTANT — Combat events:
 Exactly 1 of the 3 events MUST be a combat encounter (bandits, monsters, aggressive creatures, rivals, etc.). That event MUST include at least one option with "triggersCombat": true — this represents the character choosing to fight. The other options on that event can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). The remaining 2 events should be non-combat (exploration, social, discovery, etc.) with NO options that have triggersCombat. This ensures approximately 25% of events over time involve combat potential.
+
+IMPORTANT — Mount events:
+If the character has an active mount (check character.activeMount), occasionally include events where the mount can be harmed. Examples: a rock slide that injures the mount, a magical trap that wounds it, hostile wildlife attacking the mount, treacherous terrain causing injury. Use mountDamage (3–20) in failureEffects for partial damage, or mountDeath: true if the mount is killed outright. Only include mount-damaging outcomes when character.activeMount is not null/undefined.
 
 Character:
 ${JSON.stringify(character, null, 2)}
@@ -432,6 +447,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {}, failureDescription: 'The treant roars and attacks!', failureEffects: {} },
         ],
       },
+      {
+        id: `rfb-shadow-vines-${s}`,
+        description: 'Shadow vines suddenly lash out from the undergrowth, writhing toward your mount.',
+        options: [
+          { id: `shield-mount-shadow-${s}`, text: 'Step in front to protect your mount', successProbability: 0.7,
+            successDescription: 'You absorb the blow and your mount escapes unharmed.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The vines still manage to slash your mount before you can fully block them.',
+            failureEffects: { mountDamage: 8 } },
+          { id: `flee-shadow-vines-${s}`, text: 'Pull your mount away and flee', successProbability: 0.5,
+            successDescription: 'You wrench your mount free and gallop clear of the writhing vines.',
+            successEffects: {},
+            failureDescription: 'The vines catch your mount before you escape, dealing a nasty gash.',
+            failureEffects: { mountDamage: 8 } },
+        ],
+      },
     ],
     scorched_wastes: [
       {
@@ -501,6 +532,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successDescription: 'The wyrm passes by without noticing you.',
             successEffects: {}, failureDescription: 'It notices your movement but loses interest.',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-fire-geyser-${s}`,
+        description: 'Without warning, a fire geyser erupts from a crack in the earth directly beneath your mount.',
+        options: [
+          { id: `yank-mount-geyser-${s}`, text: 'Yank your mount aside at the last moment', successProbability: 0.6,
+            successDescription: 'You pull your mount clear just in time — the geyser scorches the ground where it stood.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The geyser catches your mount in a burst of scalding flame before you can react.',
+            failureEffects: { mountDamage: 12 } },
+          { id: `endure-geyser-${s}`, text: 'Trust your mount to endure', successProbability: 0.4,
+            successDescription: 'Your mount leaps clear instinctively, completely unharmed.',
+            successEffects: {},
+            failureDescription: 'The geyser hits full-force, seriously burning your mount.',
+            failureEffects: { mountDamage: 12 } },
         ],
       },
     ],
@@ -581,6 +628,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { gold: -5 } },
         ],
       },
+      {
+        id: `rfb-avalanche-${s}`,
+        description: 'A distant rumble grows to a roar — an avalanche is sweeping down the mountain slope, straight toward you and your mount.',
+        options: [
+          { id: `shield-mount-avalanche-${s}`, text: 'Place yourself between the snow and your mount', successProbability: 0.5,
+            successDescription: 'You take the brunt of the avalanche, keeping your mount safe. Bruised but alive.',
+            successEffects: { reputation: 3 },
+            failureDescription: 'Snow crashes into your mount despite your efforts, burying it briefly before you dig it free.',
+            failureEffects: { mountDamage: 15 } },
+          { id: `gallop-clear-${s}`, text: 'Ride hard to outrun the avalanche', successProbability: 0.6,
+            successDescription: 'Your mount\'s speed carries you both clear of the cascading snow.',
+            successEffects: {},
+            failureDescription: 'The avalanche overtakes you; your mount takes a crushing blow from a snow-laden boulder.',
+            failureEffects: { mountDamage: 15 } },
+        ],
+      },
     ],
     crystal_caves: [
       {
@@ -659,6 +722,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: {} },
         ],
       },
+      {
+        id: `rfb-resonance-shockwave-${s}`,
+        description: 'The crystals around you suddenly resonate at a dangerous frequency. A shockwave ripples outward — your mount shies and stumbles toward a jagged crystal wall.',
+        options: [
+          { id: `grab-mount-resonance-${s}`, text: 'Grab the reins and steer your mount away', successProbability: 0.6,
+            successDescription: 'You wrestle control and guide your mount clear of the jagged crystals.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'Your mount collides with the crystal wall, gashing its flank badly.',
+            failureEffects: { mountDamage: 10 } },
+          { id: `shatter-crystals-${s}`, text: 'Smash the resonating crystals to break the wave', successProbability: 0.5,
+            successDescription: 'You shatter the source crystal and the shockwave collapses. Your mount is unharmed.',
+            successEffects: { gold: 5 },
+            failureDescription: 'You cannot reach the source in time — the shockwave slams your mount into the wall.',
+            failureEffects: { mountDamage: 10 } },
+        ],
+      },
     ],
     shadow_realm: [
       {
@@ -703,6 +782,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { gold: 18, reputation: 5 },
             failureDescription: 'The corruption is too strong. The knight stirs but ignores you.',
             failureEffects: { reputation: -1 } },
+        ],
+      },
+      {
+        id: `rfb-void-rift-${s}`,
+        description: 'A void rift tears open beside you, and tendrils of shadow energy lash out toward your mount.',
+        options: [
+          { id: `pull-mount-rift-${s}`, text: 'Pull your mount away from the rift', successProbability: 0.6,
+            successDescription: 'You drag your mount clear as the tendrils snap shut on empty air.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'A shadow tendril wraps around your mount before you can react, draining its vitality.',
+            failureEffects: { mountDamage: 10 } },
+          { id: `attack-rift-${s}`, text: 'Strike at the rift to close it', successProbability: 0.4,
+            successDescription: 'Your blow destabilizes the rift and it collapses harmlessly.',
+            successEffects: { reputation: 3 },
+            failureDescription: 'Your attack has no effect. The tendril strikes your mount hard.',
+            failureEffects: { mountDamage: 10 } },
         ],
       },
     ],
@@ -753,6 +848,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { gold: 3 } },
         ],
       },
+      {
+        id: `rfb-collapsing-floor-${s}`,
+        description: 'A section of the sunken temple floor collapses beneath your mount\'s weight, dropping it into a flooded chamber below.',
+        options: [
+          { id: `dive-rescue-mount-${s}`, text: 'Dive in to rescue your mount', successProbability: 0.7,
+            successDescription: 'You plunge in and guide your mount to a shallow ledge. It is shaken but unharmed.',
+            successEffects: { reputation: 3 },
+            failureDescription: 'The current tosses your mount against the submerged stonework before you reach it.',
+            failureEffects: { mountDamage: 8 } },
+          { id: `guide-from-above-${s}`, text: 'Guide your mount from the edge', successProbability: 0.5,
+            successDescription: 'Your mount finds its footing and climbs back up on its own.',
+            successEffects: {},
+            failureDescription: 'Your mount struggles in the water, bruised from the impact, before scrambling out.',
+            failureEffects: { mountDamage: 8 } },
+        ],
+      },
     ],
     volcanic_forge: [
       {
@@ -797,6 +908,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {},
             failureDescription: 'It hurls a glob of lava after you but misses. You escape shaken.',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-lava-splash-${s}`,
+        description: 'A sudden eruption spews molten rock in a wide arc. Your mount rears in panic as lava droplets rain down.',
+        options: [
+          { id: `cover-mount-lava-${s}`, text: 'Shield your mount with your cloak', successProbability: 0.6,
+            successDescription: 'Your cloak smolders but the lava misses your mount entirely.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'A droplet of molten rock scorches your mount\'s flank despite your effort.',
+            failureEffects: { mountDamage: 12 } },
+          { id: `gallop-away-lava-${s}`, text: 'Spur your mount to gallop clear', successProbability: 0.5,
+            successDescription: 'Your mount powers through, outrunning the rain of lava.',
+            successEffects: {},
+            failureDescription: 'Your mount is too slow — several burning droplets hit it as you flee.',
+            failureEffects: { mountDamage: 12 } },
         ],
       },
     ],
@@ -845,6 +972,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {}, failureDescription: '', failureEffects: {} },
         ],
       },
+      {
+        id: `rfb-territorial-stag-${s}`,
+        description: 'A massive territorial stag bursts from the undergrowth, antlers lowered. It charges directly at your mount.',
+        options: [
+          { id: `interpose-stag-${s}`, text: 'Step between the stag and your mount', successProbability: 0.6,
+            successDescription: 'You stand your ground and the stag veers off at the last moment.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The stag catches your mount with a glancing blow from its antlers.',
+            failureEffects: { mountDamage: 5 } },
+          { id: `startle-stag-${s}`, text: 'Make noise to scare the stag away', successProbability: 0.7,
+            successDescription: 'Your shouts startle the stag and it bolts back into the underbrush.',
+            successEffects: {},
+            failureDescription: 'The stag is undeterred by the noise and clips your mount before fleeing.',
+            failureEffects: { mountDamage: 5 } },
+        ],
+      },
     ],
     bone_wastes: [
       {
@@ -891,6 +1034,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { gold: 18 },
             failureDescription: 'A bone shifts under your foot. The skeleton twitches but doesn\'t fully animate. You flee empty-handed.',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-bone-curse-${s}`,
+        description: 'A necromantic curse emanating from a buried ossuary triggers as your mount steps over it. Dark energy writhes around the beast.',
+        options: [
+          { id: `dispel-curse-mount-${s}`, text: 'Attempt to dispel the curse', successProbability: 0.5,
+            successDescription: 'You channel your will and the dark energy dissipates before it can take hold.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The curse sinks into your mount before you can stop it, sapping its strength.',
+            failureEffects: { mountDamage: 8 } },
+          { id: `drag-mount-clear-${s}`, text: 'Drag your mount clear of the cursed ground', successProbability: 0.6,
+            successDescription: 'You pull your mount free before the curse fully takes effect.',
+            successEffects: {},
+            failureDescription: 'Too slow — the curse flares and deals a painful blow before fading.',
+            failureEffects: { mountDamage: 8 } },
         ],
       },
     ],
@@ -943,6 +1102,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { reputation: 5, gold: 10 },
             failureDescription: 'They are unimpressed. "Gold or steel, mortal. Choose."',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-dragonfire-${s}`,
+        description: 'A young dragon swoops low and lets loose a burst of dragonfire that streaks toward your mount.',
+        options: [
+          { id: `dive-off-mount-${s}`, text: 'Dive off your mount and pull it aside', successProbability: 0.5,
+            successDescription: 'You and your mount hit the ground rolling, narrowly avoiding the dragonfire.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The dragonfire clips your mount despite your desperate dive.',
+            failureEffects: { mountDamage: 14 } },
+          { id: `use-terrain-dragon-${s}`, text: 'Duck behind a rock outcrop', successProbability: 0.7,
+            successDescription: 'The stone absorbs the blast and you both emerge unscathed.',
+            successEffects: {},
+            failureDescription: 'The fire wraps around the rock and catches your mount on the flank.',
+            failureEffects: { mountDamage: 14 } },
         ],
       },
     ],
@@ -1005,6 +1180,22 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { reputation: 6, gold: 20 },
             failureDescription: 'The dragon snorts dismissively but lets you pass.',
             failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-arcane-discharge-${s}`,
+        description: 'An overloaded arcane generator discharges a bolt of lightning that arcs toward your mount.',
+        options: [
+          { id: `absorb-bolt-${s}`, text: 'Interpose yourself and absorb the bolt', successProbability: 0.5,
+            successDescription: 'You ground the lightning through yourself. You feel the tingle but your mount is fine.',
+            successEffects: { reputation: 3 },
+            failureDescription: 'The bolt jumps past you and strikes your mount, coursing through its body.',
+            failureEffects: { mountDamage: 10 } },
+          { id: `redirect-bolt-${s}`, text: 'Redirect the bolt with a metal weapon', successProbability: 0.6,
+            successDescription: 'You raise your blade and the bolt follows the metal harmlessly into the floor.',
+            successEffects: {},
+            failureDescription: 'The bolt forks — one arc hits your mount despite your attempt to redirect it.',
+            failureEffects: { mountDamage: 10 } },
         ],
       },
     ],

@@ -25,6 +25,8 @@ export interface ResolveDecisionResponse {
   }
   rewardItems?: Item[]
   triggersCombat?: boolean
+  mountDamage?: number
+  mountDied?: boolean
 }
 
 export function useResolveDecisionMutation() {
@@ -135,6 +137,9 @@ export function useResolveDecisionMutation() {
       }
       const data: ResolveDecisionResponse = await res.json()
 
+      // Capture mount name before updating character (activeMount may be null after update)
+      const previousMountName = getSelectedCharacter()?.activeMount?.name
+
       if (data.updatedCharacter) {
         updateSelectedCharacter(data.updatedCharacter)
       }
@@ -164,6 +169,15 @@ export function useResolveDecisionMutation() {
           ? `You chose to fight: ${data.selectedOptionText}`
           : (data.outcomeDescription ?? ''),
         resourceDelta: data.resourceDelta,
+      }
+
+      // Append mount damage/death messages to outcome description
+      if (data.mountDied) {
+        const mountName = previousMountName ?? 'Your mount'
+        newStoryEvent.outcomeDescription = `${newStoryEvent.outcomeDescription} ${mountName} has fallen!`
+      } else if (data.mountDamage && data.mountDamage > 0) {
+        const mountName = previousMountName ?? 'Your mount'
+        newStoryEvent.outcomeDescription = `${newStoryEvent.outcomeDescription} ${mountName} took ${data.mountDamage} damage!`
       }
 
       addStoryEvent(newStoryEvent)

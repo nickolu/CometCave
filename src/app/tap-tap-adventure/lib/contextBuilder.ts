@@ -74,6 +74,14 @@ export function buildStoryContext(
     `Dominant element: ${region.element}. Common threats: ${region.enemyTypes.join(', ') || 'none'}.`
   )
 
+  // Mount info
+  if (character.activeMount) {
+    const mount = character.activeMount
+    const mountHp = mount.hp ?? mount.maxHp ?? '?'
+    const mountMaxHp = mount.maxHp ?? '?'
+    parts.push(`Mount: ${mount.name} (${mount.rarity}, HP: ${mountHp}/${mountMaxHp}).`)
+  }
+
   // Inventory highlights
   const activeItems = character.inventory.filter(i => i.status !== 'deleted')
   if (activeItems.length > 0) {
