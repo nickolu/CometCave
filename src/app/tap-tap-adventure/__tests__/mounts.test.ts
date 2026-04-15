@@ -4,9 +4,11 @@ import {
   MOUNT_DEFINITIONS,
   getMountById,
   getMountsByRarity,
+  getMountFreeMoves,
+  getMountFleeBonus,
   getRandomMount,
 } from '@/app/tap-tap-adventure/config/mounts'
-import { initializePlayerCombatState, getCombatRewards } from '@/app/tap-tap-adventure/lib/combatEngine'
+import { initializePlayerCombatState, getCombatRewards, calculateFleeChance } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { applyLevelFromDistance } from '@/app/tap-tap-adventure/lib/leveling'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { MountSchema } from '@/app/tap-tap-adventure/models/mount'
@@ -228,6 +230,111 @@ describe('Mount Daily Cost', () => {
     for (const m of MOUNT_DEFINITIONS) {
       expect(m.dailyCost).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('getMountFreeMoves', () => {
+  it('common mount has 0 free moves', () => {
+    expect(getMountFreeMoves('common')).toBe(0)
+  })
+
+  it('uncommon mount has 1 free move', () => {
+    expect(getMountFreeMoves('uncommon')).toBe(1)
+  })
+
+  it('rare mount has 2 free moves', () => {
+    expect(getMountFreeMoves('rare')).toBe(2)
+  })
+
+  it('legendary mount has 4 free moves', () => {
+    expect(getMountFreeMoves('legendary')).toBe(4)
+  })
+})
+
+describe('getMountFleeBonus', () => {
+  it('common mount gives +10% flee bonus', () => {
+    expect(getMountFleeBonus('common')).toBe(10)
+  })
+
+  it('uncommon mount gives +20% flee bonus', () => {
+    expect(getMountFleeBonus('uncommon')).toBe(20)
+  })
+
+  it('rare mount gives +30% flee bonus', () => {
+    expect(getMountFleeBonus('rare')).toBe(30)
+  })
+
+  it('legendary mount gives +50% flee bonus', () => {
+    expect(getMountFleeBonus('legendary')).toBe(50)
+  })
+})
+
+describe('Mount free moves in combat state', () => {
+  it('common mount sets mountMovesRemaining to 0', () => {
+    const char = makeCharacter({ activeMount: getMountById('horse')! })
+    const state = initializePlayerCombatState(char)
+    expect(state.mountMovesRemaining).toBe(0)
+  })
+
+  it('uncommon mount sets mountMovesRemaining to 1', () => {
+    const char = makeCharacter({ activeMount: getMountById('war-horse')! })
+    const state = initializePlayerCombatState(char)
+    expect(state.mountMovesRemaining).toBe(1)
+  })
+
+  it('rare mount sets mountMovesRemaining to 2', () => {
+    const char = makeCharacter({ activeMount: getMountById('griffin')! })
+    const state = initializePlayerCombatState(char)
+    expect(state.mountMovesRemaining).toBe(2)
+  })
+
+  it('legendary mount sets mountMovesRemaining to 4', () => {
+    const char = makeCharacter({ activeMount: getMountById('dragon')! })
+    const state = initializePlayerCombatState(char)
+    expect(state.mountMovesRemaining).toBe(4)
+  })
+
+  it('no mount sets mountMovesRemaining to 0', () => {
+    const char = makeCharacter({ activeMount: null })
+    const state = initializePlayerCombatState(char)
+    expect(state.mountMovesRemaining).toBe(0)
+  })
+})
+
+describe('calculateFleeChance with mount bonus', () => {
+  const baseEnemy = {
+    id: 'e1',
+    name: 'Goblin',
+    description: 'A goblin',
+    hp: 20,
+    maxHp: 20,
+    attack: 5,
+    defense: 2,
+    level: 1,
+    goldReward: 5,
+  }
+
+  it('character without mount has base flee chance', () => {
+    const char = makeCharacter({ luck: 0, activeMount: null })
+    const chance = calculateFleeChance(char, baseEnemy)
+    // Base: 0.3 + 0*0.02 - 1*0.05 = 0.25, clamped to 0.25
+    expect(chance).toBeCloseTo(0.25, 2)
+  })
+
+  it('uncommon mount adds +20% flee bonus', () => {
+    const charNoMount = makeCharacter({ luck: 0, activeMount: null })
+    const charWithMount = makeCharacter({ luck: 0, activeMount: getMountById('war-horse')! })
+    const baseChance = calculateFleeChance(charNoMount, baseEnemy)
+    const mountChance = calculateFleeChance(charWithMount, baseEnemy)
+    expect(mountChance).toBeCloseTo(baseChance + 0.20, 2)
+  })
+
+  it('legendary mount adds +50% flee bonus', () => {
+    const charNoMount = makeCharacter({ luck: 0, activeMount: null })
+    const charWithMount = makeCharacter({ luck: 0, activeMount: getMountById('dragon')! })
+    const baseChance = calculateFleeChance(charNoMount, baseEnemy)
+    const mountChance = calculateFleeChance(charWithMount, baseEnemy)
+    expect(mountChance).toBeCloseTo(Math.min(0.9, baseChance + 0.50), 2)
   })
 })
 
