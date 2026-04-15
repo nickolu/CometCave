@@ -22,6 +22,11 @@ const processFallbackRewardItems = (
     effects: item.effects,
   })) || []
 
+const processFallbackLegendaryItems = (
+  items?: { id: string; name?: string; description?: string; quantity: number; type?: string; effects?: Record<string, number> }[]
+): Item[] | undefined =>
+  (processFallbackRewardItems(items) ?? []).map(item => ({ ...item, rarity: 'legendary' as const }))
+
 export interface LLMEventOption {
   id: string
   text: string
@@ -463,6 +468,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { mountDamage: 8 } },
         ],
       },
+      {
+        id: `rfb-dark-hermit-${s}`,
+        description: 'A cloaked hermit sits cross-legged in a clearing of dead trees, surrounded by floating shadow orbs. He opens one eye and addresses you without turning his head.',
+        options: [
+          { id: `dark-hermit-bargain-${s}`, text: 'Ask the hermit to share his knowledge', successProbability: 0.6,
+            successDescription: 'The hermit nods. He inscribes a shadow incantation on bark and hands it to you, then dissolves into smoke.',
+            successEffects: { rewardItems: [createSpellScrollRewardItem(5, `dark-hermit-${s}`)] },
+            failureDescription: 'The hermit studies you in silence, then waves dismissively. He will not share his secrets with you today.',
+            failureEffects: {} },
+          { id: `dark-hermit-fight-${s}`, text: 'Demand his orbs by force', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The hermit rises, his orbs forming into shadow blades!',
+            successEffects: {}, failureDescription: 'The hermit rises, his orbs forming into shadow blades!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-forest-shrine-${s}`,
+        description: 'A crumbling shrine to a forgotten forest deity lies half-buried in roots and dark moss. Strange runes pulse faintly with residual power.',
+        options: [
+          { id: `offer-forest-shrine-${s}`, text: 'Leave an offering of 5 gold at the shrine', successProbability: 0.7,
+            successDescription: 'The runes flare to life. A compartment opens in the base, revealing a preserved enchanted token.',
+            successEffects: { gold: -5, reputation: 3, rewardItems: processFallbackRewardItems([{ id: `forest-token-${s}`, name: 'Forest Deity Token', description: 'A token blessed by an ancient forest deity, conferring luck', quantity: 1, type: 'consumable', effects: { luck: 2 } }]) },
+            failureDescription: 'The runes flicker and dim. The shrine does not respond to your offering.',
+            failureEffects: { gold: -5 } },
+          { id: `study-forest-shrine-${s}`, text: 'Study the runes carefully', successProbability: 0.5,
+            successDescription: 'Hours of study pay off — you decipher a prayer that fills you with renewed purpose.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The runes are too worn to interpret. You learn nothing.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-shadow-cat-${s}`,
+        description: 'A sleek panther made entirely of living shadow stalks beside you, matching your pace. Its eyes glow like amber lanterns and it makes no sound whatsoever.',
+        options: [
+          { id: `tame-shadow-cat-${s}`, text: 'Offer your hand and speak softly (taming attempt)', successProbability: 0.45,
+            successDescription: 'The shadow panther rubs against your leg, purring with a sound like distant thunder. It has chosen you! You have gained a new mount.',
+            successEffects: { reputation: 4 },
+            failureDescription: 'The panther hisses, bares its shadow-fangs, and vanishes into the dark.',
+            failureEffects: {} },
+          { id: `ignore-shadow-cat-${s}`, text: 'Ignore it and keep moving', successProbability: 1.0,
+            successDescription: 'After a few minutes the panther loses interest and melts back into the shadows.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
     ],
     scorched_wastes: [
       {
@@ -548,6 +597,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {},
             failureDescription: 'The geyser hits full-force, seriously burning your mount.',
             failureEffects: { mountDamage: 12 } },
+        ],
+      },
+      {
+        id: `rfb-scorched-merchant-${s}`,
+        description: 'A sun-scorched merchant hunches beside a cracked cart, fanning himself with a battered map. His wares are half-melted but he claims one item survived the heat perfectly.',
+        options: [
+          { id: `buy-scorched-goods-${s}`, text: 'Buy the surviving item (8 gold)', successProbability: 0.7,
+            successDescription: 'The item is indeed pristine — a fire-tempered blade of surprising quality.',
+            successEffects: { gold: -8, rewardItems: processFallbackRewardItems([{ id: `fire-blade-${s}`, name: 'Fire-Tempered Blade', description: 'A blade hardened in extreme volcanic heat, razor sharp', quantity: 1, type: 'equipment', effects: { strength: 2 } }]) },
+            failureDescription: 'The item crumbles the moment you touch it. The merchant shrugs apologetically.',
+            failureEffects: { gold: -8 } },
+          { id: `help-merchant-${s}`, text: 'Help repair his cart', successProbability: 0.6,
+            successDescription: 'You spend an hour patching the wheel. The grateful merchant gives you water and a pouch of coins.',
+            successEffects: { gold: 8, reputation: 3 },
+            failureDescription: 'You try but lack the right tools. At least the merchant appreciates the effort.',
+            failureEffects: { reputation: 1 } },
+        ],
+      },
+      {
+        id: `rfb-oasis-${s}`,
+        description: 'A shimmering oasis appears ahead — real or mirage? Crystal water surrounded by impossible green palms beckons through the wavering heat.',
+        options: [
+          { id: `approach-oasis-${s}`, text: 'Approach and investigate', successProbability: 0.6,
+            successDescription: 'It is real! You drink deep and find a cache of fire-resistant armor buried under the palms.',
+            successEffects: { reputation: 2, rewardItems: processFallbackRewardItems([{ id: `heat-mantle-${s}`, name: 'Heat-Resistant Mantle', description: 'A cloak woven from ashsilk that insulates against extreme heat', quantity: 1, type: 'equipment', effects: { intelligence: 1, luck: 1 } }]) },
+            failureDescription: 'It is a mirage. The disappointment is rough but you recover your bearings.',
+            failureEffects: {} },
+          { id: `ignore-oasis-${s}`, text: 'Press on without risking the detour', successProbability: 1.0,
+            successDescription: 'You push through the heat. Discipline over temptation.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-fire-cultists-${s}`,
+        description: 'Robed cultists dance around a bonfire in the wastes, chanting to a fire deity. Their leader spots you and calls out: "Stranger! Join our rite and be blessed, or move along!"',
+        options: [
+          { id: `join-cultist-rite-${s}`, text: 'Participate in the fire rite', successProbability: 0.5,
+            successDescription: 'The flames embrace you and you emerge unburned. The cultists cheer and offer a fire-blessed item.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `fire-talisman-${s}`, name: 'Fire Talisman', description: 'A talisman blessed in the cultist fire rite, radiating warmth', quantity: 1, type: 'consumable', effects: { strength: 1 } }]) },
+            failureDescription: 'The flames spit you out, scorching your cloak. The cultists mutter disappointedly.',
+            failureEffects: { reputation: -1 } },
+          { id: `attack-cultists-${s}`, text: 'Move to scatter the dangerous cult', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The cultists draw ritual blades and the leader shouts a war cry!',
+            successEffects: {}, failureDescription: 'The cultists draw ritual blades and the leader shouts a war cry!', failureEffects: {} },
         ],
       },
     ],
@@ -644,6 +737,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { mountDamage: 15 } },
         ],
       },
+      {
+        id: `rfb-frozen-explorer-${s}`,
+        description: 'Half-buried in a drift, you find a frozen explorer still gripping a leather satchel. He is well-preserved by the cold — perhaps there is still time to help him.',
+        options: [
+          { id: `thaw-explorer-${s}`, text: 'Build a fire to thaw him out', successProbability: 0.5,
+            successDescription: 'Against the odds, the explorer sputters awake. Delirious but grateful, he presses his satchel on you before passing out again.',
+            successEffects: { gold: 12, reputation: 5, rewardItems: processFallbackRewardItems([{ id: `explorer-map-${s}`, name: 'Mountaineer\'s Map', description: 'A detailed map of hidden mountain passes and caches', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'The frost is too deep. He does not revive, but at least he rests in peace now.',
+            failureEffects: { reputation: 2 } },
+          { id: `take-satchel-${s}`, text: 'Take his satchel without stopping', successProbability: 0.8,
+            successDescription: 'Inside you find coins and a crumpled map — useful, but you feel a pang of guilt.',
+            successEffects: { gold: 10, reputation: -2 },
+            failureDescription: 'The frozen clasps resist your fingers. You manage to free only a few coins.',
+            failureEffects: { gold: 3, reputation: -1 } },
+        ],
+      },
+      {
+        id: `rfb-ice-cave-spirit-${s}`,
+        description: 'Deep in an ice cave, a pale spirit manifests from mist. She was once a lost noblewoman. She speaks: "Retrieve my signet ring from the cave depths and I will share a secret."',
+        options: [
+          { id: `find-ring-${s}`, text: 'Venture deeper to find the signet ring', successProbability: 0.5,
+            successDescription: 'You brave the cold and find the ring on a frozen pedestal. The spirit smiles and whispers the location of a hidden treasure cache.',
+            successEffects: { gold: 15, reputation: 4 },
+            failureDescription: 'The ring is buried too deep. You emerge empty-handed and the spirit sighs sadly.',
+            failureEffects: {} },
+          { id: `ignore-spirit-${s}`, text: 'Leave the spirit to her fate', successProbability: 1.0,
+            successDescription: 'You walk on. The spirit\'s whispers fade behind you.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-yeti-ambush-${s}`,
+        description: 'A massive yeti drops from a ledge above, blocking the narrow mountain trail. It roars, exposing fearsome teeth, then sniffs the air curiously.',
+        options: [
+          { id: `fight-yeti-${s}`, text: 'Stand and fight the yeti', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The yeti swings a boulder-like fist at you!',
+            successEffects: {}, failureDescription: 'The yeti swings a boulder-like fist at you!', failureEffects: {} },
+          { id: `offer-food-yeti-${s}`, text: 'Offer it some rations', successProbability: 0.7,
+            successDescription: 'The yeti sniffs your rations, stuffs them in its mouth, then lumbers off the trail with a contented grunt.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The yeti ignores your offering but eventually loses interest and wanders off.',
+            failureEffects: {} },
+        ],
+      },
     ],
     crystal_caves: [
       {
@@ -738,6 +875,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { mountDamage: 10 } },
         ],
       },
+      {
+        id: `rfb-crystal-elemental-${s}`,
+        description: 'A crystal elemental crystallizes from the cave walls — sharp-edged and faceted, it gazes at you with gem-eyes. It does not attack but holds up a claw expectantly.',
+        options: [
+          { id: `give-crystal-${s}`, text: 'Offer it a coin as tribute', successProbability: 0.7,
+            successDescription: 'It examines the coin, presses it to its chest, and extrudes a perfectly cut arcane gem in return.',
+            successEffects: { gold: -1, rewardItems: processFallbackRewardItems([{ id: `arcane-gem-${s}`, name: 'Arcane Gem', description: 'A flawlessly cut gem pulsing with stored arcane energy', quantity: 1, type: 'consumable', effects: { intelligence: 2 } }]) },
+            failureDescription: 'It examines the coin and flings it away. Too common for its tastes.',
+            failureEffects: { gold: -1 } },
+          { id: `fight-crystal-elem-${s}`, text: 'Attack the elemental before it can act', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The elemental bristles with sharp spines and charges!',
+            successEffects: {}, failureDescription: 'The elemental bristles with sharp spines and charges!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-crystal-vision-${s}`,
+        description: 'A giant central crystal emits a soft drone. When you touch it, visions flood your mind — glimpses of the caves, hidden paths, and buried wealth.',
+        options: [
+          { id: `follow-vision-${s}`, text: 'Follow the vision to the hidden cache', successProbability: 0.6,
+            successDescription: 'The vision is accurate. You find a cache of gems and gold exactly where it showed.',
+            successEffects: { gold: 16, reputation: 2 },
+            failureDescription: 'The cache has already been looted by someone else, but the vision was real.',
+            failureEffects: { reputation: 1 } },
+          { id: `meditate-crystal-${s}`, text: 'Meditate on the vision for wisdom', successProbability: 0.7,
+            successDescription: 'Hours of meditation crystallize into real insight. You feel more attuned to arcane forces.',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `insight-shard-${s}`, name: 'Crystal Insight', description: 'Clarity distilled from crystal meditation', quantity: 1, type: 'consumable', effects: { intelligence: 1, luck: 1 } }]) },
+            failureDescription: 'The vision dissipates too quickly to glean wisdom from it.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-crystal-colossus-${s}`,
+        description: 'An enormous crystal colossus blocks the main tunnel, its slow gait rumbling the cave floor. Ancient and indifferent, it seems unbothered by your presence — for now.',
+        options: [
+          { id: `sneak-colossus-${s}`, text: 'Slip past while it\'s distracted', successProbability: 0.6,
+            successDescription: 'You dart through its legs unnoticed. On the far side you find scattered crystal fragments worth good coin.',
+            successEffects: { gold: 12 },
+            failureDescription: 'It steps toward you and you scramble back. You must find another route.',
+            failureEffects: {} },
+          { id: `fight-colossus-${s}`, text: 'Challenge the crystal colossus', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The colossus swings a massive crystalline arm!',
+            successEffects: {}, failureDescription: 'The colossus swings a massive crystalline arm!', failureEffects: {} },
+        ],
+      },
     ],
     shadow_realm: [
       {
@@ -798,6 +979,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: { reputation: 3 },
             failureDescription: 'Your attack has no effect. The tendril strikes your mount hard.',
             failureEffects: { mountDamage: 10 } },
+        ],
+      },
+      {
+        id: `rfb-shadow-market-${s}`,
+        description: 'At a crossroads of intersecting void-lanes, a pale vendor has set up a floating stall. His wares include objects that should not exist. He smiles with too many teeth: "Buy something."',
+        options: [
+          { id: `buy-shadow-item-${s}`, text: 'Browse and buy something (10 gold)', successProbability: 0.6,
+            successDescription: 'The vendor produces a shadow-forged accessory that defies normal physics. It hums with dark power.',
+            successEffects: { gold: -10, rewardItems: processFallbackRewardItems([{ id: `shadow-ring-${s}`, name: 'Shadow-Forged Ring', description: 'A ring forged in the shadow realm, bending light around it', quantity: 1, type: 'equipment', effects: { luck: 2, intelligence: 1 } }]) },
+            failureDescription: 'The item crumbles into void-dust as you pay. The vendor shrugs apologetically and vanishes.',
+            failureEffects: { gold: -10 } },
+          { id: `ignore-shadow-market-${s}`, text: 'Keep walking — this feels like a trap', successProbability: 1.0,
+            successDescription: 'The stall folds itself into shadow behind you. Good call.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-forgotten-soul-${s}`,
+        description: 'A forgotten soul drifts before you — a scholar trapped in the shadow realm for centuries. He begs you to carry a message to the living world.',
+        options: [
+          { id: `carry-message-${s}`, text: 'Agree to carry his message', successProbability: 0.8,
+            successDescription: 'The scholar weeps tears of light and presses an ancient scroll into your hands. "My thanks, traveler."',
+            successEffects: { reputation: 5, rewardItems: [createSpellScrollRewardItem(5, `soul-message-${s}`)] },
+            failureDescription: 'The scholar fades before he can finish telling you the message. Only a fragment of knowledge remains.',
+            failureEffects: { reputation: 2 } },
+          { id: `demand-payment-soul-${s}`, text: 'Demand payment upfront', successProbability: 0.5,
+            successDescription: 'The soul nods and conjures shadow-gold from the void for you.',
+            successEffects: { gold: 15, reputation: -2 },
+            failureDescription: 'The scholar has nothing to offer. He drifts away in silence.',
+            failureEffects: { reputation: -1 } },
+        ],
+      },
+      {
+        id: `rfb-shadow-doppelganger-${s}`,
+        description: 'A perfect shadow copy of yourself steps from the darkness, matching your every move with an unsettling grin. It blocks your path and raises a shadowy weapon.',
+        options: [
+          { id: `fight-doppelganger-${s}`, text: 'Fight your shadow self', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The doppelganger attacks with your own fighting style!',
+            successEffects: {}, failureDescription: 'The doppelganger attacks with your own fighting style!', failureEffects: {} },
+          { id: `outwit-doppelganger-${s}`, text: 'Outwit it by doing the unexpected', successProbability: 0.5,
+            successDescription: 'You do the last thing it expects. The doppelganger stutters and dissolves — leaving behind a residue of shadow essence.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `shadow-essence-${s}`, name: 'Shadow Essence', description: 'Condensed shadow energy crystallized from a defeated doppelganger', quantity: 1, type: 'consumable', effects: { strength: 1, luck: 1 } }]) },
+            failureDescription: 'It mirrors your trick back at you. You both stand dumbfounded until it fades away.',
+            failureEffects: {} },
         ],
       },
     ],
@@ -864,6 +1089,52 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { mountDamage: 8 } },
         ],
       },
+      {
+        id: `rfb-ancient-inscription-${s}`,
+        description: 'A submerged wall bears an enormous inscription, still perfectly legible through the crystal-clear water. It describes the history of the sunken civilization in extraordinary detail.',
+        options: [
+          { id: `transcribe-inscription-${s}`, text: 'Carefully transcribe the inscription', successProbability: 0.7,
+            successDescription: 'The transcription takes hours but yields extraordinary knowledge. Scholars would pay a fortune for this.',
+            successEffects: { gold: 14, reputation: 4, rewardItems: processFallbackRewardItems([{ id: `sunken-chronicle-${s}`, name: 'Sunken Chronicle', description: 'A transcription of the sunken civilization\'s history, rich with lost knowledge', quantity: 1, type: 'consumable', effects: { intelligence: 2 } }]) },
+            failureDescription: 'The water distorts the inscription too much. You capture only fragments.',
+            failureEffects: { reputation: 1 } },
+          { id: `look-for-exit-${s}`, text: 'Search for a secret door mentioned in the text', successProbability: 0.4,
+            successDescription: 'You find a hidden passage behind a loose stone block. It leads to a dry treasure room!',
+            successEffects: { gold: 20, reputation: 2 },
+            failureDescription: 'You search every wall but find nothing. The door may have collapsed centuries ago.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-sea-witch-${s}`,
+        description: 'A sea witch materializes from swirling brine, her hair flowing with living seaweed. "I sense power in you, wanderer. Shall we make a deal?"',
+        options: [
+          { id: `deal-sea-witch-${s}`, text: 'Negotiate with the sea witch', successProbability: 0.5,
+            successDescription: 'The witch grins and trades a water-magic scroll for a lock of your hair.',
+            successEffects: { rewardItems: [createSpellScrollRewardItem(6, `sea-witch-${s}`)] },
+            failureDescription: 'She cackles and demands too much. You decline and she vanishes with a disappointed splash.',
+            failureEffects: {} },
+          { id: `fight-sea-witch-${s}`, text: 'Attack before she can cast', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The witch shrieks and conjures tidal forces to fight you!',
+            successEffects: {}, failureDescription: 'The witch shrieks and conjures tidal forces to fight you!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-sunken-armory-${s}`,
+        description: 'You push open a barnacle-crusted door to find a perfectly preserved sunken armory. Racks of weapons and armor line the walls, maintained by ancient preservation enchantments.',
+        options: [
+          { id: `claim-armory-item-${s}`, text: 'Claim the finest piece you can find', successProbability: 0.7,
+            successDescription: 'You select a beautifully preserved gauntlet. It still crackles with ancient enchantment.',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `sunken-gauntlet-${s}`, name: 'Sunken Warlord\'s Gauntlet', description: 'An enchanted gauntlet from the drowned armory, granting tremendous grip strength', quantity: 1, type: 'equipment', effects: { strength: 2 } }]) },
+            failureDescription: 'The preservation enchantment expires the moment you touch the items. They crumble to rust.',
+            failureEffects: {} },
+          { id: `loot-armory-${s}`, text: 'Strip as much as you can carry', successProbability: 0.5,
+            successDescription: 'You haul out several pieces and sell them for a tidy sum.',
+            successEffects: { gold: 18, reputation: -1 },
+            failureDescription: 'The items are heavier than they look. You salvage only fragments.',
+            failureEffects: { gold: 5 } },
+        ],
+      },
     ],
     volcanic_forge: [
       {
@@ -924,6 +1195,52 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {},
             failureDescription: 'Your mount is too slow — several burning droplets hit it as you flee.',
             failureEffects: { mountDamage: 12 } },
+        ],
+      },
+      {
+        id: `rfb-smith-spirit-${s}`,
+        description: 'The ghost of a master smith materializes at an ancient anvil, hammering phantom metal. He notices you and pauses: "Been a while since someone living could see me. Want me to improve your equipment?"',
+        options: [
+          { id: `accept-ghost-smith-${s}`, text: 'Accept his offer', successProbability: 0.6,
+            successDescription: 'The ghost smith works with supernatural precision. Your weapon glows with volcanic fire when he is done.',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `volcanic-weapon-${s}`, name: 'Volcano-Tempered Weapon', description: 'A weapon reforged by a master smith\'s ghost, inlaid with volcanic metal', quantity: 1, type: 'equipment', effects: { strength: 2 } }]) },
+            failureDescription: 'The ghost smith shakes his head — your equipment is beyond his ghostly reach. He fades.',
+            failureEffects: {} },
+          { id: `ask-smith-history-${s}`, text: 'Ask about the history of this forge', successProbability: 0.9,
+            successDescription: 'He speaks for an hour of legendary battles and mighty weapons. His tales give you a deeper appreciation of craftsmanship.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `smith-token-${s}`, name: 'Smith\'s Memento', description: 'A token from the ghost smith commemorating the forge\'s history', quantity: 1, type: 'misc', effects: { luck: 1 } }]) },
+            failureDescription: 'He begins but fades mid-sentence. The forge goes dark.',
+            failureEffects: { reputation: 1 } },
+        ],
+      },
+      {
+        id: `rfb-obsidian-cache-${s}`,
+        description: 'Beneath a solidified lava shelf you spot an obsidian chest, sealed with a heat-lock rune. The rune looks solvable, but the surrounding rock is razor-sharp.',
+        options: [
+          { id: `crack-heat-lock-${s}`, text: 'Solve the heat-lock rune', successProbability: 0.5,
+            successDescription: 'The rune logic clicks. The chest pops open to reveal a cache of obsidian coins and a fire-magic scroll.',
+            successEffects: { gold: 18, rewardItems: [createSpellScrollRewardItem(5, `obsidian-cache-${s}`)] },
+            failureDescription: 'The rune triggers a flash of heat. You back away singed but unhurt.',
+            failureEffects: {} },
+          { id: `smash-chest-${s}`, text: 'Smash the chest open with brute force', successProbability: 0.4,
+            successDescription: 'After exhausting effort you crack the chest. Inside: obsidian coins still warm from the earth.',
+            successEffects: { gold: 14 },
+            failureDescription: 'The obsidian chest is harder than it looks. Your weapon bounces off without a scratch.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-lava-golem-patrol-${s}`,
+        description: 'A lava golem patrols a section of the forge, its molten body dripping onto the stone floor. It appears to be guarding a cluster of valuable volcanic ore.',
+        options: [
+          { id: `fight-lava-golem-${s}`, text: 'Engage the lava golem', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The golem turns and hurls a glob of molten rock!',
+            successEffects: {}, failureDescription: 'The golem turns and hurls a glob of molten rock!', failureEffects: {} },
+          { id: `wait-out-golem-${s}`, text: 'Wait patiently for it to move away', successProbability: 0.7,
+            successDescription: 'Its patrol route eventually carries it around the corner. You swiftly claim the ore.',
+            successEffects: { gold: 12, reputation: 1 },
+            failureDescription: 'The golem\'s patrol overlaps the ore indefinitely. You eventually give up.',
+            failureEffects: {} },
         ],
       },
     ],
@@ -988,6 +1305,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { mountDamage: 5 } },
         ],
       },
+      {
+        id: `rfb-fey-court-${s}`,
+        description: 'Tiny fey courtiers line a mossy avenue, bowing as you approach. A herald announces: "The Summer Court grants audience! You may petition the fey nobility for one boon."',
+        options: [
+          { id: `petition-gold-${s}`, text: 'Ask for wealth', successProbability: 0.6,
+            successDescription: 'The court erupts in laughter — then golden acorns rain down. Each is worth a coin.',
+            successEffects: { gold: 15, reputation: 1 },
+            failureDescription: 'The court sniffs disapprovingly. "Mortals and their gold. Ask for something interesting." You leave empty-handed.',
+            failureEffects: { reputation: -1 } },
+          { id: `petition-wisdom-${s}`, text: 'Ask for forbidden fey knowledge', successProbability: 0.5,
+            successDescription: 'The court murmurs approvingly. A scroll bound with flowering vines materializes in your hands.',
+            successEffects: { reputation: 4, rewardItems: [createSpellScrollRewardItem(6, `fey-court-${s}`)] },
+            failureDescription: 'The court decides you are unworthy of their secrets. A cold wind shows you out.',
+            failureEffects: { reputation: -2 } },
+        ],
+      },
+      {
+        id: `rfb-will-o-wisp-${s}`,
+        description: 'A cluster of will-o-wisps bobs invitingly through the grove, leading you off the main path toward a soft glow between the trees.',
+        options: [
+          { id: `follow-wisps-${s}`, text: 'Follow the wisps', successProbability: 0.5,
+            successDescription: 'The wisps lead you to a fairy treasure trove — a knot of roots filled with enchanted trinkets.',
+            successEffects: { gold: 12, rewardItems: processFallbackRewardItems([{ id: `fairy-trinket-${s}`, name: 'Fairy Trinket', description: 'A glimmering trinket left by the fey, still warm with magic', quantity: 1, type: 'consumable', effects: { luck: 2 } }]) },
+            failureDescription: 'The wisps lead you in circles and vanish, giggling invisibly. Just fey mischief.',
+            failureEffects: {} },
+          { id: `ignore-wisps-${s}`, text: 'Stay on the path', successProbability: 1.0,
+            successDescription: 'You wisely ignore the wisps. Travelers who follow them often end up miles off course.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-fey-duel-${s}`,
+        description: 'A fey knight in silver armor steps onto the path and challenges you to single combat, "for sport and glory." His eyes sparkle with excitement rather than malice.',
+        options: [
+          { id: `accept-fey-duel-${s}`, text: 'Accept the fey knight\'s duel', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The fey knight draws a shimmering blade and salutes!',
+            successEffects: {}, failureDescription: 'The fey knight draws a shimmering blade and salutes!', failureEffects: {} },
+          { id: `decline-fey-duel-${s}`, text: 'Decline graciously', successProbability: 0.8,
+            successDescription: 'The knight bows. "Well-met, prudent one." He gifts you a fey blessing and steps aside.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `fey-blessing-vial-${s}`, name: 'Vial of Fey Blessing', description: 'A tiny vial of fey grace, conferring fortune', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'The knight huffs but lets you pass.',
+            failureEffects: {} },
+        ],
+      },
     ],
     bone_wastes: [
       {
@@ -1050,6 +1411,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {},
             failureDescription: 'Too slow — the curse flares and deals a painful blow before fading.',
             failureEffects: { mountDamage: 8 } },
+        ],
+      },
+      {
+        id: `rfb-lich-library-${s}`,
+        description: 'A lich sits surrounded by floating tomes, completely absorbed in study. It raises one finger without looking up: "Mortal. Do not interrupt me, or barter knowledge. Choose quickly."',
+        options: [
+          { id: `barter-lich-${s}`, text: 'Offer to tell the lich something it doesn\'t know', successProbability: 0.4,
+            successDescription: 'Your tale of the surface world surprises the lich. It nods and slides a glowing tome toward you.',
+            successEffects: { reputation: 3, rewardItems: [createSpellScrollRewardItem(6, `lich-library-${s}`)] },
+            failureDescription: 'The lich already knows what you say. "Boring." It returns to its studies.',
+            failureEffects: {} },
+          { id: `attack-lich-${s}`, text: 'Strike while its guard is down', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The lich closes its book and turns to face you with cold fury!',
+            successEffects: {}, failureDescription: 'The lich closes its book and turns to face you with cold fury!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-bone-idol-${s}`,
+        description: 'A towering idol constructed from interlocked bones dominates a clearing. Offerings of gold and skulls surround its base. It seems to glow faintly.',
+        options: [
+          { id: `leave-offering-idol-${s}`, text: 'Leave an offering at the idol (5 gold)', successProbability: 0.6,
+            successDescription: 'The glow intensifies. You hear a whisper in an ancient tongue and feel a dark power fortify you.',
+            successEffects: { gold: -5, reputation: -2, rewardItems: processFallbackRewardItems([{ id: `dark-blessing-${s}`, name: 'Dark Idol\'s Blessing', description: 'A fragment of dark power bestowed by the bone idol', quantity: 1, type: 'consumable', effects: { strength: 2 } }]) },
+            failureDescription: 'Nothing happens. The idol does not acknowledge you.',
+            failureEffects: { gold: -5 } },
+          { id: `destroy-idol-${s}`, text: 'Destroy the dark idol', successProbability: 0.7,
+            successDescription: 'The bones scatter as you smash the idol. Nearby spirits seem calmer. Your righteous act is noted.',
+            successEffects: { reputation: 5 },
+            failureDescription: 'The idol is too large to destroy alone. You knock a few bones loose and leave.',
+            failureEffects: { reputation: 2 } },
+        ],
+      },
+      {
+        id: `rfb-wight-camp-${s}`,
+        description: 'A camp of wights has set up around a large fire burning with green necromantic flame. They seem to be... cooking something. Their leader gestures you over.',
+        options: [
+          { id: `fight-wights-${s}`, text: 'Attack the wight camp', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The wights drop their meal and reach for rusty weapons!',
+            successEffects: {}, failureDescription: 'The wights drop their meal and reach for rusty weapons!', failureEffects: {} },
+          { id: `sneak-past-wights-${s}`, text: 'Sneak around the camp', successProbability: 0.6,
+            successDescription: 'You circle wide through the bone-fields and bypass the camp entirely.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'One wight turns its hollow gaze toward you, but seems uninterested. You quicken your pace.',
+            failureEffects: {} },
         ],
       },
     ],
@@ -1118,6 +1523,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {},
             failureDescription: 'The fire wraps around the rock and catches your mount on the flank.',
             failureEffects: { mountDamage: 14 } },
+        ],
+      },
+      {
+        id: `rfb-dragon-egg-${s}`,
+        description: 'Tucked in a rocky alcove, you find a single dragon egg the size of a barrel, still warm. The parent is nowhere in sight. The egg pulses with magical heat.',
+        options: [
+          { id: `take-egg-${s}`, text: 'Take the dragon egg', successProbability: 0.4,
+            successDescription: 'You wrap it carefully and carry it off. A fortune awaits — but so might an angry parent.',
+            successEffects: { gold: 30, reputation: -3 },
+            failureDescription: 'As you reach for it, a distant roar splits the air. You flee empty-handed.',
+            failureEffects: {} },
+          { id: `guard-egg-${s}`, text: 'Stand guard over the egg until the parent returns', successProbability: 0.6,
+            successDescription: 'An enormous dragon lands before you. It regards you with ancient eyes, then nods once and drops a gem at your feet.',
+            successEffects: { reputation: 8, rewardItems: processFallbackRewardItems([{ id: `dragon-gratitude-${s}`, name: 'Dragon\'s Gratitude Gem', description: 'A gem offered by a grateful dragon — carries a latent ward', quantity: 1, type: 'equipment', effects: { luck: 2 } }]) },
+            failureDescription: 'You wait for hours. No dragon comes. The egg remains warm. You leave it undisturbed.',
+            failureEffects: { reputation: 3 } },
+        ],
+      },
+      {
+        id: `rfb-petrified-hero-${s}`,
+        description: 'A warrior stands petrified in stone in the middle of the path. His expression is one of pure defiance. Carved into his base: "Turned to stone by the dragon Verakath. May he be avenged."',
+        options: [
+          { id: `break-petrification-${s}`, text: 'Attempt to break the petrification curse', successProbability: 0.4,
+            successDescription: 'The stone cracks. The warrior gasps and falls to his knees. Overwhelmed with gratitude, he gifts you his ancient sword.',
+            successEffects: { reputation: 7, rewardItems: processFallbackRewardItems([{ id: `ancient-hero-sword-${s}`, name: 'Sword of the Petrified Hero', description: 'An ancient warrior\'s weapon, still sharp after decades in stone', quantity: 1, type: 'equipment', effects: { strength: 3 } }]) },
+            failureDescription: 'The curse is too deep-rooted. The warrior remains stone. At least you tried.',
+            failureEffects: { reputation: 2 } },
+          { id: `leave-hero-${s}`, text: 'Leave the warrior and press on', successProbability: 1.0,
+            successDescription: 'You continue. His defiant expression watches you go.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-scavenger-bandits-spine-${s}`,
+        description: 'A pack of opportunistic bandits, daring enough to hunt in dragon territory, surround you with crossbows leveled. "Empty your pockets. Nice and slow."',
+        options: [
+          { id: `fight-spine-bandits-${s}`, text: 'Draw your weapon and fight back', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The bandits loose their crossbows as you charge!',
+            successEffects: {}, failureDescription: 'The bandits loose their crossbows as you charge!', failureEffects: {} },
+          { id: `lure-dragon-bandits-${s}`, text: 'Scream loudly to attract a dragon\'s attention', successProbability: 0.6,
+            successDescription: 'The bandits look skyward in terror. They drop their weapons and scatter as a shadow passes overhead.',
+            successEffects: { reputation: 3, gold: 5 },
+            failureDescription: 'No dragon comes — but the bandits are rattled enough by the bluff to take less from you.',
+            failureEffects: { gold: -5 } },
         ],
       },
     ],
@@ -1198,6 +1647,52 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             failureEffects: { mountDamage: 10 } },
         ],
       },
+      {
+        id: `rfb-cloud-navigator-${s}`,
+        description: 'An elderly cloud-navigator sits cross-legged on a floating platform, charts spread around him. He looks up. "Lost, are we? I can chart your course through the Citadel for a small fee."',
+        options: [
+          { id: `hire-navigator-${s}`, text: 'Pay for the navigator\'s guidance (8 gold)', successProbability: 0.8,
+            successDescription: 'The navigator\'s route bypasses three dangerous zones entirely and shaves hours off your journey.',
+            successEffects: { gold: -8, reputation: 2, rewardItems: processFallbackRewardItems([{ id: `sky-chart-${s}`, name: 'Sky Citadel Chart', description: 'A precise chart of the Citadel\'s platforms and safe routes', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'The navigator\'s old charts are outdated. You end up in a dead end.',
+            failureEffects: { gold: -8 } },
+          { id: `find-own-way-${s}`, text: 'Trust your own judgment', successProbability: 0.5,
+            successDescription: 'You navigate by intuition and find a shortcut the navigator would have missed.',
+            successEffects: { reputation: 2, gold: 8 },
+            failureDescription: 'You get briefly lost but eventually find your bearings.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-sky-pirates-${s}`,
+        description: 'A sky pirate crew descends on tethered wingships, demanding a toll. Their captain grins through a bronze mask: "Pay the sky tax, or walk the plank. Quite a long drop from up here."',
+        options: [
+          { id: `fight-sky-pirates-${s}`, text: 'Fight the sky pirates', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The sky pirates draw cutlasses and charge!',
+            successEffects: {}, failureDescription: 'The sky pirates draw cutlasses and charge!', failureEffects: {} },
+          { id: `pay-sky-toll-${s}`, text: 'Pay the sky tax (12 gold)', successProbability: 0.9,
+            successDescription: 'The captain tips his mask. "Pleasure doing business." The wingships peel away.',
+            successEffects: { gold: -12, reputation: 1 },
+            failureDescription: 'The captain is dissatisfied and takes extra. "Call it interest."',
+            failureEffects: { gold: -18, reputation: -1 } },
+        ],
+      },
+      {
+        id: `rfb-crystal-observatory-${s}`,
+        description: 'An intact crystal observatory floats serenely, its telescope pointed at the heavens. Constellation maps on the walls seem to indicate something hidden in the Citadel.',
+        options: [
+          { id: `study-constellations-${s}`, text: 'Study the constellation maps', successProbability: 0.6,
+            successDescription: 'The maps reveal a hidden cache chamber. Following the directions, you locate it.',
+            successEffects: { gold: 16, reputation: 2 },
+            failureDescription: 'The maps use symbols you cannot decode. Fascinating but inscrutable.',
+            failureEffects: {} },
+          { id: `use-telescope-${s}`, text: 'Look through the telescope at the city below', successProbability: 0.8,
+            successDescription: 'You spot a merchant caravan through the lens — and a glint that suggests dropped cargo worth retrieving.',
+            successEffects: { gold: 10, reputation: 1 },
+            failureDescription: 'The lens is too blurred to make anything out.',
+            failureEffects: {} },
+        ],
+      },
     ],
     abyssal_depths: [
       {
@@ -1242,6 +1737,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {}, failureDescription: 'The shadow energy coalesces into a hostile void entity that lashes out!', failureEffects: {} },
         ],
       },
+      {
+        id: `rfb-abyssal-philosopher-${s}`,
+        description: 'Floating in the abyss is a skeletal being in robes, apparently reading a book of void scripture. It looks up with empty eye sockets. "You seem lost. May I offer perspective?"',
+        options: [
+          { id: `discuss-void-${s}`, text: 'Engage in philosophical discussion', successProbability: 0.6,
+            successDescription: 'The creature\'s insights reframe your entire understanding of the abyss. You feel wiser for it.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `void-insight-${s}`, name: 'Void Insight', description: 'A fragment of abyssal wisdom crystallized into usable form', quantity: 1, type: 'consumable', effects: { intelligence: 2 } }]) },
+            failureDescription: 'Its perspective is too alien to parse. You nod politely and back away.',
+            failureEffects: {} },
+          { id: `demand-void-tome-${s}`, text: 'Demand its book by force', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The robed figure snaps its tome shut and conjures void tendrils!',
+            successEffects: {}, failureDescription: 'The robed figure snaps its tome shut and conjures void tendrils!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-drowned-hoard-${s}`,
+        description: 'Far below through the obsidian floor, you glimpse a vast treasure hoard sitting on a ledge over the infinite abyss. There appears to be a way down — but not necessarily back up.',
+        options: [
+          { id: `descend-to-hoard-${s}`, text: 'Risk the descent for the treasure', successProbability: 0.4,
+            successDescription: 'You reach the ledge and fill your arms with ancient coins and gems before hauling yourself back up.',
+            successEffects: { gold: 35, reputation: 3 },
+            failureDescription: 'A handhold gives way. You barely catch yourself and climb back up empty-handed, heart pounding.',
+            failureEffects: {} },
+          { id: `observe-hoard-${s}`, text: 'Observe carefully for traps first', successProbability: 0.7,
+            successDescription: 'You spot a safe route down and identify a magical tripwire. You avoid it and claim a portion of the hoard.',
+            successEffects: { gold: 20, reputation: 2 },
+            failureDescription: 'The route is too complex. Caution wins over greed today.',
+            failureEffects: { reputation: 1 } },
+        ],
+      },
+      {
+        id: `rfb-echo-wraith-${s}`,
+        description: 'An echo wraith — a creature made of spent screams — approaches slowly, its form flickering with captured sound. It opens its maw and a hundred voices cry out for release.',
+        options: [
+          { id: `fight-echo-wraith-${s}`, text: 'Banish the wraith with force', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The wraith shrieks and lunges, deafening sound crashing over you!',
+            successEffects: {}, failureDescription: 'The wraith shrieks and lunges, deafening sound crashing over you!', failureEffects: {} },
+          { id: `release-wraith-${s}`, text: 'Perform a release rite for the trapped souls', successProbability: 0.5,
+            successDescription: 'The voices fade with sighs of relief. The wraith dissolves, leaving behind a void crystal as thanks.',
+            successEffects: { reputation: 5, rewardItems: processFallbackRewardItems([{ id: `void-crystal-echo-${s}`, name: 'Echo Void Crystal', description: 'A crystal crystallized from released soul-energy, pulsing with abyssal power', quantity: 1, type: 'consumable', effects: { intelligence: 1, luck: 1 } }]) },
+            failureDescription: 'The rite fails. The wraith moans and drifts away, still suffering.',
+            failureEffects: {} },
+        ],
+      },
     ],
     celestial_throne: [
       {
@@ -1284,6 +1823,50 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
             successEffects: {}, failureDescription: '', failureEffects: {} },
         ],
       },
+      {
+        id: `rfb-celestial-oracle-${s}`,
+        description: 'A veiled oracle sits in a beam of golden light, her eyes replaced by twin stars. "Ask one question, mortal. I will answer truly — if you can bear the truth."',
+        options: [
+          { id: `ask-oracle-future-${s}`, text: 'Ask about your destiny', successProbability: 0.7,
+            successDescription: 'Her star-eyes bore into you. "Great deeds lie ahead, but greater trials first." She presses a celestial coin into your hands.',
+            successEffects: { reputation: 5, rewardItems: processFallbackRewardItems([{ id: `celestial-coin-${s}`, name: 'Oracle\'s Celestial Coin', description: 'A coin touched by an oracle\'s prophecy, said to guide its bearer', quantity: 1, type: 'consumable', effects: { luck: 2 } }]) },
+            failureDescription: 'The oracle shakes her head. "Some futures are not meant to be seen yet." She says nothing more.',
+            failureEffects: {} },
+          { id: `attack-oracle-${s}`, text: 'Strike before she can reveal something terrible', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The oracle rises, surrounded by divine fire!',
+            successEffects: {}, failureDescription: 'The oracle rises, surrounded by divine fire!', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-divine-armory-${s}`,
+        description: 'Floating above the clouds, an open armory displays divine weapons and armor suspended in beams of holy light. A golden plaque reads: "Only the worthy may claim one artifact."',
+        options: [
+          { id: `claim-divine-artifact-${s}`, text: 'Reach for an artifact', successProbability: 0.5,
+            successDescription: 'The light accepts your worth. A gleaming piece descends into your hands.',
+            successEffects: { reputation: 6, rewardItems: processFallbackRewardItems([{ id: `divine-artifact-${s}`, name: 'Divine Artifact', description: 'A weapon forged in celestial fires, radiating judgment and power', quantity: 1, type: 'equipment', effects: { strength: 3, intelligence: 1 } }]) },
+            failureDescription: 'The light pushes your hand away. You are not yet worthy.',
+            failureEffects: { reputation: -2 } },
+          { id: `study-divine-armory-${s}`, text: 'Study the armory from a respectful distance', successProbability: 0.9,
+            successDescription: 'Your restraint impresses a divine watcher. A small blessing descends upon you.',
+            successEffects: { reputation: 4 },
+            failureDescription: 'You observe but learn nothing actionable.',
+            failureEffects: { reputation: 1 } },
+        ],
+      },
+      {
+        id: `rfb-fallen-paladin-${s}`,
+        description: 'A paladin in tarnished divine armor kneels in the open air, weeping silently. His god has abandoned him and he cannot leave the Celestial Throne. He begs for help.',
+        options: [
+          { id: `help-fallen-paladin-${s}`, text: 'Help restore his faith', successProbability: 0.6,
+            successDescription: 'Your words reach him. His armor gleams again as faith returns. Overcome with gratitude, he passes you his blessed shield.',
+            successEffects: { reputation: 7, rewardItems: processFallbackRewardItems([{ id: `blessed-shield-${s}`, name: 'Shield of Renewed Faith', description: 'A paladin\'s shield restored to divine radiance, protective and pure', quantity: 1, type: 'equipment', effects: { intelligence: 2, luck: 1 } }]) },
+            failureDescription: 'Your words cannot breach his grief. He thanks you for trying and returns to his silent vigil.',
+            failureEffects: { reputation: 3 } },
+          { id: `fight-paladin-${s}`, text: 'Challenge him to restore his fighting spirit', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The paladin rises to the challenge, divine energy surging back into his blade!',
+            successEffects: {}, failureDescription: 'The paladin rises to the challenge, divine energy surging back into his blade!', failureEffects: {} },
+        ],
+      },
     ],
   }
 
@@ -1300,6 +1883,10 @@ function createSpellScrollRewardItem(level: number, suffix: string): Item {
     type: 'spell_scroll',
     spell,
   })
+}
+
+function createLegendarySpellScrollRewardItem(level: number, suffix: string): Item {
+  return { ...createSpellScrollRewardItem(level, suffix), rarity: 'legendary' as const }
 }
 
 function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
@@ -2097,7 +2684,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successEffects: {
             gold: 40 + character.level * 10,
             reputation: 7,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `vault-sword-${s}`, name: 'Blade of the Ancients', description: 'A legendary sword forged by a forgotten civilization, pulsing with ancient power', quantity: 1, type: 'equipment', effects: { strength: 4, luck: 2 } },
             ]),
           },
@@ -2112,7 +2699,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successEffects: {
             gold: 20 + character.level * 5,
             reputation: 5,
-            rewardItems: [createSpellScrollRewardItem(character.level + 3, `vault-scroll-${s}`)],
+            rewardItems: [createLegendarySpellScrollRewardItem(character.level + 3, `vault-scroll-${s}`)],
           },
           failureDescription: '',
           failureEffects: {},
@@ -2140,7 +2727,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'Light pours through you. You feel every aspect of yourself elevated — strength, mind, and fortune all transformed by divine grace.',
           successEffects: {
             reputation: 8,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `celestial-str-${s}`, name: 'Celestial Strength Essence', description: 'A vial of starlight that permanently strengthens the body', quantity: 1, type: 'consumable', effects: { strength: 3 } },
               { id: `celestial-int-${s}`, name: 'Celestial Wisdom Essence', description: 'A vial of starlight that expands the mind', quantity: 1, type: 'consumable', effects: { intelligence: 3 } },
               { id: `celestial-luck-${s}`, name: 'Celestial Fortune Essence', description: 'A vial of starlight that blesses with fortune', quantity: 1, type: 'consumable', effects: { luck: 3 } },
@@ -2156,7 +2743,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'The being smiles and imparts arcane secrets. A scroll materializes, inscribed with a spell never before seen by mortal eyes.',
           successEffects: {
             reputation: 6,
-            rewardItems: [createSpellScrollRewardItem(character.level + 5, `celestial-scroll-${s}`)],
+            rewardItems: [createLegendarySpellScrollRewardItem(character.level + 5, `celestial-scroll-${s}`)],
           },
           failureDescription: 'The being looks thoughtful, then fades: "You seek more than you are ready to receive." You are left with only the memory of starlight.',
           failureEffects: { reputation: 2 },
@@ -2185,7 +2772,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successEffects: {
             gold: -20,
             reputation: 7,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `dragon-scale-blade-${s}`, name: 'Dragon Scale Blade', description: 'A legendary weapon forged from a living dragon scale — nearly indestructible', quantity: 1, type: 'equipment', effects: { strength: 5 } },
             ]),
           },
@@ -2199,7 +2786,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'The dragon is delighted by the challenge. After three riddles, you stump it. It roars with laughter and presents you with an even greater gift.',
           successEffects: {
             reputation: 10,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `dragon-heart-gem-${s}`, name: 'Dragon Heart Gem', description: 'A gem said to contain a fragment of the dragon\'s soul — its power is immense', quantity: 1, type: 'equipment', effects: { strength: 3, intelligence: 3, luck: 2 } },
             ]),
           },
@@ -2213,7 +2800,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'The dragon appraises you for a long moment. "Wisdom is knowing when not to bargain. You have earned my respect." It leaves a single scale on the ground.',
           successEffects: {
             reputation: 5,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `dragon-scale-${s}`, name: 'Dragon Scale', description: 'A shed scale from an ancient dragon, still radiating power', quantity: 1, type: 'equipment', effects: { strength: 2, luck: 1 } },
             ]),
           },
@@ -2234,7 +2821,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'Your hands close around objects of immense power from another age. You pull two legendary items through before the rift snaps shut.',
           successEffects: {
             reputation: 6,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `temporal-helm-${s}`, name: 'Helm of Lost Ages', description: 'Ancient armor from an age of heroes, its enchantments still potent', quantity: 1, type: 'equipment', effects: { intelligence: 3, luck: 2 } },
               { id: `temporal-ring-${s}`, name: 'Chrono Ring', description: 'A ring that bends time slightly in its wearer\'s favor', quantity: 1, type: 'equipment', effects: { luck: 3, strength: 1 } },
             ]),
@@ -2249,7 +2836,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'You study the phenomenon carefully. Patterns within the rift resolve into arcane knowledge. A scroll materializes at your feet as the rift closes.',
           successEffects: {
             reputation: 5,
-            rewardItems: [createSpellScrollRewardItem(character.level + 4, `temporal-scroll-${s}`)],
+            rewardItems: [createLegendarySpellScrollRewardItem(character.level + 4, `temporal-scroll-${s}`)],
           },
           failureDescription: '',
           failureEffects: {},
@@ -2278,7 +2865,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successEffects: {
             gold: 25 + character.level * 5,
             reputation: 5,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `shrine-str-essence-${s}`, name: 'Essence of the Shrine', description: 'A glowing essence that strengthens the body and sharpens the mind', quantity: 2, type: 'consumable', effects: { strength: 2, intelligence: 1 } },
             ]),
           },
@@ -2292,7 +2879,7 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successDescription: 'You channel the shrine\'s full might into yourself. The power is overwhelming but you hold on — and are transformed!',
           successEffects: {
             reputation: 7,
-            rewardItems: processFallbackRewardItems([
+            rewardItems: processFallbackLegendaryItems([
               { id: `shrine-power-str-${s}`, name: 'Potion of Immense Strength', description: 'The distilled power of the shrine, imbuing tremendous strength', quantity: 1, type: 'consumable', effects: { strength: 3 } },
               { id: `shrine-power-int-${s}`, name: 'Potion of Ancient Wisdom', description: 'The distilled power of the shrine, sharpening the mind to a razor edge', quantity: 1, type: 'consumable', effects: { intelligence: 3 } },
             ]),
@@ -2308,10 +2895,250 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           successEffects: {
             gold: -10,
             reputation: 6,
-            rewardItems: [createSpellScrollRewardItem(character.level + 4, `shrine-scroll-${s}`)],
+            rewardItems: [createLegendarySpellScrollRewardItem(character.level + 4, `shrine-scroll-${s}`)],
           },
           failureDescription: 'The shrine absorbs your gold silently. Nothing else happens — perhaps it simply was not the right time.',
           failureEffects: { gold: -10 },
+        },
+      ],
+    },
+    // 6. The Time-Frozen Warrior
+    {
+      id: `leg-frozen-warrior-${s}`,
+      description: 'In a remote canyon, time itself has crystallized around a legendary warrior mid-battle-cry. Her weapon is raised, her armor gleaming as the day she was frozen. A temporal crack runs along the crystal — it is weakening.',
+      options: [
+        {
+          id: `shatter-crystal-warrior-${s}`,
+          text: 'Shatter the temporal crystal and free the warrior',
+          successProbability: 0.5,
+          successDescription: 'The crystal explodes in a shower of time-fragments. The warrior gasps — then looks at you with ancient warrior\'s eyes. "I owe you everything." She removes her legendary armor and presses it into your hands.',
+          successEffects: {
+            reputation: 8,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `frozen-warrior-armor-${s}`, name: 'Armor of the Time-Frozen Warrior', description: 'Legendary armor from a warrior preserved across ages, forged in techniques lost to history', quantity: 1, type: 'equipment', effects: { strength: 3, intelligence: 2 } },
+            ]),
+          },
+          failureDescription: 'The crystal resists your blow and reforms. The warrior remains frozen in time.',
+          failureEffects: {},
+        },
+        {
+          id: `study-frozen-warrior-${s}`,
+          text: 'Study the warrior\'s fighting stance for technique',
+          successProbability: 1.0,
+          successDescription: 'Locked in battle-perfect form, the warrior is the finest tutor you have ever had. Hours of study unlock techniques you never thought possible.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `warrior-technique-${s}`, name: 'Warrior\'s Technique Codex', description: 'Notes compiled from studying the time-frozen warrior, distilling lost combat techniques', quantity: 1, type: 'consumable', effects: { strength: 4 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `take-frozen-weapon-${s}`,
+          text: 'Carefully extract the weapon from the crystal',
+          successProbability: 0.4,
+          successDescription: 'The weapon slides free, still sharp after all this time. In your hands it feels destined.',
+          successEffects: {
+            gold: 20 + character.level * 5,
+            reputation: 4,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `frozen-blade-${s}`, name: 'Blade of the Frozen Age', description: 'A legendary weapon extracted from a temporal crystal, perfectly preserved and devastatingly sharp', quantity: 1, type: 'equipment', effects: { strength: 5 } },
+            ]),
+          },
+          failureDescription: 'The crystal fuses tighter around the weapon. It will not be moved.',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 7. The Ancient Library
+    {
+      id: `leg-ancient-library-${s}`,
+      description: 'A mountain trembles and a great stone door grinds open, revealing an untouched library older than any civilization you know. Thousands of intact tomes glow with preserved magic. The air smells of ancient knowledge.',
+      options: [
+        {
+          id: `read-library-forbidden-${s}`,
+          text: 'Seek out the most forbidden tome in the collection',
+          successProbability: 0.4,
+          successDescription: 'You find a tome of impossible complexity. Hours later you emerge fundamentally changed, your mind expanded far beyond its former limits.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `forbidden-tome-${s}`, name: 'Tome of Forbidden Wisdom', description: 'A legendary tome containing knowledge no mortal was meant to possess', quantity: 1, type: 'consumable', effects: { intelligence: 5 } },
+            ]),
+          },
+          failureDescription: 'The tome\'s words shift and resist comprehension. Some knowledge refuses to be read.',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `copy-library-spell-${s}`,
+          text: 'Copy the most powerful spell you can find',
+          successProbability: 1.0,
+          successDescription: 'You spend hours transcribing a legendary spell. When finished, the scroll in your hands practically thrums with power.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: [createLegendarySpellScrollRewardItem(character.level + 6, `library-legendary-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `take-library-artifacts-${s}`,
+          text: 'Gather the most valuable artifacts and sell them',
+          successProbability: 0.7,
+          successDescription: 'You identify several unique artifacts. Scholars and merchants will pay extraordinary sums.',
+          successEffects: {
+            gold: 50 + character.level * 12,
+            reputation: -2,
+          },
+          failureDescription: 'Most artifacts are too fragile to move. You salvage a fraction of their value.',
+          failureEffects: { gold: 15 + character.level * 3 },
+        },
+      ],
+    },
+    // 8. Phoenix Rebirth
+    {
+      id: `leg-phoenix-${s}`,
+      description: 'A dying phoenix lands before you in an explosion of golden embers. With her last breath she speaks: "Champion. I choose you to carry my rebirth fire. Will you bear it?" The air shimmers with impossible heat.',
+      options: [
+        {
+          id: `accept-phoenix-fire-${s}`,
+          text: 'Accept the phoenix rebirth fire',
+          successProbability: 1.0,
+          successDescription: 'The phoenix fire pours into you. You feel reborn — not just restored, but transformed. Three vials of living flame materialize in your pack, each containing a fragment of phoenix essence.',
+          successEffects: {
+            reputation: 8,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `phoenix-essence-${s}`, name: 'Phoenix Rebirth Essence', description: 'A vial of living phoenix flame that permanently strengthens the bearer', quantity: 3, type: 'consumable', effects: { strength: 2, luck: 2 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `guide-phoenix-rebirth-${s}`,
+          text: 'Help guide the phoenix\'s rebirth',
+          successProbability: 0.7,
+          successDescription: 'With your help, the phoenix completes her rebirth perfectly. She rises fully — then gifts you a feather from her new plumage.',
+          successEffects: {
+            reputation: 10,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `phoenix-feather-item-${s}`, name: 'Phoenix Feather', description: 'A feather from a reborn phoenix, radiating warmth and fortune in equal measure', quantity: 1, type: 'equipment', effects: { luck: 4, intelligence: 1 } },
+            ]),
+          },
+          failureDescription: 'The rebirth goes imperfectly. The phoenix still rises, but limping. She nods her thanks and takes wing.',
+          failureEffects: { reputation: 5 },
+        },
+        {
+          id: `collect-phoenix-embers-${s}`,
+          text: 'Collect the embers for later use',
+          successProbability: 1.0,
+          successDescription: 'You carefully gather the cooling embers. Each one is worth a small fortune and carries the phoenix\'s blessing.',
+          successEffects: {
+            gold: 30 + character.level * 8,
+            reputation: 4,
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 9. The Shadow Merchant
+    {
+      id: `leg-shadow-merchant-${s}`,
+      description: 'From the darkness steps a figure who should not exist: the legendary Shadow Merchant. He trades in things that cannot be bought — memories, possibilities, futures. His prices are steep but his goods are unparalleled.',
+      options: [
+        {
+          id: `buy-possibility-${s}`,
+          text: 'Buy a "possibility" — an alternate path forward',
+          successProbability: 1.0,
+          successDescription: 'The merchant names his price: five years of mundane luck. You agree. A key appears — it opens something you don\'t yet know about, but fate shifts in your favor.',
+          successEffects: {
+            reputation: 6,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `shadow-key-${s}`, name: 'Shadow Merchant\'s Key', description: 'A key of pure shadow that opens a door not yet known — but certain to appear', quantity: 1, type: 'quest' },
+              { id: `luck-amplifier-${s}`, name: 'Amplifier of Fortune', description: 'A distillation of traded luck, repurposed into a usable surge of fortune', quantity: 1, type: 'consumable', effects: { luck: 5 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `buy-strength-shadow-${s}`,
+          text: 'Buy raw power at any cost',
+          successProbability: 0.6,
+          successDescription: 'The merchant nods and names a price — a painful memory. You pay. Power like you have never felt floods through you.',
+          successEffects: {
+            reputation: 4,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `shadow-power-${s}`, name: 'Shadow-Bought Power', description: 'Power purchased from the Shadow Merchant at a personal price — immense and slightly uncomfortable', quantity: 1, type: 'consumable', effects: { strength: 4, intelligence: 2 } },
+            ]),
+          },
+          failureDescription: 'The merchant examines you carefully. "Nothing worth trading in you today." He vanishes.',
+          failureEffects: {},
+        },
+        {
+          id: `rob-shadow-merchant-${s}`,
+          text: 'Attempt to steal from the Shadow Merchant',
+          successProbability: 0.3,
+          successDescription: 'By some miracle you succeed. The merchant\'s laughter follows you as you flee. "Well done, mortal. Perhaps I let you."',
+          successEffects: {
+            gold: 40 + character.level * 10,
+            reputation: -5,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `stolen-shadow-goods-${s}`, name: 'Stolen Shadow Goods', description: 'Items taken from the Shadow Merchant — valuable beyond reason, cursed with his amusement', quantity: 1, type: 'consumable', effects: { luck: 3, intelligence: 3 } },
+            ]),
+          },
+          failureDescription: 'The merchant sighs and your hands pass through his wares like smoke. "Nice try." He vanishes.',
+          failureEffects: { reputation: -2 },
+        },
+      ],
+    },
+    // 10. The Celestial Forge
+    {
+      id: `leg-celestial-forge-${s}`,
+      description: 'High in the clouds, suspended by nothing, a forge of pure starfire burns. An absent smith\'s tools hang in the air, still moving on their own, crafting something magnificent. The forge responds to intention alone.',
+      options: [
+        {
+          id: `forge-legendary-weapon-${s}`,
+          text: 'Command the forge to craft you a weapon',
+          successProbability: 0.7,
+          successDescription: 'The celestial tools respond to your will. Hours later, a weapon unlike anything forged by mortal hands completes itself in the starfire.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `celestial-forge-weapon-${s}`, name: 'Blade of Celestial Fire', description: 'A weapon forged in pure starfire — it cuts through anything with absolute clarity', quantity: 1, type: 'equipment', effects: { strength: 4, intelligence: 2 } },
+            ]),
+          },
+          failureDescription: 'The forge crafts something, but it crumbles before completion. The materials were not aligned.',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `forge-armor-celestial-${s}`,
+          text: 'Command the forge to craft you armor',
+          successProbability: 0.7,
+          successDescription: 'The starfire shapes itself into plates of celestial alloy. The resulting armor fits perfectly and radiates divine protection.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: processFallbackLegendaryItems([
+              { id: `celestial-forge-armor-${s}`, name: 'Celestial Forge Armor', description: 'Armor forged in starfire — impossibly light and impossibly strong', quantity: 1, type: 'equipment', effects: { intelligence: 3, luck: 3 } },
+            ]),
+          },
+          failureDescription: 'The forge tries but the mold collapses. The starfire scatters harmlessly.',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `learn-celestial-forge-${s}`,
+          text: 'Study the forge\'s techniques',
+          successProbability: 1.0,
+          successDescription: 'The celestial tools teach you methods beyond any mortal smith. A scroll manifests recording the most powerful forge-spell the starfire can teach.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: [createLegendarySpellScrollRewardItem(character.level + 5, `celestial-forge-scroll-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
         },
       ],
     },

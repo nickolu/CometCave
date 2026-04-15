@@ -175,6 +175,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       <span className="text-amber-400 text-sm" title="Heirloom">&#9733;</span>
                     )}
                     <div className="font-bold text-white">{item.name}</div>
+                    {item.rarity && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                        item.rarity === 'legendary' ? 'bg-yellow-900/60 text-yellow-300 border border-yellow-600/40' :
+                        item.rarity === 'rare' ? 'bg-blue-900/60 text-blue-300 border border-blue-600/40' :
+                        item.rarity === 'uncommon' ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-600/40' :
+                        'bg-gray-900/60 text-gray-400 border border-gray-600/40'
+                      }`}>
+                        {item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1)}
+                      </span>
+                    )}
                     {item.type === 'consumable' && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-green-900/50 text-green-400 rounded">
                         Consumable
@@ -285,6 +295,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             <div className="flex items-center gap-2">
               {detailItem.isHeirloom && <span className="text-amber-400">&#9733;</span>}
               <h4 className="text-white font-bold text-lg">{detailItem.name}</h4>
+              {detailItem.rarity && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                  detailItem.rarity === 'legendary' ? 'bg-yellow-900/60 text-yellow-300 border border-yellow-600/40' :
+                  detailItem.rarity === 'rare' ? 'bg-blue-900/60 text-blue-300 border border-blue-600/40' :
+                  detailItem.rarity === 'uncommon' ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-600/40' :
+                  'bg-gray-900/60 text-gray-400 border border-gray-600/40'
+                }`}>
+                  {detailItem.rarity.charAt(0).toUpperCase() + detailItem.rarity.slice(1)}
+                </span>
+              )}
               {detailItem.type && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                   detailItem.type === 'consumable' ? 'bg-green-900/50 text-green-400' :
