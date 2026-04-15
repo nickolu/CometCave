@@ -132,7 +132,7 @@ function DecisionPointDisplay({
 }
 
 interface RewardItemDisplayProps {
-  item: { id: string; name: string; quantity: number }
+  item: { id: string; name: string; quantity: number; type?: string }
   isHighlighted: boolean
 }
 
@@ -143,6 +143,9 @@ function RewardItemDisplay({ item, isHighlighted }: RewardItemDisplayProps) {
         You received {item.quantity > 1 ? `${item.quantity} ` : ''}
         <span className={`font-semibold ${isHighlighted ? 'text-yellow-300' : 'text-yellow-400'}`}>
           {item.name}
+          {item.type === 'spell_scroll' && (
+            <span className="text-purple-400 ml-1">(Scroll)</span>
+          )}
         </span>
       </span>
     </div>
@@ -193,7 +196,7 @@ export function StoryFeed({
   return (
     <div
       ref={feedRef}
-      className="border border-slate-700 rounded-lg max-h-48 sm:max-h-64 md:max-h-[calc(100vh-479px)] overflow-y-auto flex p-2 space-y-2 flex-col bg-slate-900"
+      className="border border-slate-700 rounded-lg max-h-64 sm:max-h-80 md:max-h-[calc(100vh-479px)] overflow-y-auto flex p-2 space-y-2 flex-col bg-slate-900"
     >
       {filteredEvents.reverse().map(storyEvent => {
         const isHighlighted = highlightedEventId === storyEvent.id

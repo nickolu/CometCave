@@ -122,9 +122,12 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
 
         if (data.combatState.status === 'victory' && data.rewards) {
           soundEngine.playVictory()
-          // Add loot items
+          // Add loot items and collect for story event
+          const processedLoot: Item[] = []
           for (const lootItem of data.rewards.loot) {
-            addItem(inferItemTypeAndEffects(lootItem))
+            const processed = inferItemTypeAndEffects(lootItem)
+            addItem(processed)
+            processedLoot.push(processed)
           }
 
           // If combat dropped a mount, trigger naming modal or equip directly
@@ -166,10 +169,11 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             characterId: character.id,
             locationId: character.locationId,
             timestamp: new Date().toISOString(),
-            outcomeDescription: `You defeated ${enemy.name}! +${data.rewards.gold} Gold.${mountText}${regionTravelText}`,
+            outcomeDescription: `You defeated ${enemy.name}!${mountText}${regionTravelText}`,
             resourceDelta: {
               gold: data.rewards.gold,
             },
+            rewardItems: processedLoot.length > 0 ? processedLoot : undefined,
           })
         } else if (data.combatState.status === 'defeat') {
           soundEngine.playDefeat()
