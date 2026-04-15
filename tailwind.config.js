@@ -102,6 +102,11 @@ const config = {
           '50%': { transform: 'scale(1.15)', boxShadow: '0 0 12px 4px rgba(251, 146, 60, 0.4)' },
           '100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(251, 146, 60, 0)' },
         },
+        'particle-burst': {
+          '0%':   { opacity: '1', transform: 'translate(0, 0) scale(1)' },
+          '80%':  { opacity: '0.6', transform: 'translate(var(--tx), var(--ty)) scale(0.5)' },
+          '100%': { opacity: '0', transform: 'translate(var(--tx), var(--ty)) scale(0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -109,6 +114,7 @@ const config = {
         'float-up': 'float-up 1s ease-out forwards',
         'crit-flash': 'crit-flash 0.5s ease-out forwards',
         'combo-pulse': 'combo-pulse 0.6s ease-out',
+        'particle-burst': 'particle-burst 0.8s ease-out forwards',
       },
     },
   },

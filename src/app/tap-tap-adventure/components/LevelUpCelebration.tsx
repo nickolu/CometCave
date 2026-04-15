@@ -1,7 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+
+const PARTICLE_COLORS = ['#FACC15', '#FB923C', '#A78BFA', '#60A5FA']
+const PARTICLES = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i / 12) * 2 * Math.PI
+  const radius = [40, 55, 70][i % 3]
+  const tx = Math.round(Math.cos(angle) * radius)
+  const ty = Math.round(Math.sin(angle) * radius)
+  const color = PARTICLE_COLORS[i % PARTICLE_COLORS.length]
+  return { id: i, tx, ty, color }
+})
 
 interface LevelUpCelebrationProps {
   level: number
@@ -45,7 +55,19 @@ export function LevelUpCelebration({ level, onDismiss }: LevelUpCelebrationProps
           setTimeout(onDismiss, 300)
         }}
       >
-        <div className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-yellow-500/50 rounded-2xl px-10 py-8 text-center shadow-2xl shadow-yellow-500/20">
+        <div className="relative bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-yellow-500/50 rounded-2xl px-10 py-8 text-center shadow-2xl shadow-yellow-500/20">
+          {isVisible && PARTICLES.map(p => (
+            <span
+              key={p.id}
+              className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full pointer-events-none animate-particle-burst"
+              style={{
+                '--tx': `${p.tx}px`,
+                '--ty': `${p.ty}px`,
+                backgroundColor: p.color,
+                animationDelay: `${p.id * 40}ms`,
+              } as React.CSSProperties}
+            />
+          ))}
           {/* Stars */}
           <div className="text-4xl mb-2">
             <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>
