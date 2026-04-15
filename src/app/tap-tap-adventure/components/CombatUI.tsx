@@ -751,6 +751,10 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
     status === 'defeat'
       ? [...lastStoryEvents].reverse().find(e => e.type === 'combat_defeat')
       : null
+  const lastVictoryEvent =
+    status === 'victory'
+      ? [...lastStoryEvents].reverse().find(e => e.type === 'combat_victory' || e.type === 'boss_guardian_victory')
+      : null
 
   const [showPenalties, setShowPenalties] = useState(status !== 'defeat')
 
@@ -806,6 +810,34 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
     <div className={`${c.bgColor} border ${c.borderColor} rounded-lg p-6 text-center space-y-4`}>
       <h4 className={`text-xl font-bold ${c.color}`}>{c.title}</h4>
       <p className="text-slate-300">{c.message}</p>
+      {status === 'victory' && lastVictoryEvent && (
+        <div className="space-y-3">
+          {lastVictoryEvent.resourceDelta?.gold ? (
+            <p className="text-yellow-400 font-semibold">+{lastVictoryEvent.resourceDelta.gold} Gold</p>
+          ) : null}
+          {(() => {
+            const allItems = [
+              ...(lastVictoryEvent.resourceDelta?.rewardItems || []),
+              ...(lastVictoryEvent.rewardItems || []),
+            ]
+            return allItems.length > 0 ? (
+              <div className="text-sm text-yellow-200 space-y-1 bg-yellow-950/30 rounded p-3">
+                <p className="font-semibold text-yellow-300">Rewards gained:</p>
+                {allItems.map((item, idx) => (
+                  <p key={item.id + idx}>
+                    <span className="text-yellow-200">{item.name}</span>
+                    {item.quantity > 1 && <span className="text-yellow-400"> x{item.quantity}</span>}
+                    {item.type === 'spell_scroll' && <span className="text-purple-400 ml-1">(Scroll)</span>}
+                  </p>
+                ))}
+              </div>
+            ) : null
+          })()}
+          {lastVictoryEvent.outcomeDescription && (
+            <p className="text-slate-400 text-sm italic">{lastVictoryEvent.outcomeDescription}</p>
+          )}
+        </div>
+      )}
       {status === 'defeat' && (
         <>
           {/* Flavor text - visible immediately */}
