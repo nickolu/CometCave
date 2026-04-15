@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
 
 interface MountNamingModalProps {
   mount: Mount
@@ -55,6 +56,15 @@ export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalP
             </div>
           </div>
           <p className="text-xs text-slate-400">{mount.description}</p>
+          {mount.personality && MOUNT_PERSONALITY_INFO[mount.personality] && (
+            <div className="mt-2 flex items-center gap-2 bg-amber-950/30 rounded px-2 py-1">
+              <span>{MOUNT_PERSONALITY_INFO[mount.personality].icon}</span>
+              <div className="text-left">
+                <span className="text-xs font-semibold text-amber-300">{MOUNT_PERSONALITY_INFO[mount.personality].label}</span>
+                <span className="text-[10px] text-slate-400 ml-1">— {MOUNT_PERSONALITY_INFO[mount.personality].description}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Name input */}

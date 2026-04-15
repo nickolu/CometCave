@@ -163,7 +163,7 @@ export function applyLevelFromDistance(
   // Uses floor(newDist/rate) - floor(oldDist/rate) so single-step increments work
   const oldDistance = updated.distance - stepsGained
   const currentHp = updated.hp ?? maxHp
-  const mountHealBonus = updated.activeMount?.bonuses?.healRate ?? 0
+  const mountHealBonus = (updated.activeMount?.bonuses?.healRate ?? 0) + (updated.activeMount?.personality === 'gentle' ? 1 : 0)
   const skills = resolveSkills(updated)
   const healSkillBonus = getSkillBonus(skills, 'heal_rate')
   const diffMods = getDifficultyModifiers(updated.difficultyMode)

@@ -21,6 +21,7 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { assignMountPersonality } from '@/app/tap-tap-adventure/config/mounts'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
   FantasyDecisionPoint,
@@ -701,7 +702,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 16,
+      version: 17,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -768,6 +769,10 @@ export const useGameStore = create<GameStore>()(
                 if (count >= m.regionsRequired) m.claimed = true
               }
               if (count >= 12) (char as FantasyCharacter).mainQuest!.status = 'completed'
+            }
+            // v17: Add mount personality
+            if ((char as FantasyCharacter).activeMount && !(char as FantasyCharacter).activeMount!.personality) {
+              ;(char as FantasyCharacter).activeMount!.personality = assignMountPersonality()
             }
           }
         }

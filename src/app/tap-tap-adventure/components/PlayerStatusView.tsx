@@ -11,6 +11,7 @@ import { EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
+import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
 
 interface PlayerStatusViewProps {
   onClose: () => void
@@ -393,6 +394,11 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   {mount.bonuses.healRate ? (
                     <span className="bg-green-900/30 text-green-300 px-2 py-0.5 rounded">+{mount.bonuses.healRate} Heal</span>
                   ) : null}
+                  {mount.personality && MOUNT_PERSONALITY_INFO[mount.personality] && (
+                    <span className="bg-amber-900/30 text-amber-300 px-2 py-0.5 rounded">
+                      {MOUNT_PERSONALITY_INFO[mount.personality].icon} {MOUNT_PERSONALITY_INFO[mount.personality].label}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-slate-400 mt-2">{mount.dailyCost} gp/day upkeep</div>
                 <button
