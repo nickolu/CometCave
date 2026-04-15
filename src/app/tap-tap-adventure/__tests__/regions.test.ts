@@ -89,26 +89,27 @@ describe('Min level requirements', () => {
     expect(REGIONS.starting_village.minLevel).toBe(0)
     expect(REGIONS.green_meadows.minLevel).toBe(0)
     expect(REGIONS.dark_forest.minLevel).toBe(0)
-    expect(REGIONS.crystal_caves.minLevel).toBe(0)
   })
 
-  it('hard regions should require level 3', () => {
-    expect(REGIONS.scorched_wastes.minLevel).toBe(3)
-    expect(REGIONS.frozen_peaks.minLevel).toBe(3)
+  it('hard regions should require level 4', () => {
+    expect(REGIONS.scorched_wastes.minLevel).toBe(4)
+    expect(REGIONS.frozen_peaks.minLevel).toBe(4)
+    expect(REGIONS.bone_wastes.minLevel).toBe(4)
   })
 
   it('very hard regions should require higher levels', () => {
     expect(REGIONS.shadow_realm.minLevel).toBe(5)
-    expect(REGIONS.sky_citadel.minLevel).toBe(7)
+    expect(REGIONS.dragons_spine.minLevel).toBe(7)
+    expect(REGIONS.sky_citadel.minLevel).toBe(8)
   })
 
   it('canEnterRegion should respect min level', () => {
     expect(canEnterRegion(REGIONS.green_meadows, 1)).toBe(true)
-    expect(canEnterRegion(REGIONS.scorched_wastes, 2)).toBe(false)
-    expect(canEnterRegion(REGIONS.scorched_wastes, 3)).toBe(true)
+    expect(canEnterRegion(REGIONS.scorched_wastes, 3)).toBe(false)
+    expect(canEnterRegion(REGIONS.scorched_wastes, 4)).toBe(true)
     expect(canEnterRegion(REGIONS.scorched_wastes, 5)).toBe(true)
-    expect(canEnterRegion(REGIONS.sky_citadel, 6)).toBe(false)
-    expect(canEnterRegion(REGIONS.sky_citadel, 7)).toBe(true)
+    expect(canEnterRegion(REGIONS.sky_citadel, 7)).toBe(false)
+    expect(canEnterRegion(REGIONS.sky_citadel, 8)).toBe(true)
   })
 })
 
@@ -131,13 +132,13 @@ describe('getConnectedRegions', () => {
     const ids = connected.map(r => r.id)
     expect(ids).toContain('starting_village')
     expect(ids).toContain('dark_forest')
-    expect(ids).toContain('crystal_caves')
+    expect(ids).toContain('sunken_ruins')
   })
 
   it('should return correct number of connections', () => {
     expect(getConnectedRegions('starting_village')).toHaveLength(1)
-    expect(getConnectedRegions('green_meadows')).toHaveLength(5)
-    expect(getConnectedRegions('sky_citadel')).toHaveLength(4)
+    expect(getConnectedRegions('green_meadows')).toHaveLength(3)
+    expect(getConnectedRegions('sky_citadel')).toHaveLength(1)
   })
 })
 
@@ -188,19 +189,19 @@ describe('New regions', () => {
 
   it('new regions should have correct min levels', () => {
     expect(REGIONS.sunken_ruins.minLevel).toBe(2)
-    expect(REGIONS.volcanic_forge.minLevel).toBe(4)
+    expect(REGIONS.volcanic_forge.minLevel).toBe(5)
     expect(REGIONS.feywild_grove.minLevel).toBe(2)
     expect(REGIONS.bone_wastes.minLevel).toBe(4)
-    expect(REGIONS.dragons_spine.minLevel).toBe(8)
+    expect(REGIONS.dragons_spine.minLevel).toBe(7)
   })
 
   it('canEnterRegion should work for new regions', () => {
     expect(canEnterRegion(REGIONS.sunken_ruins, 1)).toBe(false)
     expect(canEnterRegion(REGIONS.sunken_ruins, 2)).toBe(true)
-    expect(canEnterRegion(REGIONS.volcanic_forge, 3)).toBe(false)
-    expect(canEnterRegion(REGIONS.volcanic_forge, 4)).toBe(true)
-    expect(canEnterRegion(REGIONS.dragons_spine, 7)).toBe(false)
-    expect(canEnterRegion(REGIONS.dragons_spine, 8)).toBe(true)
+    expect(canEnterRegion(REGIONS.volcanic_forge, 4)).toBe(false)
+    expect(canEnterRegion(REGIONS.volcanic_forge, 5)).toBe(true)
+    expect(canEnterRegion(REGIONS.dragons_spine, 6)).toBe(false)
+    expect(canEnterRegion(REGIONS.dragons_spine, 7)).toBe(true)
   })
 })
 
