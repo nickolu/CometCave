@@ -53,6 +53,16 @@ export function getMountFleeBonus(rarity: Mount['rarity']): number {
   }
 }
 
+/** Returns the max HP for a mount based on rarity. */
+export function getMountMaxHp(rarity: Mount['rarity']): number {
+  switch (rarity) {
+    case 'common': return 20
+    case 'uncommon': return 35
+    case 'rare': return 50
+    case 'legendary': return 80
+  }
+}
+
 export const MOUNT_PERSONALITY_INFO: Record<MountPersonality, { label: string; description: string; icon: string }> = {
   loyal: { label: 'Loyal', description: 'Never abandons you. +5% flee chance.', icon: '🤝' },
   skittish: { label: 'Skittish', description: 'Nervous in combat. -5% flee chance.', icon: '😰' },
@@ -86,7 +96,7 @@ export function getShopMount(characterLevel: number): Mount {
     pool = getMountsByRarity('common')
   }
   const mount = pool[Math.floor(Math.random() * pool.length)]
-  return { ...mount, personality: assignMountPersonality() }
+  return { ...mount, personality: assignMountPersonality(), hp: getMountMaxHp(mount.rarity), maxHp: getMountMaxHp(mount.rarity) }
 }
 
 export function getRandomMount(luckBonus: number = 0): Mount {
@@ -97,5 +107,5 @@ export function getRandomMount(luckBonus: number = 0): Mount {
   else if (roll > 0.5) { pool = getMountsByRarity('uncommon') }
   else { pool = getMountsByRarity('common') }
   const mount = pool[Math.floor(Math.random() * pool.length)]
-  return { ...mount, personality: assignMountPersonality() }
+  return { ...mount, personality: assignMountPersonality(), hp: getMountMaxHp(mount.rarity), maxHp: getMountMaxHp(mount.rarity) }
 }

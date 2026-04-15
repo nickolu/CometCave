@@ -1,5 +1,6 @@
 import { CLASS_SPELL_CONFIG } from '@/app/tap-tap-adventure/config/characterOptions'
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
+import { getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Skill } from '@/app/tap-tap-adventure/models/skill'
@@ -171,6 +172,14 @@ export function applyLevelFromDistance(
   const metaHealMultiplier = metaBonuses?.healRateMultiplier ?? 1
   const baseHeal = Math.max(0, healTicks) * (1 + healSkillBonus.flat) + (healTicks > 0 ? mountHealBonus : 0)
   const healed = Math.min(maxHp, currentHp + Math.round(baseHeal * diffMods.healRateMultiplier * metaHealMultiplier))
+
+  // Mount HP healing while traveling
+  if (updated.activeMount && healTicks > 0 && updated.activeMount.hp !== undefined && updated.activeMount.maxHp !== undefined) {
+    const mountMaxHp = updated.activeMount.maxHp
+    const mountHealAmount = 1
+    const newMountHp = Math.min(mountMaxHp, (updated.activeMount.hp ?? mountMaxHp) + mountHealAmount)
+    updated = { ...updated, activeMount: { ...updated.activeMount, hp: newMountHp } }
+  }
 
   const classConfig = CLASS_SPELL_CONFIG[updated.class.toLowerCase()]
   const regenMultiplier = classConfig?.regenMultiplier ?? 1

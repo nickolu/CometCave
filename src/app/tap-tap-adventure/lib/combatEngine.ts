@@ -17,7 +17,7 @@ import {
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { getRandomMount, getMountFreeMoves, getMountFleeBonus } from '@/app/tap-tap-adventure/config/mounts'
+import { getRandomMount, getMountFreeMoves, getMountFleeBonus, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 
@@ -109,6 +109,8 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     turnActions: [],
     luck: totalLuck,
     mountMovesRemaining: mountFreeMoves,
+    mountHp: character.activeMount ? (character.activeMount.hp ?? getMountMaxHp(character.activeMount.rarity)) : undefined,
+    mountMaxHp: character.activeMount ? getMountMaxHp(character.activeMount.rarity) : undefined,
   }
 }
 
@@ -466,10 +468,11 @@ export function processPlayerAction(
   combatState: CombatState,
   action: CombatActionRequest,
   character: FantasyCharacter
-): { combatState: CombatState; consumedItemId?: string } {
+): { combatState: CombatState; consumedItemId?: string; mountDied?: boolean } {
   let { enemy, playerState, turnNumber, combatLog, status, enemyTelegraph, isBoss } = structuredClone(combatState)
   const newLogs: CombatLogEntry[] = []
   let consumedItemId: string | undefined
+  let mountDied = false
   const bossAlreadyPhased = isBoss ? enemy.name.includes('(Enraged)') : false
   let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
   // Only propagate combatDistance in returns if the original state had it set
@@ -1045,7 +1048,24 @@ export function processPlayerAction(
         }
       }
 
-      playerState.hp = Math.max(0, playerState.hp - actualDamageDealt)
+      // Mount targeting: 20% chance enemy targets mount instead of player
+      if (playerState.mountHp !== undefined && playerState.mountHp > 0 && Math.random() < 0.2) {
+        playerState.mountHp = Math.max(0, playerState.mountHp - actualDamageDealt)
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy', action: 'attack', damage: actualDamageDealt,
+          description: `${enemy.name} targets your mount for ${actualDamageDealt} damage!`,
+        })
+        if (playerState.mountHp <= 0) {
+          mountDied = true
+          playerState.mountHp = 0
+          newLogs.push({
+            turn: turnNumber, actor: 'enemy', action: 'status_effect',
+            description: `Your mount has fallen in combat! 💀`,
+          })
+        }
+      } else {
+        playerState.hp = Math.max(0, playerState.hp - actualDamageDealt)
+      }
 
       if (dmgReduction > 0 || actualDamageDealt < reducedDmg) {
         const shieldAbsorbed = reducedDmg - actualDamageDealt
@@ -1068,7 +1088,7 @@ export function processPlayerAction(
         })
       }
       // Fierce mount personality: reflect 10% damage
-      if (character.activeMount?.personality === 'fierce' && actualDamageDealt > 0) {
+      if (character.activeMount?.personality === 'fierce' && actualDamageDealt > 0 && !mountDied) {
         const fierceReflect = Math.max(1, Math.round(actualDamageDealt * 0.1))
         enemy.hp = Math.max(0, enemy.hp - fierceReflect)
         newLogs.push({
@@ -1137,15 +1157,32 @@ export function processPlayerAction(
       }
 
       const enemyElemText = getEffectivenessText(enemyElemMult)
-      playerState.hp = Math.max(0, playerState.hp - actualDmg)
-      newLogs.push({
-        turn: turnNumber,
-        actor: 'enemy',
-        action: 'attack',
-        damage: actualDmg,
-        description: `${enemyCrit ? 'CRITICAL! ' : ''}${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
-        isCritical: enemyCrit,
-      })
+      // Mount targeting: 20% chance enemy targets mount instead of player
+      if (playerState.mountHp !== undefined && playerState.mountHp > 0 && Math.random() < 0.2) {
+        playerState.mountHp = Math.max(0, playerState.mountHp - actualDmg)
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy', action: 'attack', damage: actualDmg,
+          description: `${enemy.name} targets your mount for ${actualDmg} damage!`,
+        })
+        if (playerState.mountHp <= 0) {
+          mountDied = true
+          playerState.mountHp = 0
+          newLogs.push({
+            turn: turnNumber, actor: 'enemy', action: 'status_effect',
+            description: `Your mount has fallen in combat! 💀`,
+          })
+        }
+      } else {
+        playerState.hp = Math.max(0, playerState.hp - actualDmg)
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'enemy',
+          action: 'attack',
+          damage: actualDmg,
+          description: `${enemyCrit ? 'CRITICAL! ' : ''}${enemy.name} attacks you for ${actualDmg} damage!${dmgReduction > 0 ? ` (${dmgReduction}% reduced)` : ''}${(playerState.shield ?? 0) > 0 || reducedDmg !== actualDmg ? ' (shield absorbed some)' : ''}${enemyElemText ? ` ${enemyElemText}` : ''}`,
+          isCritical: enemyCrit,
+        })
+      }
 
       // Apply thorns damage back to enemy
       const thornsDmg = getThornsDamage(playerState.statusEffects)
@@ -1160,7 +1197,7 @@ export function processPlayerAction(
         })
       }
       // Fierce mount personality: reflect 10% damage
-      if (character.activeMount?.personality === 'fierce' && actualDmg > 0) {
+      if (character.activeMount?.personality === 'fierce' && actualDmg > 0 && !mountDied) {
         const fierceReflect = Math.max(1, Math.round(actualDmg * 0.1))
         enemy.hp = Math.max(0, enemy.hp - fierceReflect)
         newLogs.push({
@@ -1319,6 +1356,7 @@ export function processPlayerAction(
       turnPhase: 'enemy_done',
     },
     consumedItemId,
+    mountDied,
   }
 }
 
