@@ -90,6 +90,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Default reputation fallback: if no reputation effect was applied, nudge +1 for success, -1 for failure
+    const typedOpt = option as FantasyDecisionOption
+    if (!typedOpt.triggersCombat && (appliedEffects as Record<string, unknown>)?.reputation === undefined) {
+      const defaultRep = outcome === 'success' ? 1 : -1
+      appliedEffects = { ...appliedEffects, reputation: defaultRep }
+      updatedCharacter = { ...updatedCharacter, reputation: (updatedCharacter.reputation ?? 0) + defaultRep }
+    }
+
     const typedOption = option
     if (typedOption.rewardItems && Array.isArray(typedOption.rewardItems)) {
       rewardItems = [...rewardItems, ...typedOption.rewardItems]
