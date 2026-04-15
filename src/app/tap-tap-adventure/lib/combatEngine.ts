@@ -1250,6 +1250,29 @@ export function processPlayerAction(
     }
   }
 
+  // Enemy may try to change distance based on their combat style
+  if (status === 'active' && combatDistance !== 'close') {
+    const enemyIsRanged = enemy.element === 'arcane' || enemy.element === 'shadow' || enemy.name.toLowerCase().includes('mage') || enemy.name.toLowerCase().includes('archer') || enemy.name.toLowerCase().includes('caster')
+    if (!enemyIsRanged) {
+      // Melee enemy closes distance one step
+      combatDistance = combatDistance === 'far' ? 'mid' : 'close'
+      newLogs.push({
+        turn: turnNumber, actor: 'enemy', action: 'move',
+        description: `${enemy.name} closes in to ${combatDistance} range!`,
+      })
+    }
+  } else if (status === 'active' && combatDistance === 'close') {
+    // Ranged enemies try to back away
+    const enemyIsRanged = enemy.element === 'arcane' || enemy.element === 'shadow' || enemy.name.toLowerCase().includes('mage') || enemy.name.toLowerCase().includes('archer') || enemy.name.toLowerCase().includes('caster')
+    if (enemyIsRanged && Math.random() < 0.3) {
+      combatDistance = 'mid'
+      newLogs.push({
+        turn: turnNumber, actor: 'enemy', action: 'move',
+        description: `${enemy.name} backs away to mid range!`,
+      })
+    }
+  }
+
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'
     ? generateEnemyTelegraph(enemy, turnNumber, !!isBoss)
