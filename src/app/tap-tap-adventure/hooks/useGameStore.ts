@@ -13,6 +13,7 @@ import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { createMainQuest } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { getUpgradeById } from '@/app/tap-tap-adventure/config/eternalUpgrades'
 import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
@@ -62,6 +63,7 @@ const defaultCharacter: FantasyCharacter = {
   difficultyMode: 'normal',
   currentRegion: 'green_meadows',
   visitedRegions: ['green_meadows'],
+  mainQuest: createMainQuest(),
 }
 
 export interface GameStore {
@@ -699,7 +701,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 15,
+      version: 16,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -756,6 +758,17 @@ export const useGameStore = create<GameStore>()(
               ;(char as FantasyCharacter).visitedRegions = [(char as FantasyCharacter).currentRegion ?? 'green_meadows']
             }
             // v15: customName is optional on activeMount; no action needed for backward compat
+            // v16: Add mainQuest
+            if (!(char as FantasyCharacter).mainQuest) {
+              ;(char as FantasyCharacter).mainQuest = createMainQuest()
+              // Mark milestones as claimed for already-visited regions (no retroactive gold)
+              const visited = (char as FantasyCharacter).visitedRegions ?? ['green_meadows']
+              const count = visited.filter((r: string) => r !== 'starting_village').length
+              for (const m of (char as FantasyCharacter).mainQuest!.milestones) {
+                if (count >= m.regionsRequired) m.claimed = true
+              }
+              if (count >= 12) (char as FantasyCharacter).mainQuest!.status = 'completed'
+            }
           }
         }
         // v6: Add activeQuest

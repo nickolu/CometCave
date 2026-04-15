@@ -60,7 +60,7 @@ export type {
   SpellConditionSchema,
 } from './spell'
 export type { Mount, MountSchema, MountBonuses, MountBonusesSchema, MountRarity, MountRaritySchema } from './mount'
-export type { TimedQuest, TimedQuestSchema } from './quest'
+export type { TimedQuest, TimedQuestSchema, MainQuest, MainQuestSchema, MainQuestMilestone, MainQuestMilestoneSchema } from './quest'
 export type {
   CombatState,
   CombatEnemy,

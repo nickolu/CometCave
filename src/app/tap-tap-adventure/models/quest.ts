@@ -24,3 +24,19 @@ export const TimedQuestSchema = z.object({
   }),
 })
 export type TimedQuest = z.infer<typeof TimedQuestSchema>
+
+export const MainQuestMilestoneSchema = z.object({
+  regionsRequired: z.number(),
+  title: z.string(),
+  goldReward: z.number(),
+  claimed: z.boolean(),
+})
+export type MainQuestMilestone = z.infer<typeof MainQuestMilestoneSchema>
+
+export const MainQuestSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  status: z.enum(['active', 'completed']),
+  milestones: z.array(MainQuestMilestoneSchema),
+})
+export type MainQuest = z.infer<typeof MainQuestSchema>
