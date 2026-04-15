@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
@@ -124,6 +124,37 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
     [character]
   ) as Record<IconType, number | string>
 
+  interface StatDelta { id: string; key: IconType; delta: number }
+  const [statDeltas, setStatDeltas] = useState<StatDelta[]>([])
+  const prevStatsRef = useRef<Partial<Record<IconType, number>>>({})
+
+  useEffect(() => {
+    const trackedKeys: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon']
+    const newDeltas: StatDelta[] = []
+    for (const key of trackedKeys) {
+      const rawVal = stats[key]
+      const current = typeof rawVal === 'string' ? parseInt(rawVal, 10) : (rawVal as number)
+      const prev = prevStatsRef.current[key]
+      if (prev !== undefined && !isNaN(current) && current !== prev) {
+        newDeltas.push({ id: `${key}-${Date.now()}`, key, delta: current - prev })
+      }
+      if (!isNaN(current)) {
+        prevStatsRef.current[key] = current
+      }
+    }
+    if (newDeltas.length > 0) {
+      setStatDeltas(prev => {
+        const combined = [...prev, ...newDeltas].slice(-5)
+        return combined
+      })
+      newDeltas.forEach(d => {
+        setTimeout(() => {
+          setStatDeltas(prev => prev.filter(x => x.id !== d.id))
+        }, 1200)
+      })
+    }
+  }, [stats])
+
   const [soundEnabled, setSoundEnabled] = useState(true)
 
   useEffect(() => {
@@ -223,6 +254,14 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
           {getTooltipText(key)}
         </div>
       )}
+      {statDeltas.filter(d => d.key === key).map(d => (
+        <span
+          key={d.id}
+          className={`absolute top-0 left-full ml-1 text-[10px] font-bold pointer-events-none animate-float-up ${d.delta > 0 ? 'text-green-400' : 'text-red-400'}`}
+        >
+          {d.delta > 0 ? `+${d.delta}` : `${d.delta}`}
+        </span>
+      ))}
     </div>
   )
 

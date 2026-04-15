@@ -49,12 +49,14 @@ function FloatingNumber({ event }: { event: DamageEvent }) {
           : 'text-green-400'
 
   const size = event.isCritical
-    ? 'text-lg font-black'
-    : event.isDot
-      ? 'text-xs font-semibold italic'
-      : 'text-sm font-bold'
+    ? 'text-2xl font-black'
+    : !event.isDot && event.amount >= 50
+      ? 'text-xl font-black text-yellow-200'
+      : event.isDot
+        ? 'text-xs font-semibold italic'
+        : 'text-sm font-bold'
   // Stagger horizontal position slightly based on id hash
-  const offset = ((event.id.charCodeAt(0) ?? 0) % 5) * 10 - 20
+  const offset = ((event.id.charCodeAt(0) ?? 0) % 5) * 12 - 30
 
   return (
     <span
@@ -65,8 +67,10 @@ function FloatingNumber({ event }: { event: DamageEvent }) {
       }}
     >
       {event.isCritical && '★ '}
-      {event.isDot ? `${event.amount} ${event.dotType}` : `-${event.amount}`}
+      {event.isDot ? `${event.amount}` : `-${event.amount}`}
       {event.isCritical && ' ★'}
+      {event.effectiveness === 'super' && <span className="text-yellow-300 text-[10px] ml-0.5">⚡</span>}
+      {event.effectiveness === 'resisted' && <span className="text-blue-400 text-[10px] ml-0.5">~</span>}
     </span>
   )
 }
