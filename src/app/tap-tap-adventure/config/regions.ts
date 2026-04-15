@@ -1,6 +1,6 @@
 import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
 
-export type RegionDifficulty = 'easy' | 'medium' | 'hard' | 'very_hard'
+export type RegionDifficulty = 'easy' | 'medium' | 'hard' | 'very_hard' | 'extreme'
 
 export interface Region {
   id: string
@@ -124,10 +124,38 @@ export const REGIONS: Record<string, Region> = {
     theme: 'floating fortress in the sky, ancient arcane machinery, cloud platforms, and celestial architecture',
     enemyTypes: ['sky knights', 'ancient dragons', 'arcane sentinels'],
     element: 'arcane',
-    connectedRegions: ['dragons_spine'],
+    connectedRegions: ['dragons_spine', 'abyssal_depths'],
     minLevel: 8,
     icon: '\u{26C5}',
     startingCombatDistance: 'mid',
+  },
+  abyssal_depths: {
+    id: 'abyssal_depths',
+    name: 'Abyssal Depths',
+    description: 'A crushing ocean abyss where bioluminescent nightmares dwell in ancient sunken fortresses. Few who descend ever return.',
+    difficulty: 'very_hard',
+    difficultyMultiplier: 2.5,
+    theme: 'crushing ocean abyss, bioluminescent nightmares, ancient sunken fortresses, and tentacled void creatures',
+    enemyTypes: ['abyssal horrors', 'drowned titans', 'void krakens'],
+    element: 'shadow',
+    connectedRegions: ['sky_citadel', 'celestial_throne'],
+    minLevel: 10,
+    icon: '\u{1F30A}',
+    startingCombatDistance: 'mid',
+  },
+  celestial_throne: {
+    id: 'celestial_throne',
+    name: 'Celestial Throne',
+    description: 'The realm of the gods itself — blinding white spires and floating celestial islands where divine beings of immense power hold dominion.',
+    difficulty: 'extreme',
+    difficultyMultiplier: 3.0,
+    theme: 'realm of the gods, blinding white spires, floating celestial islands, and divine beings of immense power',
+    enemyTypes: ['divine sentinels', 'celestial wyrms', 'corrupted archangels'],
+    element: 'arcane',
+    connectedRegions: ['abyssal_depths'],
+    minLevel: 12,
+    icon: '\u2728',
+    startingCombatDistance: 'far',
   },
   sunken_ruins: {
     id: 'sunken_ruins',

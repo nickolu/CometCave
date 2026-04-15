@@ -149,6 +149,7 @@ export const CombatStateSchema = z.object({
   enemyTelegraph: EnemyTelegraphSchema.optional().nullable(),
   isBoss: z.boolean().optional(),
   isMiniBoss: z.boolean().optional(),
+  isFinalBoss: z.boolean().optional(),
   combatDistance: CombatDistanceSchema.optional(),
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),

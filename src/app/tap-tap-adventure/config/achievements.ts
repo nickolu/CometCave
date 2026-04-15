@@ -208,4 +208,13 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '☠️',
     reward: { gold: 15, reputation: 3 },
   },
+  {
+    id: 'special_world_conqueror',
+    name: 'World Conqueror',
+    description: 'Conquer all 14 regions and complete the main quest',
+    category: 'special',
+    requirement: 14,
+    icon: '🌍',
+    reward: { gold: 500, reputation: 100 },
+  },
 ]

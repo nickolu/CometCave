@@ -436,13 +436,67 @@ function executeEnemyTelegraph(
 
 /**
  * Boss phase change: when a boss drops below 50% HP, boost their stats.
+ * For the final boss, supports 3 phases triggered at 66% and 33% HP.
  */
 function checkBossPhaseChange(
   enemy: CombatEnemy,
   isBoss: boolean,
-  alreadyPhased: boolean
+  alreadyPhased: boolean,
+  isFinalBoss?: boolean
 ): { enemy: CombatEnemy; phaseChanged: boolean; log?: CombatLogEntry } {
-  if (!isBoss || alreadyPhased) return { enemy, phaseChanged: false }
+  if (!isBoss) return { enemy, phaseChanged: false }
+
+  if (isFinalBoss) {
+    const isPhase2 = enemy.name.includes('(Phase 2)')
+    const isPhase3 = enemy.name.includes('(Phase 3)')
+
+    if (!isPhase2 && !isPhase3) {
+      // Phase 1 → 2 at 66% HP
+      if (enemy.hp > enemy.maxHp * 0.66) return { enemy, phaseChanged: false }
+      const originalName = enemy.name
+      const phase2Enemy = {
+        ...enemy,
+        attack: Math.round(enemy.attack * 1.3),
+        defense: Math.round(enemy.defense * 1.2),
+        name: `${originalName} (Phase 2)`,
+      }
+      return {
+        enemy: phase2Enemy,
+        phaseChanged: true,
+        log: {
+          turn: 0,
+          actor: 'enemy',
+          action: 'phase_change',
+          description: `${originalName} enters Phase 2! Power intensifies!`,
+        },
+      }
+    } else if (isPhase2 && !isPhase3) {
+      // Phase 2 → 3 at 33% HP
+      if (enemy.hp > enemy.maxHp * 0.33) return { enemy, phaseChanged: false }
+      const baseName = enemy.name.replace(' (Phase 2)', '')
+      const phase3Enemy = {
+        ...enemy,
+        attack: Math.round(enemy.attack * 1.4),
+        defense: Math.round(enemy.defense * 1.3),
+        name: `${baseName} (Phase 3)`,
+      }
+      return {
+        enemy: phase3Enemy,
+        phaseChanged: true,
+        log: {
+          turn: 0,
+          actor: 'enemy',
+          action: 'phase_change',
+          description: `${baseName} ascends to Phase 3! Celestial fury unleashed!`,
+        },
+      }
+    }
+    // Already Phase 3 — no further change
+    return { enemy, phaseChanged: false }
+  }
+
+  // Regular boss: single enrage at 50% HP
+  if (alreadyPhased) return { enemy, phaseChanged: false }
   if (enemy.hp > enemy.maxHp * 0.5) return { enemy, phaseChanged: false }
 
   const enragedEnemy = {
@@ -473,7 +527,7 @@ export function processPlayerAction(
   const newLogs: CombatLogEntry[] = []
   let consumedItemId: string | undefined
   let mountDied = false
-  const bossAlreadyPhased = isBoss ? enemy.name.includes('(Enraged)') : false
+  const bossAlreadyPhased = isBoss && !combatState.isFinalBoss ? enemy.name.includes('(Enraged)') : false
   let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
   // Only propagate combatDistance in returns if the original state had it set
   // This ensures backward compatibility with combat states created before range was added
@@ -931,7 +985,7 @@ export function processPlayerAction(
 
   // Check boss phase change
   if (enemy.hp > 0) {
-    const phase = checkBossPhaseChange(enemy, !!isBoss, bossAlreadyPhased)
+    const phase = checkBossPhaseChange(enemy, !!isBoss, bossAlreadyPhased, combatState.isFinalBoss)
     if (phase.phaseChanged) {
       enemy = phase.enemy
       if (phase.log) {

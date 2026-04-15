@@ -12,6 +12,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   medium: 'border-yellow-500/60 bg-yellow-900/30',
   hard: 'border-orange-500/60 bg-orange-900/30',
   very_hard: 'border-red-500/60 bg-red-900/30',
+  extreme: 'border-purple-500/60 bg-purple-900/30',
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -19,24 +20,27 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   medium: 'Medium',
   hard: 'Hard',
   very_hard: 'Very Hard',
+  extreme: 'Extreme',
 }
 
 // Fixed positions for the map layout (percentage-based)
 // Linear top-to-bottom layout matching the progression path
 const POSITIONS: Record<string, { x: number; y: number }> = {
-  sky_citadel:      { x: 50, y: 3 },
-  dragons_spine:    { x: 50, y: 12 },
-  volcanic_forge:   { x: 28, y: 23 },
-  shadow_realm:     { x: 72, y: 23 },
-  scorched_wastes:  { x: 28, y: 35 },
-  frozen_peaks:     { x: 72, y: 35 },
-  bone_wastes:      { x: 50, y: 47 },
-  feywild_grove:    { x: 28, y: 59 },
-  crystal_caves:    { x: 72, y: 59 },
-  dark_forest:      { x: 28, y: 71 },
-  sunken_ruins:     { x: 72, y: 71 },
-  green_meadows:    { x: 50, y: 83 },
-  starting_village: { x: 50, y: 95 },
+  celestial_throne: { x: 50, y: 3 },
+  abyssal_depths:   { x: 50, y: 12 },
+  sky_citadel:      { x: 50, y: 16 },
+  dragons_spine:    { x: 50, y: 25 },
+  volcanic_forge:   { x: 28, y: 36 },
+  shadow_realm:     { x: 72, y: 36 },
+  scorched_wastes:  { x: 28, y: 48 },
+  frozen_peaks:     { x: 72, y: 48 },
+  bone_wastes:      { x: 50, y: 60 },
+  feywild_grove:    { x: 28, y: 72 },
+  crystal_caves:    { x: 72, y: 72 },
+  dark_forest:      { x: 28, y: 83 },
+  sunken_ruins:     { x: 72, y: 83 },
+  green_meadows:    { x: 50, y: 92 },
+  starting_village: { x: 50, y: 99 },
 }
 
 function ConnectionLine({ from, to }: { from: { x: number; y: number }; to: { x: number; y: number } }) {
@@ -72,7 +76,7 @@ export function RegionMap({ currentRegionId, characterLevel }: RegionMapProps) {
   return (
     <div className="w-full">
       <h3 className="text-lg font-semibold text-white mb-3">Region Map</h3>
-      <div className="relative w-full" style={{ paddingBottom: '110%' }}>
+      <div className="relative w-full" style={{ paddingBottom: '125%' }}>
         {/* Connection lines */}
         <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
           {connections.map(({ from, to }) => {

@@ -356,6 +356,126 @@ function getDefaultMiniBossEncounter(
   }
 }
 
+export async function generateFinalBossEncounter(
+  character: FantasyCharacter,
+  context: string
+): Promise<{ enemy: CombatEnemy; scenario: string }> {
+  const level = character.level
+  try {
+    const response = await getOpenAI().chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: `Generate the SUPREME FINAL BOSS combat encounter for this fantasy character. This is the ultimate confrontation — the guardian of the Celestial Throne, the last obstacle to complete world conquest. The boss should be awe-inspiring, devastating, and legendary. It guards the realm of the gods and has never been defeated.
+
+This is the FINAL BOSS of the entire game. It must feel truly supreme and nearly unstoppable:
+- Final Boss HP: ${Math.round((35 + level * 15) * 4)} (4x normal — overwhelming)
+- Final Boss attack: ${Math.round((6 + level * 3) * 3.5)} (3.5x normal)
+- Final Boss defense: ${Math.round((2 + level) * 3)} (3x normal)
+- Gold reward: ${Math.round((5 + level * 5) * 10)} (10x normal — legendary haul)
+- Include 3-4 legendary loot items including a spell scroll
+- MUST include a devastating special ability with cooldown of 2 turns — maximum lethality
+- Give the boss a name that conveys absolute power and divine authority
+- The element MUST be arcane
+
+Character:
+${JSON.stringify(character, null, 2)}
+
+Context:
+${context}`,
+        },
+      ],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'generate_combat',
+            description: 'Generate the final boss combat encounter.',
+            parameters: enemySchemaForOpenAI,
+          },
+        },
+      ],
+      tool_choice: { type: 'function', function: { name: 'generate_combat' } },
+      temperature: 0.8,
+      max_tokens: 1000,
+    })
+
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+    if (toolCall && toolCall.function?.name === 'generate_combat') {
+      const parsed = JSON.parse(toolCall.function.arguments)
+      const validated = combatResponseSchema.parse(parsed)
+      if (validated.enemy.lootTable) {
+        validated.enemy.lootTable = validated.enemy.lootTable.map(inferItemTypeAndEffects)
+      }
+      return validated
+    }
+    throw new Error('No tool call in response')
+  } catch (err) {
+    console.error('Final boss generation failed, using fallback', err)
+    return getDefaultFinalBossEncounter(character)
+  }
+}
+
+function getDefaultFinalBossEncounter(
+  character: FantasyCharacter
+): { enemy: CombatEnemy; scenario: string } {
+  const level = character.level
+  const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+
+  const spell = generateSpellForLevel(Math.max(level, 8))
+
+  return {
+    scenario: `You stand before the Celestial Throne itself. The air shimmers with divine power as The Eternal Sovereign materializes from blinding light — a being of immeasurable power that has guarded the realm of the gods since the dawn of creation. This is the ultimate test. Win this battle and you will have conquered the entire world.`,
+    enemy: {
+      id: `final-boss-${suffix}`,
+      name: 'The Eternal Sovereign',
+      description: 'A supreme divine being of incomprehensible power, wreathed in celestial fire and ancient authority. Its presence alone bends reality.',
+      hp: Math.round((35 + level * 15) * 4),
+      maxHp: Math.round((35 + level * 15) * 4),
+      attack: Math.round((6 + level * 3) * 3.5),
+      defense: Math.round((2 + level) * 3),
+      level: level + 5,
+      goldReward: Math.round((5 + level * 5) * 10),
+      lootTable: [
+        inferItemTypeAndEffects({
+          id: `final-boss-loot-1-${suffix}`,
+          name: 'Elixir of Eternal Life',
+          description: 'A legendary elixir radiating pure divine energy.',
+          quantity: 1,
+        }),
+        inferItemTypeAndEffects({
+          id: `final-boss-loot-2-${suffix}`,
+          name: 'Crown of the Sovereign',
+          description: 'The crown of a defeated god, still pulsing with immense power.',
+          quantity: 1,
+        }),
+        inferItemTypeAndEffects({
+          id: `final-boss-loot-3-${suffix}`,
+          name: 'Celestial Shard',
+          description: 'A fragment of divine power broken from the Celestial Throne.',
+          quantity: 1,
+        }),
+        {
+          id: `final-boss-loot-spell-${suffix}`,
+          name: `Scroll of ${spell.name}`,
+          description: `A supreme spell scroll containing divine knowledge.`,
+          quantity: 1,
+          type: 'spell_scroll' as const,
+          spell,
+        },
+      ],
+      specialAbility: {
+        name: 'Celestial Judgment',
+        description: 'Calls down a pillar of divine light that obliterates everything in its path.',
+        damage: Math.round((5 + level * 2) * 4),
+        cooldown: 2,
+      },
+      element: 'arcane',
+    },
+  }
+}
+
 function getDefaultBossEncounter(
   character: FantasyCharacter
 ): { enemy: CombatEnemy; scenario: string } {

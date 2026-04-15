@@ -90,7 +90,7 @@ type DailyRewardState = {
 
 type RunSummaryData = {
   character: FantasyCharacter
-  reason: 'death' | 'permadeath' | 'retirement'
+  reason: 'death' | 'permadeath' | 'retirement' | 'victory'
   essenceEarned: number
   heirloom: Item | null
 }
