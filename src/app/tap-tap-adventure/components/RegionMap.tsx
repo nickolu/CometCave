@@ -22,19 +22,20 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 }
 
 // Fixed positions for the map layout (percentage-based)
+// Linear top-to-bottom layout matching the progression path
 const POSITIONS: Record<string, { x: number; y: number }> = {
   sky_citadel:      { x: 50, y: 3 },
-  dragons_spine:    { x: 82, y: 10 },
-  scorched_wastes:  { x: 15, y: 22 },
-  frozen_peaks:     { x: 50, y: 18 },
-  shadow_realm:     { x: 85, y: 28 },
-  volcanic_forge:   { x: 15, y: 40 },
-  bone_wastes:      { x: 85, y: 45 },
-  dark_forest:      { x: 30, y: 55 },
-  crystal_caves:    { x: 70, y: 55 },
-  feywild_grove:    { x: 30, y: 70 },
-  sunken_ruins:     { x: 70, y: 70 },
-  green_meadows:    { x: 50, y: 82 },
+  dragons_spine:    { x: 50, y: 12 },
+  volcanic_forge:   { x: 28, y: 23 },
+  shadow_realm:     { x: 72, y: 23 },
+  scorched_wastes:  { x: 28, y: 35 },
+  frozen_peaks:     { x: 72, y: 35 },
+  bone_wastes:      { x: 50, y: 47 },
+  feywild_grove:    { x: 28, y: 59 },
+  crystal_caves:    { x: 72, y: 59 },
+  dark_forest:      { x: 28, y: 71 },
+  sunken_ruins:     { x: 72, y: 71 },
+  green_meadows:    { x: 50, y: 83 },
   starting_village: { x: 50, y: 95 },
 }
 
