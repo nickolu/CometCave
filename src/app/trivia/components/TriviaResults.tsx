@@ -33,7 +33,7 @@ function getShareText(result: TriviaGameResult): string {
 
   const pct = Math.round((result.score / MAX_SCORE) * 100)
 
-  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\ncometcave.com/trivia`
+  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\nhttps://cometcave.com/trivia`
 }
 
 function useCountdown() {
