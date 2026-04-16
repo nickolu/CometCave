@@ -7,7 +7,7 @@ import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate, getTodayPST } from '../lib/triviaUtils'
 import type { TriviaGameResult } from '../models/trivia'
 
-const MAX_SCORE = 3000
+const MAX_SCORE = 3150
 
 function getScoreRating(percentage: number) {
   if (percentage === 100) return 'Perfect!'
