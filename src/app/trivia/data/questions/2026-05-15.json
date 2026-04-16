@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-15",
+  "categoryId": 29,
+  "categoryName": "Entertainment: Comics",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-15-0",
+      "question": "The main six year old protagonist in Calvin and Hobbes is named after what theologian?",
+      "options": [
+        "Calvin Klein",
+        "Phillip Calvin McGraw",
+        "Calvin Coolidge",
+        "John Calvin"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "John Calvin"
+    },
+    {
+      "id": "opentdb-2026-05-15-1",
+      "question": "Who is the creator of the comic series \"The Walking Dead\"?",
+      "options": [
+        "Stan Lee",
+        "Robert Crumb",
+        "Malcolm Wheeler-Nicholson",
+        "Robert Kirkman"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Robert Kirkman"
+    },
+    {
+      "id": "opentdb-2026-05-15-2",
+      "question": "In Black Hammer, what city did the heroes save from the Anti-God?",
+      "options": [
+        "Mega-City One",
+        "Rockwood",
+        "Star City",
+        "Spiral City"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Spiral City"
+    },
+    {
+      "id": "opentdb-2026-05-15-3",
+      "question": "What is Homestuck character Gamzee's last name?",
+      "options": [
+        "Makera",
+        "Makare",
+        "Makrea",
+        "Makara"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Makara"
+    },
+    {
+      "id": "opentdb-2026-05-15-4",
+      "question": "What was the name of the first Robin in the Batman comics?",
+      "options": [
+        "Bruce Wayne",
+        "Jason Todd",
+        "Tim Drake",
+        "Dick Grayson"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Dick Grayson"
+    },
+    {
+      "id": "opentdb-2026-05-15-5",
+      "question": "Which of the following rings from the DC Comics' \"Lantern Corps\" are classified as Parasitic?",
+      "options": [
+        "White (Life)",
+        "Yellow (Fear)",
+        "Green (Willpower)",
+        "Indigo (Compassion)"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Indigo (Compassion)"
+    }
+  ]
+}

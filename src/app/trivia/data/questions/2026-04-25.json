@@ -1,0 +1,91 @@
+{
+  "date": "2026-04-25",
+  "categoryId": 9,
+  "categoryName": "General Knowledge",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-25-0",
+      "question": "In which fast food chain can you order a Jamocha Shake?",
+      "options": [
+        "McDonald's",
+        "Burger King",
+        "Wendy's",
+        "Arby's"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Arby's"
+    },
+    {
+      "id": "opentdb-2026-04-25-1",
+      "question": "What do the letters of the fast food chain KFC stand for?",
+      "options": [
+        "Kentucky Fresh Cheese",
+        "Kiwi Food Cut",
+        "Kibbled Freaky Cow",
+        "Kentucky Fried Chicken"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Kentucky Fried Chicken"
+    },
+    {
+      "id": "opentdb-2026-04-25-2",
+      "question": "How tall is the Burj Khalifa?",
+      "options": [
+        "2,546 ft",
+        "3,024 ft",
+        "2,717 ft",
+        "2,722 ft"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "2,722 ft"
+    },
+    {
+      "id": "opentdb-2026-04-25-3",
+      "question": "Which of these Nicktoons were NOT originally a short on Oh Yeah! Cartoons before becoming their own series?",
+      "options": [
+        "My Life as a Teenage Robot",
+        "The Fairly OddParents",
+        "ChalkZone",
+        "Danny Phantom"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Danny Phantom"
+    },
+    {
+      "id": "opentdb-2026-04-25-4",
+      "question": "What character was once considered to be the 27th letter of the alphabet?",
+      "options": [
+        "Tilde",
+        "Pilcrow",
+        "Interrobang",
+        "Ampersand"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Ampersand"
+    },
+    {
+      "id": "opentdb-2026-04-25-5",
+      "question": "What is the romanized Korean word for \"heart\"?",
+      "options": [
+        "Aejeong",
+        "Segseu",
+        "Jeongsin",
+        "Simjang"
+      ],
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Simjang"
+    }
+  ]
+}

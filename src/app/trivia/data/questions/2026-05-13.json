@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-13",
+  "categoryId": 27,
+  "categoryName": "Animals",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-13-0",
+      "question": "By definition, where does an abyssopelagic animal live?",
+      "options": [
+        "In the desert",
+        "Inside a tree",
+        "On top of a mountain",
+        "At the bottom of the ocean"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "At the bottom of the ocean"
+    },
+    {
+      "id": "opentdb-2026-05-13-1",
+      "question": "Which class of animals are newts members of?",
+      "options": [
+        "Fish",
+        "Reptiles",
+        "Mammals",
+        "Amphibian"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Amphibian"
+    },
+    {
+      "id": "opentdb-2026-05-13-2",
+      "question": "How many teeth does an adult rabbit have?",
+      "options": [
+        "30",
+        "26",
+        "24",
+        "28"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "28"
+    },
+    {
+      "id": "opentdb-2026-05-13-3",
+      "question": "What is the collective noun for rats?",
+      "options": [
+        "Race",
+        "Drift",
+        "Pack",
+        "Mischief"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Mischief"
+    },
+    {
+      "id": "opentdb-2026-05-13-4",
+      "question": "Which dog breed is named after a region in Croatia",
+      "options": [
+        "Chihuahua ",
+        "Pomeranian",
+        "Pekingnese",
+        "Dalmatian"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Dalmatian"
+    },
+    {
+      "id": "opentdb-2026-05-13-5",
+      "question": "What scientific family does the Aardwolf belong to?",
+      "options": [
+        "Canidae",
+        "Eupleridae",
+        "Felidae",
+        "Hyaenidae"
+      ],
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Hyaenidae"
+    }
+  ]
+}

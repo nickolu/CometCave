@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-10",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-10-0",
+      "question": "Who was South Africa's first Black President?",
+      "options": [
+        "Mangosuthu Buthelezi",
+        "Bishop Tutu",
+        "Steve Biko ",
+        "Nelson Mandela"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nelson Mandela"
+    },
+    {
+      "id": "opentdb-2026-05-10-1",
+      "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
+      "options": [
+        "Marco Rubio",
+        "Bernie Sanders",
+        "Ted Cruz",
+        "Donald Trump"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-05-10-2",
+      "question": "The largest consumer market in 2015 was...",
+      "options": [
+        "Germany",
+        "Japan",
+        "United Kingdom",
+        "The United States of America"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "The United States of America"
+    },
+    {
+      "id": "opentdb-2026-05-10-3",
+      "question": "Due to the Nagoya Resolution, China agreed to allow Taiwan to compete separately in international sporting events under what name?",
+      "options": [
+        "Chinese Taiwan",
+        "Republic of Taiwan",
+        "Republic of Taipei ",
+        "Chinese Taipei"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Chinese Taipei"
+    },
+    {
+      "id": "opentdb-2026-05-10-4",
+      "question": "Who succeeded Joseph Stalin as General Secretary of the Communist Party of the Soviet Union?",
+      "options": [
+        "Mikhail Gorbachev",
+        "Boris Yeltsin",
+        "Leonid Brezhnev",
+        "Nikita Khrushchev"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nikita Khrushchev"
+    },
+    {
+      "id": "opentdb-2026-05-10-5",
+      "question": "Which nation joined NATO as its 29th member in 2017?",
+      "options": [
+        "Estonia",
+        "Iceland",
+        "Andorra",
+        "Montenegro"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Montenegro"
+    }
+  ]
+}

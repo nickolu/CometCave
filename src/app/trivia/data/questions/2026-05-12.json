@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-12",
+  "categoryId": 26,
+  "categoryName": "Celebrities",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-12-0",
+      "question": "What was the cause of Marilyn Monroes suicide?",
+      "options": [
+        "House Fire",
+        "Gunshot",
+        "Knife Attack",
+        "Drug Overdose"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Drug Overdose"
+    },
+    {
+      "id": "opentdb-2026-05-12-1",
+      "question": "What does film maker Dan Bell typically focus his films on?",
+      "options": [
+        "Action Films",
+        "Documentaries ",
+        "Historic Landmarks",
+        "Abandoned Buildings and Dead Malls"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Abandoned Buildings and Dead Malls"
+    },
+    {
+      "id": "opentdb-2026-05-12-2",
+      "question": "By what name is Carlos Estevez better known? ",
+      "options": [
+        "Ricky Martin",
+        "Bruno Mars",
+        "Joaquin Phoenix",
+        "Charlie Sheen"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Charlie Sheen"
+    },
+    {
+      "id": "opentdb-2026-05-12-3",
+      "question": "Who is \"James Rolfe\" better known as?",
+      "options": [
+        "TotalBiscuit",
+        "PewDiePie",
+        "PeanutButterGamer",
+        "The Angry Video Game Nerd"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "The Angry Video Game Nerd"
+    },
+    {
+      "id": "opentdb-2026-05-12-4",
+      "question": "How much weight did Chris Pratt lose for his role as Star-Lord in \"Guardians of the Galaxy\"?",
+      "options": [
+        "50 lbs",
+        "70 lbs",
+        "30 lbs",
+        "60 lbs"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "60 lbs"
+    },
+    {
+      "id": "opentdb-2026-05-12-5",
+      "question": "Billy Herrington is from which US state?",
+      "options": [
+        "Arizona",
+        "California",
+        "Georgia",
+        "New York"
+      ],
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "New York"
+    }
+  ]
+}

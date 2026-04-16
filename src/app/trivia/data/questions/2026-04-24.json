@@ -1,0 +1,91 @@
+{
+  "date": "2026-04-24",
+  "categoryId": 32,
+  "categoryName": "Entertainment: Cartoon & Animations",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-24-0",
+      "question": "Which of these cartoons had a character named Heinz Doofenshmirtz?",
+      "options": [
+        "Ben 10",
+        "Batman: The Animated Series",
+        "Ren & Stimpy",
+        "Phineas & Ferb"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Phineas & Ferb"
+    },
+    {
+      "id": "opentdb-2026-04-24-1",
+      "question": "In the 1993 Disney animated series \"Bonkers\", what is the name of Bonker's second partner?",
+      "options": [
+        "Dick Tracy",
+        "Eddie Valiant",
+        "Dr. Ludwig von Drake",
+        "Miranda Wright"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Miranda Wright"
+    },
+    {
+      "id": "opentdb-2026-04-24-2",
+      "question": "Butters Stotch, Pip Pirrup, and Wendy Testaburger are all characters in which long running animated TV series?",
+      "options": [
+        "The Simpsons",
+        "Bob's Burgers",
+        "Family Guy",
+        "South Park"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "South Park"
+    },
+    {
+      "id": "opentdb-2026-04-24-3",
+      "question": "What was the number on Gerald's shirt in \"Hey Arnold!\"?",
+      "options": [
+        "88",
+        "83",
+        "38",
+        "33"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "33"
+    },
+    {
+      "id": "opentdb-2026-04-24-4",
+      "question": "Who voiced Finn in Adventure Time?",
+      "options": [
+        "Nolan North",
+        "John DiMaggio",
+        "Tom Kenny",
+        "Jeremy Shada"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Jeremy Shada"
+    },
+    {
+      "id": "opentdb-2026-04-24-5",
+      "question": "Who played Stan's dog in the South Park episode \"Big Gay Al's Big Gay Boat Ride\"?",
+      "options": [
+        "Jay Leno",
+        "Matt Stone",
+        "Robert Smith",
+        "George Clooney"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "George Clooney"
+    }
+  ]
+}

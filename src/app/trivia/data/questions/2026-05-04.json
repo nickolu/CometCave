@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-04",
+  "categoryId": 18,
+  "categoryName": "Science: Computers",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-04-0",
+      "question": "In web design, what does CSS stand for?",
+      "options": [
+        "Corrective Style Sheet",
+        "Computer Style Sheet",
+        "Counter Strike: Source",
+        "Cascading Style Sheet"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Cascading Style Sheet"
+    },
+    {
+      "id": "opentdb-2026-05-04-1",
+      "question": "In computing, what does LAN stand for?",
+      "options": [
+        "Long Antenna Node",
+        "Light Access Node",
+        "Land Address Navigation",
+        "Local Area Network"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Local Area Network"
+    },
+    {
+      "id": "opentdb-2026-05-04-2",
+      "question": "In computing, what does MIDI stand for?",
+      "options": [
+        "Musical Interface of Digital Instruments",
+        "Musical Instrument Data Interface",
+        "Modular Interface of Digital Instruments",
+        "Musical Instrument Digital Interface"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Musical Instrument Digital Interface"
+    },
+    {
+      "id": "opentdb-2026-05-04-3",
+      "question": "In CSS, which of these values CANNOT be used with the \"position\" property?",
+      "options": [
+        "absolute",
+        "relative",
+        "static",
+        "center"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "center"
+    },
+    {
+      "id": "opentdb-2026-05-04-4",
+      "question": "How many cores does the Intel i7-6950X have?",
+      "options": [
+        "8",
+        "4",
+        "12",
+        "10"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "10"
+    },
+    {
+      "id": "opentdb-2026-05-04-5",
+      "question": "Which kind of algorithm is Ron Rivest not famous for creating?",
+      "options": [
+        "Hashing algorithm",
+        "Stream cipher",
+        "Asymmetric encryption",
+        "Secret sharing scheme"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Secret sharing scheme"
+    }
+  ]
+}

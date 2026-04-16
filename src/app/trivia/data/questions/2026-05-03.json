@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-03",
+  "categoryId": 17,
+  "categoryName": "Science & Nature",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-03-0",
+      "question": "Which type of rock is created by intense heat AND pressure?",
+      "options": [
+        "Sedimentary",
+        "Diamond",
+        "Igneous",
+        "Metamorphic"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Metamorphic"
+    },
+    {
+      "id": "opentdb-2026-05-03-1",
+      "question": "Which is the longest bone in the human body? ",
+      "options": [
+        "Fibula",
+        "Ulna",
+        "Scapula",
+        "Femur"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Femur"
+    },
+    {
+      "id": "opentdb-2026-05-03-2",
+      "question": "How many laws of thermodynamics are there?",
+      "options": [
+        "Three",
+        "Two",
+        "Five",
+        "Four"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Four"
+    },
+    {
+      "id": "opentdb-2026-05-03-3",
+      "question": "What stage of development do the majority of eukaryotic cells remain in for most of their life?",
+      "options": [
+        "Stasis",
+        "Telophase",
+        "Prophase",
+        "Interphase"
+      ],
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Interphase"
+    },
+    {
+      "id": "opentdb-2026-05-03-4",
+      "question": "In aeronautics, flaps and slats are used to control what on an aircraft?",
+      "options": [
+        "Thrust",
+        "Drag",
+        "Weight ",
+        "Lift"
+      ],
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Lift"
+    },
+    {
+      "id": "opentdb-2026-05-03-5",
+      "question": "Which is not a type of neuron?",
+      "options": [
+        "Motor Neuron",
+        "Interneuron",
+        "Sensory Neuron",
+        "Perceptual Neuron"
+      ],
+      "difficulty": "hard",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Perceptual Neuron"
+    }
+  ]
+}

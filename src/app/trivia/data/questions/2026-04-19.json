@@ -1,0 +1,91 @@
+{
+  "date": "2026-04-19",
+  "categoryId": 27,
+  "categoryName": "Animals",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-19-0",
+      "question": "How many teeth does an adult rabbit have?",
+      "options": [
+        "30",
+        "26",
+        "24",
+        "28"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "28"
+    },
+    {
+      "id": "opentdb-2026-04-19-1",
+      "question": "What is the fastest  land animal?",
+      "options": [
+        "Thomson's Gazelle",
+        "Pronghorn Antelope",
+        "Lion",
+        "Cheetah"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Cheetah"
+    },
+    {
+      "id": "opentdb-2026-04-19-2",
+      "question": "Which class of animals are newts members of?",
+      "options": [
+        "Reptiles",
+        "Mammals",
+        "Fish",
+        "Amphibian"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Amphibian"
+    },
+    {
+      "id": "opentdb-2026-04-19-3",
+      "question": "\"Decapods\" are an order of ten-footed crustaceans.  Which of these are NOT decapods?",
+      "options": [
+        "Shrimp",
+        "Crabs",
+        "Lobsters",
+        "Krill"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Krill"
+    },
+    {
+      "id": "opentdb-2026-04-19-4",
+      "question": "About how much of their body weight in food do sea otters eat every day?",
+      "options": [
+        "10%",
+        "45%",
+        "80%",
+        "25%"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "25%"
+    },
+    {
+      "id": "opentdb-2026-04-19-5",
+      "question": "What bird is born with claws on its wing digits?",
+      "options": [
+        "Cormorant",
+        "Secretary bird",
+        "Cassowary",
+        "Hoatzin"
+      ],
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Hoatzin"
+    }
+  ]
+}

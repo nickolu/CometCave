@@ -1,0 +1,91 @@
+{
+  "date": "2026-04-28",
+  "categoryId": 12,
+  "categoryName": "Entertainment: Music",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-28-0",
+      "question": "Which of these is the name of a song by Tears for Fears?",
+      "options": [
+        "Scream",
+        "Yell",
+        "Shriek",
+        "Shout"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Shout"
+    },
+    {
+      "id": "opentdb-2026-04-28-1",
+      "question": "The band Muse released their first album, Showbiz, in what year?",
+      "options": [
+        "2000",
+        "2001",
+        "1998",
+        "1999"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "1999"
+    },
+    {
+      "id": "opentdb-2026-04-28-2",
+      "question": "What was Daft Punk's first studio album?",
+      "options": [
+        "Random Access Memories",
+        "Human After All",
+        "Discovery",
+        "Homework"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Homework"
+    },
+    {
+      "id": "opentdb-2026-04-28-3",
+      "question": "Which one of these artists appears in the album Deltron 3030?",
+      "options": [
+        "Lamarr Kendrick",
+        "CeeLo Green",
+        "Danger Mouse",
+        "Dan the Automater"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Dan the Automater"
+    },
+    {
+      "id": "opentdb-2026-04-28-4",
+      "question": "When was the 3rd album \"Notes from the Underground\" of the band \"Hollywood Undead\" released?",
+      "options": [
+        "2014",
+        "2009",
+        "2011",
+        "2013"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "2013"
+    },
+    {
+      "id": "opentdb-2026-04-28-5",
+      "question": "Which Death Grips album is the only one to feature a band member?",
+      "options": [
+        "Bottomless Pit",
+        "The Money Store",
+        "The Powers That B",
+        "No Love Deep Web"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "No Love Deep Web"
+    }
+  ]
+}

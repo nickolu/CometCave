@@ -1,0 +1,91 @@
+{
+  "date": "2026-04-16",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-16-0",
+      "question": "Which of the following Pacific Islander countries is ruled by a constitutional monarchy?",
+      "options": [
+        "Palau",
+        "Kiribati",
+        "Fiji",
+        "Tonga"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Tonga"
+    },
+    {
+      "id": "opentdb-2026-04-16-1",
+      "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
+      "options": [
+        "Marco Rubio",
+        "Bernie Sanders",
+        "Ted Cruz",
+        "Donald Trump"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-04-16-2",
+      "question": "Who was South Africa's first Black President?",
+      "options": [
+        "Mangosuthu Buthelezi",
+        "Steve Biko ",
+        "Bishop Tutu",
+        "Nelson Mandela"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nelson Mandela"
+    },
+    {
+      "id": "opentdb-2026-04-16-3",
+      "question": "The 2014 movie \"The Raid 2: Berandal\" was mainly filmed in which Asian country?",
+      "options": [
+        "Thailand",
+        "Malaysia",
+        "Brunei",
+        "Indonesia"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Indonesia"
+    },
+    {
+      "id": "opentdb-2026-04-16-4",
+      "question": "What was the personal nickname of the 40th Governor of the US State Louisiana, Huey Long?",
+      "options": [
+        "The Hoot Owl",
+        "The Oracle",
+        "The Champ",
+        "The Kingfish"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "The Kingfish"
+    },
+    {
+      "id": "opentdb-2026-04-16-5",
+      "question": "In June 2017, Saudi Arabia and Egypt broke off ties with which country over its supposed support for terrorism?",
+      "options": [
+        "Bahrain",
+        "United States of America",
+        "Russia",
+        "Qatar"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Qatar"
+    }
+  ]
+}

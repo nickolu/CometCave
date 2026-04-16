@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-11",
+  "categoryId": 25,
+  "categoryName": "Art",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-11-0",
+      "question": "Who painted the biblical fresco The Creation of Adam?",
+      "options": [
+        "Caravaggio",
+        "Rembrandt",
+        "Leonardo da Vinci",
+        "Michelangelo"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Michelangelo"
+    },
+    {
+      "id": "opentdb-2026-05-11-1",
+      "question": "What is the world's oldest known piece of fiction?",
+      "options": [
+        "Papyrus of Ani",
+        "Code of Hammurabi",
+        "Rosetta Stone",
+        "Epic of Gilgamesh"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Epic of Gilgamesh"
+    },
+    {
+      "id": "opentdb-2026-05-11-2",
+      "question": "Who painted the Mona Lisa?",
+      "options": [
+        "Pablo Picasso",
+        "Michelangelo",
+        " Vincent van Gogh",
+        "Leonardo da Vinci "
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Leonardo da Vinci "
+    },
+    {
+      "id": "opentdb-2026-05-11-3",
+      "question": "In \"Last Supper\" by Leonardo Da Vinci, what two colors were the robes worn by Jesus?",
+      "options": [
+        "Red and Yellow",
+        "Red and Black",
+        "Red and White",
+        "Red and Blue"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Red and Blue"
+    },
+    {
+      "id": "opentdb-2026-05-11-4",
+      "question": "What nationality was the surrealist painter Salvador Dali?",
+      "options": [
+        "French",
+        "Portuguese",
+        "Italian",
+        "Spanish"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Spanish"
+    },
+    {
+      "id": "opentdb-2026-05-11-5",
+      "question": "What nationality was the famous artist Van Gogh?",
+      "options": [
+        "French",
+        "Polish",
+        "Russian",
+        "Dutch"
+      ],
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Dutch"
+    }
+  ]
+}

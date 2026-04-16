@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-09",
+  "categoryId": 23,
+  "categoryName": "History",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-09-0",
+      "question": "What was William Frederick Cody better known as?",
+      "options": [
+        "Wild Bill Hickok",
+        "Pawnee Bill",
+        "Billy the Kid",
+        "Buffalo Bill"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Buffalo Bill"
+    },
+    {
+      "id": "opentdb-2026-05-09-1",
+      "question": "Who was the Confederate general in the American Civil War?",
+      "options": [
+        "George A. Custer",
+        "Ulysses S. Grant",
+        "George B. McClellan",
+        "Robert E. Lee"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Robert E. Lee"
+    },
+    {
+      "id": "opentdb-2026-05-09-2",
+      "question": "Which country was Josef Stalin born in?",
+      "options": [
+        "Russia",
+        "Poland",
+        "Germany",
+        "Georgia"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Georgia"
+    },
+    {
+      "id": "opentdb-2026-05-09-3",
+      "question": "When was the People's Republic of China founded?",
+      "options": [
+        "April 3, 1947",
+        "May 7, 1945",
+        "December 6, 1950",
+        "October 1, 1949"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "October 1, 1949"
+    },
+    {
+      "id": "opentdb-2026-05-09-4",
+      "question": "In what year was the video game company Electronic Arts founded?",
+      "options": [
+        "1999",
+        "2005",
+        "1981",
+        "1982"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "1982"
+    },
+    {
+      "id": "opentdb-2026-05-09-5",
+      "question": "What Southeast Asian country was formerly known as 'Lan Xang'?",
+      "options": [
+        "Vietnam",
+        "Thailand",
+        "Cambodia",
+        "Laos"
+      ],
+      "difficulty": "hard",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Laos"
+    }
+  ]
+}

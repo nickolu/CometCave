@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-14",
+  "categoryId": 28,
+  "categoryName": "Vehicles",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-14-0",
+      "question": "Which car tire manufacturer is famous for its \"P Zero\" line?",
+      "options": [
+        "Goodyear",
+        "Bridgestone",
+        "Michelin",
+        "Pirelli"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Pirelli"
+    },
+    {
+      "id": "opentdb-2026-05-14-1",
+      "question": "What country was the Trabant 601 manufactured in?",
+      "options": [
+        "Soviet Union",
+        "Hungary",
+        "France",
+        "East Germany"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "East Germany"
+    },
+    {
+      "id": "opentdb-2026-05-14-2",
+      "question": "What animal is pictured on the logo of the automobile manufacturer Porsche?",
+      "options": [
+        "Bull",
+        "Lion",
+        "Cheetah",
+        "Horse"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Horse"
+    },
+    {
+      "id": "opentdb-2026-05-14-3",
+      "question": "What do the 4 Rings in Audi's Logo represent?",
+      "options": [
+        "States in which Audi makes the most sales",
+        "Main cities vital to Audi",
+        "Countries in which Audi makes the most sales",
+        "Previously independent automobile manufacturers"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Previously independent automobile manufacturers"
+    },
+    {
+      "id": "opentdb-2026-05-14-4",
+      "question": "What was the aircraft registration for the last Concorde built?",
+      "options": [
+        "F-BTSC",
+        "F-BVFF",
+        "G-BOAC",
+        "G-BOAF"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "G-BOAF"
+    },
+    {
+      "id": "opentdb-2026-05-14-5",
+      "question": "Which of these is NOT a car model produced by Malaysian car manufacturer Proton?",
+      "options": [
+        "Perdana",
+        "Inspira",
+        "Saga",
+        "Kelisa"
+      ],
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Kelisa"
+    }
+  ]
+}
