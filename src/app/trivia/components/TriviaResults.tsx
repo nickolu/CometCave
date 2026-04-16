@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
-import { formatDisplayDate, getTodayPST } from '../lib/triviaUtils'
+import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 import type { TriviaGameResult } from '../models/trivia'
 
 const MAX_SCORE = 3150
@@ -25,6 +25,7 @@ function formatTime(ms: number): string {
 function getShareText(result: TriviaGameResult): string {
   const date = new Date(result.date + 'T12:00:00')
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const category = getDailyCategory(result.date)
 
   const squares = result.answers
     .map((a) => (a.correct ? '🟩' : '🟥'))
@@ -32,7 +33,7 @@ function getShareText(result: TriviaGameResult): string {
 
   const pct = Math.round((result.score / MAX_SCORE) * 100)
 
-  return `🧠 CometCave Daily Trivia — ${dateStr}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\ncometcave.com/trivia`
+  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\ncometcave.com/trivia`
 }
 
 function useCountdown() {
