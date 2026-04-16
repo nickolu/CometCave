@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
+import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
 import type { TriviaQuestion, TriviaQuestionWithAnswer } from '@/app/trivia/models/questions'
 
 // Re-export dailyCache so check-answer route can import it
@@ -258,6 +259,24 @@ export async function GET(request: NextRequest) {
       )
       return NextResponse.json({ date: today, questions })
     }
+
+    // PREFERRED: Load pre-generated questions from disk (static JSON files)
+    const preGenerated = loadDailyQuestionsFromDisk(today)
+    if (preGenerated && preGenerated.length > 0) {
+      dailyCache.set(today, preGenerated)
+      // Clean old cache entries
+      for (const key of dailyCache.keys()) {
+        if (key !== today) dailyCache.delete(key)
+      }
+      const questions: TriviaQuestion[] = preGenerated.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        ({ correctAnswer, explanation, ...q }) => q
+      )
+      return NextResponse.json({ date: today, questions })
+    }
+
+    // FALLBACK: Generate questions on-the-fly if no pre-generated file exists
+    console.warn(`No pre-generated questions for ${today}, falling back to live generation`)
 
     // Resolve API key for AI question
     let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY

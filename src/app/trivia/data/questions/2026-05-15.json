@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-15",
+  "categoryId": 29,
+  "categoryName": "Entertainment: Comics",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-15-0",
+      "question": "The main six year old protagonist in Calvin and Hobbes is named after what theologian?",
+      "options": [
+        "Calvin Klein",
+        "Phillip Calvin McGraw",
+        "Calvin Coolidge",
+        "John Calvin"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "John Calvin"
+    },
+    {
+      "id": "opentdb-2026-05-15-1",
+      "question": "Who is the creator of the comic series \"The Walking Dead\"?",
+      "options": [
+        "Stan Lee",
+        "Robert Crumb",
+        "Malcolm Wheeler-Nicholson",
+        "Robert Kirkman"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Robert Kirkman"
+    },
+    {
+      "id": "opentdb-2026-05-15-2",
+      "question": "In Black Hammer, what city did the heroes save from the Anti-God?",
+      "options": [
+        "Mega-City One",
+        "Rockwood",
+        "Star City",
+        "Spiral City"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Spiral City"
+    },
+    {
+      "id": "opentdb-2026-05-15-3",
+      "question": "What is Homestuck character Gamzee's last name?",
+      "options": [
+        "Makera",
+        "Makare",
+        "Makrea",
+        "Makara"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Makara"
+    },
+    {
+      "id": "opentdb-2026-05-15-4",
+      "question": "What was the name of the first Robin in the Batman comics?",
+      "options": [
+        "Bruce Wayne",
+        "Jason Todd",
+        "Tim Drake",
+        "Dick Grayson"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Dick Grayson"
+    },
+    {
+      "id": "opentdb-2026-05-15-5",
+      "question": "Which of the following rings from the DC Comics' \"Lantern Corps\" are classified as Parasitic?",
+      "options": [
+        "White (Life)",
+        "Yellow (Fear)",
+        "Green (Willpower)",
+        "Indigo (Compassion)"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Indigo (Compassion)"
+    },
+    {
+      "id": "ai-2026-05-15-6",
+      "question": "Which indie comic by the creator of 'Snotgirl' features a protagonist who navigates a world where reality is breaking down, known as 'Glitch'?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Patience",
+      "explanation": "The indie comic 'Glitch' is created by Bryan Lee O'Malley, known for his work on 'Snotgirl.' The story follows Patience, a character dealing with a world where reality is unstable, exploring themes of identity and technology. This comic is notable for its unique storytelling and artistic style."
+    },
+    {
+      "id": "ai-2026-05-15-7",
+      "question": "Which unusual DC Comics character, known for being a sentient living planet, first appeared in 'Green Lantern' #24 in 1963?",
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Mogo",
+      "explanation": "Mogo is a unique character in the DC Universe, as it is a sentient planet that serves as a member of the Green Lantern Corps. It first appeared in 'Green Lantern' #24 in 1963. Mogo plays a crucial role in the Corps by directing Power Rings to new bearers and providing a training ground for Lanterns, showcasing the wide range of creativity in DC Comics."
+    }
+  ]
+}

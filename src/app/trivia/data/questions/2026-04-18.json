@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-18",
+  "categoryId": 26,
+  "categoryName": "Celebrities",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-18-0",
+      "question": "What does film maker Dan Bell typically focus his films on?",
+      "options": [
+        "Action Films",
+        "Documentaries ",
+        "Historic Landmarks",
+        "Abandoned Buildings and Dead Malls"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Abandoned Buildings and Dead Malls"
+    },
+    {
+      "id": "opentdb-2026-04-18-1",
+      "question": "By which name is Ramon Estevez better known as?",
+      "options": [
+        "Ramon Sheen",
+        "Emilio Estevez",
+        "Charlie Sheen",
+        "Martin Sheen"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Martin Sheen"
+    },
+    {
+      "id": "opentdb-2026-04-18-2",
+      "question": "Aubrey Graham is better known as",
+      "options": [
+        "Travis Scott",
+        "Lil Wayne",
+        "2 Chainz",
+        "Drake"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Drake"
+    },
+    {
+      "id": "opentdb-2026-04-18-3",
+      "question": "What is generally considered to be William Shakespeare's birth date?",
+      "options": [
+        "July 4th, 1409",
+        "December 1st, 1750",
+        "September 29th, 1699",
+        "April 23rd, 1564"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "April 23rd, 1564"
+    },
+    {
+      "id": "opentdb-2026-04-18-4",
+      "question": "What year did radio icon Howard Stern start a job at radio station WNBC?",
+      "options": [
+        "1984",
+        "1995",
+        "1985",
+        "1982"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "1982"
+    },
+    {
+      "id": "opentdb-2026-04-18-5",
+      "question": "Gabe Newell was born in which year?",
+      "options": [
+        "1970",
+        "1960",
+        "1972",
+        "1962 "
+      ],
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "1962 "
+    },
+    {
+      "id": "ai-2026-04-18-6",
+      "question": "Which actor is famously known for saying 'I'll be back' in a Hollywood blockbuster film?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Arnold Schwarzenegger",
+      "explanation": "Arnold Schwarzenegger first delivered the iconic line 'I'll be back' in the 1984 film 'The Terminator'. The phrase has since become a hallmark of his acting career and is widely recognized in popular culture as a classic Hollywood movie cliche."
+    },
+    {
+      "id": "ai-2026-04-18-7",
+      "question": "Which fashion icon founded the luxury brand Off-White in 2012?",
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Virgil Abloh",
+      "explanation": "Virgil Abloh, a renowned fashion designer, founded the luxury streetwear brand Off-White in 2012. He was known for blending high fashion with streetwear aesthetics and later became the artistic director of Louis Vuitton's menswear collection, making him a significant figure in the fashion industry."
+    }
+  ]
+}

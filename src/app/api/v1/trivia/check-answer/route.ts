@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
+import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,8 +26,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Look up the question in the shared cache
-    const cachedQuestions = dailyCache.get(today)
+    // Look up the question in the shared cache, or load from disk
+    let cachedQuestions = dailyCache.get(today)
+    if (!cachedQuestions) {
+      const fromDisk = loadDailyQuestionsFromDisk(today)
+      if (fromDisk && fromDisk.length > 0) {
+        dailyCache.set(today, fromDisk)
+        cachedQuestions = fromDisk
+      }
+    }
 
     if (!cachedQuestions) {
       return NextResponse.json(

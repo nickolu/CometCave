@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate } from '../lib/triviaUtils'
 
-const MAX_SCORE_PER_GAME = 3000
+const MAX_SCORE_PER_GAME = 3150
 
 function getAccuracyColor(accuracy: number): string {
   if (accuracy >= 80) return 'text-green-400'

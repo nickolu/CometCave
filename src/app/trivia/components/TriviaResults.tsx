@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
-import { formatDisplayDate, getTodayPST } from '../lib/triviaUtils'
+import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 import type { TriviaGameResult } from '../models/trivia'
 
-const MAX_SCORE = 3000
+const MAX_SCORE = 3150
 
 function getScoreRating(percentage: number) {
   if (percentage === 100) return 'Perfect!'
@@ -25,6 +25,7 @@ function formatTime(ms: number): string {
 function getShareText(result: TriviaGameResult): string {
   const date = new Date(result.date + 'T12:00:00')
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const category = getDailyCategory(result.date)
 
   const squares = result.answers
     .map((a) => (a.correct ? '🟩' : '🟥'))
@@ -32,7 +33,7 @@ function getShareText(result: TriviaGameResult): string {
 
   const pct = Math.round((result.score / MAX_SCORE) * 100)
 
-  return `🧠 CometCave Daily Trivia — ${dateStr}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\ncometcave.com/trivia`
+  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\ncometcave.com/trivia`
 }
 
 function useCountdown() {
@@ -80,11 +81,12 @@ interface TriviaResultsProps {
   result: TriviaGameResult
   onBack: () => void
   onViewStats?: () => void
+  onViewLeaderboard?: () => void
   // Optional: pass questions data for difficulty display
   questionDifficulties?: Array<{ difficulty: string; source: string }>
 }
 
-export function TriviaResults({ result, onBack, onViewStats }: TriviaResultsProps) {
+export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { userData } = useTriviaStore()
   const countdown = useCountdown()
@@ -224,13 +226,18 @@ export function TriviaResults({ result, onBack, onViewStats }: TriviaResultsProp
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-3 w-full">
-        <Button variant="outline" onClick={onBack} className="flex-1">
+      <div className="grid grid-cols-3 gap-2 w-full">
+        <Button variant="outline" onClick={onBack}>
           Back
         </Button>
         {onViewStats && (
-          <Button variant="outline" onClick={onViewStats} className="flex-1">
-            View Stats
+          <Button variant="outline" onClick={onViewStats}>
+            Stats
+          </Button>
+        )}
+        {onViewLeaderboard && (
+          <Button variant="outline" onClick={onViewLeaderboard}>
+            Board
           </Button>
         )}
       </div>

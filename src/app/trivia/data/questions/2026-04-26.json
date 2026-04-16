@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-26",
+  "categoryId": 10,
+  "categoryName": "Entertainment: Books",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-26-0",
+      "question": "Who wrote the young adult novel \"The Fault in Our Stars\"?",
+      "options": [
+        "Stephenie Meyer",
+        "Stephen Chbosky",
+        "Suzanne Collins",
+        "John Green"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "John Green"
+    },
+    {
+      "id": "opentdb-2026-04-26-1",
+      "question": "In what Harry Potter book was a Horcrux first encountered?",
+      "options": [
+        "The Goblet of Fire",
+        "The Deathly Hallows",
+        "The Half-Blood Prince",
+        "The Chamber of Secrets"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "The Chamber of Secrets"
+    },
+    {
+      "id": "opentdb-2026-04-26-2",
+      "question": "Which famous book is sub-titled 'The Modern Prometheus'?",
+      "options": [
+        "The Strange Case of Dr. Jekyll and Mr. Hyde ",
+        "The Legend of Sleepy Hollow",
+        "Dracula",
+        "Frankenstein"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Frankenstein"
+    },
+    {
+      "id": "opentdb-2026-04-26-3",
+      "question": "Which novel by John Grisham was conceived on a road trip to Florida while thinking about stolen books with his wife?",
+      "options": [
+        "Gray Mountain",
+        "The Litigators",
+        "Rogue Lawyer",
+        "Camino Island"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Camino Island"
+    },
+    {
+      "id": "opentdb-2026-04-26-4",
+      "question": "Who is the author of the series \"Malazan Book of the Fallen\"?",
+      "options": [
+        "Ian Cameron Esslemont",
+        "J. R. R. Tolkien",
+        "George R. R. Martin",
+        "Steven Erikson"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Steven Erikson"
+    },
+    {
+      "id": "opentdb-2026-04-26-5",
+      "question": "In which classic novel is there a character named Homer Simpson?",
+      "options": [
+        "Catch-22",
+        "A Separate Peace",
+        "Of Mice and Men",
+        "The Day of the Locust"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "The Day of the Locust"
+    },
+    {
+      "id": "ai-2026-04-26-6",
+      "question": "Which album by Taylor Swift, released in 2017, includes the song 'Look What You Made Me Do' and marked a shift in her public persona?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Reputation",
+      "explanation": "Taylor Swift's 'Reputation' was released in 2017 and is known for its darker aesthetic and themes of reclaiming her image amidst public scrutiny. The album features hits like 'Look What You Made Me Do' and represents a significant evolution in her music career."
+    },
+    {
+      "id": "ai-2026-04-26-7",
+      "question": "In Neal Stephenson's novel 'The Diamond Age,' what is the name of the interactive book designed to educate a young girl in a future neo-Victorian society?",
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "The Young Lady's Illustrated Primer",
+      "explanation": "'The Diamond Age' by Neal Stephenson features 'The Young Lady's Illustrated Primer' as a unique artifact. It is an artificially intelligent, interactive book intended to raise and educate its reader through stories and lessons, playing a crucial role in the narrative and exploring themes of technology and education."
+    }
+  ]
+}

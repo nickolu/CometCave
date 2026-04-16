@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-07",
+  "categoryId": 21,
+  "categoryName": "Sports",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-07-0",
+      "question": "Which city did the former NHL team \"The Nordiques\" originiate from?",
+      "options": [
+        "Houston",
+        "New York",
+        "Montreal",
+        "Quebec City"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Quebec City"
+    },
+    {
+      "id": "opentdb-2026-05-07-1",
+      "question": "This Canadian television sportscaster is known for his \"Hockey Night in Canada\" role, a commentary show during hockey games.",
+      "options": [
+        "Don McKellar",
+        "Don Taylor ",
+        "Donald Sutherland",
+        "Don Cherry"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Don Cherry"
+    },
+    {
+      "id": "opentdb-2026-05-07-2",
+      "question": "Which of these teams has Jaromir Jagr not played for?",
+      "options": [
+        "Calgary Flames",
+        "New Jersey Devils",
+        "Dallas Stars",
+        "New York Islanders"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "New York Islanders"
+    },
+    {
+      "id": "opentdb-2026-05-07-3",
+      "question": "What is the highest belt you can get in Taekwondo?",
+      "options": [
+        "White",
+        "Green",
+        "Red",
+        "Black"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Black"
+    },
+    {
+      "id": "opentdb-2026-05-07-4",
+      "question": "Which football manager won more trophies than any other during his tenure at English football club Manchester United?",
+      "options": [
+        "Louis van Gaal",
+        "José Mourinho",
+        "David Moyes",
+        "Sir Alex Ferguson"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Sir Alex Ferguson"
+    },
+    {
+      "id": "opentdb-2026-05-07-5",
+      "question": "The Mazda 787B won the 24 Hours of Le Mans in what year?",
+      "options": [
+        "1990",
+        "2000",
+        "1987",
+        "1991"
+      ],
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "1991"
+    },
+    {
+      "id": "ai-2026-05-07-6",
+      "question": "In what year was the National Basketball Association (NBA) founded?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "1946",
+      "explanation": "The NBA was founded on June 6, 1946, in New York City as the Basketball Association of America (BAA). It merged with the National Basketball League (NBL) in 1949 to become the NBA we know today. This founding marked the beginning of professional basketball in the United States on a large scale."
+    },
+    {
+      "id": "ai-2026-05-07-7",
+      "question": "Which former NFL player, known for his off-field philanthropy, once intercepted a pass from Tom Brady and returned it for a touchdown in the same game?",
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Jason Sehorn",
+      "explanation": "Jason Sehorn was a cornerback for the New York Giants and is noted for being one of the few players to intercept a pass from Tom Brady and return it for a touchdown. This rare feat highlights Sehorn's defensive prowess and has become a part of his legacy in the NFL. Additionally, Sehorn is recognized for his significant philanthropic efforts off the field, making him a notable figure both on and off the gridiron."
+    }
+  ]
+}

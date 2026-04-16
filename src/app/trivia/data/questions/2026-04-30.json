@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-30",
+  "categoryId": 14,
+  "categoryName": "Entertainment: Television",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-30-0",
+      "question": "Who won the 10th season of Big Brother in the United States?",
+      "options": [
+        "Adam Jasinski",
+        "Dick Donato",
+        "Hayden Moss",
+        "Dan Gheesling"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Dan Gheesling"
+    },
+    {
+      "id": "opentdb-2026-04-30-1",
+      "question": "Who won Big Brother 2014 UK?",
+      "options": [
+        "Christopher Hall",
+        "Pauline Bennett",
+        "Pavandeep \"Pav\" Paul",
+        "Helen Wood"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Helen Wood"
+    },
+    {
+      "id": "opentdb-2026-04-30-2",
+      "question": "In the show \"Dragonball Z\", what is the name of Cell's most powerful attack?",
+      "options": [
+        "Super Kamehameha",
+        "Cell Kamehameha",
+        "Android Kamehameha",
+        "Solar Kamehameha"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Solar Kamehameha"
+    },
+    {
+      "id": "opentdb-2026-04-30-3",
+      "question": "Which WWF wrestler had the nickname \"The Ayatollah of Rock 'N' Rolla\"?",
+      "options": [
+        "Marty Jannetty",
+        "Shawn Michaels",
+        "Scott Hall",
+        "Chris Jericho"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Chris Jericho"
+    },
+    {
+      "id": "opentdb-2026-04-30-4",
+      "question": "What year did the television company BBC officially launch the channel BBC One?",
+      "options": [
+        "1932",
+        "1955",
+        "1948",
+        "1936"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "1936"
+    },
+    {
+      "id": "opentdb-2026-04-30-5",
+      "question": "In \"Star Trek\", what sauce is commonly used by Klingons on bregit lung?",
+      "options": [
+        "Gazorpazorp pudding",
+        "Sweet chili sauce",
+        "Grapork sauce",
+        "Grapok sauce"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Grapok sauce"
+    },
+    {
+      "id": "ai-2026-04-30-6",
+      "question": "What is the name of the nuclear power plant where Homer Simpson works in 'The Simpsons'?",
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Springfield Nuclear Power Plant",
+      "explanation": "Homer Simpson works at the Springfield Nuclear Power Plant, where he is known for his lack of attention to safety protocols. This setting is central to many episodes and highlights the satirical nature of the show regarding workplace safety and competence."
+    },
+    {
+      "id": "ai-2026-04-30-7",
+      "question": "What was the name of the last original series to premiere on VH1 before its rebranding in 2023?",
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Family Legacy",
+      "explanation": "Family Legacy was the last original series to premiere on VH1 in April 2023, just before the channel's rebranding to focus more on music content. The series highlighted the lives of children of famous musicians, providing a unique perspective on fame and family life in the music industry."
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-29",
+  "categoryId": 13,
+  "categoryName": "Entertainment: Musicals & Theatres",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-29-0",
+      "question": "How many plays is Shakespeare generally considered to have written?",
+      "options": [
+        "54",
+        "25",
+        "18",
+        "37"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "37"
+    },
+    {
+      "id": "opentdb-2026-04-29-1",
+      "question": "Which Shakespeare play inspired the musical 'West Side Story'?",
+      "options": [
+        "Hamlet",
+        "Macbeth",
+        "Othello",
+        "Romeo & Juliet"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Romeo & Juliet"
+    },
+    {
+      "id": "opentdb-2026-04-29-2",
+      "question": "Who wrote the award winning musical \"In The Heights\"?",
+      "options": [
+        "Francis Scott Key",
+        "John Phillips Sousa",
+        "Steven Sondheim",
+        "Lin-Manuel Miranda"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Lin-Manuel Miranda"
+    },
+    {
+      "id": "opentdb-2026-04-29-3",
+      "question": "Who is the musical director for the award winning musical \"Hamilton\"?",
+      "options": [
+        "Renee Elise-Goldberry",
+        "Leslie Odom Jr.",
+        "Lin-Manuel Miranda",
+        "Alex Lacamoire"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Alex Lacamoire"
+    },
+    {
+      "id": "opentdb-2026-04-29-4",
+      "question": "Which of these musicals won the Tony Award for Best Musical?",
+      "options": [
+        "The Color Purple",
+        "Newsies",
+        "American Idiot",
+        "Rent"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Rent"
+    },
+    {
+      "id": "opentdb-2026-04-29-5",
+      "question": "Who serves as the speaker of the prologue in Shakespeare's Romeo and Juliet?",
+      "options": [
+        "Montague",
+        "Capulet",
+        "Refrain",
+        "Chorus"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Chorus"
+    },
+    {
+      "id": "ai-2026-04-29-6",
+      "question": "Which Shakespeare play features the characters of Oberon and Titania?",
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "A Midsummer Night's Dream",
+      "explanation": "Oberon and Titania are the king and queen of the fairies in Shakespeare's 'A Midsummer Night's Dream'. The play is one of his most popular comedies, known for its intricate plot involving love, magic, and transformation."
+    },
+    {
+      "id": "ai-2026-04-29-7",
+      "question": "Which musical, co-created by Lin-Manuel Miranda, includes a song that humorously explores the concept of improv as a potential design flaw in a robot character?",
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Freestyle Love Supreme",
+      "explanation": "Freestyle Love Supreme is an improvisational hip-hop musical co-created by Lin-Manuel Miranda, where various topics are turned into songs on the spot. One of the skits humorously touches on the idea of a robot struggling with improv, highlighting how the spontaneity of improv can be seen as a challenge or flaw in a pre-programmed entity. This unique twist showcases the clever and unpredictable nature of the show."
+    }
+  ]
+}
