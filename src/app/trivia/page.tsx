@@ -5,11 +5,12 @@ import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaResults } from './components/TriviaResults'
 import { TriviaStats } from './components/TriviaStats'
+import { TriviaLeaderboard } from './components/TriviaLeaderboard'
 import { useTriviaStore } from './hooks/useTriviaStore'
 import { getTodayPST } from './lib/triviaUtils'
 import type { TriviaGameResult } from './models/trivia'
 
-type View = 'landing' | 'playing' | 'results' | 'stats'
+type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard'
 
 export default function TriviaPage() {
   const { recordGame, userData } = useTriviaStore()
@@ -33,11 +34,27 @@ export default function TriviaPage() {
 
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => setView('stats')
+  const handleViewLeaderboard = () => setView('leaderboard')
 
   const handleFinish = (result: TriviaGameResult) => {
     recordGame(result)
     setLastResult(result)
     setView('results')
+
+    // Submit score to leaderboard if user has a display name (fire and forget)
+    if (userData.displayName) {
+      fetch('/api/v1/trivia/submit-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: userData.displayName,
+          date: result.date,
+          score: result.score,
+          correct: result.correct,
+          total: result.total,
+        }),
+      }).catch((err) => console.error('Failed to submit score:', err))
+    }
   }
 
   const handleBackToLanding = () => setView('landing')
@@ -52,6 +69,7 @@ export default function TriviaPage() {
         result={lastResult}
         onBack={handleBackToLanding}
         onViewStats={handleViewStats}
+        onViewLeaderboard={handleViewLeaderboard}
       />
     )
   }
@@ -60,5 +78,15 @@ export default function TriviaPage() {
     return <TriviaStats onBack={handleBackToLanding} />
   }
 
-  return <TriviaLanding onStartGame={handleStartGame} onViewStats={handleViewStats} />
+  if (view === 'leaderboard') {
+    return <TriviaLeaderboard onBack={handleBackToLanding} />
+  }
+
+  return (
+    <TriviaLanding
+      onStartGame={handleStartGame}
+      onViewStats={handleViewStats}
+      onViewLeaderboard={handleViewLeaderboard}
+    />
+  )
 }
