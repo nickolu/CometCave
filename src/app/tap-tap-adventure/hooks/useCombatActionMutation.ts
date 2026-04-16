@@ -262,7 +262,8 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               heirloom,
             })
 
-            deleteCharacter(character.id)
+            // NOTE: deleteCharacter is called AFTER commit() below
+            // to prevent commit() from overwriting the deletion with a stale snapshot
           } else {
             const penalty = data.deathPenalty
             const penaltyParts: string[] = []
@@ -334,6 +335,15 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
       }
 
       commit()
+
+      // Permadeath deletion must happen AFTER commit() to avoid the stale snapshot overwriting it
+      if (data.combatState.status === 'defeat') {
+        const diffMods = getDifficultyModifiers(character.difficultyMode)
+        if (diffMods.permadeath) {
+          deleteCharacter(character.id)
+        }
+      }
+
       return data
     },
     onSuccess: () => {
