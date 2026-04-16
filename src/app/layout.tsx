@@ -71,6 +71,12 @@ export default function RootLayout({
                     CHAT ROOM
                   </Link>
                   <Link
+                    href={ROUTE_CONSTANTS.TRIVIA}
+                    className="text-space-gold hover:text-space-gold/80 transition-colors font-semibold"
+                  >
+                    DAILY TRIVIA
+                  </Link>
+                  <Link
                     href={ROUTE_CONSTANTS.SECRET_WORD}
                     className="text-cream-white hover:text-cream-white/80 transition-colors"
                   >
