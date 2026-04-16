@@ -4,16 +4,16 @@ import { useState, useEffect } from 'react'
 import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaResults } from './components/TriviaResults'
+import { TriviaStats } from './components/TriviaStats'
 import { useTriviaStore } from './hooks/useTriviaStore'
 import { getTodayPST } from './lib/triviaUtils'
 import type { TriviaGameResult } from './models/trivia'
 
-type View = 'landing' | 'playing' | 'results'
+type View = 'landing' | 'playing' | 'results' | 'stats'
 
 export default function TriviaPage() {
-  const { recordGame, canPlayToday, userData } = useTriviaStore()
+  const { recordGame, userData } = useTriviaStore()
 
-  // Determine initial view: if already played today, show results
   const getTodayResult = (): TriviaGameResult | null => {
     const today = getTodayPST()
     return userData.history.find((h) => h.date === today) ?? null
@@ -23,7 +23,6 @@ export default function TriviaPage() {
   const [view, setView] = useState<View>(todayResult ? 'results' : 'landing')
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(todayResult)
 
-  // Also sync on hydration (Zustand persist loads async)
   useEffect(() => {
     const result = getTodayResult()
     if (result && view === 'landing') {
@@ -32,9 +31,8 @@ export default function TriviaPage() {
     }
   }, [userData.history])
 
-  const handleStartGame = () => {
-    setView('playing')
-  }
+  const handleStartGame = () => setView('playing')
+  const handleViewStats = () => setView('stats')
 
   const handleFinish = (result: TriviaGameResult) => {
     recordGame(result)
@@ -42,17 +40,25 @@ export default function TriviaPage() {
     setView('results')
   }
 
-  const handleBackToLanding = () => {
-    setView('landing')
-  }
+  const handleBackToLanding = () => setView('landing')
 
   if (view === 'playing') {
     return <TriviaGame onFinish={handleFinish} />
   }
 
   if (view === 'results' && lastResult) {
-    return <TriviaResults result={lastResult} onBack={handleBackToLanding} />
+    return (
+      <TriviaResults
+        result={lastResult}
+        onBack={handleBackToLanding}
+        onViewStats={handleViewStats}
+      />
+    )
   }
 
-  return <TriviaLanding onStartGame={handleStartGame} />
+  if (view === 'stats') {
+    return <TriviaStats onBack={handleBackToLanding} />
+  }
+
+  return <TriviaLanding onStartGame={handleStartGame} onViewStats={handleViewStats} />
 }
