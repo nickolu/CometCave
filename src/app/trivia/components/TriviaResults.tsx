@@ -80,11 +80,12 @@ interface TriviaResultsProps {
   result: TriviaGameResult
   onBack: () => void
   onViewStats?: () => void
+  onViewLeaderboard?: () => void
   // Optional: pass questions data for difficulty display
   questionDifficulties?: Array<{ difficulty: string; source: string }>
 }
 
-export function TriviaResults({ result, onBack, onViewStats }: TriviaResultsProps) {
+export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { userData } = useTriviaStore()
   const countdown = useCountdown()
@@ -224,13 +225,18 @@ export function TriviaResults({ result, onBack, onViewStats }: TriviaResultsProp
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-3 w-full">
-        <Button variant="outline" onClick={onBack} className="flex-1">
+      <div className="grid grid-cols-3 gap-2 w-full">
+        <Button variant="outline" onClick={onBack}>
           Back
         </Button>
         {onViewStats && (
-          <Button variant="outline" onClick={onViewStats} className="flex-1">
-            View Stats
+          <Button variant="outline" onClick={onViewStats}>
+            Stats
+          </Button>
+        )}
+        {onViewLeaderboard && (
+          <Button variant="outline" onClick={onViewLeaderboard}>
+            Board
           </Button>
         )}
       </div>

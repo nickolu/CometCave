@@ -5,7 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate, getTodayPST } from '../lib/triviaUtils'
 
-export function TriviaLanding({ onStartGame, onViewStats }: { onStartGame?: () => void; onViewStats?: () => void }) {
+export function TriviaLanding({
+  onStartGame,
+  onViewStats,
+  onViewLeaderboard,
+}: {
+  onStartGame?: () => void
+  onViewStats?: () => void
+  onViewLeaderboard?: () => void
+}) {
   const { userData, canPlayToday } = useTriviaStore()
   const todayStr = getTodayPST()
   const alreadyPlayed = !canPlayToday()
@@ -96,7 +104,12 @@ export function TriviaLanding({ onStartGame, onViewStats }: { onStartGame?: () =
           My Stats
         </button>
         <span className="text-cream-white/20">·</span>
-        <span className="text-cream-white/40 cursor-not-allowed">Leaderboard (coming soon)</span>
+        <button
+          onClick={onViewLeaderboard}
+          className="text-space-gold hover:text-space-gold/80 transition-colors underline-offset-4 hover:underline"
+        >
+          Leaderboard
+        </button>
       </div>
     </div>
   )
