@@ -86,6 +86,24 @@
       "category": "Entertainment: Japanese Anime & Manga",
       "source": "opentdb",
       "correctAnswer": "Makoto Furukawa"
+    },
+    {
+      "id": "ai-2026-04-23-6",
+      "question": "Which magical girl anime features the character Usagi Tsukino as its main protagonist?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Sailor Moon",
+      "explanation": "Usagi Tsukino is the main character of the anime 'Sailor Moon,' which debuted in 1992. She transforms into the titular character, Sailor Moon, and fights evil forces while learning about friendship and love. The series is one of the most iconic in the magical girl genre."
+    },
+    {
+      "id": "ai-2026-04-23-7",
+      "question": "Which manga artist is renowned for creating the series 'One Piece', which became the best-selling manga series worldwide?",
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Eiichiro Oda",
+      "explanation": "Eiichiro Oda is the creator of 'One Piece', a manga series that has achieved global fame and success. Since its debut in 1997, 'One Piece' has captured audiences with its unique art style, compelling story, and expansive world-building, leading it to become the best-selling manga series worldwide."
     }
   ]
 }

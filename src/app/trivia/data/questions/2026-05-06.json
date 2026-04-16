@@ -86,6 +86,24 @@
       "category": "Mythology",
       "source": "opentdb",
       "correctAnswer": "Tree"
+    },
+    {
+      "id": "ai-2026-05-06-6",
+      "question": "In Norse mythology, which trickster god is known for his cunning and shape-shifting abilities?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Loki",
+      "explanation": "Loki is a central figure in Norse mythology known for his mischief and ability to change his shape and sex. He plays a crucial role in many myths, often causing trouble for the gods but also helping them in some situations. His complex nature makes him one of the most intriguing figures in mythology."
+    },
+    {
+      "id": "ai-2026-05-06-7",
+      "question": "In Japanese mythology, who is the Shinto god of storms and the sea, known for causing chaos and is a key figure in the story of the creation of Japan?",
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Susanoo",
+      "explanation": "Susanoo is a prominent deity in Japanese mythology, revered as the god of storms and the sea. He is notorious for his tempestuous behavior, which often brings chaos and disorder. Despite his unruly nature, Susanoo plays a pivotal role in the mythological narrative of Japan's creation, showcasing the balance of chaos and harmony in Shinto beliefs."
     }
   ]
 }

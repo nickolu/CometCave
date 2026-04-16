@@ -86,6 +86,24 @@
       "category": "Entertainment: Board Games",
       "source": "opentdb",
       "correctAnswer": "Wyvern"
+    },
+    {
+      "id": "ai-2026-05-02-6",
+      "question": "In which cooperative board game do players work together to treat infections and find cures for four diseases before a global outbreak occurs?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Pandemic",
+      "explanation": "Pandemic is a widely popular cooperative board game designed by Matt Leacock. Players must collaborate to manage disease outbreaks and find cures, offering a thrilling experience of teamwork and strategy. Its engaging mechanics make it a favorite among board game enthusiasts."
+    },
+    {
+      "id": "ai-2026-05-02-7",
+      "question": "In the board game 'Dungeons & Dragons', what is the name of the die typically used to determine initiative, the order of turns during combat?",
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "D20",
+      "explanation": "In Dungeons & Dragons, initiative is determined by rolling a twenty-sided die, commonly referred to as a D20. The result helps decide the order in which players and monsters act during combat, making it a crucial element of gameplay strategy."
     }
   ]
 }

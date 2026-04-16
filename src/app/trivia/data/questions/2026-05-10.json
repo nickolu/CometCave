@@ -86,6 +86,24 @@
       "category": "Politics",
       "source": "opentdb",
       "correctAnswer": "Montenegro"
+    },
+    {
+      "id": "ai-2026-05-10-6",
+      "question": "Which country is known for not having a written constitution despite being a constitutional monarchy?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "United Kingdom",
+      "explanation": "The United Kingdom is unique in that it does not have a single, written constitution. Instead, its constitutional framework is based on statutes, common law, and conventions. This makes it a notable counterexample to countries with explicit, formal written constitutions."
+    },
+    {
+      "id": "ai-2026-05-10-7",
+      "question": "Which constitutional document limited the powers of the English monarchy for the first time in 1215?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Magna Carta",
+      "explanation": "The Magna Carta, signed in 1215 by King John of England, was the first document to impose legal constraints on a monarch's power. It established the principle that the king was subject to the law, a foundational concept for constitutional governance."
     }
   ]
 }

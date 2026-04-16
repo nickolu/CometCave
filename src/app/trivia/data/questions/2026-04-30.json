@@ -86,6 +86,24 @@
       "category": "Entertainment: Television",
       "source": "opentdb",
       "correctAnswer": "Grapok sauce"
+    },
+    {
+      "id": "ai-2026-04-30-6",
+      "question": "What is the name of the nuclear power plant where Homer Simpson works in 'The Simpsons'?",
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Springfield Nuclear Power Plant",
+      "explanation": "Homer Simpson works at the Springfield Nuclear Power Plant, where he is known for his lack of attention to safety protocols. This setting is central to many episodes and highlights the satirical nature of the show regarding workplace safety and competence."
+    },
+    {
+      "id": "ai-2026-04-30-7",
+      "question": "What was the name of the last original series to premiere on VH1 before its rebranding in 2023?",
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Family Legacy",
+      "explanation": "Family Legacy was the last original series to premiere on VH1 in April 2023, just before the channel's rebranding to focus more on music content. The series highlighted the lives of children of famous musicians, providing a unique perspective on fame and family life in the music industry."
     }
   ]
 }

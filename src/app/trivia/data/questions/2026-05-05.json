@@ -86,6 +86,24 @@
       "category": "Science: Mathematics",
       "source": "opentdb",
       "correctAnswer": "Galois Theory"
+    },
+    {
+      "id": "ai-2026-05-05-6",
+      "question": "What mathematician is famous for developing the concept of the Mandelbrot set, a well-known example of a fractal?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Benoit Mandelbrot",
+      "explanation": "Benoit Mandelbrot was a French-American mathematician who developed the concept of the Mandelbrot set. This set is famous for its intricate, self-similar patterns that are characteristic of fractals, showcasing the infinite complexity of mathematical structures."
+    },
+    {
+      "id": "ai-2026-05-05-7",
+      "question": "Which 17th-century mathematician is credited with laying the groundwork for the theory of probability through his correspondence with Pierre de Fermat?",
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Blaise Pascal",
+      "explanation": "Blaise Pascal, a French mathematician and philosopher, is credited with developing the foundational concepts of probability theory through his correspondence with Pierre de Fermat. Their collaborative work in 1654 addressed problems related to gambling and laid the groundwork for modern probability theory."
     }
   ]
 }

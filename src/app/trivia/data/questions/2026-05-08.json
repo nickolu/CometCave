@@ -86,6 +86,24 @@
       "category": "Geography",
       "source": "opentdb",
       "correctAnswer": "Port Louis"
+    },
+    {
+      "id": "ai-2026-05-08-6",
+      "question": "What is the capital city of Japan?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Tokyo",
+      "explanation": "Tokyo is the capital city of Japan and is known for its blend of modernity and traditional culture. It is one of the most populous and important cities in the world, serving as a major economic and cultural hub."
+    },
+    {
+      "id": "ai-2026-05-08-7",
+      "question": "Which river, considered the longest in Australia, has been extensively utilized for irrigation and water supply to support agricultural activities in the Murray-Darling Basin?",
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Murray River",
+      "explanation": "The Murray River is the longest river in Australia, stretching over 2,500 kilometers. It is a crucial component of the Murray-Darling Basin, which is one of the most productive agricultural regions in Australia, providing water for a variety of crops and supporting the livelihoods of many communities."
     }
   ]
 }

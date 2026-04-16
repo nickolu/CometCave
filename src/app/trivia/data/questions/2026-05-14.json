@@ -86,6 +86,24 @@
       "category": "Vehicles",
       "source": "opentdb",
       "correctAnswer": "Kelisa"
+    },
+    {
+      "id": "ai-2026-05-14-6",
+      "question": "Which racing video game series is known for its 'It's a me, Mario!' meme?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Mario Kart",
+      "explanation": "The Mario Kart series, featuring characters from the Mario franchise, is famous for its fun racing gameplay. The phrase 'It's a me, Mario!' is iconic and often associated with the character Mario, making it a popular meme among fans."
+    },
+    {
+      "id": "ai-2026-05-14-7",
+      "question": "Which automotive designer is credited with creating the iconic 1964 1/2 Ford Mustang?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Lee Iacocca",
+      "explanation": "Lee Iacocca was a key figure in the creation of the Ford Mustang, which was first introduced in 1964. His vision for a sporty yet affordable car helped revolutionize the automotive industry, leading to the Mustang becoming an enduring symbol of American automotive culture."
     }
   ]
 }

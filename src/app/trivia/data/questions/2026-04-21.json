@@ -86,6 +86,24 @@
       "category": "Entertainment: Comics",
       "source": "opentdb",
       "correctAnswer": "Lobster Johnson"
+    },
+    {
+      "id": "ai-2026-04-21-6",
+      "question": "Who is the creator of the popular indie comic series 'The Walking Dead'?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Robert Kirkman",
+      "explanation": "Robert Kirkman is the creator of 'The Walking Dead,' a highly acclaimed indie comic series that has been adapted into a successful television show. Kirkman's work has significantly impacted the comic book industry, showcasing the potential of indie comics to reach a broad audience."
+    },
+    {
+      "id": "ai-2026-04-21-7",
+      "question": "What storyline in DC Comics, published in 1986, is often credited with redefining Batman's character and achieving critical acclaim as one of the greatest graphic novels?",
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "The Dark Knight Returns",
+      "explanation": "Written by Frank Miller, 'The Dark Knight Returns' is a seminal work that revitalized Batman as a darker, more complex character. Its success helped pave the way for the modern era of graphic novels and influenced countless adaptations and portrayals of Batman in other media."
     }
   ]
 }

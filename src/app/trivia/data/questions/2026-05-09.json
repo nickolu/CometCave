@@ -86,6 +86,24 @@
       "category": "History",
       "source": "opentdb",
       "correctAnswer": "Laos"
+    },
+    {
+      "id": "ai-2026-05-09-6",
+      "question": "Which Italian city is widely recognized as the birthplace of the Renaissance due to its significant cultural and artistic influence during the period?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Florence",
+      "explanation": "Florence is considered the cradle of the Renaissance, a period of great cultural change and achievement. It was home to influential figures such as Leonardo da Vinci, Michelangelo, and Dante Alighieri, and its patronage systems supported the flourishing of arts and sciences."
+    },
+    {
+      "id": "ai-2026-05-09-7",
+      "question": "Which Chinese dynasty was responsible for the design and expansion of the Silk Road, significantly enhancing trade and cultural exchange between the East and the West?",
+      "difficulty": "medium",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Han Dynasty",
+      "explanation": "The Han Dynasty, which lasted from 206 BCE to 220 CE, played a crucial role in establishing the Silk Road. The trade routes were expanded under their rule, promoting exchange of goods, ideas, and culture between China and other civilizations, such as those in the Middle East and Europe, profoundly impacting global history."
     }
   ]
 }

@@ -86,6 +86,24 @@
       "category": "Science & Nature",
       "source": "opentdb",
       "correctAnswer": "Perceptual Neuron"
+    },
+    {
+      "id": "ai-2026-05-03-6",
+      "question": "What term describes a species that has a disproportionately large impact on its ecosystem relative to its abundance?",
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "Keystone species",
+      "explanation": "A keystone species plays a critical role in maintaining the structure of an ecological community, affecting many other organisms in an ecosystem. The concept is interesting because the removal of such a species can lead to significant changes in the ecosystem and even cause its collapse."
+    },
+    {
+      "id": "ai-2026-05-03-7",
+      "question": "What is the term for the hypothetical maximum number of chemical bonds that can form between two atoms?",
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "Bond order",
+      "explanation": "Bond order is a concept from molecular orbital theory that indicates the number of chemical bonds between a pair of atoms. For example, a bond order of 3 corresponds to a triple bond. It is an important concept in understanding the stability and energy of molecules."
     }
   ]
 }

@@ -86,6 +86,24 @@
       "category": "Vehicles",
       "source": "opentdb",
       "correctAnswer": "0.1m"
+    },
+    {
+      "id": "ai-2026-04-20-6",
+      "question": "What was the first car to win the inaugural Formula One World Championship in 1950?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Alfa Romeo 158",
+      "explanation": "The Alfa Romeo 158, driven by Giuseppe Farina, won the first Formula One World Championship race in 1950. This victory is significant as it marked the beginning of the modern era of Formula One racing, establishing the sport as a premier global motorsport event."
+    },
+    {
+      "id": "ai-2026-04-20-7",
+      "question": "Which classic car, introduced by a French manufacturer in 1955, was known for its futuristic design and hydropneumatic self-leveling suspension system?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Citroën DS",
+      "explanation": "The Citroën DS, launched in 1955, was celebrated for its innovative technology and sleek design, earning it a place in automotive history. Its hydropneumatic suspension offered an exceptionally smooth ride, making it one of the most advanced cars of its time, and it remains an icon of automotive engineering."
     }
   ]
 }

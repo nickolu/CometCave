@@ -86,6 +86,24 @@
       "category": "Entertainment: Comics",
       "source": "opentdb",
       "correctAnswer": "Indigo (Compassion)"
+    },
+    {
+      "id": "ai-2026-05-15-6",
+      "question": "Which indie comic by the creator of 'Snotgirl' features a protagonist who navigates a world where reality is breaking down, known as 'Glitch'?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Patience",
+      "explanation": "The indie comic 'Glitch' is created by Bryan Lee O'Malley, known for his work on 'Snotgirl.' The story follows Patience, a character dealing with a world where reality is unstable, exploring themes of identity and technology. This comic is notable for its unique storytelling and artistic style."
+    },
+    {
+      "id": "ai-2026-05-15-7",
+      "question": "Which unusual DC Comics character, known for being a sentient living planet, first appeared in 'Green Lantern' #24 in 1963?",
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Mogo",
+      "explanation": "Mogo is a unique character in the DC Universe, as it is a sentient planet that serves as a member of the Green Lantern Corps. It first appeared in 'Green Lantern' #24 in 1963. Mogo plays a crucial role in the Corps by directing Power Rings to new bearers and providing a training ground for Lanterns, showcasing the wide range of creativity in DC Comics."
     }
   ]
 }

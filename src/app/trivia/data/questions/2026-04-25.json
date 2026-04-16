@@ -86,6 +86,24 @@
       "category": "General Knowledge",
       "source": "opentdb",
       "correctAnswer": "Simjang"
+    },
+    {
+      "id": "ai-2026-04-25-6",
+      "question": "What is the term used in linguistics to describe the study of the structure and form of words?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Morphology",
+      "explanation": "Morphology is a branch of linguistics that focuses on the study of the structure and formation of words. It examines how words are formed from smaller units called morphemes, which are the smallest meaning-bearing elements in a language."
+    },
+    {
+      "id": "ai-2026-04-25-7",
+      "question": "Which artist's song 'Inspiration' was used as a central theme in the 1980 film 'Fame'?",
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Luther Vandross",
+      "explanation": "Luther Vandross's song 'Inspiration' was prominently featured in the 1980 film 'Fame', underscoring the movie's theme of aspiring artists pursuing their dreams. Vandross, known for his soulful voice, contributed significantly to the soundtrack's emotional depth, highlighting the film's exploration of ambition and creativity."
     }
   ]
 }

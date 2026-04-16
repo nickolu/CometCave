@@ -86,6 +86,24 @@
       "category": "Sports",
       "source": "opentdb",
       "correctAnswer": "1991"
+    },
+    {
+      "id": "ai-2026-05-07-6",
+      "question": "In what year was the National Basketball Association (NBA) founded?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "1946",
+      "explanation": "The NBA was founded on June 6, 1946, in New York City as the Basketball Association of America (BAA). It merged with the National Basketball League (NBL) in 1949 to become the NBA we know today. This founding marked the beginning of professional basketball in the United States on a large scale."
+    },
+    {
+      "id": "ai-2026-05-07-7",
+      "question": "Which former NFL player, known for his off-field philanthropy, once intercepted a pass from Tom Brady and returned it for a touchdown in the same game?",
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Jason Sehorn",
+      "explanation": "Jason Sehorn was a cornerback for the New York Giants and is noted for being one of the few players to intercept a pass from Tom Brady and return it for a touchdown. This rare feat highlights Sehorn's defensive prowess and has become a part of his legacy in the NFL. Additionally, Sehorn is recognized for his significant philanthropic efforts off the field, making him a notable figure both on and off the gridiron."
     }
   ]
 }

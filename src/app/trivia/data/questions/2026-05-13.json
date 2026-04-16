@@ -86,6 +86,24 @@
       "category": "Animals",
       "source": "opentdb",
       "correctAnswer": "Hyaenidae"
+    },
+    {
+      "id": "ai-2026-05-13-6",
+      "question": "What is the term used to describe the compromise cats make between their need for stealth and their need for speed?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Digitigrade locomotion",
+      "explanation": "Cats are digitigrade animals, meaning they walk on their toes. This adaptation allows them to move quietly and with agility, a tradeoff between stealth for hunting and speed for escaping predators. It is an interesting aspect of their evolutionary biology."
+    },
+    {
+      "id": "ai-2026-05-13-7",
+      "question": "What is the name of the first cat breed recognized by The International Cat Association (TICA) in 1979?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Maine Coon",
+      "explanation": "The Maine Coon was the first breed recognized by The International Cat Association (TICA) when it was founded in 1979. Known for its large size and tufted ears, the Maine Coon is one of the oldest natural cat breeds in North America and is often referred to as the 'gentle giant' of cats."
     }
   ]
 }

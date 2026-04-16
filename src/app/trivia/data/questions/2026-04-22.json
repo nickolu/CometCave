@@ -86,6 +86,24 @@
       "category": "Science: Gadgets",
       "source": "opentdb",
       "correctAnswer": "80 Hz"
+    },
+    {
+      "id": "ai-2026-04-22-6",
+      "question": "What unusual medical device, invented by Dr. John Gorrie in the 19th century, was originally designed to cool hospital rooms for patients with tropical diseases?",
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Ice machine",
+      "explanation": "Dr. John Gorrie invented the ice machine in the 1840s to create artificial ice. His goal was to cool rooms for patients suffering from yellow fever and malaria, showcasing an early use of refrigeration technology in the medical field."
+    },
+    {
+      "id": "ai-2026-04-22-7",
+      "question": "What was the name of the first drone to successfully deliver a package in an urban environment as part of a commercial service?",
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Flirtey",
+      "explanation": "Flirtey made history in 2016 by completing the first fully autonomous drone delivery in an urban environment in the United States. This milestone demonstrated the potential of drones in logistics and sparked increased interest and development in drone delivery services."
     }
   ]
 }

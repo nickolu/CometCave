@@ -86,6 +86,24 @@
       "category": "Entertainment: Musicals & Theatres",
       "source": "opentdb",
       "correctAnswer": "Chorus"
+    },
+    {
+      "id": "ai-2026-04-29-6",
+      "question": "Which Shakespeare play features the characters of Oberon and Titania?",
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "A Midsummer Night's Dream",
+      "explanation": "Oberon and Titania are the king and queen of the fairies in Shakespeare's 'A Midsummer Night's Dream'. The play is one of his most popular comedies, known for its intricate plot involving love, magic, and transformation."
+    },
+    {
+      "id": "ai-2026-04-29-7",
+      "question": "Which musical, co-created by Lin-Manuel Miranda, includes a song that humorously explores the concept of improv as a potential design flaw in a robot character?",
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Freestyle Love Supreme",
+      "explanation": "Freestyle Love Supreme is an improvisational hip-hop musical co-created by Lin-Manuel Miranda, where various topics are turned into songs on the spot. One of the skits humorously touches on the idea of a robot struggling with improv, highlighting how the spontaneity of improv can be seen as a challenge or flaw in a pre-programmed entity. This unique twist showcases the clever and unpredictable nature of the show."
     }
   ]
 }

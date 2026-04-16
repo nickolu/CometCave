@@ -86,6 +86,24 @@
       "category": "Politics",
       "source": "opentdb",
       "correctAnswer": "Qatar"
+    },
+    {
+      "id": "ai-2026-04-16-6",
+      "question": "Which document serves as the supreme law of the United States, outlining the national framework of government?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "The Constitution",
+      "explanation": "The Constitution of the United States, adopted in 1787, establishes the federal government and its relationship with the states and citizens. It is the oldest written national constitution still in use and has inspired numerous other countries in forming their own governance structures."
+    },
+    {
+      "id": "ai-2026-04-16-7",
+      "question": "Which European monarchy was officially abolished in 1946 following a referendum, leading to the establishment of a republic?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Italy",
+      "explanation": "The Italian monarchy was abolished in 1946 after a referendum where the majority voted in favor of establishing a republic. This was a significant moment in Italian history as it marked the end of the Kingdom of Italy, which had been in place since the unification of Italy in the 19th century. The decision was influenced by the monarchy's association with the fascist regime during World War II."
     }
   ]
 }

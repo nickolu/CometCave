@@ -86,6 +86,24 @@
       "category": "Entertainment: Film",
       "source": "opentdb",
       "correctAnswer": "Clint Eastwood, Eli Wallach, and Lee Van Cleef"
+    },
+    {
+      "id": "ai-2026-04-27-6",
+      "question": "In the movie 'Shrek', what animal is mistakenly thought to be unable to fly but is shown flying in the film?",
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Donkey",
+      "explanation": "A common misconception is that donkeys cannot fly, but in 'Shrek', Donkey is shown flying after being granted powers by the Fairy Godmother's magic. This humorous twist plays on the trope of flying mythical creatures and adds to the comedic nature of the film."
+    },
+    {
+      "id": "ai-2026-04-27-7",
+      "question": "Which spaceship's design in the 1979 film 'Alien' elicited strong fan reactions due to its unique and biomechanical aesthetic, created by Swiss artist H.R. Giger?",
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Nostromo",
+      "explanation": "The Nostromo's design was pivotal in creating the eerie and immersive atmosphere of 'Alien.' H.R. Giger's biomechanical art style contributed to the spaceship's unsettling and otherworldly appearance, making it a memorable element that resonated with fans and added to the film's cult status."
     }
   ]
 }

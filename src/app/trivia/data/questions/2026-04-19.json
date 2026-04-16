@@ -86,6 +86,24 @@
       "category": "Animals",
       "source": "opentdb",
       "correctAnswer": "Hoatzin"
+    },
+    {
+      "id": "ai-2026-04-19-6",
+      "question": "What is the term used to describe a group of kittens born to the same mother at the same time?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Litter",
+      "explanation": "A group of kittens born to the same mother at the same time is called a 'litter.' This term is commonly used in the context of domestic cats and is a widely recognized part of feline terminology. Knowing this can help in understanding cat breeding and care."
+    },
+    {
+      "id": "ai-2026-04-19-7",
+      "question": "Which rare cat breed is known for its curly coat and originated from a single stray kitten found in Montana in 1987?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Selkirk Rex",
+      "explanation": "The Selkirk Rex is a unique breed that features a naturally curly coat, which is a result of a spontaneous genetic mutation. This breed originated from a single stray kitten discovered in Montana in 1987, making it distinct from other curly-coated breeds like the Cornish Rex and Devon Rex."
     }
   ]
 }

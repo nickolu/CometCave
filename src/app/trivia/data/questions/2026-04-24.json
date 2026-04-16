@@ -86,6 +86,24 @@
       "category": "Entertainment: Cartoon & Animations",
       "source": "opentdb",
       "correctAnswer": "George Clooney"
+    },
+    {
+      "id": "ai-2026-04-24-6",
+      "question": "Which animated series, premiering in 1992, follows the adventures of a young street rat who discovers a magical lamp?",
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Aladdin",
+      "explanation": "Premiering in 1992, 'Aladdin' was a television series that continued the story from Disney's hit movie of the same name. It featured Aladdin, a street-smart young man, and his adventures with the magical Genie, capturing the spirit of 1990s animation and storytelling."
+    },
+    {
+      "id": "ai-2026-04-24-7",
+      "question": "In 'Finding Nemo', what is the hidden detail that references Pixar's first feature film, 'Toy Story'?",
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Buzz Lightyear toy",
+      "explanation": "In 'Finding Nemo', a Buzz Lightyear toy can be seen in the waiting room of the dentist's office. This is a nod to 'Toy Story', Pixar's first feature film, and is one of many Easter eggs that Pixar includes in its films, connecting them through subtle references."
     }
   ]
 }

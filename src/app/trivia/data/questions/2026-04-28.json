@@ -86,6 +86,24 @@
       "category": "Entertainment: Music",
       "source": "opentdb",
       "correctAnswer": "No Love Deep Web"
+    },
+    {
+      "id": "ai-2026-04-28-6",
+      "question": "Which indie rock band released the critically acclaimed album 'Funeral' in 2004?",
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "Arcade Fire",
+      "explanation": "'Funeral' is the debut studio album by the Canadian indie rock band Arcade Fire, released in 2004. The album was widely praised for its anthemic sound and emotional depth, helping to establish the band's reputation as a major force in indie music."
+    },
+    {
+      "id": "ai-2026-04-28-7",
+      "question": "Which fan theory suggests that My Chemical Romance's 'The Black Parade' is a concept album about the character's journey through the five stages of grief?",
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "Five Stages of Grief theory",
+      "explanation": "The 'Five Stages of Grief' theory posits that My Chemical Romance's album 'The Black Parade' depicts the protagonist's emotional journey through denial, anger, bargaining, depression, and acceptance. This theory is intriguing as it aligns with the album's narrative and thematic depth, exploring complex emotions through its lyrics and music."
     }
   ]
 }

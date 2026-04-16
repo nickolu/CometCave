@@ -86,6 +86,24 @@
       "category": "Entertainment: Books",
       "source": "opentdb",
       "correctAnswer": "The Day of the Locust"
+    },
+    {
+      "id": "ai-2026-04-26-6",
+      "question": "Which album by Taylor Swift, released in 2017, includes the song 'Look What You Made Me Do' and marked a shift in her public persona?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Reputation",
+      "explanation": "Taylor Swift's 'Reputation' was released in 2017 and is known for its darker aesthetic and themes of reclaiming her image amidst public scrutiny. The album features hits like 'Look What You Made Me Do' and represents a significant evolution in her music career."
+    },
+    {
+      "id": "ai-2026-04-26-7",
+      "question": "In Neal Stephenson's novel 'The Diamond Age,' what is the name of the interactive book designed to educate a young girl in a future neo-Victorian society?",
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "The Young Lady's Illustrated Primer",
+      "explanation": "'The Diamond Age' by Neal Stephenson features 'The Young Lady's Illustrated Primer' as a unique artifact. It is an artificially intelligent, interactive book intended to raise and educate its reader through stories and lessons, playing a crucial role in the narrative and exploring themes of technology and education."
     }
   ]
 }
