@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate, getTodayPST } from '../lib/triviaUtils'
 
-export function TriviaLanding() {
+export function TriviaLanding({ onStartGame }: { onStartGame?: () => void }) {
   const { userData, canPlayToday } = useTriviaStore()
   const todayStr = getTodayPST()
   const alreadyPlayed = !canPlayToday()
@@ -29,6 +29,7 @@ export function TriviaLanding() {
             size="lg"
             className="w-full text-lg py-6"
             disabled={alreadyPlayed}
+            onClick={onStartGame}
           >
             {alreadyPlayed ? 'Come Back Tomorrow' : "Start Today's Trivia"}
           </Button>
