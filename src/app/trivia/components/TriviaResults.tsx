@@ -79,11 +79,12 @@ const SCORING_CONFIG: Record<string, { maxPoints: number }> = {
 interface TriviaResultsProps {
   result: TriviaGameResult
   onBack: () => void
+  onViewStats?: () => void
   // Optional: pass questions data for difficulty display
   questionDifficulties?: Array<{ difficulty: string; source: string }>
 }
 
-export function TriviaResults({ result, onBack }: TriviaResultsProps) {
+export function TriviaResults({ result, onBack, onViewStats }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { userData } = useTriviaStore()
   const countdown = useCountdown()
@@ -225,8 +226,13 @@ export function TriviaResults({ result, onBack }: TriviaResultsProps) {
       {/* Navigation */}
       <div className="flex gap-3 w-full">
         <Button variant="outline" onClick={onBack} className="flex-1">
-          Back to Trivia
+          Back
         </Button>
+        {onViewStats && (
+          <Button variant="outline" onClick={onViewStats} className="flex-1">
+            View Stats
+          </Button>
+        )}
       </div>
     </div>
   )
