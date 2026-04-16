@@ -228,7 +228,7 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
   }[question.difficulty]
 
   return (
-    <div className="flex flex-col gap-4 max-w-lg mx-auto py-4">
+    <div className="flex flex-col gap-3 sm:gap-4 max-w-lg mx-auto py-2 sm:py-4">
       {/* Top bar: progress + score */}
       <div className="flex justify-between items-center">
         <div className="flex gap-1.5">
@@ -263,26 +263,25 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
 
       {/* Question card */}
       <Card className="bg-space-dark/80 border-space-grey">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 pt-3 sm:pt-6 px-4 sm:px-6">
           <div className="flex justify-between items-center">
-            <span className="text-cream-white/50 text-sm">
+            <span className="text-cream-white/50 text-xs sm:text-sm">
               Question {currentIndex + 1}/{questions.length}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full border ${diffBadgeColor}`}>
+            <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full border ${diffBadgeColor}`}>
               {question.difficulty.toUpperCase()}
             </span>
           </div>
-          <div className="text-cream-white/40 text-xs">{question.category}</div>
         </CardHeader>
-        <CardContent>
-          <p className="text-cream-white text-lg mb-4">{question.question}</p>
+        <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+          <p className="text-cream-white text-base sm:text-lg mb-3 sm:mb-4 leading-snug">{question.question}</p>
 
           {/* Multiple choice options */}
           {question.options ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5 sm:gap-2">
               {question.options.map((option, i) => {
                 const letter = String.fromCharCode(65 + i)
-                let btnClass = 'w-full justify-start text-left py-3 px-4'
+                let btnClass = 'w-full justify-start text-left py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base whitespace-normal h-auto min-h-[2.75rem]'
 
                 if (phase === 'answered' && answerResult) {
                   if (option === answerResult.correctAnswer) {
