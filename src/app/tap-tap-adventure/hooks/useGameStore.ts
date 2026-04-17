@@ -49,6 +49,7 @@ import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
+import { getEnchantCost, getEnchantBonusStat, MAX_ENCHANT_LEVEL } from '@/app/tap-tap-adventure/config/enchanting'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -130,6 +131,7 @@ export interface GameStore {
   clearRunSummary: () => void
   purchaseFactionGear: (factionId: FactionId, gearId: string) => boolean
   craftItem: (recipeId: string) => { message: string; success: boolean } | null
+  enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => { message: string; success: boolean } | null
   updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
 }
@@ -1051,6 +1053,69 @@ export const useGameStore = create<GameStore>()(
         )
 
         return { message: `Crafted ${recipe.result.name}!`, success: true }
+      },
+      enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return null
+
+        const equipment = selectedCharacter.equipment ?? { weapon: null, armor: null, accessory: null }
+        const item = equipment[slot]
+        if (!item) return { message: 'No item equipped in that slot.', success: false }
+
+        const currentLevel = item.enchantmentLevel ?? 0
+        if (currentLevel >= MAX_ENCHANT_LEVEL) {
+          return { message: `${item.name} is already at max enchantment level!`, success: false }
+        }
+
+        const cost = getEnchantCost(currentLevel)
+        if (cost === null) return { message: 'Cannot enchant further.', success: false }
+        if (selectedCharacter.gold < cost) {
+          return { message: `Not enough gold! Need ${cost}g.`, success: false }
+        }
+
+        const bonusStat = getEnchantBonusStat(item)
+        if (!bonusStat) {
+          return { message: `${item.name} has no stat to boost.`, success: false }
+        }
+
+        const newLevel = currentLevel + 1
+        const enchantedItem: Item = {
+          ...item,
+          enchantmentLevel: newLevel,
+          effects: {
+            ...item.effects,
+            [bonusStat]: (item.effects?.[bonusStat] ?? 0) + 1,
+          },
+        }
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            const char = state.gameState.characters[charIndex]
+            // Deduct gold
+            char.gold -= cost
+            // Update equipped item
+            const currentEquipment = char.equipment ?? { weapon: null, armor: null, accessory: null }
+            char.equipment = {
+              weapon: currentEquipment.weapon ?? null,
+              armor: currentEquipment.armor ?? null,
+              accessory: currentEquipment.accessory ?? null,
+              [slot]: enchantedItem,
+            }
+            // Update the same item in inventory (if present by id)
+            char.inventory = char.inventory.map(invItem =>
+              invItem.id === item.id ? enchantedItem : invItem
+            )
+          })
+        )
+
+        return {
+          message: `${enchantedItem.name} +${newLevel} enchanted! (+1 ${bonusStat})`,
+          success: true,
+        }
       },
       updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => {
         set(
