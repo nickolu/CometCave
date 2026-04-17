@@ -112,6 +112,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     setCombatState,
     allocateStatPoints,
     updateAchievements,
+    applyAchievementRewards,
     claimDailyReward,
   } = useGameStore()
 
@@ -358,6 +359,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     )
                     updateAchievements(achievements)
                     if (newlyCompleted.length > 0) {
+                      applyAchievementRewards(newlyCompleted)
                       setNewlyCompletedIds(newlyCompleted)
                     }
                   } else if (combatState && combatState.status === 'defeat' && character) {
@@ -369,6 +371,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     )
                     updateAchievements(achievements)
                     if (newlyCompleted.length > 0) {
+                      applyAchievementRewards(newlyCompleted)
                       setNewlyCompletedIds(newlyCompleted)
                     }
                   }

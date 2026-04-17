@@ -15,4 +15,5 @@ export type PlayerAchievement = {
   progress: number
   completed: boolean
   completedAt?: string
+  rewardClaimed?: boolean
 }

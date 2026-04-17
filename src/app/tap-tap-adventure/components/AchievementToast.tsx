@@ -44,6 +44,14 @@ export function AchievementToast({ achievementId, onDismiss }: AchievementToastP
             </div>
             <div className="text-sm font-bold text-white">{achievement.name}</div>
             <div className="text-[10px] text-amber-200/70">{achievement.description}</div>
+            {(achievement.reward?.gold || achievement.reward?.reputation) && (
+              <div className="text-[10px] text-yellow-300 font-semibold mt-0.5">
+                Reward:{' '}
+                {achievement.reward.gold ? `+${achievement.reward.gold}g` : ''}
+                {achievement.reward.gold && achievement.reward.reputation ? ', ' : ''}
+                {achievement.reward.reputation ? `+${achievement.reward.reputation} rep` : ''}
+              </div>
+            )}
           </div>
         </div>
       </div>
