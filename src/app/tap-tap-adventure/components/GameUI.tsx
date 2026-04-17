@@ -30,6 +30,7 @@ import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
 import { RegionMap } from './RegionMap'
+import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
 import { OnboardingHint } from './OnboardingHint'
@@ -514,6 +515,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <RegionMap
                 currentRegionId={character?.currentRegion ?? 'green_meadows'}
                 characterLevel={character?.level ?? 1}
+                visitedRegions={character?.visitedRegions ?? []}
+                conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
               />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
@@ -582,6 +585,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <RegionMap
                 currentRegionId={character?.currentRegion ?? 'green_meadows'}
                 characterLevel={character?.level ?? 1}
+                visitedRegions={character?.visitedRegions ?? []}
+                conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
               />
             )}
             {mobilePanel === 'settings' && <SettingsPanel />}
