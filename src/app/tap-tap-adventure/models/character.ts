@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ClassSkillTreeSchema } from './classSkillTree'
+import { CampStateSchema } from './camp'
 import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
 import { MountSchema } from './mount'
@@ -56,6 +57,7 @@ export const FantasyCharacterSchema = z.object({
   currentRegion: z.string().optional().default('green_meadows'),
   visitedRegions: z.array(z.string()).optional(),
   mainQuest: MainQuestSchema.optional(),
+  campState: CampStateSchema.optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
