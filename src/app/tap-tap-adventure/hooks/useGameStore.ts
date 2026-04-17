@@ -39,6 +39,8 @@ import {
 import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
+import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
+import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -118,6 +120,7 @@ export interface GameStore {
   setRunSummary: (summary: RunSummaryData) => void
   clearRunSummary: () => void
   purchaseFactionGear: (factionId: FactionId, gearId: string) => boolean
+  craftItem: (recipeId: string) => { message: string; success: boolean } | null
 }
 
 export const useGameStore = create<GameStore>()(
@@ -986,10 +989,35 @@ export const useGameStore = create<GameStore>()(
         )
         return true
       },
+      craftItem: (recipeId: string) => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return null
+
+        const recipe = CRAFTING_RECIPES.find(r => r.id === recipeId)
+        if (!recipe) return null
+
+        if (!canCraft(recipe, selectedCharacter.inventory, selectedCharacter.gold)) {
+          return { message: 'Cannot craft: missing ingredients or gold.', success: false }
+        }
+
+        const updatedCharacter = applyCraft(selectedCharacter, recipe)
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            state.gameState.characters[charIndex] = updatedCharacter
+          })
+        )
+
+        return { message: `Crafted ${recipe.result.name}!`, success: true }
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 20,
+      version: 21,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1080,6 +1108,7 @@ export const useGameStore = create<GameStore>()(
             if ((char as FantasyCharacter).factionReputations === undefined) {
               ;(char as FantasyCharacter).factionReputations = {}
             }
+            // v21: crafting system (no per-character migration needed)
             // v21: Add currentWeather
             if ((char as FantasyCharacter).currentWeather === undefined) {
               ;(char as FantasyCharacter).currentWeather = 'clear'
