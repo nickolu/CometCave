@@ -12,6 +12,7 @@ import { claimNewMilestones, getConqueredCount } from '@/app/tap-tap-adventure/l
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
+import { BestiaryEntry } from '@/app/tap-tap-adventure/models/bestiary'
 
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
@@ -224,6 +225,38 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               })
               // Do NOT delete the character — post-game character persists
             }
+          }
+
+          // Update bestiary on victory
+          {
+            const existingBestiary: BestiaryEntry[] = character.bestiary ?? []
+            const enemyNameLower = enemy.name.toLowerCase()
+            const existingIndex = existingBestiary.findIndex(
+              e => e.name.toLowerCase() === enemyNameLower
+            )
+            let updatedBestiary: BestiaryEntry[]
+            if (existingIndex !== -1) {
+              updatedBestiary = existingBestiary.map((e, i) =>
+                i === existingIndex ? { ...e, timesDefeated: e.timesDefeated + 1 } : e
+              )
+            } else {
+              const newEntry: BestiaryEntry = {
+                name: enemy.name,
+                element: enemy.element,
+                level: enemy.level,
+                attack: enemy.attack,
+                defense: enemy.defense,
+                maxHp: enemy.maxHp,
+                specialAbility: enemy.specialAbility,
+                statusAbility: enemy.statusAbility,
+                region: character.currentRegion ?? 'green_meadows',
+                timesDefeated: 1,
+                firstEncountered: new Date().toISOString(),
+                isBoss: combatState.isBoss,
+              }
+              updatedBestiary = [...existingBestiary, newEntry]
+            }
+            updateSelectedCharacter({ bestiary: updatedBestiary })
           }
 
           addStoryEvent({
