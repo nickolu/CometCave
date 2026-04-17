@@ -25,6 +25,7 @@ export interface TriviaStats {
 
 export interface TriviaUserData {
   displayName: string | null
+  nameSkipped: boolean
   stats: TriviaStats
   history: TriviaGameResult[]
   lastPlayedDate: string | null
