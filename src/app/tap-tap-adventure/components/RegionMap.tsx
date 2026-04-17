@@ -5,6 +5,8 @@ import { REGIONS, canEnterRegion, Region } from '@/app/tap-tap-adventure/config/
 interface RegionMapProps {
   currentRegionId: string
   characterLevel: number
+  visitedRegions?: string[]
+  conqueredRegions?: string[]
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -43,22 +45,23 @@ const POSITIONS: Record<string, { x: number; y: number }> = {
   starting_village: { x: 50, y: 99 },
 }
 
-function ConnectionLine({ from, to }: { from: { x: number; y: number }; to: { x: number; y: number } }) {
+function ConnectionLine({ from, to, explored }: { from: { x: number; y: number }; to: { x: number; y: number }; explored: boolean }) {
   return (
     <line
       x1={`${from.x}%`}
       y1={`${from.y}%`}
       x2={`${to.x}%`}
       y2={`${to.y}%`}
-      stroke="rgba(148, 163, 184, 0.3)"
-      strokeWidth="1.5"
-      strokeDasharray="4 4"
+      stroke={explored ? 'rgba(168, 185, 255, 0.5)' : 'rgba(148, 163, 184, 0.15)'}
+      strokeWidth={explored ? 2 : 1.5}
+      strokeDasharray={explored ? undefined : '4 4'}
     />
   )
 }
 
-export function RegionMap({ currentRegionId, characterLevel }: RegionMapProps) {
+export function RegionMap({ currentRegionId, characterLevel, visitedRegions = [], conqueredRegions = [] }: RegionMapProps) {
   const regions = Object.values(REGIONS)
+  const visited = new Set([...visitedRegions, currentRegionId, 'starting_village'])
 
   // Build unique connection pairs to avoid drawing duplicates
   const connections: { from: string; to: string }[] = []
@@ -75,7 +78,13 @@ export function RegionMap({ currentRegionId, characterLevel }: RegionMapProps) {
 
   return (
     <div className="w-full">
-      <h3 className="text-lg font-semibold text-white mb-3">Region Map</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-semibold text-white">Region Map</h3>
+        <span className="text-xs text-slate-400">
+          {visited.size}/{regions.length} discovered
+          {conqueredRegions.length > 0 && <span className="ml-1 text-amber-400">⭐{conqueredRegions.length}</span>}
+        </span>
+      </div>
       <div className="relative w-full" style={{ paddingBottom: '125%' }}>
         {/* Connection lines */}
         <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
@@ -83,11 +92,13 @@ export function RegionMap({ currentRegionId, characterLevel }: RegionMapProps) {
             const fromPos = POSITIONS[from]
             const toPos = POSITIONS[to]
             if (!fromPos || !toPos) return null
+            const explored = visited.has(from) && visited.has(to)
             return (
               <ConnectionLine
                 key={`${from}-${to}`}
                 from={fromPos}
                 to={toPos}
+                explored={explored}
               />
             )
           })}
@@ -98,39 +109,48 @@ export function RegionMap({ currentRegionId, characterLevel }: RegionMapProps) {
           const pos = POSITIONS[region.id]
           if (!pos) return null
           const isCurrent = region.id === currentRegionId
+          const isVisited = visited.has(region.id)
+          const isConquered = conqueredRegions.includes(region.id)
           const accessible = canEnterRegion(region, characterLevel)
 
           return (
             <div
               key={region.id}
               className={`absolute transform -translate-x-1/2 -translate-y-1/2 w-24 sm:w-28 text-center rounded-lg border-2 px-1 py-1.5 transition-all ${
-                DIFFICULTY_COLORS[region.difficulty]
-              } ${
                 isCurrent
-                  ? 'ring-2 ring-white shadow-lg shadow-white/20 scale-110'
-                  : accessible
-                  ? 'opacity-80 hover:opacity-100'
-                  : 'opacity-40 grayscale'
+                  ? `${DIFFICULTY_COLORS[region.difficulty]} ring-2 ring-white shadow-lg shadow-white/20 scale-110`
+                  : isVisited
+                  ? `${DIFFICULTY_COLORS[region.difficulty]} ${accessible ? 'opacity-80 hover:opacity-100' : 'opacity-60'}`
+                  : 'border-slate-700/40 bg-slate-900/60 opacity-40 blur-[1px]'
               }`}
               style={{
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
                 zIndex: isCurrent ? 10 : 1,
               }}
-              title={region.description}
+              title={isVisited ? region.description : 'Unexplored region'}
             >
-              <div className="text-lg leading-none">{region.icon}</div>
-              <div className="text-[10px] sm:text-xs font-bold text-white truncate">{region.name}</div>
-              <div className="text-[9px] text-slate-400">
-                {DIFFICULTY_LABELS[region.difficulty]}
+              <div className="text-lg leading-none">{isVisited ? region.icon : '❓'}</div>
+              <div className="text-[10px] sm:text-xs font-bold text-white truncate">
+                {isVisited ? region.name : '???'}
               </div>
-              {!accessible && (
-                <div className="text-[9px] text-red-400 font-semibold">
-                  Lv.{region.minLevel}+
-                </div>
+              {isVisited ? (
+                <>
+                  <div className="text-[9px] text-slate-400">
+                    {DIFFICULTY_LABELS[region.difficulty]}
+                    {isConquered && <span className="ml-1 text-amber-400">⭐</span>}
+                  </div>
+                  {!accessible && !isCurrent && (
+                    <div className="text-[9px] text-red-400 font-semibold">
+                      Lv.{region.minLevel}+
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-[9px] text-slate-500">Unexplored</div>
               )}
               {isCurrent && (
-                <div className="text-[9px] text-emerald-400 font-bold">You are here</div>
+                <div className="text-[9px] text-emerald-400 font-bold animate-pulse">📍 Here</div>
               )}
             </div>
           )
