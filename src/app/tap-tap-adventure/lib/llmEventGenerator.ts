@@ -264,6 +264,34 @@ export async function generateLLMEvents(
   }
 }
 
+function getSeasonalContext(): string {
+  const now = new Date()
+  const month = now.getMonth() + 1 // 1-12
+  const day = now.getDate()
+
+  // Oct 25 – Nov 1: Samhain/Halloween
+  if ((month === 10 && day >= 25) || (month === 11 && day === 1)) {
+    return 'It is the season of Samhain/Halloween. The veil between worlds is thin. Ghosts, ghouls, jack-o-lanterns, and eerie fog pervade the land.'
+  }
+  // Dec 1 – Jan 6: Winter Solstice / Yuletide
+  if (month === 12 || (month === 1 && day <= 6)) {
+    return 'It is the Winter Solstice / Yuletide season. Snow blankets the land, hearths glow warm, and mysterious gift-givers roam.'
+  }
+  // Mar 20 – Jun 20: Spring
+  if ((month === 3 && day >= 20) || month === 4 || month === 5 || (month === 6 && day <= 20)) {
+    return 'Spring has arrived. Flowers bloom, rivers swell, fey creatures emerge, and the world awakens.'
+  }
+  // Jun 21 – Sep 22: High Summer
+  if ((month === 6 && day >= 21) || month === 7 || month === 8 || (month === 9 && day <= 22)) {
+    return 'It is High Summer. The sun blazes, festivals abound, and ancient powers stir in the heat.'
+  }
+  // Sep 23 – Oct 24: Harvest
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 24)) {
+    return 'It is the Harvest season. Fields are golden, bonfires light the night, and the world prepares for winter.'
+  }
+  return ''
+}
+
 function getCompletionsConfig(character: FantasyCharacter, context: string) {
   const model = 'gpt-4o'
   const reputationTier = getReputationTier(character.reputation)
@@ -289,6 +317,11 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
 
   const region = getRegion(character.currentRegion ?? 'green_meadows')
   const regionContext = `The character is currently in ${region.name}: ${region.description}. Setting/theme: ${region.theme}. Generate events that fit this setting. ${region.enemyTypes.length > 0 ? `Enemy types common here: ${region.enemyTypes.join(', ')}.` : 'This is a safe zone with no combat.'} The dominant element is ${region.element}.`
+
+  const seasonalContext = getSeasonalContext()
+  const seasonalInjection = seasonalContext
+    ? `\n\nIMPORTANT — Seasonal context: ${seasonalContext}. Weave this theme subtly into the event's atmosphere and descriptions.`
+    : ''
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
@@ -318,7 +351,7 @@ Character:
 ${JSON.stringify(character, null, 2)}
 
 Recent History & Context:
-${context || 'No prior adventures yet — this is the beginning of their journey.'}`,
+${context || 'No prior adventures yet — this is the beginning of their journey.'}${seasonalInjection}`,
     },
   ]
 
@@ -1243,6 +1276,82 @@ function getRegionFallbackEvents(regionId: string): LLMGeneratedEvent[] {
         ],
       },
     ],
+    green_meadows: [
+      {
+        id: `rfb-farmstead-${s}`,
+        description: 'A cheerful farmstead sits amid rolling hills, its fields golden with grain. The farmer waves from the porch and calls out: "Hey, traveler! Could use an extra pair of hands for the morning!"',
+        options: [
+          { id: `help-farmer-${s}`, text: 'Lend a hand with the farm work', successProbability: 0.8,
+            successDescription: 'You spend the morning helping with chores. The farmer rewards you generously with coin and fresh supplies.',
+            successEffects: { gold: 12, reputation: 3, rewardItems: processFallbackRewardItems([{ id: `farm-bread-${s}`, name: 'Fresh Farmstead Loaf', description: 'Hearty bread baked fresh this morning — restores vigor', quantity: 1, type: 'consumable', effects: { heal: 10 } }]) },
+            failureDescription: 'You do your best, but farm work is harder than it looks. The farmer thanks you with a small gift anyway.',
+            failureEffects: { reputation: 1 } },
+          { id: `decline-farmer-${s}`, text: 'Wish them well and continue on', successProbability: 1.0,
+            successDescription: 'The farmer waves you off cheerfully. "Safe travels, then!" The wildflowers nod in the breeze as you pass.',
+            successEffects: {}, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-meadow-wildfire-${s}`,
+        description: 'A spark from a nearby campfire catches the dry summer grass. Flames race across the meadow with alarming speed, and your mount shies as the smoke thickens.',
+        options: [
+          { id: `gallop-clear-fire-${s}`, text: 'Gallop your mount clear of the fire', successProbability: 0.6,
+            successDescription: 'You spur your mount hard and clear the wall of flame with seconds to spare. You both emerge singed but safe.',
+            successEffects: { reputation: 2 },
+            failureDescription: 'The fire shifts with the wind and catches your mount on the flank before you can escape.',
+            failureEffects: { mountDamage: 10 } },
+          { id: `stamp-out-fire-${s}`, text: 'Try to stamp out the fire before it spreads', successProbability: 0.5,
+            successDescription: 'You beat the fire back with your cloak and dirt. Nearby farmsteaders see your heroic effort.',
+            successEffects: { reputation: 4 },
+            failureDescription: 'The fire is too fast. You retreat, but not before it nips at your mount.',
+            failureEffects: { mountDamage: 7 } },
+        ],
+      },
+      {
+        id: `rfb-wild-boar-${s}`,
+        description: 'A large wild boar bursts from the hedgerow, tusks gleaming, charging across the meadow path directly toward you.',
+        options: [
+          { id: `fight-boar-${s}`, text: 'Draw your weapon and stand your ground', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The boar lowers its head and charges — this is going to be a fight!',
+            successEffects: {}, failureDescription: 'The boar lowers its head and charges — this is going to be a fight!', failureEffects: {} },
+          { id: `sidestep-boar-${s}`, text: 'Sidestep and let it pass', successProbability: 0.7,
+            successDescription: 'You dodge deftly and the boar thunders past into the wildflowers. No harm done.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'The boar clips you as it passes but you stay on your feet. It disappears into the meadow.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-stream-treasure-${s}`,
+        description: 'A gentle stream winds through the meadow, its clear water sparkling over smooth pebbles. One glint looks distinctly unnatural — something metallic under the surface.',
+        options: [
+          { id: `wade-stream-${s}`, text: 'Wade in and investigate the glint', successProbability: 0.6,
+            successDescription: 'Your fingers close around a small iron box wedged between the rocks. Inside: gold coins and a traveler\'s lucky charm.',
+            successEffects: { gold: 10, rewardItems: processFallbackRewardItems([{ id: `stream-charm-${s}`, name: 'Stream-Worn Lucky Stone', description: 'A smooth stone worn by the stream, cool and fortunate to the touch', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'It was just a piece of bright quartz. Pretty, but worthless. Your boots are wet now.',
+            failureEffects: {} },
+          { id: `drink-stream-${s}`, text: 'Enjoy a cool drink and move on', successProbability: 1.0,
+            successDescription: 'The stream water is fresh and invigorating. You fill your waterskin and continue refreshed.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `rfb-traveling-merchant-meadow-${s}`,
+        description: 'A colorful wagon sits parked by a wildflower hedgerow. A merchant in a bright coat calls out: "Exotic goods! Rare curiosities! Spices from the far east! Step right up!"',
+        options: [
+          { id: `browse-exotic-${s}`, text: 'Browse the exotic wares', successProbability: 0.7,
+            successDescription: 'The merchant\'s wares are genuinely remarkable. You find a rare item at a fair price.',
+            successEffects: { gold: -8, rewardItems: processFallbackRewardItems([{ id: `exotic-spice-${s}`, name: 'Exotic Spice Blend', description: 'A potent blend of rare spices said to sharpen the mind', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+            failureDescription: 'Most of it is trinkets and overpriced junk. Nothing worth buying today.',
+            failureEffects: {} },
+          { id: `trade-info-${s}`, text: 'Trade news of the road for a free sample', successProbability: 0.8,
+            successDescription: 'The merchant appreciates fresh road gossip and slips you a small vial of restorative tonic.',
+            successEffects: { reputation: 2, rewardItems: processFallbackRewardItems([{ id: `tonic-${s}`, name: 'Traveler\'s Tonic', description: 'A small restorative brew that soothes tired muscles', quantity: 1, type: 'consumable', effects: { heal: 8 } }]) },
+            failureDescription: 'The merchant listens but waves you off without offering anything. "Old news," he sniffs.',
+            failureEffects: {} },
+        ],
+      },
+    ],
     celestial_throne: [
       {
         id: `rfb-divine-sentinel-${s}`,
@@ -1300,6 +1409,169 @@ function createSpellScrollRewardItem(level: number, suffix: string): Item {
     type: 'spell_scroll',
     spell,
   })
+}
+
+function getSeasonalFallbackEvents(): LLMGeneratedEvent[] {
+  const s = `sfb-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+
+  // Oct 25 – Nov 1: Halloween
+  if ((month === 10 && day >= 25) || (month === 11 && day === 1)) {
+    return [
+      {
+        id: `sfb-jack-lantern-${s}`,
+        description: 'A carved jack-o-lantern sits alone in the middle of the road, its candle burning with an eerie green flame. Its grin seems to shift as you approach.',
+        options: [
+          { id: `smash-lantern-${s}`, text: 'Smash the lantern', successProbability: 0.5,
+            successDescription: 'A mischievous spirit bursts free with a cackle and drops a pouch of coins as thanks.',
+            successEffects: { gold: 15, reputation: 2 },
+            failureDescription: 'The smashed lantern releases a puff of foul smoke. Something unseen pinches you and cackles, then vanishes.',
+            failureEffects: { reputation: -1 } },
+          { id: `honor-lantern-${s}`, text: 'Leave an offering beside the lantern', successProbability: 0.9,
+            successDescription: 'The flame flares warmly. You feel the blessing of the harvest spirits settle upon you.',
+            successEffects: { reputation: 4, rewardItems: processFallbackRewardItems([{ id: `spirit-candy-${s}`, name: 'Ghost Pepper Candy', description: 'Spicy spirit-world candy that sharpens the senses', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'The lantern flickers out. Nothing happens.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `sfb-ghost-procession-${s}`,
+        description: 'A silent procession of translucent figures drifts across the path. Their hollow eyes glow faintly as they pass — the restless dead walking on All Hallows\' Eve.',
+        options: [
+          { id: `join-procession-${s}`, text: 'Fall in step with the ghost procession', successProbability: 0.6,
+            successDescription: 'The spirits accept your presence. They lead you to a hidden grave mound — inside: ancient burial gold.',
+            successEffects: { gold: 18, reputation: 3 },
+            failureDescription: 'The spirits turn and leer at you. You feel a chill pass through your bones but they move on without harming you.',
+            failureEffects: {} },
+          { id: `ward-off-ghosts-${s}`, text: 'Make a warding sign and step aside', successProbability: 1.0,
+            successDescription: 'The ghosts pass without incident. One turns and nods — perhaps a grateful soul.',
+            successEffects: { reputation: 1 }, failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `sfb-fog-wraith-${s}`,
+        description: 'Thick, unnatural fog rolls across the meadow. Within it, a shape coalesces — the veil between worlds is thin tonight.',
+        options: [
+          { id: `fight-wraith-${s}`, text: 'Draw your weapon against the wraith', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The fog-wraith solidifies and shrieks — it means to fight!',
+            successEffects: {}, failureDescription: 'The fog-wraith solidifies and shrieks — it means to fight!', failureEffects: {} },
+          { id: `speak-wraith-${s}`, text: 'Call out to the wraith peacefully', successProbability: 0.6,
+            successDescription: 'The wraith is a lost soul seeking remembrance. It gifts you a token from the other side before dissolving into the fog.',
+            successEffects: { reputation: 4, rewardItems: processFallbackRewardItems([{ id: `wraith-token-${s}`, name: 'Wraith\'s Token', description: 'A cold coin from beyond the veil, radiating luck', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: 'The wraith moans and drifts away. The fog thickens, then slowly clears.',
+            failureEffects: {} },
+        ],
+      },
+    ]
+  }
+
+  // Dec 1 – Jan 6: Winter / Yuletide
+  if (month === 12 || (month === 1 && day <= 6)) {
+    return [
+      {
+        id: `sfb-gift-giver-${s}`,
+        description: 'A mysterious figure in a heavy winter cloak trudges through the snow toward you, a large sack over one shoulder. They stop and study you with twinkling eyes. "I know what\'s in your heart, traveler."',
+        options: [
+          { id: `greet-gift-giver-${s}`, text: 'Greet them warmly', successProbability: 0.8,
+            successDescription: 'The gift-giver reaches into the sack and produces something perfectly suited to your needs. "May your journey be bright."',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `yuletide-gift-${s}`, name: 'Yuletide Gift', description: 'A wrapped gift that radiates warmth and good fortune', quantity: 1, type: 'consumable', effects: { heal: 15, luck: 1 } }]) },
+            failureDescription: 'The gift-giver shakes their head sadly. "Not yet ready, perhaps." They trudge on.',
+            failureEffects: {} },
+          { id: `follow-gift-giver-${s}`, text: 'Follow them out of curiosity', successProbability: 0.5,
+            successDescription: 'They lead you to a cozy inn hidden in the snow. The innkeeper says your stay has been paid.',
+            successEffects: { gold: 10, reputation: 2 },
+            failureDescription: 'They disappear around a snow drift. No inn, no gift — just your footprints in the snow.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `sfb-frozen-hearth-${s}`,
+        description: 'A lone hearth fire burns in the ruins of a snow-covered cottage. Fresh bread sits on the windowsill, still steaming, as if left just moments ago.',
+        options: [
+          { id: `eat-bread-${s}`, text: 'Take the bread and warm yourself', successProbability: 0.9,
+            successDescription: 'The bread is delicious and the fire warms you through. You feel restored.',
+            successEffects: { rewardItems: processFallbackRewardItems([{ id: `winter-bread-${s}`, name: 'Yuletide Loaf', description: 'Warm bread infused with the magic of winter hearths', quantity: 1, type: 'consumable', effects: { heal: 20 } }]) },
+            failureDescription: 'The bread is wonderful but no one appears. You leave a coin by the hearth as thanks.',
+            failureEffects: {} },
+          { id: `wait-by-hearth-${s}`, text: 'Wait to see who returns', successProbability: 0.6,
+            successDescription: 'An old woman appears and thanks you for your patience. She shares her supply of healing salves.',
+            successEffects: { reputation: 3, gold: 5 },
+            failureDescription: 'No one comes. The fire dies and the snow closes in.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `sfb-snow-giant-${s}`,
+        description: 'A towering figure of packed snow shambles toward you — not a natural snowfall, but something animated by the winter spirits. Its eyes glow blue-white in the storm.',
+        options: [
+          { id: `fight-snow-giant-${s}`, text: 'Stand and fight the snow giant', triggersCombat: true,
+            successProbability: 0.5, successDescription: 'The snow giant raises fists of packed ice and roars!',
+            successEffects: {}, failureDescription: 'The snow giant raises fists of packed ice and roars!', failureEffects: {} },
+          { id: `offer-snow-giant-${s}`, text: 'Offer it your warmest scarf', successProbability: 0.7,
+            successDescription: 'The creature stops, tilts its head, then scoops up a mound of snow — inside is a frozen gem it drops at your feet.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `winter-gem-${s}`, name: 'Winter\'s Heart Gem', description: 'A gem frozen in the heart of a snowstorm, cold to the touch', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+            failureDescription: 'The giant examines the scarf and shambles away, unimpressed but peaceful.',
+            failureEffects: {} },
+        ],
+      },
+    ]
+  }
+
+  // Mar 20 – Jun 20: Spring
+  if ((month === 3 && day >= 20) || month === 4 || month === 5 || (month === 6 && day <= 20)) {
+    return [
+      {
+        id: `sfb-spring-fey-${s}`,
+        description: 'The air smells of fresh blossoms and new rain. A fey sprite emerges from a budding flower, wings dusted with pollen, and regards you with curious spring-bright eyes.',
+        options: [
+          { id: `play-sprite-${s}`, text: 'Play along with the sprite\'s games', successProbability: 0.7,
+            successDescription: 'The sprite leads a dance through the blooming meadow and gifts you a vial of spring nectar.',
+            successEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `spring-nectar-${s}`, name: 'Spring Fey Nectar', description: 'A vial of potent nectar from the first flowers of spring', quantity: 1, type: 'consumable', effects: { heal: 15, luck: 1 } }]) },
+            failureDescription: 'You trip on a root mid-dance and the sprite dissolves into giggles and vanishes.',
+            failureEffects: { reputation: -1 } },
+          { id: `gift-flower-sprite-${s}`, text: 'Offer a wildflower in greeting', successProbability: 1.0,
+            successDescription: 'The sprite beams and twirls the flower into a lucky charm for you.',
+            successEffects: { reputation: 2, rewardItems: processFallbackRewardItems([{ id: `spring-charm-${s}`, name: 'Bloom Charm', description: 'A spring bloom twisted into a lucky token by a fey sprite', quantity: 1, type: 'consumable', effects: { luck: 1 } }]) },
+            failureDescription: '', failureEffects: {} },
+        ],
+      },
+      {
+        id: `sfb-swollen-river-${s}`,
+        description: 'Spring snowmelt has swollen the river to bursting. The usual ford is impassable. A rickety rope bridge is the only crossing — but it strains loudly in the current.',
+        options: [
+          { id: `cross-rope-bridge-${s}`, text: 'Cross the rope bridge quickly', successProbability: 0.6,
+            successDescription: 'The bridge holds! On the far bank you spot a waterproof satchel caught against the reeds.',
+            successEffects: { gold: 8, rewardItems: processFallbackRewardItems([{ id: `waterproof-bag-${s}`, name: 'Waterproof Satchel', description: 'A sealed satchel containing dry herbs and a map fragment', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+            failureDescription: 'A rope snaps and you barely catch the far post, hauling yourself over. Soaked but alive.',
+            failureEffects: {} },
+          { id: `find-upstream-${s}`, text: 'Scout upstream for a safer crossing', successProbability: 0.8,
+            successDescription: 'You find a natural rock ford upstream and cross safely. The detour was worth it.',
+            successEffects: { reputation: 1 },
+            failureDescription: 'The upstream crossing is worse. Eventually you backtrack and use the bridge anyway.',
+            failureEffects: {} },
+        ],
+      },
+      {
+        id: `sfb-spring-festival-${s}`,
+        description: 'A village is celebrating the spring festival — colorful ribbons, music, and laughter fill the square. A cheerful elder beckons you to join the festivities.',
+        options: [
+          { id: `join-festival-${s}`, text: 'Join the spring festival', successProbability: 0.9,
+            successDescription: 'You dance, share food, and trade stories. The villagers are charmed and send you off with gifts.',
+            successEffects: { reputation: 4, gold: 6 },
+            failureDescription: 'You try to join but feel out of place. Still, a kind child offers you a piece of festival cake.',
+            failureEffects: { reputation: 1 } },
+          { id: `watch-festival-${s}`, text: 'Watch from the edge of the village', successProbability: 1.0,
+            successDescription: 'The music lifts your spirits. A villager notices and brings you a cup of spring mead.',
+            successEffects: { reputation: 1, rewardItems: processFallbackRewardItems([{ id: `spring-mead-${s}`, name: 'Spring Festival Mead', description: 'Sweet mead brewed from the first blossoms', quantity: 1, type: 'consumable', effects: { heal: 8 } }]) },
+            failureDescription: '', failureEffects: {} },
+        ],
+      },
+    ]
+  }
+
+  return []
 }
 
 function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
@@ -1949,8 +2221,9 @@ function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
     },
   ]
 
-  // Add region-specific events to the pool for non-generic regions
-  const combinedPool = [...regionSpecificEvents, ...pool]
+  // Add seasonal and region-specific events to the pool
+  const seasonalEvents = getSeasonalFallbackEvents()
+  const combinedPool = [...seasonalEvents, ...regionSpecificEvents, ...pool]
 
   // Randomly pick 3 events from the combined pool (region events are at front so they're more likely)
   const shuffled = combinedPool.sort(() => Math.random() - 0.5)
@@ -2006,6 +2279,11 @@ export async function generateLegendaryEvent(
     reputationGuidance = `This character has a ${reputationTier} reputation (${character.reputation}). Even unknown adventurers can stumble upon legendary moments of fate.`
   }
 
+  const legendarySeasonalContext = getSeasonalContext()
+  const legendarySeasonalInjection = legendarySeasonalContext
+    ? `\n\nIMPORTANT — Seasonal context: ${legendarySeasonalContext}. Weave this theme subtly into the event's atmosphere and descriptions.`
+    : ''
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
@@ -2030,7 +2308,7 @@ Character:
 ${JSON.stringify(character, null, 2)}
 
 Recent History & Context:
-${context || 'No prior adventures yet — this is the beginning of their journey.'}`,
+${context || 'No prior adventures yet — this is the beginning of their journey.'}${legendarySeasonalInjection}`,
     },
   ]
 
@@ -2312,6 +2590,243 @@ function getDefaultLegendaryEvent(character: FantasyCharacter): LLMGeneratedEven
           },
           failureDescription: 'The shrine absorbs your gold silently. Nothing else happens — perhaps it simply was not the right time.',
           failureEffects: { gold: -10 },
+        },
+      ],
+    },
+    // 6. The Wandering Sage
+    {
+      id: `leg-sage-${s}`,
+      description: 'An ancient scholar in travel-worn robes sits on a milestone, surrounded by floating tomes and scrolls. Their eyes hold the depth of centuries. "I have wandered all the world\'s roads. Sit with me, and I will share what I have found."',
+      options: [
+        {
+          id: `learn-sage-${s}`,
+          text: 'Ask the sage to teach you',
+          successProbability: 1.0,
+          successDescription: 'The sage speaks for an hour, imparting knowledge that shifts your understanding of the world. A powerful spell crystallizes from the lesson.',
+          successEffects: {
+            reputation: 6,
+            rewardItems: [createSpellScrollRewardItem(character.level + 4, `sage-scroll-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `ask-sage-map-${s}`,
+          text: 'Ask for a map to a legendary dungeon',
+          successProbability: 0.5,
+          successDescription: 'The sage smiles and produces a hand-drawn map to a legendary site. "The dungeon is real. Whether you are ready is another matter."',
+          successEffects: {
+            reputation: 5,
+            rewardItems: processFallbackRewardItems([
+              { id: `sage-dungeon-map-${s}`, name: 'Scholar\'s Dungeon Map', description: 'A precisely drawn map to a legendary dungeon, annotated in the sage\'s own hand', quantity: 1, type: 'quest' },
+            ]),
+          },
+          failureDescription: 'The sage searches their scrolls but shakes their head. "I once knew that place, but the map has been lost. What I can give you is wisdom instead."',
+          failureEffects: { reputation: 3, rewardItems: [createSpellScrollRewardItem(character.level + 2, `sage-fallback-${s}`)] },
+        },
+        {
+          id: `ask-sage-stat-${s}`,
+          text: 'Ask for training to improve your abilities',
+          successProbability: 0.8,
+          successDescription: 'The sage puts you through a demanding mental and physical regimen. By sunset, you feel genuinely transformed.',
+          successEffects: {
+            reputation: 4,
+            rewardItems: processFallbackRewardItems([
+              { id: `sage-training-${s}`, name: 'Essence of Mastery', description: 'A concentrated essence produced by the sage\'s training regimen, permanently improving the mind', quantity: 1, type: 'consumable', effects: { intelligence: 3 } },
+            ]),
+          },
+          failureDescription: 'The training is exhausting and you struggle to keep up. Still, the sage gives you a small token of encouragement.',
+          failureEffects: { reputation: 2, rewardItems: processFallbackRewardItems([{ id: `sage-token-${s}`, name: 'Sage\'s Token', description: 'A small carved stone given to students of promise', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+        },
+      ],
+    },
+    // 7. The Cursed Heirloom
+    {
+      id: `leg-heirloom-${s}`,
+      description: 'A dying knight slumps against a waystone, their legendary sword planted in the earth before them. They look up with fading eyes: "I was tasked to find a worthy heir for this blade... It seems fate has brought you here."',
+      options: [
+        {
+          id: `accept-cursed-sword-${s}`,
+          text: 'Accept the legendary blade',
+          successProbability: 1.0,
+          successDescription: 'The knight releases the hilt and you grasp the weapon. Power surges through you — this sword has seen a hundred battles and carries their strength.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: processFallbackRewardItems([
+              { id: `heirloom-blade-${s}`, name: 'Knight\'s Legacy Blade', description: 'A legendary sword passed down through generations of champions — its edge never dulls', quantity: 1, type: 'equipment', effects: { strength: 5, luck: 1 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `refuse-heirloom-${s}`,
+          text: 'Respectfully decline — the sword deserves a better heir',
+          successProbability: 1.0,
+          successDescription: 'The knight\'s eyes clear momentarily. "Your humility honors me, adventurer." They press a pouch of ancient gold into your hand instead. "For your kindness."',
+          successEffects: {
+            gold: 30 + character.level * 8,
+            reputation: 8,
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `learn-history-heirloom-${s}`,
+          text: 'Ask the knight to share the sword\'s history before they pass',
+          successProbability: 0.7,
+          successDescription: 'The knight speaks for an hour — tales of legendary battles. Their story, told fully, draws power into a scroll. Then they press the blade on you as well.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: [
+              createSpellScrollRewardItem(character.level + 3, `heirloom-scroll-${s}`),
+              ...(processFallbackRewardItems([{ id: `heirloom-blade2-${s}`, name: 'Knight\'s Legacy Blade', description: 'A legendary sword passed down through generations of champions', quantity: 1, type: 'equipment', effects: { strength: 4 } }]) ?? []),
+            ],
+          },
+          failureDescription: 'The knight fades before finishing their tale. You are left with the sword and an unfinished story.',
+          failureEffects: { reputation: 3, rewardItems: processFallbackRewardItems([{ id: `heirloom-blade3-${s}`, name: 'Knight\'s Legacy Blade', description: 'A legendary sword — its full history untold', quantity: 1, type: 'equipment', effects: { strength: 3 } }]) },
+        },
+      ],
+    },
+    // 8. The Living Constellation
+    {
+      id: `leg-constellation-${s}`,
+      description: 'Stars descend from the night sky, forming a shimmering humanoid figure of pure light above the road. It speaks in a voice like the turning of celestial spheres: "We have observed you, small one. We offer a trial. Pass, and we will grant you power beyond the ordinary."',
+      options: [
+        {
+          id: `accept-trial-str-${s}`,
+          text: 'Accept the Trial of Strength',
+          successProbability: 0.6,
+          successDescription: 'You endure the constellation\'s trial — tests of endurance and will beyond mortal expectation. Stars shower down as a reward.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: processFallbackRewardItems([
+              { id: `star-strength-${s}`, name: 'Fallen Star — Strength', description: 'A crystallized star fragment that surges with martial power', quantity: 1, type: 'consumable', effects: { strength: 4 } },
+            ]),
+          },
+          failureDescription: 'The trial breaks you before you finish. The constellation watches without judgment as you fall. "Try again in another life, small one."',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `accept-trial-int-${s}`,
+          text: 'Accept the Trial of the Mind',
+          successProbability: 0.6,
+          successDescription: 'The constellation poses riddles drawn from the fabric of the universe. You answer the last — barely — and the stars rain arcane knowledge.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: processFallbackRewardItems([
+              { id: `star-intelligence-${s}`, name: 'Fallen Star — Wisdom', description: 'A crystallized star fragment radiating arcane insight', quantity: 1, type: 'consumable', effects: { intelligence: 4 } },
+            ]),
+          },
+          failureDescription: 'The riddles exceed your understanding. The constellation fades: "The stars will wait."',
+          failureEffects: { reputation: 2 },
+        },
+        {
+          id: `contemplate-constellation-${s}`,
+          text: 'Simply stand in awe and ask for nothing',
+          successProbability: 1.0,
+          successDescription: 'The constellation is moved by your humility. It reaches down and leaves a blessing of luck — a gentle hand of starlight on your brow.',
+          successEffects: {
+            reputation: 6,
+            rewardItems: processFallbackRewardItems([
+              { id: `star-luck-${s}`, name: 'Fallen Star — Fortune', description: 'A crystallized star fragment brimming with cosmic luck', quantity: 1, type: 'consumable', effects: { luck: 4 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 9. The World Tree Sapling
+    {
+      id: `leg-world-tree-${s}`,
+      description: 'In a clearing bathed in golden light, a sapling glows with the unmistakable life-force of the World Tree itself. Its roots have barely touched the earth, yet it hums with ancient power. A voice emanates from its bark: "Take me, or plant me — the choice is yours."',
+      options: [
+        {
+          id: `take-branch-${s}`,
+          text: 'Take a branch from the sapling',
+          successProbability: 1.0,
+          successDescription: 'The sapling yields a branch willingly. It immediately shapes itself into a legendary staff radiating nature magic.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: processFallbackRewardItems([
+              { id: `world-tree-staff-${s}`, name: 'World Tree Branch', description: 'A living branch from the World Tree itself, still pulsing with ancient nature power', quantity: 1, type: 'equipment', effects: { intelligence: 4, strength: 2 } },
+            ]),
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `plant-sapling-${s}`,
+          text: 'Plant the sapling in sacred ground',
+          successProbability: 0.8,
+          successDescription: 'You carefully plant the sapling at the clearing\'s heart. As it roots, a burst of golden light rewards your selflessness — coins rain from its first leaves, and your name will be remembered.',
+          successEffects: {
+            gold: 25 + character.level * 6,
+            reputation: 10,
+          },
+          failureDescription: 'You search for the right spot but the sapling\'s glow dims — it must be planted here. You do, and feel at peace, though no material reward follows.',
+          failureEffects: { reputation: 6 },
+        },
+        {
+          id: `commune-world-tree-${s}`,
+          text: 'Commune with the sapling and listen to what it says',
+          successProbability: 1.0,
+          successDescription: 'You press your hands to its bark. In a rush of vision you see the whole world, its roots, its future. Knowledge crystallizes — a scroll unlike any other.',
+          successEffects: {
+            reputation: 7,
+            rewardItems: [createSpellScrollRewardItem(character.level + 5, `world-tree-scroll-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+      ],
+    },
+    // 10. The Ancient Automaton
+    {
+      id: `leg-automaton-${s}`,
+      description: 'Standing in the rubble of a pre-civilization ruin is a construct of impossible complexity — gears within gears, runes etched on brass skin. Its eyes flicker on as you approach. "Unit... online. You are the first organic lifeform detected in... 4,217 years. Query: what do you require?"',
+      options: [
+        {
+          id: `request-knowledge-${s}`,
+          text: 'Ask the automaton for knowledge of lost civilizations',
+          successProbability: 1.0,
+          successDescription: 'The automaton downloads eons of archived knowledge into your mind. The sheer volume is dizzying — but a crystallized scroll forms from the overflow.',
+          successEffects: {
+            reputation: 6,
+            rewardItems: [createSpellScrollRewardItem(character.level + 5, `automaton-scroll-${s}`)],
+          },
+          failureDescription: '',
+          failureEffects: {},
+        },
+        {
+          id: `request-combat-aid-${s}`,
+          text: 'Request the automaton\'s combat protocols',
+          successProbability: 0.7,
+          successDescription: 'The automaton performs a weapons analysis and forges a combat enhancement from its own chassis — a legendary piece of equipment calibrated perfectly to you.',
+          successEffects: {
+            reputation: 5,
+            rewardItems: processFallbackRewardItems([
+              { id: `automaton-module-${s}`, name: 'Automaton Combat Module', description: 'A precision-crafted module from a pre-civilization construct, enhancing combat performance', quantity: 1, type: 'equipment', effects: { strength: 3, intelligence: 2, luck: 1 } },
+            ]),
+          },
+          failureDescription: 'The automaton\'s combat database is corrupted. "Combat protocols unavailable. Offering archived treasure coordinates instead."',
+          failureEffects: { gold: 20 + character.level * 5, reputation: 3 },
+        },
+        {
+          id: `reactivate-automaton-${s}`,
+          text: 'Offer to help restore the automaton to full function',
+          successProbability: 0.5,
+          successDescription: 'With great effort you locate a power source nearby and restore the automaton. Its gratitude is immense — it transfers its remaining treasury to you.',
+          successEffects: {
+            gold: 40 + character.level * 10,
+            reputation: 8,
+            rewardItems: processFallbackRewardItems([
+              { id: `automaton-core-${s}`, name: 'Automaton Power Core', description: 'The restored power core of an ancient construct, radiating enormous energy', quantity: 1, type: 'equipment', effects: { intelligence: 3, strength: 2 } },
+            ]),
+          },
+          failureDescription: 'The power source proves incompatible. The automaton\'s eyes dim. "Attempt appreciated. Transferring emergency cache." A small but valuable reward materializes.',
+          failureEffects: { gold: 15, reputation: 4 },
         },
       ],
     },
