@@ -208,6 +208,7 @@ export function useCharacterCreation() {
       classData,
       difficultyMode: selectedDifficulty.id,
       currentRegion: 'green_meadows',
+      currentWeather: 'clear',
       visitedRegions: ['green_meadows'],
       factionReputations: {},
     }

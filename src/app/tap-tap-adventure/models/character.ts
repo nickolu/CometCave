@@ -58,6 +58,7 @@ export const FantasyCharacterSchema = z.object({
   unlockedTreeSkillIds: z.array(z.string()).optional(),
   difficultyMode: z.string().optional().default('normal'),
   currentRegion: z.string().optional().default('green_meadows'),
+  currentWeather: z.string().optional().default('clear'),
   visitedRegions: z.array(z.string()).optional(),
   mainQuest: MainQuestSchema.optional(),
   campState: CampStateSchema.optional(),

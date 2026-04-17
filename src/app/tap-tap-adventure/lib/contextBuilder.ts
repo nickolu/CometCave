@@ -1,4 +1,5 @@
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { WEATHER_TYPES, WeatherId } from '@/app/tap-tap-adventure/config/weather'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 import { FACTIONS, FACTION_IDS, getFactionRepTier } from '@/app/tap-tap-adventure/config/factions'
@@ -74,6 +75,12 @@ export function buildStoryContext(
     `Region: ${region.name} (${region.difficulty}) — ${region.theme}. ` +
     `Dominant element: ${region.element}. Common threats: ${region.enemyTypes.join(', ') || 'none'}.`
   )
+
+  // Weather context (skip for clear skies — no atmospheric effect to describe)
+  const weatherType = WEATHER_TYPES[(character.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
+  if (weatherType.id !== 'clear') {
+    parts.push(`Weather: ${weatherType.icon} ${weatherType.name} — ${weatherType.description}`)
+  }
 
   // Faction standings
   const factionReps = character.factionReputations ?? {}

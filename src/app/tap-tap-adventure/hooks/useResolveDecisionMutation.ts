@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -89,7 +90,7 @@ export function useResolveDecisionMutation() {
         }
 
         soundEngine.playCrossroads()
-        updateSelectedCharacter({ currentRegion: regionId })
+        updateSelectedCharacter({ currentRegion: regionId, currentWeather: rollWeather(regionId) })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         addStoryEvent({
           id: `result-${Date.now()}`,
