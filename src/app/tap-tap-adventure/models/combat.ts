@@ -99,6 +99,8 @@ export const CombatPlayerStateSchema = z.object({
   mountMovesRemaining: z.number().optional(),
   mountHp: z.number().optional(),
   mountMaxHp: z.number().optional(),
+  mercenaryHp: z.number().optional(),
+  mercenaryMaxHp: z.number().optional(),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 

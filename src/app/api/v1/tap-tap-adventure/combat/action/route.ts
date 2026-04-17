@@ -43,6 +43,17 @@ export async function POST(req: NextRequest) {
       updatedCharacter = { ...updatedCharacter, activeMount: null }
     }
 
+    // Persist mercenary HP from combat state back to character
+    if (updatedCombat.playerState.mercenaryHp !== undefined && updatedCharacter.activeMercenary) {
+      updatedCharacter = {
+        ...updatedCharacter,
+        activeMercenary: {
+          ...updatedCharacter.activeMercenary,
+          hp: updatedCombat.playerState.mercenaryHp,
+        },
+      }
+    }
+
     return NextResponse.json({
       combatState: updatedCombat,
       rewards,
