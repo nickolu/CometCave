@@ -8,7 +8,7 @@ import { clampReputation } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { getMetaBonuses, MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
-import { computeUnlockedSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
+import { computeUnlockedSkillIds, computeUnlockedTreeSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
@@ -235,6 +235,19 @@ export const useGameStore = create<GameStore>()(
                 state.gameState.characters[characterIndex] = {
                   ...state.gameState.characters[characterIndex],
                   unlockedSkills: skillIds,
+                }
+              }
+            }
+            // Check and unlock class skill tree nodes
+            const treeSkillIds = computeUnlockedTreeSkillIds(updatedCharacter)
+            if (treeSkillIds.length !== (updatedCharacter.unlockedTreeSkillIds ?? []).length) {
+              const characterIndex = state.gameState.characters.findIndex(
+                char => char.id === updatedCharacter.id
+              )
+              if (characterIndex !== -1) {
+                state.gameState.characters[characterIndex] = {
+                  ...state.gameState.characters[characterIndex],
+                  unlockedTreeSkillIds: treeSkillIds,
                 }
               }
             }
@@ -823,6 +836,10 @@ export const useGameStore = create<GameStore>()(
               const hp = getMountMaxHp(rarity)
               ;(char as FantasyCharacter).activeMount!.hp = hp
               ;(char as FantasyCharacter).activeMount!.maxHp = hp
+            }
+            // v19: Add unlockedTreeSkillIds
+            if ((char as FantasyCharacter).unlockedTreeSkillIds === undefined) {
+              ;(char as FantasyCharacter).unlockedTreeSkillIds = []
             }
           }
         }

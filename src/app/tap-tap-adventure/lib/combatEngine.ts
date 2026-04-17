@@ -45,10 +45,27 @@ import {
   tickStatusEffects,
 } from './statusEffects'
 
-/** Resolve unlocked Skill objects from the character's stored skill IDs. */
+/** Resolve all unlocked Skill objects: global skills plus class skill tree nodes. */
 function resolveSkills(character: FantasyCharacter): Skill[] {
-  const ids = character.unlockedSkills ?? []
-  return SKILLS.filter(s => ids.includes(s.id))
+  const globalIds = character.unlockedSkills ?? []
+  const globalSkills = SKILLS.filter(s => globalIds.includes(s.id))
+
+  const tree = character.classSkillTree
+  if (!tree) return globalSkills
+  const treeIds = new Set(character.unlockedTreeSkillIds ?? [])
+  const treeSkills: Skill[] = tree.nodes
+    .filter(n => treeIds.has(n.id))
+    .map(n => ({
+      id: n.id,
+      name: n.name,
+      description: n.description,
+      icon: n.icon,
+      category: 'combat' as const,
+      effect: n.effect,
+      requirement: { type: 'level' as const, value: n.requiredLevel },
+    }))
+
+  return [...globalSkills, ...treeSkills]
 }
 
 export function initializePlayerCombatState(character: FantasyCharacter): CombatPlayerState {

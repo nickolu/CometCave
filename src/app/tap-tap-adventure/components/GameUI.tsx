@@ -33,6 +33,7 @@ import { RegionMap } from './RegionMap'
 import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
 import { OnboardingHint } from './OnboardingHint'
+import { SkillPanel } from './SkillPanel'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -501,6 +502,14 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <RegionMap
                 currentRegionId={character?.currentRegion ?? 'green_meadows'}
                 characterLevel={character?.level ?? 1}
+              />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <SkillPanel
+                unlockedSkillIds={getSelectedCharacter()?.unlockedSkills ?? []}
+                classSkillTree={getSelectedCharacter()?.classSkillTree}
+                unlockedTreeSkillIds={getSelectedCharacter()?.unlockedTreeSkillIds ?? []}
+                characterLevel={getSelectedCharacter()?.level ?? 1}
               />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">

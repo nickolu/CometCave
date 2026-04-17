@@ -93,3 +93,28 @@ export function computeUnlockedSkillIds(
 ): string[] {
   return getUnlockedSkills(character, achievements).map(s => s.id)
 }
+
+/**
+ * Compute which class skill tree node IDs should be unlocked based on the
+ * character's level and prerequisite chain.
+ *
+ * Prerequisites must always reference lower-tier nodes (enforced during tree
+ * generation), so iterating tier-ascending prevents cycles without a full
+ * graph check.
+ */
+export function computeUnlockedTreeSkillIds(character: FantasyCharacter): string[] {
+  if (!character.classSkillTree) return []
+
+  const unlockedSet = new Set<string>()
+  const nodes = [...character.classSkillTree.nodes].sort((a, b) => a.tier - b.tier)
+
+  for (const node of nodes) {
+    const levelOk = character.level >= node.requiredLevel
+    const prereqsOk = node.prerequisiteIds.every(id => unlockedSet.has(id))
+    if (levelOk && prereqsOk) {
+      unlockedSet.add(node.id)
+    }
+  }
+
+  return Array.from(unlockedSet)
+}
