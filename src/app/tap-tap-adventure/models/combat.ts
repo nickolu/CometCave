@@ -90,6 +90,7 @@ export const CombatPlayerStateSchema = z.object({
   spellCooldowns: z.record(z.string(), z.number()).optional(),
   activeSpellEffects: z.array(ActiveSpellEffectSchema).optional(),
   spellTagsUsed: z.array(z.string()).optional(),
+  lastCastSpellElements: z.array(z.string()).optional(),
   shield: z.number().default(0),
   statusEffects: z.array(StatusEffectSchema).optional(),
   ap: z.number().default(3),
