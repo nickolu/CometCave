@@ -81,14 +81,14 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (period === 'daily') {
       return data.entries.map((entry: DailyEntry, i: number) => {
-        const isCurrentUser = entry.displayName.toLowerCase().trim() === currentName
+        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
         return (
           <LeaderboardRow
             key={`${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName}
-            primary={entry.score.toLocaleString()}
-            secondary={`${entry.correct}/${entry.total} correct`}
+            name={entry.displayName ?? 'Unknown'}
+            primary={(entry.score ?? 0).toLocaleString()}
+            secondary={`${entry.correct ?? 0}/${entry.total ?? 0} correct`}
             isCurrentUser={isCurrentUser}
           />
         )
@@ -97,17 +97,18 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (period === 'weekly') {
       return data.entries.map((entry: WeeklyEntry, i: number) => {
-        const isCurrentUser = entry.displayName.toLowerCase().trim() === currentName
-        const accuracy = entry.totalQuestions > 0
-          ? Math.round((entry.totalCorrect / entry.totalQuestions) * 100)
+        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
+        const totalQ = entry.totalQuestions ?? 0
+        const accuracy = totalQ > 0
+          ? Math.round(((entry.totalCorrect ?? 0) / totalQ) * 100)
           : 0
         return (
           <LeaderboardRow
             key={`${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName}
-            primary={entry.totalScore.toLocaleString()}
-            secondary={`${entry.gamesPlayed} games · ${accuracy}%`}
+            name={entry.displayName ?? 'Unknown'}
+            primary={(entry.totalScore ?? 0).toLocaleString()}
+            secondary={`${entry.gamesPlayed ?? 0} games · ${accuracy}%`}
             isCurrentUser={isCurrentUser}
           />
         )
@@ -116,14 +117,15 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (period === 'alltime') {
       return data.entries.map((entry: AllTimeEntry, i: number) => {
-        const isCurrentUser = entry.displayName.toLowerCase().trim() === currentName
+        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
+        const wins = entry.weeklyWins ?? 0
         return (
           <LeaderboardRow
             key={`${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName}
-            primary={`${entry.weeklyWins} ${entry.weeklyWins === 1 ? 'win' : 'wins'}`}
-            secondary={`${entry.totalScore.toLocaleString()} pts`}
+            name={entry.displayName ?? 'Unknown'}
+            primary={`${wins} ${wins === 1 ? 'win' : 'wins'}`}
+            secondary={`${(entry.totalScore ?? 0).toLocaleString()} pts`}
             isCurrentUser={isCurrentUser}
           />
         )
