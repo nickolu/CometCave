@@ -15,6 +15,7 @@ import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana 
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { createMainQuest } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { getUpgradeById } from '@/app/tap-tap-adventure/config/eternalUpgrades'
+import { getCampBonuses as computeCampBonuses, getBuildingById, CampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
@@ -99,6 +100,8 @@ export interface GameStore {
   awardSoulEssence: (character: FantasyCharacter, bonusMultiplier?: number) => number
   purchaseUpgrade: (upgradeId: string) => boolean
   getMetaBonuses: () => MetaBonuses
+  upgradeBuilding: (buildingId: string) => boolean
+  getCampBonuses: () => CampBonuses
   setRunSummary: (summary: RunSummaryData) => void
   clearRunSummary: () => void
 }
@@ -189,6 +192,7 @@ export const useGameStore = create<GameStore>()(
             const oldDistance = selectedCharacter.distance || 0
             const newDistance = oldDistance + 1
             const metaBonuses = get().getMetaBonuses()
+            const campBonuses = get().getCampBonuses()
             let updatedCharacter = applyLevelFromDistance({
               ...selectedCharacter,
               distance: newDistance,
@@ -198,7 +202,8 @@ export const useGameStore = create<GameStore>()(
             const oldDay = calculateDay(oldDistance)
             const newDay = calculateDay(newDistance)
             if (newDay > oldDay && updatedCharacter.activeMount) {
-              const cost = updatedCharacter.activeMount.dailyCost ?? 0
+              const rawCost = updatedCharacter.activeMount.dailyCost ?? 0
+              const cost = Math.max(0, Math.floor(rawCost * (1 - campBonuses.mountUpkeepDiscountPct / 100)))
               const newGold = updatedCharacter.gold - cost
               if (newGold < 0) {
                 // Can't afford upkeep — auto-release mount
@@ -741,6 +746,39 @@ export const useGameStore = create<GameStore>()(
         if (!meta) return getMetaBonuses({})
         return getMetaBonuses(meta.upgradeLevels)
       },
+      upgradeBuilding: (buildingId: string) => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return false
+
+        const building = getBuildingById(buildingId)
+        if (!building) return false
+
+        const currentLevel = selectedCharacter.campState?.buildingLevels[buildingId] ?? 0
+        if (currentLevel >= building.maxLevel) return false
+
+        const cost = building.costPerLevel[currentLevel]
+        if (cost === undefined || selectedCharacter.gold < cost) return false
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            const char = state.gameState.characters[charIndex]
+            if (!char.campState) {
+              char.campState = { buildingLevels: {} }
+            }
+            char.gold -= cost
+            char.campState.buildingLevels[buildingId] = currentLevel + 1
+          })
+        )
+        return true
+      },
+      getCampBonuses: () => {
+        const char = get().getSelectedCharacter()
+        return computeCampBonuses(char?.campState?.buildingLevels ?? {})
+      },
       setRunSummary: (summary: RunSummaryData) => {
         set(
           produce((state: GameStore) => {
@@ -758,7 +796,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 18,
+      version: 19,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -840,6 +878,10 @@ export const useGameStore = create<GameStore>()(
             // v19: Add unlockedTreeSkillIds
             if ((char as FantasyCharacter).unlockedTreeSkillIds === undefined) {
               ;(char as FantasyCharacter).unlockedTreeSkillIds = []
+            }
+            // v19: Add campState
+            if ((char as FantasyCharacter).campState === undefined) {
+              ;(char as FantasyCharacter).campState = { buildingLevels: {} }
             }
           }
         }

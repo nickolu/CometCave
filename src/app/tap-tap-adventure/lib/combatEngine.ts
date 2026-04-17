@@ -20,6 +20,7 @@ import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getRandomMount, getMountFreeMoves, getMountFleeBonus, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
+import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 
 import { applyCombatItemEffect, isUsableInCombat } from './combatItemEffects'
 import { calculateMaxMana } from './leveling'
@@ -80,6 +81,9 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const mountIntBonus = character.activeMount?.bonuses?.intelligence ?? 0
   const mountLuckBonus = character.activeMount?.bonuses?.luck ?? 0
 
+  // Calculate camp bonuses
+  const campBonuses = getCampBonuses(character.campState?.buildingLevels ?? {})
+
   // Resolve passive skill bonuses
   const skills = resolveSkills(character)
   const attackBonus = getSkillBonus(skills, 'attack')
@@ -91,8 +95,8 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
   const maxMana = character.maxMana ?? calculateMaxMana(character)
   const currentMana = character.mana ?? maxMana
 
-  const baseAttack = 2 + character.strength + mountStrBonus + Math.floor(character.level / 2) + weaponBonus * 2
-  const baseDefense = 1 + Math.floor((character.intelligence + mountIntBonus) / 2) + Math.floor(character.level / 2) + armorBonus
+  const baseAttack = 2 + character.strength + mountStrBonus + campBonuses.bonusStrength + Math.floor(character.level / 2) + weaponBonus * 2
+  const baseDefense = 1 + Math.floor((character.intelligence + mountIntBonus) / 2) + Math.floor(campBonuses.bonusIntelligence / 2) + Math.floor(character.level / 2) + armorBonus
 
   // Calculate total luck for crit chance
   const totalLuck = character.luck + mountLuckBonus + accessoryLuckBonus

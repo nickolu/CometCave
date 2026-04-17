@@ -34,6 +34,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
 import { OnboardingHint } from './OnboardingHint'
 import { SkillPanel } from './SkillPanel'
+import { BasePanel } from './BasePanel'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -92,7 +93,7 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | null
+type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | 'base' | null
 
 interface GameUIProps {
   onOpenStatus?: () => void
@@ -513,6 +514,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
+              <BasePanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
               <SettingsPanel />
             </div>
           </div>
@@ -531,7 +535,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : 'Quest'}
+                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : mobilePanel === 'base' ? 'Camp' : 'Quest'}
               </h3>
               <button
                 className="text-slate-400 hover:text-white text-sm px-2 py-1"
@@ -560,6 +564,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               />
             )}
             {mobilePanel === 'settings' && <SettingsPanel />}
+            {mobilePanel === 'base' && <BasePanel />}
           </div>
         </div>
       )}
@@ -571,6 +576,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           { id: 'inventory' as MobilePanel, label: 'Items', icon: '\uD83C\uDF92' },
           { id: 'quest' as MobilePanel, label: 'Quest', icon: '\uD83D\uDCDC' },
           { id: 'map' as MobilePanel, label: 'Map', icon: '\uD83D\uDDFA' },
+          { id: 'base' as MobilePanel, label: 'Camp', icon: '\uD83C\uDFD5' },
           { id: 'settings' as MobilePanel, label: 'Settings', icon: '\u2699' },
         ]).map(tab => (
           <button

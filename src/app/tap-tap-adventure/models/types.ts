@@ -61,6 +61,7 @@ export type {
 } from './spell'
 export type { Mount, MountSchema, MountBonuses, MountBonusesSchema, MountRarity, MountRaritySchema, MountPersonality, MountPersonalitySchema } from './mount'
 export type { TimedQuest, TimedQuestSchema, MainQuest, MainQuestSchema, MainQuestMilestone, MainQuestMilestoneSchema } from './quest'
+export type { CampState, CampStateSchema } from './camp'
 export type {
   CombatState,
   CombatEnemy,

@@ -1,5 +1,6 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionOption } from '@/app/tap-tap-adventure/models/story'
+import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 
 export function applyEffects(
   character: FantasyCharacter,
@@ -13,10 +14,21 @@ export function applyEffects(
   }
 ): FantasyCharacter {
   if (!effects) return character
+
+  const campBonuses = getCampBonuses(character.campState?.buildingLevels ?? {})
+  const goldGain = effects.gold ?? 0
+  const adjustedGold = goldGain > 0
+    ? Math.round(goldGain * (1 + campBonuses.goldEventBonusPct / 100))
+    : goldGain
+  const repGain = effects.reputation ?? 0
+  const adjustedRep = repGain > 0
+    ? Math.round(repGain * (1 + campBonuses.reputationGainBonusPct / 100))
+    : repGain
+
   let updatedCharacter: FantasyCharacter = {
     ...character,
-    gold: character.gold + (effects.gold ?? 0),
-    reputation: character.reputation + (effects.reputation ?? 0),
+    gold: character.gold + adjustedGold,
+    reputation: character.reputation + adjustedRep,
     distance: character.distance + (effects.distance ?? 0),
     status: effects.statusChange
       ? (effects.statusChange as FantasyCharacter['status'])
@@ -50,8 +62,10 @@ export function calculateEffectiveProbability(
   }
   const base = typedOption.successProbability ?? 1
 
+  const campBonuses = getCampBonuses(character.campState?.buildingLevels ?? {})
+
   if (!typedOption.relevantAttributes || typedOption.relevantAttributes.length === 0) {
-    return Math.max(0, Math.min(1, base))
+    return Math.max(0, Math.min(1, base + campBonuses.combatSuccessBonus))
   }
 
   let modifier = 0
@@ -65,5 +79,5 @@ export function calculateEffectiveProbability(
   const reputationModifier = Math.max(-0.1, Math.min(0.1, character.reputation * 0.001))
   modifier += reputationModifier
 
-  return Math.max(0, Math.min(1, Number(base) + modifier))
+  return Math.max(0, Math.min(1, Number(base) + modifier + campBonuses.combatSuccessBonus))
 }
