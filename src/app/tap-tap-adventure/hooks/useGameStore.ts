@@ -23,6 +23,8 @@ import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/mod
 import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
+import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
+import { getMercenaryMaxHp } from '@/app/tap-tap-adventure/config/mercenaries'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
   FantasyDecisionPoint,
@@ -62,6 +64,8 @@ const defaultCharacter: FantasyCharacter = {
   spellbook: [],
   classData: undefined,
   activeMount: null,
+  activeMercenary: null,
+  mercenaryRoster: [],
   difficultyMode: 'normal',
   currentRegion: 'green_meadows',
   visitedRegions: ['green_meadows'],
@@ -93,6 +97,9 @@ export interface GameStore {
   setMount: (mount: Mount | null, customName?: string) => void
   damageMountHp: (damage: number) => void
   killMount: () => void
+  recruitMercenary: (mercenary: Mercenary) => boolean
+  dismissMercenary: (mercenaryId: string) => void
+  setActiveMercenary: (mercenaryId: string) => void
   addHeirloom: (item: Item) => void
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
@@ -210,6 +217,17 @@ export const useGameStore = create<GameStore>()(
                 updatedCharacter = { ...updatedCharacter, gold: updatedCharacter.gold, activeMount: null }
               } else {
                 updatedCharacter = { ...updatedCharacter, gold: newGold }
+              }
+            }
+
+            // Mercenary daily upkeep
+            if (newDay > oldDay && updatedCharacter.activeMercenary) {
+              const mercCost = updatedCharacter.activeMercenary.dailyCost ?? 0
+              const mercGold = updatedCharacter.gold - mercCost
+              if (mercGold < 0) {
+                updatedCharacter = { ...updatedCharacter, activeMercenary: null }
+              } else {
+                updatedCharacter = { ...updatedCharacter, gold: mercGold }
               }
             }
 
@@ -611,6 +629,75 @@ export const useGameStore = create<GameStore>()(
             state.gameState.characters[characterIndex] = {
               ...state.gameState.characters[characterIndex],
               activeMount: null,
+            }
+          })
+        )
+      },
+      recruitMercenary: (mercenary: Mercenary) => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return false
+        if (selectedCharacter.gold < mercenary.recruitCost) return false
+        const roster = selectedCharacter.mercenaryRoster ?? []
+        if (roster.length >= 3) return false
+        if (roster.some(m => m.id === mercenary.id)) return false
+
+        const maxHp = getMercenaryMaxHp(mercenary.rarity)
+        const fullMercenary: Mercenary = { ...mercenary, hp: maxHp, maxHp }
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            const char = state.gameState.characters[charIndex]
+            const updatedRoster = [...(char.mercenaryRoster ?? []), fullMercenary]
+            state.gameState.characters[charIndex] = {
+              ...char,
+              gold: char.gold - mercenary.recruitCost,
+              mercenaryRoster: updatedRoster,
+              activeMercenary: char.activeMercenary ?? fullMercenary,
+            }
+          })
+        )
+        return true
+      },
+      dismissMercenary: (mercenaryId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            const char = state.gameState.characters[charIndex]
+            const updatedRoster = (char.mercenaryRoster ?? []).filter(m => m.id !== mercenaryId)
+            const updatedActive =
+              char.activeMercenary?.id === mercenaryId ? null : char.activeMercenary
+            state.gameState.characters[charIndex] = {
+              ...char,
+              mercenaryRoster: updatedRoster,
+              activeMercenary: updatedActive,
+            }
+          })
+        )
+      },
+      setActiveMercenary: (mercenaryId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            const char = state.gameState.characters[charIndex]
+            const merc = (char.mercenaryRoster ?? []).find(m => m.id === mercenaryId)
+            if (!merc) return
+            state.gameState.characters[charIndex] = {
+              ...char,
+              activeMercenary: merc,
             }
           })
         )

@@ -422,6 +422,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {playerState.mountHp !== undefined && playerState.mountMaxHp !== undefined && playerState.mountHp > 0 && (
           <HpBar current={playerState.mountHp} max={playerState.mountMaxHp} label={`${character?.activeMount?.icon ?? '🐴'} Mount`} color="text-amber-400" />
         )}
+        {playerState.mercenaryHp !== undefined && playerState.mercenaryMaxHp !== undefined && playerState.mercenaryHp > 0 && (
+          <HpBar
+            current={playerState.mercenaryHp}
+            max={playerState.mercenaryMaxHp}
+            label={`${character?.activeMercenary?.icon ?? '⚔️'} ${character?.activeMercenary?.customName ?? character?.activeMercenary?.name ?? 'Mercenary'}`}
+            color="text-amber-400"
+          />
+        )}
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}

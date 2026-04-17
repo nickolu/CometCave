@@ -18,6 +18,7 @@ import {
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getRandomMount, getMountFreeMoves, getMountFleeBonus, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
+import { calculateMercenaryDamage, getMercenaryMaxHp } from '@/app/tap-tap-adventure/config/mercenaries'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
@@ -132,6 +133,12 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     mountMovesRemaining: mountFreeMoves,
     mountHp: character.activeMount ? (character.activeMount.hp ?? getMountMaxHp(character.activeMount.rarity)) : undefined,
     mountMaxHp: character.activeMount ? getMountMaxHp(character.activeMount.rarity) : undefined,
+    mercenaryHp: character.activeMercenary
+      ? (character.activeMercenary.hp ?? getMercenaryMaxHp(character.activeMercenary.rarity))
+      : undefined,
+    mercenaryMaxHp: character.activeMercenary
+      ? getMercenaryMaxHp(character.activeMercenary.rarity)
+      : undefined,
   }
 }
 
@@ -456,6 +463,35 @@ function executeEnemyTelegraph(
 }
 
 /**
+ * Mercenary auto-attack: fires at the end of each full turn.
+ * Returns updated enemy, combat logs, and a flag for whether the merc killed the enemy.
+ */
+function applyMercenaryAutoAttack(
+  character: FantasyCharacter,
+  playerState: CombatPlayerState,
+  enemy: CombatEnemy,
+  turnNumber: number
+): { enemy: CombatEnemy; logs: CombatLogEntry[]; killedEnemy: boolean } {
+  if (!character.activeMercenary || (playerState.mercenaryHp ?? 1) <= 0) {
+    return { enemy, logs: [], killedEnemy: false }
+  }
+  const merc = character.activeMercenary
+  const damage = calculateMercenaryDamage(merc, enemy.defense)
+  const updatedEnemy = { ...enemy, hp: Math.max(0, enemy.hp - damage) }
+  const logs: CombatLogEntry[] = [
+    {
+      turn: turnNumber,
+      actor: 'player',
+      action: 'mercenary_attack',
+      damage,
+      description: `${merc.icon} ${merc.name} strikes ${enemy.name} for ${damage} damage!`,
+    },
+  ]
+  const killedEnemy = updatedEnemy.hp <= 0
+  return { enemy: updatedEnemy, logs, killedEnemy }
+}
+
+/**
  * Boss phase change: when a boss drops below 50% HP, boost their stats.
  * For the final boss, supports 3 phases triggered at 66% and 33% HP.
  */
@@ -543,7 +579,7 @@ export function processPlayerAction(
   combatState: CombatState,
   action: CombatActionRequest,
   character: FantasyCharacter
-): { combatState: CombatState; consumedItemId?: string; mountDied?: boolean } {
+): { combatState: CombatState; consumedItemId?: string; mountDied?: boolean; mercenaryDied?: boolean } {
   let { enemy, playerState, turnNumber, combatLog, status, enemyTelegraph, isBoss } = structuredClone(combatState)
   const newLogs: CombatLogEntry[] = []
   let consumedItemId: string | undefined
@@ -1346,6 +1382,22 @@ export function processPlayerAction(
     }
   }
 
+  // Mercenary auto-attack fires at end of each full turn
+  if (status === 'active' && character.activeMercenary) {
+    const mercResult = applyMercenaryAutoAttack(character, playerState, enemy, turnNumber)
+    enemy = mercResult.enemy
+    newLogs.push(...mercResult.logs)
+    if (mercResult.killedEnemy) {
+      status = 'victory'
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'victory',
+        description: `${character.activeMercenary.name} delivers the killing blow on ${enemy.name}!`,
+      })
+    }
+  }
+
   // Tick buffs at end of full turn
   playerState = tickBuffs(playerState)
 
@@ -1432,6 +1484,7 @@ export function processPlayerAction(
     },
     consumedItemId,
     mountDied,
+    mercenaryDied: false,
   }
 }
 

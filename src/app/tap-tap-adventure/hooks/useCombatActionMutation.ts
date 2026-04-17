@@ -111,6 +111,16 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
         }
       }
 
+      // Sync mercenary HP back to character
+      if (data.combatState.playerState.mercenaryHp !== undefined && character.activeMercenary) {
+        updateSelectedCharacter({
+          activeMercenary: {
+            ...character.activeMercenary,
+            hp: data.combatState.playerState.mercenaryHp,
+          },
+        })
+      }
+
       if (data.combatState.status === 'active') {
         // Combat continues — play sounds based on what happened
         // Check for critical hits in new log entries
