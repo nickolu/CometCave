@@ -1,5 +1,6 @@
-// NOTE: This is an in-memory store. For production, swap with Vercel KV / Redis.
-// All functions are sync to match the current Map pattern — convert to async if swapping.
+import { getFirestoreDb } from './firebase'
+
+const COLLECTION = 'trivia-scores'
 
 export interface LeaderboardEntry {
   displayName: string
@@ -10,43 +11,60 @@ export interface LeaderboardEntry {
   submittedAt: number // Date.now() ms
 }
 
-// All entries, keyed by `${displayName}|${date}` to enforce one entry per user per day
-const entries = new Map<string, LeaderboardEntry>()
-
-function keyFor(displayName: string, date: string): string {
+function docId(displayName: string, date: string): string {
   return `${displayName.toLowerCase().trim()}|${date}`
 }
 
-// Returns the previous entry if one existed (useful for "updated" response)
-export function submitScore(entry: LeaderboardEntry): { stored: boolean; previous: LeaderboardEntry | null } {
-  const key = keyFor(entry.displayName, entry.date)
-  const existing = entries.get(key)
+export async function submitScore(entry: LeaderboardEntry): Promise<{ stored: boolean; previous: LeaderboardEntry | null }> {
+  const db = getFirestoreDb()
+  const id = docId(entry.displayName, entry.date)
+  const ref = db.collection(COLLECTION).doc(id)
 
-  // Only store if new or higher score
+  const snap = await ref.get()
+  const existing = snap.exists ? (snap.data() as LeaderboardEntry) : null
+
   if (!existing || entry.score > existing.score) {
-    entries.set(key, entry)
-    return { stored: true, previous: existing ?? null }
+    await ref.set({
+      displayName: entry.displayName,
+      displayNameLower: entry.displayName.toLowerCase().trim(),
+      date: entry.date,
+      score: entry.score,
+      correct: entry.correct,
+      total: entry.total,
+      submittedAt: entry.submittedAt,
+    })
+    return { stored: true, previous: existing }
   }
+
   return { stored: false, previous: existing }
 }
 
-export function getDailyLeaderboard(date: string, limit = 20): LeaderboardEntry[] {
-  const dailyEntries: LeaderboardEntry[] = []
-  for (const entry of entries.values()) {
-    if (entry.date === date) dailyEntries.push(entry)
-  }
-  return dailyEntries.sort((a, b) => b.score - a.score).slice(0, limit)
+export async function getDailyLeaderboard(date: string, limit = 20): Promise<LeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collection(COLLECTION)
+    .where('date', '==', date)
+    .orderBy('score', 'desc')
+    .limit(limit)
+    .get()
+
+  return snap.docs.map(doc => doc.data() as LeaderboardEntry)
 }
 
-// Get all entries from Monday-Sunday of a given week (week start YYYY-MM-DD)
-export function getWeeklyLeaderboard(weekStart: string, weekEnd: string, limit = 20): Array<{
+export async function getWeeklyLeaderboard(weekStart: string, weekEnd: string, limit = 20): Promise<Array<{
   displayName: string
   totalScore: number
   gamesPlayed: number
   totalCorrect: number
   totalQuestions: number
-}> {
-  // Aggregate by displayName (normalized lowercase)
+}>> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collection(COLLECTION)
+    .where('date', '>=', weekStart)
+    .where('date', '<=', weekEnd)
+    .get()
+
   const aggregated = new Map<string, {
     displayName: string
     totalScore: number
@@ -55,24 +73,23 @@ export function getWeeklyLeaderboard(weekStart: string, weekEnd: string, limit =
     totalQuestions: number
   }>()
 
-  for (const entry of entries.values()) {
-    if (entry.date >= weekStart && entry.date <= weekEnd) {
-      const normKey = entry.displayName.toLowerCase().trim()
-      const existing = aggregated.get(normKey)
-      if (existing) {
-        existing.totalScore += entry.score
-        existing.gamesPlayed += 1
-        existing.totalCorrect += entry.correct
-        existing.totalQuestions += entry.total
-      } else {
-        aggregated.set(normKey, {
-          displayName: entry.displayName,
-          totalScore: entry.score,
-          gamesPlayed: 1,
-          totalCorrect: entry.correct,
-          totalQuestions: entry.total,
-        })
-      }
+  for (const doc of snap.docs) {
+    const entry = doc.data() as LeaderboardEntry
+    const normKey = entry.displayName.toLowerCase().trim()
+    const existing = aggregated.get(normKey)
+    if (existing) {
+      existing.totalScore += entry.score
+      existing.gamesPlayed += 1
+      existing.totalCorrect += entry.correct
+      existing.totalQuestions += entry.total
+    } else {
+      aggregated.set(normKey, {
+        displayName: entry.displayName,
+        totalScore: entry.score,
+        gamesPlayed: 1,
+        totalCorrect: entry.correct,
+        totalQuestions: entry.total,
+      })
     }
   }
 
@@ -81,30 +98,29 @@ export function getWeeklyLeaderboard(weekStart: string, weekEnd: string, limit =
     .slice(0, limit)
 }
 
-// All-time weekly wins: for each historical week, find the top scorer, count wins per user
-export function getAllTimeLeaderboard(limit = 20): Array<{
+export async function getAllTimeLeaderboard(limit = 20): Promise<Array<{
   displayName: string
   weeklyWins: number
   totalScore: number
-}> {
+}>> {
+  const db = getFirestoreDb()
+  const snap = await db.collection(COLLECTION).get()
+
   // Group entries by week
   const weekMap = new Map<string, LeaderboardEntry[]>()
-
-  for (const entry of entries.values()) {
+  for (const doc of snap.docs) {
+    const entry = doc.data() as LeaderboardEntry
     const weekKey = getWeekKeyForDate(entry.date)
     if (!weekMap.has(weekKey)) weekMap.set(weekKey, [])
     weekMap.get(weekKey)!.push(entry)
   }
 
-  // For each week, determine the winner (highest weekly aggregate score)
-  const winCounts = new Map<string, { displayName: string; weeklyWins: number; totalScore: number }>()
   const todayWeek = getWeekKeyForDate(getTodayPSTLocal())
+  const winCounts = new Map<string, { displayName: string; weeklyWins: number; totalScore: number }>()
 
   for (const [weekKey, weekEntries] of weekMap) {
-    // Only count completed weeks
     if (weekKey === todayWeek) continue
 
-    // Aggregate this week's scores per user
     const weekScores = new Map<string, { displayName: string; total: number }>()
     for (const e of weekEntries) {
       const norm = e.displayName.toLowerCase().trim()
@@ -116,7 +132,6 @@ export function getAllTimeLeaderboard(limit = 20): Array<{
       }
     }
 
-    // Find winner
     let winner: { displayName: string; total: number } | null = null
     for (const ws of weekScores.values()) {
       if (!winner || ws.total > winner.total) winner = ws
@@ -139,11 +154,9 @@ export function getAllTimeLeaderboard(limit = 20): Array<{
     .slice(0, limit)
 }
 
-// Helper: get a week key (YYYY-Www) for grouping, using PST timezone
 function getWeekKeyForDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00-08:00')
   const year = d.getUTCFullYear()
-  // Simple ISO week approximation
   const jan1 = new Date(Date.UTC(year, 0, 1))
   const days = Math.floor((d.getTime() - jan1.getTime()) / 86400000)
   const week = Math.ceil((days + jan1.getUTCDay() + 1) / 7)
@@ -160,14 +173,12 @@ function getTodayPSTLocal(): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
-// Utility: get Monday-Sunday date range for current PST week
 export function getCurrentWeekRange(): { start: string; end: string } {
   const now = new Date()
   const pstStr = now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })
   const today = new Date(pstStr)
 
-  // Get Monday of this week (ISO: Mon=1, Sun=0→7)
-  const dayOfWeek = today.getDay() || 7 // treat Sunday as 7
+  const dayOfWeek = today.getDay() || 7
   const monday = new Date(today)
   monday.setDate(today.getDate() - (dayOfWeek - 1))
 
@@ -182,14 +193,4 @@ export function getCurrentWeekRange(): { start: string; end: string } {
   }
 
   return { start: fmt(monday), end: fmt(sunday) }
-}
-
-// For testing / clearing
-export function _clearAll() {
-  entries.clear()
-}
-
-// For debugging
-export function _getAllEntries() {
-  return Array.from(entries.values())
 }

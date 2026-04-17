@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = submitScore({
+    const result = await submitScore({
       displayName: trimmedName,
       date,
       score,

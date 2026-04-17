@@ -13,18 +13,18 @@ export async function GET(request: NextRequest) {
 
     if (period === 'daily') {
       const today = getTodayPST()
-      const entries = getDailyLeaderboard(today, 20)
+      const entries = await getDailyLeaderboard(today, 20)
       return NextResponse.json({ period: 'daily', date: today, entries })
     }
 
     if (period === 'weekly') {
       const { start, end } = getCurrentWeekRange()
-      const entries = getWeeklyLeaderboard(start, end, 20)
+      const entries = await getWeeklyLeaderboard(start, end, 20)
       return NextResponse.json({ period: 'weekly', weekStart: start, weekEnd: end, entries })
     }
 
     if (period === 'alltime') {
-      const entries = getAllTimeLeaderboard(20)
+      const entries = await getAllTimeLeaderboard(20)
       return NextResponse.json({ period: 'alltime', entries })
     }
 
