@@ -8,7 +8,7 @@ import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
-import { claimNewMilestones, getConqueredCount } from '@/app/tap-tap-adventure/lib/mainQuestManager'
+import { claimNewMilestones, getConqueredCount, CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
@@ -32,7 +32,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount) => void }) {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary } = useGameStore()
+  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary, recordRun } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -219,11 +219,26 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             if (questStatus === 'completed') {
               const freshChar = useGameStore.getState().gameState.characters.find(c => c.id === character.id)
               const victoryEssence = awardSoulEssence(freshChar ?? character, 5)
+              const victoryChar = freshChar ?? character
               setRunSummary({
-                character: freshChar ? { ...freshChar } : { ...character },
+                character: { ...victoryChar },
                 reason: 'victory',
                 essenceEarned: victoryEssence,
                 heirloom: null,
+              })
+              recordRun({
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+                characterName: victoryChar.name,
+                characterClass: victoryChar.class,
+                level: victoryChar.level,
+                distance: victoryChar.distance ?? 0,
+                gold: victoryChar.gold,
+                reputation: victoryChar.reputation ?? 0,
+                regionsConquered: (victoryChar.visitedRegions ?? []).filter(r => CONQUERABLE_REGIONS.includes(r)).length,
+                reason: 'victory',
+                essenceEarned: victoryEssence,
+                endedAt: new Date().toISOString(),
+                difficultyMode: victoryChar.difficultyMode,
               })
               // Do NOT delete the character — post-game character persists
             }
@@ -309,6 +324,21 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               heirloom,
             })
 
+            recordRun({
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              characterName: character.name,
+              characterClass: character.class,
+              level: character.level,
+              distance: character.distance ?? 0,
+              gold: character.gold,
+              reputation: character.reputation ?? 0,
+              regionsConquered: (character.visitedRegions ?? []).filter(r => CONQUERABLE_REGIONS.includes(r)).length,
+              reason: 'permadeath',
+              essenceEarned,
+              endedAt: new Date().toISOString(),
+              difficultyMode: character.difficultyMode,
+            })
+
             // NOTE: deleteCharacter is called AFTER commit() below
             // to prevent commit() from overwriting the deletion with a stale snapshot
           } else {
@@ -351,6 +381,21 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               reason: 'death',
               essenceEarned,
               heirloom,
+            })
+
+            recordRun({
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              characterName: character.name,
+              characterClass: character.class,
+              level: character.level,
+              distance: character.distance ?? 0,
+              gold: character.gold,
+              reputation: character.reputation ?? 0,
+              regionsConquered: (character.visitedRegions ?? []).filter(r => CONQUERABLE_REGIONS.includes(r)).length,
+              reason: 'death',
+              essenceEarned,
+              endedAt: new Date().toISOString(),
+              difficultyMode: character.difficultyMode,
             })
           }
         } else if (data.combatState.status === 'fled') {

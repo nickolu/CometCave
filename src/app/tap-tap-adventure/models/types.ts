@@ -9,6 +9,7 @@ import { FantasyLocation } from './location'
 import { MetaProgressionState } from './metaProgression'
 import { Mount } from './mount'
 import { TimedQuest } from './quest'
+import { RunHistoryEntry } from './runHistory'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
 
 export type ShopMountData = {
@@ -117,6 +118,7 @@ type GameState = {
   dailyChallenges: DailyChallengesState | null
   metaProgression: MetaProgressionState | null
   runSummary: RunSummaryData | null
+  runHistory: RunHistoryEntry[]
 }
 export type { GameState, DailyRewardState, RunSummaryData }
 export type { DailyChallenge, DailyChallengeType, DailyChallengesState } from './dailyChallenge'
@@ -130,3 +132,4 @@ export type {
   MetaProgressionStateSchema,
 } from './metaProgression'
 export type { BestiaryEntry, BestiaryEntrySchema } from './bestiary'
+export type { RunHistoryEntry, RunHistoryEntrySchema } from './runHistory'

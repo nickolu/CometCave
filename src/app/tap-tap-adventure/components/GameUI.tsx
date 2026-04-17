@@ -31,6 +31,7 @@ import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
 import { RegionMap } from './RegionMap'
 import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
+import { RunHistoryPanel } from './RunHistoryPanel'
 import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
 import { OnboardingHint } from './OnboardingHint'
@@ -584,6 +585,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
               <EnchantingPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <RunHistoryPanel runHistory={gameState.runHistory ?? []} />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
               <SettingsPanel />

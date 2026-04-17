@@ -51,6 +51,7 @@ const baseGameState: GameState = {
   dailyChallenges: null,
   metaProgression: null,
   runSummary: null,
+  runHistory: [],
 }
 
 describe('Achievement Definitions', () => {
