@@ -1,6 +1,7 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionOption } from '@/app/tap-tap-adventure/models/story'
 import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
+import { getFactionForRegion, FACTIONS } from '@/app/tap-tap-adventure/config/factions'
 
 export function applyEffects(
   character: FantasyCharacter,
@@ -33,6 +34,24 @@ export function applyEffects(
     status: effects.statusChange
       ? (effects.statusChange as FantasyCharacter['status'])
       : character.status,
+  }
+
+  // Faction reputation gain
+  if (adjustedRep > 0) {
+    const factionId = getFactionForRegion(character.currentRegion ?? 'green_meadows')
+    if (factionId) {
+      const factionReps = { ...(character.factionReputations ?? {}) }
+      const gain = Math.ceil(adjustedRep * 0.5)
+      factionReps[factionId] = Math.min(200, (factionReps[factionId] ?? 0) + gain)
+
+      const rivalId = FACTIONS[factionId].rivalFactionId
+      if (rivalId) {
+        const rivalPenalty = Math.ceil(gain * 0.5)
+        factionReps[rivalId] = Math.max(0, (factionReps[rivalId] ?? 0) - rivalPenalty)
+      }
+
+      updatedCharacter = { ...updatedCharacter, factionReputations: factionReps }
+    }
   }
 
   // Mount damage handling

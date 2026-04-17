@@ -209,6 +209,7 @@ export function useCharacterCreation() {
       difficultyMode: selectedDifficulty.id,
       currentRegion: 'green_meadows',
       visitedRegions: ['green_meadows'],
+      factionReputations: {},
     }
     const maxMana = calculateMaxMana(tempChar)
 

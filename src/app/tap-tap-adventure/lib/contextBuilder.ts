@@ -1,6 +1,7 @@
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
+import { FACTIONS, FACTION_IDS, getFactionRepTier } from '@/app/tap-tap-adventure/config/factions'
 
 const MAX_CONTEXT_LENGTH = 1500
 
@@ -73,6 +74,19 @@ export function buildStoryContext(
     `Region: ${region.name} (${region.difficulty}) — ${region.theme}. ` +
     `Dominant element: ${region.element}. Common threats: ${region.enemyTypes.join(', ') || 'none'}.`
   )
+
+  // Faction standings
+  const factionReps = character.factionReputations ?? {}
+  const activeFactions = FACTION_IDS
+    .filter(id => (factionReps[id] ?? 0) > 0)
+    .map(id => {
+      const rep = factionReps[id] ?? 0
+      const tier = getFactionRepTier(rep)
+      return `${FACTIONS[id].name}: ${rep} (${tier.label})`
+    })
+  if (activeFactions.length > 0) {
+    parts.push(`Faction rep: ${activeFactions.join(', ')}.`)
+  }
 
   // Mount info
   if (character.activeMount) {

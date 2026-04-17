@@ -36,6 +36,7 @@ import {
   ShopState,
 } from '@/app/tap-tap-adventure/models/types'
 import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
+import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -70,6 +71,7 @@ const defaultCharacter: FantasyCharacter = {
   currentRegion: 'green_meadows',
   visitedRegions: ['green_meadows'],
   mainQuest: createMainQuest(),
+  factionReputations: {},
 }
 
 export interface GameStore {
@@ -111,6 +113,7 @@ export interface GameStore {
   getCampBonuses: () => CampBonuses
   setRunSummary: (summary: RunSummaryData) => void
   clearRunSummary: () => void
+  purchaseFactionGear: (factionId: FactionId, gearId: string) => boolean
 }
 
 export const useGameStore = create<GameStore>()(
@@ -880,10 +883,48 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      purchaseFactionGear: (factionId: FactionId, gearId: string) => {
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!selectedCharacter) return false
+
+        const faction = FACTIONS[factionId]
+        if (!faction) return false
+
+        const gear = faction.gear.find(g => g.id === gearId)
+        if (!gear) return false
+
+        const factionRep = (selectedCharacter.factionReputations ?? {})[factionId] ?? 0
+        if (factionRep < gear.requiredRep) return false
+        if (selectedCharacter.gold < gear.price) return false
+
+        const newItem: Item = {
+          id: `${gear.id}_${Date.now()}`,
+          name: gear.name,
+          description: gear.description,
+          quantity: 1,
+          type: 'equipment',
+          effects: gear.effects,
+          price: gear.price,
+          status: 'active',
+        }
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (charIndex === -1) return
+            const char = state.gameState.characters[charIndex]
+            char.gold -= gear.price
+            char.inventory = [...char.inventory, newItem]
+          })
+        )
+        return true
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 19,
+      version: 20,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -969,6 +1010,10 @@ export const useGameStore = create<GameStore>()(
             // v19: Add campState
             if ((char as FantasyCharacter).campState === undefined) {
               ;(char as FantasyCharacter).campState = { buildingLevels: {} }
+            }
+            // v20: Add factionReputations
+            if ((char as FantasyCharacter).factionReputations === undefined) {
+              ;(char as FantasyCharacter).factionReputations = {}
             }
           }
         }

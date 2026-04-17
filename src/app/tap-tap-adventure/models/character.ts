@@ -61,6 +61,7 @@ export const FantasyCharacterSchema = z.object({
   visitedRegions: z.array(z.string()).optional(),
   mainQuest: MainQuestSchema.optional(),
   campState: CampStateSchema.optional(),
+  factionReputations: z.record(z.string(), z.number()).optional().default({}),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
