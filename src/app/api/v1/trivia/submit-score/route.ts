@@ -53,8 +53,13 @@ export async function POST(request: NextRequest) {
       stored: result.stored,
       previousScore: result.previous?.score ?? null,
     })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error submitting score:', error)
+    // Don't block the user if Firestore is temporarily unavailable
+    const errMsg = error instanceof Error ? error.message : String(error)
+    if (errMsg.includes('FAILED_PRECONDITION') || errMsg.includes('index')) {
+      return NextResponse.json({ stored: false, previousScore: null, notice: 'Leaderboard is initializing.' })
+    }
     return NextResponse.json({ error: 'Failed to submit score.' }, { status: 500 })
   }
 }
