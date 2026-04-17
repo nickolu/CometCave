@@ -36,7 +36,15 @@ import {
   RunSummaryData,
   ShopState,
 } from '@/app/tap-tap-adventure/models/types'
-import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
+import { claimDailyReward as processDailyRewardClaim, getTodayDateString } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
+import {
+  shouldRefreshChallenges,
+  refreshChallenges,
+  applyProgress as applyDailyChallengeProgress,
+  computeBonusReward,
+  canClaimBonusReward,
+} from '@/app/tap-tap-adventure/lib/dailyChallengeTracker'
+import { DailyChallengeType } from '@/app/tap-tap-adventure/models/dailyChallenge'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
@@ -122,6 +130,8 @@ export interface GameStore {
   clearRunSummary: () => void
   purchaseFactionGear: (factionId: FactionId, gearId: string) => boolean
   craftItem: (recipeId: string) => { message: string; success: boolean } | null
+  updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
+  claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
 }
 
 export const useGameStore = create<GameStore>()(
@@ -207,6 +217,25 @@ export const useGameStore = create<GameStore>()(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
             if (!selectedCharacter) return
+
+            // Refresh daily challenges if date has changed
+            const today = getTodayDateString()
+            if (shouldRefreshChallenges(state.gameState.dailyChallenges, today)) {
+              state.gameState.dailyChallenges = refreshChallenges(
+                state.gameState.dailyChallenges,
+                today,
+                selectedCharacter.level ?? 1
+              )
+            }
+            // Track travel_distance progress
+            if (state.gameState.dailyChallenges) {
+              state.gameState.dailyChallenges = applyDailyChallengeProgress(
+                state.gameState.dailyChallenges,
+                'travel_distance',
+                1
+              )
+            }
+
             const oldDistance = selectedCharacter.distance || 0
             const newDistance = oldDistance + 1
             const metaBonuses = get().getMetaBonuses()
@@ -1010,15 +1039,55 @@ export const useGameStore = create<GameStore>()(
             )
             if (charIndex === -1) return
             state.gameState.characters[charIndex] = updatedCharacter
+            // Track craft_item daily challenge progress
+            if (state.gameState.dailyChallenges) {
+              state.gameState.dailyChallenges = applyDailyChallengeProgress(
+                state.gameState.dailyChallenges,
+                'craft_item',
+                1
+              )
+            }
           })
         )
 
         return { message: `Crafted ${recipe.result.name}!`, success: true }
       },
+      updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => {
+        set(
+          produce((state: GameStore) => {
+            if (!state.gameState.dailyChallenges) return
+            state.gameState.dailyChallenges = applyDailyChallengeProgress(
+              state.gameState.dailyChallenges,
+              type,
+              amount
+            )
+          })
+        )
+      },
+      claimDailyChallengeBonus: () => {
+        const challenges = get().gameState.dailyChallenges
+        const selectedCharacter = get().getSelectedCharacter()
+        if (!challenges || !selectedCharacter) return null
+        if (!canClaimBonusReward(challenges)) return null
+
+        const bonus = computeBonusReward(challenges.streak)
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(c => c.id === selectedCharacter.id)
+            if (charIndex === -1) return
+            state.gameState.characters[charIndex].gold += bonus.gold
+            state.gameState.characters[charIndex].reputation = clampReputation(
+              state.gameState.characters[charIndex].reputation + bonus.reputation
+            )
+            state.gameState.dailyChallenges!.allCompletedClaimed = true
+          })
+        )
+        return bonus
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 22,
+      version: 23,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1143,6 +1212,10 @@ export const useGameStore = create<GameStore>()(
         // v13: Add runSummary
         if (state?.gameState && !('runSummary' in state.gameState)) {
           (state.gameState as GameState).runSummary = null
+        }
+        // v23: Add dailyChallenges
+        if (state?.gameState && !('dailyChallenges' in state.gameState)) {
+          (state.gameState as GameState).dailyChallenges = null
         }
         return state
       },

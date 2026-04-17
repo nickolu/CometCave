@@ -40,6 +40,7 @@ import { FactionPanel } from './FactionPanel'
 import AdventureLeaderboard from './AdventureLeaderboard'
 import { CraftingPanel } from './CraftingPanel'
 import { BestiaryPanel } from './BestiaryPanel'
+import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -500,6 +501,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           <div className="hidden md:block p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
             {character && <MainQuestPanel character={character} />}
             <QuestPanel />
+            <DailyChallengesPanel />
             <AchievementPanel achievements={gameState.achievements ?? []} />
             <BestiaryPanel bestiary={character?.bestiary ?? []} />
             <EquipmentPanel
@@ -564,6 +566,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             </div>
             {mobilePanel === 'quest' && character && <MainQuestPanel character={character} />}
             {mobilePanel === 'quest' && <QuestPanel />}
+            {mobilePanel === 'quest' && <DailyChallengesPanel />}
             {mobilePanel === 'equipment' && (
               <>
                 <EquipmentPanel

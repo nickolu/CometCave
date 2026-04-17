@@ -147,6 +147,8 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
 
         if (data.combatState.status === 'victory' && data.rewards) {
           soundEngine.playVictory()
+          // Track daily challenge: win_combats
+          useGameStore.getState().updateDailyChallengeProgress('win_combats', 1)
           // Add loot items and collect for story event
           const processedLoot: Item[] = []
           for (const lootItem of data.rewards.loot) {

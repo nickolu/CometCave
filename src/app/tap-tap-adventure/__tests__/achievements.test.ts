@@ -48,6 +48,7 @@ const baseGameState: GameState = {
   achievements: [],
   legacyHeirlooms: [],
   dailyReward: null,
+  dailyChallenges: null,
   metaProgression: null,
   runSummary: null,
 }
