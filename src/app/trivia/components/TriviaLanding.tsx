@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
+import { NamePrompt } from './NamePrompt'
 
 export function TriviaLanding({
   onStartGame,
@@ -14,7 +16,9 @@ export function TriviaLanding({
   onViewStats?: () => void
   onViewLeaderboard?: () => void
 }) {
-  const { userData, canPlayToday } = useTriviaStore()
+  const { userData, canPlayToday, setDisplayName, skipName } = useTriviaStore()
+  const [showChangeName, setShowChangeName] = useState(false)
+  const needsNamePrompt = !userData.displayName && !userData.nameSkipped
   const todayStr = getTodayPST()
   const alreadyPlayed = !canPlayToday()
   const category = getDailyCategory(todayStr)
@@ -34,6 +38,30 @@ export function TriviaLanding({
           <span>{category.name}</span>
         </div>
       </div>
+
+      {needsNamePrompt ? (
+        <NamePrompt onSave={setDisplayName} onSkip={skipName} />
+      ) : userData.displayName && !showChangeName ? (
+        <div className="w-full text-center text-cream-white/60 text-sm">
+          Playing as{' '}
+          <span className="text-space-gold font-semibold">{userData.displayName}</span>
+          {' · '}
+          <button
+            onClick={() => setShowChangeName(true)}
+            className="text-space-gold/70 hover:text-space-gold hover:underline underline-offset-4 transition-colors"
+          >
+            change
+          </button>
+        </div>
+      ) : showChangeName ? (
+        <NamePrompt
+          showSkip={false}
+          initialName={userData.displayName ?? ''}
+          title="Change display name"
+          onSave={(name) => { setDisplayName(name); setShowChangeName(false) }}
+          onSkip={() => setShowChangeName(false)}
+        />
+      ) : null}
 
       <Card className="w-full bg-space-dark/80 border-space-grey">
         <CardHeader>

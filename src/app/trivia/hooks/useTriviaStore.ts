@@ -7,6 +7,7 @@ import { getTodayPST, hasPlayedToday } from '../lib/triviaUtils'
 
 const defaultUserData: TriviaUserData = {
   displayName: null,
+  nameSkipped: false,
   stats: {
     gamesPlayed: 0,
     totalScore: 0,
@@ -24,6 +25,7 @@ interface TriviaStore {
   userData: TriviaUserData
   canPlayToday: () => boolean
   setDisplayName: (name: string) => void
+  skipName: () => void
   recordGame: (result: TriviaGameResult) => void
   resetStats: () => void
 }
@@ -39,7 +41,13 @@ export const useTriviaStore = create<TriviaStore>()(
 
       setDisplayName: (name: string) => {
         set((state) => ({
-          userData: { ...state.userData, displayName: name },
+          userData: { ...state.userData, displayName: name, nameSkipped: false },
+        }))
+      },
+
+      skipName: () => {
+        set((state) => ({
+          userData: { ...state.userData, nameSkipped: true },
         }))
       },
 
@@ -73,7 +81,7 @@ export const useTriviaStore = create<TriviaStore>()(
                 currentStreak: newStreak,
                 bestStreak,
               },
-              history: [...state.userData.history, result],
+              history: state.userData.displayName ? [...state.userData.history, result] : state.userData.history,
             },
           }
         })
@@ -85,7 +93,14 @@ export const useTriviaStore = create<TriviaStore>()(
     }),
     {
       name: 'cometcave-trivia-user',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        if (version < 2) {
+          const state = persistedState as { userData: TriviaUserData }
+          return { ...state, userData: { ...state.userData, nameSkipped: false } }
+        }
+        return persistedState
+      },
     }
   )
 )

@@ -37,7 +37,7 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showNameDialog, setShowNameDialog] = useState(!userData.displayName)
+  const [showNameDialog, setShowNameDialog] = useState(!userData.displayName && !userData.nameSkipped)
   const [nameInput, setNameInput] = useState(userData.displayName ?? '')
 
   const currentName = userData.displayName?.toLowerCase().trim() ?? ''
