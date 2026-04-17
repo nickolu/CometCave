@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
@@ -182,6 +183,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             updateSelectedCharacter({
               currentRegion: pendingRegionId,
               visitedRegions: updatedVisited,
+              currentWeather: rollWeather(pendingRegionId),
             })
             regionTravelText = ` You conquered the guardian and entered ${destRegion.icon} ${destRegion.name}!`
           }

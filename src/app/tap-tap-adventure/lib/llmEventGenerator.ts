@@ -2,6 +2,7 @@ import { OpenAI } from 'openai'
 import { z } from 'zod'
 
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { WEATHER_TYPES, WeatherId } from '@/app/tap-tap-adventure/config/weather'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { SpellSchema } from '@/app/tap-tap-adventure/models/spell'
@@ -323,6 +324,11 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
     ? `\n\nIMPORTANT — Seasonal context: ${seasonalContext}. Weave this theme subtly into the event's atmosphere and descriptions.`
     : ''
 
+  const eventWeatherType = WEATHER_TYPES[(character.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
+  const weatherInjection = eventWeatherType.id !== 'clear'
+    ? `\n\nWeather context: ${eventWeatherType.icon} ${eventWeatherType.name}. ${eventWeatherType.description} Weave the weather atmosphere subtly into events.`
+    : ''
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
@@ -351,7 +357,7 @@ Character:
 ${JSON.stringify(character, null, 2)}
 
 Recent History & Context:
-${context || 'No prior adventures yet — this is the beginning of their journey.'}${seasonalInjection}`,
+${context || 'No prior adventures yet — this is the beginning of their journey.'}${seasonalInjection}${weatherInjection}`,
     },
   ]
 
@@ -2284,6 +2290,11 @@ export async function generateLegendaryEvent(
     ? `\n\nIMPORTANT — Seasonal context: ${legendarySeasonalContext}. Weave this theme subtly into the event's atmosphere and descriptions.`
     : ''
 
+  const legendaryWeatherType = WEATHER_TYPES[(character.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
+  const legendaryWeatherInjection = legendaryWeatherType.id !== 'clear'
+    ? `\n\nWeather context: ${legendaryWeatherType.icon} ${legendaryWeatherType.name}. ${legendaryWeatherType.description} Weave the weather atmosphere subtly into events.`
+    : ''
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
@@ -2308,7 +2319,7 @@ Character:
 ${JSON.stringify(character, null, 2)}
 
 Recent History & Context:
-${context || 'No prior adventures yet — this is the beginning of their journey.'}${legendarySeasonalInjection}`,
+${context || 'No prior adventures yet — this is the beginning of their journey.'}${legendarySeasonalInjection}${legendaryWeatherInjection}`,
     },
   ]
 

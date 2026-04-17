@@ -37,6 +37,7 @@ import {
 } from '@/app/tap-tap-adventure/models/types'
 import { claimDailyReward as processDailyRewardClaim } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
+import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -69,6 +70,7 @@ const defaultCharacter: FantasyCharacter = {
   mercenaryRoster: [],
   difficultyMode: 'normal',
   currentRegion: 'green_meadows',
+  currentWeather: 'clear',
   visitedRegions: ['green_meadows'],
   mainQuest: createMainQuest(),
   factionReputations: {},
@@ -232,6 +234,12 @@ export const useGameStore = create<GameStore>()(
               } else {
                 updatedCharacter = { ...updatedCharacter, gold: mercGold }
               }
+            }
+
+            // Weather change every WEATHER_CHANGE_INTERVAL distance steps
+            if (newDistance % WEATHER_CHANGE_INTERVAL === 0) {
+              const newWeather = rollWeather(updatedCharacter.currentRegion ?? 'green_meadows')
+              updatedCharacter = { ...updatedCharacter, currentWeather: newWeather }
             }
 
             state.gameState.characters = state.gameState.characters.map(char =>
@@ -1014,6 +1022,10 @@ export const useGameStore = create<GameStore>()(
             // v20: Add factionReputations
             if ((char as FantasyCharacter).factionReputations === undefined) {
               ;(char as FantasyCharacter).factionReputations = {}
+            }
+            // v21: Add currentWeather
+            if ((char as FantasyCharacter).currentWeather === undefined) {
+              ;(char as FantasyCharacter).currentWeather = 'clear'
             }
           }
         }

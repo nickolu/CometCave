@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { WEATHER_TYPES, WeatherId } from '@/app/tap-tap-adventure/config/weather'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
@@ -307,6 +308,17 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
         >
           {currentRegion.icon} {currentRegion.name}
         </span>
+        {(() => {
+          const weatherType = WEATHER_TYPES[(character?.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
+          return weatherType.id !== 'clear' ? (
+            <span
+              className="text-[10px] px-1.5 py-0.5 border rounded border-sky-400 text-sky-300 bg-[#2a2b3f]"
+              title={`${weatherType.name}: ${weatherType.description}`}
+            >
+              {weatherType.icon} {weatherType.name}
+            </span>
+          ) : null
+        })()}
         {difficultyMode.id !== 'normal' && (
           <span
             className={`text-[10px] px-1.5 py-0.5 border rounded ${difficultyColor} bg-[#2a2b3f]`}

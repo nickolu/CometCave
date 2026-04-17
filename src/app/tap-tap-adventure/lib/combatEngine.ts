@@ -1,4 +1,5 @@
 import { CLASS_ABILITIES, getClassElement, getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
+import { WEATHER_TYPES, WeatherId } from '@/app/tap-tap-adventure/config/weather'
 import { AP_COSTS, MAX_AP } from '@/app/tap-tap-adventure/config/apCosts'
 import { getElementalMultiplier, getEffectivenessText } from '@/app/tap-tap-adventure/config/elements'
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
@@ -164,6 +165,35 @@ function getPlayerCritChance(luck: number, bonusCritChance: number = 0): number 
   return Math.min(0.4, baseCritChance)
 }
 
+/**
+ * Return weather-based combat modifiers.
+ * - accuracyPenalty: probability (0.0–0.15) that an enemy attack misses entirely.
+ * - critBonus: flat addition to player crit chance.
+ * - fireMultiplier / iceMultiplier / lightningMultiplier: multiplicative on elemental damage.
+ *
+ * Note: weather modifiers apply to basic attacks only (calculatePlayerDamage / calculateEnemyDamage).
+ * Spell damage in spellEngine.ts is intentionally excluded to avoid double-application.
+ */
+export function getWeatherCombatModifiers(weatherId: string | undefined): {
+  accuracyPenalty: number
+  critBonus: number
+  fireMultiplier: number
+  iceMultiplier: number
+  lightningMultiplier: number
+} {
+  const weather = WEATHER_TYPES[( weatherId ?? 'clear') as WeatherId]
+  if (!weather) {
+    return { accuracyPenalty: 0, critBonus: 0, fireMultiplier: 1, iceMultiplier: 1, lightningMultiplier: 1 }
+  }
+  return {
+    accuracyPenalty: weather.accuracyMod,
+    critBonus: weather.critChanceMod,
+    fireMultiplier: 1 + weather.fireDamageMod,
+    iceMultiplier: 1 + weather.iceDamageMod,
+    lightningMultiplier: 1 + weather.lightningDamageMod,
+  }
+}
+
 export function calculatePlayerDamage(
   playerState: CombatPlayerState,
   enemy: CombatEnemy,
@@ -182,15 +212,24 @@ export function calculatePlayerDamage(
   const attackElement = character
     ? getClassElement(character.class, character.classData)
     : undefined
-  const elementalMultiplier = getElementalMultiplier(attackElement, enemy.element)
+  const baseElementalMultiplier = getElementalMultiplier(attackElement, enemy.element)
+
+  // Weather modifiers: boost elemental damage based on current weather
+  const weatherMods = getWeatherCombatModifiers(character?.currentWeather)
+  const weatherElementalBoost =
+    attackElement === 'fire' ? weatherMods.fireMultiplier
+    : attackElement === 'ice' ? weatherMods.iceMultiplier
+    : attackElement === 'lightning' ? weatherMods.lightningMultiplier
+    : 1.0
+  const elementalMultiplier = baseElementalMultiplier * weatherElementalBoost
 
   const raw = randomVariance(buffedAttack) * comboMultiplier * berserkMultiplier * elementalMultiplier - enemyDefense
   // AP system: reduce per-action damage so 3 attacks ≈ 1.8x old single attack
   const apScaled = raw * 0.6
 
-  // Critical strike check
+  // Critical strike check (weather can add crit bonus)
   const luck = playerState.luck ?? 0
-  const critChance = getPlayerCritChance(luck, bonusCritChance)
+  const critChance = getPlayerCritChance(luck, bonusCritChance + weatherMods.critBonus)
   const isCritical = Math.random() < critChance
   const critMultiplier = isCritical ? 2.0 : 1.0
 
@@ -239,6 +278,12 @@ export function calculateEnemyDamage(
   isHeavyAttack: boolean = false,
   character?: FantasyCharacter
 ): { damage: number; elementalMultiplier: number; isCritical: boolean } {
+  // Weather-based miss chance: enemy may miss entirely due to poor visibility
+  const enemyWeatherMods = getWeatherCombatModifiers(character?.currentWeather)
+  if (enemyWeatherMods.accuracyPenalty > 0 && Math.random() < enemyWeatherMods.accuracyPenalty) {
+    return { damage: 0, elementalMultiplier: 1, isCritical: false }
+  }
+
   const effectiveDefense = playerState.isDefending
     ? playerState.defense * 2
     : playerState.defense
@@ -256,7 +301,14 @@ export function calculateEnemyDamage(
     : undefined
   const elementalMultiplier = getElementalMultiplier(enemy.element, defenseElement)
 
-  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier * elementalMultiplier
+  // Weather can boost enemy elemental attacks (e.g., lightning enemies deal more in storms)
+  const enemyWeatherElementalBoost =
+    enemy.element === 'fire' ? enemyWeatherMods.fireMultiplier
+    : enemy.element === 'ice' ? enemyWeatherMods.iceMultiplier
+    : enemy.element === 'lightning' ? enemyWeatherMods.lightningMultiplier
+    : 1.0
+
+  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier * elementalMultiplier * enemyWeatherElementalBoost
   const raw = randomVariance(attackPower) - buffedDefense
 
   // Enemy critical strike check
@@ -393,6 +445,11 @@ function executeEnemyTelegraph(
         true,
         character
       )
+      if (rawDmg === 0) {
+        // Weather miss
+        logs.push({ turn: turnNumber, actor: 'enemy', action: 'heavy_attack', damage: 0, description: `${enemy.name}'s powerful blow goes wide in the poor visibility!` })
+        break
+      }
       const dmg = Math.max(1, Math.round(rawDmg * rangeMult))
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
       const elemText = getEffectivenessText(elementalMultiplier)
@@ -444,6 +501,11 @@ function executeEnemyTelegraph(
         false,
         character
       )
+      if (rawNormalDmg === 0) {
+        // Weather miss
+        logs.push({ turn: turnNumber, actor: 'enemy', action: 'attack', damage: 0, description: `${enemy.name} swings wildly and misses in the poor visibility!` })
+        break
+      }
       const dmg = Math.max(1, Math.round(rawNormalDmg * rangeMult))
       updatedPlayer.hp = Math.max(0, updatedPlayer.hp - dmg)
       const elemText = getEffectivenessText(elementalMultiplier)
@@ -1244,6 +1306,16 @@ export function processPlayerAction(
         elementalMultiplier: enemyElemMult,
         isCritical: enemyCrit,
       } = calculateEnemyDamage(enemy, playerState, false, character)
+      if (enemyRawDmg === 0) {
+        // Weather miss
+        newLogs.push({
+          turn: turnNumber,
+          actor: 'enemy',
+          action: 'attack',
+          damage: 0,
+          description: `${enemy.name} swings wildly and misses in the poor visibility!`,
+        })
+      } else {
       const enemyDmg = Math.max(1, Math.round(enemyRawDmg * fbRangeMult))
       const dmgReduction = getActiveDamageReduction(playerState)
       const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
@@ -1338,6 +1410,7 @@ export function processPlayerAction(
           })
         }
       }
+      } // end else (enemyRawDmg > 0)
     }
   }
 
