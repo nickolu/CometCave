@@ -39,6 +39,7 @@ import { MercenaryPanel } from './MercenaryPanel'
 import { FactionPanel } from './FactionPanel'
 import AdventureLeaderboard from './AdventureLeaderboard'
 import { CraftingPanel } from './CraftingPanel'
+import { BestiaryPanel } from './BestiaryPanel'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -97,7 +98,7 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | 'base' | 'party' | 'factions' | 'leaderboard' | 'crafting' | null
+type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | 'base' | 'party' | 'factions' | 'leaderboard' | 'crafting' | 'bestiary' | null
 
 interface GameUIProps {
   onOpenStatus?: () => void
@@ -500,6 +501,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             {character && <MainQuestPanel character={character} />}
             <QuestPanel />
             <AchievementPanel achievements={gameState.achievements ?? []} />
+            <BestiaryPanel bestiary={character?.bestiary ?? []} />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
             />
@@ -551,7 +553,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : mobilePanel === 'base' ? 'Camp' : mobilePanel === 'party' ? 'Party' : mobilePanel === 'factions' ? 'Factions' : mobilePanel === 'leaderboard' ? 'Leaderboard' : mobilePanel === 'crafting' ? 'Crafting' : 'Quest'}
+                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : mobilePanel === 'base' ? 'Camp' : mobilePanel === 'party' ? 'Party' : mobilePanel === 'factions' ? 'Factions' : mobilePanel === 'leaderboard' ? 'Leaderboard' : mobilePanel === 'crafting' ? 'Crafting' : mobilePanel === 'bestiary' ? 'Bestiary' : 'Quest'}
               </h3>
               <button
                 className="text-slate-400 hover:text-white text-sm px-2 py-1"
@@ -587,6 +589,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <AdventureLeaderboard onBack={() => setMobilePanel(null)} />
             )}
             {mobilePanel === 'crafting' && <CraftingPanel />}
+            {mobilePanel === 'bestiary' && character && <BestiaryPanel bestiary={character.bestiary ?? []} />}
           </div>
         </div>
       )}
@@ -603,6 +606,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           { id: 'party' as MobilePanel, label: 'Party', icon: '\u2694\uFE0F' },
           { id: 'factions' as MobilePanel, label: 'Factions', icon: '\uD83C\uDFF0' },
           { id: 'leaderboard' as MobilePanel, label: 'Ranks', icon: '\uD83C\uDFC6' },
+          { id: 'bestiary' as MobilePanel, label: 'Bestiary', icon: '\uD83D\uDC09' },
           { id: 'settings' as MobilePanel, label: 'Settings', icon: '\u2699' },
         ]).map(tab => (
           <button

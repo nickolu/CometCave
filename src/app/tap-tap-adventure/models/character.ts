@@ -8,6 +8,7 @@ import { MountSchema } from './mount'
 import { MercenarySchema } from './mercenary'
 import { MainQuestSchema } from './quest'
 import { SpellSchema } from './spell'
+import { BestiaryEntrySchema } from './bestiary'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
@@ -63,6 +64,7 @@ export const FantasyCharacterSchema = z.object({
   mainQuest: MainQuestSchema.optional(),
   campState: CampStateSchema.optional(),
   factionReputations: z.record(z.string(), z.number()).optional().default({}),
+  bestiary: z.array(BestiaryEntrySchema).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

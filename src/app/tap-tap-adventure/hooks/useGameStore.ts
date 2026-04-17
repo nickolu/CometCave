@@ -77,6 +77,7 @@ const defaultCharacter: FantasyCharacter = {
   visitedRegions: ['green_meadows'],
   mainQuest: createMainQuest(),
   factionReputations: {},
+  bestiary: [],
 }
 
 export interface GameStore {
@@ -1017,7 +1018,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 21,
+      version: 22,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1112,6 +1113,10 @@ export const useGameStore = create<GameStore>()(
             // v21: Add currentWeather
             if ((char as FantasyCharacter).currentWeather === undefined) {
               ;(char as FantasyCharacter).currentWeather = 'clear'
+            }
+            // v22: Add bestiary
+            if (!(char as FantasyCharacter).bestiary) {
+              ;(char as FantasyCharacter).bestiary = []
             }
           }
         }

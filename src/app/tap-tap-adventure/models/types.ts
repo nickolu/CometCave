@@ -126,3 +126,4 @@ export type {
   MetaProgressionState,
   MetaProgressionStateSchema,
 } from './metaProgression'
+export type { BestiaryEntry, BestiaryEntrySchema } from './bestiary'
