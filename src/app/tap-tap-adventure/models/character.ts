@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { ClassSkillTreeSchema } from './classSkillTree'
 import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
 import { MountSchema } from './mount'
@@ -49,6 +50,8 @@ export const FantasyCharacterSchema = z.object({
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),
   unlockedSkills: z.array(z.string()).optional(),
+  classSkillTree: ClassSkillTreeSchema.optional(),
+  unlockedTreeSkillIds: z.array(z.string()).optional(),
   difficultyMode: z.string().optional().default('normal'),
   currentRegion: z.string().optional().default('green_meadows'),
   visitedRegions: z.array(z.string()).optional(),

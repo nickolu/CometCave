@@ -21,8 +21,17 @@ import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { calculateMaxHp } from '@/app/tap-tap-adventure/lib/leveling'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { ClassSkillTree } from '@/app/tap-tap-adventure/models/classSkillTree'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+
+/** Map static class IDs to their combat style for skill tree generation. */
+const STATIC_CLASS_COMBAT_STYLES: Record<string, string> = {
+  warrior: 'martial',
+  mage: 'arcane',
+  rogue: 'shadow',
+  ranger: 'primal',
+}
 
 export function useCharacterCreation() {
   const { addCharacter, claimHeirloom, gameState, getMetaBonuses } = useGameStore()
@@ -35,6 +44,8 @@ export function useCharacterCreation() {
   const [isComplete, setIsComplete] = useState(false)
   const [selectedHeirloom, setSelectedHeirloom] = useState<Item | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyMode>(DIFFICULTY_MODES[0])
+  const [skillTreeData, setSkillTreeData] = useState<ClassSkillTree | null>(null)
+  const [isFetchingTree, setIsFetchingTree] = useState(false)
 
   const legacyHeirlooms = gameState?.legacyHeirlooms ?? []
   const hasHeirlooms = legacyHeirlooms.length > 0
@@ -62,6 +73,25 @@ export function useCharacterCreation() {
   }
 
   const isValid = Boolean(character.name?.trim()) && selectedRace !== null && (selectedClass !== null || selectedGeneratedClass !== null)
+
+  const fetchSkillTree = useCallback(async (classId: string, className: string, combatStyle: string) => {
+    setIsFetchingTree(true)
+    try {
+      const response = await fetch('/api/v1/tap-tap-adventure/skill-tree/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId, className, combatStyle }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setSkillTreeData(data.skillTree)
+      }
+    } catch {
+      // Silently fail — character will be created without a tree
+    } finally {
+      setIsFetchingTree(false)
+    }
+  }, [])
 
   const fetchGeneratedClasses = useCallback(async () => {
     setIsLoadingClasses(true)
@@ -94,7 +124,17 @@ export function useCharacterCreation() {
         luck: gc.statDistribution.luck - DEFAULT_STAT_MIN,
       },
     })
-  }, [])
+    setSkillTreeData(null)
+    fetchSkillTree(gc.id, gc.name, gc.combatStyle)
+  }, [fetchSkillTree])
+
+  const selectStaticClass = useCallback((classOption: ClassOption) => {
+    setSelectedClass(classOption)
+    setSelectedGeneratedClass(null)
+    setSkillTreeData(null)
+    const combatStyle = STATIC_CLASS_COMBAT_STYLES[classOption.id] ?? 'martial'
+    fetchSkillTree(classOption.id, classOption.name, combatStyle)
+  }, [fetchSkillTree])
 
   const completeCreation = () => {
     if (!isValid || !selectedRace || (!selectedClass && !selectedGeneratedClass)) return
@@ -114,6 +154,7 @@ export function useCharacterCreation() {
     let className: string
     let spellbook: Spell[] = []
     let classData: GeneratedClass | undefined
+    let classSkillTree: ClassSkillTree | undefined = skillTreeData ?? undefined
 
     if (selectedGeneratedClass) {
       finalStats = {
@@ -213,6 +254,8 @@ export function useCharacterCreation() {
       maxMana: boostedMaxMana,
       spellbook,
       classData,
+      classSkillTree,
+      unlockedTreeSkillIds: [],
       inventory: startingInventory,
       gold: boostedGold,
       difficultyMode: selectedDifficulty.id,
@@ -234,6 +277,7 @@ export function useCharacterCreation() {
     updateCharacter,
     setSelectedRace,
     setSelectedClass,
+    selectStaticClass,
     selectGeneratedClass,
     fetchGeneratedClasses,
     isComplete,
@@ -244,5 +288,7 @@ export function useCharacterCreation() {
     setSelectedHeirloom,
     selectedDifficulty,
     setSelectedDifficulty,
+    skillTreeData,
+    isFetchingTree,
   }
 }
