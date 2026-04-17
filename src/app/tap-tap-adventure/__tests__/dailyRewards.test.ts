@@ -55,6 +55,7 @@ function makeState(dailyReward: GameState['dailyReward'] = null): GameState {
     metaProgression: null,
     runSummary: null,
     dailyReward,
+    dailyChallenges: null,
   }
 }
 

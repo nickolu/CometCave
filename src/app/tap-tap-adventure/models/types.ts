@@ -3,6 +3,7 @@
 import { PlayerAchievement } from './achievement'
 import { FantasyCharacter } from './character'
 import { CombatState } from './combat'
+import { DailyChallengesState } from './dailyChallenge'
 import { Item } from './item'
 import { FantasyLocation } from './location'
 import { MetaProgressionState } from './metaProgression'
@@ -113,10 +114,12 @@ type GameState = {
   achievements: PlayerAchievement[]
   legacyHeirlooms: Item[]
   dailyReward: DailyRewardState | null
+  dailyChallenges: DailyChallengesState | null
   metaProgression: MetaProgressionState | null
   runSummary: RunSummaryData | null
 }
 export type { GameState, DailyRewardState, RunSummaryData }
+export type { DailyChallenge, DailyChallengeType, DailyChallengesState } from './dailyChallenge'
 export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
 export type {
   EternalUpgrade,
