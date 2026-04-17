@@ -32,8 +32,25 @@ export async function GET(request: NextRequest) {
       { error: 'Invalid period. Use daily, weekly, or alltime.' },
       { status: 400 }
     )
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching leaderboard:', error)
+
+    // Firestore index errors — return empty results with a helpful message
+    const errMsg = error instanceof Error ? error.message : String(error)
+    if (errMsg.includes('index') || errMsg.includes('FAILED_PRECONDITION') || errMsg.includes('requires an index')) {
+      console.error('Firestore index missing. Create composite index: collection=trivia-scores, fields: date ASC + score DESC')
+      // Log the index creation URL if present
+      const urlMatch = errMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/)
+      if (urlMatch) {
+        console.error('Create index here:', urlMatch[1])
+      }
+      return NextResponse.json({
+        period: 'daily',
+        entries: [],
+        notice: 'Leaderboard is initializing. Please try again in a few minutes.',
+      })
+    }
+
     return NextResponse.json({ error: 'Failed to fetch leaderboard.' }, { status: 500 })
   }
 }
