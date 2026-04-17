@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-27",
+  "categoryId": 11,
+  "categoryName": "Entertainment: Film",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-27-0",
+      "question": "Who directed the Kill Bill movies?",
+      "options": [
+        "Arnold Schwarzenegger",
+        "David Lean",
+        "Stanley Kubrick",
+        "Quentin Tarantino"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Quentin Tarantino"
+    },
+    {
+      "id": "opentdb-2026-04-27-1",
+      "question": "In the 1995 film \"Balto\", who are Steele's accomplices?",
+      "options": [
+        "Dusty, Kirby, and Ralph",
+        "Jenna, Sylvie, and Dixie",
+        "Nuk, Yak, and Sumac",
+        "Kaltag, Nikki, and Star"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Kaltag, Nikki, and Star"
+    },
+    {
+      "id": "opentdb-2026-04-27-2",
+      "question": "Who directed the 2015 movie \"The Revenant\"?",
+      "options": [
+        "David Fincher",
+        "Wes Anderson",
+        "Christopher Nolan",
+        "Alejandro G. Iñárritu"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Alejandro G. Iñárritu"
+    },
+    {
+      "id": "opentdb-2026-04-27-3",
+      "question": "In \"The Hobbit,\" who was head of the White Council? ",
+      "options": [
+        "Gandalf",
+        "Elrond",
+        "Lady Galadriel ",
+        "Saruman"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Saruman"
+    },
+    {
+      "id": "opentdb-2026-04-27-4",
+      "question": "What is the name of the Artificial Intelligence system in the 1983 film, \"WarGames\"?",
+      "options": [
+        "Master Control Program",
+        "West Campus Analog Computer",
+        "Self Evolving Thought Helix",
+        "War Operation Plan Response"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "War Operation Plan Response"
+    },
+    {
+      "id": "opentdb-2026-04-27-5",
+      "question": "Which actors made up the trio in \"The Good, the Bad, and the Ugly\"? ",
+      "options": [
+        "Sergio Leone, Ennio Morricone, and Tonino Delli Colli",
+        "Aldo Giuffrè, Mario Brega, and Luigi Pistilli",
+        "Yul Brynner, Steve McQueen, and Charles Bronson",
+        "Clint Eastwood, Eli Wallach, and Lee Van Cleef"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Clint Eastwood, Eli Wallach, and Lee Van Cleef"
+    },
+    {
+      "id": "ai-2026-04-27-6",
+      "question": "In the movie 'Shrek', what animal is mistakenly thought to be unable to fly but is shown flying in the film?",
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Donkey",
+      "explanation": "A common misconception is that donkeys cannot fly, but in 'Shrek', Donkey is shown flying after being granted powers by the Fairy Godmother's magic. This humorous twist plays on the trope of flying mythical creatures and adds to the comedic nature of the film."
+    },
+    {
+      "id": "ai-2026-04-27-7",
+      "question": "Which spaceship's design in the 1979 film 'Alien' elicited strong fan reactions due to its unique and biomechanical aesthetic, created by Swiss artist H.R. Giger?",
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Nostromo",
+      "explanation": "The Nostromo's design was pivotal in creating the eerie and immersive atmosphere of 'Alien.' H.R. Giger's biomechanical art style contributed to the spaceship's unsettling and otherworldly appearance, making it a memorable element that resonated with fans and added to the film's cult status."
+    }
+  ]
+}

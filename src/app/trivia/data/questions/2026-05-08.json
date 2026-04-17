@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-08",
+  "categoryId": 22,
+  "categoryName": "Geography",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-08-0",
+      "question": "Which country was NOT part of the Soviet Union?",
+      "options": [
+        "Turkmenistan",
+        "Tajikistan",
+        "Belarus",
+        "Romania"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Romania"
+    },
+    {
+      "id": "opentdb-2026-05-08-1",
+      "question": "Which area of Eastern Europe is famous for its association with vampires?",
+      "options": [
+        "Silesia",
+        "Slovakia",
+        "Macedonia",
+        "Transylvania"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Transylvania"
+    },
+    {
+      "id": "opentdb-2026-05-08-2",
+      "question": "What is the largest country, by area, that has only one time zone?",
+      "options": [
+        "Canada",
+        "India",
+        "Russia",
+        "China"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "China"
+    },
+    {
+      "id": "opentdb-2026-05-08-3",
+      "question": "How many timezones does Russia have?",
+      "options": [
+        "6",
+        "24",
+        "16",
+        "11"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "11"
+    },
+    {
+      "id": "opentdb-2026-05-08-4",
+      "question": "What was the African nation of Zimbabwe formerly known as?",
+      "options": [
+        "Zambia",
+        "Mozambique",
+        " Bulawayo",
+        "Rhodesia"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Rhodesia"
+    },
+    {
+      "id": "opentdb-2026-05-08-5",
+      "question": "What is the capital of Mauritius?",
+      "options": [
+        "Port Moresby",
+        "Port-au-Prince",
+        "Port Vila",
+        "Port Louis"
+      ],
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Port Louis"
+    },
+    {
+      "id": "ai-2026-05-08-6",
+      "question": "What is the capital city of Japan?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Tokyo",
+      "explanation": "Tokyo is the capital city of Japan and is known for its blend of modernity and traditional culture. It is one of the most populous and important cities in the world, serving as a major economic and cultural hub."
+    },
+    {
+      "id": "ai-2026-05-08-7",
+      "question": "Which river, considered the longest in Australia, has been extensively utilized for irrigation and water supply to support agricultural activities in the Murray-Darling Basin?",
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Murray River",
+      "explanation": "The Murray River is the longest river in Australia, stretching over 2,500 kilometers. It is a crucial component of the Murray-Darling Basin, which is one of the most productive agricultural regions in Australia, providing water for a variety of crops and supporting the livelihoods of many communities."
+    }
+  ]
+}

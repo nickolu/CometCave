@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
-import { formatDisplayDate, getTodayPST } from '../lib/triviaUtils'
+import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 
 export function TriviaLanding({
   onStartGame,
@@ -17,12 +17,22 @@ export function TriviaLanding({
   const { userData, canPlayToday } = useTriviaStore()
   const todayStr = getTodayPST()
   const alreadyPlayed = !canPlayToday()
+  const category = getDailyCategory(todayStr)
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-space-gold mb-2">Daily Trivia</h1>
         <p className="text-cream-white/70 text-lg">{formatDisplayDate(todayStr)}</p>
+      </div>
+
+      {/* Today's Theme banner */}
+      <div className="w-full flex flex-col items-center gap-1 px-4 py-3 rounded-lg bg-gradient-to-r from-space-purple/30 to-space-gold/20 border border-space-gold/30">
+        <div className="text-cream-white/60 text-xs uppercase tracking-widest">Today&apos;s Theme</div>
+        <div className="flex items-center gap-2 text-xl font-bold text-space-gold">
+          <span className="text-2xl">{category.icon}</span>
+          <span>{category.name}</span>
+        </div>
       </div>
 
       <Card className="w-full bg-space-dark/80 border-space-grey">

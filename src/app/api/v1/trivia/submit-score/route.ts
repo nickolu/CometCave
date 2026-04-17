@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { submitScore } from '@/app/trivia/lib/leaderboardStore'
 
-const MAX_SCORE = 3000
+const MAX_SCORE = 3150
 const MAX_NAME_LENGTH = 20
 
 export async function POST(request: NextRequest) {
