@@ -43,6 +43,8 @@ import { CraftingPanel } from './CraftingPanel'
 import { EnchantingPanel } from './EnchantingPanel'
 import { BestiaryPanel } from './BestiaryPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
+import { NPCDialoguePanel } from './NPCDialoguePanel'
+import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -101,7 +103,7 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | 'base' | 'party' | 'factions' | 'leaderboard' | 'crafting' | 'enchant' | 'bestiary' | null
+type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | 'base' | 'party' | 'factions' | 'leaderboard' | 'crafting' | 'enchant' | 'bestiary' | 'npc' | null
 
 interface GameUIProps {
   onOpenStatus?: () => void
@@ -119,12 +121,14 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     updateAchievements,
     applyAchievementRewards,
     claimDailyReward,
+    recordNPCEncounter,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [showNPCPanel, setShowNPCPanel] = useState(false)
 
   // Check for daily reward on mount
   useEffect(() => {
@@ -468,6 +472,44 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     </div>
                   )
                 })()}
+                {/* NPC button and panel */}
+                {(() => {
+                  const regionNPCs = getNPCsForRegion(character?.currentRegion ?? 'green_meadows')
+                  if (regionNPCs.length === 0) return null
+                  const npc = regionNPCs[0]
+                  const encounters = character?.npcEncounters ?? {}
+                  const timesSpoken = encounters[npc.id]?.timesSpoken ?? 0
+                  return (
+                    <div>
+                      {showNPCPanel ? (
+                        <NPCDialoguePanel
+                          npc={npc}
+                          characterName={character?.name ?? 'Adventurer'}
+                          characterClass={character?.class ?? 'Unknown'}
+                          characterLevel={character?.level ?? 1}
+                          reputation={character?.reputation ?? 0}
+                          region={character?.currentRegion ?? 'green_meadows'}
+                          timesSpoken={timesSpoken}
+                          onReward={(reward) => {
+                            recordNPCEncounter(npc.id, reward)
+                          }}
+                          onClose={() => {
+                            setShowNPCPanel(false)
+                          }}
+                        />
+                      ) : (
+                        <button
+                          className="w-full text-left text-xs bg-[#1e1f30] border border-[#3a3c56] hover:border-indigo-700/50 rounded-lg px-3 py-2 text-slate-300 transition-colors"
+                          onClick={() => setShowNPCPanel(true)}
+                        >
+                          <span className="mr-1.5">{npc.icon}</span>
+                          <span className="font-semibold">{npc.name}</span>
+                          <span className="text-slate-500 ml-1">is nearby &mdash; Talk?</span>
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
                 <Button
                   className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
                     isAutoWalking
@@ -562,7 +604,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : mobilePanel === 'base' ? 'Camp' : mobilePanel === 'party' ? 'Party' : mobilePanel === 'factions' ? 'Factions' : mobilePanel === 'leaderboard' ? 'Leaderboard' : mobilePanel === 'crafting' ? 'Crafting' : mobilePanel === 'enchant' ? 'Enchanting' : mobilePanel === 'bestiary' ? 'Bestiary' : 'Quest'}
+                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : mobilePanel === 'base' ? 'Camp' : mobilePanel === 'party' ? 'Party' : mobilePanel === 'factions' ? 'Factions' : mobilePanel === 'leaderboard' ? 'Leaderboard' : mobilePanel === 'crafting' ? 'Crafting' : mobilePanel === 'enchant' ? 'Enchanting' : mobilePanel === 'bestiary' ? 'Bestiary' : mobilePanel === 'npc' ? 'NPC' : 'Quest'}
               </h3>
               <button
                 className="text-slate-400 hover:text-white text-sm px-2 py-1"
@@ -603,6 +645,30 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             {mobilePanel === 'crafting' && <CraftingPanel />}
             {mobilePanel === 'enchant' && <EnchantingPanel />}
             {mobilePanel === 'bestiary' && character && <BestiaryPanel bestiary={character.bestiary ?? []} />}
+            {mobilePanel === 'npc' && character && (() => {
+              const regionNPCs = getNPCsForRegion(character.currentRegion ?? 'green_meadows')
+              if (regionNPCs.length === 0) return <p className="text-sm text-slate-400">No NPCs in this region.</p>
+              const npc = regionNPCs[0]
+              const encounters = character.npcEncounters ?? {}
+              const timesSpoken = encounters[npc.id]?.timesSpoken ?? 0
+              return (
+                <NPCDialoguePanel
+                  npc={npc}
+                  characterName={character.name}
+                  characterClass={character.class}
+                  characterLevel={character.level}
+                  reputation={character.reputation}
+                  region={character.currentRegion ?? 'green_meadows'}
+                  timesSpoken={timesSpoken}
+                  onReward={(reward) => {
+                    recordNPCEncounter(npc.id, reward)
+                  }}
+                  onClose={() => {
+                    setMobilePanel(null)
+                  }}
+                />
+              )
+            })()}
           </div>
         </div>
       )}
@@ -621,6 +687,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           { id: 'factions' as MobilePanel, label: 'Factions', icon: '\uD83C\uDFF0' },
           { id: 'leaderboard' as MobilePanel, label: 'Ranks', icon: '\uD83C\uDFC6' },
           { id: 'bestiary' as MobilePanel, label: 'Bestiary', icon: '\uD83D\uDC09' },
+          { id: 'npc' as MobilePanel, label: 'NPCs', icon: '\uD83D\uDDE3\uFE0F' },
           { id: 'settings' as MobilePanel, label: 'Settings', icon: '\u2699' },
         ]).map(tab => (
           <button

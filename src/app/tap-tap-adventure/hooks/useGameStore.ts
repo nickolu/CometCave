@@ -87,6 +87,7 @@ const defaultCharacter: FantasyCharacter = {
   mainQuest: createMainQuest(),
   factionReputations: {},
   bestiary: [],
+  npcEncounters: {},
 }
 
 export interface GameStore {
@@ -134,6 +135,7 @@ export interface GameStore {
   enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => { message: string; success: boolean } | null
   updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
+  recordNPCEncounter: (npcId: string, reward?: { gold?: number; reputation?: number }) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1148,6 +1150,33 @@ export const useGameStore = create<GameStore>()(
           })
         )
         return bonus
+      },
+      recordNPCEncounter: (npcId: string, reward?: { gold?: number; reputation?: number }) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(c => c.id === selectedCharacter.id)
+            if (charIndex === -1) return
+
+            const encounters = state.gameState.characters[charIndex].npcEncounters ?? {}
+            const existing = encounters[npcId] ?? { timesSpoken: 0, disposition: 0 }
+            encounters[npcId] = {
+              timesSpoken: existing.timesSpoken + 1,
+              disposition: Math.min(100, existing.disposition + 5),
+            }
+            state.gameState.characters[charIndex].npcEncounters = encounters
+
+            if (reward?.gold) {
+              state.gameState.characters[charIndex].gold += reward.gold
+            }
+            if (reward?.reputation) {
+              state.gameState.characters[charIndex].reputation = clampReputation(
+                state.gameState.characters[charIndex].reputation + reward.reputation
+              )
+            }
+          })
+        )
       },
     }),
     {

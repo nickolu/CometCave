@@ -65,6 +65,7 @@ export const FantasyCharacterSchema = z.object({
   campState: CampStateSchema.optional(),
   factionReputations: z.record(z.string(), z.number()).optional().default({}),
   bestiary: z.array(BestiaryEntrySchema).optional(),
+  npcEncounters: z.record(z.string(), z.object({ timesSpoken: z.number(), disposition: z.number() })).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 
