@@ -116,6 +116,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const [damageEvents, setDamageEvents] = useState<DamageEvent[]>([])
   const [showCritFlash, setShowCritFlash] = useState(false)
   const [comboKey, setComboKey] = useState(0)
+  const [spellComboFlash, setSpellComboFlash] = useState<string | null>(null)
   const prevLogLenRef = useRef(0)
   const prevComboRef = useRef(0)
   const [effectivenessFlash, setEffectivenessFlash] = useState<'super' | 'resisted' | null>(null)
@@ -176,6 +177,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
         const type = effectivenessEntry.description.includes('Super effective') ? 'super' : 'resisted'
         setEffectivenessFlash(type)
         setTimeout(() => setEffectivenessFlash(null), 1200)
+      }
+
+      // Spell combo flash
+      const comboEntry = newEntries.find(e => e.action === 'spell_combo')
+      if (comboEntry) {
+        const match = comboEntry.description.match(/^COMBO: ([^!]+)!/)
+        setSpellComboFlash(match?.[1] ?? 'Combo!')
+        setTimeout(() => setSpellComboFlash(null), 1800)
       }
     }
     prevLogLenRef.current = combatLog.length
@@ -405,6 +414,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 {playerState.comboCount}x Combo
               </span>
             )}
+            {spellComboFlash && (
+              <span className="text-[11px] px-2 py-0.5 bg-purple-900/60 text-purple-300 rounded font-bold animate-combo-pulse">
+                {spellComboFlash}
+              </span>
+            )}
             {playerState.isDefending && (
               <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-400 rounded">
                 Defending
@@ -496,7 +510,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 <span className="text-slate-500">T{entry.turn}:</span>{' '}
                 {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
                 {entry.action === 'status_effect' && <span className="mr-1">{entry.description.toLowerCase().includes('poison') ? '☠️' : '🔥'}</span>}
-                {entry.description.includes('Super effective') ? (
+                {entry.action === 'spell_combo' ? (
+                  <><span className="text-purple-400 font-bold">COMBO! </span>{entry.description.replace(/^COMBO: [^!]+! /, '')}</>
+                ) : entry.description.includes('Super effective') ? (
                   <>{entry.description.replace('Super effective!', '')}<span className="text-yellow-400 font-bold"> Super effective!</span></>
                 ) : entry.description.includes('Resisted') ? (
                   <>{entry.description.replace('Resisted!', '')}<span className="text-blue-400 font-bold"> Resisted!</span></>
