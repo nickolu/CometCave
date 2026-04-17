@@ -98,6 +98,14 @@ export function AchievementPanel({ achievements }: { achievements: PlayerAchieve
                         )}
                       </div>
                       <p className="text-[10px] text-slate-400 truncate">{achievement.description}</p>
+                      {(achievement.reward?.gold || achievement.reward?.reputation) && (
+                        <p className="text-[10px] text-amber-400/80 mt-0.5">
+                          {'🪙 '}
+                          {achievement.reward.gold ? `+${achievement.reward.gold}g` : ''}
+                          {achievement.reward.gold && achievement.reward.reputation ? '  ' : ''}
+                          {achievement.reward.reputation ? `⭐ +${achievement.reward.reputation} rep` : ''}
+                        </p>
+                      )}
                       {!completed && (
                         <div className="mt-1">
                           <div className="flex justify-between text-[9px] text-slate-500">

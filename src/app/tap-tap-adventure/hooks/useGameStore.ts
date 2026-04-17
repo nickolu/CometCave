@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
+import { ACHIEVEMENTS } from '@/app/tap-tap-adventure/config/achievements'
 import { clampReputation } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { getMetaBonuses, MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
@@ -98,6 +99,7 @@ export interface GameStore {
   unequipItem: (slot: EquipmentSlotType) => void
   learnSpell: (itemId: string) => { message: string; learned: boolean } | null
   updateAchievements: (achievements: PlayerAchievement[]) => void
+  applyAchievementRewards: (ids: string[]) => void
   setMount: (mount: Mount | null, customName?: string) => void
   damageMountHp: (damage: number) => void
   killMount: () => void
@@ -253,12 +255,37 @@ export const useGameStore = create<GameStore>()(
               )
             }
             // Check achievements on each step
-            const { achievements } = checkAchievements(
+            const { achievements, newlyCompleted } = checkAchievements(
               updatedCharacter,
               state.gameState,
               state.gameState.achievements ?? []
             )
             state.gameState.achievements = achievements
+            // Apply rewards for newly completed achievements
+            if (newlyCompleted.length > 0) {
+              const characterIndex2 = state.gameState.characters.findIndex(
+                char => char.id === updatedCharacter.id
+              )
+              if (characterIndex2 !== -1) {
+                const char = state.gameState.characters[characterIndex2]
+                let goldGain = 0
+                let repGain = 0
+                for (const id of newlyCompleted) {
+                  const config = ACHIEVEMENTS.find(a => a.id === id)
+                  if (config?.reward) {
+                    goldGain += config.reward.gold ?? 0
+                    repGain += config.reward.reputation ?? 0
+                  }
+                  const pa = state.gameState.achievements.find(a => a.achievementId === id)
+                  if (pa) pa.rewardClaimed = true
+                }
+                state.gameState.characters[characterIndex2] = {
+                  ...char,
+                  gold: char.gold + goldGain,
+                  reputation: clampReputation(char.reputation + repGain),
+                }
+              }
+            }
             // Check and unlock passive skills
             const skillIds = computeUnlockedSkillIds(updatedCharacter, achievements)
             if (skillIds.length !== (updatedCharacter.unlockedSkills ?? []).length) {
@@ -578,6 +605,36 @@ export const useGameStore = create<GameStore>()(
         set(
           produce((state: GameStore) => {
             state.gameState.achievements = achievements
+          })
+        )
+      },
+      applyAchievementRewards: (ids: string[]) => {
+        if (ids.length === 0) return
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const characterIndex = state.gameState.characters.findIndex(
+              char => char.id === selectedCharacter.id
+            )
+            if (characterIndex === -1) return
+            const char = state.gameState.characters[characterIndex]
+            let goldGain = 0
+            let repGain = 0
+            for (const id of ids) {
+              const config = ACHIEVEMENTS.find(a => a.id === id)
+              if (config?.reward) {
+                goldGain += config.reward.gold ?? 0
+                repGain += config.reward.reputation ?? 0
+              }
+              const pa = state.gameState.achievements?.find(a => a.achievementId === id)
+              if (pa) pa.rewardClaimed = true
+            }
+            state.gameState.characters[characterIndex] = {
+              ...char,
+              gold: char.gold + goldGain,
+              reputation: clampReputation(char.reputation + repGain),
+            }
           })
         )
       },
