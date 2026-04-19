@@ -103,7 +103,11 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | 'base' | 'party' | 'factions' | 'leaderboard' | 'crafting' | 'enchant' | 'bestiary' | 'npc' | null
+type MobileCategory = 'gear' | 'quest' | 'social' | 'more' | null
+type GearSubTab = 'equipment' | 'inventory' | 'crafting' | 'enchant'
+type QuestSubTab = 'quests' | 'map' | 'bestiary'
+type SocialSubTab = 'party' | 'factions' | 'npc' | 'leaderboard'
+type MoreSubTab = 'status' | 'base' | 'settings'
 
 interface GameUIProps {
   onOpenStatus?: () => void
@@ -126,7 +130,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null)
+  const [mobileCategory, setMobileCategory] = useState<MobileCategory>(null)
+  const [gearSubTab, setGearSubTab] = useState<GearSubTab>('equipment')
+  const [questSubTab, setQuestSubTab] = useState<QuestSubTab>('quests')
+  const [socialSubTab, setSocialSubTab] = useState<SocialSubTab>('party')
+  const [moreSubTab, setMoreSubTab] = useState<MoreSubTab>('status')
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [showNPCPanel, setShowNPCPanel] = useState(false)
 
@@ -267,7 +275,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       // Escape — close overlays
       if (e.key === 'Escape') {
         if (showKeyboardHelp) { setShowKeyboardHelp(false); return }
-        setMobilePanel(null)
+        setMobileCategory(null)
         return
       }
 
@@ -595,28 +603,57 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       {/* Main content wrapper END */}
 
       {/* Mobile bottom drawer overlay */}
-      {mobilePanel && (
-        <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobilePanel(null)}>
+      {mobileCategory && (
+        <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobileCategory(null)}>
           <div className="absolute inset-0 bg-black/50" />
           <div
             className="absolute bottom-14 left-0 right-0 max-h-[70vh] overflow-y-auto bg-[#161723] border-t border-[#3a3c56] rounded-t-xl p-4 space-y-4"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : mobilePanel === 'base' ? 'Camp' : mobilePanel === 'party' ? 'Party' : mobilePanel === 'factions' ? 'Factions' : mobilePanel === 'leaderboard' ? 'Leaderboard' : mobilePanel === 'crafting' ? 'Crafting' : mobilePanel === 'enchant' ? 'Enchanting' : mobilePanel === 'bestiary' ? 'Bestiary' : mobilePanel === 'npc' ? 'NPC' : 'Quest'}
-              </h3>
-              <button
-                className="text-slate-400 hover:text-white text-sm px-2 py-1"
-                onClick={() => setMobilePanel(null)}
-              >
-                Close
-              </button>
+            {/* Sub-tab bar inside the drawer */}
+            <div className="flex gap-1 bg-[#0e0f1a] rounded-lg p-1 overflow-x-auto">
+              {mobileCategory === 'gear' && ([
+                { id: 'equipment' as GearSubTab, label: 'Equip' },
+                { id: 'inventory' as GearSubTab, label: 'Items' },
+                { id: 'crafting' as GearSubTab, label: 'Craft' },
+                { id: 'enchant' as GearSubTab, label: 'Enchant' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setGearSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${gearSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
+              {mobileCategory === 'quest' && ([
+                { id: 'quests' as QuestSubTab, label: 'Quests' },
+                { id: 'map' as QuestSubTab, label: 'Map' },
+                { id: 'bestiary' as QuestSubTab, label: 'Bestiary' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setQuestSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${questSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
+              {mobileCategory === 'social' && ([
+                { id: 'party' as SocialSubTab, label: 'Party' },
+                { id: 'factions' as SocialSubTab, label: 'Factions' },
+                { id: 'npc' as SocialSubTab, label: 'NPCs' },
+                { id: 'leaderboard' as SocialSubTab, label: 'Ranks' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setSocialSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${socialSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
+              {mobileCategory === 'more' && ([
+                { id: 'status' as MoreSubTab, label: 'Status' },
+                { id: 'base' as MoreSubTab, label: 'Camp' },
+                { id: 'settings' as MoreSubTab, label: 'Settings' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setMoreSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${moreSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
             </div>
-            {mobilePanel === 'quest' && character && <MainQuestPanel character={character} />}
-            {mobilePanel === 'quest' && <QuestPanel />}
-            {mobilePanel === 'quest' && <DailyChallengesPanel />}
-            {mobilePanel === 'equipment' && (
+
+            {/* Gear panels */}
+            {mobileCategory === 'gear' && gearSubTab === 'equipment' && (
               <>
                 <EquipmentPanel
                   equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
@@ -624,10 +661,21 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 <AchievementPanel achievements={gameState.achievements ?? []} />
               </>
             )}
-            {mobilePanel === 'inventory' && (
+            {mobileCategory === 'gear' && gearSubTab === 'inventory' && (
               <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
             )}
-            {mobilePanel === 'map' && (
+            {mobileCategory === 'gear' && gearSubTab === 'crafting' && <CraftingPanel />}
+            {mobileCategory === 'gear' && gearSubTab === 'enchant' && <EnchantingPanel />}
+
+            {/* Quest panels */}
+            {mobileCategory === 'quest' && questSubTab === 'quests' && (
+              <>
+                {character && <MainQuestPanel character={character} />}
+                <QuestPanel />
+                <DailyChallengesPanel />
+              </>
+            )}
+            {mobileCategory === 'quest' && questSubTab === 'map' && (
               <RegionMap
                 currentRegionId={character?.currentRegion ?? 'green_meadows'}
                 characterLevel={character?.level ?? 1}
@@ -635,17 +683,21 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
               />
             )}
-            {mobilePanel === 'settings' && <SettingsPanel />}
-            {mobilePanel === 'base' && <BasePanel />}
-            {mobilePanel === 'party' && character && <MercenaryPanel character={character} />}
-            {mobilePanel === 'factions' && character && <FactionPanel character={character} />}
-            {mobilePanel === 'leaderboard' && (
-              <AdventureLeaderboard onBack={() => setMobilePanel(null)} />
+            {mobileCategory === 'quest' && questSubTab === 'bestiary' && character && (
+              <BestiaryPanel bestiary={character.bestiary ?? []} />
             )}
-            {mobilePanel === 'crafting' && <CraftingPanel />}
-            {mobilePanel === 'enchant' && <EnchantingPanel />}
-            {mobilePanel === 'bestiary' && character && <BestiaryPanel bestiary={character.bestiary ?? []} />}
-            {mobilePanel === 'npc' && character && (() => {
+
+            {/* Social panels */}
+            {mobileCategory === 'social' && socialSubTab === 'party' && character && (
+              <MercenaryPanel character={character} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'factions' && character && (
+              <FactionPanel character={character} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'leaderboard' && (
+              <AdventureLeaderboard onBack={() => setMobileCategory(null)} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'npc' && character && (() => {
               const regionNPCs = getNPCsForRegion(character.currentRegion ?? 'green_meadows')
               if (regionNPCs.length === 0) return <p className="text-sm text-slate-400">No NPCs in this region.</p>
               const npc = regionNPCs[0]
@@ -664,52 +716,47 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     recordNPCEncounter(npc.id, reward)
                   }}
                   onClose={() => {
-                    setMobilePanel(null)
+                    setMobileCategory(null)
                   }}
                 />
               )
             })()}
+
+            {/* More panels */}
+            {mobileCategory === 'more' && moreSubTab === 'status' && (
+              <div>
+                <button onClick={() => { setMobileCategory(null); onOpenStatus?.() }}
+                  className="w-full py-3 text-base bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+                >Open Full Status View</button>
+              </div>
+            )}
+            {mobileCategory === 'more' && moreSubTab === 'base' && <BasePanel />}
+            {mobileCategory === 'more' && moreSubTab === 'settings' && <SettingsPanel />}
           </div>
         </div>
       )}
 
-      {/* Mobile bottom tab bar */}
+      {/* Mobile bottom tab bar — 4 grouped tabs */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex bg-[#1a1b2e] border-t border-slate-700">
         {([
-          { id: 'equipment' as MobilePanel, label: 'Equip', icon: '\u2694' },
-          { id: 'inventory' as MobilePanel, label: 'Items', icon: '\uD83C\uDF92' },
-          { id: 'crafting' as MobilePanel, label: 'Craft', icon: '\u2692' },
-          { id: 'enchant' as MobilePanel, label: 'Enchant', icon: '\u2728' },
-          { id: 'quest' as MobilePanel, label: 'Quest', icon: '\uD83D\uDCDC' },
-          { id: 'map' as MobilePanel, label: 'Map', icon: '\uD83D\uDDFA' },
-          { id: 'base' as MobilePanel, label: 'Camp', icon: '\uD83C\uDFD5' },
-          { id: 'party' as MobilePanel, label: 'Party', icon: '\u2694\uFE0F' },
-          { id: 'factions' as MobilePanel, label: 'Factions', icon: '\uD83C\uDFF0' },
-          { id: 'leaderboard' as MobilePanel, label: 'Ranks', icon: '\uD83C\uDFC6' },
-          { id: 'bestiary' as MobilePanel, label: 'Bestiary', icon: '\uD83D\uDC09' },
-          { id: 'npc' as MobilePanel, label: 'NPCs', icon: '\uD83D\uDDE3\uFE0F' },
-          { id: 'settings' as MobilePanel, label: 'Settings', icon: '\u2699' },
+          { id: 'gear' as MobileCategory, label: 'Gear', icon: '\u2694' },
+          { id: 'quest' as MobileCategory, label: 'Quest', icon: '\uD83D\uDCDC' },
+          { id: 'social' as MobileCategory, label: 'Social', icon: '\uD83C\uDFF0' },
+          { id: 'more' as MobileCategory, label: 'More', icon: '\u2630' },
         ]).map(tab => (
           <button
             key={tab.id}
-            className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
-              mobilePanel === tab.id
+            className={`flex-1 flex flex-col items-center py-2.5 text-xs transition-colors ${
+              mobileCategory === tab.id
                 ? 'text-indigo-400 bg-[#2a2b3f]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            onClick={() => setMobilePanel(mobilePanel === tab.id ? null : tab.id)}
+            onClick={() => setMobileCategory(mobileCategory === tab.id ? null : tab.id)}
           >
-            <span className="text-lg leading-none">{tab.icon}</span>
-            <span className="mt-0.5">{tab.label}</span>
+            <span className="text-xl leading-none">{tab.icon}</span>
+            <span className="mt-1 text-[11px]">{tab.label}</span>
           </button>
         ))}
-        <button
-          className="flex-1 flex flex-col items-center py-2 text-xs transition-colors text-slate-400 hover:text-slate-200"
-          onClick={() => onOpenStatus?.()}
-        >
-          <span className="text-lg leading-none">&#x1F4CA;</span>
-          <span className="mt-0.5">Status</span>
-        </button>
       </div>
       {/* Bottom padding spacer for mobile tab bar */}
       <div className="md:hidden h-14" />
