@@ -215,8 +215,10 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   }
   const reputationTierColor = reputationTierColorMap[reputationTier]
 
+  const MOBILE_HIDDEN_STATS: IconType[] = ['waterDropIcon', 'leafIcon', 'dayIcon']
+
   const renderStat = (key: IconType) => (
-    <div key={key} className="relative">
+    <div key={key} className={`relative ${MOBILE_HIDDEN_STATS.includes(key) ? 'hidden sm:block' : ''}`}>
       <button
         className="flex flex-col items-center gap-0.5 text-xs sm:text-sm font-semibold"
         onClick={() => handleStatTap(key)}
