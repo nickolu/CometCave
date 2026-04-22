@@ -1,4 +1,4 @@
-import { Spell, SpellEffect, SpellSchool, SpellElement, SpellCondition } from '@/app/tap-tap-adventure/models/spell'
+import { Spell, SpellEffect, SpellSchool, SpellElement, SpellCondition, ExplorationEffect } from '@/app/tap-tap-adventure/models/spell'
 
 const SPELL_NAMES: Record<string, string[]> = {
   arcane: ['Arcane Missile', 'Mana Surge', 'Ethereal Lance', 'Astral Barrage', 'Void Bolt'],
@@ -147,6 +147,32 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
 
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
+  // 30% chance for an exploration effect
+  let explorationEffect: ExplorationEffect | undefined
+  let explorationManaCost: number | undefined
+  if (Math.random() < 0.3) {
+    const explorationTypes = [
+      {
+        type: 'heal' as const,
+        value: 10 + level * 5,
+        description: `Restores ${10 + level * 5} HP outside of combat.`,
+      },
+      {
+        type: 'mana_restore' as const,
+        value: 5 + level * 2,
+        description: `Restores ${5 + level * 2} mana outside of combat.`,
+      },
+      {
+        type: 'speed_boost' as const,
+        value: 3 + Math.floor(level / 2),
+        description: `Advances ${3 + Math.floor(level / 2)} steps toward your target.`,
+      },
+    ]
+    const chosen = pickRandom(explorationTypes)
+    explorationEffect = chosen
+    explorationManaCost = Math.max(2, Math.floor(manaCost * 0.6)) // cheaper than combat cost
+  }
+
   return {
     id: `spell-${spellSchool}-${suffix}`,
     name: `${name}${level > 3 ? ' II' : ''}${level > 7 ? 'I' : ''}`,
@@ -158,5 +184,7 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
     effects,
     conditions: conditions.length > 0 ? conditions : undefined,
     tags: [spellSchool, ...tags],
+    explorationEffect,
+    explorationManaCost,
   }
 }

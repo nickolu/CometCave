@@ -140,6 +140,7 @@ export interface GameStore {
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
   recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => void
   setActiveTarget: (index: number) => void
+  castExplorationSpell: (spellId: string) => { message: string; success: boolean } | null
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1239,6 +1240,79 @@ export const useGameStore = create<GameStore>()(
             state.gameState.characters[charIndex].landmarkState = { ...ls, activeTargetIndex: index }
           })
         )
+      },
+      castExplorationSpell: (spellId: string) => {
+        const character = get().getSelectedCharacter()
+        if (!character) return null
+
+        const spell = (character.spellbook ?? []).find(s => s.id === spellId)
+        if (!spell?.explorationEffect) return { message: 'This spell has no exploration effect.', success: false }
+
+        const manaCost = spell.explorationManaCost ?? spell.manaCost
+        const currentMana = character.mana ?? 0
+        if (currentMana < manaCost) {
+          return { message: `Not enough mana! Need ${manaCost} MP, have ${currentMana} MP.`, success: false }
+        }
+
+        const effect = spell.explorationEffect
+        let message = ''
+        const updates: Partial<typeof character> = {
+          mana: currentMana - manaCost,
+        }
+
+        switch (effect.type) {
+          case 'heal': {
+            const maxHp = character.maxHp ?? 100
+            const currentHp = character.hp ?? maxHp
+            const healAmount = Math.min(effect.value, maxHp - currentHp)
+            if (healAmount <= 0) {
+              return { message: 'Already at full health!', success: false }
+            }
+            updates.hp = currentHp + healAmount
+            message = `${spell.name}: Restored ${healAmount} HP! (${manaCost} MP spent)`
+            break
+          }
+          case 'mana_restore': {
+            // Mana restore costs mana but restores more — net positive
+            const maxMana = character.maxMana ?? 20
+            const netRestore = effect.value - manaCost
+            if (netRestore <= 0) {
+              return { message: 'This spell would not restore net mana.', success: false }
+            }
+            const newMana = Math.min(maxMana, currentMana + effect.value - manaCost)
+            updates.mana = newMana
+            message = `${spell.name}: Restored ${netRestore} mana! (net gain)`
+            break
+          }
+          case 'speed_boost': {
+            // Advance positionInRegion
+            if (!character.landmarkState) {
+              return { message: 'No active travel to speed up.', success: false }
+            }
+            const ls = character.landmarkState
+            const newPosition = (ls.positionInRegion ?? 0) + effect.value
+            updates.landmarkState = {
+              ...ls,
+              positionInRegion: newPosition,
+            }
+            updates.distance = (character.distance ?? 0) + effect.value
+            message = `${spell.name}: Advanced ${effect.value} steps! (${manaCost} MP spent)`
+            break
+          }
+        }
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(c => c.id === character.id)
+            if (charIndex === -1) return
+            state.gameState.characters[charIndex] = {
+              ...state.gameState.characters[charIndex],
+              ...updates,
+            }
+          })
+        )
+
+        return { message, success: true }
       },
     }),
     {

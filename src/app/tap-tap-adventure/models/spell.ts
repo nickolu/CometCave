@@ -73,6 +73,20 @@ export const SpellConditionSchema = z.object({
 })
 export type SpellCondition = z.infer<typeof SpellConditionSchema>
 
+export const ExplorationEffectTypeSchema = z.enum([
+  'heal',
+  'mana_restore',
+  'speed_boost',
+])
+export type ExplorationEffectType = z.infer<typeof ExplorationEffectTypeSchema>
+
+export const ExplorationEffectSchema = z.object({
+  type: ExplorationEffectTypeSchema,
+  value: z.number(),
+  description: z.string(),
+})
+export type ExplorationEffect = z.infer<typeof ExplorationEffectSchema>
+
 export const SpellSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -84,5 +98,7 @@ export const SpellSchema = z.object({
   effects: z.array(SpellEffectSchema),
   conditions: z.array(SpellConditionSchema).optional(),
   tags: z.array(z.string()),
+  explorationEffect: ExplorationEffectSchema.optional(),
+  explorationManaCost: z.number().optional(),
 })
 export type Spell = z.infer<typeof SpellSchema>

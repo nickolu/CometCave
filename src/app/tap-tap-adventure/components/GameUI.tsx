@@ -43,6 +43,7 @@ import { FactionPanel } from './FactionPanel'
 import AdventureLeaderboard from './AdventureLeaderboard'
 import { CraftingPanel } from './CraftingPanel'
 import { EnchantingPanel } from './EnchantingPanel'
+import { ExplorationSpellsPanel } from './ExplorationSpellsPanel'
 import { BestiaryPanel } from './BestiaryPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
@@ -109,7 +110,7 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
   return 'Continue Travelling'
 }
 type MobileCategory = 'gear' | 'quest' | 'social' | 'more' | null
-type GearSubTab = 'equipment' | 'inventory' | 'crafting' | 'enchant'
+type GearSubTab = 'equipment' | 'inventory' | 'crafting' | 'enchant' | 'spells'
 type QuestSubTab = 'quests' | 'map' | 'bestiary'
 type SocialSubTab = 'party' | 'factions' | 'npc' | 'leaderboard'
 type MoreSubTab = 'status' | 'history' | 'base' | 'settings'
@@ -713,6 +714,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <EnchantingPanel />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
+              <ExplorationSpellsPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
               <SettingsPanel />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
@@ -742,6 +746,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 { id: 'inventory' as GearSubTab, label: 'Items' },
                 { id: 'crafting' as GearSubTab, label: 'Craft' },
                 { id: 'enchant' as GearSubTab, label: 'Enchant' },
+                { id: 'spells' as GearSubTab, label: 'Spells' },
               ]).map(t => (
                 <button key={t.id} onClick={() => setGearSubTab(t.id)}
                   className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${gearSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
@@ -792,6 +797,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             )}
             {mobileCategory === 'gear' && gearSubTab === 'crafting' && <CraftingPanel />}
             {mobileCategory === 'gear' && gearSubTab === 'enchant' && <EnchantingPanel />}
+            {mobileCategory === 'gear' && gearSubTab === 'spells' && <ExplorationSpellsPanel />}
 
             {/* Quest panels */}
             {mobileCategory === 'quest' && questSubTab === 'quests' && (
