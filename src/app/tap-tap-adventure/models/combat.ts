@@ -12,6 +12,9 @@ export const StatusEffectTypeSchema = z.enum([
   'berserk',
   'fear',
   'reflect',
+  'freeze',
+  'stun',
+  'bleed',
 ])
 export type StatusEffectType = z.infer<typeof StatusEffectTypeSchema>
 
