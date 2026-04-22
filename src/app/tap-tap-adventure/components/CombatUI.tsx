@@ -13,6 +13,7 @@ import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { getWeatherType } from '@/app/tap-tap-adventure/config/weather'
 import { StatusEffectsHUD } from '@/app/tap-tap-adventure/components/StatusEffectsHUD'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
@@ -54,6 +55,40 @@ function ManaBar({ current, max }: { current: number; max: number }) {
           className="h-full bg-blue-500 rounded-full transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
+      </div>
+    </div>
+  )
+}
+
+function WeatherBanner({ weatherId }: { weatherId: string }) {
+  if (!weatherId || weatherId === 'clear') return null
+  const weather = getWeatherType(weatherId)
+  if (weather.id === 'clear') return null
+
+  const effects: string[] = []
+  if (weather.accuracyMod > 0) effects.push(`-${Math.round(weather.accuracyMod * 100)}% enemy accuracy`)
+  if (weather.critChanceMod > 0) effects.push(`+${Math.round(weather.critChanceMod * 100)}% crit chance`)
+  if (weather.fireDamageMod > 0) effects.push(`+${Math.round(weather.fireDamageMod * 100)}% fire`)
+  if (weather.fireDamageMod < 0) effects.push(`${Math.round(weather.fireDamageMod * 100)}% fire`)
+  if (weather.iceDamageMod > 0) effects.push(`+${Math.round(weather.iceDamageMod * 100)}% ice`)
+  if (weather.iceDamageMod < 0) effects.push(`${Math.round(weather.iceDamageMod * 100)}% ice`)
+  if (weather.lightningDamageMod > 0) effects.push(`+${Math.round(weather.lightningDamageMod * 100)}% lightning`)
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-950/40 border border-sky-800/30 text-xs">
+      <span className="text-base leading-none">{weather.icon}</span>
+      <div className="flex-1 min-w-0">
+        <span className="font-semibold text-sky-200">{weather.name}</span>
+        {effects.length > 0 && (
+          <span className="ml-2 text-sky-300/70">
+            {effects.map((e, i) => (
+              <span key={i}>
+                {i > 0 && <span className="mx-1 text-sky-800">·</span>}
+                <span className={e.startsWith('-') ? 'text-red-400/80' : 'text-green-400/80'}>{e}</span>
+              </span>
+            ))}
+          </span>
+        )}
       </div>
     </div>
   )
@@ -299,6 +334,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
         </h4>
         <p className="text-sm text-slate-300 italic">{scenario}</p>
       </div>
+
+      {/* Weather banner */}
+      <WeatherBanner weatherId={character?.currentWeather ?? 'clear'} />
 
       {/* Enemy info — condensed for mobile */}
       <div className="relative bg-[#1e1f30] border border-red-900/30 rounded-lg p-2 sm:p-3 space-y-1">
