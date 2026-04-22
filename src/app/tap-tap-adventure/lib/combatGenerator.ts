@@ -43,6 +43,7 @@ const enemySchemaForOpenAI = {
               description: { type: 'string' },
               quantity: { type: 'number' },
               type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc'] },
+              rarity: { type: 'string', enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
               effects: {
                 type: 'object',
                 properties: {
