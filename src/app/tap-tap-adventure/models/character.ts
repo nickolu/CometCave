@@ -82,6 +82,8 @@ export const FantasyCharacterSchema = z.object({
     entryDistance: z.number(),
     nextLandmarkIndex: z.number(),
     exploring: z.boolean(),
+    explorationDepth: z.number().default(0),
+    exploringLandmarkName: z.string().optional(),
     positionInRegion: z.number().default(0),
     activeTargetIndex: z.number().default(0),
     regionLength: z.number().default(200),

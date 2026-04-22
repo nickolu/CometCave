@@ -42,6 +42,7 @@ export async function moveForwardService(
         entryDistance: newDistance,
         nextLandmarkIndex: 0,
         exploring: false,
+        explorationDepth: 0,
         positionInRegion: 0,
         activeTargetIndex: 0,
         regionLength,
