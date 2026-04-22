@@ -23,7 +23,7 @@ function hashString(str: string): number {
 }
 
 // Linear congruential generator seeded from a string
-function seededRandom(seed: string): () => number {
+export function seededRandom(seed: string): () => number {
   let state = hashString(seed)
   return () => {
     // LCG parameters from Numerical Recipes
