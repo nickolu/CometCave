@@ -63,11 +63,20 @@ function makeActiveCombat(overrides: Partial<CombatState> = {}): CombatState {
       isDefending: false,
       activeBuffs: [],
       comboCount: 0,
+      abilityCooldown: 0,
+      enemyStunned: false,
+      shield: 0,
+      luck: 0,
+      mana: 0,
+      maxMana: 0,
+      ap: 3,
+      maxAp: 3,
     },
     turnNumber: 0,
     combatLog: [],
     status: 'active',
     scenario: 'A goblin appears!',
+    combatDistance: 'close',
     ...overrides,
   }
 }
@@ -112,8 +121,8 @@ describe('Combat Engine', () => {
       const { combatState: result } = processPlayerAction(combat, { action: 'attack' }, baseChar)
 
       expect(result.enemy.hp).toBeLessThan(30)
-      expect(result.combatLog.length).toBeGreaterThanOrEqual(2) // player attack + enemy attack
-      expect(result.turnNumber).toBe(1)
+      expect(result.combatLog.length).toBeGreaterThanOrEqual(1) // player attack log
+      expect(result.turnNumber).toBe(0)
       vi.restoreAllMocks()
     })
 
@@ -165,7 +174,7 @@ describe('Combat Engine', () => {
 
     it('sets defeat when player HP reaches 0', () => {
       const combat = makeActiveCombat({
-        playerState: { ...makeActiveCombat().playerState, hp: 1 },
+        playerState: { ...makeActiveCombat().playerState, hp: 1, ap: 1, maxAp: 1 },
         enemy: { ...makeActiveCombat().enemy, attack: 100 },
       })
       vi.spyOn(Math, 'random').mockReturnValue(0.5)

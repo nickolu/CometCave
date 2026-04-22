@@ -111,8 +111,8 @@ describe('Distance-Based Leveling (rebalanced)', () => {
   })
 
   describe('crossedMilestone', () => {
-    it('detects shop milestone at 75', () => {
-      expect(crossedMilestone(74, 75, SHOP_MILESTONE_INTERVAL)).toBe(true)
+    it('detects shop milestone at 100', () => {
+      expect(crossedMilestone(99, 100, SHOP_MILESTONE_INTERVAL)).toBe(true)
     })
 
     it('does not trigger between milestones', () => {
@@ -127,7 +127,7 @@ describe('Distance-Based Leveling (rebalanced)', () => {
   describe('constants', () => {
     it('has expected milestone values', () => {
       expect(STEPS_PER_DAY).toBe(50)
-      expect(SHOP_MILESTONE_INTERVAL).toBe(75)
+      expect(SHOP_MILESTONE_INTERVAL).toBe(100)
     })
   })
 
