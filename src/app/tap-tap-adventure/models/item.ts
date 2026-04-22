@@ -12,6 +12,14 @@ export const ItemEffectsSchema = z.object({
   luck: z.number().optional(),
   heal: z.number().optional(),
   range: z.enum(['close', 'mid', 'far']).optional(),
+  /** Grants a damage-absorbing shield (points) */
+  shield: z.number().optional(),
+  /** Restores mana points */
+  manaRestore: z.number().optional(),
+  /** Removes all negative status effects */
+  cleanse: z.boolean().optional(),
+  /** Temporary damage multiplier boost (e.g., 1.5 = +50% damage for 2 turns) */
+  damageBoost: z.number().optional(),
 })
 export type ItemEffects = z.infer<typeof ItemEffectsSchema>
 

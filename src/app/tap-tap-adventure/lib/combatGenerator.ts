@@ -51,7 +51,11 @@ const enemySchemaForOpenAI = {
                   strength: { type: 'number' },
                   intelligence: { type: 'number' },
                   luck: { type: 'number' },
-                  heal: { type: 'number', description: 'Directly restores this amount of HP. Use for healing items instead of strength.' },
+                  heal: { type: 'number', description: 'Directly restores this amount of HP.' },
+                  shield: { type: 'number', description: 'Grants damage-absorbing shield points.' },
+                  manaRestore: { type: 'number', description: 'Restores mana points.' },
+                  cleanse: { type: 'boolean', description: 'Removes all negative status effects (poison, burn, etc.).' },
+                  damageBoost: { type: 'number', description: 'Temporary damage multiplier (e.g., 1.5 = +50% for 2 turns).' },
                 },
               },
             },
@@ -120,7 +124,7 @@ Stat guidelines for a level ${character.level} character:
 - Enemy attack: ${6 + character.level * 3} (±20%)
 - Enemy defense: ${2 + character.level} (±20%)
 - Gold reward: ${5 + character.level * 5}
-- Include 1-2 loot items (potions, scrolls, gems, etc.). For healing items, use the 'heal' effect (e.g., heal: 15 restores 15 HP). The 'strength' effect permanently increases the strength stat.
+- Include 1-2 loot items. Vary the types: healing potions (heal: 15), shield potions (shield: 15), mana potions (manaRestore: 15), antidotes (cleanse: true), rage elixirs (damageBoost: 1.5), or stat-boosting items (strength/intelligence/luck). Don't always drop healing potions — tactical variety matters.
 - Optionally include a special ability with cooldown of 2-4 turns
 - Some enemies can inflict status effects (poison, burn, slow, curse, fear). Include a statusAbility field with type, value (damage per turn or effect strength), duration (2-4 turns), and chance (0-1 probability of inflicting)
 - Assign an element to the enemy (fire, ice, lightning, shadow, nature, arcane, or none). Choose an element that fits the enemy's theme. For example: wolves = nature, fire elementals = fire, undead = shadow, golems = none.
@@ -627,12 +631,17 @@ function getDefaultCombatEncounter(
       level,
       goldReward: 5 + level * 5,
       lootTable: [
-        inferItemTypeAndEffects({
-          id: `loot-potion-${suffix}`,
-          name: 'Healing Potion',
-          description: 'A small vial of restorative liquid.',
-          quantity: 1,
-        }),
+        inferItemTypeAndEffects((() => {
+          const potionTypes = [
+            { name: 'Healing Potion', description: 'A small vial of restorative liquid.' },
+            { name: 'Shield Potion', description: 'A shimmering brew that grants a protective barrier.' },
+            { name: 'Mana Elixir', description: 'A glowing blue elixir that restores magical energy.' },
+            ...(level >= 3 ? [{ name: 'Rage Elixir', description: 'A fiery red brew that temporarily boosts damage.' }] : []),
+            ...(level >= 2 ? [{ name: 'Antidote', description: 'A herbal remedy that purges toxins and curses.' }] : []),
+          ]
+          const pick = potionTypes[Math.floor(Math.random() * potionTypes.length)]
+          return { id: `loot-potion-${suffix}`, name: pick.name, description: pick.description, quantity: 1 }
+        })()),
         ...(level >= 2 ? [inferItemTypeAndEffects({
           id: `loot-equipment-${suffix}`,
           name: level <= 3 ? 'Rusty Dagger' : level <= 5 ? 'Iron Sword' : 'Steel Blade',
