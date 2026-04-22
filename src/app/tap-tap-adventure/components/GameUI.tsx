@@ -46,6 +46,7 @@ import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
+import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -596,6 +597,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             <div className="border-t border-[#3a3c56] pt-4">
               <SettingsPanel />
             </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <StatsPanel />
+            </div>
           </div>
         </div>
         {/* Two-column grid END */}
@@ -724,11 +728,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
 
             {/* More panels */}
             {mobileCategory === 'more' && moreSubTab === 'status' && (
-              <div>
-                <button onClick={() => { setMobileCategory(null); onOpenStatus?.() }}
-                  className="w-full py-3 text-base bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
-                >Open Full Status View</button>
-              </div>
+              <StatsPanel />
             )}
             {mobileCategory === 'more' && moreSubTab === 'base' && <BasePanel />}
             {mobileCategory === 'more' && moreSubTab === 'settings' && <SettingsPanel />}
