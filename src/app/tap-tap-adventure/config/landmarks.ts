@@ -8,6 +8,7 @@ export interface LandmarkTemplate {
   icon: string
   hasShop: boolean
   encounterPrompt: string
+  isSecret?: boolean
 }
 
 export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
@@ -647,4 +648,56 @@ const GENERIC_LANDMARKS: LandmarkTemplate[] = [
 
 export function getTemplatesForRegion(regionId: string): LandmarkTemplate[] {
   return LANDMARK_TEMPLATES[regionId] ?? GENERIC_LANDMARKS
+}
+
+export const SECRET_LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
+  starting_village: [
+    { id: 'sv_hidden_cellar', name: 'Hidden Cellar', type: 'dungeon', description: 'A concealed entrance beneath the cobblestones leads to a forgotten cellar.', icon: '🕳️', hasShop: false, encounterPrompt: 'A damp cellar filled with old crates and cobwebs. Something glints in the darkness.', isSecret: true },
+  ],
+  green_meadows: [
+    { id: 'gm_fairy_ring', name: 'Fairy Ring', type: 'shrine', description: 'A circle of glowing mushrooms hidden in a meadow hollow.', icon: '🍄', hasShop: false, encounterPrompt: 'A ring of luminescent mushrooms pulses with fey energy. Tiny lights dance above the circle.', isSecret: true },
+  ],
+  dark_forest: [
+    { id: 'df_shadow_grotto', name: 'Shadow Grotto', type: 'dungeon', description: 'A cave entrance concealed by twisted roots and perpetual shadow.', icon: '🕸️', hasShop: false, encounterPrompt: 'A grotto shrouded in unnatural darkness. Strange whispers echo from within.', isSecret: true },
+  ],
+  crystal_caves: [
+    { id: 'cc_resonance_chamber', name: 'Resonance Chamber', type: 'shrine', description: 'A hidden chamber where crystals sing in perfect harmony.', icon: '🔮', hasShop: false, encounterPrompt: 'A vast chamber where crystals of every color resonate with harmonic energy. The air hums.', isSecret: true },
+  ],
+  sunken_ruins: [
+    { id: 'sr_drowned_vault', name: 'Drowned Vault', type: 'dungeon', description: 'A sealed vault deep beneath the flooded ruins.', icon: '🗝️', hasShop: false, encounterPrompt: 'An ancient vault sealed by water pressure. Inside, preserved treasures await.', isSecret: true },
+  ],
+  scorched_wastes: [
+    { id: 'sw_ember_sanctum', name: 'Ember Sanctum', type: 'shrine', description: 'A hidden temple where eternal flames guard ancient secrets.', icon: '🕯️', hasShop: false, encounterPrompt: 'A sanctum of eternal flames. Fire spirits dance between the pillars.', isSecret: true },
+  ],
+  frozen_peaks: [
+    { id: 'fp_ice_throne', name: 'Ice Throne', type: 'ruins', description: 'A frozen throne room sealed beneath the glacial ice.', icon: '🧊', hasShop: false, encounterPrompt: 'A throne of pure ice sits in a frozen chamber. An ancient power lingers here.', isSecret: true },
+  ],
+  feywild_grove: [
+    { id: 'fg_dream_pool', name: 'Dream Pool', type: 'shrine', description: 'A pool of liquid starlight hidden among the fey trees.', icon: '✨', hasShop: false, encounterPrompt: 'A pool of shimmering liquid starlight. Looking into it shows visions of other worlds.', isSecret: true },
+  ],
+  bone_wastes: [
+    { id: 'bw_ossuary', name: 'The Ossuary', type: 'dungeon', description: 'A hidden chamber of carefully arranged bones and dark rituals.', icon: '💀', hasShop: false, encounterPrompt: 'A chamber where bones are arranged in intricate patterns. Necromantic energy pulses.', isSecret: true },
+  ],
+  volcanic_forge: [
+    { id: 'vf_heart_of_fire', name: 'Heart of Fire', type: 'shrine', description: 'The molten core of the volcano, where the original forge still burns.', icon: '❤️‍🔥', hasShop: false, encounterPrompt: 'The primordial forge at the heart of the volcano. Ancient weapons and armor glow white-hot.', isSecret: true },
+  ],
+  shadow_realm: [
+    { id: 'shr_void_nexus', name: 'Void Nexus', type: 'ruins', description: 'A tear in reality where shadow and void converge.', icon: '🌀', hasShop: false, encounterPrompt: 'A nexus of swirling void energy. Reality bends and shifts around you.', isSecret: true },
+  ],
+  dragons_spine: [
+    { id: 'ds_elder_hoard', name: "Elder Dragon's Hoard", type: 'dungeon', description: 'A legendary treasure vault guarded by the eldest dragon.', icon: '🐲', hasShop: false, encounterPrompt: "Mountains of gold and artifacts fill this vast cavern. The elder dragon's presence is overwhelming.", isSecret: true },
+  ],
+  sky_citadel: [
+    { id: 'sc_astral_library', name: 'Astral Library', type: 'shrine', description: 'A library containing knowledge from across the planes.', icon: '📚', hasShop: false, encounterPrompt: 'Books float in the air, pages turning on their own. The collected knowledge of the cosmos awaits.', isSecret: true },
+  ],
+  abyssal_depths: [
+    { id: 'ad_leviathan_lair', name: "Leviathan's Lair", type: 'dungeon', description: 'The resting place of an ancient sea god.', icon: '🐙', hasShop: false, encounterPrompt: 'A massive underwater cavern where something impossibly large sleeps. Ancient power radiates from the depths.', isSecret: true },
+  ],
+  celestial_throne: [
+    { id: 'ct_genesis_chamber', name: 'Genesis Chamber', type: 'shrine', description: 'The chamber where gods shaped the world.', icon: '⚡', hasShop: false, encounterPrompt: 'A chamber of pure light where creation itself began. Divine energy is overwhelming.', isSecret: true },
+  ],
+}
+
+export function getSecretTemplatesForRegion(regionId: string): LandmarkTemplate[] {
+  return SECRET_LANDMARK_TEMPLATES[regionId] ?? []
 }

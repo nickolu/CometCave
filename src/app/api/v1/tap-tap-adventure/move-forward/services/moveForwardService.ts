@@ -58,18 +58,20 @@ export async function moveForwardService(
         }
       : null
 
-    // Build availableTargets for TargetList rendering
+    // Build availableTargets for TargetList rendering (hidden landmarks excluded)
     const availableTargets = [
-      ...landmarks.map((lm, i) => ({
-        index: i,
-        name: lm.name,
-        icon: lm.icon,
-        type: 'landmark' as const,
-        position: lm.distanceFromEntry,
-        distance: lm.distanceFromEntry,
-        isExplored: false,
-        hasShop: lm.hasShop,
-      })),
+      ...landmarks
+        .map((lm, i) => ({
+          index: i,
+          name: lm.name,
+          icon: lm.icon,
+          type: 'landmark' as const,
+          position: lm.distanceFromEntry,
+          distance: lm.distanceFromEntry,
+          isExplored: false,
+          hasShop: lm.hasShop,
+        }))
+        .filter((_, i) => !landmarks[i].hidden),
       {
         index: landmarks.length,
         name: `Leave ${region.name}`,
@@ -103,7 +105,7 @@ export async function moveForwardService(
     // Landmark target arrival
     const activeLandmark = landmarkState.landmarks[activeTargetIndex]
 
-    if (activeLandmark && newPositionInRegion >= activeLandmark.distanceFromEntry) {
+    if (activeLandmark && !activeLandmark.hidden && newPositionInRegion >= activeLandmark.distanceFromEntry) {
       const arrivalEventId = `landmark-arrival-${Date.now()}`
 
       const characterWithUpdatedState: FantasyCharacter = {
@@ -263,9 +265,14 @@ export async function moveForwardService(
   }
 
   // Priority 3: Compute landmark progress for non-arrival steps
+  // Find the next visible (non-hidden) target for progress display
+  let progressTargetIndex = activeTargetIndex
+  while (progressTargetIndex < landmarkState.landmarks.length && landmarkState.landmarks[progressTargetIndex]?.hidden) {
+    progressTargetIndex++
+  }
   let landmarkProgress: MoveForwardResponse['landmarkProgress'] = null
-  if (activeTargetIndex < landmarkState.landmarks.length) {
-    const nextLandmark = landmarkState.landmarks[activeTargetIndex]
+  if (progressTargetIndex < landmarkState.landmarks.length) {
+    const nextLandmark = landmarkState.landmarks[progressTargetIndex]
     const stepsRemaining = nextLandmark.distanceFromEntry - newPositionInRegion
     landmarkProgress = {
       nextLandmarkName: nextLandmark.name,

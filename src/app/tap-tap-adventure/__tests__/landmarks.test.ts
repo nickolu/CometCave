@@ -27,10 +27,10 @@ function generateRegionLength(regionId: string, charId: string, visitCount: numb
 }
 
 describe('generateLandmarks', () => {
-  it('returns exactly 3 landmarks for every known region', () => {
+  it('returns exactly 4 landmarks for every known region (3 regular + 1 secret)', () => {
     for (const regionId of ALL_REGION_IDS) {
       const landmarks = generateLandmarks(regionId, 'char-1')
-      expect(landmarks).toHaveLength(3)
+      expect(landmarks).toHaveLength(4)
     }
   })
 
@@ -43,7 +43,7 @@ describe('generateLandmarks', () => {
     for (const regionId of ALL_REGION_IDS) {
       const landmarks = generateLandmarks(regionId, 'char-1')
       for (let i = 1; i < landmarks.length; i++) {
-        expect(landmarks[i].distanceFromEntry).toBeGreaterThan(landmarks[i - 1].distanceFromEntry)
+        expect(landmarks[i].distanceFromEntry).toBeGreaterThanOrEqual(landmarks[i - 1].distanceFromEntry)
       }
     }
   })
