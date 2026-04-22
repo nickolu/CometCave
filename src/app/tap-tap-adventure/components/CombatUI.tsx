@@ -10,7 +10,8 @@ import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombat
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
-import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
+import { ELEMENT_COLORS, getElementalMultiplier } from '@/app/tap-tap-adventure/config/elements'
+import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getWeatherType } from '@/app/tap-tap-adventure/config/weather'
@@ -56,6 +57,51 @@ function ManaBar({ current, max }: { current: number; max: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
+    </div>
+  )
+}
+
+const ELEMENT_ICONS: Record<string, string> = {
+  fire: '🔥', ice: '❄️', lightning: '⚡', shadow: '🌑', nature: '🌿', arcane: '✨',
+}
+
+function ElementalMatchup({ enemyElement }: { enemyElement: SpellElement | undefined }) {
+  if (!enemyElement || enemyElement === 'none') return null
+
+  const allElements: SpellElement[] = ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane']
+  const strong: SpellElement[] = []
+  const weak: SpellElement[] = []
+
+  for (const atk of allElements) {
+    const mult = getElementalMultiplier(atk, enemyElement)
+    if (mult >= 2.0) strong.push(atk)
+    else if (mult <= 0.5) weak.push(atk)
+  }
+
+  if (strong.length === 0 && weak.length === 0) return null
+
+  return (
+    <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+      {strong.length > 0 && (
+        <span className="flex items-center gap-1">
+          <span className="text-green-500">Weak to</span>
+          {strong.map(e => (
+            <span key={e} className="text-green-400" title={`${e} deals 2x damage`}>
+              {ELEMENT_ICONS[e] ?? e}
+            </span>
+          ))}
+        </span>
+      )}
+      {weak.length > 0 && (
+        <span className="flex items-center gap-1">
+          <span className="text-red-500">Resists</span>
+          {weak.map(e => (
+            <span key={e} className="text-red-400" title={`${e} deals 0.5x damage`}>
+              {ELEMENT_ICONS[e] ?? e}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   )
 }
@@ -363,6 +409,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {showEnemyDesc && (
           <p className="text-xs text-slate-400">{enemy.description}</p>
         )}
+        <ElementalMatchup enemyElement={enemy.element as SpellElement | undefined} />
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
         <StatusEffectsHUD
           statusEffects={enemy.statusEffects ?? []}
