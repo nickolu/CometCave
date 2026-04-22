@@ -82,9 +82,9 @@ const STAT_LABELS: Record<IconType, string> = {
   leafIcon: 'Steps',
   fireIcon: 'Level',
   dayIcon: 'Day',
-  purpleCircleIcon: 'Strength',
-  blueCircleIcon: 'Intelligence',
-  yellowMoonIcon: 'Luck',
+  purpleCircleIcon: 'STR — Attack power, max HP',
+  blueCircleIcon: 'INT — Defense, mana pool',
+  yellowMoonIcon: 'LCK — Crit chance, loot, flee',
 } as const
 
 const STATS_LEFT: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon', 'dayIcon']
@@ -310,6 +310,23 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
         >
           {currentRegion.icon} {currentRegion.name}
         </span>
+        {/* Region danger indicator */}
+        {(() => {
+          const levelDiff = (currentRegion.minLevel ?? 0) - level
+          const mult = currentRegion.difficultyMultiplier ?? 1
+          const danger = levelDiff >= 4 ? { label: 'Deadly', color: 'border-red-500 text-red-400', icon: '☠️' }
+            : levelDiff >= 2 ? { label: 'Hard', color: 'border-orange-500 text-orange-400', icon: '⚠️' }
+            : mult >= 1.5 ? { label: 'Tough', color: 'border-yellow-500 text-yellow-400', icon: '💪' }
+            : null
+          return danger ? (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 border rounded ${danger.color} bg-[#2a2b3f]`}
+              title={`Region difficulty: ${currentRegion.difficulty} (${mult}x). Recommended level: ${currentRegion.minLevel}+`}
+            >
+              {danger.icon} {danger.label}
+            </span>
+          ) : null
+        })()}
         {(() => {
           const weatherType = WEATHER_TYPES[(character?.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
           return weatherType.id !== 'clear' ? (
