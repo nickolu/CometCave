@@ -28,11 +28,12 @@ export interface ResolveDecisionResponse {
   triggersCombat?: boolean
   mountDamage?: number
   mountDied?: boolean
+  decisionPoint?: FantasyDecisionPoint | null
 }
 
 export function useResolveDecisionMutation() {
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, addStoryEvent, commit, setCombatState, updateSelectedCharacter } = useGameStateBuilder()
+  const { addItem, addStoryEvent, commit, setCombatState, setDecisionPoint, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
@@ -46,6 +47,36 @@ export function useResolveDecisionMutation() {
     }) => {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
+
+      // Handle landmark bypass client-side — just increment the index and continue
+      if (optionId === 'bypass-landmark') {
+        const landmarkState = character.landmarkState
+        if (landmarkState) {
+          const bypassedLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
+          const landmarkName = bypassedLandmark?.name ?? 'the landmark'
+          updateSelectedCharacter({
+            landmarkState: {
+              ...landmarkState,
+              nextLandmarkIndex: landmarkState.nextLandmarkIndex + 1,
+              exploring: false,
+            },
+          })
+          const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'decision_result',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: chosenOption?.text ?? 'Pass by without stopping',
+            outcomeDescription: `You pass by ${landmarkName} without stopping and continue your journey.`,
+          })
+          commit()
+          onSuccess?.()
+        }
+        return
+      }
 
       // Handle crossroads region travel decisions client-side
       if (optionId.startsWith('travel-')) {
@@ -90,7 +121,8 @@ export function useResolveDecisionMutation() {
         }
 
         soundEngine.playCrossroads()
-        updateSelectedCharacter({ currentRegion: regionId, currentWeather: rollWeather(regionId) })
+        // Clear landmarkState so next step in new region initializes fresh landmarks
+        updateSelectedCharacter({ currentRegion: regionId, currentWeather: rollWeather(regionId), landmarkState: undefined })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         addStoryEvent({
           id: `result-${Date.now()}`,
@@ -123,6 +155,7 @@ export function useResolveDecisionMutation() {
         return
       }
 
+      const { gameState: gs } = useGameStore.getState()
       const res = await fetch('/api/v1/tap-tap-adventure/resolve-decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -130,6 +163,7 @@ export function useResolveDecisionMutation() {
           character,
           decisionPoint,
           optionId,
+          storyEvents: gs.storyEvents,
         }),
       })
 
@@ -182,6 +216,12 @@ export function useResolveDecisionMutation() {
       }
 
       addStoryEvent(newStoryEvent)
+
+      // If server returned a new decision point (e.g. from explore-landmark), set it
+      if (data.decisionPoint) {
+        soundEngine.playEvent()
+        setDecisionPoint(data.decisionPoint)
+      }
 
       // Check if this event grants a mount (mount discovery events)
       const isMountEvent = optionId.includes('tame-') || optionId.includes('claim-mount')

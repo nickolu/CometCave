@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import {
   applyEffects,
   calculateEffectiveProbability,
 } from '@/app/tap-tap-adventure/lib/eventResolution'
+import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
-import { FantasyDecisionOption, FantasyDecisionPoint } from '@/app/tap-tap-adventure/models/story'
+import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
 type ResolveDecisionRequest = {
   character: FantasyCharacter
   decisionPoint: FantasyDecisionPoint
   optionId: string
+  storyEvents?: FantasyStoryEvent[]
 }
 
 type ResolveDecisionResponse = {
@@ -30,16 +33,94 @@ type ResolveDecisionResponse = {
   }
   mountDamage?: number
   mountDied?: boolean
+  decisionPoint?: FantasyDecisionPoint | null
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ResolveDecisionRequest
 
-    const { character, decisionPoint, optionId } = body
+    const { character, decisionPoint, optionId, storyEvents = [] } = body
     const option = decisionPoint.options.find(o => o.id === optionId)
     if (!option) {
       return NextResponse.json({ error: 'Invalid optionId' }, { status: 400 })
+    }
+
+    // Handle explore-landmark: increment nextLandmarkIndex, call LLM with landmark context
+    if (optionId === 'explore-landmark') {
+      const landmarkState = character.landmarkState
+      const exploredLandmark = landmarkState?.landmarks[landmarkState.nextLandmarkIndex]
+
+      const updatedLandmarkState = landmarkState
+        ? {
+            ...landmarkState,
+            nextLandmarkIndex: landmarkState.nextLandmarkIndex + 1,
+            exploring: true,
+          }
+        : undefined
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        landmarkState: updatedLandmarkState,
+      }
+
+      // Build enriched context with landmark's encounterPrompt prepended
+      const MAX_CONTEXT = 1500
+      const baseContext = buildStoryContext(character, storyEvents)
+      const landmarkPrefix = exploredLandmark
+        ? `Landmark: ${exploredLandmark.name} (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\n\n`
+        : ''
+      const combined = landmarkPrefix + baseContext
+      const enrichedContext = combined.length > MAX_CONTEXT ? combined.slice(0, MAX_CONTEXT) : combined
+
+      try {
+        const llmEvents = await generateLLMEvents(updatedCharacter, enrichedContext)
+        const llmEvent = llmEvents[0]
+
+        const explorationDecisionPoint: FantasyDecisionPoint = {
+          id: `decision-${llmEvent.id}`,
+          eventId: llmEvent.id,
+          prompt: llmEvent.description,
+          options: llmEvent.options.map(opt => ({
+            id: opt.id,
+            text: opt.text,
+            successProbability: opt.successProbability,
+            successDescription: opt.successDescription,
+            successEffects: opt.successEffects,
+            failureDescription: opt.failureDescription,
+            failureEffects: opt.failureEffects,
+            resultDescription: opt.successDescription,
+            triggersCombat: opt.triggersCombat,
+          })),
+          resolved: false,
+        }
+
+        const response: ResolveDecisionResponse & { rewardItems?: Item[]; triggersCombat?: boolean } = {
+          updatedCharacter,
+          resultDescription: `You venture into ${exploredLandmark?.name ?? 'the landmark'}.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You venture into ${exploredLandmark?.name ?? 'the landmark'} to explore.`,
+          resourceDelta: {},
+          decisionPoint: explorationDecisionPoint,
+        }
+
+        return NextResponse.json(response)
+      } catch (err) {
+        console.error('explore-landmark LLM generation failed', err)
+        // Fallback: return a generic response without a new decision point
+        const fallbackResponse: ResolveDecisionResponse & { rewardItems?: Item[]; triggersCombat?: boolean } = {
+          updatedCharacter,
+          resultDescription: `You explore ${exploredLandmark?.name ?? 'the landmark'} but find nothing remarkable.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You explore ${exploredLandmark?.name ?? 'the landmark'} but find nothing remarkable.`,
+          resourceDelta: {},
+        }
+        return NextResponse.json(fallbackResponse)
+      }
     }
 
     // Scale gold rewards by region difficulty so harder regions give better non-combat rewards

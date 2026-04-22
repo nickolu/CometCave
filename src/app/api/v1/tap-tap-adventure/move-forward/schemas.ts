@@ -17,6 +17,18 @@ export const MoveForwardResponseSchema = z.object({
   combatEncounter: z.any().optional().nullable(),
   shopEvent: z.boolean().optional().nullable(),
   genericMessage: z.string().optional().nullable(),
+  landmarkArrival: z.object({
+    name: z.string(),
+    type: z.string(),
+    description: z.string(),
+    icon: z.string(),
+    hasShop: z.boolean(),
+  }).optional().nullable(),
+  landmarkProgress: z.object({
+    nextLandmarkName: z.string(),
+    nextLandmarkIcon: z.string(),
+    stepsRemaining: z.number(),
+  }).optional().nullable(),
 })
 
 export type MoveForwardResponse = z.infer<typeof MoveForwardResponseSchema>

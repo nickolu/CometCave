@@ -7,6 +7,7 @@ import {
   SHOP_MILESTONE_INTERVAL,
   calculateDay,
 } from '@/app/tap-tap-adventure/lib/leveling'
+import { generateLandmarks } from '@/app/tap-tap-adventure/lib/landmarkGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
@@ -20,10 +21,125 @@ export async function moveForwardService(
   const updatedCharacter = { ...character, distance: newDistance }
   const day = calculateDay(newDistance)
 
+  const currentRegion = character.currentRegion ?? 'green_meadows'
+  const region = getRegion(currentRegion)
+
+  // Priority 1: Landmark state initialization (new region or no state yet)
+  const existingLandmarkState = character.landmarkState
+  if (!existingLandmarkState || existingLandmarkState.regionId !== currentRegion) {
+    const visitCount = (character.visitedRegions ?? []).filter(id => id === currentRegion).length
+    const landmarks = generateLandmarks(currentRegion, character.id, visitCount)
+
+    const initializedCharacter: FantasyCharacter = {
+      ...updatedCharacter,
+      landmarkState: {
+        regionId: currentRegion,
+        landmarks,
+        entryDistance: newDistance,
+        nextLandmarkIndex: 0,
+        exploring: false,
+      },
+    }
+
+    const firstLandmark = landmarks[0]
+    const landmarkProgress = firstLandmark
+      ? {
+          nextLandmarkName: firstLandmark.name,
+          nextLandmarkIcon: firstLandmark.icon,
+          stepsRemaining: firstLandmark.distanceFromEntry,
+        }
+      : null
+
+    return {
+      character: initializedCharacter,
+      event: null,
+      decisionPoint: null,
+      genericMessage: `You enter ${region.icon} ${region.name}. ${region.description}`,
+      landmarkProgress,
+    }
+  }
+
+  const landmarkState = existingLandmarkState
+  const stepsFromEntry = newDistance - landmarkState.entryDistance
+
+  // Priority 2: Landmark arrival check
+  if (landmarkState.nextLandmarkIndex < landmarkState.landmarks.length) {
+    const nextLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
+
+    if (stepsFromEntry >= nextLandmark.distanceFromEntry) {
+      const arrivalEventId = `landmark-arrival-${Date.now()}`
+
+      const characterWithUpdatedState: FantasyCharacter = {
+        ...updatedCharacter,
+        landmarkState: {
+          ...landmarkState,
+        },
+      }
+
+      return {
+        character: characterWithUpdatedState,
+        event: {
+          id: arrivalEventId,
+          type: 'landmark_arrival',
+          characterId: character.id,
+          locationId: character.locationId,
+          timestamp: new Date().toISOString(),
+        },
+        decisionPoint: {
+          id: `decision-${arrivalEventId}`,
+          eventId: arrivalEventId,
+          prompt: `${nextLandmark.icon} You arrive at ${nextLandmark.name}. ${nextLandmark.description} What do you do?`,
+          options: [
+            {
+              id: 'explore-landmark',
+              text: `Explore ${nextLandmark.name}`,
+              successProbability: 1.0,
+              successDescription: `You venture into ${nextLandmark.name} to see what awaits.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You explore ${nextLandmark.name}.`,
+            },
+            {
+              id: 'bypass-landmark',
+              text: 'Pass by without stopping',
+              successProbability: 1.0,
+              successDescription: `You leave ${nextLandmark.name} behind and continue on your journey.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You pass by ${nextLandmark.name}.`,
+            },
+          ],
+          resolved: false,
+        },
+        shopEvent: nextLandmark.hasShop ? true : undefined,
+        landmarkArrival: {
+          name: nextLandmark.name,
+          type: nextLandmark.type,
+          description: nextLandmark.description,
+          icon: nextLandmark.icon,
+          hasShop: nextLandmark.hasShop,
+        },
+      }
+    }
+  }
+
+  // Priority 3: Compute landmark progress for non-arrival steps
+  let landmarkProgress: MoveForwardResponse['landmarkProgress'] = null
+  if (landmarkState.nextLandmarkIndex < landmarkState.landmarks.length) {
+    const nextLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
+    const stepsRemaining = nextLandmark.distanceFromEntry - stepsFromEntry
+    landmarkProgress = {
+      nextLandmarkName: nextLandmark.name,
+      nextLandmarkIcon: nextLandmark.icon,
+      stepsRemaining: Math.max(1, stepsRemaining),
+    }
+  }
+
   // Trigger crossroads event every CROSSROADS_INTERVAL steps (75)
   if (crossedMilestone(character.distance, newDistance, CROSSROADS_INTERVAL)) {
-    const currentRegion = getRegion(character.currentRegion ?? 'green_meadows')
-    const connected = getConnectedRegions(currentRegion.id)
+    const connected = getConnectedRegions(region.id)
     const crossroadsEventId = `crossroads-event-${Date.now()}`
 
     const difficultyLabel: Record<string, string> = {
@@ -35,37 +151,37 @@ export async function moveForwardService(
 
     const visitedRegions = character.visitedRegions ?? ['green_meadows']
 
-    const travelOptions = connected.map(region => {
-      const meetsLevel = canEnterRegion(region, character.level)
-      const levelWarning = meetsLevel ? '' : ` [Requires Lv.${region.minLevel}]`
-      const isVisited = visitedRegions.includes(region.id)
+    const travelOptions = connected.map(connectedRegion => {
+      const meetsLevel = canEnterRegion(connectedRegion, character.level)
+      const levelWarning = meetsLevel ? '' : ` [Requires Lv.${connectedRegion.minLevel}]`
+      const isVisited = visitedRegions.includes(connectedRegion.id)
       const bossTag = !isVisited && meetsLevel ? ' — ⚔️ BOSS GUARDIAN' : ''
       return {
-        id: `travel-${region.id}`,
-        text: `${!isVisited && meetsLevel ? '⚔️ ' : ''}${region.icon} ${region.name} (${difficultyLabel[region.difficulty] ?? region.difficulty})${levelWarning}${bossTag}`,
+        id: `travel-${connectedRegion.id}`,
+        text: `${!isVisited && meetsLevel ? '⚔️ ' : ''}${connectedRegion.icon} ${connectedRegion.name} (${difficultyLabel[connectedRegion.difficulty] ?? connectedRegion.difficulty})${levelWarning}${bossTag}`,
         requiresBoss: !isVisited && meetsLevel,
         successProbability: meetsLevel ? 1.0 : 0.0,
-        successDescription: `You set out toward ${region.name}. ${region.description}`,
+        successDescription: `You set out toward ${connectedRegion.name}. ${connectedRegion.description}`,
         successEffects: {},
         failureDescription: meetsLevel
-          ? `You set out toward ${region.name}.`
-          : `You are not experienced enough to enter ${region.name}. You need to be at least level ${region.minLevel}.`,
+          ? `You set out toward ${connectedRegion.name}.`
+          : `You are not experienced enough to enter ${connectedRegion.name}. You need to be at least level ${connectedRegion.minLevel}.`,
         failureEffects: {},
         resultDescription: meetsLevel
-          ? `You travel to ${region.name}.`
-          : `You cannot enter ${region.name} yet.`,
+          ? `You travel to ${connectedRegion.name}.`
+          : `You cannot enter ${connectedRegion.name} yet.`,
       }
     })
 
     const stayOption = {
       id: 'stay',
-      text: `${currentRegion.icon} Continue in ${currentRegion.name}`,
+      text: `${region.icon} Continue in ${region.name}`,
       successProbability: 1.0,
-      successDescription: `You decide to continue exploring ${currentRegion.name}.`,
+      successDescription: `You decide to continue exploring ${region.name}.`,
       successEffects: {},
       failureDescription: '',
       failureEffects: {},
-      resultDescription: `You continue in ${currentRegion.name}.`,
+      resultDescription: `You continue in ${region.name}.`,
     }
 
     return {
@@ -80,15 +196,18 @@ export async function moveForwardService(
       decisionPoint: {
         id: `decision-${crossroadsEventId}`,
         eventId: crossroadsEventId,
-        prompt: `You reach a crossroads. Multiple paths stretch before you. You are currently in ${currentRegion.icon} ${currentRegion.name}. Where will you go?`,
+        prompt: `You reach a crossroads. Multiple paths stretch before you. You are currently in ${region.icon} ${region.name}. Where will you go?`,
         options: [...travelOptions, stayOption],
         resolved: false,
       },
+      landmarkProgress,
     }
   }
 
-  // Trigger shop event every SHOP_MILESTONE_INTERVAL steps (100)
-  if (crossedMilestone(character.distance, newDistance, SHOP_MILESTONE_INTERVAL)) {
+  // Trigger shop event every SHOP_MILESTONE_INTERVAL steps (100) — only when no landmarks remain
+  const allLandmarksDone =
+    !landmarkState || landmarkState.nextLandmarkIndex >= landmarkState.landmarks.length
+  if (allLandmarksDone && crossedMilestone(character.distance, newDistance, SHOP_MILESTONE_INTERVAL)) {
     return {
       character: updatedCharacter,
       event: {
@@ -100,6 +219,7 @@ export async function moveForwardService(
       },
       decisionPoint: null,
       shopEvent: true,
+      landmarkProgress,
     }
   }
 
@@ -117,6 +237,7 @@ export async function moveForwardService(
       },
       decisionPoint: null,
       shopEvent: true,
+      landmarkProgress,
     }
   }
 
@@ -153,6 +274,7 @@ export async function moveForwardService(
           resolved: false,
           isLegendary: true,
         },
+        landmarkProgress,
       }
     } catch (err) {
       console.error('Legendary encounter generation failed, falling back to normal events', err)
@@ -202,5 +324,6 @@ export async function moveForwardService(
     character: updatedCharacter,
     event,
     decisionPoint,
+    landmarkProgress,
   }
 }
