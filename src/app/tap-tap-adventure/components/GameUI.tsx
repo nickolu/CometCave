@@ -49,6 +49,7 @@ import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
+import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -110,7 +111,7 @@ type MobileCategory = 'gear' | 'quest' | 'social' | 'more' | null
 type GearSubTab = 'equipment' | 'inventory' | 'crafting' | 'enchant'
 type QuestSubTab = 'quests' | 'map' | 'bestiary'
 type SocialSubTab = 'party' | 'factions' | 'npc' | 'leaderboard'
-type MoreSubTab = 'status' | 'base' | 'settings'
+type MoreSubTab = 'status' | 'history' | 'base' | 'settings'
 
 interface GameUIProps {
   onOpenStatus?: () => void
@@ -639,6 +640,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             <div className="border-t border-[#3a3c56] pt-4">
               <StatsPanel />
             </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <RunHistoryPanel />
+            </div>
           </div>
         </div>
         {/* Two-column grid END */}
@@ -686,6 +690,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               ))}
               {mobileCategory === 'more' && ([
                 { id: 'status' as MoreSubTab, label: 'Status' },
+                { id: 'history' as MoreSubTab, label: 'History' },
                 { id: 'base' as MoreSubTab, label: 'Camp' },
                 { id: 'settings' as MoreSubTab, label: 'Settings' },
               ]).map(t => (
@@ -769,6 +774,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             {/* More panels */}
             {mobileCategory === 'more' && moreSubTab === 'status' && (
               <StatsPanel />
+            )}
+            {mobileCategory === 'more' && moreSubTab === 'history' && (
+              <RunHistoryPanel />
             )}
             {mobileCategory === 'more' && moreSubTab === 'base' && <BasePanel />}
             {mobileCategory === 'more' && moreSubTab === 'settings' && <SettingsPanel />}
