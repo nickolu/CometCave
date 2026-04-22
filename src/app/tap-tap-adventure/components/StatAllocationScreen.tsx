@@ -10,9 +10,9 @@ interface StatAllocationScreenProps {
 }
 
 const STAT_DESCRIPTIONS: Record<string, string> = {
-  strength: 'Attack power, HP',
-  intelligence: 'Defense',
-  luck: 'Flee chance, loot drops',
+  strength: 'Attack power, max HP',
+  intelligence: 'Defense, mana pool',
+  luck: 'Crit chance, loot drops, flee chance',
 }
 
 const STAT_LABELS: Record<string, string> = {
