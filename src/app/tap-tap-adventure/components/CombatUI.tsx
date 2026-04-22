@@ -763,8 +763,28 @@ export function CombatUI({ combatState }: CombatUIProps) {
         )}
       </div>
 
-      <div className="text-center text-xs text-slate-500">
-        Turn {combatState.turnNumber}
+      {/* Turn counter with combat pressure indicator */}
+      <div className="text-center text-xs">
+        {(() => {
+          const turn = combatState.turnNumber ?? 1
+          if (turn >= 10) {
+            return (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-red-400 font-semibold animate-pulse">Turn {turn}</span>
+                <span className="text-red-500/70">— Prolonged fight! Enemy growing desperate</span>
+              </div>
+            )
+          }
+          if (turn >= 6) {
+            return (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-yellow-400 font-medium">Turn {turn}</span>
+                <span className="text-yellow-500/60">— Fight dragging on...</span>
+              </div>
+            )
+          }
+          return <span className="text-slate-500">Turn {turn}</span>
+        })()}
       </div>
 
       {pendingMountDrop && (
