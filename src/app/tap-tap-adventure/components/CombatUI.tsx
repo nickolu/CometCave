@@ -722,22 +722,39 @@ export function CombatUI({ combatState }: CombatUIProps) {
               const notEnoughMana = currentMana < (spell.manaCost ?? 0)
               const disabled = isPending || onCooldown || notEnoughMana
 
+              // Determine spell's primary element and effectiveness vs enemy
+              const spellElement = spell.effects?.find(e => e.element && e.element !== 'none')?.element as SpellElement | undefined
+              const enemyElement = enemy.element as SpellElement | undefined
+              const elemMult = spellElement && enemyElement ? getElementalMultiplier(spellElement, enemyElement) : 1
+              const effectiveness = elemMult >= 2 ? { label: 'Super effective!', color: 'text-green-400', border: 'border-green-600/50' }
+                : elemMult <= 0.5 ? { label: 'Resisted', color: 'text-red-400', border: 'border-red-600/50' }
+                : null
+
               return (
                 <Button
                   key={spell.id}
                   className={`w-full text-left whitespace-normal h-auto text-xs py-2 px-3 rounded-md border ${
                     disabled
                       ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
-                      : 'bg-[#2a2b3f] border-[#3a3c56] hover:bg-[#3a3c56] text-white'
+                      : effectiveness
+                        ? `bg-[#2a2b3f] ${effectiveness.border} hover:bg-[#3a3c56] text-white`
+                        : 'bg-[#2a2b3f] border-[#3a3c56] hover:bg-[#3a3c56] text-white'
                   }`}
                   onClick={() => handleCastSpell(spell.id)}
                   disabled={disabled}
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">{spell.name}</span>
-                    <span className={`text-[10px] ${notEnoughMana ? 'text-red-400' : 'text-blue-400'}`}>
-                      {spell.manaCost ?? 0} MP
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {effectiveness && !disabled && (
+                        <span className={`text-[9px] font-bold ${effectiveness.color}`}>
+                          {effectiveness.label}
+                        </span>
+                      )}
+                      <span className={`text-[10px] ${notEnoughMana ? 'text-red-400' : 'text-blue-400'}`}>
+                        {spell.manaCost ?? 0} MP
+                      </span>
+                    </div>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
                     {spell.description}
