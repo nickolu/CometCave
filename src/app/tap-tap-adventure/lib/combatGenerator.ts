@@ -125,6 +125,11 @@ Stat guidelines for a level ${character.level} character:
 - Some enemies can inflict status effects (poison, burn, slow, curse, fear). Include a statusAbility field with type, value (damage per turn or effect strength), duration (2-4 turns), and chance (0-1 probability of inflicting)
 - Assign an element to the enemy (fire, ice, lightning, shadow, nature, arcane, or none). Choose an element that fits the enemy's theme. For example: wolves = nature, fire elementals = fire, undead = shadow, golems = none.
 
+Tactical variety guidelines:
+- Give each enemy a distinct combat personality. Archetypes to vary between: tanky (high HP/defense, low attack), glass cannon (high attack, fragile), debuffer (relies on status effects), swift striker (balanced but with multi-hit or dodge abilities).
+- For the special ability, choose ONE from: area attack (damages and has a secondary effect), self-heal (restores 20-30% HP, cooldown 3-4), counter-stance (next attack is reflected), multi-strike (hits 2-3 times for reduced damage each), enrage (temporarily boosts attack but lowers defense).
+- Make the enemy feel tactically distinct — not every enemy should be a simple damage-dealer.
+
 Reputation context: This character's reputation is ${character.reputation} (${getReputationTier(character.reputation)}).
 ${character.reputation >= 50 ? 'High reputation: the enemy might offer to surrender or parley before fighting. Consider less aggressive enemies like misguided guards or territorial creatures rather than outright villains.' : ''}${character.reputation <= -20 ? 'Low reputation: enemies are more aggressive. Consider bounty hunters, rival adventurers seeking the bounty on this character, or vengeful NPCs.' : ''}
 
@@ -195,6 +200,14 @@ This is a level ${character.level} character facing a boss fight. The boss shoul
 - Include 2-3 high-quality loot items (rare potions, powerful scrolls, gems)
 - MUST include a special ability with cooldown of 2-3 turns — this is a boss!
 - Give the boss an imposing, unique name
+
+Boss tactical design:
+- The boss MUST have a distinct combat phase pattern. Choose one:
+  (a) Enrage at low HP — attack increases below 30% HP
+  (b) Alternating phases — switches between aggressive and defensive stances
+  (c) Summoning — conceptually powerful enough to feel like multiple threats
+- The special ability should feel devastating and force the player to plan around its cooldown.
+- Include a status ability: choose from poison, burn, slow, curse, or fear. The boss's status effect should synergize with its combat style.
 
 Character:
 ${JSON.stringify(character, null, 2)}
@@ -306,10 +319,13 @@ function getDefaultMiniBossEncounter(
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
   const region = getRegion(character.currentRegion ?? 'green_meadows')
 
-  const miniBosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' | 'fire' }> = [
+  const miniBosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' | 'fire' | 'ice' | 'lightning' }> = [
     { name: 'Goretusk the Ravager', desc: 'A hulking beast covered in battle scars, its tusks dripping with venom.', special: 'Tusked Charge', specialDesc: 'Charges forward with devastating force.', element: 'nature' },
     { name: 'Whisper, the Shadow Stalker', desc: 'A silent assassin wreathed in living darkness, striking from impossible angles.', special: 'Shadow Step', specialDesc: 'Teleports behind the target for a critical strike.', element: 'shadow' },
     { name: 'Cindermaw the Scorched', desc: 'A fire-scarred drake that breathes superheated ash and embers.', special: 'Ember Breath', specialDesc: 'Unleashes a cone of burning embers.', element: 'fire' },
+    { name: 'Glacius, the Frozen Wrath', desc: 'An ice elemental that has consumed countless warriors, their frozen faces visible within its crystalline body.', special: 'Absolute Zero', specialDesc: 'Flash-freezes the area, dealing ice damage and slowing.', element: 'ice' },
+    { name: 'Dreadweaver Azuul', desc: 'An arachnid horror whose webs are made of concentrated fear. Its many eyes see all possible futures.', special: 'Nightmare Web', specialDesc: 'Ensnares the target in webs that inflict terror.', element: 'shadow' },
+    { name: 'Boltclaw the Thunderborn', desc: 'A lightning-charged beast crackling with raw electrical power. Thunder follows each step.', special: 'Chain Lightning', specialDesc: 'Unleashes arcing lightning that strikes multiple times.', element: 'lightning' },
   ]
   const miniBoss = miniBosses[level % miniBosses.length]
 
@@ -483,10 +499,13 @@ function getDefaultBossEncounter(
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
   const region = getRegion(character.currentRegion ?? 'green_meadows')
 
-  const bosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' }> = [
+  const bosses: Array<{ name: string; desc: string; special: string; specialDesc: string; element: 'none' | 'shadow' | 'nature' | 'fire' | 'arcane' }> = [
     { name: 'The Iron Warden', desc: 'A colossal animated suit of armor, its eyes burning with ancient fury.', special: 'Crushing Blow', specialDesc: 'Slams the ground, sending shockwaves.', element: 'none' },
     { name: 'Vexara the Cursed', desc: 'A spectral sorceress wreathed in dark flame, whispering words of ruin.', special: 'Soul Drain', specialDesc: 'Drains life force from her victims.', element: 'shadow' },
     { name: 'Grimfang the Devourer', desc: 'A massive beast with razor teeth and impenetrable scales.', special: 'Rending Fury', specialDesc: 'Unleashes a devastating multi-strike attack.', element: 'nature' },
+    { name: 'Pyraxis the Undying', desc: 'A phoenix-like entity that regenerates from each wound, its body wreathed in undying flame.', special: 'Phoenix Rebirth', specialDesc: 'Erupts in flame, dealing massive damage and restoring its own health.', element: 'fire' },
+    { name: 'The Hollow King', desc: 'An ancient monarch whose hollow armor houses a devouring void. Reality warps around its crown.', special: 'Void Collapse', specialDesc: 'Creates a gravity well that pulls and crushes everything nearby.', element: 'shadow' },
+    { name: 'Crystalweave Titan', desc: 'A towering construct of living crystal, refracting light into devastating beams.', special: 'Prismatic Barrage', specialDesc: 'Fires a cascade of crystal shards in all directions.', element: 'arcane' },
   ]
   const boss = bosses[level % bosses.length]
 
@@ -545,28 +564,66 @@ function getDefaultCombatEncounter(
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
   const region = getRegion(character.currentRegion ?? 'green_meadows')
 
-  const enemyName = region.enemyTypes.length > 0
-    ? region.enemyTypes[Math.floor(Math.random() * region.enemyTypes.length)]
-    : (level <= 2 ? 'Wild Goblin' : level <= 5 ? 'Dark Wolf' : 'Shadow Knight')
+  const normalEnemies: Array<{
+    name: string; desc: string; element: CombatEnemy['element']
+    archetype: 'balanced' | 'tank' | 'glass_cannon' | 'debuffer' | 'swift'
+    special?: { name: string; desc: string; dmgMult: number; cd: number }
+    status?: { type: 'poison' | 'burn' | 'slow' | 'curse' | 'fear'; value: number; dur: number; chance: number }
+  }> = [
+    { name: 'Ironhide Brute', desc: 'A hulking creature with thick armor plating.', element: 'none', archetype: 'tank', status: { type: 'slow', value: 0, dur: 2, chance: 0.3 } },
+    { name: 'Venom Stalker', desc: 'A lean predator dripping with toxic venom.', element: 'nature', archetype: 'glass_cannon', special: { name: 'Venomous Lunge', desc: 'A poison-tipped strike.', dmgMult: 1.5, cd: 3 }, status: { type: 'poison', value: 3, dur: 3, chance: 0.5 } },
+    { name: 'Hex Weaver', desc: 'A cloaked figure that whispers curses.', element: 'shadow', archetype: 'debuffer', special: { name: 'Hex Bolt', desc: 'Fires a bolt of cursed energy.', dmgMult: 0.8, cd: 2 }, status: { type: 'curse', value: 0, dur: 4, chance: 0.6 } },
+    { name: 'Blaze Runner', desc: 'A swift creature wreathed in crackling flames.', element: 'fire', archetype: 'swift', special: { name: 'Flame Dash', desc: 'Blazes past defenses with scorching speed.', dmgMult: 1.3, cd: 2 }, status: { type: 'burn', value: 4, dur: 2, chance: 0.4 } },
+    { name: 'Frost Sentinel', desc: 'An icy guardian that slows all who approach.', element: 'ice', archetype: 'tank', special: { name: 'Glacial Slam', desc: 'Slams the ground, sending frost waves.', dmgMult: 1.2, cd: 3 }, status: { type: 'slow', value: 0, dur: 3, chance: 0.5 } },
+    { name: 'Shadow Wraith', desc: 'A spectral horror that feeds on fear.', element: 'shadow', archetype: 'debuffer', special: { name: 'Terror Pulse', desc: 'Emits a wave of overwhelming dread.', dmgMult: 0.6, cd: 2 }, status: { type: 'fear', value: 0, dur: 3, chance: 0.5 } },
+    { name: 'Arcane Golem', desc: 'A construct of pure magical energy.', element: 'arcane', archetype: 'balanced', special: { name: 'Mana Burst', desc: 'Releases stored arcane energy.', dmgMult: 1.4, cd: 3 } },
+    { name: 'Thornback Beast', desc: 'A creature bristling with razor-sharp thorns.', element: 'nature', archetype: 'balanced', status: { type: 'poison', value: 2, dur: 2, chance: 0.3 } },
+  ]
 
-  const enemyDescription = region.enemyTypes.length > 0
-    ? `A dangerous ${enemyName} native to the ${region.name}.`
-    : (level <= 2
-        ? 'A snarling goblin wielding a rusty dagger.'
-        : level <= 5
-          ? 'A massive wolf with glowing red eyes.'
-          : 'An armored knight wreathed in dark energy.')
+  // Prefer region-matching elements: 60% chance to pick from matching templates, else random
+  const matchingTemplates = normalEnemies.filter(t => t.element === region.element)
+  let template: typeof normalEnemies[0]
+  if (matchingTemplates.length > 0 && Math.random() < 0.6) {
+    template = matchingTemplates[Math.floor(Math.random() * matchingTemplates.length)]
+  } else {
+    template = normalEnemies[Math.floor(Math.random() * normalEnemies.length)]
+  }
+
+  // Apply archetype stat modifiers
+  const baseHp = 35 + level * 15
+  const baseAtk = 6 + level * 3
+  const baseDef = 2 + level
+  let hpMult = 1.0, atkMult = 1.0, defMult = 1.0
+  if (template.archetype === 'tank') { hpMult = 1.3; defMult = 1.3; atkMult = 0.85 }
+  else if (template.archetype === 'glass_cannon') { hpMult = 0.75; defMult = 0.7; atkMult = 1.4 }
+  else if (template.archetype === 'swift') { hpMult = 0.9; defMult = 0.9; atkMult = 1.15 }
+  else if (template.archetype === 'debuffer') { atkMult = 0.9 }
+
+  const hp = Math.round(baseHp * hpMult)
+  const atk = Math.round(baseAtk * atkMult)
+  const def = Math.round(baseDef * defMult)
+
+  // Override name with region enemyType if available
+  const regionEnemyName = region.enemyTypes.length > 0
+    ? region.enemyTypes[Math.floor(Math.random() * region.enemyTypes.length)]
+    : null
+  const enemyName = regionEnemyName
+    ? regionEnemyName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    : template.name
+  const enemyDescription = regionEnemyName
+    ? `A dangerous ${regionEnemyName} native to the ${region.name}.`
+    : template.desc
 
   return {
     scenario: `In the ${region.name}, a hostile creature emerges from the shadows, blocking your path. You must fight or flee!`,
     enemy: {
       id: `enemy-${suffix}`,
-      name: enemyName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      name: enemyName,
       description: enemyDescription,
-      hp: 35 + level * 15,
-      maxHp: 35 + level * 15,
-      attack: 6 + level * 3,
-      defense: 2 + level,
+      hp,
+      maxHp: hp,
+      attack: atk,
+      defense: def,
       level,
       goldReward: 5 + level * 5,
       lootTable: [
@@ -583,8 +640,14 @@ function getDefaultCombatEncounter(
           quantity: 1,
         })] : []),
       ],
-      specialAbility:
-        level >= 3
+      specialAbility: template.special && level >= 3
+        ? {
+            name: template.special.name,
+            description: template.special.desc,
+            damage: Math.round((5 + level * 2) * template.special.dmgMult),
+            cooldown: template.special.cd,
+          }
+        : level >= 3
           ? {
               name: level <= 5 ? 'Savage Bite' : 'Shadow Strike',
               description: level <= 5 ? 'A vicious lunging bite.' : 'A devastating blow from the shadows.',
@@ -592,13 +655,14 @@ function getDefaultCombatEncounter(
               cooldown: 3,
             }
           : undefined,
-      statusAbility:
-        level <= 2
-          ? { type: 'slow' as const, value: 0, duration: 2, chance: 0.3 }
-          : level <= 5
+      statusAbility: template.status
+        ? { type: template.status.type, value: template.status.value, duration: template.status.dur, chance: template.status.chance }
+        : level >= 3
+          ? level <= 5
             ? { type: 'poison' as const, value: 3 + level, duration: 3, chance: 0.4 }
-            : { type: 'curse' as const, value: 0, duration: 3, chance: 0.3 },
-      element: (region.element !== 'none' ? region.element : (level <= 2 ? 'none' : level <= 5 ? 'nature' : 'shadow')) as CombatEnemy['element'],
+            : { type: 'curse' as const, value: 0, duration: 3, chance: 0.3 }
+          : undefined,
+      element: template.element,
     },
   }
 }

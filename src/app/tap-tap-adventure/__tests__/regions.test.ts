@@ -63,6 +63,8 @@ describe('Region definitions', () => {
     expect(REGIONS.frozen_peaks.difficultyMultiplier).toBe(1.5)
     expect(REGIONS.shadow_realm.difficultyMultiplier).toBe(1.9)
     expect(REGIONS.sky_citadel.difficultyMultiplier).toBe(2.2)
+    expect(REGIONS.abyssal_depths.difficultyMultiplier).toBe(2.4)
+    expect(REGIONS.celestial_throne.difficultyMultiplier).toBe(2.8)
     expect(REGIONS.sunken_ruins.difficultyMultiplier).toBe(1.0)
     expect(REGIONS.volcanic_forge.difficultyMultiplier).toBe(1.7)
     expect(REGIONS.feywild_grove.difficultyMultiplier).toBe(1.2)
