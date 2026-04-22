@@ -3,15 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
-import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { useGameStore, useGameStateBuilder } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { useMoveForwardMutation } from '@/app/tap-tap-adventure/hooks/useMoveForwardMutation'
 import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useResolveDecisionMutation'
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { crossedMilestone, SHOP_MILESTONE_INTERVAL, STEPS_PER_DAY, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
-import { CROSSROADS_INTERVAL, getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { CROSSROADS_INTERVAL, getRegion, REGIONS, canEnterRegion } from '@/app/tap-tap-adventure/config/regions'
 import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
+import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { flipCoin } from '@/app/utils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
@@ -30,6 +31,7 @@ import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
 import { RegionMap } from './RegionMap'
+import { TravelConfirmDialog } from './TravelConfirmDialog'
 import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
@@ -132,6 +134,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
   const [mobileCategory, setMobileCategory] = useState<MobileCategory>(null)
+  const [travelTarget, setTravelTarget] = useState<string | null>(null)
   const [gearSubTab, setGearSubTab] = useState<GearSubTab>('equipment')
   const [questSubTab, setQuestSubTab] = useState<QuestSubTab>('quests')
   const [socialSubTab, setSocialSubTab] = useState<SocialSubTab>('party')
@@ -151,6 +154,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
     useResolveDecisionMutation()
 
+  const { addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder()
+
   const character = getSelectedCharacter()
 
   const { hasSeenHint, markHintSeen } = useOnboarding(character?.id)
@@ -164,6 +169,39 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     if (character.distance === 0 && !hasSeenHint('first-tap')) return 'first-tap'
     return null
   })()
+
+  const handleRegionClick = useCallback((regionId: string) => {
+    const region = REGIONS[regionId]
+    if (!region || !character) return
+    const currentRegion = getRegion(character.currentRegion ?? 'green_meadows')
+    const isConnected = currentRegion.connectedRegions.includes(regionId)
+    const isVisited = (character.visitedRegions ?? []).includes(regionId)
+    if (isConnected && isVisited && canEnterRegion(region, character.level)) {
+      setTravelTarget(regionId)
+    }
+  }, [character])
+
+  const handleTravelConfirm = useCallback(() => {
+    if (!travelTarget || !character) return
+    const destRegion = getRegion(travelTarget)
+    updateSelectedCharacter({
+      currentRegion: travelTarget,
+      currentWeather: rollWeather(travelTarget),
+    })
+    addStoryEvent({
+      id: `map-travel-${Date.now()}`,
+      type: 'region_travel',
+      characterId: character.id,
+      locationId: character.locationId,
+      timestamp: new Date().toISOString(),
+      selectedOptionId: travelTarget,
+      selectedOptionText: `Traveled to ${destRegion.name}`,
+      outcomeDescription: `You set out for ${destRegion.icon} ${destRegion.name} \u2014 ${destRegion.description}`,
+    })
+    commit()
+    setTravelTarget(null)
+    soundEngine.playCrossroads()
+  }, [travelTarget, character, updateSelectedCharacter, addStoryEvent, commit])
 
   const handleResolveDecision = (optionId: string) => {
     resolveDecisionMutation({
@@ -569,6 +607,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 characterLevel={character?.level ?? 1}
                 visitedRegions={character?.visitedRegions ?? []}
                 conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
+                onRegionClick={handleRegionClick}
               />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
@@ -685,6 +724,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 characterLevel={character?.level ?? 1}
                 visitedRegions={character?.visitedRegions ?? []}
                 conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
+                onRegionClick={handleRegionClick}
               />
             )}
             {mobileCategory === 'quest' && questSubTab === 'bestiary' && character && (
@@ -760,6 +800,15 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       </div>
       {/* Bottom padding spacer for mobile tab bar */}
       <div className="md:hidden h-14" />
+
+      {/* Travel confirm dialog */}
+      {travelTarget && (
+        <TravelConfirmDialog
+          region={getRegion(travelTarget)}
+          onConfirm={handleTravelConfirm}
+          onCancel={() => setTravelTarget(null)}
+        />
+      )}
     </div>
     </>
   )
