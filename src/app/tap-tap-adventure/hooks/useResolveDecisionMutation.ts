@@ -154,6 +154,9 @@ export function useResolveDecisionMutation() {
           if (combatRes.ok) {
             const combatData = await combatRes.json()
             setCombatState(combatData.combatState)
+            if (combatData.updatedCharacter) {
+              updateSelectedCharacter(combatData.updatedCharacter)
+            }
           }
           addStoryEvent({
             id: `result-${Date.now()}`,
@@ -317,6 +320,9 @@ export function useResolveDecisionMutation() {
         if (combatRes.ok) {
           const combatData = await combatRes.json()
           setCombatState(combatData.combatState)
+          if (combatData.updatedCharacter) {
+            updateSelectedCharacter(combatData.updatedCharacter)
+          }
         }
       }
 

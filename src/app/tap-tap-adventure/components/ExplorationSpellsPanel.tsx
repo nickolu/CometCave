@@ -36,7 +36,12 @@ export function ExplorationSpellsPanel() {
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-1">
         <h4 className="text-sm font-semibold text-white">Exploration Spells</h4>
-        <span className="text-xs text-blue-300">{currentMana} MP available</span>
+        <div className="flex items-center gap-2">
+          {(character?.explorationShield ?? 0) > 0 && (
+            <span className="text-xs text-cyan-300">🛡️ {character!.explorationShield} shield</span>
+          )}
+          <span className="text-xs text-blue-300">{currentMana} MP available</span>
+        </div>
       </div>
       {feedbackMessage && (
         <div className={`p-2 rounded-md text-sm animate-pulse ${feedbackSuccess ? 'bg-green-900/50 border border-green-700 text-green-300' : 'bg-red-900/50 border border-red-700 text-red-300'}`}>
@@ -69,7 +74,7 @@ export function ExplorationSpellsPanel() {
               onClick={() => canCast && handleCast(spell.id)}
               disabled={!canCast}
             >
-              {canCast ? `Cast ${effect.type === 'heal' ? '❤️' : effect.type === 'mana_restore' ? '💎' : '⚡'} ${effect.type.replace('_', ' ')}` : 'Not enough mana'}
+              {canCast ? `Cast ${effect.type === 'heal' ? '❤️' : effect.type === 'mana_restore' ? '💎' : effect.type === 'speed_boost' ? '⚡' : effect.type === 'shield' ? '🛡️' : '🔮'} ${effect.type.replace(/_/g, ' ')}` : 'Not enough mana'}
             </Button>
           </div>
         )

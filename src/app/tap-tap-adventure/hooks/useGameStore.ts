@@ -1299,6 +1299,26 @@ export const useGameStore = create<GameStore>()(
             message = `${spell.name}: Advanced ${effect.value} steps! (${manaCost} MP spent)`
             break
           }
+          case 'shield': {
+            const currentShield = character.explorationShield ?? 0
+            updates.explorationShield = currentShield + effect.value
+            message = `${spell.name}: Gained ${effect.value} shield for your next combat! (${manaCost} MP spent)`
+            break
+          }
+          case 'reveal': {
+            // Reveal info about the next landmark
+            const ls = character.landmarkState
+            if (!ls) {
+              return { message: 'No active travel — nothing to reveal.', success: false }
+            }
+            const activeIdx = ls.activeTargetIndex ?? 0
+            if (activeIdx >= ls.landmarks.length) {
+              return { message: 'No more landmarks ahead to reveal.', success: false }
+            }
+            const landmark = ls.landmarks[activeIdx]
+            message = `${spell.name}: You sense what lies ahead... ${landmark.icon} ${landmark.name} — ${landmark.encounterPrompt} (${manaCost} MP spent)`
+            break
+          }
         }
 
         set(

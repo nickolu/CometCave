@@ -167,6 +167,16 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
         value: 3 + Math.floor(level / 2),
         description: `Advances ${3 + Math.floor(level / 2)} steps toward your target.`,
       },
+      {
+        type: 'shield' as const,
+        value: 8 + level * 3,
+        description: `Grants a ${8 + level * 3} point shield that activates in your next combat.`,
+      },
+      {
+        type: 'reveal' as const,
+        value: 1,
+        description: `Reveals details about the next landmark ahead.`,
+      },
     ]
     const chosen = pickRandom(explorationTypes)
     explorationEffect = chosen
