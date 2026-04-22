@@ -10,6 +10,14 @@ interface EquipmentPanelProps {
   equipment: EquipmentSlots
 }
 
+const RARITY_COLORS: Record<string, { border: string; text: string; bg: string; label: string }> = {
+  common: { border: 'border-gray-600/50', text: 'text-gray-400', bg: 'bg-gray-900/30', label: 'Common' },
+  uncommon: { border: 'border-green-600/50', text: 'text-green-400', bg: 'bg-green-900/30', label: 'Uncommon' },
+  rare: { border: 'border-blue-500/60', text: 'text-blue-400', bg: 'bg-blue-900/30', label: 'Rare' },
+  epic: { border: 'border-purple-500/60', text: 'text-purple-400', bg: 'bg-purple-900/30', label: 'Epic' },
+  legendary: { border: 'border-amber-500/60', text: 'text-amber-400', bg: 'bg-amber-900/30', label: 'Legendary' },
+}
+
 const SLOT_LABELS: Record<EquipmentSlotType, string> = {
   weapon: 'Weapon',
   armor: 'Armor',
@@ -102,7 +110,19 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                     <div className="text-xs text-gray-500 uppercase">{SLOT_LABELS[slot]}</div>
                     {item ? (
                       <>
-                        <div className="font-bold text-white text-sm truncate">{item.name}</div>
+                        {(() => {
+                          const rarityStyle = RARITY_COLORS[item.rarity ?? 'common']
+                          return (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <div className={`font-bold text-sm truncate ${item.rarity && item.rarity !== 'common' ? rarityStyle.text : 'text-white'}`}>{item.name}</div>
+                              {item.rarity && item.rarity !== 'common' && (
+                                <span className={`text-[10px] px-1.5 py-0.5 ${rarityStyle.bg} ${rarityStyle.text} rounded`}>
+                                  {rarityStyle.label}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })()}
                         {item.effects && (
                           <div className="text-xs text-emerald-400">
                             {Object.entries(item.effects)
@@ -114,6 +134,16 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                                   `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`
                               )
                               .join(', ')}
+                          </div>
+                        )}
+                        {item.onHitEffect && (
+                          <div className="text-xs text-orange-400">
+                            On Hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                          </div>
+                        )}
+                        {item.drawback && (
+                          <div className="text-xs text-red-400">
+                            Drawback: {item.drawback.description} ({item.drawback.value} {item.drawback.stat})
                           </div>
                         )}
                         {slot === 'weapon' && item.effects?.range && (

@@ -59,6 +59,7 @@ function generateEquipmentHeirloom(character: FantasyCharacter): Item {
   const { tier, multiplier } = qualityTier(character)
   const stat = strongestStat(character)
   const baseBonus = Math.max(1, Math.floor(character.level * multiplier))
+  const rarity = tier.toLowerCase() as Item['rarity']
 
   const nameTemplates = [
     `${character.name}'s Lucky Charm`,
@@ -78,6 +79,24 @@ function generateEquipmentHeirloom(character: FantasyCharacter): Item {
     effects[secondaryStat] = Math.max(1, Math.floor(baseBonus * 0.5))
   }
 
+  // On-hit effect for Epic and Legendary
+  let onHitEffect: Item['onHitEffect']
+  if (multiplier >= 2.2) {
+    if (stat === 'strength') {
+      onHitEffect = { type: 'bleed', chance: 0.15, damage: 3, duration: 2, description: 'Causes bleeding on hit' }
+    } else if (stat === 'intelligence') {
+      onHitEffect = { type: 'burn', chance: 0.15, damage: 3, duration: 2, description: 'Burns the enemy on hit' }
+    } else {
+      onHitEffect = { type: 'lifesteal', chance: 0.2, damage: 0, duration: 0, description: 'Steals life on hit' }
+    }
+  }
+
+  // Drawback for Legendary
+  let drawback: Item['drawback']
+  if (multiplier >= 3) {
+    drawback = { stat: 'luck', value: -2, description: 'Cursed by memories of its fallen owner' }
+  }
+
   return {
     id: `heirloom-${character.id}-${Date.now()}`,
     name,
@@ -86,6 +105,10 @@ function generateEquipmentHeirloom(character: FantasyCharacter): Item {
     type: 'equipment',
     effects,
     isHeirloom: true,
+    rarity,
+    loreText: `Carried by ${character.name} through ${character.distance ?? 0} steps of adventure.`,
+    ...(onHitEffect ? { onHitEffect } : {}),
+    ...(drawback ? { drawback } : {}),
   }
 }
 
@@ -103,6 +126,7 @@ function generateConsumableHeirloom(character: FantasyCharacter): Item {
       heal: healAmount,
     },
     isHeirloom: true,
+    rarity: tier.toLowerCase() as Item['rarity'],
   }
 }
 
@@ -110,6 +134,7 @@ function generateSpellScrollHeirloom(character: FantasyCharacter): Item {
   const spells = character.spellbook ?? []
   // Pick the "best" spell (highest mana cost generally = strongest)
   const spell = [...spells].sort((a, b) => b.manaCost - a.manaCost)[0]
+  const { tier } = qualityTier(character)
 
   return {
     id: `heirloom-${character.id}-${Date.now()}`,
@@ -119,6 +144,7 @@ function generateSpellScrollHeirloom(character: FantasyCharacter): Item {
     type: 'spell_scroll',
     spell,
     isHeirloom: true,
+    rarity: tier.toLowerCase() as Item['rarity'],
   }
 }
 

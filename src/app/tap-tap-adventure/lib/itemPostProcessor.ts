@@ -39,7 +39,17 @@ function findMatchingEffects(name: string, rules: KeywordRule[], fallback: ItemE
 
 export function inferItemTypeAndEffects(item: Item): Item {
   const inferred = inferItemTypeAndEffectsInternal(item)
-  return { ...inferred, description: generateItemDescription(inferred) }
+  const withDescription = { ...inferred, description: generateItemDescription(inferred) }
+  return withDescription.rarity ? withDescription : { ...withDescription, rarity: inferRarity(withDescription) }
+}
+
+function inferRarity(item: Item): Item['rarity'] {
+  const name = item.name.toLowerCase()
+  if (matchesAny(name, ['legendary', 'mythic', 'divine', 'godly'])) return 'legendary'
+  if (matchesAny(name, ['epic', 'ancient', 'primordial', 'eternal'])) return 'epic'
+  if (matchesAny(name, ['rare', 'enchanted', 'mystic', 'arcane'])) return 'rare'
+  if (matchesAny(name, ['fine', 'quality', 'superior', 'sturdy', 'sharp', 'greater'])) return 'uncommon'
+  return 'common'
 }
 
 function inferItemTypeAndEffectsInternal(item: Item): Item {

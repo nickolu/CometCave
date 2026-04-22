@@ -8,6 +8,14 @@ import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
+const RARITY_COLORS: Record<string, { border: string; text: string; bg: string; label: string }> = {
+  common: { border: 'border-gray-600/50', text: 'text-gray-400', bg: 'bg-gray-900/30', label: 'Common' },
+  uncommon: { border: 'border-green-600/50', text: 'text-green-400', bg: 'bg-green-900/30', label: 'Uncommon' },
+  rare: { border: 'border-blue-500/60', text: 'text-blue-400', bg: 'bg-blue-900/30', label: 'Rare' },
+  epic: { border: 'border-purple-500/60', text: 'text-purple-400', bg: 'bg-purple-900/30', label: 'Epic' },
+  legendary: { border: 'border-amber-500/60', text: 'text-amber-400', bg: 'bg-amber-900/30', label: 'Legendary' },
+}
+
 interface InventoryPanelProps {
   inventory: Item[]
 }
@@ -25,7 +33,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<'default' | 'name' | 'type' | 'value'>('default')
+  const [sortBy, setSortBy] = useState<'default' | 'name' | 'type' | 'value' | 'rarity'>('default')
   const [detailItem, setDetailItem] = useState<Item | null>(null)
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -98,6 +106,10 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
         const bVal = Object.values(b.effects ?? {}).reduce((sum: number, v) => sum + (typeof v === 'number' ? Math.abs(v) : 0), 0)
         return bVal - aVal
       }
+      case 'rarity': {
+        const rarityOrder: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 }
+        return (rarityOrder[b.rarity ?? 'common'] ?? 0) - (rarityOrder[a.rarity ?? 'common'] ?? 0)
+      }
       default: return 0
     }
   })
@@ -117,6 +129,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           <option value="name">Sort: Name</option>
           <option value="type">Sort: Type</option>
           <option value="value">Sort: Value</option>
+          <option value="rarity">Sort: Rarity</option>
         </select>
         <Button
           onClick={() => setActiveTab(activeTab === 'active' ? 'deleted' : 'active')}
@@ -157,9 +170,14 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
           <List
             items={sortedItems}
             className="space-y-0 w-full"
-            renderItem={(item: Item) => (
+            renderItem={(item: Item) => {
+              const rarityStyle = RARITY_COLORS[item.rarity ?? 'common']
+              const borderClass = item.isHeirloom
+                ? `${rarityStyle.border} ring-1 ring-amber-500/30`
+                : rarityStyle.border
+              return (
               <div
-                className={`relative bg-[#1e1f30] border ${item.isHeirloom ? 'border-amber-500/60 ring-1 ring-amber-500/30' : 'border-[#3a3c56]'} p-4 rounded-lg space-y-2 mb-3 w-full`}
+                className={`relative bg-[#1e1f30] border ${borderClass} p-4 rounded-lg space-y-2 mb-3 w-full`}
                 onPointerDown={() => handlePointerDown(item)}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
@@ -174,7 +192,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                     {item.isHeirloom && (
                       <span className="text-amber-400 text-sm" title="Heirloom">&#9733;</span>
                     )}
-                    <div className="font-bold text-white">{item.name}</div>
+                    <div className={`font-bold ${item.rarity && item.rarity !== 'common' ? rarityStyle.text : 'text-white'}`}>{item.name}</div>
                     {item.type === 'consumable' && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-green-900/50 text-green-400 rounded">
                         Consumable
@@ -190,8 +208,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                         Spell Scroll
                       </span>
                     )}
+                    {item.rarity && item.rarity !== 'common' && (
+                      <span className={`text-[10px] px-1.5 py-0.5 ${rarityStyle.bg} ${rarityStyle.text} rounded`}>
+                        {rarityStyle.label}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-400">{item.description}</div>
+                  {item.loreText && (
+                    <div className="text-xs text-amber-300/70 italic mt-0.5">{item.loreText}</div>
+                  )}
                   {item.effects && (
                     <div className="text-xs text-emerald-400 mt-1">
                       Effects: {Object.entries(item.effects)
@@ -221,6 +247,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       </div>
                     )
                   })()}
+                  {item.onHitEffect && (
+                    <div className="text-xs text-orange-400 mt-0.5">
+                      On Hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                    </div>
+                  )}
+                  {item.drawback && (
+                    <div className="text-xs text-red-400 mt-0.5">
+                      Drawback: {item.drawback.description} ({item.drawback.value} {item.drawback.stat})
+                    </div>
+                  )}
                 </div>
                 <div className="flex space-x-2 mt-3">
                   {activeTab === 'active' && item.type === 'consumable' && (
@@ -269,7 +305,8 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                   )}
                 </div>
               </div>
-            )}
+              )
+            }}
           />
         )}
       </div>
@@ -282,22 +319,35 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             className="bg-[#1e1f30] border border-[#3a3c56] rounded-xl p-5 max-w-sm w-full mx-4 space-y-3"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2">
-              {detailItem.isHeirloom && <span className="text-amber-400">&#9733;</span>}
-              <h4 className="text-white font-bold text-lg">{detailItem.name}</h4>
-              {detailItem.type && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                  detailItem.type === 'consumable' ? 'bg-green-900/50 text-green-400' :
-                  detailItem.type === 'equipment' ? 'bg-indigo-900/50 text-indigo-400' :
-                  detailItem.type === 'spell_scroll' ? 'bg-purple-900/50 text-purple-400' :
-                  detailItem.type === 'quest' ? 'bg-yellow-900/50 text-yellow-400' :
-                  'bg-gray-900/50 text-gray-400'
-                }`}>
-                  {detailItem.type === 'spell_scroll' ? 'Spell Scroll' : detailItem.type.charAt(0).toUpperCase() + detailItem.type.slice(1)}
-                </span>
-              )}
-            </div>
+            {(() => {
+              const detailRarityStyle = RARITY_COLORS[detailItem.rarity ?? 'common']
+              return (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {detailItem.isHeirloom && <span className="text-amber-400">&#9733;</span>}
+                  <h4 className={`font-bold text-lg ${detailItem.rarity && detailItem.rarity !== 'common' ? detailRarityStyle.text : 'text-white'}`}>{detailItem.name}</h4>
+                  {detailItem.type && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      detailItem.type === 'consumable' ? 'bg-green-900/50 text-green-400' :
+                      detailItem.type === 'equipment' ? 'bg-indigo-900/50 text-indigo-400' :
+                      detailItem.type === 'spell_scroll' ? 'bg-purple-900/50 text-purple-400' :
+                      detailItem.type === 'quest' ? 'bg-yellow-900/50 text-yellow-400' :
+                      'bg-gray-900/50 text-gray-400'
+                    }`}>
+                      {detailItem.type === 'spell_scroll' ? 'Spell Scroll' : detailItem.type.charAt(0).toUpperCase() + detailItem.type.slice(1)}
+                    </span>
+                  )}
+                  {detailItem.rarity && detailItem.rarity !== 'common' && (
+                    <span className={`text-[10px] px-1.5 py-0.5 ${detailRarityStyle.bg} ${detailRarityStyle.text} rounded`}>
+                      {detailRarityStyle.label}
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
             <p className="text-gray-300 text-sm">{detailItem.description}</p>
+            {detailItem.loreText && (
+              <div className="text-xs text-amber-300/70 italic">{detailItem.loreText}</div>
+            )}
             {detailItem.quantity > 1 && (
               <div className="text-xs text-gray-400">Quantity: {detailItem.quantity}</div>
             )}
@@ -344,6 +394,18 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
               <div className="space-y-1">
                 <div className="text-xs text-gray-500 uppercase font-semibold">Spell: {detailItem.spell.name}</div>
                 <div className="text-sm text-gray-300">{detailItem.spell.description}</div>
+              </div>
+            )}
+            {detailItem.onHitEffect && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 uppercase font-semibold">On Hit Effect</div>
+                <div className="text-sm text-orange-400">{detailItem.onHitEffect.description} ({Math.round(detailItem.onHitEffect.chance * 100)}% chance)</div>
+              </div>
+            )}
+            {detailItem.drawback && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 uppercase font-semibold">Drawback</div>
+                <div className="text-sm text-red-400">{detailItem.drawback.description} ({detailItem.drawback.value} {detailItem.drawback.stat})</div>
               </div>
             )}
             <button
