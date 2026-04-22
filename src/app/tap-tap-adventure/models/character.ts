@@ -80,6 +80,7 @@ export const FantasyCharacterSchema = z.object({
       encounterPrompt: z.string(),
       distanceFromEntry: z.number(),
       hidden: z.boolean().default(false),
+      isSecret: z.boolean().default(false),
     })),
     entryDistance: z.number(),
     nextLandmarkIndex: z.number(),

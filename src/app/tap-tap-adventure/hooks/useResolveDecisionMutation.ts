@@ -48,6 +48,36 @@ export function useResolveDecisionMutation() {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
 
+      // Handle fleeing from a secret boss
+      if (optionId === 'flee-secret-boss') {
+        const landmarkState = character.landmarkState
+        if (landmarkState) {
+          const landmarkName = landmarkState.exploringLandmarkName ?? 'the landmark'
+          updateSelectedCharacter({
+            landmarkState: {
+              ...landmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            },
+          })
+          const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'decision_result',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: chosenOption?.text ?? 'Retreat',
+            outcomeDescription: `You retreat from the guardian of ${landmarkName}. Perhaps you'll return when you're stronger.`,
+          })
+          commit()
+          onSuccess?.()
+        }
+        return
+      }
+
       // Handle leaving a landmark during exploration
       if (optionId === 'leave-landmark') {
         const landmarkState = character.landmarkState
@@ -303,7 +333,8 @@ export function useResolveDecisionMutation() {
         soundEngine.playBoss()
         const { gameState } = useGameStore.getState()
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
-        const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true
+        const isSecretBoss = optionId === 'fight-secret-boss'
+        const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true || isSecretBoss
         // Mini-boss: 5% chance on non-boss combat when distance > 100
         const isMiniBoss = !isBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
@@ -315,6 +346,7 @@ export function useResolveDecisionMutation() {
             eventContext: decisionPoint.prompt,
             isBoss,
             isMiniBoss,
+            isSecretBoss,
           }),
         })
         if (combatRes.ok) {

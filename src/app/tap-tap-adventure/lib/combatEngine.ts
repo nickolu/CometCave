@@ -1728,11 +1728,13 @@ export function getCombatRewards(
   }
 
   // Assign rarity to loot items that don't have one
-  const rarityWeights = combatState.isBoss
-    ? { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 }
-    : combatState.isMiniBoss
-      ? { common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 }
-      : { common: 0.5, uncommon: 0.3, rare: 0.15, epic: 0.04, legendary: 0.01 }
+  const rarityWeights = combatState.isSecretBoss
+    ? { common: 0, uncommon: 0, rare: 0.2, epic: 0.5, legendary: 0.3 }
+    : combatState.isBoss
+      ? { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 }
+      : combatState.isMiniBoss
+        ? { common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 }
+        : { common: 0.5, uncommon: 0.3, rare: 0.15, epic: 0.04, legendary: 0.01 }
 
   function rollRarity(weights: Record<string, number>): string {
     const roll = Math.random()
@@ -1748,6 +1750,23 @@ export function getCombatRewards(
     if (!loot[i].rarity) {
       loot[i] = { ...loot[i], rarity: rollRarity(rarityWeights) as Item['rarity'] }
     }
+  }
+
+  // Secret bosses always drop at least one item
+  if (combatState.isSecretBoss && loot.length === 0) {
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+    loot.push({
+      id: `secret-boss-loot-${suffix}`,
+      name: 'Guardian\'s Treasure',
+      description: 'A powerful artifact left behind by the defeated guardian.',
+      quantity: 1,
+      type: 'equipment',
+      rarity: Math.random() < 0.3 ? 'legendary' : 'epic',
+      effects: {
+        strength: 3 + Math.floor(character.level * 1.5),
+        intelligence: 2 + character.level,
+      },
+    })
   }
 
   // Regular (non-boss) enemies have a chance to drop a spell scroll

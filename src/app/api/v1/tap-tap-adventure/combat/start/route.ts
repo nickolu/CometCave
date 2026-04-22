@@ -9,7 +9,7 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
   try {
-    const { character, storyEvents = [], eventContext, isBoss = false, isMiniBoss = false, pendingRegionId } = await req.json()
+    const { character, storyEvents = [], eventContext, isBoss = false, isMiniBoss = false, pendingRegionId, isSecretBoss = false } = await req.json()
     const storyContext = buildStoryContext(character, storyEvents)
     const fullContext = eventContext
       ? `The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
       isBoss: isFinalBoss ? true : isBoss,
       isMiniBoss,
       isFinalBoss: isFinalBoss || undefined,
+      isSecretBoss: isSecretBoss || undefined,
       combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
     }

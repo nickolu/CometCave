@@ -332,18 +332,68 @@ export async function POST(req: NextRequest) {
         }
         response.decisionPoint = continueDecision
       } else {
-        // Max depth reached — end exploration
-        response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
-        updatedCharacter = {
-          ...updatedCharacter,
-          landmarkState: {
-            ...currentLandmarkState,
-            exploring: false,
-            explorationDepth: 0,
-            exploringLandmarkName: undefined,
-          },
+        // Max depth reached
+        const exploringLandmark = currentLandmarkState.landmarks?.find(
+          lm => lm.name === currentLandmarkState.exploringLandmarkName
+        )
+
+        if (exploringLandmark?.isSecret) {
+          // Secret landmark — final encounter is a boss fight!
+          const bossDecision: FantasyDecisionPoint = {
+            id: `decision-boss-${Date.now()}`,
+            eventId: `boss-encounter-${Date.now()}`,
+            prompt: `As you reach the deepest chamber of ${currentLandmarkState.exploringLandmarkName}, a powerful guardian emerges from the shadows! This ancient protector will not let you leave with its treasures without a fight.`,
+            options: [
+              {
+                id: 'fight-secret-boss',
+                text: `⚔️ Fight the Guardian of ${currentLandmarkState.exploringLandmarkName}`,
+                successProbability: 1.0,
+                successDescription: `You face the guardian of ${currentLandmarkState.exploringLandmarkName}!`,
+                successEffects: {},
+                failureDescription: '',
+                failureEffects: {},
+                resultDescription: `You engage the guardian in combat!`,
+                triggersCombat: true,
+              },
+              {
+                id: 'flee-secret-boss',
+                text: 'Retreat — this guardian is too powerful',
+                successProbability: 1.0,
+                successDescription: `You wisely retreat from ${currentLandmarkState.exploringLandmarkName}.`,
+                successEffects: {},
+                failureDescription: '',
+                failureEffects: {},
+                resultDescription: `You flee the guardian.`,
+              },
+            ],
+            resolved: false,
+          }
+          response.decisionPoint = bossDecision
+          // End exploration state — boss fight is the finale
+          updatedCharacter = {
+            ...updatedCharacter,
+            landmarkState: {
+              ...currentLandmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            },
+          }
+          response.updatedCharacter = updatedCharacter
+        } else {
+          // Regular landmark — end exploration normally
+          response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
+          updatedCharacter = {
+            ...updatedCharacter,
+            landmarkState: {
+              ...currentLandmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            },
+          }
+          response.updatedCharacter = updatedCharacter
         }
-        response.updatedCharacter = updatedCharacter
       }
     }
 
