@@ -905,6 +905,59 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
           )}
         </div>
       )}
+      {/* Combat performance summary */}
+      {(status === 'victory' || status === 'defeat') && combatState.combatLog.length > 0 && (() => {
+        const log = combatState.combatLog
+        const playerDamage = log.filter(e => e.actor === 'player' && e.damage).reduce((sum, e) => sum + (e.damage ?? 0), 0)
+        const damageTaken = log.filter(e => e.actor === 'enemy' && e.damage).reduce((sum, e) => sum + (e.damage ?? 0), 0)
+        const crits = log.filter(e => e.actor === 'player' && e.isCritical).length
+        const turns = combatState.turnNumber ?? 1
+        const hpLeft = combatState.playerState.hp
+        const maxHp = combatState.playerState.maxHp
+        const hpPct = Math.round((hpLeft / maxHp) * 100)
+
+        // Performance rating
+        const rating = status === 'defeat' ? null
+          : turns <= 3 ? { label: 'Flawless', color: 'text-yellow-300' }
+          : turns <= 6 && hpPct > 50 ? { label: 'Efficient', color: 'text-green-300' }
+          : turns <= 9 ? { label: 'Solid', color: 'text-blue-300' }
+          : { label: 'Hard-fought', color: 'text-orange-300' }
+
+        return (
+          <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 text-xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-400 uppercase tracking-wide font-semibold text-[10px]">Combat Summary</span>
+              {rating && <span className={`font-bold ${rating.color}`}>{rating.label}</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Turns</span>
+                <span>{turns}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Damage dealt</span>
+                <span className="text-green-400">{playerDamage.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Damage taken</span>
+                <span className="text-red-400">{damageTaken.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">HP remaining</span>
+                <span className={hpPct > 50 ? 'text-green-400' : hpPct > 25 ? 'text-yellow-400' : 'text-red-400'}>
+                  {hpLeft}/{maxHp} ({hpPct}%)
+                </span>
+              </div>
+              {crits > 0 && (
+                <div className="flex justify-between col-span-2">
+                  <span className="text-slate-500">Critical hits</span>
+                  <span className="text-yellow-400">★ {crits}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
       {status === 'defeat' && (
         <>
           {/* Flavor text - visible immediately */}
