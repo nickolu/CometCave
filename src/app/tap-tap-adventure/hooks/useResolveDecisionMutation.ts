@@ -49,16 +49,30 @@ export function useResolveDecisionMutation() {
       if (!character) throw new Error('No character found')
 
       // Handle landmark bypass client-side — just increment the index and continue
-      if (optionId === 'bypass-landmark') {
+      if (optionId === 'bypass-landmark' || optionId.startsWith('bypass-toward-')) {
         const landmarkState = character.landmarkState
         if (landmarkState) {
           const bypassedLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
           const landmarkName = bypassedLandmark?.name ?? 'the landmark'
           const newNextLandmarkIndex = landmarkState.nextLandmarkIndex + 1
-          const newActiveTargetIndex = Math.min(
-            newNextLandmarkIndex,
-            landmarkState.landmarks.length
-          )
+
+          // Determine target based on which direction was chosen
+          let newActiveTargetIndex: number
+          if (optionId.startsWith('bypass-toward-')) {
+            const targetPart = optionId.replace('bypass-toward-', '')
+            if (targetPart === 'exit') {
+              newActiveTargetIndex = landmarkState.landmarks.length
+            } else {
+              newActiveTargetIndex = parseInt(targetPart, 10)
+            }
+          } else {
+            // Original bypass-landmark behavior: go to next target
+            newActiveTargetIndex = Math.min(
+              newNextLandmarkIndex,
+              landmarkState.landmarks.length
+            )
+          }
+
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
@@ -76,7 +90,7 @@ export function useResolveDecisionMutation() {
             timestamp: new Date().toISOString(),
             selectedOptionId: optionId,
             selectedOptionText: chosenOption?.text ?? 'Pass by without stopping',
-            outcomeDescription: `You pass by ${landmarkName} without stopping and continue your journey.`,
+            outcomeDescription: `You pass by ${landmarkName} and continue your journey.`,
           })
           commit()
           onSuccess?.()

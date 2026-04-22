@@ -254,6 +254,17 @@ export const useGameStore = create<GameStore>()(
               distance: newDistance,
             }, 1, metaBonuses)
 
+            // Increment positionInRegion so TargetList shows correct distance
+            if (updatedCharacter.landmarkState) {
+              updatedCharacter = {
+                ...updatedCharacter,
+                landmarkState: {
+                  ...updatedCharacter.landmarkState,
+                  positionInRegion: (updatedCharacter.landmarkState.positionInRegion ?? 0) + 1,
+                },
+              }
+            }
+
             // Mount daily upkeep: deduct gold when a new day boundary is crossed
             const oldDay = calculateDay(oldDistance)
             const newDay = calculateDay(newDistance)

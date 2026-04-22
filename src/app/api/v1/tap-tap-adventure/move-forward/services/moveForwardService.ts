@@ -113,6 +113,38 @@ export async function moveForwardService(
         },
       }
 
+      // Build directional bypass options: show what lies ahead
+      const bypassOptions = []
+
+      // Add next landmarks (after the current one)
+      for (let i = activeTargetIndex + 1; i < landmarkState.landmarks.length; i++) {
+        const nextLm = landmarkState.landmarks[i]
+        const dist = nextLm.distanceFromEntry - newPositionInRegion
+        bypassOptions.push({
+          id: `bypass-toward-${i}`,
+          text: `${nextLm.icon} Head toward ${nextLm.name} (${dist} steps)`,
+          successProbability: 1.0,
+          successDescription: `You leave ${activeLandmark.name} behind and head toward ${nextLm.name}.`,
+          successEffects: {},
+          failureDescription: '',
+          failureEffects: {},
+          resultDescription: `You pass by ${activeLandmark.name} and head toward ${nextLm.name}.`,
+        })
+      }
+
+      // Add region exit option
+      const exitDist = (landmarkState.regionLength ?? 200) - newPositionInRegion
+      bypassOptions.push({
+        id: `bypass-toward-exit`,
+        text: `🚪 Head toward ${region.name} border (${exitDist} steps)`,
+        successProbability: 1.0,
+        successDescription: `You leave ${activeLandmark.name} behind and continue toward the edge of ${region.name}.`,
+        successEffects: {},
+        failureDescription: '',
+        failureEffects: {},
+        resultDescription: `You pass by ${activeLandmark.name} and head toward the border.`,
+      })
+
       return {
         character: characterWithUpdatedState,
         event: {
@@ -137,16 +169,7 @@ export async function moveForwardService(
               failureEffects: {},
               resultDescription: `You explore ${activeLandmark.name}.`,
             },
-            {
-              id: 'bypass-landmark',
-              text: 'Pass by without stopping',
-              successProbability: 1.0,
-              successDescription: `You leave ${activeLandmark.name} behind and continue on your journey.`,
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: `You pass by ${activeLandmark.name}.`,
-            },
+            ...bypassOptions,
           ],
           resolved: false,
         },
