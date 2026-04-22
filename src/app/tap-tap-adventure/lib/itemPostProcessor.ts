@@ -13,6 +13,10 @@ const POTION_SUBRULES: KeywordRule[] = [
   { keywords: ['luck', 'fortune', 'lucky', 'chance'], effects: { luck: 2 } },
   { keywords: ['strength', 'power', 'might', 'vigor', 'brawn'], effects: { strength: 3 } },
   { keywords: ['gold', 'wealth', 'rich', 'greed'], effects: { gold: 20 } },
+  { keywords: ['shield', 'barrier', 'protection', 'ward', 'aegis'], effects: { shield: 15 } },
+  { keywords: ['mana', 'arcane', 'ether', 'spirit', 'mystic'], effects: { manaRestore: 15 } },
+  { keywords: ['antidote', 'cure', 'cleanse', 'purify', 'remedy'], effects: { cleanse: true } },
+  { keywords: ['rage', 'fury', 'berserk', 'wrath', 'destruction'], effects: { damageBoost: 1.5 } },
 ]
 
 const SCROLL_SUBRULES: KeywordRule[] = [
@@ -94,6 +98,24 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
   }
   if (matchesAny(name, ['coin', 'gold piece', 'gold pouch'])) {
     return { ...item, type: 'consumable', effects: item.effects ?? { gold: 15 } }
+  }
+
+  // Bombs / Throwables
+  if (matchesAny(name, ['bomb', 'grenade', 'explosive', 'firebomb', 'flashbang'])) {
+    return {
+      ...item,
+      type: 'consumable',
+      effects: item.effects ?? { damageBoost: 1.5 },
+    }
+  }
+
+  // Antidotes / Remedies
+  if (matchesAny(name, ['antidote', 'remedy', 'panacea', 'salve'])) {
+    return {
+      ...item,
+      type: 'consumable',
+      effects: item.effects ?? { cleanse: true, heal: 5 },
+    }
   }
 
   // Charms / Amulets (consumable by default, but equipment if explicitly typed)
