@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { OpenAI } from 'openai'
 import { z } from 'zod'
 
-import { getNPCById } from '@/app/tap-tap-adventure/config/npcs'
+import { getNPCById, getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 
 const DialogueRequestSchema = z.object({
@@ -18,6 +18,8 @@ const DialogueRequestSchema = z.object({
     role: z.enum(['user', 'assistant']),
     content: z.string(),
   })).optional(),
+  disposition: z.number().optional(),
+  exchangeCount: z.number().optional(),
 })
 
 function getOpenAI() {
@@ -35,7 +37,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { npcId, characterName, characterClass, characterLevel, reputation, region, characterCharisma, message, conversationHistory } = parseResult.data
+    const {
+      npcId,
+      characterName,
+      characterClass,
+      characterLevel,
+      reputation,
+      region,
+      characterCharisma,
+      message,
+      conversationHistory,
+      disposition = 0,
+      exchangeCount = 1,
+    } = parseResult.data
+
+    const charisma = characterCharisma ?? 5
 
     const npc = getNPCById(npcId)
     if (!npc) {
@@ -45,13 +61,38 @@ export async function POST(req: NextRequest) {
     const regionData = getRegion(region)
     const regionName = regionData?.name ?? region
 
-    const systemPrompt = `You are ${npc.name}, ${npc.role} in ${regionName}. Personality: ${npc.personality}. Respond in character. Keep responses under 3 sentences. Occasionally offer a small reward (a gold tip, a reputation boost, or a useful hint about the area). End with a natural conversation hook or question. If you choose to offer a reward, include a JSON block at the very end of your response in this exact format: [REWARD:{"gold":N}] or [REWARD:{"reputation":N}] or [REWARD:{"gold":N,"reputation":N}] where N is a small number (gold: 5-25, reputation: 1-5). Only offer rewards occasionally, not every message.`
+    const tier = getRelationshipTier(disposition)
+    const weightsDescription = npc.personalityWeights
+      ? Object.entries(npc.personalityWeights)
+          .map(([intent, weight]) => `${intent}: ${weight && weight > 0 ? '+' : ''}${weight}`)
+          .join(', ')
+      : 'balanced'
 
-    const characterContext = `The adventurer ${characterName} (Level ${characterLevel} ${characterClass}, Reputation: ${reputation}, Charisma: ${characterCharisma ?? 5}) approaches.`
+    const systemPrompt = `You are ${npc.name}, ${npc.role} in ${regionName}. Personality: ${npc.personality}
+
+RELATIONSHIP: The player's current disposition toward you is ${disposition} (${tier.label}). Adjust your warmth and willingness accordingly.
+
+PLAYER: ${characterName}, Level ${characterLevel} ${characterClass}. Reputation: ${reputation}. Charisma: ${charisma}.
+
+CONVERSATION: This is exchange ${exchangeCount}.
+
+Evaluate the player's message for intent. Choose one of: flatter, charm, threaten, inquire, offend, lie, bore, neutral.
+Your personality preferences (how much you like each intent): ${weightsDescription}
+
+Respond in character. Keep responses under 4 sentences.
+
+RESPOND WITH ONLY THIS JSON (no markdown, no code fences):
+{
+  "dialogue": "Your in-character response here",
+  "intent": "detected intent",
+  "dispositionDelta": <integer from -10 to 8>,
+  "conversationComplete": <true if exchange >= 3 and conversation feels naturally concluded, otherwise false>,
+  "reward": { "gold": <integer 0-25>, "reputation": <integer 0-5> } or null
+}`
 
     const userMessage = message
-      ? `${characterContext}\n\nPlayer says: "${message}"`
-      : `${characterContext}\n\nThe adventurer approaches you for the first time.`
+      ? `${characterName} says: "${message}"`
+      : `${characterName} (Level ${characterLevel} ${characterClass}) approaches you.`
 
     const historyMessages: { role: 'user' | 'assistant'; content: string }[] = conversationHistory ?? []
 
@@ -63,32 +104,50 @@ export async function POST(req: NextRequest) {
           ...historyMessages,
           { role: 'user', content: userMessage },
         ],
-        temperature: 0.85,
-        max_tokens: 200,
+        temperature: 0.7,
+        max_tokens: 300,
+        response_format: { type: 'json_object' },
       })
 
-      const raw = response.choices[0]?.message?.content?.trim() ?? npc.greeting
+      const raw = response.choices[0]?.message?.content?.trim() ?? ''
 
-      // Parse optional reward block
-      const rewardMatch = raw.match(/\[REWARD:(\{[^}]+\})\]/)
-      let reward: { gold?: number; reputation?: number } | undefined
-      let dialogue = raw
+      let parsed: {
+        dialogue?: string
+        intent?: string
+        dispositionDelta?: number
+        conversationComplete?: boolean
+        reward?: { gold?: number; reputation?: number } | null
+      } = {}
 
-      if (rewardMatch) {
-        try {
-          reward = JSON.parse(rewardMatch[1]) as { gold?: number; reputation?: number }
-          // Remove the reward block from dialogue text
-          dialogue = raw.replace(/\s*\[REWARD:[^\]]+\]/, '').trim()
-        } catch {
-          // Ignore malformed reward block
-          dialogue = raw.replace(/\s*\[REWARD:[^\]]+\]/, '').trim()
-        }
+      try {
+        parsed = JSON.parse(raw) as typeof parsed
+      } catch {
+        // Fallback: try to extract dialogue from partial JSON
+        const dialogueMatch = raw.match(/"dialogue"\s*:\s*"([^"]+)"/)
+        parsed = { dialogue: dialogueMatch ? dialogueMatch[1] : npc.greeting, dispositionDelta: 0 }
       }
 
-      return NextResponse.json({ dialogue, reward })
+      const dialogue = parsed.dialogue ?? npc.greeting
+      const rawDelta = typeof parsed.dispositionDelta === 'number' ? parsed.dispositionDelta : 0
+
+      // Apply CHA modifier: CHA 7 = baseline 1.0; each point adds/subtracts 0.1
+      const chaModifier = 1 + (charisma - 7) * 0.1
+      const adjustedDelta = Math.round(rawDelta * chaModifier)
+      // Clamp to [-15, +12]
+      const dispositionDelta = Math.max(-15, Math.min(12, adjustedDelta))
+
+      const reward = parsed.reward && (parsed.reward.gold || parsed.reward.reputation) ? parsed.reward : undefined
+
+      return NextResponse.json({
+        dialogue,
+        intent: parsed.intent ?? 'neutral',
+        dispositionDelta,
+        conversationComplete: parsed.conversationComplete ?? false,
+        reward,
+      })
     } catch (err) {
       console.error('NPC dialogue LLM call failed', err)
-      return NextResponse.json({ dialogue: npc.greeting })
+      return NextResponse.json({ dialogue: npc.greeting, intent: 'neutral', dispositionDelta: 0, conversationComplete: false })
     }
   } catch (err) {
     console.error('Error in NPC dialogue route', err)

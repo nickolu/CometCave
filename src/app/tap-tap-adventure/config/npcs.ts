@@ -1,3 +1,31 @@
+export type IntentType = 'flatter' | 'charm' | 'threaten' | 'inquire' | 'offend' | 'lie' | 'bore' | 'neutral'
+
+export interface RelationshipTier {
+  tier: string
+  label: string
+  min: number
+  max: number
+  color: string
+}
+
+export const RELATIONSHIP_TIERS: RelationshipTier[] = [
+  { tier: 'hostile',    label: 'Hostile',    min: -100, max: -30, color: 'text-red-500' },
+  { tier: 'unfriendly', label: 'Unfriendly', min: -30,  max: -10, color: 'text-orange-400' },
+  { tier: 'neutral',    label: 'Neutral',    min: -10,  max: 20,  color: 'text-slate-400' },
+  { tier: 'friendly',   label: 'Friendly',   min: 20,   max: 50,  color: 'text-green-400' },
+  { tier: 'trusted',    label: 'Trusted',    min: 50,   max: 80,  color: 'text-blue-400' },
+  { tier: 'bonded',     label: 'Bonded',     min: 80,   max: 100, color: 'text-amber-400' },
+]
+
+export function getRelationshipTier(disposition: number): RelationshipTier {
+  const clamped = Math.max(-100, Math.min(100, disposition))
+  for (const tier of RELATIONSHIP_TIERS) {
+    if (clamped >= tier.min && clamped < tier.max) return tier
+  }
+  // disposition === 100 falls through — return bonded
+  return RELATIONSHIP_TIERS[RELATIONSHIP_TIERS.length - 1]
+}
+
 export interface GameNPC {
   id: string
   name: string
@@ -7,6 +35,8 @@ export interface GameNPC {
   personality: string
   icon: string
   greeting: string
+  personalityWeights?: Partial<Record<IntentType, number>>
+  topics?: string[]
 }
 
 export const NPCS: GameNPC[] = [
@@ -19,6 +49,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Wise, welcoming, and patient. Speaks with warmth and authority. Offers practical advice and tips to adventurers. Uses gentle humor. Values courage and kindness.',
     icon: '\u{1F9D9}',
     greeting: 'Ah, a new face! Welcome, traveler. This village has seen many adventurers pass through — may your journey be long and your tales worth telling.',
+    personalityWeights: { charm: 2, inquire: 1, flatter: 1, threaten: -2, offend: -2, bore: -1, lie: -1, neutral: 0 },
+    topics: ['village history', 'adventurer guidance', 'ancient lore', 'local legends'],
   },
   {
     id: 'bramble',
@@ -29,6 +61,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Jovial, chatty, and loves gossip. Always looking for a deal. Speaks enthusiastically and uses merchant slang. Has a laugh for every situation. Drops hints about rare goods or local rumors.',
     icon: '\u{1F9F3}',
     greeting: "Ha! You look like someone who appreciates a good bargain. Bramble's the name — finest goods this side of the Dark Forest, and tales to boot!",
+    personalityWeights: { flatter: 2, charm: 1, inquire: 1, threaten: -1, offend: -2, bore: -1, lie: 0, neutral: 0 },
+    topics: ['rare goods', 'trade rumors', 'local gossip', 'bargains', 'travel routes'],
   },
   {
     id: 'whisper',
@@ -39,6 +73,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Mysterious, cryptic, and speaks in riddles and metaphors. Ancient and otherworldly. Reveals hidden truths obliquely. Neither fully good nor evil. Knows secrets of the forest.',
     icon: '\u{1F9DA}',
     greeting: 'The trees... they remember your footsteps. Every path chosen is a path not taken. What brings the warmth of flesh to where shadows breathe?',
+    personalityWeights: { inquire: 2, charm: 1, neutral: 1, offend: -2, threaten: -1, bore: -1, flatter: 0, lie: -1 },
+    topics: ['forest secrets', 'ancient riddles', 'hidden paths', 'shadow lore', 'nature omens'],
   },
   {
     id: 'grimjaw',
@@ -49,6 +85,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Gruff, direct, and battle-hardened. Respects strength and survival above all. Short sentences. Dismissive of weakness. Warms up slightly to those who prove themselves. Knows tactical battle wisdom.',
     icon: '\u{1F9B4}',
     greeting: "You want to talk? Fine. Make it quick. Every minute standing still is a minute something out there gains on you.",
+    personalityWeights: { threaten: 1, inquire: 1, neutral: 1, flatter: -1, bore: -2, offend: -1, charm: 0, lie: -1 },
+    topics: ['battle tactics', 'survival skills', 'Bone Wastes dangers', 'old wars', 'enemy weaknesses'],
   },
   {
     id: 'crystalline',
@@ -59,6 +97,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Ancient, formal, and precise. Speaks in measured, deliberate tones. Deeply knowledgeable about history and arcane lore. Emotionless but not unkind. Values accuracy and truth above all.',
     icon: '\u{1F48E}',
     greeting: 'Designation: traveler. Purpose: unknown. This unit has observed 4,712 adventurers traverse these caverns. State your query and I will consult my archives.',
+    personalityWeights: { inquire: 2, neutral: 1, charm: 0, flatter: -1, threaten: -2, offend: -2, bore: -1, lie: -2 },
+    topics: ['crystal cave history', 'arcane lore', 'ancient records', 'golem origins', 'magical theory'],
   },
   {
     id: 'pyraxis',
@@ -69,6 +109,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Passionate, hot-tempered, and scholarly. Enthusiastic about fire magic and ancient lore. Gets excited easily and speaks in bursts. Brilliant but impatient with ignorance. Generous with knowledge when impressed.',
     icon: '\u{1F525}',
     greeting: "You dare venture here? EXCELLENT! The Wastes are magnificent — most flee screaming. Tell me, do you feel it? The ambient heat reading is up twelve degrees today!",
+    personalityWeights: { inquire: 2, charm: 1, flatter: 1, bore: -2, offend: -1, threaten: -1, neutral: 0, lie: -1 },
+    topics: ['fire magic', 'Scorched Wastes phenomena', 'elemental theory', 'ancient ruins', 'magical experiments'],
   },
   {
     id: 'umbra',
@@ -79,6 +121,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Sly, transactional, and deals in secrets. Everything is a negotiation. Smooth and calculating. Amused by mortals but not contemptuous. Will share valuable secrets for the right price or information.',
     icon: '\u{1F578}\u{FE0F}',
     greeting: "Oh my... a living soul in my realm. How refreshing. I deal in secrets, traveler — and you have the look of someone who wants one. Shall we... negotiate?",
+    personalityWeights: { lie: 1, charm: 1, inquire: 1, bore: -1, flatter: 0, threaten: -1, offend: -2, neutral: 0 },
+    topics: ['secret information', 'shadow realm trade', 'hidden knowledge', 'bargaining chips', 'dangerous rumors'],
   },
   {
     id: 'seraphiel',
@@ -89,6 +133,8 @@ export const NPCS: GameNPC[] = [
     personality: 'Noble, dignified, and tests worthiness. Speaks with divine authority. Fair but demanding. Rewards genuine virtue and punishes arrogance. Genuinely cares for mortal souls despite stern demeanor.',
     icon: '\u{1F47C}',
     greeting: 'Halt, mortal. Few souls reach the Celestial Throne. Fewer still are worthy of what lies within. Speak — what virtue do you carry that justifies your presence here?',
+    personalityWeights: { charm: 2, inquire: 1, neutral: 1, lie: -2, offend: -2, threaten: -1, flatter: -1, bore: -1 },
+    topics: ['divine worthiness', 'celestial lore', 'virtuous deeds', 'mortal trials', 'heavenly knowledge'],
   },
 ]
 

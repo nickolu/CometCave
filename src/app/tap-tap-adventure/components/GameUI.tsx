@@ -603,7 +603,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   if (regionNPCs.length === 0) return null
                   const npc = regionNPCs[0]
                   const encounters = character?.npcEncounters ?? {}
-                  const timesSpoken = encounters[npc.id]?.timesSpoken ?? 0
+                  const disposition = encounters[npc.id]?.disposition ?? 0
                   return (
                     <div>
                       {showNPCPanel ? (
@@ -614,9 +614,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                           characterLevel={character?.level ?? 1}
                           reputation={character?.reputation ?? 0}
                           region={character?.currentRegion ?? 'green_meadows'}
-                          timesSpoken={timesSpoken}
-                          onReward={(reward) => {
-                            recordNPCEncounter(npc.id, reward)
+                          characterCharisma={character?.charisma ?? 5}
+                          disposition={disposition}
+                          onEncounterUpdate={(dispositionDelta, reward) => {
+                            recordNPCEncounter(npc.id, dispositionDelta, reward)
                           }}
                           onClose={() => {
                             setShowNPCPanel(false)
@@ -828,7 +829,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               if (regionNPCs.length === 0) return <p className="text-sm text-slate-400">No NPCs in this region.</p>
               const npc = regionNPCs[0]
               const encounters = character.npcEncounters ?? {}
-              const timesSpoken = encounters[npc.id]?.timesSpoken ?? 0
+              const disposition = encounters[npc.id]?.disposition ?? 0
               return (
                 <NPCDialoguePanel
                   npc={npc}
@@ -837,9 +838,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   characterLevel={character.level}
                   reputation={character.reputation}
                   region={character.currentRegion ?? 'green_meadows'}
-                  timesSpoken={timesSpoken}
-                  onReward={(reward) => {
-                    recordNPCEncounter(npc.id, reward)
+                  characterCharisma={character.charisma ?? 5}
+                  disposition={disposition}
+                  onEncounterUpdate={(dispositionDelta, reward) => {
+                    recordNPCEncounter(npc.id, dispositionDelta, reward)
                   }}
                   onClose={() => {
                     setMobileCategory(null)

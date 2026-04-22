@@ -47,6 +47,7 @@ import {
 } from '@/app/tap-tap-adventure/lib/dailyChallengeTracker'
 import { DailyChallengeType } from '@/app/tap-tap-adventure/models/dailyChallenge'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
+import { getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
@@ -137,7 +138,7 @@ export interface GameStore {
   enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => { message: string; success: boolean } | null
   updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
-  recordNPCEncounter: (npcId: string, reward?: { gold?: number; reputation?: number }) => void
+  recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => void
   setActiveTarget: (index: number) => void
 }
 
@@ -1155,7 +1156,7 @@ export const useGameStore = create<GameStore>()(
         )
         return bonus
       },
-      recordNPCEncounter: (npcId: string, reward?: { gold?: number; reputation?: number }) => {
+      recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
@@ -1165,9 +1166,12 @@ export const useGameStore = create<GameStore>()(
 
             const encounters = state.gameState.characters[charIndex].npcEncounters ?? {}
             const existing = encounters[npcId] ?? { timesSpoken: 0, disposition: 0 }
+            const newDisposition = Math.max(-100, Math.min(100, existing.disposition + dispositionDelta))
+            const tier = getRelationshipTier(newDisposition)
             encounters[npcId] = {
               timesSpoken: existing.timesSpoken + 1,
-              disposition: Math.min(100, existing.disposition + 5),
+              disposition: newDisposition,
+              lastTier: tier.tier,
             }
             state.gameState.characters[charIndex].npcEncounters = encounters
 
@@ -1198,7 +1202,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 25,
+      version: 26,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1307,6 +1311,14 @@ export const useGameStore = create<GameStore>()(
               ;(char as FantasyCharacter).landmarkState!.positionInRegion = 0
               ;(char as FantasyCharacter).landmarkState!.activeTargetIndex = 0
               ;(char as FantasyCharacter).landmarkState!.regionLength = 200
+            }
+            // v26: Add lastTier to npcEncounters
+            if ((char as FantasyCharacter).npcEncounters) {
+              for (const enc of Object.values((char as FantasyCharacter).npcEncounters!)) {
+                if (enc.lastTier === undefined) {
+                  enc.lastTier = getRelationshipTier(enc.disposition).tier
+                }
+              }
             }
           }
         }
