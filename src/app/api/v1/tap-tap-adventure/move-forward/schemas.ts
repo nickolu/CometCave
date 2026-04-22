@@ -29,6 +29,16 @@ export const MoveForwardResponseSchema = z.object({
     nextLandmarkIcon: z.string(),
     stepsRemaining: z.number(),
   }).optional().nullable(),
+  availableTargets: z.array(z.object({
+    index: z.number(),
+    name: z.string(),
+    icon: z.string(),
+    type: z.string(),
+    position: z.number(),
+    distance: z.number(),
+    isExplored: z.boolean().optional(),
+    hasShop: z.boolean().optional(),
+  })).optional().nullable(),
 })
 
 export type MoveForwardResponse = z.infer<typeof MoveForwardResponseSchema>

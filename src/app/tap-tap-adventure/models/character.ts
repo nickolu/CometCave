@@ -82,6 +82,9 @@ export const FantasyCharacterSchema = z.object({
     entryDistance: z.number(),
     nextLandmarkIndex: z.number(),
     exploring: z.boolean(),
+    positionInRegion: z.number().default(0),
+    activeTargetIndex: z.number().default(0),
+    regionLength: z.number().default(200),
   }).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>

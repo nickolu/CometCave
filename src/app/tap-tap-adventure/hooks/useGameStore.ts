@@ -138,6 +138,7 @@ export interface GameStore {
   updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
   recordNPCEncounter: (npcId: string, reward?: { gold?: number; reputation?: number }) => void
+  setActiveTarget: (index: number) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1181,10 +1182,23 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      setActiveTarget: (index: number) => {
+        set(
+          produce((state: GameStore) => {
+            const char = get().getSelectedCharacter()
+            if (!char?.landmarkState) return
+            const charIndex = state.gameState.characters.findIndex(c => c.id === char.id)
+            if (charIndex === -1) return
+            const ls = state.gameState.characters[charIndex].landmarkState
+            if (!ls) return
+            state.gameState.characters[charIndex].landmarkState = { ...ls, activeTargetIndex: index }
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 24,
+      version: 25,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1287,6 +1301,12 @@ export const useGameStore = create<GameStore>()(
             // v24: Add charisma
             if ((char as FantasyCharacter).charisma === undefined) {
               ;(char as FantasyCharacter).charisma = DEFAULT_STAT_MIN
+            }
+            // v25: Add directional movement fields to landmarkState
+            if ((char as FantasyCharacter).landmarkState && (char as FantasyCharacter).landmarkState!.positionInRegion === undefined) {
+              ;(char as FantasyCharacter).landmarkState!.positionInRegion = 0
+              ;(char as FantasyCharacter).landmarkState!.activeTargetIndex = 0
+              ;(char as FantasyCharacter).landmarkState!.regionLength = 200
             }
           }
         }

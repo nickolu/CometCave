@@ -10,7 +10,7 @@ import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericT
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { crossedMilestone, SHOP_MILESTONE_INTERVAL, STEPS_PER_DAY, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
-import { CROSSROADS_INTERVAL, getRegion, REGIONS, canEnterRegion } from '@/app/tap-tap-adventure/config/regions'
+import { getRegion, REGIONS, canEnterRegion } from '@/app/tap-tap-adventure/config/regions'
 import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
 import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { flipCoin } from '@/app/utils'
@@ -46,6 +46,7 @@ import { EnchantingPanel } from './EnchantingPanel'
 import { BestiaryPanel } from './BestiaryPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
+import { TargetList } from './TargetList'
 import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
@@ -130,6 +131,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     applyAchievementRewards,
     claimDailyReward,
     recordNPCEncounter,
+    setActiveTarget,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
@@ -229,18 +231,22 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     const distance = character?.distance ?? 0
     const nextDistance = distance + 1
 
-    // Check if the next step would hit a landmark arrival
+    // Check if the next step would hit a target arrival (landmark or region exit)
     const ls = character?.landmarkState
-    const hitsLandmark =
-      ls != null &&
-      ls.nextLandmarkIndex < ls.landmarks.length &&
-      (nextDistance - ls.entryDistance) >= ls.landmarks[ls.nextLandmarkIndex].distanceFromEntry
+    const nextPosInRegion = (ls?.positionInRegion ?? 0) + 1
+    const activeTargetIndex = ls?.activeTargetIndex ?? 0
+    const isExitTarget = ls ? activeTargetIndex >= ls.landmarks.length : false
+    const activeTargetPosition = ls
+      ? isExitTarget
+        ? (ls.regionLength ?? 200)
+        : ls.landmarks[activeTargetIndex]?.distanceFromEntry ?? Infinity
+      : Infinity
+    const hitsTarget = ls != null && nextPosInRegion >= activeTargetPosition
 
-    // Always call server for milestone events (crossroads, shop, landmark arrival)
+    // Always call server for milestone events (shop, target arrival)
     const hitsMilestone =
-      crossedMilestone(distance, nextDistance, CROSSROADS_INTERVAL) ||
       crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL) ||
-      hitsLandmark
+      hitsTarget
 
     if (hitsMilestone) {
       moveForwardMutation()
@@ -559,29 +565,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   const day = calculateDay(dist)
                   const timeOfDay = getTimeOfDay(dist)
 
-                  // Landmark progress from character state
-                  const charLandmarkState = character?.landmarkState
-                  const hasNextLandmark =
-                    charLandmarkState != null &&
-                    charLandmarkState.nextLandmarkIndex < charLandmarkState.landmarks.length
-                  const nextLandmark = hasNextLandmark
-                    ? charLandmarkState!.landmarks[charLandmarkState!.nextLandmarkIndex]
-                    : null
-                  const stepsFromEntry = hasNextLandmark && charLandmarkState
-                    ? dist - charLandmarkState.entryDistance
-                    : 0
-                  const landmarkStepsRemaining = nextLandmark
-                    ? Math.max(1, nextLandmark.distanceFromEntry - stepsFromEntry)
-                    : null
-
-                  // Milestone calculations (shown when no landmarks remain)
-                  const crossroadsSteps = CROSSROADS_INTERVAL - (dist % CROSSROADS_INTERVAL)
-                  const milestones = !hasNextLandmark
-                    ? [
-                        { label: 'Crossroads', icon: '🔀', steps: crossroadsSteps },
-                        { label: 'Shop', icon: '🛒', steps: SHOP_MILESTONE_INTERVAL - (dist % SHOP_MILESTONE_INTERVAL) },
-                      ].sort((a, b) => a.steps - b.steps)
-                    : [{ label: 'Crossroads', icon: '🔀', steps: crossroadsSteps }]
+                  // Landmark state for TargetList
+                  const ls = character?.landmarkState
 
                   return (
                     <div className="space-y-2 mb-1">
@@ -597,19 +582,18 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                       <p className="text-xs text-slate-400 italic leading-snug">{region.description}</p>
                       {/* Day / time of day */}
                       <p className="text-xs text-slate-500">Day {day} &mdash; {timeOfDay}</p>
-                      {/* Landmark progress pill + milestone indicators */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {landmarkStepsRemaining != null && nextLandmark && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900/40 border border-indigo-600/40 text-indigo-300">
-                            {nextLandmark.icon} {nextLandmark.name}: {landmarkStepsRemaining} steps
-                          </span>
-                        )}
-                        {milestones.map(m => (
-                          <span key={m.label} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2b3f] border border-[#3a3c56] text-slate-300">
-                            {m.icon} {m.label}: {m.steps}
-                          </span>
-                        ))}
-                      </div>
+                      {/* Target list */}
+                      {ls && (
+                        <TargetList
+                          landmarks={ls.landmarks}
+                          positionInRegion={ls.positionInRegion ?? 0}
+                          activeTargetIndex={ls.activeTargetIndex ?? 0}
+                          regionLength={ls.regionLength ?? 200}
+                          regionName={region.name}
+                          onSelectTarget={(i) => setActiveTarget(i)}
+                          disabled={moveForwardPending || resolveDecisionPending}
+                        />
+                      )}
                     </div>
                   )
                 })()}

@@ -54,10 +54,16 @@ export function useResolveDecisionMutation() {
         if (landmarkState) {
           const bypassedLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
           const landmarkName = bypassedLandmark?.name ?? 'the landmark'
+          const newNextLandmarkIndex = landmarkState.nextLandmarkIndex + 1
+          const newActiveTargetIndex = Math.min(
+            newNextLandmarkIndex,
+            landmarkState.landmarks.length
+          )
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
-              nextLandmarkIndex: landmarkState.nextLandmarkIndex + 1,
+              nextLandmarkIndex: newNextLandmarkIndex,
+              activeTargetIndex: newActiveTargetIndex,
               exploring: false,
             },
           })
