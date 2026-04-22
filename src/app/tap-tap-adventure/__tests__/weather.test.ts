@@ -28,6 +28,7 @@ const baseChar: FantasyCharacter = {
   strength: 8,
   intelligence: 5,
   luck: 4,
+  charisma: 6,
   inventory: [],
   deathCount: 0,
   pendingStatPoints: 0,

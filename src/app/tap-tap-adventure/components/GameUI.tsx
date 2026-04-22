@@ -387,7 +387,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       {character && (character.pendingStatPoints ?? 0) > 0 && (
         <StatAllocationScreen
           character={character}
-          onConfirm={(str, int, lck) => allocateStatPoints(str, int, lck)}
+          onConfirm={(str, int, lck, cha) => allocateStatPoints(str, int, lck, cha)}
         />
       )}
     <div className="flex flex-col select-none">

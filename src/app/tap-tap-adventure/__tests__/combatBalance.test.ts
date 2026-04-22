@@ -110,9 +110,14 @@ function makeChar(level: number, str: number = 5, int: number = 5, lck: number =
     strength: str,
     intelligence: int,
     luck: lck,
+    charisma: 6,
     inventory: [],
     deathCount: 0,
     pendingStatPoints: 0,
+    difficultyMode: 'normal',
+    currentRegion: 'green_meadows',
+    currentWeather: 'clear',
+    factionReputations: {},
   }
   const maxHp = calculateMaxHp(char)
   return { ...char, hp: maxHp, maxHp }

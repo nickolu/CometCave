@@ -12,6 +12,7 @@ const DialogueRequestSchema = z.object({
   characterLevel: z.number(),
   reputation: z.number(),
   region: z.string(),
+  characterCharisma: z.number().optional(),
   message: z.string().optional(),
   conversationHistory: z.array(z.object({
     role: z.enum(['user', 'assistant']),
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { npcId, characterName, characterClass, characterLevel, reputation, region, message, conversationHistory } = parseResult.data
+    const { npcId, characterName, characterClass, characterLevel, reputation, region, characterCharisma, message, conversationHistory } = parseResult.data
 
     const npc = getNPCById(npcId)
     if (!npc) {
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = `You are ${npc.name}, ${npc.role} in ${regionName}. Personality: ${npc.personality}. Respond in character. Keep responses under 3 sentences. Occasionally offer a small reward (a gold tip, a reputation boost, or a useful hint about the area). End with a natural conversation hook or question. If you choose to offer a reward, include a JSON block at the very end of your response in this exact format: [REWARD:{"gold":N}] or [REWARD:{"reputation":N}] or [REWARD:{"gold":N,"reputation":N}] where N is a small number (gold: 5-25, reputation: 1-5). Only offer rewards occasionally, not every message.`
 
-    const characterContext = `The adventurer ${characterName} (Level ${characterLevel} ${characterClass}, Reputation: ${reputation}) approaches.`
+    const characterContext = `The adventurer ${characterName} (Level ${characterLevel} ${characterClass}, Reputation: ${reputation}, Charisma: ${characterCharisma ?? 5}) approaches.`
 
     const userMessage = message
       ? `${characterContext}\n\nPlayer says: "${message}"`

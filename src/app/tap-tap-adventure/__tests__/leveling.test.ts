@@ -29,11 +29,16 @@ const baseChar: FantasyCharacter = {
   strength: 5,
   intelligence: 5,
   luck: 5,
+  charisma: 6,
   hp: 100,
   maxHp: 100,
   inventory: [],
   deathCount: 0,
   pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
 }
 
 describe('Distance-Based Leveling (rebalanced)', () => {

@@ -20,10 +20,16 @@ const baseChar: FantasyCharacter = {
   strength: 5,
   intelligence: 5,
   luck: 5,
+  charisma: 5,
   hp: 50,
   maxHp: 100,
   inventory: [],
   deathCount: 0,
+  pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
 }
 
 function makeConsumable(overrides: Partial<Item> = {}): Item {
@@ -162,5 +168,15 @@ describe('Item Effects', () => {
 
     expect(result.consumed).toBe(false)
     expect(result.message).toContain('discarded')
+  })
+
+  it('applies charisma effect from consumable', () => {
+    const item = makeConsumable({ effects: { charisma: 2 } })
+    const char = { ...baseChar, inventory: [item] }
+    const result = useItem(char, item)
+
+    expect(result.consumed).toBe(true)
+    expect(result.character.charisma).toBe(7) // 5 + 2
+    expect(result.message).toContain('+2 Charisma')
   })
 })

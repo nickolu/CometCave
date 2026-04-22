@@ -18,6 +18,7 @@ import { createMainQuest } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { getUpgradeById } from '@/app/tap-tap-adventure/config/eternalUpgrades'
 import { getCampBonuses as computeCampBonuses, getBuildingById, CampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
+import { DEFAULT_STAT_MIN } from '@/app/tap-tap-adventure/config/gameDefaults'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
@@ -67,6 +68,7 @@ const defaultCharacter: FantasyCharacter = {
   strength: 0,
   intelligence: 0,
   luck: 0,
+  charisma: 0,
   hp: 53,
   maxHp: 53,
   inventory: [],
@@ -93,7 +95,7 @@ const defaultCharacter: FantasyCharacter = {
 export interface GameStore {
   gameState: GameState
   addCharacter: (c: Partial<FantasyCharacter>) => void
-  allocateStatPoints: (strength: number, intelligence: number, luck: number) => void
+  allocateStatPoints: (strength: number, intelligence: number, luck: number, charisma: number) => void
   clearGameState: () => void
   deleteCharacter: (id: string) => void
   getSelectedCharacter: () => FantasyCharacter | null
@@ -152,13 +154,13 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
-      allocateStatPoints: (strength: number, intelligence: number, luck: number) => {
+      allocateStatPoints: (strength: number, intelligence: number, luck: number, charisma: number) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
             if (!selectedCharacter) return
 
-            const totalAllocated = strength + intelligence + luck
+            const totalAllocated = strength + intelligence + luck + charisma
             const pending = selectedCharacter.pendingStatPoints ?? 0
             if (totalAllocated > pending || totalAllocated <= 0) return
 
@@ -172,6 +174,7 @@ export const useGameStore = create<GameStore>()(
               strength: selectedCharacter.strength + strength,
               intelligence: selectedCharacter.intelligence + intelligence,
               luck: selectedCharacter.luck + luck,
+              charisma: selectedCharacter.charisma + charisma,
               pendingStatPoints: pending - totalAllocated,
             }
             const maxHp = calculateMaxHp(updatedCharacter)
@@ -1181,7 +1184,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 23,
+      version: 24,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1280,6 +1283,10 @@ export const useGameStore = create<GameStore>()(
             // v22: Add bestiary
             if (!(char as FantasyCharacter).bestiary) {
               ;(char as FantasyCharacter).bestiary = []
+            }
+            // v24: Add charisma
+            if ((char as FantasyCharacter).charisma === undefined) {
+              ;(char as FantasyCharacter).charisma = DEFAULT_STAT_MIN
             }
           }
         }

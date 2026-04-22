@@ -80,6 +80,13 @@ describe('reputation modifier on probability', () => {
     strength: 10,
     intelligence: 10,
     luck: 5,
+    charisma: 6,
+    deathCount: 0,
+    pendingStatPoints: 0,
+    difficultyMode: 'normal',
+    currentRegion: 'green_meadows',
+    currentWeather: 'clear',
+    factionReputations: {},
     inventory: [],
   }
 
