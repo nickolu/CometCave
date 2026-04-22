@@ -14,6 +14,7 @@ import { getRegion, REGIONS, canEnterRegion } from '@/app/tap-tap-adventure/conf
 import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
 import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { flipCoin } from '@/app/utils'
+import { hasArrived, moveToward } from '@/app/tap-tap-adventure/lib/movementUtils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
@@ -242,7 +243,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
         ? (ls.regionLength ?? 200)
         : ls.landmarks[activeTargetIndex]?.distanceFromEntry ?? Infinity
       : Infinity
-    const hitsTarget = ls != null && nextPosInRegion >= activeTargetPosition
+    const charPos = ls?.position
+    const targetPos2d = isExitTarget ? ls?.exitPosition : ls?.landmarks[activeTargetIndex]?.position
+    const hitsTarget = charPos && targetPos2d
+      ? hasArrived(moveToward(charPos, targetPos2d), targetPos2d)
+      : (ls != null && nextPosInRegion >= activeTargetPosition)
 
     // Always call server for milestone events (shop, target arrival)
     const hitsMilestone =
@@ -593,6 +598,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                           regionName={region.name}
                           onSelectTarget={(i) => setActiveTarget(i)}
                           disabled={moveForwardPending || resolveDecisionPending}
+                          characterPosition={ls.position}
                         />
                       )}
                     </div>

@@ -1,5 +1,7 @@
 'use client'
 
+import { euclidean } from '@/app/tap-tap-adventure/lib/movementUtils'
+
 // Minimal landmark shape compatible with both GeneratedLandmark and the character schema
 interface LandmarkInfo {
   name: string
@@ -7,6 +9,7 @@ interface LandmarkInfo {
   hasShop: boolean
   distanceFromEntry: number
   hidden?: boolean
+  position?: { x: number; y: number }
 }
 
 interface Target {
@@ -18,6 +21,7 @@ interface Target {
   isExplored?: boolean
   hasShop?: boolean
   hidden?: boolean
+  position2d?: { x: number; y: number }
 }
 
 interface TargetListProps {
@@ -28,6 +32,7 @@ interface TargetListProps {
   regionName?: string
   onSelectTarget: (index: number) => void
   disabled: boolean
+  characterPosition?: { x: number; y: number }
 }
 
 export function TargetList({
@@ -38,6 +43,7 @@ export function TargetList({
   regionName,
   onSelectTarget,
   disabled,
+  characterPosition,
 }: TargetListProps) {
   // Build target list: landmarks + region exit (hidden landmarks are excluded from display)
   const targets: Target[] = [
@@ -51,6 +57,7 @@ export function TargetList({
         isExplored: false,
         hasShop: lm.hasShop,
         hidden: lm.hidden ?? false,
+        position2d: lm.position,
       }))
       .filter(t => !t.hidden),
     {
@@ -59,6 +66,7 @@ export function TargetList({
       icon: '🚪',
       type: 'region_exit' as const,
       position: regionLength,
+      position2d: { x: 490, y: 250 },
     },
   ]
 
@@ -68,7 +76,9 @@ export function TargetList({
       {targets.map(target => {
         const isPassed = positionInRegion >= target.position
         const isActive = target.index === activeTargetIndex
-        const stepsRemaining = Math.max(0, target.position - positionInRegion)
+        const stepsRemaining = characterPosition && target.position2d
+          ? Math.ceil(euclidean(characterPosition, target.position2d))
+          : Math.max(0, target.position - positionInRegion)
 
         return (
           <button

@@ -10,6 +10,7 @@ import {
 import { generateLandmarks, seededRandom } from '@/app/tap-tap-adventure/lib/landmarkGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
+import { moveToward, hasArrived, Vec2 } from '@/app/tap-tap-adventure/lib/movementUtils'
 
 const BASE_DISTANCE = 1
 
@@ -46,6 +47,9 @@ export async function moveForwardService(
         positionInRegion: 0,
         activeTargetIndex: 0,
         regionLength,
+        position: { x: 0, y: 0 },
+        exitPosition: { x: 490, y: 250 },
+        regionBounds: { width: 500, height: 500 },
       },
     }
 
@@ -70,6 +74,7 @@ export async function moveForwardService(
           distance: lm.distanceFromEntry,
           isExplored: false,
           hasShop: lm.hasShop,
+          position2d: lm.position,
         }))
         .filter((_, i) => !landmarks[i].hidden),
       {
@@ -79,6 +84,7 @@ export async function moveForwardService(
         type: 'region_exit' as const,
         position: regionLength,
         distance: regionLength,
+        position2d: { x: 490, y: 250 },
       },
     ]
 
@@ -98,6 +104,16 @@ export async function moveForwardService(
   const newPositionInRegion = (landmarkState.positionInRegion ?? 0) + 1
   const activeTargetIndex = landmarkState.activeTargetIndex ?? 0
 
+  // Compute updated 2D position for this step
+  const isExitTargetForPos = activeTargetIndex >= landmarkState.landmarks.length
+  let updatedPosition = landmarkState.position
+  const activePosTarget: Vec2 | undefined = isExitTargetForPos
+    ? landmarkState.exitPosition
+    : landmarkState.landmarks[activeTargetIndex]?.position
+  if (updatedPosition && activePosTarget) {
+    updatedPosition = moveToward(updatedPosition, activePosTarget)
+  }
+
   // Priority 2: Target arrival check
   const isExitTarget = activeTargetIndex >= landmarkState.landmarks.length
 
@@ -105,7 +121,14 @@ export async function moveForwardService(
     // Landmark target arrival
     const activeLandmark = landmarkState.landmarks[activeTargetIndex]
 
-    if (activeLandmark && !activeLandmark.hidden && newPositionInRegion >= activeLandmark.distanceFromEntry) {
+    // Check arrival: prefer 2D check, fall back to 1D
+    const charPos = updatedPosition
+    const targetPos = activeLandmark?.position
+    const arrived2d = charPos && targetPos ? hasArrived(charPos, targetPos) : false
+    const arrived1d = newPositionInRegion >= (activeLandmark?.distanceFromEntry ?? Infinity)
+    const hasArrivedAtLandmark = arrived2d || arrived1d
+
+    if (activeLandmark && !activeLandmark.hidden && hasArrivedAtLandmark) {
       const arrivalEventId = `landmark-arrival-${Date.now()}`
 
       const characterWithUpdatedState: FantasyCharacter = {
@@ -113,6 +136,7 @@ export async function moveForwardService(
         landmarkState: {
           ...landmarkState,
           positionInRegion: newPositionInRegion,
+          position: updatedPosition,
         },
       }
 
@@ -190,7 +214,14 @@ export async function moveForwardService(
     // Exit target arrival — triggers region travel decision
     const regionLength = landmarkState.regionLength ?? 200
 
-    if (newPositionInRegion >= regionLength) {
+    // Check arrival: prefer 2D check, fall back to 1D
+    const exitCharPos = updatedPosition
+    const exitTargetPos = landmarkState.exitPosition
+    const arrivedAtExit2d = exitCharPos && exitTargetPos ? hasArrived(exitCharPos, exitTargetPos) : false
+    const arrivedAtExit1d = newPositionInRegion >= regionLength
+    const hasArrivedAtExit = arrivedAtExit2d || arrivedAtExit1d
+
+    if (hasArrivedAtExit) {
       const connected = getConnectedRegions(region.id)
       const exitEventId = `region-exit-${Date.now()}`
 
@@ -241,6 +272,7 @@ export async function moveForwardService(
         landmarkState: {
           ...landmarkState,
           positionInRegion: newPositionInRegion,
+          position: updatedPosition,
         },
       }
 
@@ -291,6 +323,7 @@ export async function moveForwardService(
         landmarkState: {
           ...landmarkState,
           positionInRegion: newPositionInRegion,
+          position: updatedPosition,
         },
       },
       event: {
@@ -315,6 +348,7 @@ export async function moveForwardService(
         landmarkState: {
           ...landmarkState,
           positionInRegion: newPositionInRegion,
+          position: updatedPosition,
         },
       },
       event: {
@@ -342,6 +376,7 @@ export async function moveForwardService(
           landmarkState: {
             ...landmarkState,
             positionInRegion: newPositionInRegion,
+            position: updatedPosition,
           },
         },
         event: {
@@ -421,6 +456,7 @@ export async function moveForwardService(
       landmarkState: {
         ...landmarkState,
         positionInRegion: newPositionInRegion,
+        position: updatedPosition,
       },
     },
     event,

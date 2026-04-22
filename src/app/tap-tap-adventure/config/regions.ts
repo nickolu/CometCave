@@ -19,6 +19,7 @@ export interface Region {
   parentRegion?: string
   /** Child regions branching from this node */
   childRegions?: string[]
+  bounds?: { width: number; height: number }
 }
 
 export const REGIONS: Record<string, Region> = {
@@ -35,6 +36,7 @@ export const REGIONS: Record<string, Region> = {
     minLevel: 0,
     icon: '\u{1F3D8}\u{FE0F}',
     childRegions: ['green_meadows'],
+    bounds: { width: 500, height: 500 },
   },
   green_meadows: {
     id: 'green_meadows',
@@ -51,6 +53,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'far',
     parentRegion: 'starting_village',
     childRegions: ['dark_forest', 'sunken_ruins'],
+    bounds: { width: 500, height: 500 },
   },
   dark_forest: {
     id: 'dark_forest',
@@ -67,6 +70,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'close',
     parentRegion: 'green_meadows',
     childRegions: ['feywild_grove'],
+    bounds: { width: 500, height: 500 },
   },
   crystal_caves: {
     id: 'crystal_caves',
@@ -83,6 +87,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'close',
     parentRegion: 'sunken_ruins',
     childRegions: ['bone_wastes'],
+    bounds: { width: 500, height: 500 },
   },
   scorched_wastes: {
     id: 'scorched_wastes',
@@ -99,6 +104,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'far',
     parentRegion: 'bone_wastes',
     childRegions: ['volcanic_forge'],
+    bounds: { width: 500, height: 500 },
   },
   frozen_peaks: {
     id: 'frozen_peaks',
@@ -115,6 +121,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'far',
     parentRegion: 'bone_wastes',
     childRegions: ['shadow_realm'],
+    bounds: { width: 500, height: 500 },
   },
   shadow_realm: {
     id: 'shadow_realm',
@@ -131,6 +138,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'close',
     parentRegion: 'frozen_peaks',
     childRegions: ['dragons_spine'],
+    bounds: { width: 500, height: 500 },
   },
   sky_citadel: {
     id: 'sky_citadel',
@@ -147,6 +155,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'mid',
     parentRegion: 'dragons_spine',
     childRegions: ['abyssal_depths'],
+    bounds: { width: 500, height: 500 },
   },
   abyssal_depths: {
     id: 'abyssal_depths',
@@ -163,6 +172,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'mid',
     parentRegion: 'sky_citadel',
     childRegions: ['celestial_throne'],
+    bounds: { width: 500, height: 500 },
   },
   celestial_throne: {
     id: 'celestial_throne',
@@ -178,6 +188,7 @@ export const REGIONS: Record<string, Region> = {
     icon: '\u2728',
     startingCombatDistance: 'far',
     parentRegion: 'abyssal_depths',
+    bounds: { width: 500, height: 500 },
   },
   sunken_ruins: {
     id: 'sunken_ruins',
@@ -194,6 +205,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'mid',
     parentRegion: 'green_meadows',
     childRegions: ['crystal_caves'],
+    bounds: { width: 500, height: 500 },
   },
   volcanic_forge: {
     id: 'volcanic_forge',
@@ -210,6 +222,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'close',
     parentRegion: 'scorched_wastes',
     childRegions: ['dragons_spine'],
+    bounds: { width: 500, height: 500 },
   },
   feywild_grove: {
     id: 'feywild_grove',
@@ -226,6 +239,7 @@ export const REGIONS: Record<string, Region> = {
     startingCombatDistance: 'mid',
     parentRegion: 'dark_forest',
     childRegions: ['bone_wastes'],
+    bounds: { width: 500, height: 500 },
   },
   bone_wastes: {
     id: 'bone_wastes',
@@ -241,6 +255,7 @@ export const REGIONS: Record<string, Region> = {
     icon: '\u{1F480}',
     startingCombatDistance: 'mid',
     childRegions: ['scorched_wastes', 'frozen_peaks'],
+    bounds: { width: 500, height: 500 },
   },
   dragons_spine: {
     id: 'dragons_spine',
@@ -256,6 +271,7 @@ export const REGIONS: Record<string, Region> = {
     icon: '\u{1F409}',
     startingCombatDistance: 'far',
     childRegions: ['sky_citadel'],
+    bounds: { width: 500, height: 500 },
   },
 }
 
