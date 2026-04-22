@@ -67,6 +67,22 @@ export const FantasyCharacterSchema = z.object({
   factionReputations: z.record(z.string(), z.number()).optional().default({}),
   bestiary: z.array(BestiaryEntrySchema).optional(),
   npcEncounters: z.record(z.string(), z.object({ timesSpoken: z.number(), disposition: z.number() })).optional(),
+  landmarkState: z.object({
+    regionId: z.string(),
+    landmarks: z.array(z.object({
+      templateId: z.string(),
+      name: z.string(),
+      type: z.string(),
+      description: z.string(),
+      icon: z.string(),
+      hasShop: z.boolean(),
+      encounterPrompt: z.string(),
+      distanceFromEntry: z.number(),
+    })),
+    entryDistance: z.number(),
+    nextLandmarkIndex: z.number(),
+    exploring: z.boolean(),
+  }).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

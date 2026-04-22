@@ -229,10 +229,18 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     const distance = character?.distance ?? 0
     const nextDistance = distance + 1
 
-    // Always call server for milestone events (crossroads, shop)
+    // Check if the next step would hit a landmark arrival
+    const ls = character?.landmarkState
+    const hitsLandmark =
+      ls != null &&
+      ls.nextLandmarkIndex < ls.landmarks.length &&
+      (nextDistance - ls.entryDistance) >= ls.landmarks[ls.nextLandmarkIndex].distanceFromEntry
+
+    // Always call server for milestone events (crossroads, shop, landmark arrival)
     const hitsMilestone =
       crossedMilestone(distance, nextDistance, CROSSROADS_INTERVAL) ||
-      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL)
+      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL) ||
+      hitsLandmark
 
     if (hitsMilestone) {
       moveForwardMutation()
@@ -439,13 +447,41 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <ShopUI />
             ) : gameState.decisionPoint ? (
               <>
-                <h4 className={`font-semibold w-full text-center uppercase border-b pb-2 mb-4 ${
-                  gameState.decisionPoint?.isLegendary
-                    ? 'text-amber-400 border-amber-500/50'
-                    : 'border-[#3a3c56]'
-                }`}>
-                  {gameState.decisionPoint?.isLegendary ? '✨ Legendary Encounter ✨' : 'Event'}
-                </h4>
+                {(() => {
+                  const isLandmarkArrival = gameState.decisionPoint?.options?.some(
+                    (o: { id: string }) => o.id === 'explore-landmark' || o.id === 'bypass-landmark'
+                  )
+                  // Find landmark data from character state (the one we just arrived at)
+                  // nextLandmarkIndex has NOT been incremented yet at this point (server didn't increment it)
+                  const arrivalLandmark = isLandmarkArrival && character?.landmarkState
+                    ? character.landmarkState.landmarks[character.landmarkState.nextLandmarkIndex]
+                    : null
+
+                  if (arrivalLandmark) {
+                    return (
+                      <div className="text-center mb-4 pb-2 border-b border-indigo-600/40">
+                        <div className="text-3xl mb-1">{arrivalLandmark.icon}</div>
+                        <h4 className="font-semibold uppercase text-indigo-300">{arrivalLandmark.name}</h4>
+                        <p className="text-xs text-slate-400 italic mt-1">{arrivalLandmark.description}</p>
+                        {arrivalLandmark.hasShop && (
+                          <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-yellow-900/40 border border-yellow-600/40 text-yellow-300">
+                            🛒 Shop Available
+                          </span>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <h4 className={`font-semibold w-full text-center uppercase border-b pb-2 mb-4 ${
+                      gameState.decisionPoint?.isLegendary
+                        ? 'text-amber-400 border-amber-500/50'
+                        : 'border-[#3a3c56]'
+                    }`}>
+                      {gameState.decisionPoint?.isLegendary ? '✨ Legendary Encounter ✨' : 'Event'}
+                    </h4>
+                  )
+                })()}
                 {!gameState.decisionPoint.resolved && (
                   <div>
                     <div className="font-semibold mb-6 break-words">{gameState.decisionPoint.prompt}</div>
@@ -523,11 +559,29 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   const day = calculateDay(dist)
                   const timeOfDay = getTimeOfDay(dist)
 
-                  // Milestone calculations
-                  const milestones = [
-                    { label: 'Crossroads', icon: '🔀', steps: CROSSROADS_INTERVAL - (dist % CROSSROADS_INTERVAL) },
-                    { label: 'Shop', icon: '🛒', steps: SHOP_MILESTONE_INTERVAL - (dist % SHOP_MILESTONE_INTERVAL) },
-                  ].sort((a, b) => a.steps - b.steps)
+                  // Landmark progress from character state
+                  const charLandmarkState = character?.landmarkState
+                  const hasNextLandmark =
+                    charLandmarkState != null &&
+                    charLandmarkState.nextLandmarkIndex < charLandmarkState.landmarks.length
+                  const nextLandmark = hasNextLandmark
+                    ? charLandmarkState!.landmarks[charLandmarkState!.nextLandmarkIndex]
+                    : null
+                  const stepsFromEntry = hasNextLandmark && charLandmarkState
+                    ? dist - charLandmarkState.entryDistance
+                    : 0
+                  const landmarkStepsRemaining = nextLandmark
+                    ? Math.max(1, nextLandmark.distanceFromEntry - stepsFromEntry)
+                    : null
+
+                  // Milestone calculations (shown when no landmarks remain)
+                  const crossroadsSteps = CROSSROADS_INTERVAL - (dist % CROSSROADS_INTERVAL)
+                  const milestones = !hasNextLandmark
+                    ? [
+                        { label: 'Crossroads', icon: '🔀', steps: crossroadsSteps },
+                        { label: 'Shop', icon: '🛒', steps: SHOP_MILESTONE_INTERVAL - (dist % SHOP_MILESTONE_INTERVAL) },
+                      ].sort((a, b) => a.steps - b.steps)
+                    : [{ label: 'Crossroads', icon: '🔀', steps: crossroadsSteps }]
 
                   return (
                     <div className="space-y-2 mb-1">
@@ -543,8 +597,13 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                       <p className="text-xs text-slate-400 italic leading-snug">{region.description}</p>
                       {/* Day / time of day */}
                       <p className="text-xs text-slate-500">Day {day} &mdash; {timeOfDay}</p>
-                      {/* Milestone indicators */}
+                      {/* Landmark progress pill + milestone indicators */}
                       <div className="flex flex-wrap gap-1.5">
+                        {landmarkStepsRemaining != null && nextLandmark && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900/40 border border-indigo-600/40 text-indigo-300">
+                            {nextLandmark.icon} {nextLandmark.name}: {landmarkStepsRemaining} steps
+                          </span>
+                        )}
                         {milestones.map(m => (
                           <span key={m.label} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2b3f] border border-[#3a3c56] text-slate-300">
                             {m.icon} {m.label}: {m.steps}
