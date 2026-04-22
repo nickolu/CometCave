@@ -55,6 +55,10 @@ export async function POST(req: NextRequest) {
         ? {
             ...landmarkState,
             nextLandmarkIndex: landmarkState.nextLandmarkIndex + 1,
+            activeTargetIndex: Math.min(
+              landmarkState.nextLandmarkIndex + 1,
+              landmarkState.landmarks.length
+            ),
             exploring: true,
           }
         : undefined

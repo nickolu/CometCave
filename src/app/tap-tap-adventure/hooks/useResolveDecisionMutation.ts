@@ -145,6 +145,14 @@ export function useResolveDecisionMutation() {
         return
       }
       if (optionId === 'stay') {
+        // Clear landmarkState so the region re-initializes with fresh landmarks on the next step.
+        // Add current region to visitedRegions to vary the landmark seed.
+        const currentRegion = character.currentRegion ?? 'green_meadows'
+        const updatedVisitedRegions = [...(character.visitedRegions ?? []), currentRegion]
+        updateSelectedCharacter({
+          landmarkState: undefined,
+          visitedRegions: updatedVisitedRegions,
+        })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         addStoryEvent({
           id: `result-${Date.now()}`,
