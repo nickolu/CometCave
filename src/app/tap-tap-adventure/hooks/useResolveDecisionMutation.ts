@@ -48,6 +48,36 @@ export function useResolveDecisionMutation() {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
 
+      // Handle leaving a landmark during exploration
+      if (optionId === 'leave-landmark') {
+        const landmarkState = character.landmarkState
+        if (landmarkState) {
+          const landmarkName = landmarkState.exploringLandmarkName ?? 'the landmark'
+          updateSelectedCharacter({
+            landmarkState: {
+              ...landmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            },
+          })
+          const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'decision_result',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: chosenOption?.text ?? 'Leave',
+            outcomeDescription: `You leave ${landmarkName} and continue your journey.`,
+          })
+          commit()
+          onSuccess?.()
+        }
+        return
+      }
+
       // Handle landmark bypass client-side — just increment the index and continue
       if (optionId === 'bypass-landmark' || optionId.startsWith('bypass-toward-')) {
         const landmarkState = character.landmarkState

@@ -11,6 +11,15 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 
+function hashString(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+    hash = hash & hash
+  }
+  return hash
+}
+
 type ResolveDecisionRequest = {
   character: FantasyCharacter
   decisionPoint: FantasyDecisionPoint
@@ -46,6 +55,79 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid optionId' }, { status: 400 })
     }
 
+    // Handle continue-exploring: generate next encounter in landmark chain
+    if (optionId === 'continue-exploring') {
+      const landmarkState = character.landmarkState
+      if (!landmarkState?.exploring || !landmarkState.exploringLandmarkName) {
+        return NextResponse.json({ error: 'Not currently exploring a landmark' }, { status: 400 })
+      }
+
+      const currentDepth = (landmarkState.explorationDepth ?? 1)
+      const newDepth = currentDepth + 1
+
+      const updatedLandmarkState = {
+        ...landmarkState,
+        explorationDepth: newDepth,
+      }
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        landmarkState: updatedLandmarkState,
+      }
+
+      // Build context with depth info
+      const MAX_CONTEXT = 1500
+      const baseContext = buildStoryContext(character, storyEvents)
+      const depthPrefix = `You are exploring deeper into ${landmarkState.exploringLandmarkName}. This is encounter ${newDepth} of your exploration. The player has been exploring for a while — make this encounter more interesting or rewarding than earlier ones. Previous exploration choices are reflected in the story context.\n\n`
+      const combined = depthPrefix + baseContext
+      const enrichedContext = combined.length > MAX_CONTEXT ? combined.slice(0, MAX_CONTEXT) : combined
+
+      try {
+        const llmEvents = await generateLLMEvents(updatedCharacter, enrichedContext)
+        const llmEvent = llmEvents[0]
+
+        const explorationDecisionPoint: FantasyDecisionPoint = {
+          id: `decision-${llmEvent.id}`,
+          eventId: llmEvent.id,
+          prompt: llmEvent.description,
+          options: llmEvent.options.map(opt => ({
+            id: opt.id,
+            text: opt.text,
+            successProbability: opt.successProbability,
+            successDescription: opt.successDescription,
+            successEffects: opt.successEffects,
+            failureDescription: opt.failureDescription,
+            failureEffects: opt.failureEffects,
+            resultDescription: opt.successDescription,
+            triggersCombat: opt.triggersCombat,
+          })),
+          resolved: false,
+        }
+
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `You venture deeper into ${landmarkState.exploringLandmarkName}...`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: 'Continue exploring',
+          outcomeDescription: `You continue exploring ${landmarkState.exploringLandmarkName}.`,
+          resourceDelta: {},
+          decisionPoint: explorationDecisionPoint,
+        })
+      } catch (err) {
+        console.error('continue-exploring LLM generation failed', err)
+        return NextResponse.json({
+          updatedCharacter: { ...character, landmarkState: { ...landmarkState, exploring: false, explorationDepth: 0, exploringLandmarkName: undefined } },
+          resultDescription: `You've explored all there is to see in ${landmarkState.exploringLandmarkName}.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: 'Continue exploring',
+          outcomeDescription: `There is nothing more to find in ${landmarkState.exploringLandmarkName}.`,
+          resourceDelta: {},
+        })
+      }
+    }
+
     // Handle explore-landmark: increment nextLandmarkIndex, call LLM with landmark context
     if (optionId === 'explore-landmark') {
       const landmarkState = character.landmarkState
@@ -60,6 +142,8 @@ export async function POST(req: NextRequest) {
               landmarkState.landmarks.length
             ),
             exploring: true,
+            explorationDepth: 1,
+            exploringLandmarkName: exploredLandmark?.name ?? 'the landmark',
           }
         : undefined
 
@@ -209,6 +293,58 @@ export async function POST(req: NextRequest) {
       triggersCombat: typedOption.triggersCombat,
       mountDied: mountDied || undefined,
       mountDamage: mountDamageAmt && mountDamageAmt > 0 ? mountDamageAmt : undefined,
+    }
+
+    // If exploring a landmark, append continue/leave options as next decision
+    const currentLandmarkState = updatedCharacter.landmarkState
+    if (currentLandmarkState?.exploring && currentLandmarkState.exploringLandmarkName) {
+      const depth = currentLandmarkState.explorationDepth ?? 1
+      const maxDepth = 2 + Math.floor(Math.abs(hashString(currentLandmarkState.exploringLandmarkName)) % 4)
+
+      if (depth < maxDepth) {
+        const continueDecision: FantasyDecisionPoint = {
+          id: `decision-continue-${Date.now()}`,
+          eventId: `continue-explore-${Date.now()}`,
+          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover... (Encounter ${depth} of ~${maxDepth})`,
+          options: [
+            {
+              id: 'continue-exploring',
+              text: `Keep exploring ${currentLandmarkState.exploringLandmarkName}`,
+              successProbability: 1.0,
+              successDescription: `You venture deeper into ${currentLandmarkState.exploringLandmarkName}.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You continue exploring.`,
+            },
+            {
+              id: 'leave-landmark',
+              text: 'Leave and continue your journey',
+              successProbability: 1.0,
+              successDescription: `You step back outside and continue on your way.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You leave ${currentLandmarkState.exploringLandmarkName}.`,
+            },
+          ],
+          resolved: false,
+        }
+        response.decisionPoint = continueDecision
+      } else {
+        // Max depth reached — end exploration
+        response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
+        updatedCharacter = {
+          ...updatedCharacter,
+          landmarkState: {
+            ...currentLandmarkState,
+            exploring: false,
+            explorationDepth: 0,
+            exploringLandmarkName: undefined,
+          },
+        }
+        response.updatedCharacter = updatedCharacter
+      }
     }
 
     return NextResponse.json(response)
