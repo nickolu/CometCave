@@ -79,6 +79,7 @@ export const FantasyCharacterSchema = z.object({
       hasShop: z.boolean(),
       encounterPrompt: z.string(),
       distanceFromEntry: z.number(),
+      hidden: z.boolean().default(false),
     })),
     entryDistance: z.number(),
     nextLandmarkIndex: z.number(),

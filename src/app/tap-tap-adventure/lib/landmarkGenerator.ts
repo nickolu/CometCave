@@ -1,4 +1,4 @@
-import { getTemplatesForRegion, LandmarkTemplate, LandmarkType } from '../config/landmarks'
+import { getTemplatesForRegion, getSecretTemplatesForRegion, LandmarkTemplate, LandmarkType } from '../config/landmarks'
 
 export interface GeneratedLandmark {
   templateId: string
@@ -9,6 +9,7 @@ export interface GeneratedLandmark {
   hasShop: boolean
   encounterPrompt: string
   distanceFromEntry: number
+  hidden: boolean
 }
 
 // Simple string hash for seeded random
@@ -76,8 +77,32 @@ export function generateLandmarks(
       hasShop: template.hasShop,
       encounterPrompt: template.encounterPrompt,
       distanceFromEntry: currentDist,
+      hidden: false,
     })
     currentDist += 25 + Math.floor(rng() * 26) // 25-50
+  }
+
+  // Add 1 secret landmark per region (hidden until revealed)
+  const secretTemplates = getSecretTemplatesForRegion(regionId)
+  if (secretTemplates.length > 0) {
+    const secretTemplate = secretTemplates[Math.floor(rng() * secretTemplates.length)]
+    // Place secret landmark between existing landmarks (roughly middle of region)
+    const secretDist = landmarks.length > 1
+      ? Math.floor((landmarks[0].distanceFromEntry + landmarks[landmarks.length - 1].distanceFromEntry) / 2) + Math.floor(rng() * 15)
+      : 30 + Math.floor(rng() * 20)
+    landmarks.push({
+      templateId: secretTemplate.id,
+      name: secretTemplate.name,
+      type: secretTemplate.type,
+      description: secretTemplate.description,
+      icon: secretTemplate.icon,
+      hasShop: secretTemplate.hasShop,
+      encounterPrompt: secretTemplate.encounterPrompt,
+      distanceFromEntry: secretDist,
+      hidden: true,
+    })
+    // Re-sort by distance
+    landmarks.sort((a, b) => a.distanceFromEntry - b.distanceFromEntry)
   }
 
   return landmarks

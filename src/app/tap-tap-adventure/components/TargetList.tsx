@@ -6,6 +6,7 @@ interface LandmarkInfo {
   icon: string
   hasShop: boolean
   distanceFromEntry: number
+  hidden?: boolean
 }
 
 interface Target {
@@ -16,6 +17,7 @@ interface Target {
   position: number
   isExplored?: boolean
   hasShop?: boolean
+  hidden?: boolean
 }
 
 interface TargetListProps {
@@ -37,17 +39,20 @@ export function TargetList({
   onSelectTarget,
   disabled,
 }: TargetListProps) {
-  // Build target list: landmarks + region exit
+  // Build target list: landmarks + region exit (hidden landmarks are excluded from display)
   const targets: Target[] = [
-    ...landmarks.map((lm, i) => ({
-      index: i,
-      name: lm.name,
-      icon: lm.icon,
-      type: 'landmark' as const,
-      position: lm.distanceFromEntry,
-      isExplored: false,
-      hasShop: lm.hasShop,
-    })),
+    ...landmarks
+      .map((lm, i) => ({
+        index: i,
+        name: lm.name,
+        icon: lm.icon,
+        type: 'landmark' as const,
+        position: lm.distanceFromEntry,
+        isExplored: false,
+        hasShop: lm.hasShop,
+        hidden: lm.hidden ?? false,
+      }))
+      .filter(t => !t.hidden),
     {
       index: landmarks.length,
       name: regionName ? `Leave ${regionName}` : 'Leave Region',

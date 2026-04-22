@@ -266,6 +266,28 @@ export const useGameStore = create<GameStore>()(
               }
             }
 
+            // Auto-skip hidden landmarks the player has walked past
+            if (updatedCharacter.landmarkState) {
+              const ls = updatedCharacter.landmarkState
+              let idx = ls.activeTargetIndex ?? 0
+              while (
+                idx < ls.landmarks.length &&
+                ls.landmarks[idx]?.hidden &&
+                (ls.positionInRegion ?? 0) >= ls.landmarks[idx].distanceFromEntry
+              ) {
+                idx++
+              }
+              if (idx !== (ls.activeTargetIndex ?? 0)) {
+                updatedCharacter = {
+                  ...updatedCharacter,
+                  landmarkState: {
+                    ...ls,
+                    activeTargetIndex: idx,
+                  },
+                }
+              }
+            }
+
             // Mount daily upkeep: deduct gold when a new day boundary is crossed
             const oldDay = calculateDay(oldDistance)
             const newDay = calculateDay(newDistance)
@@ -1306,11 +1328,26 @@ export const useGameStore = create<GameStore>()(
             break
           }
           case 'reveal': {
-            // Reveal info about the next landmark
             const ls = character.landmarkState
             if (!ls) {
               return { message: 'No active travel — nothing to reveal.', success: false }
             }
+            // Find the nearest hidden landmark
+            const hiddenLandmarkIdx = ls.landmarks.findIndex(lm => lm.hidden)
+            if (hiddenLandmarkIdx !== -1) {
+              // Reveal the hidden landmark
+              const revealedLandmark = ls.landmarks[hiddenLandmarkIdx]
+              const updatedLandmarks = ls.landmarks.map((lm, i) =>
+                i === hiddenLandmarkIdx ? { ...lm, hidden: false } : lm
+              )
+              updates.landmarkState = {
+                ...ls,
+                landmarks: updatedLandmarks,
+              }
+              message = `${spell.name}: You sense a hidden location! ${revealedLandmark.icon} ${revealedLandmark.name} has been revealed on your map! (${manaCost} MP spent)`
+              break
+            }
+            // No hidden landmarks — fall back to showing next visible landmark info
             const activeIdx = ls.activeTargetIndex ?? 0
             if (activeIdx >= ls.landmarks.length) {
               return { message: 'No more landmarks ahead to reveal.', success: false }
