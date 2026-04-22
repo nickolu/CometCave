@@ -66,7 +66,7 @@ export const FantasyCharacterSchema = z.object({
   campState: CampStateSchema.optional(),
   factionReputations: z.record(z.string(), z.number()).optional().default({}),
   bestiary: z.array(BestiaryEntrySchema).optional(),
-  npcEncounters: z.record(z.string(), z.object({ timesSpoken: z.number(), disposition: z.number() })).optional(),
+  npcEncounters: z.record(z.string(), z.object({ timesSpoken: z.number(), disposition: z.number(), lastTier: z.string().optional() })).optional(),
   landmarkState: z.object({
     regionId: z.string(),
     landmarks: z.array(z.object({
