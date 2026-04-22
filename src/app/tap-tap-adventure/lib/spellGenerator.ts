@@ -165,7 +165,7 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
       {
         type: 'speed_boost' as const,
         value: 3 + Math.floor(level / 2),
-        description: `Advances ${3 + Math.floor(level / 2)} steps toward your target.`,
+        description: `Advances ${3 + Math.floor(level / 2)} km toward your target.`,
       },
       {
         type: 'shield' as const,

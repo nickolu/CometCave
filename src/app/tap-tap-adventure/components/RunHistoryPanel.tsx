@@ -38,7 +38,7 @@ function RunCard({ character }: { character: FantasyCharacter }) {
       <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
         <span>{character.class}</span>
         <span>·</span>
-        <span>{(character.distance ?? 0).toLocaleString()} steps</span>
+        <span>{(character.distance ?? 0).toLocaleString()} km</span>
         <span>·</span>
         <span>{(character.gold ?? 0).toLocaleString()} gold</span>
         <span>·</span>

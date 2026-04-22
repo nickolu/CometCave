@@ -221,7 +221,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   </span>
                 </span>
                 <span className="text-slate-400">Day {day}</span>
-                <span className="text-slate-400">{distance} steps</span>
+                <span className="text-slate-400">{distance} km</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-emerald-300 text-sm">
@@ -479,7 +479,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
               </div>
               <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
                 <div className="text-xs text-slate-500">Distance</div>
-                <div className="text-lg font-bold text-emerald-300">{distance} steps</div>
+                <div className="text-lg font-bold text-emerald-300">{distance} km</div>
               </div>
               <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
                 <div className="text-xs text-slate-500">Days Survived</div>

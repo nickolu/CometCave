@@ -107,7 +107,7 @@ export function TargetList({
                 <span className="text-[10px] text-slate-500">passed</span>
               ) : (
                 <span className={`text-[10px] ${isActive ? 'text-indigo-300' : 'text-slate-400'}`}>
-                  {stepsRemaining === 0 ? 'here' : `${stepsRemaining} steps`}
+                  {stepsRemaining === 0 ? 'here' : `${stepsRemaining} km`}
                 </span>
               )}
               {isActive && !isPassed && (

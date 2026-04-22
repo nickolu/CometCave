@@ -109,8 +109,8 @@ export function QuestPanel() {
       const needed = quest.target - quest.startValue
       const done = Math.max(0, character.distance - quest.startValue)
       progress = Math.min(1, done / needed)
-      progressText = `${character.distance} / ${quest.target} steps`
-      targetDescription = `Travel to ${quest.target} steps`
+      progressText = `${character.distance} / ${quest.target} km`
+      targetDescription = `Travel ${quest.target} km`
       break
     }
     case 'collect_gold': {
@@ -222,7 +222,7 @@ export function QuestPanel() {
 
       {/* Deadline detail */}
       <p className="text-[10px] text-slate-500">
-        ~{stepsUntilDeadline} steps until deadline
+        ~{stepsUntilDeadline} km until deadline
       </p>
 
       {/* Progress bar */}
