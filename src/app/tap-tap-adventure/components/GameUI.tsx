@@ -459,10 +459,25 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                         {gameState.decisionPoint.options.map((option: { id: string; text: string; successEffects?: { reputation?: number }; failureEffects?: { reputation?: number }; effects?: { reputation?: number } }, index: number) => {
                           if (!option) return null
                           if (!gameState.decisionPoint) return null
+
+                          // Enrich crossroads travel options with region data
+                          const isTravelOption = option.id.startsWith('travel-')
+                          const travelRegionId = isTravelOption ? option.id.replace('travel-', '') : null
+                          const travelRegion = travelRegionId ? REGIONS[travelRegionId] : null
+                          const diffStyle = travelRegion ? DIFFICULTY_STYLES[travelRegion.difficulty] : null
+                          const elemStyle = travelRegion && travelRegion.element !== 'none' ? ELEMENT_STYLES[travelRegion.element] : null
+                          const borderColor = diffStyle
+                            ? travelRegion!.difficulty === 'easy' ? 'border-green-600/50'
+                              : travelRegion!.difficulty === 'medium' ? 'border-yellow-600/50'
+                              : travelRegion!.difficulty === 'hard' ? 'border-orange-600/50'
+                              : travelRegion!.difficulty === 'very_hard' ? 'border-red-600/50'
+                              : 'border-purple-600/50'
+                            : 'border-[#3a3c56]'
+
                           return (
                             <Button
                               key={option.id}
-                              className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-3 text-base mt-2 rounded disabled:opacity-60"
+                              className={`block w-full text-left whitespace-normal h-auto border bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-3 text-base mt-2 rounded disabled:opacity-60 ${borderColor}`}
                               disabled={resolveDecisionPending}
                               onClick={() => {
                                 handleResolveDecision(option.id)
@@ -470,6 +485,25 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                             >
                               <span className="hidden sm:inline text-slate-400 mr-2 text-xs font-mono">[{index + 1}]</span>
                               {option.text}
+                              {travelRegion && (
+                                <span className="flex items-center gap-1.5 mt-1.5">
+                                  {diffStyle && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${diffStyle.color}`}>
+                                      {diffStyle.label}
+                                    </span>
+                                  )}
+                                  {elemStyle && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${elemStyle.color}`}>
+                                      {travelRegion.element}
+                                    </span>
+                                  )}
+                                  {travelRegion.minLevel > 0 && (
+                                    <span className="text-[10px] text-slate-500">
+                                      Lv.{travelRegion.minLevel}+
+                                    </span>
+                                  )}
+                                </span>
+                              )}
                             </Button>
                           )
                         })}
