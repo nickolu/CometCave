@@ -6,7 +6,7 @@ import { Item, ItemSchema } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getMountPrice, getShopMount } from '@/app/tap-tap-adventure/config/mounts'
 
-import { getReputationPriceMultiplier } from './contextBuilder'
+import { getCharismaPriceMultiplier, getReputationPriceMultiplier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 import { generateSpellForLevel } from './spellGenerator'
 
@@ -110,23 +110,23 @@ ${JSON.stringify({ name: character.name, race: character.race, class: character.
     if (toolCall && toolCall.function?.name === 'generate_shop') {
       const parsed = JSON.parse(toolCall.function.arguments)
       const validated = shopResponseSchema.parse(parsed)
-      const reputationMultiplier = getReputationPriceMultiplier(character.reputation)
+      const priceMultiplier = Math.max(0.60, getReputationPriceMultiplier(character.reputation) * getCharismaPriceMultiplier(character.charisma))
       return validated.items.map(item => inferItemTypeAndEffects({
         ...item,
-        price: item.price !== undefined ? Math.round(item.price * reputationMultiplier) : undefined,
+        price: item.price !== undefined ? Math.round(item.price * priceMultiplier) : undefined,
       }))
     }
 
     throw new Error('No tool call in response')
   } catch (err) {
     console.error('Shop generation failed, using fallback', err)
-    return getFallbackShopItems(character.level, character.reputation)
+    return getFallbackShopItems(character.level, character.reputation, character.charisma)
   }
 }
 
-export function getFallbackShopItems(level: number, reputation: number = 0): Item[] {
+export function getFallbackShopItems(level: number, reputation: number = 0, charisma: number = 5): Item[] {
   const basePrice = 10 + level * 5
-  const reputationMultiplier = getReputationPriceMultiplier(reputation)
+  const reputationMultiplier = Math.max(0.60, getReputationPriceMultiplier(reputation) * getCharismaPriceMultiplier(charisma))
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
   const items: Item[] = [

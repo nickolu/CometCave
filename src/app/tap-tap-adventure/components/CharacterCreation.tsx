@@ -28,6 +28,7 @@ function ModifierBadges({ modifiers }: { modifiers: StatModifiers }) {
       <StatBadge label="STR" value={modifiers.strength} />
       <StatBadge label="INT" value={modifiers.intelligence} />
       <StatBadge label="LCK" value={modifiers.luck} />
+      <StatBadge label="CHA" value={modifiers.charisma} />
     </div>
   )
 }

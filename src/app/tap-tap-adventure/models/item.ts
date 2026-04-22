@@ -10,6 +10,7 @@ export const ItemEffectsSchema = z.object({
   strength: z.number().optional(),
   intelligence: z.number().optional(),
   luck: z.number().optional(),
+  charisma: z.number().optional(),
   heal: z.number().optional(),
   range: z.enum(['close', 'mid', 'far']).optional(),
   /** Grants a damage-absorbing shield (points) */

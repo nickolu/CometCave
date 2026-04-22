@@ -3,8 +3,8 @@ import { Item } from '@/app/tap-tap-adventure/models/item'
 
 export function isUsableInCombat(item: Item): boolean {
   if (item.type !== 'consumable' || !item.effects) return false
-  const { strength, intelligence, luck, heal, shield, manaRestore, cleanse, damageBoost } = item.effects
-  return !!(strength || intelligence || luck || heal || shield || manaRestore || cleanse || damageBoost)
+  const { strength, intelligence, luck, charisma, heal, shield, manaRestore, cleanse, damageBoost } = item.effects
+  return !!(strength || intelligence || luck || charisma || heal || shield || manaRestore || cleanse || damageBoost)
 }
 
 export function applyCombatItemEffect(
@@ -101,6 +101,16 @@ export function applyCombatItemEffect(
       turnsRemaining: 3,
     })
     parts.push(`+${item.effects.luck * 2} attack for 3 turns`)
+  }
+
+  // Charisma effect → defense buff (intimidating presence)
+  if (item.effects.charisma) {
+    updated.activeBuffs.push({
+      stat: 'defense',
+      value: item.effects.charisma * 2,
+      turnsRemaining: 3,
+    })
+    parts.push(`+${item.effects.charisma * 2} defense for 3 turns`)
   }
 
   const description =

@@ -25,6 +25,13 @@ const baseChar: FantasyCharacter = {
   strength: 8,
   intelligence: 5,
   luck: 6,
+  charisma: 6,
+  deathCount: 0,
+  pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
   inventory: [
     {
       id: 'potion-1',

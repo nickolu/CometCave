@@ -49,6 +49,11 @@ export function clampReputation(value: number): number {
   return Math.max(-100, Math.min(200, value))
 }
 
+export function getCharismaPriceMultiplier(charisma: number): number {
+  const discount = Math.min(0.10, (charisma - 5) * 0.01)
+  return 1.0 - discount
+}
+
 export function buildStoryContext(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[],
@@ -65,7 +70,7 @@ export function buildStoryContext(
   parts.push(
     `Character: ${character.name}, Level ${character.level} ${character.race} ${character.class}. ` +
     `Gold: ${character.gold}, Reputation: ${character.reputation} (${tier}), Distance: ${character.distance}. ` +
-    `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}.`
+    `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}, CHA ${character.charisma}.`
   )
   parts.push(`Reputation implications: ${REPUTATION_TIER_IMPLICATIONS[tier]}`)
 

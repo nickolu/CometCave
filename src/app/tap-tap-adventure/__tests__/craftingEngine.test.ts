@@ -21,6 +21,7 @@ const baseChar: FantasyCharacter = {
   strength: 5,
   intelligence: 5,
   luck: 5,
+  charisma: 6,
   hp: 50,
   maxHp: 100,
   inventory: [],

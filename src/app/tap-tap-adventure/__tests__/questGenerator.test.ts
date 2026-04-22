@@ -19,10 +19,16 @@ const baseChar: FantasyCharacter = {
   strength: 7,
   intelligence: 6,
   luck: 6,
+  charisma: 6,
   hp: 100,
   maxHp: 100,
   inventory: [],
   deathCount: 0,
+  pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
 }
 
 describe('Quest Generator', () => {

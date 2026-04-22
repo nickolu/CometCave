@@ -65,6 +65,10 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     updatedCharacter.luck += effects.luck
     effectMessages.push(`${effects.luck > 0 ? '+' : ''}${effects.luck} Luck`)
   }
+  if (effects.charisma) {
+    updatedCharacter.charisma += effects.charisma
+    effectMessages.push(`${effects.charisma > 0 ? '+' : ''}${effects.charisma} Charisma`)
+  }
 
   // Update inventory: decrement quantity or remove
   const updatedInventory = character.inventory

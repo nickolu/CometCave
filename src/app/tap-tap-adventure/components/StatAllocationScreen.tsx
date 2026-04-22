@@ -6,25 +6,27 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
 interface StatAllocationScreenProps {
   character: FantasyCharacter
-  onConfirm: (strength: number, intelligence: number, luck: number) => void
+  onConfirm: (strength: number, intelligence: number, luck: number, charisma: number) => void
 }
 
 const STAT_DESCRIPTIONS: Record<string, string> = {
   strength: 'Attack power, max HP',
   intelligence: 'Defense, mana pool',
   luck: 'Crit chance, loot drops, flee chance',
+  charisma: 'Shop discounts, NPC dialogue',
 }
 
 const STAT_LABELS: Record<string, string> = {
   strength: 'STR',
   intelligence: 'INT',
   luck: 'LCK',
+  charisma: 'CHA',
 }
 
 export function StatAllocationScreen({ character, onConfirm }: StatAllocationScreenProps) {
-  const [allocation, setAllocation] = useState({ strength: 0, intelligence: 0, luck: 0 })
+  const [allocation, setAllocation] = useState({ strength: 0, intelligence: 0, luck: 0, charisma: 0 })
 
-  const totalAllocated = allocation.strength + allocation.intelligence + allocation.luck
+  const totalAllocated = allocation.strength + allocation.intelligence + allocation.luck + allocation.charisma
   const remaining = (character.pendingStatPoints ?? 0) - totalAllocated
   const allSpent = remaining === 0
 
@@ -40,10 +42,10 @@ export function StatAllocationScreen({ character, onConfirm }: StatAllocationScr
 
   const handleConfirm = () => {
     if (!allSpent) return
-    onConfirm(allocation.strength, allocation.intelligence, allocation.luck)
+    onConfirm(allocation.strength, allocation.intelligence, allocation.luck, allocation.charisma)
   }
 
-  const stats = ['strength', 'intelligence', 'luck'] as const
+  const stats = ['strength', 'intelligence', 'luck', 'charisma'] as const
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

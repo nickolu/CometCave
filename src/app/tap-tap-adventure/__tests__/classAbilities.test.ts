@@ -21,6 +21,7 @@ function makeChar(classId: string): FantasyCharacter {
     strength: 8,
     intelligence: 5,
     luck: 6,
+    charisma: 6,
     inventory: [],
     deathCount: 0,
     pendingStatPoints: 0,

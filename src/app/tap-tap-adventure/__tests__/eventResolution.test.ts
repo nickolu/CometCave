@@ -24,6 +24,13 @@ describe('Decision Resolution', () => {
     strength: 2,
     intelligence: 3,
     luck: 1,
+    charisma: 6,
+    deathCount: 0,
+    pendingStatPoints: 0,
+    difficultyMode: 'normal',
+    currentRegion: 'green_meadows',
+    currentWeather: 'clear',
+    factionReputations: {},
     inventory: [],
   }
 
