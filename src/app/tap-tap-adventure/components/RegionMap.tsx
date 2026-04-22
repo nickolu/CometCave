@@ -414,15 +414,34 @@ export function RegionMap({
 
   return (
     <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-white">World Map</h3>
-        <span className="text-xs text-slate-400">
-          {visited.size}/{regions.length} discovered
-          {conqueredRegions.length > 0 && (
-            <span className="ml-1 text-amber-400">⭐{conqueredRegions.length}</span>
-          )}
-        </span>
+      {/* Header with exploration progress */}
+      <div className="mb-3 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white">World Map</h3>
+          <span className="text-xs text-slate-400">
+            {visited.size}/{regions.length} discovered
+            {conqueredRegions.length > 0 && (
+              <span className="ml-1 text-amber-400">⭐{conqueredRegions.length}</span>
+            )}
+          </span>
+        </div>
+        {/* Exploration progress bar */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(visited.size / regions.length) * 100}%`,
+                background: visited.size >= regions.length
+                  ? 'linear-gradient(90deg, #f59e0b, #eab308)'
+                  : 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+              }}
+            />
+          </div>
+          <span className="text-[10px] text-slate-500 shrink-0">
+            {Math.round((visited.size / regions.length) * 100)}%
+          </span>
+        </div>
       </div>
 
       {/* Scroll container */}
