@@ -83,6 +83,8 @@ function ConnectionPath({
     d = `M ${x1} ${y1} C ${x1} ${midY} ${x2} ${midY} ${x2} ${y2}`
   }
 
+  const pathId = `trail-${Math.round(x1)}-${Math.round(y1)}-${Math.round(x2)}-${Math.round(y2)}`
+
   if (!explored) {
     return (
       <path
@@ -100,6 +102,7 @@ function ConnectionPath({
     <>
       {/* Wide dark road base */}
       <path
+        id={pathId}
         d={d}
         fill="none"
         stroke="#7a5c30"
@@ -114,6 +117,12 @@ function ConnectionPath({
         strokeWidth={2}
         strokeLinecap="round"
       />
+      {/* Animated travelling dot */}
+      <circle r={3} fill="rgba(251, 191, 36, 0.8)">
+        <animateMotion dur="4s" repeatCount="indefinite">
+          <mpath href={`#${pathId}`} />
+        </animateMotion>
+      </circle>
     </>
   )
 }
@@ -398,6 +407,34 @@ export function RegionMap({
           {/* Background layers */}
           <rect width="400" height="1100" fill="#0a100a" />
           <rect width="400" height="1100" fill="url(#parchment)" />
+
+          {/* Zone tier labels on the right edge */}
+          {([
+            [1040, 'Haven'],
+            [940,  'Outskirts'],
+            [845,  'Frontier'],
+            [755,  'Wilds'],
+            [660,  'Crossroads'],
+            [560,  'Badlands'],
+            [460,  'Depths'],
+            [350,  'Apex'],
+            [250,  'Skyward'],
+            [160,  'Abyss'],
+            [60,   'Ascension'],
+          ] as const).map(([y, label]) => (
+            <text
+              key={label}
+              x={388}
+              y={y}
+              textAnchor="end"
+              fontSize={7}
+              fill="rgba(180, 160, 100, 0.2)"
+              fontWeight={500}
+              style={{ letterSpacing: '0.1em', textTransform: 'uppercase' } as React.CSSProperties}
+            >
+              {label}
+            </text>
+          ))}
 
           {/* Unexplored connections (rendered first, behind explored) */}
           {unexploredConns.map(({ from, to }) => {
