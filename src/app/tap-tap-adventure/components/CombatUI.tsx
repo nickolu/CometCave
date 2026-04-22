@@ -12,7 +12,8 @@ import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNaming
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
-import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
+import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { StatusEffectsHUD } from '@/app/tap-tap-adventure/components/StatusEffectsHUD'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
@@ -57,46 +58,6 @@ function ManaBar({ current, max }: { current: number; max: number }) {
     </div>
   )
 }
-function StatusEffectBadges({ effects, label }: { effects: StatusEffect[]; label: string }) {
-  if (effects.length === 0) return null
-
-  const iconMap: Record<string, string> = {
-    poison: '☠️',
-    burn: '🔥',
-    slow: '🐌',
-    curse: '💀',
-    thorns: '🌿',
-    berserk: '😡',
-    fear: '😨',
-    reflect: '🪞',
-  }
-
-  const colorMap: Record<string, string> = {
-    poison: 'bg-green-900/50 text-green-400',
-    burn: 'bg-orange-900/50 text-orange-400',
-    slow: 'bg-blue-900/50 text-blue-400',
-    curse: 'bg-purple-900/50 text-purple-400',
-    thorns: 'bg-green-900/50 text-green-400',
-    berserk: 'bg-red-900/50 text-red-400',
-    fear: 'bg-yellow-900/50 text-yellow-400',
-    reflect: 'bg-slate-700/50 text-slate-300',
-  }
-
-  return (
-    <div className="flex gap-1 flex-wrap">
-      {effects.map((effect, i) => (
-        <span
-          key={i}
-          className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
-          title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
-        >
-          {iconMap[effect.type] ?? '⬡'} {effect.name} ({effect.turnsRemaining}t)
-        </span>
-      ))}
-    </div>
-  )
-}
-
 
 interface CombatUIProps {
   combatState: CombatState
@@ -365,7 +326,12 @@ export function CombatUI({ combatState }: CombatUIProps) {
           <p className="text-xs text-slate-400">{enemy.description}</p>
         )}
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
-        <StatusEffectBadges effects={enemy.statusEffects ?? []} label="Enemy" />
+        <StatusEffectsHUD
+          statusEffects={enemy.statusEffects ?? []}
+          activeBuffs={[]}
+          activeSpellEffects={[]}
+          side="enemy"
+        />
         {/* Distance indicator */}
         {combatState.combatDistance && (
           <div className="flex items-center justify-center gap-2 mt-2 text-xs">
@@ -447,47 +413,13 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}
-        {/* Status badges row */}
-        {((playerState.activeSpellEffects ?? []).length > 0 || (playerState.activeBuffs ?? []).length > 0 || (playerState.statusEffects ?? []).length > 0) && (
-          <div className="flex gap-1 flex-wrap">
-            {(playerState.activeSpellEffects ?? []).map((effect, i) => (
-              <span key={`spell-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded ${
-                effect.effectType === 'heal_over_time' ? 'bg-green-900/50 text-green-400' :
-                effect.effectType === 'damage_reduction' ? 'bg-cyan-900/50 text-cyan-400' :
-                effect.effectType === 'damage_over_time' || effect.effectType === 'bleed' ? 'bg-red-900/50 text-red-400' :
-                'bg-purple-900/50 text-purple-400'
-              }`}>
-                {effect.effectType.replace(/_/g, ' ')} ({effect.turnsRemaining}t)
-              </span>
-            ))}
-            {(playerState.activeBuffs ?? []).map((buff, i) => (
-              <span key={`buff-${i}`} className="text-[10px] px-1.5 py-0.5 bg-emerald-900/50 text-emerald-400 rounded">
-                +{buff.value} {buff.stat} ({buff.turnsRemaining}t)
-              </span>
-            ))}
-            {(playerState.statusEffects ?? []).map((effect, i) => {
-              const colorMap: Record<string, string> = {
-                poison: 'bg-green-900/50 text-green-400',
-                burn: 'bg-orange-900/50 text-orange-400',
-                slow: 'bg-blue-900/50 text-blue-400',
-                curse: 'bg-purple-900/50 text-purple-400',
-                thorns: 'bg-green-900/50 text-green-400',
-                berserk: 'bg-red-900/50 text-red-400',
-                fear: 'bg-yellow-900/50 text-yellow-400',
-                reflect: 'bg-slate-700/50 text-slate-300',
-              }
-              return (
-                <span
-                  key={`status-${i}`}
-                  className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
-                  title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
-                >
-                  {effect.name} ({effect.turnsRemaining}t)
-                </span>
-              )
-            })}
-          </div>
-        )}
+        {/* Status effects HUD */}
+        <StatusEffectsHUD
+          statusEffects={playerState.statusEffects ?? []}
+          activeBuffs={playerState.activeBuffs ?? []}
+          activeSpellEffects={playerState.activeSpellEffects ?? []}
+          side="player"
+        />
         <FloatingDamage events={damageEvents.filter(e => e.target === 'player')} />
       </div>
 
