@@ -601,7 +601,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('attack')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || !canAttackAtDistance}
           >
-            {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : `Attack (${AP_COSTS.attack} AP)`}
+            {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : <><span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[A]</span>Attack ({AP_COSTS.attack} AP)</>}
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -612,7 +612,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('heavy_attack')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || !canAttackAtDistance}
           >
-            Heavy Attack ({AP_COSTS.heavy_attack} AP)
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[H]</span>Heavy Attack ({AP_COSTS.heavy_attack} AP)
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -623,7 +623,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('defend')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.defend ?? 1)}
           >
-            Defend ({AP_COSTS.defend} AP)
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[D]</span>Defend ({AP_COSTS.defend} AP)
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors relative border ${
@@ -656,7 +656,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('move_closer')}
             disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP`})
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[Q]</span>Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -667,7 +667,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('move_away')}
             disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP`})
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[E]</span>Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -678,14 +678,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('flee')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.flee ?? 3)}
           >
-            Flee ({AP_COSTS.flee} AP)
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[F]</span>Flee ({AP_COSTS.flee} AP)
           </Button>
           <Button
             className="col-span-2 bg-yellow-900/50 border border-yellow-800 hover:bg-yellow-800 text-white text-base py-3 rounded-md transition-colors"
             onClick={() => handleAction('end_turn')}
             disabled={isPending}
           >
-            End Turn
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[Z]</span>End Turn
           </Button>
         </div>
 
