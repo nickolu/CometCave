@@ -36,6 +36,20 @@ export const ItemSchema = z.object({
   spell: SpellSchema.optional(),
   isHeirloom: z.boolean().optional(),
   enchantmentLevel: z.number().optional(),
+  rarity: z.enum(['common', 'uncommon', 'rare', 'epic', 'legendary']).optional(),
+  loreText: z.string().optional(),
+  onHitEffect: z.object({
+    type: z.enum(['poison', 'burn', 'freeze', 'lifesteal', 'stun', 'bleed']),
+    chance: z.number(),
+    damage: z.number().optional(),
+    duration: z.number().optional(),
+    description: z.string(),
+  }).optional(),
+  drawback: z.object({
+    stat: z.string(),
+    value: z.number(),
+    description: z.string(),
+  }).optional(),
 })
 
 export type Item = z.infer<typeof ItemSchema>

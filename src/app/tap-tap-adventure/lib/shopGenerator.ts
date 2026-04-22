@@ -37,6 +37,7 @@ const shopSchemaForOpenAI = {
           quantity: { type: 'number' },
           type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc'] },
           price: { type: 'number' },
+          rarity: { type: 'string', enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
           effects: {
             type: 'object',
             properties: {
@@ -86,6 +87,9 @@ Include a mix of:
 - Occasionally a spell scroll (type: "spell_scroll") with a spell object containing id, name, description, school, manaCost, cooldown, target, effects, and tags
 
 Each item needs a unique id (e.g. "shop-item-1"), a creative name, a short description, quantity of 1, a gold price, and effects.
+
+- Each item should have a rarity: common (basic supplies), uncommon (quality goods), rare (special finds), epic (very rare), legendary (once in a lifetime)
+- Most items should be common or uncommon. Include at most 1 rare item. Epic/legendary items should almost never appear in shops.
 
 Character:
 ${JSON.stringify({ name: character.name, race: character.race, class: character.class, level: character.level }, null, 2)}`,
@@ -138,6 +142,7 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       type: 'consumable',
       price: Math.round(basePrice * 0.8 * reputationMultiplier),
       effects: { heal: 10 + level * 5 },
+      rarity: 'common',
     },
     {
       id: `shop-str-${suffix}`,
@@ -147,6 +152,7 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       type: 'consumable',
       price: Math.round(basePrice * 1.5 * reputationMultiplier),
       effects: { strength: 2 + Math.floor(level / 2) },
+      rarity: 'uncommon',
     },
     {
       id: `shop-int-${suffix}`,
@@ -156,6 +162,7 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       type: 'consumable',
       price: Math.round(basePrice * 1.5 * reputationMultiplier),
       effects: { intelligence: 2 + Math.floor(level / 2) },
+      rarity: 'uncommon',
     },
     {
       id: `shop-luck-${suffix}`,
@@ -165,6 +172,7 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       type: 'consumable',
       price: Math.round(basePrice * reputationMultiplier),
       effects: { luck: 2 + Math.floor(level / 3) },
+      rarity: 'common',
     },
   ]
 
@@ -179,6 +187,7 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
     type: 'spell_scroll',
     price: Math.round(spellPrice * reputationMultiplier),
     spell: spell1,
+    rarity: 'rare',
   })
 
   // 50% chance for a second spell scroll
@@ -192,6 +201,7 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       type: 'spell_scroll',
       price: Math.round(spellPrice * reputationMultiplier),
       spell: spell2,
+      rarity: 'rare',
     })
   }
 
