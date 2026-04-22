@@ -1727,6 +1727,29 @@ export function getCombatRewards(
     }
   }
 
+  // Assign rarity to loot items that don't have one
+  const rarityWeights = combatState.isBoss
+    ? { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 }
+    : combatState.isMiniBoss
+      ? { common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 }
+      : { common: 0.5, uncommon: 0.3, rare: 0.15, epic: 0.04, legendary: 0.01 }
+
+  function rollRarity(weights: Record<string, number>): string {
+    const roll = Math.random()
+    let cumulative = 0
+    for (const [rarity, weight] of Object.entries(weights)) {
+      cumulative += weight
+      if (roll < cumulative) return rarity
+    }
+    return 'common'
+  }
+
+  for (let i = 0; i < loot.length; i++) {
+    if (!loot[i].rarity) {
+      loot[i] = { ...loot[i], rarity: rollRarity(rarityWeights) as Item['rarity'] }
+    }
+  }
+
   // Regular (non-boss) enemies have a chance to drop a spell scroll
   if (!combatState.isBoss) {
     const spellDropChance = 0.05 + character.level * 0.01
@@ -1740,6 +1763,7 @@ export function getCombatRewards(
         quantity: 1,
         type: 'spell_scroll',
         spell,
+        rarity: 'rare', // Spell scrolls are always rare quality
       })
     }
   }

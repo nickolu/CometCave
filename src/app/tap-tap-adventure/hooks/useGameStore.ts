@@ -562,7 +562,18 @@ export const useGameStore = create<GameStore>()(
               updatedInventory = [...updatedInventory, currentlyEquipped]
             }
 
-            state.gameState.characters[characterIndex] = {
+            // Apply drawback from new item, reverse drawback from old item
+            let statAdjustments: Record<string, number> = {}
+            if (item.drawback) {
+              const stat = item.drawback.stat
+              statAdjustments[stat] = (statAdjustments[stat] ?? 0) + item.drawback.value
+            }
+            if (currentlyEquipped?.drawback) {
+              const stat = currentlyEquipped.drawback.stat
+              statAdjustments[stat] = (statAdjustments[stat] ?? 0) - currentlyEquipped.drawback.value // reverse: subtract the negative = add
+            }
+
+            const charWithEquipment = {
               ...selectedCharacter,
               inventory: updatedInventory,
               equipment: {
@@ -570,6 +581,15 @@ export const useGameStore = create<GameStore>()(
                 [targetSlot]: item,
               },
             }
+
+            // Apply stat adjustments
+            for (const [stat, adjustment] of Object.entries(statAdjustments)) {
+              if (stat in charWithEquipment && typeof (charWithEquipment as Record<string, unknown>)[stat] === 'number') {
+                (charWithEquipment as unknown as Record<string, number>)[stat] = Math.max(0, ((charWithEquipment as unknown as Record<string, number>)[stat] ?? 0) + adjustment)
+              }
+            }
+
+            state.gameState.characters[characterIndex] = charWithEquipment
           })
         )
       },
@@ -588,7 +608,7 @@ export const useGameStore = create<GameStore>()(
             const equippedItem = equipment[slot]
             if (!equippedItem) return
 
-            state.gameState.characters[characterIndex] = {
+            const updatedChar = {
               ...selectedCharacter,
               inventory: [...selectedCharacter.inventory, equippedItem],
               equipment: {
@@ -596,6 +616,16 @@ export const useGameStore = create<GameStore>()(
                 [slot]: null,
               },
             }
+
+            // Reverse drawback from unequipped item
+            if (equippedItem.drawback) {
+              const stat = equippedItem.drawback.stat
+              if (stat in updatedChar && typeof (updatedChar as Record<string, unknown>)[stat] === 'number') {
+                (updatedChar as unknown as Record<string, number>)[stat] = Math.max(0, ((updatedChar as unknown as Record<string, number>)[stat] ?? 0) - equippedItem.drawback.value) // subtract negative = add back
+              }
+            }
+
+            state.gameState.characters[characterIndex] = updatedChar
           })
         )
       },
