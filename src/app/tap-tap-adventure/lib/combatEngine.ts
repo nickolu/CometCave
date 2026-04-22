@@ -14,6 +14,7 @@ import {
   CombatPlayerState,
   CombatState,
   EnemyTelegraph,
+  StatusEffect,
   TurnPhase,
 } from '@/app/tap-tap-adventure/models/combat'
 import { Item } from '@/app/tap-tap-adventure/models/item'
@@ -37,10 +38,12 @@ import {
 import {
   applyStatusEffect,
   checkFearSkip,
+  checkStunSkip,
   createStatusEffectFromAbility,
   getBerserkAttackMultiplier,
   getBerserkDefenseMultiplier,
   getBurnDefenseMultiplier,
+  getFreezeMultiplier,
   getSlowMultiplier,
   getThornsDamage,
   hasStatusEffect,
@@ -295,6 +298,7 @@ export function calculateEnemyDamage(
       .filter(b => b.stat === 'defense')
       .reduce((sum, b) => sum + b.value, 0)
   const slowMultiplier = getSlowMultiplier(enemy.statusEffects)
+  const freezeMultiplier = getFreezeMultiplier(enemy.statusEffects)
 
   const defenseElement = character
     ? getClassElement(character.class, character.classData)
@@ -308,7 +312,7 @@ export function calculateEnemyDamage(
     : enemy.element === 'lightning' ? enemyWeatherMods.lightningMultiplier
     : 1.0
 
-  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier * elementalMultiplier * enemyWeatherElementalBoost
+  const attackPower = (isHeavyAttack ? enemy.attack * 1.5 : enemy.attack) * slowMultiplier * freezeMultiplier * elementalMultiplier * enemyWeatherElementalBoost
   const raw = randomVariance(attackPower) - buffedDefense
 
   // Enemy critical strike check
@@ -637,6 +641,116 @@ function checkBossPhaseChange(
   }
 }
 
+/**
+ * Apply weapon on-hit effects after a successful attack.
+ * Returns updated enemy, playerState, and combat log entries.
+ */
+function applyWeaponOnHitEffect(
+  weapon: Item,
+  enemy: CombatEnemy,
+  playerState: CombatPlayerState,
+  damageDealt: number,
+  turnNumber: number
+): { enemy: CombatEnemy; playerState: CombatPlayerState; logs: CombatLogEntry[] } {
+  const logs: CombatLogEntry[] = []
+  const onHit = weapon.onHitEffect
+  if (!onHit || damageDealt <= 0) return { enemy, playerState, logs }
+
+  if (Math.random() >= onHit.chance) return { enemy, playerState, logs }
+
+  const effectDamage = onHit.damage ?? 0
+  const effectDuration = onHit.duration ?? 2
+
+  switch (onHit.type) {
+    case 'poison':
+    case 'burn':
+    case 'bleed': {
+      const typeNames = { poison: 'Poisoned', burn: 'Burning', bleed: 'Bleeding' }
+      const effect: StatusEffect = {
+        id: `weapon-${onHit.type}-${Date.now()}`,
+        name: typeNames[onHit.type],
+        type: onHit.type,
+        value: effectDamage,
+        turnsRemaining: effectDuration,
+        source: 'player',
+      }
+      enemy = {
+        ...enemy,
+        statusEffects: applyStatusEffect(enemy.statusEffects ?? [], effect),
+      }
+      logs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'status_effect',
+        description: `Your weapon inflicts ${typeNames[onHit.type].toLowerCase()} on ${enemy.name}! (${effectDamage} damage/turn for ${effectDuration} turns)`,
+      })
+      break
+    }
+    case 'freeze': {
+      const effect: StatusEffect = {
+        id: `weapon-freeze-${Date.now()}`,
+        name: 'Frozen',
+        type: 'freeze',
+        value: effectDamage,
+        turnsRemaining: effectDuration,
+        source: 'player',
+      }
+      enemy = {
+        ...enemy,
+        statusEffects: applyStatusEffect(enemy.statusEffects ?? [], effect),
+      }
+      logs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'status_effect',
+        description: `Your weapon freezes ${enemy.name}! Attack power reduced by 50% for ${effectDuration} turns.`,
+      })
+      break
+    }
+    case 'stun': {
+      const effect: StatusEffect = {
+        id: `weapon-stun-${Date.now()}`,
+        name: 'Stunned',
+        type: 'stun',
+        value: 1,
+        turnsRemaining: 1, // Stun always lasts 1 turn
+        source: 'player',
+      }
+      enemy = {
+        ...enemy,
+        statusEffects: applyStatusEffect(enemy.statusEffects ?? [], effect),
+      }
+      logs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'status_effect',
+        description: `Your weapon stuns ${enemy.name}! They will skip their next action.`,
+      })
+      break
+    }
+    case 'lifesteal': {
+      const healAmount = Math.max(1, Math.floor(damageDealt * 0.2))
+      const oldHp = playerState.hp
+      playerState = {
+        ...playerState,
+        hp: Math.min(playerState.maxHp, playerState.hp + healAmount),
+      }
+      const actualHeal = playerState.hp - oldHp
+      if (actualHeal > 0) {
+        logs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'heal',
+          description: `Your weapon drains life from ${enemy.name}, restoring ${actualHeal} HP!`,
+        })
+      }
+      break
+    }
+  }
+
+  return { enemy, playerState, logs }
+}
+
 export function processPlayerAction(
   combatState: CombatState,
   action: CombatActionRequest,
@@ -772,6 +886,13 @@ export function processPlayerAction(
         const damage = Math.max(1, Math.round(rawAtkDmg * wRangeMult) + aggressiveBonus)
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
+        // Apply weapon on-hit effects
+        if (character.equipment?.weapon?.onHitEffect) {
+          const onHitResult = applyWeaponOnHitEffect(character.equipment.weapon, enemy, playerState, damage, turnNumber)
+          enemy = onHitResult.enemy
+          playerState = onHitResult.playerState
+          newLogs.push(...onHitResult.logs)
+        }
         const comboText =
           playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
         const elemText = getEffectivenessText(elementalMultiplier)
@@ -806,6 +927,13 @@ export function processPlayerAction(
         const damage = Math.max(1, Math.round(baseDmg * 1.8 * heavyWRangeMult) + heavyAggressiveBonus)
         enemy.hp = Math.max(0, enemy.hp - damage)
         playerState.comboCount = (playerState.comboCount ?? 0) + 1
+        // Apply weapon on-hit effects
+        if (character.equipment?.weapon?.onHitEffect) {
+          const onHitResult = applyWeaponOnHitEffect(character.equipment.weapon, enemy, playerState, damage, turnNumber)
+          enemy = onHitResult.enemy
+          playerState = onHitResult.playerState
+          newLogs.push(...onHitResult.logs)
+        }
         const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
         const elemText = getEffectivenessText(elementalMultiplier)
         newLogs.push({
@@ -1164,8 +1292,16 @@ export function processPlayerAction(
   // Execute enemy's telegraphed action (or normal attack if no telegraph)
   // Check fear: 50% chance to skip action
   const enemyFeared = checkFearSkip(enemy.statusEffects)
+  const enemyStatusStunned = checkStunSkip(enemy.statusEffects)
   if (playerState.enemyStunned) {
     playerState.enemyStunned = false
+    newLogs.push({
+      turn: turnNumber,
+      actor: 'enemy',
+      action: 'stunned',
+      description: `${enemy.name} is stunned and cannot act!`,
+    })
+  } else if (enemyStatusStunned) {
     newLogs.push({
       turn: turnNumber,
       actor: 'enemy',
