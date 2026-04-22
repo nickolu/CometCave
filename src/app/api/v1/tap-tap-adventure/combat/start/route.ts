@@ -49,6 +49,11 @@ export async function POST(req: NextRequest) {
 
     const playerState = initializePlayerCombatState(character)
 
+    // Clear exploration shield — it's been consumed by combat init
+    const updatedCharacter = character.explorationShield
+      ? { ...character, explorationShield: 0 }
+      : character
+
     const combatState: CombatState = {
       id: `combat-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       eventId: `event-combat-${Date.now()}`,
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
       ...(pendingRegionId ? { pendingRegionId } : {}),
     }
 
-    return NextResponse.json({ combatState })
+    return NextResponse.json({ combatState, updatedCharacter: character.explorationShield ? updatedCharacter : undefined })
   } catch (err) {
     console.error('Error starting combat', err)
     return NextResponse.json(

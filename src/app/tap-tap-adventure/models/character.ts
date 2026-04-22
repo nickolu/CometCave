@@ -50,6 +50,7 @@ export const FantasyCharacterSchema = z.object({
   pendingStatPoints: z.number().default(0),
   mana: z.number().optional(),
   maxMana: z.number().optional(),
+  explorationShield: z.number().optional(),
   spellbook: z.array(SpellSchema).optional(),
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),

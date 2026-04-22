@@ -128,7 +128,7 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     spellCooldowns: {},
     activeSpellEffects: [],
     spellTagsUsed: [],
-    shield: 0,
+    shield: character.explorationShield ?? 0,
     statusEffects: [],
     ap: MAX_AP,
     maxAp: MAX_AP,

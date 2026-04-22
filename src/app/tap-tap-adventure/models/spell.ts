@@ -77,6 +77,8 @@ export const ExplorationEffectTypeSchema = z.enum([
   'heal',
   'mana_restore',
   'speed_boost',
+  'shield',
+  'reveal',
 ])
 export type ExplorationEffectType = z.infer<typeof ExplorationEffectTypeSchema>
 
