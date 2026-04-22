@@ -8,6 +8,7 @@ interface RegionMapProps {
   characterLevel: number
   visitedRegions?: string[]
   conqueredRegions?: string[]
+  onRegionClick?: (regionId: string) => void
 }
 
 // Absolute SVG coordinates in 400x1100 viewBox (bottom = high y, top = low y)
@@ -138,6 +139,7 @@ function RegionNode({
   isConquered,
   accessible,
   characterLevel,
+  onRegionClick,
 }: {
   region: Region
   x: number
@@ -147,10 +149,12 @@ function RegionNode({
   isConquered: boolean
   accessible: boolean
   characterLevel: number
+  onRegionClick?: (regionId: string) => void
 }) {
   const diffColor = DIFFICULTY_COLOR[region.difficulty] ?? DIFFICULTY_COLOR.easy
   const displayName = region.name.length > 12 ? region.name.slice(0, 11) + '\u2026' : region.name
   const isLocked = !isVisited && !isCurrent
+  const isClickable = isVisited && accessible && !isCurrent && !!onRegionClick
 
   if (isLocked) {
     // Fog-of-war: blurred dark box
@@ -179,7 +183,11 @@ function RegionNode({
 
   // Visited / current node
   return (
-    <g transform={`translate(${x},${y})`}>
+    <g
+      transform={`translate(${x},${y})`}
+      style={isClickable ? { cursor: 'pointer' } : undefined}
+      onClick={isClickable ? () => onRegionClick!(region.id) : undefined}
+    >
       {/* Pulse ring for current region */}
       {isCurrent && (
         <circle
@@ -275,6 +283,30 @@ function RegionNode({
           ⭐
         </text>
       )}
+
+      {/* Travel indicator for clickable nodes */}
+      {isClickable && (
+        <>
+          <rect
+            x={-32} y={-26} width={64} height={52} rx={10}
+            fill="rgba(99,179,237,0.08)"
+            stroke="rgba(99,179,237,0.35)"
+            strokeWidth={1}
+            className="hover:fill-[rgba(99,179,237,0.18)]"
+            style={{ pointerEvents: 'all' }}
+          />
+          <text
+            y={42}
+            textAnchor="middle"
+            fontSize={7}
+            fill="#60a5fa"
+            fontWeight="bold"
+            style={{ pointerEvents: 'none' }}
+          >
+            ▶ Travel
+          </text>
+        </>
+      )}
     </g>
   )
 }
@@ -330,6 +362,7 @@ export function RegionMap({
   characterLevel,
   visitedRegions = [],
   conqueredRegions = [],
+  onRegionClick,
 }: RegionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const regions = Object.values(REGIONS)
@@ -485,6 +518,7 @@ export function RegionMap({
                 isConquered={isConquered}
                 accessible={accessible}
                 characterLevel={characterLevel}
+                onRegionClick={onRegionClick}
               />
             )
           })}
