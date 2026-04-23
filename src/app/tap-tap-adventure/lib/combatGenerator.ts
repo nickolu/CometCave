@@ -59,6 +59,38 @@ const enemySchemaForOpenAI = {
                   damageBoost: { type: 'number', description: 'Temporary damage multiplier (e.g., 1.5 = +50% for 2 turns).' },
                 },
               },
+              onHitEffect: {
+                type: 'object',
+                description: 'On-hit effect for equipment loot items (uncommon+).',
+                properties: {
+                  type: { type: 'string', enum: ['poison', 'burn', 'freeze', 'lifesteal', 'stun', 'bleed'] },
+                  chance: { type: 'number' },
+                  damage: { type: 'number' },
+                  duration: { type: 'number' },
+                  description: { type: 'string' },
+                },
+                required: ['type', 'chance', 'description'],
+              },
+              passiveEffect: {
+                type: 'object',
+                description: 'Passive effect for equipment loot items (rare+).',
+                properties: {
+                  type: { type: 'string', enum: ['crit_bonus', 'thorns', 'dodge', 'lifesteal_passive', 'poison_immunity', 'burn_immunity', 'double_gold', 'hp_regen', 'mana_regen', 'loot_bonus', 'xp_bonus'] },
+                  value: { type: 'number' },
+                  description: { type: 'string' },
+                },
+                required: ['type', 'value', 'description'],
+              },
+              drawback: {
+                type: 'object',
+                description: 'Stat penalty for powerful loot items (epic+).',
+                properties: {
+                  stat: { type: 'string' },
+                  value: { type: 'number' },
+                  description: { type: 'string' },
+                },
+                required: ['stat', 'value', 'description'],
+              },
             },
             required: ['id', 'name', 'description', 'quantity'],
           },
@@ -126,6 +158,7 @@ Stat guidelines for a level ${character.level} character:
 - Enemy defense: ${2 + character.level} (±20%)
 - Gold reward: ${5 + character.level * 5}
 - Include 1-2 loot items. Vary the types: healing potions (heal: 15), shield potions (shield: 15), mana potions (manaRestore: 15), antidotes (cleanse: true), rage elixirs (damageBoost: 1.5), or stat-boosting items (strength/intelligence/luck). Don't always drop healing potions — tactical variety matters.
+- For rare+ equipment loot items, include an onHitEffect or passiveEffect. For epic+ equipment loot items, consider adding a drawback.
 - Optionally include a special ability with cooldown of 2-4 turns
 - Some enemies can inflict status effects (poison, burn, slow, curse, fear). Include a statusAbility field with type, value (damage per turn or effect strength), duration (2-4 turns), and chance (0-1 probability of inflicting)
 - Assign an element to the enemy (fire, ice, lightning, shadow, nature, arcane, or none). Choose an element that fits the enemy's theme. For example: wolves = nature, fire elementals = fire, undead = shadow, golems = none.

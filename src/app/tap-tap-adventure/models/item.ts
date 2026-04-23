@@ -52,6 +52,20 @@ export const ItemSchema = z.object({
     value: z.number(),
     description: z.string(),
   }).optional(),
+  passiveEffect: z.object({
+    type: z.enum(['crit_bonus', 'thorns', 'dodge', 'lifesteal_passive', 'poison_immunity', 'burn_immunity', 'double_gold', 'hp_regen', 'mana_regen', 'loot_bonus', 'xp_bonus']),
+    value: z.number(),
+    description: z.string(),
+  }).optional(),
+  grantsSpell: z.object({
+    spellId: z.string(),
+    spellName: z.string(),
+    usesPerCombat: z.number(),
+    manaCostOverride: z.number().optional(),
+    description: z.string(),
+  }).optional(),
 })
 
 export type Item = z.infer<typeof ItemSchema>
+export type PassiveEffect = NonNullable<Item['passiveEffect']>
+export type GrantsSpell = NonNullable<Item['grantsSpell']>

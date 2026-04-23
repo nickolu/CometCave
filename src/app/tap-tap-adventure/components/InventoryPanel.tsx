@@ -270,6 +270,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       On Hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
                     </div>
                   )}
+                  {item.passiveEffect && (
+                    <div className="text-xs text-cyan-400 mt-0.5">
+                      Passive: {item.passiveEffect.description}
+                    </div>
+                  )}
+                  {item.grantsSpell && (
+                    <div className="text-xs text-purple-400 mt-0.5">
+                      Grants Spell: {item.grantsSpell.spellName} ({item.grantsSpell.usesPerCombat}x/combat)
+                    </div>
+                  )}
                   {item.drawback && (
                     <div className="text-xs text-red-400 mt-0.5">
                       Drawback: {item.drawback.description} ({item.drawback.value} {item.drawback.stat})
@@ -421,6 +431,18 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
               <div className="space-y-1">
                 <div className="text-xs text-gray-500 uppercase font-semibold">On Hit Effect</div>
                 <div className="text-sm text-orange-400">{detailItem.onHitEffect.description} ({Math.round(detailItem.onHitEffect.chance * 100)}% chance)</div>
+              </div>
+            )}
+            {detailItem.passiveEffect && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 uppercase font-semibold">Passive Effect</div>
+                <div className="text-sm text-cyan-400">{detailItem.passiveEffect.description}</div>
+              </div>
+            )}
+            {detailItem.grantsSpell && (
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500 uppercase font-semibold">Grants Spell</div>
+                <div className="text-sm text-purple-400">{detailItem.grantsSpell.spellName} — {detailItem.grantsSpell.description} ({detailItem.grantsSpell.usesPerCombat}x per combat)</div>
               </div>
             )}
             {detailItem.drawback && (

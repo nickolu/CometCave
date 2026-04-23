@@ -603,9 +603,39 @@ export const useGameStore = create<GameStore>()(
               statAdjustments[stat] = (statAdjustments[stat] ?? 0) - currentlyEquipped.drawback.value // reverse: subtract the negative = add
             }
 
+            let updatedSpellbook = selectedCharacter.spellbook ?? []
+
+            // If the new item grants a spell, add it to the spellbook
+            if (item.grantsSpell) {
+              const gs = item.grantsSpell
+              const alreadyKnown = updatedSpellbook.some(s => s.id === gs.spellId)
+              if (!alreadyKnown) {
+                const grantedSpell = {
+                  id: gs.spellId,
+                  name: gs.spellName,
+                  description: gs.description,
+                  school: 'arcane' as const,
+                  manaCost: gs.manaCostOverride ?? 0,
+                  cooldown: 0,
+                  target: 'enemy' as const,
+                  effects: [],
+                  tags: ['item_granted'],
+                  usesPerCombat: gs.usesPerCombat,
+                }
+                updatedSpellbook = [...updatedSpellbook, grantedSpell]
+              }
+            }
+
+            // If the item being replaced granted a spell, remove it
+            if (currentlyEquipped?.grantsSpell) {
+              const oldSpellId = currentlyEquipped.grantsSpell.spellId
+              updatedSpellbook = updatedSpellbook.filter(s => s.id !== oldSpellId)
+            }
+
             const charWithEquipment = {
               ...selectedCharacter,
               inventory: updatedInventory,
+              spellbook: updatedSpellbook,
               equipment: {
                 ...equipment,
                 [targetSlot]: item,
@@ -638,9 +668,17 @@ export const useGameStore = create<GameStore>()(
             const equippedItem = equipment[slot]
             if (!equippedItem) return
 
+            // Remove granted spell from spellbook if item had one
+            let updatedSpellbookOnUnequip = selectedCharacter.spellbook ?? []
+            if (equippedItem.grantsSpell) {
+              const removeSpellId = equippedItem.grantsSpell.spellId
+              updatedSpellbookOnUnequip = updatedSpellbookOnUnequip.filter(s => s.id !== removeSpellId)
+            }
+
             const updatedChar = {
               ...selectedCharacter,
               inventory: [...selectedCharacter.inventory, equippedItem],
+              spellbook: updatedSpellbookOnUnequip,
               equipment: {
                 ...equipment,
                 [slot]: null,
@@ -1419,7 +1457,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 28,
+      version: 29,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1547,6 +1585,19 @@ export const useGameStore = create<GameStore>()(
                 ...lm,
                 explored: (lm as Record<string, unknown>).explored !== undefined ? Boolean((lm as Record<string, unknown>).explored) : false,
               }))
+            }
+            // v29: Backfill rarity on all inventory items and equipped items
+            if ((char as FantasyCharacter).inventory) {
+              (char as FantasyCharacter).inventory = (char as FantasyCharacter).inventory.map(item => ({
+                ...item,
+                rarity: item.rarity ?? 'common',
+              }))
+            }
+            const eq = (char as FantasyCharacter).equipment
+            if (eq) {
+              if (eq.weapon && !eq.weapon.rarity) eq.weapon = { ...eq.weapon, rarity: 'common' }
+              if (eq.armor && !eq.armor.rarity) eq.armor = { ...eq.armor, rarity: 'common' }
+              if (eq.accessory && !eq.accessory.rarity) eq.accessory = { ...eq.accessory, rarity: 'common' }
             }
           }
         }

@@ -50,6 +50,38 @@ const shopSchemaForOpenAI = {
               revealLandmark: { type: 'boolean', description: 'Set to true for map items that reveal hidden landmarks. Use for items like treasure maps, ancient charts, or cartographer notes.' },
             },
           },
+          onHitEffect: {
+            type: 'object',
+            description: 'On-hit effect for equipment items (uncommon+). Triggers with a chance on each attack.',
+            properties: {
+              type: { type: 'string', enum: ['poison', 'burn', 'freeze', 'lifesteal', 'stun', 'bleed'] },
+              chance: { type: 'number', description: 'Probability (0-1) of triggering per hit' },
+              damage: { type: 'number', description: 'Damage per turn for DoT effects' },
+              duration: { type: 'number', description: 'Duration in turns' },
+              description: { type: 'string' },
+            },
+            required: ['type', 'chance', 'description'],
+          },
+          passiveEffect: {
+            type: 'object',
+            description: 'Passive effect for equipment items (rare+). Always active while equipped.',
+            properties: {
+              type: { type: 'string', enum: ['crit_bonus', 'thorns', 'dodge', 'lifesteal_passive', 'poison_immunity', 'burn_immunity', 'double_gold', 'hp_regen', 'mana_regen', 'loot_bonus', 'xp_bonus'] },
+              value: { type: 'number', description: 'Effect magnitude (e.g. 0.05 = 5% for crit_bonus)' },
+              description: { type: 'string' },
+            },
+            required: ['type', 'value', 'description'],
+          },
+          drawback: {
+            type: 'object',
+            description: 'Stat penalty for powerful items (epic+). Balances strong bonuses.',
+            properties: {
+              stat: { type: 'string', description: 'Stat to reduce: strength, intelligence, luck, charisma' },
+              value: { type: 'number', description: 'Amount to reduce (use negative values, e.g. -2)' },
+              description: { type: 'string' },
+            },
+            required: ['stat', 'value', 'description'],
+          },
         },
         required: ['id', 'name', 'description', 'quantity', 'price'],
       },
@@ -92,6 +124,7 @@ Each item needs a unique id (e.g. "shop-item-1"), a creative name, a short descr
 
 - Each item should have a rarity: common (basic supplies), uncommon (quality goods), rare (special finds), epic (very rare), legendary (once in a lifetime)
 - Most items should be common or uncommon. Include at most 1 rare item. Epic/legendary items should almost never appear in shops.
+- For rare+ equipment items, include an onHitEffect or passiveEffect. For epic+ equipment items, consider adding a drawback to balance the power.
 
 Character:
 ${JSON.stringify({ name: character.name, race: character.race, class: character.class, level: character.level }, null, 2)}`,

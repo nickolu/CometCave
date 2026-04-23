@@ -110,6 +110,35 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     ? getMountFreeMoves(character.activeMount.rarity)
     : 0
 
+  // Gather passive effects from equipped items and apply drawback stat penalties
+  const equippedItems = [equipment.weapon, equipment.armor, equipment.accessory].filter(Boolean) as Item[]
+  let bonusCritChance = 0
+  let dodgeChance = 0
+  const initialStatusEffects: StatusEffect[] = []
+
+  for (const item of equippedItems) {
+    // Passive effects
+    if (item.passiveEffect) {
+      const pe = item.passiveEffect
+      if (pe.type === 'crit_bonus') bonusCritChance += pe.value
+      if (pe.type === 'dodge') dodgeChance += pe.value
+      if (pe.type === 'thorns') {
+        // Inject thorns as a persistent status effect (turnsRemaining = large number)
+        initialStatusEffects.push({
+          id: `passive-thorns-${item.id}`,
+          name: 'Thorns',
+          type: 'thorns',
+          value: pe.value,
+          turnsRemaining: 9999,
+          source: 'player',
+        })
+      }
+    }
+
+    // Note: drawback stat penalties are already applied to character stats on equip,
+    // so we do not re-apply them here to avoid double-counting.
+  }
+
   return {
     hp: currentHp,
     maxHp,
@@ -129,7 +158,7 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     activeSpellEffects: [],
     spellTagsUsed: [],
     shield: character.explorationShield ?? 0,
-    statusEffects: [],
+    statusEffects: initialStatusEffects,
     ap: MAX_AP,
     maxAp: MAX_AP,
     turnActions: [],
@@ -143,6 +172,8 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     mercenaryMaxHp: character.activeMercenary
       ? getMercenaryMaxHp(character.activeMercenary.rarity)
       : undefined,
+    bonusCritChance: bonusCritChance > 0 ? bonusCritChance : undefined,
+    dodgeChance: dodgeChance > 0 ? dodgeChance : undefined,
   }
 }
 
@@ -874,7 +905,8 @@ export function processPlayerAction(
         const { damage: rawAtkDmg, elementalMultiplier, isCritical } = calculatePlayerDamage(
           playerState,
           effectiveEnemy,
-          character
+          character,
+          playerState.bonusCritChance ?? 0
         )
         const wRangeMult = rangeSystemActive
           ? getWeaponRangeMultiplier(
@@ -892,6 +924,21 @@ export function processPlayerAction(
           enemy = onHitResult.enemy
           playerState = onHitResult.playerState
           newLogs.push(...onHitResult.logs)
+        }
+        // Apply lifesteal_passive from equipped items
+        {
+          const equippedItems = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+          for (const eqItem of equippedItems) {
+            if (eqItem.passiveEffect?.type === 'lifesteal_passive' && damage > 0) {
+              const healAmt = Math.max(1, Math.floor(damage * eqItem.passiveEffect.value))
+              const oldHp = playerState.hp
+              playerState = { ...playerState, hp: Math.min(playerState.maxHp, playerState.hp + healAmt) }
+              const actualHeal = playerState.hp - oldHp
+              if (actualHeal > 0) {
+                newLogs.push({ turn: turnNumber, actor: 'player', action: 'heal', description: `Lifesteal: restored ${actualHeal} HP!` })
+              }
+            }
+          }
         }
         const comboText =
           playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
@@ -933,6 +980,21 @@ export function processPlayerAction(
           enemy = onHitResult.enemy
           playerState = onHitResult.playerState
           newLogs.push(...onHitResult.logs)
+        }
+        // Apply lifesteal_passive from equipped items
+        {
+          const equippedItems = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+          for (const eqItem of equippedItems) {
+            if (eqItem.passiveEffect?.type === 'lifesteal_passive' && damage > 0) {
+              const healAmt = Math.max(1, Math.floor(damage * eqItem.passiveEffect.value))
+              const oldHp = playerState.hp
+              playerState = { ...playerState, hp: Math.min(playerState.maxHp, playerState.hp + healAmt) }
+              const actualHeal = playerState.hp - oldHp
+              if (actualHeal > 0) {
+                newLogs.push({ turn: turnNumber, actor: 'player', action: 'heal', description: `Lifesteal: restored ${actualHeal} HP!` })
+              }
+            }
+          }
         }
         const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
         const elemText = getEffectivenessText(elementalMultiplier)
@@ -1334,7 +1396,13 @@ export function processPlayerAction(
       ? undefined
       : result.logs.find(l => l.damage && l.damage > 0)
     let actualDamageDealt = 0
-    if (enemyDmgLog && enemyDmgLog.damage) {
+    // Dodge check: if player has dodge chance, they may evade the attack entirely
+    const playerDodgeChance = playerState.dodgeChance ?? 0
+    const playerDodged = playerDodgeChance > 0 && Math.random() < playerDodgeChance
+    if (playerDodged && enemyDmgLog) {
+      newLogs.push({ turn: turnNumber, actor: 'player', action: 'dodge', description: 'You nimbly dodge the attack!' })
+    }
+    if (!playerDodged && enemyDmgLog && enemyDmgLog.damage) {
       const originalDmg = enemyDmgLog.damage
       playerState.hp = Math.min(playerState.maxHp, playerState.hp + originalDmg)
 
@@ -1413,14 +1481,23 @@ export function processPlayerAction(
     // Enemy status ability: chance to inflict status effect on player
     if (enemy.statusAbility && actualDamageDealt > 0) {
       if (Math.random() < enemy.statusAbility.chance) {
-        const statusEffect = createStatusEffectFromAbility(
-          enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
-        )
-        playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
-        newLogs.push({
-          turn: turnNumber, actor: 'enemy', action: 'status_effect',
-          description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
-        })
+        // Check poison/burn immunity from passive effects
+        const equippedItemsForImmunity = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+        const hasPoisonImmunity = equippedItemsForImmunity.some(i => i.passiveEffect?.type === 'poison_immunity')
+        const hasBurnImmunity = equippedItemsForImmunity.some(i => i.passiveEffect?.type === 'burn_immunity')
+        const isImmune = (enemy.statusAbility.type === 'poison' && hasPoisonImmunity) || (enemy.statusAbility.type === 'burn' && hasBurnImmunity)
+        if (isImmune) {
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'status_effect', description: `You are immune to ${enemy.statusAbility.type}!` })
+        } else {
+          const statusEffect = createStatusEffectFromAbility(
+            enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
+          )
+          playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
+          newLogs.push({
+            turn: turnNumber, actor: 'enemy', action: 'status_effect',
+            description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+          })
+        }
       }
     }
   } else {
@@ -1452,6 +1529,13 @@ export function processPlayerAction(
           description: `${enemy.name} swings wildly and misses in the poor visibility!`,
         })
       } else {
+      // Dodge check for fallback attack
+      const fbPlayerDodgeChance = playerState.dodgeChance ?? 0
+      const fbPlayerDodged = fbPlayerDodgeChance > 0 && Math.random() < fbPlayerDodgeChance
+      if (fbPlayerDodged) {
+        newLogs.push({ turn: turnNumber, actor: 'player', action: 'dodge', description: 'You nimbly dodge the attack!' })
+      }
+      if (!fbPlayerDodged) {
       const enemyDmg = Math.max(1, Math.round(enemyRawDmg * fbRangeMult))
       const dmgReduction = getActiveDamageReduction(playerState)
       const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
@@ -1528,24 +1612,34 @@ export function processPlayerAction(
       // Enemy status ability: chance to inflict status effect on player
       if (enemy.statusAbility) {
         if (Math.random() < enemy.statusAbility.chance) {
-          const statusEffect = createStatusEffectFromAbility(
-            enemy.statusAbility.type,
-            enemy.statusAbility.value,
-            enemy.statusAbility.duration,
-            'enemy'
-          )
-          playerState = {
-            ...playerState,
-            statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect),
+          // Check poison/burn immunity from passive effects
+          const fbEquippedItemsForImmunity = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+          const fbHasPoisonImmunity = fbEquippedItemsForImmunity.some(i => i.passiveEffect?.type === 'poison_immunity')
+          const fbHasBurnImmunity = fbEquippedItemsForImmunity.some(i => i.passiveEffect?.type === 'burn_immunity')
+          const fbIsImmune = (enemy.statusAbility.type === 'poison' && fbHasPoisonImmunity) || (enemy.statusAbility.type === 'burn' && fbHasBurnImmunity)
+          if (fbIsImmune) {
+            newLogs.push({ turn: turnNumber, actor: 'player', action: 'status_effect', description: `You are immune to ${enemy.statusAbility.type}!` })
+          } else {
+            const statusEffect = createStatusEffectFromAbility(
+              enemy.statusAbility.type,
+              enemy.statusAbility.value,
+              enemy.statusAbility.duration,
+              'enemy'
+            )
+            playerState = {
+              ...playerState,
+              statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect),
+            }
+            newLogs.push({
+              turn: turnNumber,
+              actor: 'enemy',
+              action: 'status_effect',
+              description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+            })
           }
-          newLogs.push({
-            turn: turnNumber,
-            actor: 'enemy',
-            action: 'status_effect',
-            description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
-          })
         }
       }
+      } // end if (!fbPlayerDodged)
       } // end else (enemyRawDmg > 0)
     }
   }
