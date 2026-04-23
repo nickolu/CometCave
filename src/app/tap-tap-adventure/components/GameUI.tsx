@@ -49,6 +49,7 @@ import { BestiaryPanel } from './BestiaryPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { TargetList } from './TargetList'
+import { AreaMap } from './AreaMap'
 import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
@@ -144,6 +145,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [questSubTab, setQuestSubTab] = useState<QuestSubTab>('quests')
   const [socialSubTab, setSocialSubTab] = useState<SocialSubTab>('party')
   const [moreSubTab, setMoreSubTab] = useState<MoreSubTab>('status')
+  const [mapView, setMapView] = useState<'area' | 'world'>('area')
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [showNPCPanel, setShowNPCPanel] = useState(false)
   const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
@@ -719,13 +721,43 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
-              <RegionMap
-                currentRegionId={character?.currentRegion ?? 'green_meadows'}
-                characterLevel={character?.level ?? 1}
-                visitedRegions={character?.visitedRegions ?? []}
-                conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
-                onRegionClick={handleRegionClick}
-              />
+              <div className="flex gap-1 mb-3">
+                <button onClick={() => setMapView('area')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'area' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Area Map</button>
+                <button onClick={() => setMapView('world')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'world' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>World Map</button>
+              </div>
+              {mapView === 'area' && character?.landmarkState ? (
+                <AreaMap
+                  playerPosition={character.landmarkState.position ?? { x: 0, y: 0 }}
+                  landmarks={character.landmarkState.landmarks.map((lm, i) => ({
+                    index: i,
+                    name: lm.name,
+                    icon: lm.icon,
+                    position: lm.position ?? { x: 0, y: 0 },
+                    explored: lm.explored ?? false,
+                    hidden: lm.hidden ?? false,
+                    hasShop: lm.hasShop ?? false,
+                  }))}
+                  exits={(character.landmarkState.exitPositions ?? []).map((exit, i) => ({
+                    index: character.landmarkState!.landmarks.length + i,
+                    name: exit.name,
+                    icon: exit.icon,
+                    position: exit.position,
+                  }))}
+                  activeTargetIndex={character.landmarkState.activeTargetIndex ?? 0}
+                  regionBounds={character.landmarkState.regionBounds ?? { width: 500, height: 500 }}
+                  regionName={getRegion(character.currentRegion ?? 'green_meadows').name}
+                  regionIcon={getRegion(character.currentRegion ?? 'green_meadows').icon}
+                  onSelectTarget={(i) => setActiveTarget(i)}
+                />
+              ) : (
+                <RegionMap
+                  currentRegionId={character?.currentRegion ?? 'green_meadows'}
+                  characterLevel={character?.level ?? 1}
+                  visitedRegions={character?.visitedRegions ?? []}
+                  conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
+                  onRegionClick={handleRegionClick}
+                />
+              )}
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
               <SkillPanel
@@ -845,13 +877,45 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               </>
             )}
             {mobileCategory === 'quest' && questSubTab === 'map' && (
-              <RegionMap
-                currentRegionId={character?.currentRegion ?? 'green_meadows'}
-                characterLevel={character?.level ?? 1}
-                visitedRegions={character?.visitedRegions ?? []}
-                conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
-                onRegionClick={handleRegionClick}
-              />
+              <div>
+                <div className="flex gap-1 mb-3">
+                  <button onClick={() => setMapView('area')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'area' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Area</button>
+                  <button onClick={() => setMapView('world')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'world' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>World</button>
+                </div>
+                {mapView === 'area' && character?.landmarkState ? (
+                  <AreaMap
+                    playerPosition={character.landmarkState.position ?? { x: 0, y: 0 }}
+                    landmarks={character.landmarkState.landmarks.map((lm, i) => ({
+                      index: i,
+                      name: lm.name,
+                      icon: lm.icon,
+                      position: lm.position ?? { x: 0, y: 0 },
+                      explored: lm.explored ?? false,
+                      hidden: lm.hidden ?? false,
+                      hasShop: lm.hasShop ?? false,
+                    }))}
+                    exits={(character.landmarkState.exitPositions ?? []).map((exit, i) => ({
+                      index: character.landmarkState!.landmarks.length + i,
+                      name: exit.name,
+                      icon: exit.icon,
+                      position: exit.position,
+                    }))}
+                    activeTargetIndex={character.landmarkState.activeTargetIndex ?? 0}
+                    regionBounds={character.landmarkState.regionBounds ?? { width: 500, height: 500 }}
+                    regionName={getRegion(character.currentRegion ?? 'green_meadows').name}
+                    regionIcon={getRegion(character.currentRegion ?? 'green_meadows').icon}
+                    onSelectTarget={(i) => setActiveTarget(i)}
+                  />
+                ) : (
+                  <RegionMap
+                    currentRegionId={character?.currentRegion ?? 'green_meadows'}
+                    characterLevel={character?.level ?? 1}
+                    visitedRegions={character?.visitedRegions ?? []}
+                    conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
+                    onRegionClick={handleRegionClick}
+                  />
+                )}
+              </div>
             )}
             {mobileCategory === 'quest' && questSubTab === 'bestiary' && character && (
               <BestiaryPanel bestiary={character.bestiary ?? []} />
