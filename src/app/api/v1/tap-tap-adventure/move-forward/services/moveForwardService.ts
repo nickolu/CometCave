@@ -35,6 +35,20 @@ export async function moveForwardService(
     const regionLengthSeed = `${currentRegion}-${character.id}-${visitCount}-length`
     const regionLength = 150 + Math.floor(seededRandom(regionLengthSeed)() * 101)
 
+    // Generate exit positions spread around region edges, one per connected region
+    const connected = getConnectedRegions(region.id)
+    const exitPositions = connected.map((connRegion, i) => {
+      const angle = (i / connected.length) * Math.PI * 2
+      const edgeX = 250 + Math.cos(angle) * 240
+      const edgeY = 250 + Math.sin(angle) * 240
+      return {
+        regionId: connRegion.id,
+        name: `Path to ${connRegion.name}`,
+        icon: connRegion.icon,
+        position: { x: Math.round(edgeX), y: Math.round(edgeY) },
+      }
+    })
+
     const initializedCharacter: FantasyCharacter = {
       ...updatedCharacter,
       landmarkState: {
@@ -48,7 +62,8 @@ export async function moveForwardService(
         activeTargetIndex: 0,
         regionLength,
         position: { x: 0, y: 0 },
-        exitPosition: { x: 490, y: 250 },
+        exitPosition: exitPositions[0]?.position ?? { x: 490, y: 250 },
+        exitPositions,
         regionBounds: { width: 500, height: 500 },
       },
     }
@@ -77,15 +92,16 @@ export async function moveForwardService(
           position2d: lm.position,
         }))
         .filter((_, i) => !landmarks[i].hidden),
-      {
-        index: landmarks.length,
-        name: `Leave ${region.name}`,
-        icon: '🚪',
+      ...exitPositions.map((exit, i) => ({
+        index: landmarks.length + i,
+        name: exit.name,
+        icon: exit.icon,
         type: 'region_exit' as const,
         position: regionLength,
         distance: regionLength,
-        position2d: { x: 490, y: 250 },
-      },
+        position2d: exit.position,
+        exitRegionId: exit.regionId,
+      })),
     ]
 
     return {
@@ -107,9 +123,14 @@ export async function moveForwardService(
   // Compute updated 2D position for this step
   const isExitTargetForPos = activeTargetIndex >= landmarkState.landmarks.length
   let updatedPosition = landmarkState.position
-  const activePosTarget: Vec2 | undefined = isExitTargetForPos
-    ? landmarkState.exitPosition
-    : landmarkState.landmarks[activeTargetIndex]?.position
+  let activePosTarget: Vec2 | undefined
+  if (isExitTargetForPos) {
+    const exitIdx = activeTargetIndex - landmarkState.landmarks.length
+    const exits = landmarkState.exitPositions ?? []
+    activePosTarget = exits[exitIdx]?.position ?? landmarkState.exitPosition
+  } else {
+    activePosTarget = landmarkState.landmarks[activeTargetIndex]?.position
+  }
   if (updatedPosition && activePosTarget) {
     updatedPosition = moveToward(updatedPosition, activePosTarget)
   }
@@ -211,19 +232,122 @@ export async function moveForwardService(
       }
     }
   } else {
-    // Exit target arrival — triggers region travel decision
+    // Exit target arrival — triggers travel decision for the specific exit chosen
     const regionLength = landmarkState.regionLength ?? 200
+    const exitIdx = activeTargetIndex - landmarkState.landmarks.length
+    const exits = landmarkState.exitPositions ?? []
+    const targetExit = exits[exitIdx]
 
-    // Check arrival: prefer 2D check, fall back to 1D
+    // Determine which exit position to check arrival against
+    const exitTargetPos = targetExit?.position ?? landmarkState.exitPosition
     const exitCharPos = updatedPosition
-    const exitTargetPos = landmarkState.exitPosition
     const arrivedAtExit2d = exitCharPos && exitTargetPos ? hasArrived(exitCharPos, exitTargetPos) : false
     const arrivedAtExit1d = newPositionInRegion >= regionLength
     const hasArrivedAtExit = arrivedAtExit2d || arrivedAtExit1d
 
     if (hasArrivedAtExit) {
-      const connected = getConnectedRegions(region.id)
       const exitEventId = `region-exit-${Date.now()}`
+      const visitedRegions = character.visitedRegions ?? ['green_meadows']
+
+      const characterWithUpdatedState: FantasyCharacter = {
+        ...updatedCharacter,
+        landmarkState: {
+          ...landmarkState,
+          positionInRegion: newPositionInRegion,
+          position: updatedPosition,
+        },
+      }
+
+      // If we have a specific target exit, show a focused decision for that region
+      if (targetExit) {
+        const targetRegion = getRegion(targetExit.regionId)
+        const meetsLevel = canEnterRegion(targetRegion, character.level)
+        const isVisited = visitedRegions.includes(targetExit.regionId)
+
+        let travelOptions
+        if (!meetsLevel) {
+          travelOptions = [
+            {
+              id: 'turn-back',
+              text: `${region.icon} Turn back — not high enough level (need Lv.${targetRegion.minLevel})`,
+              successProbability: 1.0,
+              successDescription: `You are not ready to enter ${targetRegion.name} yet. You return to explore ${region.name}.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You turn back from the path to ${targetRegion.name}.`,
+            },
+          ]
+        } else if (!isVisited) {
+          travelOptions = [
+            {
+              id: `travel-${targetExit.regionId}`,
+              text: `⚔️ Face the Guardian of ${targetRegion.icon} ${targetRegion.name}`,
+              requiresBoss: true,
+              successProbability: 1.0,
+              successDescription: `You approach ${targetRegion.name} and prepare to face its guardian.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You enter ${targetRegion.name}.`,
+            },
+            {
+              id: 'turn-back',
+              text: `${region.icon} Turn back`,
+              successProbability: 1.0,
+              successDescription: `You decide to continue exploring ${region.name}.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You continue in ${region.name}.`,
+            },
+          ]
+        } else {
+          travelOptions = [
+            {
+              id: `travel-${targetExit.regionId}`,
+              text: `Enter ${targetRegion.icon} ${targetRegion.name}`,
+              successProbability: 1.0,
+              successDescription: `You set out toward ${targetRegion.name}. ${targetRegion.description}`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You travel to ${targetRegion.name}.`,
+            },
+            {
+              id: 'turn-back',
+              text: `${region.icon} Stay in ${region.name}`,
+              successProbability: 1.0,
+              successDescription: `You decide to continue exploring ${region.name}.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You continue in ${region.name}.`,
+            },
+          ]
+        }
+
+        return {
+          character: characterWithUpdatedState,
+          event: {
+            id: exitEventId,
+            type: 'crossroads',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+          },
+          decisionPoint: {
+            id: `decision-${exitEventId}`,
+            eventId: exitEventId,
+            prompt: `You have reached the ${targetExit.icon} path toward ${targetRegion.name}. ${isVisited ? `This region is familiar to you.` : `A guardian blocks the way to this uncharted territory.`}`,
+            options: travelOptions,
+            resolved: false,
+          },
+        }
+      }
+
+      // Fallback: no specific exit found — show all connected regions (backward compat)
+      const connected = getConnectedRegions(region.id)
 
       const difficultyLabel: Record<string, string> = {
         easy: 'Easy',
@@ -231,8 +355,6 @@ export async function moveForwardService(
         hard: 'Hard',
         very_hard: 'Very Hard',
       }
-
-      const visitedRegions = character.visitedRegions ?? ['green_meadows']
 
       const travelOptions = connected.map(connectedRegion => {
         const meetsLevel = canEnterRegion(connectedRegion, character.level)
@@ -265,15 +387,6 @@ export async function moveForwardService(
         failureDescription: '',
         failureEffects: {},
         resultDescription: `You continue in ${region.name}.`,
-      }
-
-      const characterWithUpdatedState: FantasyCharacter = {
-        ...updatedCharacter,
-        landmarkState: {
-          ...landmarkState,
-          positionInRegion: newPositionInRegion,
-          position: updatedPosition,
-        },
       }
 
       return {

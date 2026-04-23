@@ -92,6 +92,12 @@ export const FantasyCharacterSchema = z.object({
     regionLength: z.number().default(200),
     position: z.object({ x: z.number(), y: z.number() }).optional(),
     exitPosition: z.object({ x: z.number(), y: z.number() }).optional(),
+    exitPositions: z.array(z.object({
+      regionId: z.string(),
+      name: z.string(),
+      icon: z.string(),
+      position: z.object({ x: z.number(), y: z.number() }),
+    })).optional(),
     regionBounds: z.object({ width: z.number(), height: z.number() }).optional(),
   }).optional(),
 })
