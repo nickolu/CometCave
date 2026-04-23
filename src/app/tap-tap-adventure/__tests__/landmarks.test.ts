@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { generateLandmarks, seededRandom } from '../lib/landmarkGenerator'
 import { getTemplatesForRegion, LANDMARK_TEMPLATES } from '../config/landmarks'
+import { getRegion } from '../config/regions'
 
 const ALL_REGION_IDS = [
   'starting_village',
@@ -21,9 +22,9 @@ const ALL_REGION_IDS = [
 ]
 
 // Helper to compute regionLength the same way the service does
-function generateRegionLength(regionId: string, charId: string, visitCount: number): number {
+function generateRegionLength(regionId: string, charId: string, visitCount: number, difficultyMultiplier: number = 1): number {
   const seed = `${regionId}-${charId}-${visitCount}-length`
-  return 150 + Math.floor(seededRandom(seed)() * 101)
+  return Math.floor((150 + Math.floor(seededRandom(seed)() * 101)) * difficultyMultiplier)
 }
 
 describe('generateLandmarks', () => {
@@ -77,20 +78,24 @@ describe('generateLandmarks', () => {
     expect(aIds).not.toBe(bIds)
   })
 
-  it('first landmark distance is in range 20-40', () => {
+  it('first landmark distance scales with region difficulty', () => {
     for (const regionId of ALL_REGION_IDS) {
-      const landmarks = generateLandmarks(regionId, 'char-1')
-      expect(landmarks[0].distanceFromEntry).toBeGreaterThanOrEqual(20)
-      expect(landmarks[0].distanceFromEntry).toBeLessThanOrEqual(40)
+      const region = getRegion(regionId)
+      const mult = region.difficultyMultiplier
+      const landmarks = generateLandmarks(regionId, 'char-1', 0, mult)
+      expect(landmarks[0].distanceFromEntry).toBeGreaterThanOrEqual(Math.floor(20 * mult))
+      expect(landmarks[0].distanceFromEntry).toBeLessThanOrEqual(Math.floor(40 * mult))
     }
   })
 
-  it('all landmark distances are in range [20, 140]', () => {
+  it('all landmark distances scale with region difficulty', () => {
     for (const regionId of ALL_REGION_IDS) {
-      const landmarks = generateLandmarks(regionId, 'char-1')
+      const region = getRegion(regionId)
+      const mult = region.difficultyMultiplier
+      const landmarks = generateLandmarks(regionId, 'char-1', 0, mult)
       for (const lm of landmarks) {
-        expect(lm.distanceFromEntry).toBeGreaterThanOrEqual(20)
-        expect(lm.distanceFromEntry).toBeLessThanOrEqual(140)
+        expect(lm.distanceFromEntry).toBeGreaterThanOrEqual(Math.floor(20 * mult) - 1)
+        expect(lm.distanceFromEntry).toBeLessThanOrEqual(Math.ceil(140 * mult))
       }
     }
   })
@@ -138,11 +143,12 @@ describe('seededRandom', () => {
 })
 
 describe('regionLength determinism', () => {
-  it('returns a value in [150, 250] for all known regions', () => {
+  it('returns a scaled value based on region difficulty', () => {
     for (const regionId of ALL_REGION_IDS) {
-      const len = generateRegionLength(regionId, 'char-test', 0)
-      expect(len).toBeGreaterThanOrEqual(150)
-      expect(len).toBeLessThanOrEqual(250)
+      const region = getRegion(regionId)
+      const len = generateRegionLength(regionId, 'char-test', 0, region.difficultyMultiplier)
+      expect(len).toBeGreaterThanOrEqual(Math.floor(150 * region.difficultyMultiplier))
+      expect(len).toBeLessThanOrEqual(Math.ceil(250 * region.difficultyMultiplier))
     }
   })
 

@@ -31,11 +31,11 @@ export async function moveForwardService(
   const existingLandmarkState = character.landmarkState
   if (!existingLandmarkState || existingLandmarkState.regionId !== currentRegion) {
     const visitCount = (character.visitedRegions ?? []).filter(id => id === currentRegion).length
-    const landmarks = generateLandmarks(currentRegion, character.id, visitCount)
+    const landmarks = generateLandmarks(currentRegion, character.id, visitCount, region.difficultyMultiplier)
 
-    // Seeded region length between 150-250 steps
+    // Seeded region length between 150-250 steps, scaled by difficulty
     const regionLengthSeed = `${currentRegion}-${character.id}-${visitCount}-length`
-    const regionLength = 150 + Math.floor(seededRandom(regionLengthSeed)() * 101)
+    const regionLength = Math.floor((150 + Math.floor(seededRandom(regionLengthSeed)() * 101)) * region.difficultyMultiplier)
 
     // Generate exit positions spread around region edges, one per connected region
     const connected = getConnectedRegions(region.id)
