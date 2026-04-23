@@ -144,10 +144,24 @@ export function NPCDialoguePanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end gap-0.5">
             <span className={`text-[10px] font-semibold uppercase tracking-wide ${badgeColor}`}>
               {tier.label}
             </span>
+            {/* Disposition progress bar */}
+            <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  tier.tier === 'hostile' ? 'bg-red-500' :
+                  tier.tier === 'unfriendly' ? 'bg-orange-400' :
+                  tier.tier === 'neutral' ? 'bg-slate-400' :
+                  tier.tier === 'friendly' ? 'bg-green-400' :
+                  tier.tier === 'trusted' ? 'bg-blue-400' :
+                  'bg-amber-400'
+                }`}
+                style={{ width: `${Math.max(5, Math.min(100, ((disposition - tier.min) / (tier.max - tier.min)) * 100))}%` }}
+              />
+            </div>
             <span className="text-[9px] text-slate-500">({disposition > 0 ? '+' : ''}{disposition})</span>
           </div>
           <button
