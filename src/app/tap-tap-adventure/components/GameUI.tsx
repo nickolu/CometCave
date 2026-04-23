@@ -20,6 +20,7 @@ import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
+import { FloatingResources, ResourceEvent } from './FloatingResources'
 import { DailyRewardPopup } from './DailyRewardPopup'
 import { AchievementPanel } from './AchievementPanel'
 import { AchievementToastContainer } from './AchievementToast'
@@ -139,6 +140,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
+  const [floatingResources, setFloatingResources] = useState<ResourceEvent[]>([])
   const [mobileCategory, setMobileCategory] = useState<MobileCategory>(null)
   const [travelTarget, setTravelTarget] = useState<string | null>(null)
   const [gearSubTab, setGearSubTab] = useState<GearSubTab>('equipment')
@@ -226,6 +228,20 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       optionId: optionId,
       onSuccess: () => {
         setDecisionPoint(null)
+      },
+      onResourceDelta: (delta) => {
+        if (!delta) return
+        const events: ResourceEvent[] = []
+        if (delta.gold && delta.gold !== 0) {
+          events.push({ id: `gold-${Date.now()}`, type: 'gold', value: delta.gold })
+        }
+        if (delta.reputation && delta.reputation !== 0) {
+          events.push({ id: `rep-${Date.now()}`, type: 'reputation', value: delta.reputation })
+        }
+        if (events.length > 0) {
+          setFloatingResources(events)
+          setTimeout(() => setFloatingResources([]), 2000)
+        }
       },
     })
   }
@@ -678,28 +694,31 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     </div>
                   )
                 })()}
-                <Button
-                  className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
-                    isAutoWalking
-                      ? 'bg-gradient-to-r from-emerald-700 to-teal-700 border-emerald-400/30 shadow-lg shadow-emerald-500/20 animate-pulse'
-                      : moveForwardPending
-                      ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
-                  }`}
-                  onClick={handleMoveForward}
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUpOrLeave}
-                  onPointerLeave={handlePointerUpOrLeave}
-                  onPointerCancel={handlePointerUpOrLeave}
-                  disabled={moveForwardPending || resolveDecisionPending}
-                >
-                  {isAutoWalking
-                    ? 'Walking...'
-                    : getTravelButtonMessage({
-                        isLoading: moveForwardPending,
-                        distance: getSelectedCharacter()?.distance ?? 0,
-                      })}
-                </Button>
+                <div className="relative">
+                  <FloatingResources events={floatingResources} />
+                  <Button
+                    className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
+                      isAutoWalking
+                        ? 'bg-gradient-to-r from-emerald-700 to-teal-700 border-emerald-400/30 shadow-lg shadow-emerald-500/20 animate-pulse'
+                        : moveForwardPending
+                        ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
+                    }`}
+                    onClick={handleMoveForward}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUpOrLeave}
+                    onPointerLeave={handlePointerUpOrLeave}
+                    onPointerCancel={handlePointerUpOrLeave}
+                    disabled={moveForwardPending || resolveDecisionPending}
+                  >
+                    {isAutoWalking
+                      ? 'Walking...'
+                      : getTravelButtonMessage({
+                          isLoading: moveForwardPending,
+                          distance: getSelectedCharacter()?.distance ?? 0,
+                        })}
+                  </Button>
+                </div>
                 {gameState.genericMessage && (
                   <div className="text-sm">{gameState.genericMessage}</div>
                 )}

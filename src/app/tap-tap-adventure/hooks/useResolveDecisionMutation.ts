@@ -40,10 +40,12 @@ export function useResolveDecisionMutation() {
       decisionPoint,
       optionId,
       onSuccess,
+      onResourceDelta,
     }: {
       decisionPoint: FantasyDecisionPoint
       optionId: string
       onSuccess?: () => void
+      onResourceDelta?: (delta: ResolveDecisionResponse['resourceDelta']) => void
     }) => {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
@@ -301,6 +303,11 @@ export function useResolveDecisionMutation() {
         // Update the story event to note the mount gained (and any replacement)
         const replacedText = oldMount ? ` (Replaced ${oldMount.name})` : ''
         newStoryEvent.outcomeDescription = `${data.outcomeDescription} You gained a ${mount.name}! ${mount.icon}${replacedText}`
+      }
+
+      // Notify caller of resource changes so floating notifications can be shown
+      if (data.resourceDelta) {
+        onResourceDelta?.(data.resourceDelta)
       }
 
       // If the chosen option triggers combat, start a combat encounter
