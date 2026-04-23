@@ -146,6 +146,16 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                             On Hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
                           </div>
                         )}
+                        {item.passiveEffect && (
+                          <div className="text-xs text-cyan-400">
+                            Passive: {item.passiveEffect.description}
+                          </div>
+                        )}
+                        {item.grantsSpell && (
+                          <div className="text-xs text-purple-400">
+                            Grants: {item.grantsSpell.spellName} ({item.grantsSpell.usesPerCombat}x/combat)
+                          </div>
+                        )}
                         {item.drawback && (
                           <div className="text-xs text-red-400">
                             Drawback: {item.drawback.description} ({item.drawback.value} {item.drawback.stat})

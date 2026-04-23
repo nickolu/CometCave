@@ -227,4 +227,183 @@ describe('Combat Engine', () => {
       vi.restoreAllMocks()
     })
   })
+
+  describe('passive effects from equipment', () => {
+    it('accumulates bonusCritChance from crit_bonus passive', () => {
+      const charWithCritBonus = {
+        ...baseChar,
+        equipment: {
+          weapon: {
+            id: 'crit-sword',
+            name: 'Crit Sword',
+            description: 'Sharp',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { strength: 3 },
+            passiveEffect: {
+              type: 'crit_bonus' as const,
+              value: 0.1,
+              description: '+10% crit chance',
+            },
+          },
+          armor: null,
+          accessory: null,
+        },
+      }
+      const state = initializePlayerCombatState(charWithCritBonus)
+      expect(state.bonusCritChance).toBeCloseTo(0.1)
+    })
+
+    it('sets dodgeChance from dodge passive', () => {
+      const charWithDodge = {
+        ...baseChar,
+        equipment: {
+          weapon: null,
+          armor: {
+            id: 'dodge-armor',
+            name: 'Shadow Cloak',
+            description: 'Light and evasive',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { intelligence: 2 },
+            passiveEffect: {
+              type: 'dodge' as const,
+              value: 0.15,
+              description: '15% dodge chance',
+            },
+          },
+          accessory: null,
+        },
+      }
+      const state = initializePlayerCombatState(charWithDodge)
+      expect(state.dodgeChance).toBeCloseTo(0.15)
+    })
+
+    it('injects thorns as a persistent status effect', () => {
+      const charWithThorns = {
+        ...baseChar,
+        equipment: {
+          weapon: null,
+          armor: {
+            id: 'thorn-armor',
+            name: 'Thornmail',
+            description: 'Spiky armor',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { intelligence: 2 },
+            passiveEffect: {
+              type: 'thorns' as const,
+              value: 5,
+              description: 'Returns 5 damage',
+            },
+          },
+          accessory: null,
+        },
+      }
+      const state = initializePlayerCombatState(charWithThorns)
+      const thornsEffect = (state.statusEffects ?? []).find(e => e.type === 'thorns')
+      expect(thornsEffect).toBeDefined()
+      expect(thornsEffect?.value).toBe(5)
+    })
+
+    it('applies lifesteal_passive healing after attack', () => {
+      const charWithLifesteal = {
+        ...baseChar,
+        equipment: {
+          weapon: {
+            id: 'lifesteal-sword',
+            name: 'Vampiric Blade',
+            description: 'Drains life',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { strength: 3 },
+            passiveEffect: {
+              type: 'lifesteal_passive' as const,
+              value: 0.2,
+              description: 'Heal 20% of damage dealt',
+            },
+          },
+          armor: null,
+          accessory: null,
+        },
+      }
+      const combat = makeActiveCombat({
+        playerState: { ...makeActiveCombat().playerState, hp: 50 }, // not at max
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      const { combatState: result } = processPlayerAction(combat, { action: 'attack' }, charWithLifesteal)
+
+      // Player should have healed (or at least a heal log entry)
+      const healLog = result.combatLog.find(l => l.action === 'heal' && l.description.includes('Lifesteal'))
+      expect(healLog).toBeDefined()
+      vi.restoreAllMocks()
+    })
+
+    it('dodge blocks incoming enemy damage', () => {
+      const combat = makeActiveCombat({
+        playerState: {
+          ...makeActiveCombat().playerState,
+          hp: 90,
+          ap: 1,
+          maxAp: 1,
+          dodgeChance: 1.0, // 100% dodge for deterministic test
+        },
+        enemy: { ...makeActiveCombat().enemy, attack: 50 }, // high attack to ensure damage would be felt
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.0) // always dodge
+      const { combatState: result } = processPlayerAction(combat, { action: 'defend' }, baseChar)
+
+      // Player should not have lost HP due to dodge
+      const dodgeLog = result.combatLog.find(l => l.action === 'dodge')
+      expect(dodgeLog).toBeDefined()
+      vi.restoreAllMocks()
+    })
+
+    it('poison_immunity prevents poison status effect from being applied', () => {
+      const charWithPoisonImmunity = {
+        ...baseChar,
+        equipment: {
+          weapon: null,
+          armor: {
+            id: 'immunity-armor',
+            name: 'Antivenom Plate',
+            description: 'Resists poison',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { intelligence: 2 },
+            passiveEffect: {
+              type: 'poison_immunity' as const,
+              value: 1,
+              description: 'Immune to poison',
+            },
+          },
+          accessory: null,
+        },
+      }
+      const combat = makeActiveCombat({
+        playerState: { ...makeActiveCombat().playerState, ap: 1, maxAp: 1 },
+        enemy: {
+          ...makeActiveCombat().enemy,
+          attack: 5,
+          statusAbility: {
+            type: 'poison' as const,
+            value: 3,
+            duration: 3,
+            chance: 1.0, // 100% chance to poison
+          },
+        },
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.0) // ensure status triggers
+      const { combatState: result } = processPlayerAction(combat, { action: 'defend' }, charWithPoisonImmunity)
+
+      // Should have immunity log, not poison
+      const immunityLog = result.combatLog.find(l => l.description.includes('immune'))
+      expect(immunityLog).toBeDefined()
+
+      // Should NOT have poison status effect on player
+      const poisonEffect = (result.playerState.statusEffects ?? []).find(e => e.type === 'poison')
+      expect(poisonEffect).toBeUndefined()
+      vi.restoreAllMocks()
+    })
+  })
 })
