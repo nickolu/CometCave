@@ -128,19 +128,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Handle explore-landmark: increment nextLandmarkIndex, call LLM with landmark context
+    // Handle explore-landmark: use activeTargetIndex to find the landmark the player walked to
     if (optionId === 'explore-landmark') {
       const landmarkState = character.landmarkState
-      const exploredLandmark = landmarkState?.landmarks[landmarkState.nextLandmarkIndex]
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const exploredLandmark = landmarkState?.landmarks[targetIndex]
 
       const updatedLandmarkState = landmarkState
         ? {
             ...landmarkState,
-            nextLandmarkIndex: landmarkState.nextLandmarkIndex + 1,
-            activeTargetIndex: Math.min(
-              landmarkState.nextLandmarkIndex + 1,
-              landmarkState.landmarks.length
-            ),
+            // Don't auto-advance indexes — player stays at this landmark until they leave
+            nextLandmarkIndex: targetIndex,
             exploring: true,
             explorationDepth: 1,
             exploringLandmarkName: exploredLandmark?.name ?? 'the landmark',
