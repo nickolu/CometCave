@@ -21,6 +21,7 @@ import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
 import { FloatingResources, ResourceEvent } from './FloatingResources'
+import { RareLootCelebration } from './RareLootCelebration'
 import { DailyRewardPopup } from './DailyRewardPopup'
 import { AchievementPanel } from './AchievementPanel'
 import { AchievementToastContainer } from './AchievementToast'
@@ -137,6 +138,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     claimDailyReward,
     recordNPCEncounter,
     setActiveTarget,
+    dismissLootCelebration,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
@@ -228,7 +230,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
       onSuccess: () => {
-        setDecisionPoint(null)
+        // Only clear the decision point if the server didn't return a new one
+        // (e.g., explore-landmark returns a new decision point for the encounter)
+        const currentDP = useGameStore.getState().gameState.decisionPoint
+        if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
+          setDecisionPoint(null)
+        }
       },
       onResourceDelta: (delta) => {
         if (!delta) return
@@ -442,6 +449,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   return (
     <>
       <AchievementToastContainer achievementIds={newlyCompletedIds} />
+      {gameState.pendingLootCelebration && (
+        <RareLootCelebration
+          item={gameState.pendingLootCelebration}
+          onDismiss={dismissLootCelebration}
+        />
+      )}
       {showKeyboardHelp && <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />}
       {showDailyReward && character && (
         <DailyRewardPopup

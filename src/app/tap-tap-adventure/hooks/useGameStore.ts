@@ -143,6 +143,8 @@ export interface GameStore {
   setActiveTarget: (index: number) => void
   castExplorationSpell: (spellId: string) => { message: string; success: boolean } | null
   discoverCombo: (comboId: string) => void
+  dismissLootCelebration: () => void
+  clearNewItemId: (itemId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1623,10 +1625,24 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      dismissLootCelebration: () => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.pendingLootCelebration = null
+          })
+        )
+      },
+      clearNewItemId: (itemId: string) => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.newItemIds = (state.gameState.newItemIds ?? []).filter(id => id !== itemId)
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 32,
+      version: 33,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1813,6 +1829,13 @@ export const useGameStore = create<GameStore>()(
         if (state?.gameState && !('dailyChallenges' in state.gameState)) {
           (state.gameState as GameState).dailyChallenges = null
         }
+        // v33: Add loot celebration and new item tracking
+        if (state?.gameState && !('pendingLootCelebration' in state.gameState)) {
+          (state.gameState as GameState).pendingLootCelebration = null
+        }
+        if (state?.gameState && !('newItemIds' in state.gameState)) {
+          (state.gameState as GameState).newItemIds = []
+        }
         return state
       },
     }
@@ -1840,6 +1863,13 @@ export function useGameStateBuilder() {
     const selectedCharacter = gameStateClone.characters?.find(c => c.id === selectedCharacterId)
     if (!selectedCharacter) return
     selectedCharacter.inventory.push(item)
+    // Track as new item
+    if (!gameStateClone.newItemIds) gameStateClone.newItemIds = []
+    gameStateClone.newItemIds.push(item.id)
+    // Trigger celebration for epic/legendary drops
+    if (item.rarity === 'epic' || item.rarity === 'legendary') {
+      gameStateClone.pendingLootCelebration = item
+    }
   }
 
   const MAX_STORY_EVENTS = 200
