@@ -84,6 +84,7 @@ function GeneratedClassCard({
         <span className="text-xs text-amber-400">STR {generatedClass.statDistribution.strength}</span>
         <span className="text-xs text-sky-400">INT {generatedClass.statDistribution.intelligence}</span>
         <span className="text-xs text-emerald-400">LCK {generatedClass.statDistribution.luck}</span>
+        <span className="text-xs text-pink-400">CHA {generatedClass.statDistribution.charisma}</span>
       </div>
       <div className="flex gap-2 mt-1 flex-wrap">
         <span className="text-xs text-purple-400">{generatedClass.favoredSchool}</span>

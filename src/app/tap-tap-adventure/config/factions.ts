@@ -10,7 +10,7 @@ export interface FactionGearItem {
   name: string
   description: string
   type: 'equipment'
-  effects: { strength?: number; intelligence?: number; luck?: number }
+  effects: { strength?: number; intelligence?: number; luck?: number; charisma?: number }
   price: number
   requiredRep: number
   slot: 'weapon' | 'armor' | 'accessory'

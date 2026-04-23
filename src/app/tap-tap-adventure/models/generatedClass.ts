@@ -23,6 +23,7 @@ export const GeneratedClassSchema = z.object({
     strength: z.number().min(3).max(10),
     intelligence: z.number().min(3).max(10),
     luck: z.number().min(3).max(10),
+    charisma: z.number().min(3).max(10).default(5),
   }),
   favoredSchool: SpellSchoolSchema,
   manaMultiplier: z.number().min(0.5).max(1.5),

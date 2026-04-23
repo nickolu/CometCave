@@ -316,18 +316,19 @@ export function generateStatDistribution(style: string): {
   strength: number
   intelligence: number
   luck: number
+  charisma: number
 } {
   const category = getStyleCategory(style)
   // Base distributions per category with small random variance
-  const bases: Record<string, [number, number, number]> = {
-    martial:  [8, 4, 6],
-    arcane:   [3, 9, 6],
-    divine:   [5, 7, 6],
-    primal:   [7, 4, 7],
-    shadow:   [5, 4, 9],
-    psionic:  [3, 8, 7],
+  const bases: Record<string, [number, number, number, number]> = {
+    martial:  [8, 4, 6, 5],
+    arcane:   [3, 9, 6, 5],
+    divine:   [5, 7, 6, 6],
+    primal:   [7, 4, 7, 5],
+    shadow:   [5, 4, 9, 5],
+    psionic:  [3, 8, 7, 5],
   }
-  const [str, int, lck] = bases[category] ?? bases.martial
+  const [str, int, lck, cha] = bases[category] ?? bases.martial
 
   // Add small random variance (-1 to +1) while keeping total at 18 and within bounds
   const variance = Math.floor(Math.random() * 3) - 1 // -1, 0, or 1
@@ -339,7 +340,11 @@ export function generateStatDistribution(style: string): {
   const remaining = 18 - strength - luck
   intelligence = Math.max(3, Math.min(10, remaining))
 
-  return { strength, intelligence, luck }
+  // Charisma varies independently with small variance
+  const chaVariance = Math.floor(Math.random() * 3) - 1
+  const charisma = Math.max(3, Math.min(10, cha + chaVariance))
+
+  return { strength, intelligence, luck, charisma }
 }
 
 /**
@@ -437,7 +442,7 @@ export async function generateClassFromSeed(
   const classDescriptions = mechanicalClasses.map((cls, i) => {
     return `Class ${i + 1}:
 - Combat style: ${style}, Modifier: ${modifier}
-- Stats: STR ${cls.stats.strength}, INT ${cls.stats.intelligence}, LCK ${cls.stats.luck}
+- Stats: STR ${cls.stats.strength}, INT ${cls.stats.intelligence}, LCK ${cls.stats.luck}, CHA ${cls.stats.charisma}
 - Spell school: ${school}
 - Starting ability target: ${cls.ability.target}
 - Starting ability effects: ${describeEffects(cls.ability.effects)}`
