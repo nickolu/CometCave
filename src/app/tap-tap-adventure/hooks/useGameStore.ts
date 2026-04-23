@@ -1349,7 +1349,7 @@ export const useGameStore = create<GameStore>()(
               position: newLsPosition,
             }
             updates.distance = (character.distance ?? 0) + effect.value
-            message = `${spell.name}: Advanced ${effect.value} steps! (${manaCost} MP spent)`
+            message = `${spell.name}: Advanced ${effect.value} km! (${manaCost} MP spent)`
             break
           }
           case 'shield': {

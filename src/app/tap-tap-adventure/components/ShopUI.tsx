@@ -304,7 +304,7 @@ export function ShopUI() {
             if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
             if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
             if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
-            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/step`)
+            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/km`)
             return (
               <div className="border border-purple-500/40 bg-[#2a2040] rounded-lg p-3 space-y-1">
                 <div className="flex justify-between items-start">
@@ -390,7 +390,7 @@ export function ShopUI() {
             if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
             if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
             if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
-            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/step`)
+            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/km`)
             return (
               <div className="border border-purple-500/40 bg-[#2a2040] rounded-lg p-3 space-y-1">
                 <div className="flex justify-between items-start">
