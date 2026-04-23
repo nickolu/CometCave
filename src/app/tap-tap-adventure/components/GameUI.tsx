@@ -244,7 +244,15 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
         : ls.landmarks[activeTargetIndex]?.distanceFromEntry ?? Infinity
       : Infinity
     const charPos = ls?.position
-    const targetPos2d = isExitTarget ? ls?.exitPosition : ls?.landmarks[activeTargetIndex]?.position
+    let targetPos2d
+    if (isExitTarget && ls?.exitPositions) {
+      const exitIdx = activeTargetIndex - ls.landmarks.length
+      targetPos2d = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition
+    } else if (isExitTarget) {
+      targetPos2d = ls?.exitPosition
+    } else {
+      targetPos2d = ls?.landmarks[activeTargetIndex]?.position
+    }
     const hitsTarget = charPos && targetPos2d
       ? hasArrived(moveToward(charPos, targetPos2d), targetPos2d)
       : (!charPos && ls != null && nextPosInRegion >= activeTargetPosition) // 1D ONLY when no 2D data
@@ -599,6 +607,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                           onSelectTarget={(i) => setActiveTarget(i)}
                           disabled={moveForwardPending || resolveDecisionPending}
                           characterPosition={ls.position}
+                          exitTargets={ls.exitPositions}
                         />
                       )}
                     </div>
