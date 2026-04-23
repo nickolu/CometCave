@@ -50,6 +50,7 @@ function GearItemRow({ gear, rep, gold, factionId }: { gear: FactionGearItem; re
   if (gear.effects.strength) effectParts.push(`+${gear.effects.strength} STR`)
   if (gear.effects.intelligence) effectParts.push(`+${gear.effects.intelligence} INT`)
   if (gear.effects.luck) effectParts.push(`+${gear.effects.luck} LCK`)
+  if (gear.effects.charisma) effectParts.push(`+${gear.effects.charisma} CHA`)
 
   return (
     <div className="bg-[#1a1b2e] border border-[#3a3c56] rounded p-2 flex items-center justify-between gap-2">

@@ -149,24 +149,26 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   // Equipment stat bonuses from each piece
   const getEquipmentBonuses = (char: FantasyCharacter) => {
     const eq = char.equipment ?? { weapon: null, armor: null, accessory: null }
-    let str = 0, int = 0, lck = 0
+    let str = 0, int = 0, lck = 0, cha = 0
     for (const item of [eq.weapon, eq.armor, eq.accessory]) {
       if (item?.effects) {
         str += item.effects.strength ?? 0
         int += item.effects.intelligence ?? 0
         lck += item.effects.luck ?? 0
+        cha += item.effects.charisma ?? 0
       }
     }
-    return { strength: str, intelligence: int, luck: lck }
+    return { strength: str, intelligence: int, luck: lck, charisma: cha }
   }
 
   // Mount bonuses
   const getMountBonuses = () => {
-    if (!mount) return { strength: 0, intelligence: 0, luck: 0 }
+    if (!mount) return { strength: 0, intelligence: 0, luck: 0, charisma: 0 }
     return {
       strength: mount.bonuses.strength ?? 0,
       intelligence: mount.bonuses.intelligence ?? 0,
       luck: mount.bonuses.luck ?? 0,
+      charisma: 0,
     }
   }
 
@@ -176,6 +178,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   const baseStr = character.strength - equipBonuses.strength - mountStatBonuses.strength - metaBonuses.bonusStrength
   const baseInt = character.intelligence - equipBonuses.intelligence - mountStatBonuses.intelligence - metaBonuses.bonusIntelligence
   const baseLck = character.luck - equipBonuses.luck - mountStatBonuses.luck - metaBonuses.bonusLuck
+  const baseCha = character.charisma - equipBonuses.charisma - mountStatBonuses.charisma
 
   const formatBonus = (base: number, equip: number, mountB: number, meta: number) => {
     const parts: string[] = [`${base} base`]
@@ -264,6 +267,13 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   <div className="text-xl font-bold text-yellow-300">{character.luck}</div>
                   <div className="text-[10px] text-slate-500 mt-0.5">
                     {formatBonus(baseLck, equipBonuses.luck, mountStatBonuses.luck, metaBonuses.bonusLuck)}
+                  </div>
+                </div>
+                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
+                  <div className="text-xs text-slate-500 mb-1">Charisma</div>
+                  <div className="text-xl font-bold text-pink-400">{character.charisma}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {formatBonus(baseCha, equipBonuses.charisma, mountStatBonuses.charisma, 0)}
                   </div>
                 </div>
                 <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">

@@ -55,7 +55,7 @@ function RunCard({ character }: { character: FantasyCharacter }) {
           <div className="flex justify-between">
             <span className="text-slate-500">Stats</span>
             <span className="text-slate-300">
-              STR {character.strength} · INT {character.intelligence} · LCK {character.luck}
+              STR {character.strength} · INT {character.intelligence} · LCK {character.luck} · CHA {character.charisma}
             </span>
           </div>
           <div className="flex justify-between">

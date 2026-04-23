@@ -230,10 +230,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                     const slot = getEquipmentSlot(item)
                     const equipped = equipment[slot]
                     if (!equipped) return <div className="text-xs text-green-400 mt-0.5">No item in {slot} slot</div>
-                    const stats = ['strength', 'intelligence', 'luck'] as const
+                    const stats = ['strength', 'intelligence', 'luck', 'charisma'] as const
                     const deltas = stats.map(key => {
                       const diff = (item.effects?.[key] ?? 0) - (equipped.effects?.[key] ?? 0)
-                      return diff !== 0 ? { label: key.slice(0, 3).toUpperCase(), diff } : null
+                      const label = key === 'charisma' ? 'CHA' : key.slice(0, 3).toUpperCase()
+                      return diff !== 0 ? { label, diff } : null
                     }).filter(Boolean) as { label: string; diff: number }[]
                     if (deltas.length === 0) return <div className="text-xs text-gray-500 mt-0.5">Same stats as equipped {equipped.name}</div>
                     return (
@@ -370,7 +371,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
               const slot = getEquipmentSlot(detailItem)
               const equipped = equipment[slot]
               if (!equipped) return <div className="text-xs text-green-400">No item equipped in {slot} slot</div>
-              const stats = ['strength', 'intelligence', 'luck'] as const
+              const stats = ['strength', 'intelligence', 'luck', 'charisma'] as const
               const deltas = stats.map(key => {
                 const diff = (detailItem.effects?.[key] ?? 0) - (equipped.effects?.[key] ?? 0)
                 return diff !== 0 ? { label: key.charAt(0).toUpperCase() + key.slice(1), diff } : null

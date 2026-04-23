@@ -22,6 +22,7 @@ type IconType =
   | 'purpleCircleIcon'
   | 'blueCircleIcon'
   | 'yellowMoonIcon'
+  | 'pinkStarIcon'
 
 const ICONS: Record<IconType, React.ReactNode> = {
   heartIcon: (
@@ -73,6 +74,11 @@ const ICONS: Record<IconType, React.ReactNode> = {
       <path d="M10 20C4.477 20 0 15.523 0 10S4.477 0 10 0c.34 0 .674.02 1 .058A8.001 8.001 0 0110 4a8 8 0 01-2.928 6A8.001 8.001 0 011 10c.02.326.04.66.058 1A10.004 10.004 0 0010 20z" />
     </svg>
   ),
+  pinkStarIcon: (
+    <svg width="20" height="20" fill="#F472B6" viewBox="0 0 20 20">
+      <path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 14.27l-4.77 2.44.91-5.32L2.27 7.62l5.34-.78L10 2z" />
+    </svg>
+  ),
 } as const
 
 const STAT_LABELS: Record<IconType, string> = {
@@ -85,10 +91,11 @@ const STAT_LABELS: Record<IconType, string> = {
   purpleCircleIcon: 'STR — Attack power, max HP',
   blueCircleIcon: 'INT — Defense, mana pool',
   yellowMoonIcon: 'LCK — Crit chance, loot, flee',
+  pinkStarIcon: 'CHA — Shop discounts, dialogue',
 } as const
 
 const STATS_LEFT: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon', 'dayIcon']
-const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
+const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon', 'pinkStarIcon']
 
 interface HudBarProps {
   onOpenStatus?: () => void
@@ -121,6 +128,7 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
       purpleCircleIcon: character?.strength ?? 0,
       blueCircleIcon: character?.intelligence ?? 0,
       yellowMoonIcon: character?.luck ?? 0,
+      pinkStarIcon: character?.charisma ?? 0,
     }),
     [character]
   ) as Record<IconType, number | string>
