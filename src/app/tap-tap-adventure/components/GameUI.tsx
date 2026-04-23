@@ -230,7 +230,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
       onSuccess: () => {
-        setDecisionPoint(null)
+        // Only clear the decision point if the server didn't return a new one
+        // (e.g., explore-landmark returns a new decision point for the encounter)
+        const currentDP = useGameStore.getState().gameState.decisionPoint
+        if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
+          setDecisionPoint(null)
+        }
       },
       onResourceDelta: (delta) => {
         if (!delta) return
