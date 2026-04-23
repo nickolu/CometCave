@@ -31,18 +31,23 @@ export async function moveForwardService(
   const existingLandmarkState = character.landmarkState
   if (!existingLandmarkState || existingLandmarkState.regionId !== currentRegion) {
     const visitCount = (character.visitedRegions ?? []).filter(id => id === currentRegion).length
-    const landmarks = generateLandmarks(currentRegion, character.id, visitCount, region.difficultyMultiplier)
 
-    // Seeded region length between 150-250 steps, scaled by difficulty
+    // Scale region size by difficulty: easy (0.8) → 80, medium (1.0) → 100, hard (1.5) → 150, extreme (3.0) → 300
+    const regionSize = Math.round(100 * region.difficultyMultiplier)
+    const landmarks = generateLandmarks(currentRegion, character.id, visitCount, region.difficultyMultiplier, regionSize)
+
+    // Seeded region length scaled by difficulty
     const regionLengthSeed = `${currentRegion}-${character.id}-${visitCount}-length`
-    const regionLength = Math.floor((150 + Math.floor(seededRandom(regionLengthSeed)() * 101)) * region.difficultyMultiplier)
+    const regionLength = Math.floor((50 + Math.floor(seededRandom(regionLengthSeed)() * 31)) * region.difficultyMultiplier)
 
     // Generate exit positions spread around region edges, one per connected region
     const connected = getConnectedRegions(region.id)
+    const center = regionSize / 2
+    const edgeRadius = regionSize * 0.48
     const exitPositions = connected.map((connRegion, i) => {
       const angle = (i / connected.length) * Math.PI * 2
-      const edgeX = 250 + Math.cos(angle) * 240
-      const edgeY = 250 + Math.sin(angle) * 240
+      const edgeX = center + Math.cos(angle) * edgeRadius
+      const edgeY = center + Math.sin(angle) * edgeRadius
       return {
         regionId: connRegion.id,
         name: `Path to ${connRegion.name}`,
@@ -64,9 +69,9 @@ export async function moveForwardService(
         activeTargetIndex: 0,
         regionLength,
         position: { x: 0, y: 0 },
-        exitPosition: exitPositions[0]?.position ?? { x: 490, y: 250 },
+        exitPosition: exitPositions[0]?.position ?? { x: Math.round(regionSize * 0.98), y: Math.round(regionSize / 2) },
         exitPositions,
-        regionBounds: { width: 500, height: 500 },
+        regionBounds: { width: regionSize, height: regionSize },
       },
     }
 
