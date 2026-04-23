@@ -22,16 +22,24 @@ function formatEffects(effects?: Item['effects']): string {
   if (effects.strength) parts.push(`+${effects.strength} STR`)
   if (effects.intelligence) parts.push(`+${effects.intelligence} INT`)
   if (effects.luck) parts.push(`+${effects.luck} LCK`)
+  if (effects.charisma) parts.push(`+${effects.charisma} CHA`)
+  if (effects.heal) parts.push(`+${effects.heal} HP`)
   if (effects.gold) parts.push(`+${effects.gold} Gold`)
   if (effects.reputation) parts.push(`+${effects.reputation} Rep`)
+  if (effects.shield) parts.push(`+${effects.shield} Shield`)
+  if (effects.manaRestore) parts.push(`+${effects.manaRestore} MP`)
+  if (effects.cleanse) parts.push('Cleanse')
+  if (effects.damageBoost) parts.push(`${effects.damageBoost}x Damage`)
+  if (effects.revealLandmark) parts.push('Reveal Landmark')
   return parts.length > 0 ? parts.join(', ') : 'No effects'
 }
 
-type NumericEffectKey = 'strength' | 'intelligence' | 'luck'
+type NumericEffectKey = 'strength' | 'intelligence' | 'luck' | 'charisma'
 const STAT_KEYS: { key: NumericEffectKey; label: string }[] = [
   { key: 'strength', label: 'STR' },
   { key: 'intelligence', label: 'INT' },
   { key: 'luck', label: 'LCK' },
+  { key: 'charisma', label: 'CHA' },
 ]
 
 function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentSlots }) {
@@ -345,13 +353,44 @@ export function ShopUI() {
                 className="border border-[#3a3c56] bg-[#2a2b3f] rounded-lg p-3 space-y-1"
               >
                 <div className="flex justify-between items-start">
-                  <div className="font-semibold text-white">{item.name}</div>
+                  <div className="font-semibold text-white">
+                    {item.name}
+                    {item.rarity && item.rarity !== 'common' && (
+                      <span className={`ml-2 text-[10px] uppercase font-bold ${
+                        item.rarity === 'legendary' ? 'text-yellow-400' :
+                        item.rarity === 'epic' ? 'text-purple-400' :
+                        item.rarity === 'rare' ? 'text-blue-400' :
+                        item.rarity === 'uncommon' ? 'text-green-400' :
+                        'text-slate-400'
+                      }`}>
+                        {item.rarity}
+                      </span>
+                    )}
+                    {item.type && item.type !== 'misc' && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-slate-700 text-slate-300 ml-1">
+                        {item.type}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-yellow-400 font-bold text-sm whitespace-nowrap ml-2">
                     {item.price ?? '?'} gold
                   </div>
                 </div>
                 <div className="text-xs text-gray-400">{item.description}</div>
                 <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
+                {item.onHitEffect && (
+                  <div className="text-[10px] text-orange-300">
+                    ⚡ On-hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                  </div>
+                )}
+                {item.drawback && (
+                  <div className="text-[10px] text-red-400">
+                    ⚠ Drawback: {item.drawback.description}
+                  </div>
+                )}
+                {item.loreText && (
+                  <div className="text-[10px] text-slate-500 italic mt-0.5">{item.loreText}</div>
+                )}
                 {character.equipment && (
                   <ItemComparison item={item} equipment={character.equipment as EquipmentSlots} />
                 )}
