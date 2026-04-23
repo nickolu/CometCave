@@ -160,5 +160,14 @@ function getProgress(
     return existing?.progress ?? 0
   }
 
+  // Spell combo achievements — snapshot of discoveredCombos
+  if (achievementId === 'combo_first_combo') {
+    return (character.discoveredCombos?.length ?? 0) >= 1 ? 1 : 0
+  }
+
+  if (achievementId === 'combo_master') {
+    return character.discoveredCombos?.length ?? 0
+  }
+
   return 0
 }

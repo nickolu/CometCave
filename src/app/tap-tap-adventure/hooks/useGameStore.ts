@@ -142,6 +142,7 @@ export interface GameStore {
   recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => void
   setActiveTarget: (index: number) => void
   castExplorationSpell: (spellId: string) => { message: string; success: boolean } | null
+  discoverCombo: (comboId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1582,10 +1583,50 @@ export const useGameStore = create<GameStore>()(
 
         return { message, success: true }
       },
+      discoverCombo: (comboId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(c => c.id === selectedCharacter.id)
+            if (charIndex === -1) return
+            const discovered = state.gameState.characters[charIndex].discoveredCombos ?? []
+            if (discovered.includes(comboId)) return
+            state.gameState.characters[charIndex].discoveredCombos = [...discovered, comboId]
+
+            // Check achievements after updating combo discovery
+            const updatedChar = state.gameState.characters[charIndex]
+            const { achievements, newlyCompleted } = checkAchievements(
+              updatedChar,
+              state.gameState,
+              state.gameState.achievements ?? []
+            )
+            state.gameState.achievements = achievements
+            if (newlyCompleted.length > 0) {
+              let goldGain = 0
+              let repGain = 0
+              for (const id of newlyCompleted) {
+                const config = ACHIEVEMENTS.find(a => a.id === id)
+                if (config?.reward) {
+                  goldGain += config.reward.gold ?? 0
+                  repGain += config.reward.reputation ?? 0
+                }
+                const pa = state.gameState.achievements.find(a => a.achievementId === id)
+                if (pa) pa.rewardClaimed = true
+              }
+              state.gameState.characters[charIndex] = {
+                ...state.gameState.characters[charIndex],
+                gold: state.gameState.characters[charIndex].gold + goldGain,
+                reputation: clampReputation(state.gameState.characters[charIndex].reputation + repGain),
+              }
+            }
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 31,
+      version: 32,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1737,6 +1778,10 @@ export const useGameStore = create<GameStore>()(
                 ...lm,
                 isSecret: (lm as Record<string, unknown>).isSecret !== undefined ? Boolean((lm as Record<string, unknown>).isSecret) : false,
               }))
+            }
+            // v32: Add discoveredCombos
+            if (!(char as FantasyCharacter).discoveredCombos) {
+              ;(char as FantasyCharacter).discoveredCombos = []
             }
           }
         }
