@@ -20,6 +20,7 @@ const EffectsSchema = z.object({
   distance: z.number().optional(),
   statusChange: z.string().optional(),
   rewardItems: z.array(ItemSchema).optional(),
+  revealLandmark: z.boolean().optional(),
 })
 
 export const FantasyDecisionOptionSchema = z.object({

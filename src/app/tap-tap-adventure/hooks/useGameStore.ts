@@ -139,7 +139,7 @@ export interface GameStore {
   enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => { message: string; success: boolean } | null
   updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
-  recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => void
+  recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => void
   setActiveTarget: (index: number) => void
   castExplorationSpell: (spellId: string) => { message: string; success: boolean } | null
 }
@@ -1227,7 +1227,7 @@ export const useGameStore = create<GameStore>()(
         )
         return bonus
       },
-      recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => {
+      recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
@@ -1253,6 +1253,20 @@ export const useGameStore = create<GameStore>()(
               state.gameState.characters[charIndex].reputation = clampReputation(
                 state.gameState.characters[charIndex].reputation + reward.reputation
               )
+            }
+
+            // Reveal hidden landmark if NPC shared location info
+            if (revealLandmark) {
+              const ls = state.gameState.characters[charIndex].landmarkState
+              if (ls) {
+                const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
+                if (hiddenIdx !== -1) {
+                  const updatedLandmarks = ls.landmarks.map((lm, i) =>
+                    i === hiddenIdx ? { ...lm, hidden: false } : lm
+                  )
+                  state.gameState.characters[charIndex].landmarkState = { ...ls, landmarks: updatedLandmarks }
+                }
+              }
             }
           })
         )

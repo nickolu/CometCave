@@ -656,8 +656,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                           region={character?.currentRegion ?? 'green_meadows'}
                           characterCharisma={character?.charisma ?? 5}
                           disposition={disposition}
-                          onEncounterUpdate={(dispositionDelta, reward) => {
-                            recordNPCEncounter(npc.id, dispositionDelta, reward)
+                          hiddenLandmarkName={character?.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                          hiddenLandmarkType={character?.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                          onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                            recordNPCEncounter(npc.id, dispositionDelta, reward, revealLandmark)
                           }}
                           onClose={() => {
                             setShowNPCPanel(false)
@@ -947,8 +949,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   region={character.currentRegion ?? 'green_meadows'}
                   characterCharisma={character.charisma ?? 5}
                   disposition={disposition}
-                  onEncounterUpdate={(dispositionDelta, reward) => {
-                    recordNPCEncounter(npc.id, dispositionDelta, reward)
+                  hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                  hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                  onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                    recordNPCEncounter(npc.id, dispositionDelta, reward, revealLandmark)
                   }}
                   onClose={() => {
                     setMobileCategory(null)

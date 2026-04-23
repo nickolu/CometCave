@@ -15,7 +15,9 @@ interface NPCDialoguePanelProps {
   region: string
   characterCharisma: number
   disposition: number
-  onEncounterUpdate: (dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => void
+  hiddenLandmarkName?: string
+  hiddenLandmarkType?: string
+  onEncounterUpdate: (dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => void
   onClose: () => void
 }
 
@@ -28,6 +30,8 @@ export function NPCDialoguePanel({
   region,
   characterCharisma,
   disposition,
+  hiddenLandmarkName,
+  hiddenLandmarkType,
   onEncounterUpdate,
   onClose,
 }: NPCDialoguePanelProps) {
@@ -75,8 +79,10 @@ export function NPCDialoguePanel({
         reputation,
         region,
         disposition,
+        hiddenLandmarkName,
+        hiddenLandmarkType,
       }).then(result => {
-        onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward)
+        onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward, result?.revealLandmark)
         if (result?.reward) {
           const parts: string[] = []
           if (result.reward.gold) parts.push(`+${result.reward.gold} gold`)
@@ -105,9 +111,11 @@ export function NPCDialoguePanel({
       region,
       message: trimmed,
       disposition,
+      hiddenLandmarkName,
+      hiddenLandmarkType,
     })
 
-    onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward)
+    onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward, result?.revealLandmark)
 
     if (result?.reward) {
       const parts: string[] = []
