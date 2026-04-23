@@ -115,6 +115,11 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                           return (
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <div className={`font-bold text-sm truncate ${item.rarity && item.rarity !== 'common' ? rarityStyle.text : 'text-white'}`}>{item.name}</div>
+                              {item.enchantmentLevel && item.enchantmentLevel > 0 && (
+                                <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
+                                  +{item.enchantmentLevel}
+                                </span>
+                              )}
                               {item.rarity && item.rarity !== 'common' && (
                                 <span className={`text-[10px] px-1.5 py-0.5 ${rarityStyle.bg} ${rarityStyle.text} rounded`}>
                                   {rarityStyle.label}

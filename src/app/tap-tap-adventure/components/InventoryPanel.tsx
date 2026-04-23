@@ -205,6 +205,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       <span className="text-amber-400 text-sm" title="Heirloom">&#9733;</span>
                     )}
                     <div className={`font-bold ${item.rarity && item.rarity !== 'common' ? rarityStyle.text : 'text-white'}`}>{item.name}</div>
+                    {item.enchantmentLevel && item.enchantmentLevel > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold">
+                        +{item.enchantmentLevel}
+                      </span>
+                    )}
                     {item.type === 'consumable' && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-green-900/50 text-green-400 rounded">
                         Consumable
@@ -338,6 +343,9 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                 <div className="flex items-center gap-2 flex-wrap">
                   {detailItem.isHeirloom && <span className="text-amber-400">&#9733;</span>}
                   <h4 className={`font-bold text-lg ${detailItem.rarity && detailItem.rarity !== 'common' ? detailRarityStyle.text : 'text-white'}`}>{detailItem.name}</h4>
+                  {detailItem.enchantmentLevel && detailItem.enchantmentLevel > 0 && (
+                    <span className="text-sm text-cyan-300 font-semibold">+{detailItem.enchantmentLevel}</span>
+                  )}
                   {detailItem.type && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                       detailItem.type === 'consumable' ? 'bg-green-900/50 text-green-400' :

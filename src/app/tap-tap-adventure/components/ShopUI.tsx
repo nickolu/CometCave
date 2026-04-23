@@ -355,6 +355,11 @@ export function ShopUI() {
                 <div className="flex justify-between items-start">
                   <div className="font-semibold text-white">
                     {item.name}
+                    {item.enchantmentLevel && item.enchantmentLevel > 0 && (
+                      <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
+                        +{item.enchantmentLevel}
+                      </span>
+                    )}
                     {item.rarity && item.rarity !== 'common' && (
                       <span className={`ml-2 text-[10px] uppercase font-bold ${
                         item.rarity === 'legendary' ? 'text-yellow-400' :
