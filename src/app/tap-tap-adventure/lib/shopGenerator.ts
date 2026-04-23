@@ -47,6 +47,7 @@ const shopSchemaForOpenAI = {
               intelligence: { type: 'number' },
               luck: { type: 'number' },
               heal: { type: 'number', description: 'Directly restores this amount of HP. Use for healing items instead of strength.' },
+              revealLandmark: { type: 'boolean', description: 'Set to true for map items that reveal hidden landmarks. Use for items like treasure maps, ancient charts, or cartographer notes.' },
             },
           },
         },
@@ -85,6 +86,7 @@ Include a mix of:
 - Stat-boosting items (strength, intelligence, luck)
 - Interesting thematic items that fit the fantasy setting
 - Occasionally a spell scroll (type: "spell_scroll") with a spell object containing id, name, description, school, manaCost, cooldown, target, effects, and tags
+- Occasionally a map or chart (type: "consumable" with effects: { revealLandmark: true }) that reveals hidden landmarks. Price these at 2-3x the base price. Use names like "Treasure Map", "Ancient Chart", "Explorer's Map", etc.
 
 Each item needs a unique id (e.g. "shop-item-1"), a creative name, a short description, quantity of 1, a gold price, and effects.
 
@@ -202,6 +204,21 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       price: Math.round(spellPrice * reputationMultiplier),
       spell: spell2,
       rarity: 'rare',
+    })
+  }
+
+  // 40% chance to stock a region map
+  if (Math.random() < 0.4) {
+    const mapPrice = basePrice * 2
+    items.push({
+      id: `shop-map-${suffix}`,
+      name: 'Mysterious Map Fragment',
+      description: 'A weathered parchment that reveals the location of a hidden place in this region.',
+      quantity: 1,
+      type: 'consumable',
+      price: Math.round(mapPrice * reputationMultiplier),
+      effects: { revealLandmark: true },
+      rarity: 'uncommon',
     })
   }
 
