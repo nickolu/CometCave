@@ -240,12 +240,13 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     if (moveForwardPending) return
     soundEngine.playTap()
     const character = getSelectedCharacter()
+    const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
     const distance = character?.distance ?? 0
-    const nextDistance = distance + 1
+    const nextDistance = distance + mountSpeed
 
     // Check if the next step would hit a target arrival (landmark or region exit)
     const ls = character?.landmarkState
-    const nextPosInRegion = (ls?.positionInRegion ?? 0) + 1
+    const nextPosInRegion = (ls?.positionInRegion ?? 0) + mountSpeed
     const activeTargetIndex = ls?.activeTargetIndex ?? 0
     const isExitTarget = ls ? activeTargetIndex >= ls.landmarks.length : false
     const activeTargetPosition = ls
@@ -264,7 +265,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       targetPos2d = ls?.landmarks[activeTargetIndex]?.position
     }
     const hitsTarget = charPos && targetPos2d
-      ? hasArrived(moveToward(charPos, targetPos2d), targetPos2d)
+      ? hasArrived(moveToward(charPos, targetPos2d, mountSpeed), targetPos2d)
       : (!charPos && ls != null && nextPosInRegion >= activeTargetPosition) // 1D ONLY when no 2D data
 
     // Always call server for milestone events (shop, target arrival)
@@ -281,7 +282,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     if (shouldDoNothing) {
       const genericMessage = getGenericTravelMessage()
       setGenericMessage(genericMessage)
-      incrementDistance()
+      incrementDistance(mountSpeed)
     } else {
       moveForwardMutation()
     }

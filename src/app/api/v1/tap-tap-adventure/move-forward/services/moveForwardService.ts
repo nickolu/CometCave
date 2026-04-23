@@ -18,7 +18,9 @@ export async function moveForwardService(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[] = []
 ): Promise<MoveForwardResponse> {
-  const newDistance = character.distance + BASE_DISTANCE
+  const mountSpeed = character.activeMount?.bonuses?.autoWalkSpeed ?? 1
+  const moveDistance = BASE_DISTANCE * mountSpeed
+  const newDistance = character.distance + moveDistance
   const updatedCharacter = { ...character, distance: newDistance }
   const day = calculateDay(newDistance)
 
@@ -116,8 +118,8 @@ export async function moveForwardService(
 
   const landmarkState = existingLandmarkState
 
-  // Increment positionInRegion by 1 for this step
-  const newPositionInRegion = (landmarkState.positionInRegion ?? 0) + 1
+  // Increment positionInRegion by moveDistance for this step
+  const newPositionInRegion = (landmarkState.positionInRegion ?? 0) + moveDistance
   const activeTargetIndex = landmarkState.activeTargetIndex ?? 0
 
   // Compute updated 2D position for this step
@@ -132,7 +134,7 @@ export async function moveForwardService(
     activePosTarget = landmarkState.landmarks[activeTargetIndex]?.position
   }
   if (updatedPosition && activePosTarget) {
-    updatedPosition = moveToward(updatedPosition, activePosTarget)
+    updatedPosition = moveToward(updatedPosition, activePosTarget, moveDistance)
   }
 
   // Priority 2: Target arrival check

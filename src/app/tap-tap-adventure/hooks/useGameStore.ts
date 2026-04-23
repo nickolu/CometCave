@@ -101,7 +101,7 @@ export interface GameStore {
   clearGameState: () => void
   deleteCharacter: (id: string) => void
   getSelectedCharacter: () => FantasyCharacter | null
-  incrementDistance: () => void
+  incrementDistance: (distanceMultiplier?: number) => void
   selectCharacter: (id: string) => void
   setCombatState: (combatState: CombatState | null) => void
   setShopState: (shopState: ShopState | null) => void
@@ -223,7 +223,7 @@ export const useGameStore = create<GameStore>()(
         if (!state) return null
         return state.characters?.find(c => c.id === state.selectedCharacterId) ?? null
       },
-      incrementDistance: () => {
+      incrementDistance: (distanceMultiplier: number = 1) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
@@ -243,12 +243,12 @@ export const useGameStore = create<GameStore>()(
               state.gameState.dailyChallenges = applyDailyChallengeProgress(
                 state.gameState.dailyChallenges,
                 'travel_distance',
-                1
+                distanceMultiplier
               )
             }
 
             const oldDistance = selectedCharacter.distance || 0
-            const newDistance = oldDistance + 1
+            const newDistance = oldDistance + distanceMultiplier
             const metaBonuses = get().getMetaBonuses()
             const campBonuses = get().getCampBonuses()
             let updatedCharacter = applyLevelFromDistance({
@@ -261,7 +261,7 @@ export const useGameStore = create<GameStore>()(
               const ls = updatedCharacter.landmarkState
               let newLandmarkState = {
                 ...ls,
-                positionInRegion: (ls.positionInRegion ?? 0) + 1,
+                positionInRegion: (ls.positionInRegion ?? 0) + distanceMultiplier,
               }
 
               // Update 2D position toward active target
@@ -284,7 +284,7 @@ export const useGameStore = create<GameStore>()(
                 if (targetPos) {
                   newLandmarkState = {
                     ...newLandmarkState,
-                    position: moveToward(ls.position, targetPos),
+                    position: moveToward(ls.position, targetPos, distanceMultiplier),
                   }
                 }
               }
