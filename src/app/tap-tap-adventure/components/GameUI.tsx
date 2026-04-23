@@ -104,7 +104,7 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
     return (
       <div className="flex items-center justify-center gap-2 w-full">
         <LoaderCircle className="animate-spin h-5 w-5" />
-        <span>Searching for adventure...</span>
+        <span>Something happens on your travels...</span>
       </div>
     )
   if (distance === 0) return 'Start Your Adventure'
