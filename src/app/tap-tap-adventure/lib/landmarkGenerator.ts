@@ -57,7 +57,8 @@ function seededShuffle<T>(arr: T[], rng: () => number): T[] {
 export function generateLandmarks(
   regionId: string,
   characterId: string,
-  visitCount: number = 0
+  visitCount: number = 0,
+  difficultyMultiplier: number = 1
 ): GeneratedLandmark[] {
   const templates = getTemplatesForRegion(regionId)
   const seed = `${regionId}-${characterId}-${visitCount}`
@@ -66,8 +67,8 @@ export function generateLandmarks(
   // Pick 3 landmarks from templates (shuffled deterministically)
   const selected = seededShuffle([...templates], rng).slice(0, 3) as LandmarkTemplate[]
 
-  // Assign distances: first at 20-40 steps, subsequent 25-50 steps apart
-  let currentDist = 20 + Math.floor(rng() * 21) // 20-40
+  // Assign distances: first at 20-40 steps, subsequent 25-50 steps apart (scaled by difficulty)
+  let currentDist = Math.floor((20 + Math.floor(rng() * 21)) * difficultyMultiplier) // 20-40, scaled
   const landmarks: GeneratedLandmark[] = []
 
   for (const template of selected) {
@@ -85,7 +86,7 @@ export function generateLandmarks(
       explored: false,
       position,
     })
-    currentDist += 25 + Math.floor(rng() * 26) // 25-50
+    currentDist += Math.floor((25 + Math.floor(rng() * 26)) * difficultyMultiplier) // 25-50, scaled
   }
 
   // Add 1 secret landmark per region (hidden until revealed)
