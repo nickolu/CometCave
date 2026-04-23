@@ -47,8 +47,15 @@ interface TargetListProps {
 
 type DiscoveryTier = 'hidden' | 'distant' | 'unknown' | 'revealed'
 
-function getDiscoveryTier(stepsRemaining: number, isExplored: boolean): DiscoveryTier {
+function getDiscoveryTier(stepsRemaining: number, isExplored: boolean, isHidden: boolean = false): DiscoveryTier {
   if (isExplored) return 'revealed'
+  if (isHidden) {
+    // Hidden landmarks only appear when within 100km, always show as unknown until very close
+    if (stepsRemaining > 100) return 'hidden'
+    if (stepsRemaining > 20) return 'unknown'
+    return 'revealed'
+  }
+  // Normal landmarks
   if (stepsRemaining > 100) return 'hidden'
   if (stepsRemaining > 50) return 'distant'
   if (stepsRemaining > 20) return 'unknown'
@@ -77,7 +84,7 @@ export function TargetList({
 }: TargetListProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Build target list: landmarks + per-exit targets (hidden landmarks are excluded from display)
+  // Build target list: landmarks + per-exit targets (hidden landmarks included for proximity reveal)
   const exitList = exitTargets && exitTargets.length > 0
     ? exitTargets
     : [{ regionId: '', name: regionName ? `Leave ${regionName}` : 'Leave Region', icon: '🚪', position: { x: 490, y: 250 } }]
@@ -95,7 +102,7 @@ export function TargetList({
         hidden: lm.hidden ?? false,
         position2d: lm.position,
       }))
-      .filter(t => !t.hidden),
+      .filter(() => true),
     ...exitList.map((exit, i) => ({
       index: landmarks.length + i,
       name: exit.name,
@@ -120,7 +127,7 @@ export function TargetList({
             const stepsRemaining = characterPosition && activeTarget.position2d
               ? Math.ceil(euclidean(characterPosition, activeTarget.position2d))
               : Math.max(0, activeTarget.position - positionInRegion)
-            const tier = activeTarget.type === 'region_exit' ? 'revealed' : getDiscoveryTier(stepsRemaining, isExplored)
+            const tier = activeTarget.type === 'region_exit' ? 'revealed' : getDiscoveryTier(stepsRemaining, isExplored, activeTarget.hidden)
             const display = getDiscoveryDisplay(tier, activeTarget.name, activeTarget.icon)
 
             return (
@@ -174,7 +181,7 @@ export function TargetList({
           const stepsRemaining = characterPosition && target.position2d
             ? Math.ceil(euclidean(characterPosition, target.position2d))
             : Math.max(0, target.position - positionInRegion)
-          const tier = target.type === 'region_exit' ? 'revealed' : getDiscoveryTier(stepsRemaining, isExplored)
+          const tier = target.type === 'region_exit' ? 'revealed' : getDiscoveryTier(stepsRemaining, isExplored, target.hidden)
           if (tier === 'hidden') return null
           const display = getDiscoveryDisplay(tier, target.name, target.icon)
 
