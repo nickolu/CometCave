@@ -11,6 +11,7 @@ export interface GeneratedLandmark {
   encounterPrompt: string
   distanceFromEntry: number
   hidden: boolean
+  explored: boolean
   position: { x: number; y: number }
 }
 
@@ -81,6 +82,7 @@ export function generateLandmarks(
       encounterPrompt: template.encounterPrompt,
       distanceFromEntry: currentDist,
       hidden: false,
+      explored: false,
       position,
     })
     currentDist += 25 + Math.floor(rng() * 26) // 25-50
@@ -105,6 +107,7 @@ export function generateLandmarks(
       encounterPrompt: secretTemplate.encounterPrompt,
       distanceFromEntry: secretDist,
       hidden: true,
+      explored: false,
       position: secretPosition,
     })
     // Re-sort by distance

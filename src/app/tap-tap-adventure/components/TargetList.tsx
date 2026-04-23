@@ -9,6 +9,7 @@ interface LandmarkInfo {
   hasShop: boolean
   distanceFromEntry: number
   hidden?: boolean
+  explored?: boolean
   position?: { x: number; y: number }
 }
 
@@ -54,7 +55,7 @@ export function TargetList({
         icon: lm.icon,
         type: 'landmark' as const,
         position: lm.distanceFromEntry,
-        isExplored: false,
+        isExplored: lm.explored ?? false,
         hasShop: lm.hasShop,
         hidden: lm.hidden ?? false,
         position2d: lm.position,
@@ -74,7 +75,7 @@ export function TargetList({
     <div className="space-y-1">
       <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Targets</p>
       {targets.map(target => {
-        const isPassed = positionInRegion >= target.position
+        const isExplored = target.isExplored ?? false
         const isActive = target.index === activeTargetIndex
         const stepsRemaining = characterPosition && target.position2d
           ? Math.ceil(euclidean(characterPosition, target.position2d))
@@ -88,8 +89,8 @@ export function TargetList({
             className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors border ${
               isActive
                 ? 'bg-indigo-900/50 border-indigo-500/60 text-indigo-200'
-                : isPassed
-                ? 'bg-[#1a1b2e]/40 border-[#2a2b3f]/50 text-slate-500 cursor-default'
+                : isExplored
+                ? 'bg-[#1a1b2e]/40 border-[#2a2b3f]/50 text-slate-500 opacity-60 hover:border-indigo-600/30 hover:text-slate-400'
                 : 'bg-[#1e1f30] border-[#3a3c56] text-slate-300 hover:border-indigo-600/50 hover:text-slate-100'
             } disabled:cursor-not-allowed`}
           >
@@ -103,14 +104,14 @@ export function TargetList({
               )}
             </span>
             <span className="flex items-center gap-1 flex-shrink-0 ml-2">
-              {isPassed ? (
-                <span className="text-[10px] text-slate-500">passed</span>
+              {isExplored ? (
+                <span className="text-[10px] text-slate-500">explored</span>
               ) : (
                 <span className={`text-[10px] ${isActive ? 'text-indigo-300' : 'text-slate-400'}`}>
                   {stepsRemaining === 0 ? 'here' : `${stepsRemaining} km`}
                 </span>
               )}
-              {isActive && !isPassed && (
+              {isActive && !isExplored && (
                 <span className="text-[9px] px-1 py-0.5 rounded bg-indigo-700/60 text-indigo-200 border border-indigo-500/40">
                   active
                 </span>

@@ -121,12 +121,13 @@ export async function moveForwardService(
     // Landmark target arrival
     const activeLandmark = landmarkState.landmarks[activeTargetIndex]
 
-    // Check arrival: prefer 2D check, fall back to 1D
+    // Check arrival: use 2D when data exists, fall back to 1D only when no 2D data
     const charPos = updatedPosition
     const targetPos = activeLandmark?.position
-    const arrived2d = charPos && targetPos ? hasArrived(charPos, targetPos) : false
-    const arrived1d = newPositionInRegion >= (activeLandmark?.distanceFromEntry ?? Infinity)
-    const hasArrivedAtLandmark = arrived2d || arrived1d
+    const has2dData = charPos && targetPos
+    const hasArrivedAtLandmark = has2dData
+      ? hasArrived(charPos, targetPos)
+      : newPositionInRegion >= (activeLandmark?.distanceFromEntry ?? Infinity)
 
     if (activeLandmark && !activeLandmark.hidden && hasArrivedAtLandmark) {
       const arrivalEventId = `landmark-arrival-${Date.now()}`
@@ -137,6 +138,7 @@ export async function moveForwardService(
           ...landmarkState,
           positionInRegion: newPositionInRegion,
           position: updatedPosition,
+          nextLandmarkIndex: activeTargetIndex, // keep in sync with activeTargetIndex
         },
       }
 
@@ -214,12 +216,13 @@ export async function moveForwardService(
     // Exit target arrival — triggers region travel decision
     const regionLength = landmarkState.regionLength ?? 200
 
-    // Check arrival: prefer 2D check, fall back to 1D
+    // Check arrival: use 2D when data exists, fall back to 1D only when no 2D data
     const exitCharPos = updatedPosition
     const exitTargetPos = landmarkState.exitPosition
-    const arrivedAtExit2d = exitCharPos && exitTargetPos ? hasArrived(exitCharPos, exitTargetPos) : false
-    const arrivedAtExit1d = newPositionInRegion >= regionLength
-    const hasArrivedAtExit = arrivedAtExit2d || arrivedAtExit1d
+    const has2dExitData = exitCharPos && exitTargetPos
+    const hasArrivedAtExit = has2dExitData
+      ? hasArrived(exitCharPos, exitTargetPos)
+      : newPositionInRegion >= regionLength
 
     if (hasArrivedAtExit) {
       const connected = getConnectedRegions(region.id)

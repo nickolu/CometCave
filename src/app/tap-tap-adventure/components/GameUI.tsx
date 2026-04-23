@@ -247,7 +247,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     const targetPos2d = isExitTarget ? ls?.exitPosition : ls?.landmarks[activeTargetIndex]?.position
     const hitsTarget = charPos && targetPos2d
       ? hasArrived(moveToward(charPos, targetPos2d), targetPos2d)
-      : (ls != null && nextPosInRegion >= activeTargetPosition)
+      : (!charPos && ls != null && nextPosInRegion >= activeTargetPosition) // 1D ONLY when no 2D data
 
     // Always call server for milestone events (shop, target arrival)
     const hitsMilestone =

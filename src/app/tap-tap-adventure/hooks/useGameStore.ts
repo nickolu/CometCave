@@ -290,28 +290,6 @@ export const useGameStore = create<GameStore>()(
               }
             }
 
-            // Auto-skip hidden landmarks the player has walked past
-            if (updatedCharacter.landmarkState) {
-              const ls = updatedCharacter.landmarkState
-              let idx = ls.activeTargetIndex ?? 0
-              while (
-                idx < ls.landmarks.length &&
-                ls.landmarks[idx]?.hidden &&
-                (ls.positionInRegion ?? 0) >= ls.landmarks[idx].distanceFromEntry
-              ) {
-                idx++
-              }
-              if (idx !== (ls.activeTargetIndex ?? 0)) {
-                updatedCharacter = {
-                  ...updatedCharacter,
-                  landmarkState: {
-                    ...ls,
-                    activeTargetIndex: idx,
-                  },
-                }
-              }
-            }
-
             // Mount daily upkeep: deduct gold when a new day boundary is crossed
             const oldDay = calculateDay(oldDistance)
             const newDay = calculateDay(newDistance)
@@ -1417,7 +1395,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 27,
+      version: 28,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1538,6 +1516,13 @@ export const useGameStore = create<GameStore>()(
             // v27: Add 2D position to landmarkState
             if ((char as FantasyCharacter).landmarkState && !(char as FantasyCharacter).landmarkState!.position) {
               ;(char as FantasyCharacter).landmarkState!.position = { x: 0, y: 0 }
+            }
+            // v28: Add explored field to landmarks
+            if ((char as FantasyCharacter).landmarkState?.landmarks) {
+              (char as FantasyCharacter).landmarkState!.landmarks = (char as FantasyCharacter).landmarkState!.landmarks.map(lm => ({
+                ...lm,
+                explored: (lm as Record<string, unknown>).explored !== undefined ? Boolean((lm as Record<string, unknown>).explored) : false,
+              }))
             }
           }
         }
