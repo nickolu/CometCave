@@ -21,6 +21,7 @@ interface DialogueState {
   dispositionDelta?: number
   conversationComplete?: boolean
   reward?: { gold?: number; reputation?: number }
+  revealLandmark?: boolean
 }
 
 interface UseNPCDialogueReturn {
@@ -40,6 +41,8 @@ interface UseNPCDialogueReturn {
     region: string
     message?: string
     disposition?: number
+    hiddenLandmarkName?: string
+    hiddenLandmarkType?: string
   }) => Promise<DialogueState | null>
   reset: () => void
 }
@@ -64,8 +67,10 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
     region: string
     message?: string
     disposition?: number
+    hiddenLandmarkName?: string
+    hiddenLandmarkType?: string
   }): Promise<DialogueState | null> => {
-    const { npc, characterName, characterClass, characterLevel, reputation, region, message, disposition = 0 } = params
+    const { npc, characterName, characterClass, characterLevel, reputation, region, message, disposition = 0, hiddenLandmarkName, hiddenLandmarkType } = params
     setIsLoading(true)
     setError(null)
 
@@ -87,6 +92,8 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
           conversationHistory: recentHistory,
           disposition,
           exchangeCount,
+          hiddenLandmarkName,
+          hiddenLandmarkType,
         }),
       })
 
@@ -100,6 +107,7 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
         dispositionDelta?: number
         conversationComplete?: boolean
         reward?: { gold?: number; reputation?: number }
+        revealLandmark?: boolean
       }
 
       const result: DialogueState = {
@@ -108,6 +116,7 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
         dispositionDelta: data.dispositionDelta,
         conversationComplete: data.conversationComplete,
         reward: data.reward,
+        revealLandmark: data.revealLandmark,
       }
 
       setCurrentDialogue(result)

@@ -12,6 +12,7 @@ export function applyEffects(
     statusChange?: string
     mountDamage?: number
     mountDeath?: boolean
+    revealLandmark?: boolean
   }
 ): FantasyCharacter {
   if (!effects) return character
@@ -64,6 +65,21 @@ export function applyEffects(
       updatedCharacter = newHp <= 0
         ? { ...updatedCharacter, activeMount: null }
         : { ...updatedCharacter, activeMount: { ...updatedCharacter.activeMount, hp: newHp } }
+    }
+  }
+
+  // Landmark revelation
+  if (effects.revealLandmark && updatedCharacter.landmarkState) {
+    const lmState = updatedCharacter.landmarkState
+    const hiddenIdx = lmState.landmarks.findIndex(lm => lm.hidden)
+    if (hiddenIdx !== -1) {
+      const updatedLandmarks = lmState.landmarks.map((lm, i) =>
+        i === hiddenIdx ? { ...lm, hidden: false } : lm
+      )
+      updatedCharacter = {
+        ...updatedCharacter,
+        landmarkState: { ...lmState, landmarks: updatedLandmarks },
+      }
     }
   }
 

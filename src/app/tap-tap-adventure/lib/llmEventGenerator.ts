@@ -35,6 +35,7 @@ export interface LLMEventOption {
     rewardItems?: Item[]
     mountDamage?: number
     mountDeath?: boolean
+    revealLandmark?: boolean
   }
   failureDescription: string
   failureEffects: {
@@ -44,6 +45,7 @@ export interface LLMEventOption {
     rewardItems?: Item[]
     mountDamage?: number
     mountDeath?: boolean
+    revealLandmark?: boolean
   }
   triggersCombat?: boolean
 }
@@ -83,6 +85,7 @@ const eventOptionSchema = z.object({
     rewardItems: z.array(rewardItemSchema).optional(),
     mountDamage: z.number().optional(),
     mountDeath: z.boolean().optional(),
+    revealLandmark: z.boolean().optional(),
   }),
   failureDescription: z.string(),
   failureEffects: z.object({
@@ -92,6 +95,7 @@ const eventOptionSchema = z.object({
     rewardItems: z.array(rewardItemSchema).optional(),
     mountDamage: z.number().optional(),
     mountDeath: z.boolean().optional(),
+    revealLandmark: z.boolean().optional(),
   }),
   triggersCombat: z.boolean().optional(),
 })
@@ -181,6 +185,7 @@ const eventOptionSchemaForOpenAI = {
         },
         mountDamage: { type: 'number', description: 'HP damage dealt to the character\'s mount (if they have one). Use 3-10 for minor damage, 10-20 for serious damage.' },
         mountDeath: { type: 'boolean', description: 'Set to true only if the mount is killed outright by the event outcome.' },
+        revealLandmark: { type: 'boolean', description: 'Set to true if this event reveals a hidden landmark nearby. Only use when the narrative involves discovering a hidden location, receiving a treasure map, or learning about a secret place from an NPC.' },
       },
     },
     failureDescription: { type: 'string' },
@@ -196,6 +201,7 @@ const eventOptionSchemaForOpenAI = {
         },
         mountDamage: { type: 'number', description: 'HP damage dealt to the character\'s mount (if they have one). Use 3-10 for minor damage, 10-20 for serious damage.' },
         mountDeath: { type: 'boolean', description: 'Set to true only if the mount is killed outright by the event outcome.' },
+        revealLandmark: { type: 'boolean', description: 'Set to true if this event reveals a hidden landmark nearby. Only use when the narrative involves discovering a hidden location, receiving a treasure map, or learning about a secret place from an NPC.' },
       },
     },
     triggersCombat: { type: 'boolean', description: 'Set to true if this option leads to a fight' },
@@ -329,6 +335,16 @@ function getCompletionsConfig(character: FantasyCharacter, context: string) {
     ? `\n\nWeather context: ${eventWeatherType.icon} ${eventWeatherType.name}. ${eventWeatherType.description} Weave the weather atmosphere subtly into events.`
     : ''
 
+  // Build landmark context for potential revelation events
+  let landmarkHint = ''
+  const ls = character.landmarkState
+  if (ls) {
+    const hiddenLandmarks = ls.landmarks.filter(lm => lm.hidden)
+    if (hiddenLandmarks.length > 0) {
+      landmarkHint = `\n\nIMPORTANT — Hidden landmark opportunity:\nThere is a hidden landmark nearby: "${hiddenLandmarks[0].name}" (${hiddenLandmarks[0].type}). Occasionally (roughly 1 in 5 non-combat events), create an event where an NPC, old map, or mysterious sign reveals this hidden place. When this happens, set revealLandmark: true in the successEffects. Make the revelation feel natural — a traveler shares rumors, a map is found, or ancient markings are deciphered. Do NOT always reveal the landmark — only when narratively fitting.`
+    }
+  }
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'user',
@@ -357,7 +373,7 @@ Character:
 ${JSON.stringify(character, null, 2)}
 
 Recent History & Context:
-${context || 'No prior adventures yet — this is the beginning of their journey.'}${seasonalInjection}${weatherInjection}`,
+${context || 'No prior adventures yet — this is the beginning of their journey.'}${seasonalInjection}${weatherInjection}${landmarkHint}`,
     },
   ]
 
