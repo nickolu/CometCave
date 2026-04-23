@@ -229,6 +229,12 @@ export const useGameStore = create<GameStore>()(
             const selectedCharacter = get().getSelectedCharacter()
             if (!selectedCharacter) return
 
+            // Apply faster_travel multiplier from active exploration spells
+            const fasterTravelSpell = selectedCharacter.activeExplorationSpells?.find(s => s.effectType === 'faster_travel')
+            if (fasterTravelSpell?.value) {
+              distanceMultiplier = distanceMultiplier * fasterTravelSpell.value
+            }
+
             // Refresh daily challenges if date has changed
             const today = getTodayDateString()
             if (shouldRefreshChallenges(state.gameState.dailyChallenges, today)) {
@@ -292,6 +298,16 @@ export const useGameStore = create<GameStore>()(
               updatedCharacter = {
                 ...updatedCharacter,
                 landmarkState: newLandmarkState,
+              }
+            }
+
+            // Tick active exploration spells (step-based duration)
+            if (updatedCharacter.activeExplorationSpells?.length) {
+              updatedCharacter = {
+                ...updatedCharacter,
+                activeExplorationSpells: updatedCharacter.activeExplorationSpells
+                  .map(s => ({ ...s, stepsRemaining: s.stepsRemaining - 1 }))
+                  .filter(s => s.stepsRemaining > 0),
               }
             }
 
@@ -1341,6 +1357,41 @@ export const useGameStore = create<GameStore>()(
           mana: currentMana - manaCost,
         }
 
+        // Handle duration-based exploration effects (active spell tracking)
+        if (effect.duration && effect.duration > 0) {
+          const activeSpells = [...(character.activeExplorationSpells ?? [])]
+          const existingIdx = activeSpells.findIndex(s => s.spellId === spell.id)
+          const newEntry = {
+            spellId: spell.id,
+            spellName: spell.name,
+            effectType: effect.type,
+            value: effect.value,
+            stepsRemaining: effect.duration,
+          }
+          if (existingIdx >= 0) {
+            activeSpells[existingIdx] = newEntry
+          } else {
+            activeSpells.push(newEntry)
+          }
+          updates.activeExplorationSpells = activeSpells
+          updates.mana = currentMana - manaCost
+
+          set(
+            produce((state: GameStore) => {
+              const charIndex = state.gameState.characters.findIndex(c => c.id === character.id)
+              if (charIndex === -1) return
+              state.gameState.characters[charIndex] = {
+                ...state.gameState.characters[charIndex],
+                ...updates,
+              }
+            })
+          )
+          return {
+            message: `${spell.name}: Active for ${effect.duration} steps! (${manaCost} MP spent)`,
+            success: true,
+          }
+        }
+
         switch (effect.type) {
           case 'heal': {
             const maxHp = character.maxHp ?? 100
@@ -1439,6 +1490,83 @@ export const useGameStore = create<GameStore>()(
             message = `${spell.name}: You sense what lies ahead... ${landmark.icon} ${landmark.name} — ${landmark.encounterPrompt} (${manaCost} MP spent)`
             break
           }
+          case 'instant_travel': {
+            if (!character.landmarkState) {
+              return { message: 'No active travel to teleport through.', success: false }
+            }
+            const ls = character.landmarkState
+            const travelDist = effect.value
+            const newPosition = (ls.positionInRegion ?? 0) + travelDist
+            let newLsPosition = ls.position
+            if (ls.position && ls.regionBounds) {
+              const activeIdx = ls.activeTargetIndex ?? 0
+              const isExit = activeIdx >= ls.landmarks.length
+              let targetPos: Vec2 | null = null
+              if (isExit) {
+                if (ls.exitPositions && ls.exitPositions.length > 0) {
+                  const exitIdx = activeIdx - ls.landmarks.length
+                  targetPos = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition ?? null
+                } else if (ls.exitPosition) {
+                  targetPos = ls.exitPosition
+                }
+              } else if (!isExit && ls.landmarks[activeIdx]?.position) {
+                targetPos = ls.landmarks[activeIdx].position!
+              }
+              if (targetPos) {
+                let pos = ls.position
+                for (let i = 0; i < travelDist; i++) {
+                  pos = moveToward(pos, targetPos)
+                }
+                newLsPosition = pos
+              }
+            }
+            updates.landmarkState = {
+              ...ls,
+              positionInRegion: newPosition,
+              position: newLsPosition,
+            }
+            updates.distance = (character.distance ?? 0) + travelDist
+            message = `${spell.name}: Teleported ${travelDist} km instantly! (${manaCost} MP spent)`
+            break
+          }
+          case 'scouting': {
+            // Reveal the next hidden or upcoming landmark, similar to reveal
+            const ls = character.landmarkState
+            if (!ls) {
+              return { message: 'No active travel to scout ahead.', success: false }
+            }
+            const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
+            if (hiddenIdx !== -1) {
+              const scoutedLandmark = ls.landmarks[hiddenIdx]
+              const updatedLandmarks = ls.landmarks.map((lm, i) =>
+                i === hiddenIdx ? { ...lm, hidden: false } : lm
+              )
+              updates.landmarkState = { ...ls, landmarks: updatedLandmarks }
+              message = `${spell.name}: Your familiar scouted ahead! ${scoutedLandmark.icon} ${scoutedLandmark.name} has been revealed! (${manaCost} MP spent)`
+              break
+            }
+            const activeIdx2 = ls.activeTargetIndex ?? 0
+            if (activeIdx2 >= ls.landmarks.length) {
+              return { message: 'Nothing more to scout ahead.', success: false }
+            }
+            const upcomingLandmark = ls.landmarks[activeIdx2]
+            message = `${spell.name}: Your familiar reports... ${upcomingLandmark.icon} ${upcomingLandmark.name} lies ahead — ${upcomingLandmark.encounterPrompt} (${manaCost} MP spent)`
+            break
+          }
+          // Duration-based types are handled above before the switch.
+          // These cases are unreachable for instant casts but required for exhaustiveness.
+          case 'cha_boost':
+          case 'faster_travel':
+          case 'auto_stealth':
+          case 'animal_affinity':
+          case 'disguise':
+          case 'loot_bonus':
+          case 'bypass_guards':
+          case 'see_weaknesses':
+          case 'price_reduction': {
+            message = `${spell.name}: Effect applied! (${manaCost} MP spent)`
+            break
+          }
         }
 
         set(
@@ -1457,7 +1585,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 29,
+      version: 30,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1598,6 +1726,10 @@ export const useGameStore = create<GameStore>()(
               if (eq.weapon && !eq.weapon.rarity) eq.weapon = { ...eq.weapon, rarity: 'common' }
               if (eq.armor && !eq.armor.rarity) eq.armor = { ...eq.armor, rarity: 'common' }
               if (eq.accessory && !eq.accessory.rarity) eq.accessory = { ...eq.accessory, rarity: 'common' }
+            }
+            // v30: Add activeExplorationSpells
+            if (!(char as FantasyCharacter).activeExplorationSpells) {
+              ;(char as FantasyCharacter).activeExplorationSpells = []
             }
           }
         }

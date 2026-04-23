@@ -7,7 +7,7 @@ import { ItemSchema } from './item'
 import { MountSchema } from './mount'
 import { MercenarySchema } from './mercenary'
 import { MainQuestSchema } from './quest'
-import { SpellSchema } from './spell'
+import { SpellSchema, ActiveExplorationSpellSchema } from './spell'
 import { BestiaryEntrySchema } from './bestiary'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
@@ -52,6 +52,7 @@ export const FantasyCharacterSchema = z.object({
   maxMana: z.number().optional(),
   explorationShield: z.number().optional(),
   spellbook: z.array(SpellSchema).optional(),
+  activeExplorationSpells: z.array(ActiveExplorationSpellSchema).optional(),
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),
   activeMercenary: MercenarySchema.nullable().optional(),
