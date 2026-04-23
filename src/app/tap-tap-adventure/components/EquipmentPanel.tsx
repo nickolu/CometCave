@@ -30,9 +30,9 @@ const SLOT_ICONS: Record<EquipmentSlotType, string> = {
   accessory: 'LCK',
 }
 
-const COMPARE_STATS = ['strength', 'intelligence', 'luck'] as const
+const COMPARE_STATS = ['strength', 'intelligence', 'luck', 'charisma'] as const
 
-/** Sum the total stat value of an item across STR/INT/LCK */
+/** Sum the total stat value of an item across STR/INT/LCK/CHA */
 function itemStatTotal(item: Item | null): number {
   if (!item?.effects) return 0
   return COMPARE_STATS.reduce((sum, key) => sum + (item.effects?.[key] ?? 0), 0)
