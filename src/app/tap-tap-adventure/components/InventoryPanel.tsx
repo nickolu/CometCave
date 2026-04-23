@@ -77,6 +77,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const handlePointerDown = useCallback((item: Item) => {
     longPressTimerRef.current = setTimeout(() => {
       setDetailItem(item)
+      longPressTimerRef.current = null
     }, 500)
   }, [])
 
@@ -85,6 +86,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       clearTimeout(longPressTimerRef.current)
       longPressTimerRef.current = null
     }
+  }, [])
+
+  const handleItemClick = useCallback((item: Item) => {
+    // If long-press already fired (timer cleared itself), don't re-open
+    // If timer is still pending, clear it and open on click instead
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    setDetailItem(item)
   }, [])
 
   const itemsToDisplay = (inventory ?? []).filter(item => {
@@ -177,7 +188,8 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                 : rarityStyle.border
               return (
               <div
-                className={`relative bg-[#1e1f30] border ${borderClass} p-4 rounded-lg space-y-2 mb-3 w-full`}
+                className={`relative bg-[#1e1f30] border ${borderClass} p-4 rounded-lg space-y-2 mb-3 w-full cursor-pointer hover:border-indigo-500/50 transition-colors`}
+                onClick={() => handleItemClick(item)}
                 onPointerDown={() => handlePointerDown(item)}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
