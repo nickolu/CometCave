@@ -290,6 +290,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [isAutoWalking, setIsAutoWalking] = useState(false)
   const autoWalkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastMoveTimeRef = useRef<number>(0)
 
   const clearAutoWalk = useCallback(() => {
     if (autoWalkTimeoutRef.current) {
@@ -370,10 +371,20 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       // During combat or shop — let those components handle their own shortcuts
       if (gameState.combatState?.status === 'active' || gameState.shopState?.isOpen) return
 
-      // Travel mode — Space or Enter to move forward
+      // Travel mode — Space or Enter to move forward, throttled to match walk speed
       if ((e.key === ' ' || e.key === 'Enter') && !moveForwardPending) {
         e.preventDefault()
-        handleMoveForward()
+        const now = Date.now()
+        const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
+        const unlockedSkillIds = character?.unlockedSkills ?? []
+        const unlockedSkillObjects = SKILLS.filter(s => unlockedSkillIds.includes(s.id))
+        const walkSpeedBonus = getSkillBonus(unlockedSkillObjects, 'auto_walk_speed')
+        const skillSpeedMultiplier = 1 + walkSpeedBonus.percentage / 100
+        const walkInterval = Math.round(300 / (mountSpeed * skillSpeedMultiplier))
+        if (now - lastMoveTimeRef.current >= walkInterval) {
+          lastMoveTimeRef.current = now
+          handleMoveForward()
+        }
       }
     }
 
