@@ -43,6 +43,7 @@ interface UseNPCDialogueReturn {
     disposition?: number
     hiddenLandmarkName?: string
     hiddenLandmarkType?: string
+    characterCharisma?: number
   }) => Promise<DialogueState | null>
   reset: () => void
 }
@@ -69,8 +70,9 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
     disposition?: number
     hiddenLandmarkName?: string
     hiddenLandmarkType?: string
+    characterCharisma?: number
   }): Promise<DialogueState | null> => {
-    const { npc, characterName, characterClass, characterLevel, reputation, region, message, disposition = 0, hiddenLandmarkName, hiddenLandmarkType } = params
+    const { npc, characterName, characterClass, characterLevel, reputation, region, message, disposition = 0, hiddenLandmarkName, hiddenLandmarkType, characterCharisma } = params
     setIsLoading(true)
     setError(null)
 
@@ -88,6 +90,7 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
           characterLevel,
           reputation,
           region,
+          characterCharisma,
           message,
           conversationHistory: recentHistory,
           disposition,

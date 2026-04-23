@@ -3,7 +3,26 @@ import { useState, useCallback } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { Spell } from '@/app/tap-tap-adventure/models/spell'
+import { Spell, ExplorationEffectType } from '@/app/tap-tap-adventure/models/spell'
+
+const EFFECT_ICONS: Record<ExplorationEffectType, string> = {
+  heal: '❤️',
+  mana_restore: '💎',
+  speed_boost: '⚡',
+  shield: '🛡️',
+  reveal: '🔮',
+  cha_boost: '🗣️',
+  faster_travel: '🕊️',
+  auto_stealth: '👁️',
+  animal_affinity: '🐾',
+  disguise: '🎭',
+  instant_travel: '✨',
+  loot_bonus: '🎁',
+  scouting: '🧿',
+  bypass_guards: '🚪',
+  see_weaknesses: '⚔️',
+  price_reduction: '💰',
+}
 
 export function ExplorationSpellsPanel() {
   const character = useGameStore(s => s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId))
@@ -14,6 +33,7 @@ export function ExplorationSpellsPanel() {
   const spellbook = character?.spellbook ?? []
   const explorationSpells = spellbook.filter(s => s.explorationEffect)
   const currentMana = character?.mana ?? 0
+  const activeSpells = character?.activeExplorationSpells ?? []
 
   const handleCast = useCallback((spellId: string) => {
     const result = castExplorationSpell(spellId)
@@ -43,6 +63,19 @@ export function ExplorationSpellsPanel() {
           <span className="text-xs text-blue-300">{currentMana} MP available</span>
         </div>
       </div>
+      {activeSpells.length > 0 && (
+        <div className="bg-[#14152a] border border-violet-700/40 rounded-lg p-2 space-y-1">
+          <h5 className="text-xs font-semibold text-violet-300 mb-1">Active Effects</h5>
+          {activeSpells.map(s => (
+            <div key={s.spellId} className="flex items-center justify-between text-xs">
+              <span className="text-slate-200">
+                {EFFECT_ICONS[s.effectType]} {s.spellName}
+              </span>
+              <span className="text-violet-400">{s.stepsRemaining} steps</span>
+            </div>
+          ))}
+        </div>
+      )}
       {feedbackMessage && (
         <div className={`p-2 rounded-md text-sm animate-pulse ${feedbackSuccess ? 'bg-green-900/50 border border-green-700 text-green-300' : 'bg-red-900/50 border border-red-700 text-red-300'}`}>
           {feedbackMessage}
@@ -74,7 +107,7 @@ export function ExplorationSpellsPanel() {
               onClick={() => canCast && handleCast(spell.id)}
               disabled={!canCast}
             >
-              {canCast ? `Cast ${effect.type === 'heal' ? '❤️' : effect.type === 'mana_restore' ? '💎' : effect.type === 'speed_boost' ? '⚡' : effect.type === 'shield' ? '🛡️' : '🔮'} ${effect.type.replace(/_/g, ' ')}` : 'Not enough mana'}
+              {canCast ? `Cast ${EFFECT_ICONS[effect.type]} ${effect.type.replace(/_/g, ' ')}` : 'Not enough mana'}
             </Button>
           </div>
         )

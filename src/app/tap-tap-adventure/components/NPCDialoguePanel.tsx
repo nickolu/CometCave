@@ -14,6 +14,7 @@ interface NPCDialoguePanelProps {
   reputation: number
   region: string
   characterCharisma: number
+  activeCharismaBonus?: number
   disposition: number
   hiddenLandmarkName?: string
   hiddenLandmarkType?: string
@@ -29,12 +30,14 @@ export function NPCDialoguePanel({
   reputation,
   region,
   characterCharisma,
+  activeCharismaBonus = 0,
   disposition,
   hiddenLandmarkName,
   hiddenLandmarkType,
   onEncounterUpdate,
   onClose,
 }: NPCDialoguePanelProps) {
+  const effectiveCharisma = characterCharisma + activeCharismaBonus
   const {
     isLoading,
     conversationLog,
@@ -81,6 +84,7 @@ export function NPCDialoguePanel({
         disposition,
         hiddenLandmarkName,
         hiddenLandmarkType,
+        characterCharisma: effectiveCharisma,
       }).then(result => {
         onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward, result?.revealLandmark)
         if (result?.reward) {
@@ -113,6 +117,7 @@ export function NPCDialoguePanel({
       disposition,
       hiddenLandmarkName,
       hiddenLandmarkType,
+      characterCharisma: effectiveCharisma,
     })
 
     onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward, result?.revealLandmark)

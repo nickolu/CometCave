@@ -676,6 +676,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                           reputation={character?.reputation ?? 0}
                           region={character?.currentRegion ?? 'green_meadows'}
                           characterCharisma={character?.charisma ?? 5}
+                          activeCharismaBonus={character?.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
                           disposition={disposition}
                           hiddenLandmarkName={character?.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
                           hiddenLandmarkType={character?.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
@@ -972,6 +973,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   reputation={character.reputation}
                   region={character.currentRegion ?? 'green_meadows'}
                   characterCharisma={character.charisma ?? 5}
+                  activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
                   disposition={disposition}
                   hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
                   hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
