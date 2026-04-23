@@ -18,8 +18,8 @@ interface QuestTemplate {
 const QUEST_TEMPLATES: QuestTemplate[] = [
   {
     type: 'reach_distance',
-    getTitle: (target) => `Journey to Step ${target}`,
-    getDescription: (target, days) => `Travel to step ${target} within ${days} days. Keep moving!`,
+    getTitle: (target) => `Journey to km ${target}`,
+    getDescription: (target, days) => `Travel to km ${target} within ${days} days. Keep moving!`,
     getTarget: (char) => char.distance + 75 + Math.floor(Math.random() * 50),
     getDaysAllowed: (char) => 3 + Math.floor(char.level / 2),
     getStartValue: (char) => char.distance,
