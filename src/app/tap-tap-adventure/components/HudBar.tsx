@@ -79,7 +79,7 @@ const STAT_LABELS: Record<IconType, string> = {
   heartIcon: 'HP',
   sunIcon: 'Gold',
   waterDropIcon: 'Reputation',
-  leafIcon: 'Steps',
+  leafIcon: 'km',
   fireIcon: 'Level',
   dayIcon: 'Day',
   purpleCircleIcon: 'STR — Attack power, max HP',
@@ -189,9 +189,9 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   const getTooltipText = useCallback((key: IconType): string => {
     switch (key) {
       case 'heartIcon': return `HP: ${hp}/${maxHp}`
-      case 'fireIcon': return `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
+      case 'fireIcon': return `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} km to next`
       case 'waterDropIcon': return `Reputation: ${getReputationTier(stats[key] as number)} (${stats[key]})`
-      case 'dayIcon': return `Day ${day} (${50 - (distance % 50)} steps to next day)`
+      case 'dayIcon': return `Day ${day} (${50 - (distance % 50)} km to next day)`
       default: return STAT_LABELS[key]
     }
   }, [hp, maxHp, level, stepsIntoLevel, stepsNeeded, day, distance, stats])

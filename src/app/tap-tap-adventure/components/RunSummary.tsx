@@ -205,7 +205,7 @@ export default function RunSummary({
           Run Statistics
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <StatCard label="Distance" value={character.distance.toLocaleString()} sublabel="steps" />
+          <StatCard label="Distance" value={character.distance.toLocaleString()} sublabel="km" />
           <StatCard label="Level" value={String(character.level)} />
           <StatCard label="Days Survived" value={String(daysSurvived)} />
           <StatCard label="Gold" value={character.gold.toLocaleString()} />

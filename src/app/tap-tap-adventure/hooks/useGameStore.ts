@@ -52,6 +52,7 @@ import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/co
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
 import { getEnchantCost, getEnchantBonusStat, MAX_ENCHANT_LEVEL } from '@/app/tap-tap-adventure/config/enchanting'
+import { moveToward, Vec2 } from '@/app/tap-tap-adventure/lib/movementUtils'
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -257,12 +258,35 @@ export const useGameStore = create<GameStore>()(
 
             // Increment positionInRegion so TargetList shows correct distance
             if (updatedCharacter.landmarkState) {
+              const ls = updatedCharacter.landmarkState
+              let newLandmarkState = {
+                ...ls,
+                positionInRegion: (ls.positionInRegion ?? 0) + 1,
+              }
+
+              // Update 2D position toward active target
+              if (ls.position && ls.regionBounds) {
+                const activeIdx = ls.activeTargetIndex ?? 0
+                const isExit = activeIdx >= ls.landmarks.length
+                let targetPos: Vec2 | null = null
+
+                if (isExit && ls.exitPosition) {
+                  targetPos = ls.exitPosition
+                } else if (!isExit && ls.landmarks[activeIdx]?.position) {
+                  targetPos = ls.landmarks[activeIdx].position!
+                }
+
+                if (targetPos) {
+                  newLandmarkState = {
+                    ...newLandmarkState,
+                    position: moveToward(ls.position, targetPos),
+                  }
+                }
+              }
+
               updatedCharacter = {
                 ...updatedCharacter,
-                landmarkState: {
-                  ...updatedCharacter.landmarkState,
-                  positionInRegion: (updatedCharacter.landmarkState.positionInRegion ?? 0) + 1,
-                },
+                landmarkState: newLandmarkState,
               }
             }
 
@@ -1313,9 +1337,28 @@ export const useGameStore = create<GameStore>()(
             }
             const ls = character.landmarkState
             const newPosition = (ls.positionInRegion ?? 0) + effect.value
+            let newLsPosition = ls.position
+            if (ls.position && ls.regionBounds) {
+              const activeIdx = ls.activeTargetIndex ?? 0
+              const isExit = activeIdx >= ls.landmarks.length
+              let targetPos: Vec2 | null = null
+              if (isExit && ls.exitPosition) {
+                targetPos = ls.exitPosition
+              } else if (!isExit && ls.landmarks[activeIdx]?.position) {
+                targetPos = ls.landmarks[activeIdx].position!
+              }
+              if (targetPos) {
+                let pos = ls.position
+                for (let i = 0; i < effect.value; i++) {
+                  pos = moveToward(pos, targetPos)
+                }
+                newLsPosition = pos
+              }
+            }
             updates.landmarkState = {
               ...ls,
               positionInRegion: newPosition,
+              position: newLsPosition,
             }
             updates.distance = (character.distance ?? 0) + effect.value
             message = `${spell.name}: Advanced ${effect.value} steps! (${manaCost} MP spent)`
@@ -1374,7 +1417,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 26,
+      version: 27,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1491,6 +1534,10 @@ export const useGameStore = create<GameStore>()(
                   enc.lastTier = getRelationshipTier(enc.disposition).tier
                 }
               }
+            }
+            // v27: Add 2D position to landmarkState
+            if ((char as FantasyCharacter).landmarkState && !(char as FantasyCharacter).landmarkState!.position) {
+              ;(char as FantasyCharacter).landmarkState!.position = { x: 0, y: 0 }
             }
           }
         }

@@ -80,6 +80,7 @@ export const FantasyCharacterSchema = z.object({
       encounterPrompt: z.string(),
       distanceFromEntry: z.number(),
       hidden: z.boolean().default(false),
+      position: z.object({ x: z.number(), y: z.number() }).optional(),
     })),
     entryDistance: z.number(),
     nextLandmarkIndex: z.number(),
@@ -89,6 +90,9 @@ export const FantasyCharacterSchema = z.object({
     positionInRegion: z.number().default(0),
     activeTargetIndex: z.number().default(0),
     regionLength: z.number().default(200),
+    position: z.object({ x: z.number(), y: z.number() }).optional(),
+    exitPosition: z.object({ x: z.number(), y: z.number() }).optional(),
+    regionBounds: z.object({ width: z.number(), height: z.number() }).optional(),
   }).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>

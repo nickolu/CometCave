@@ -1,4 +1,5 @@
 import { getTemplatesForRegion, getSecretTemplatesForRegion, LandmarkTemplate, LandmarkType } from '../config/landmarks'
+import { euclidean } from './movementUtils'
 
 export interface GeneratedLandmark {
   templateId: string
@@ -10,6 +11,7 @@ export interface GeneratedLandmark {
   encounterPrompt: string
   distanceFromEntry: number
   hidden: boolean
+  position: { x: number; y: number }
 }
 
 // Simple string hash for seeded random
@@ -68,6 +70,7 @@ export function generateLandmarks(
   const landmarks: GeneratedLandmark[] = []
 
   for (const template of selected) {
+    const position = { x: 50 + rng() * 400, y: 50 + rng() * 400 }
     landmarks.push({
       templateId: template.id,
       name: template.name,
@@ -78,6 +81,7 @@ export function generateLandmarks(
       encounterPrompt: template.encounterPrompt,
       distanceFromEntry: currentDist,
       hidden: false,
+      position,
     })
     currentDist += 25 + Math.floor(rng() * 26) // 25-50
   }
@@ -90,6 +94,7 @@ export function generateLandmarks(
     const secretDist = landmarks.length > 1
       ? Math.floor((landmarks[0].distanceFromEntry + landmarks[landmarks.length - 1].distanceFromEntry) / 2) + Math.floor(rng() * 15)
       : 30 + Math.floor(rng() * 20)
+    const secretPosition = { x: 50 + rng() * 400, y: 50 + rng() * 400 }
     landmarks.push({
       templateId: secretTemplate.id,
       name: secretTemplate.name,
@@ -100,6 +105,7 @@ export function generateLandmarks(
       encounterPrompt: secretTemplate.encounterPrompt,
       distanceFromEntry: secretDist,
       hidden: true,
+      position: secretPosition,
     })
     // Re-sort by distance
     landmarks.sort((a, b) => a.distanceFromEntry - b.distanceFromEntry)

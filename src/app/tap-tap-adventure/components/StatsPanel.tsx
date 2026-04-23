@@ -104,7 +104,7 @@ export function StatsPanel() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">🏃 Longest Run</span>
-                <span className="text-slate-200 font-medium">{longestRun.toLocaleString()} steps</span>
+                <span className="text-slate-200 font-medium">{longestRun.toLocaleString()} km</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">💰 Most Gold</span>
