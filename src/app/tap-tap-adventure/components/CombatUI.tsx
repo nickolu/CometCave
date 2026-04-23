@@ -264,6 +264,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const spellCooldowns = playerState.spellCooldowns ?? {}
   const currentMana = playerState.mana ?? 0
   const maxMana = playerState.maxMana ?? 0
+  const readySpellCount = spellbook.filter(
+    (s: Spell) => (spellCooldowns[s.id] ?? 0) === 0 && currentMana >= (s.manaCost ?? 0)
+  ).length
 
   const handleAction = useCallback(
     (action: CombatAction, itemId?: string) => {
@@ -645,7 +648,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => { setShowSpellMenu(!showSpellMenu); setShowItemMenu(false) }}
             disabled={isPending || spellbook.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.cast_spell ?? 2)}
           >
-            Cast Spell ({AP_COSTS.cast_spell} AP) {spellbook.length > 0 && `[${spellbook.length}]`}
+            Cast Spell ({AP_COSTS.cast_spell} AP) {spellbook.length > 0 && (
+              readySpellCount === spellbook.length
+                ? `[${spellbook.length}]`
+                : `[${readySpellCount}/${spellbook.length} ready]`
+            )}
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -717,10 +724,15 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {/* Spell selection dropdown */}
         {showSpellMenu && spellbook.length > 0 && (
           <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1 max-h-48 overflow-y-auto">
-            {spellbook.map((spell: Spell) => {
+            {[...spellbook].sort((a: Spell, b: Spell) => {
+              const aReady = (spellCooldowns[a.id] ?? 0) === 0 ? 0 : 1
+              const bReady = (spellCooldowns[b.id] ?? 0) === 0 ? 0 : 1
+              return aReady - bReady
+            }).map((spell: Spell, _idx: number, sortedArr: Spell[]) => {
               const onCooldown = (spellCooldowns[spell.id] ?? 0) > 0
               const notEnoughMana = currentMana < (spell.manaCost ?? 0)
               const disabled = isPending || onCooldown || notEnoughMana
+              const isFirstCooldown = onCooldown && _idx > 0 && (spellCooldowns[sortedArr[_idx - 1].id] ?? 0) === 0
 
               // Determine spell's primary element and effectiveness vs enemy
               const spellElement = spell.effects?.find(e => e.element && e.element !== 'none')?.element as SpellElement | undefined
@@ -731,8 +743,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 : null
 
               return (
+                <div key={spell.id}>
+                  {isFirstCooldown && (
+                    <div className="text-[9px] text-slate-500 uppercase tracking-wide px-2 pt-1 pb-0.5">On Cooldown</div>
+                  )}
                 <Button
-                  key={spell.id}
                   className={`w-full text-left whitespace-normal h-auto text-xs py-2 px-3 rounded-md border ${
                     disabled
                       ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
@@ -774,6 +789,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
                     </div>
                   )}
                 </Button>
+                </div>
               )
             })}
           </div>
