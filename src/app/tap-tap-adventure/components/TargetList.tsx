@@ -101,8 +101,7 @@ export function TargetList({
         hasShop: lm.hasShop,
         hidden: lm.hidden ?? false,
         position2d: lm.position,
-      }))
-      .filter(() => true),
+      })),
     ...exitList.map((exit, i) => ({
       index: landmarks.length + i,
       name: exit.name,
