@@ -59,7 +59,8 @@ export function generateLandmarks(
   regionId: string,
   characterId: string,
   visitCount: number = 0,
-  difficultyMultiplier: number = 1
+  difficultyMultiplier: number = 1,
+  regionSize: number = 100
 ): GeneratedLandmark[] {
   const templates = getTemplatesForRegion(regionId)
   const seed = `${regionId}-${characterId}-${visitCount}`
@@ -68,12 +69,19 @@ export function generateLandmarks(
   // Pick 3 landmarks from templates (shuffled deterministically)
   const selected = seededShuffle([...templates], rng).slice(0, 3) as LandmarkTemplate[]
 
+  // Scale positions within the region size (margin = 10% of size)
+  const margin = regionSize * 0.1
+  const range = regionSize - 2 * margin
+
   // Assign distances: first at 20-40 steps, subsequent 25-50 steps apart (scaled by difficulty)
   let currentDist = Math.floor((20 + Math.floor(rng() * 21)) * difficultyMultiplier) // 20-40, scaled
   const landmarks: GeneratedLandmark[] = []
 
   for (const template of selected) {
-    const position = { x: 50 + rng() * 400, y: 50 + rng() * 400 }
+    const position = {
+      x: Math.round(margin + rng() * range),
+      y: Math.round(margin + rng() * range),
+    }
     landmarks.push({
       templateId: template.id,
       name: template.name,
@@ -94,11 +102,13 @@ export function generateLandmarks(
   const secretTemplates = getSecretTemplatesForRegion(regionId)
   if (secretTemplates.length > 0) {
     const secretTemplate = secretTemplates[Math.floor(rng() * secretTemplates.length)]
-    // Place secret landmark between existing landmarks (roughly middle of region)
     const secretDist = landmarks.length > 1
       ? Math.floor((landmarks[0].distanceFromEntry + landmarks[landmarks.length - 1].distanceFromEntry) / 2) + Math.floor(rng() * 15)
       : 30 + Math.floor(rng() * 20)
-    const secretPosition = { x: 50 + rng() * 400, y: 50 + rng() * 400 }
+    const secretPosition = {
+      x: Math.round(margin + rng() * range),
+      y: Math.round(margin + rng() * range),
+    }
     landmarks.push({
       templateId: secretTemplate.id,
       name: secretTemplate.name,
@@ -113,7 +123,6 @@ export function generateLandmarks(
       explored: false,
       position: secretPosition,
     })
-    // Re-sort by distance
     landmarks.sort((a, b) => a.distanceFromEntry - b.distanceFromEntry)
   }
 
