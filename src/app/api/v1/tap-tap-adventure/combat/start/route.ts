@@ -9,19 +9,27 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
   try {
-    const { character, storyEvents = [], eventContext, isBoss = false, isMiniBoss = false, pendingRegionId } = await req.json()
+    const { character, storyEvents = [], eventContext, isBoss = false, isMiniBoss = false, isSecretBoss = false, pendingRegionId } = await req.json()
     const storyContext = buildStoryContext(character, storyEvents)
+
+    // Build context string — for secret bosses, emphasize the guardian nature
+    const secretBossPrefix = isSecretBoss
+      ? `A powerful ancient guardian protects this secret place. Generate a formidable boss-level guardian enemy that feels mythic and dangerous.\n\n`
+      : ''
     const fullContext = eventContext
-      ? `The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
-      : storyContext
+      ? `${secretBossPrefix}The player chose to fight in this situation: "${eventContext}"\n\nGenerate an enemy that matches this encounter. The enemy should be the creature or opponent described in the event above.\n\n${storyContext}`
+      : `${secretBossPrefix}${storyContext}`
 
     const isFinalBoss = pendingRegionId === 'celestial_throne'
+
+    // Secret boss always uses boss-level generation
+    const effectiveIsBoss = isBoss || isSecretBoss
 
     const { enemy: rawEnemy, scenario } = isFinalBoss
       ? await generateFinalBossEncounter(character, fullContext)
       : isMiniBoss
         ? await generateMiniBossEncounter(character, fullContext)
-        : isBoss
+        : effectiveIsBoss
           ? await generateBossEncounter(character, fullContext)
           : await generateCombatEncounter(character, fullContext)
 
@@ -29,6 +37,8 @@ export async function POST(req: NextRequest) {
     const diffMods = getDifficultyModifiers(character.difficultyMode)
     const region = getRegion(character.currentRegion ?? 'green_meadows')
     const regionMult = region.difficultyMultiplier
+    // Secret bosses get an additional 2x scaling on top of regular modifiers
+    const secretBossMultiplier = isSecretBoss ? 2.0 : 1.0
     // Determine enemy range type based on element and name
     const enemyNameLower = rawEnemy.name.toLowerCase()
     const rangedByElement = rawEnemy.element === 'arcane' || rawEnemy.element === 'shadow'
@@ -39,11 +49,11 @@ export async function POST(req: NextRequest) {
 
     const enemy = {
       ...rawEnemy,
-      hp: Math.round(rawEnemy.hp * diffMods.enemyHpMultiplier * regionMult),
-      maxHp: Math.round(rawEnemy.maxHp * diffMods.enemyHpMultiplier * regionMult),
-      attack: Math.round(rawEnemy.attack * diffMods.enemyAttackMultiplier * regionMult),
-      defense: Math.round(rawEnemy.defense * regionMult),
-      goldReward: Math.round(rawEnemy.goldReward * regionMult),
+      hp: Math.round(rawEnemy.hp * diffMods.enemyHpMultiplier * regionMult * secretBossMultiplier),
+      maxHp: Math.round(rawEnemy.maxHp * diffMods.enemyHpMultiplier * regionMult * secretBossMultiplier),
+      attack: Math.round(rawEnemy.attack * diffMods.enemyAttackMultiplier * regionMult * secretBossMultiplier),
+      defense: Math.round(rawEnemy.defense * regionMult * secretBossMultiplier),
+      goldReward: Math.round(rawEnemy.goldReward * regionMult * secretBossMultiplier),
       range: enemyRange,
     }
 
@@ -63,9 +73,10 @@ export async function POST(req: NextRequest) {
       combatLog: [],
       status: 'active',
       scenario,
-      isBoss: isFinalBoss ? true : isBoss,
+      isBoss: isFinalBoss ? true : effectiveIsBoss,
       isMiniBoss,
       isFinalBoss: isFinalBoss || undefined,
+      isSecretBoss: isSecretBoss || undefined,
       combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
     }

@@ -187,6 +187,41 @@ describe('regionLength determinism', () => {
   })
 })
 
+describe('secret landmarks', () => {
+  it('secret landmark has isSecret: true', () => {
+    // All known regions have a secret landmark — the last one added is always the secret one
+    for (const regionId of ALL_REGION_IDS) {
+      const landmarks = generateLandmarks(regionId, 'char-secret-test')
+      const secretLandmarks = landmarks.filter(lm => lm.isSecret === true)
+      expect(secretLandmarks.length).toBe(1)
+    }
+  })
+
+  it('secret landmark has hidden: true initially', () => {
+    for (const regionId of ALL_REGION_IDS) {
+      const landmarks = generateLandmarks(regionId, 'char-hidden-test')
+      const secretLandmark = landmarks.find(lm => lm.isSecret === true)
+      expect(secretLandmark).toBeDefined()
+      expect(secretLandmark!.hidden).toBe(true)
+    }
+  })
+
+  it('normal landmarks do not have isSecret: true', () => {
+    for (const regionId of ALL_REGION_IDS) {
+      const landmarks = generateLandmarks(regionId, 'char-normal-test')
+      const normalLandmarks = landmarks.filter(lm => !lm.isSecret)
+      // There should be 3 normal landmarks and 1 secret
+      expect(normalLandmarks.length).toBe(3)
+    }
+  })
+
+  it('unknown region produces no secret landmarks (no secret templates)', () => {
+    const landmarks = generateLandmarks('unknown_region', 'char-1')
+    const secretLandmarks = landmarks.filter(lm => lm.isSecret === true)
+    expect(secretLandmarks.length).toBe(0)
+  })
+})
+
 describe('getTemplatesForRegion', () => {
   it('returns at least 3 templates for every known region', () => {
     for (const regionId of ALL_REGION_IDS) {

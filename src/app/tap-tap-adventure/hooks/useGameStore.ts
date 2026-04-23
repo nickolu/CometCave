@@ -1585,7 +1585,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 30,
+      version: 31,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1730,6 +1730,13 @@ export const useGameStore = create<GameStore>()(
             // v30: Add activeExplorationSpells
             if (!(char as FantasyCharacter).activeExplorationSpells) {
               ;(char as FantasyCharacter).activeExplorationSpells = []
+            }
+            // v31: Backfill isSecret on existing landmarks (undefined → false for normal, keep true for secret)
+            if ((char as FantasyCharacter).landmarkState?.landmarks) {
+              (char as FantasyCharacter).landmarkState!.landmarks = (char as FantasyCharacter).landmarkState!.landmarks.map(lm => ({
+                ...lm,
+                isSecret: (lm as Record<string, unknown>).isSecret !== undefined ? Boolean((lm as Record<string, unknown>).isSecret) : false,
+              }))
             }
           }
         }
