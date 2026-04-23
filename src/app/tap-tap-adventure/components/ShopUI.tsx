@@ -472,6 +472,21 @@ export function ShopUI() {
                 <div className="flex justify-between items-start">
                   <div className="font-semibold text-white">
                     {item.name}
+                    {item.enchantmentLevel && item.enchantmentLevel > 0 && (
+                      <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
+                        +{item.enchantmentLevel}
+                      </span>
+                    )}
+                    {item.rarity && item.rarity !== 'common' && (
+                      <span className={`ml-1 text-[10px] uppercase font-bold ${
+                        item.rarity === 'legendary' ? 'text-yellow-400' :
+                        item.rarity === 'epic' ? 'text-purple-400' :
+                        item.rarity === 'rare' ? 'text-blue-400' :
+                        'text-green-400'
+                      }`}>
+                        {item.rarity}
+                      </span>
+                    )}
                     {item.quantity > 1 && (
                       <span className="text-xs text-gray-400 ml-1">(x{item.quantity})</span>
                     )}
@@ -482,6 +497,16 @@ export function ShopUI() {
                 </div>
                 <div className="text-xs text-gray-400">{item.description}</div>
                 <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
+                {item.onHitEffect && (
+                  <div className="text-[10px] text-orange-300">
+                    ⚡ On-hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                  </div>
+                )}
+                {item.drawback && (
+                  <div className="text-[10px] text-red-400">
+                    ⚠ Drawback: {item.drawback.description}
+                  </div>
+                )}
                 <Button
                   className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                   disabled={busy}
