@@ -146,6 +146,16 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [moreSubTab, setMoreSubTab] = useState<MoreSubTab>('status')
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [showNPCPanel, setShowNPCPanel] = useState(false)
+  const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
+
+  useEffect(() => {
+    if (gameState?.decisionPoint && !gameState.decisionPoint.resolved) {
+      setDecisionGracePeriod(true)
+      const timer = setTimeout(() => setDecisionGracePeriod(false), 500)
+      return () => clearTimeout(timer)
+    }
+    setDecisionGracePeriod(false)
+  }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
   useEffect(() => {
@@ -348,7 +358,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       }
 
       // During decision point — 1-4 to pick options
-      if (gameState.decisionPoint && !gameState.decisionPoint.resolved && !resolveDecisionPending) {
+      if (gameState.decisionPoint && !gameState.decisionPoint.resolved && !resolveDecisionPending && !decisionGracePeriod) {
         const num = parseInt(e.key, 10)
         if (num >= 1 && num <= gameState.decisionPoint.options.length) {
           e.preventDefault()
@@ -534,7 +544,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                             <Button
                               key={option.id}
                               className={`block w-full text-left whitespace-normal h-auto border bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-3 text-base mt-2 rounded disabled:opacity-60 ${borderColor}`}
-                              disabled={resolveDecisionPending}
+                              disabled={resolveDecisionPending || decisionGracePeriod}
                               onClick={() => {
                                 handleResolveDecision(option.id)
                               }}
