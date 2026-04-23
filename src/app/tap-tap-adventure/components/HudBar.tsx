@@ -383,6 +383,34 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
             </button>
           </div>
         )}
+        {character?.activeMercenary && (() => {
+          const merc = character.activeMercenary
+          const mercRarityColor: Record<string, string> = {
+            common: 'border-slate-400',
+            uncommon: 'border-green-400',
+            rare: 'border-blue-400',
+            legendary: 'border-yellow-400',
+          }
+          const mercHpColor = merc.hp !== undefined && merc.maxHp !== undefined
+            ? merc.hp / merc.maxHp > 0.5 ? 'text-green-400' : merc.hp / merc.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'
+            : 'text-slate-400'
+          return (
+            <div className="flex items-center">
+              <span
+                className={`flex items-center gap-1 text-xs sm:text-sm font-semibold border rounded px-1.5 py-0.5 ${mercRarityColor[merc.rarity] ?? 'border-slate-400'} bg-[#2a2b3f]`}
+                title={`${merc.customName ?? merc.name} (${merc.class}) — ATK ${merc.attack}, DEF ${merc.defense} (${merc.dailyCost} gp/day)${merc.hp !== undefined && merc.maxHp !== undefined ? ` | HP: ${merc.hp}/${merc.maxHp}` : ''}`}
+              >
+                <span>{merc.icon}</span>
+                <span className="hidden sm:inline text-[10px]">{merc.customName ?? merc.name}</span>
+                {merc.hp !== undefined && merc.maxHp !== undefined && (
+                  <span className={`text-[9px] ml-0.5 ${mercHpColor}`}>
+                    {merc.hp}/{merc.maxHp}
+                  </span>
+                )}
+              </span>
+            </div>
+          )
+        })()}
         <div className="hidden sm:flex items-center gap-1 sm:gap-4">
           {STATS_RIGHT.map(renderStat)}
         </div>
