@@ -298,7 +298,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
 
     const shouldDoNothing = flipCoin(0.03, 0.97)
     if (shouldDoNothing) {
-      const genericMessage = getGenericTravelMessage()
+      const region = character ? getRegion(character.currentRegion ?? 'green_meadows') : null
+      const genericMessage = getGenericTravelMessage({
+        regionElement: region?.element,
+        timeOfDay: getTimeOfDay(character?.distance ?? 0),
+        weather: character?.currentWeather,
+      })
       setGenericMessage(genericMessage)
       incrementDistance(mountSpeed)
     } else {
