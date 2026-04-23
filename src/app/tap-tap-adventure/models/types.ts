@@ -117,6 +117,10 @@ type GameState = {
   dailyChallenges: DailyChallengesState | null
   metaProgression: MetaProgressionState | null
   runSummary: RunSummaryData | null
+  /** Item awaiting a rarity celebration modal (epic/legendary drops) */
+  pendingLootCelebration: Item | null
+  /** IDs of items recently added to inventory — cleared when viewed */
+  newItemIds: string[]
 }
 export type { GameState, DailyRewardState, RunSummaryData }
 export type { DailyChallenge, DailyChallengeType, DailyChallengesState } from './dailyChallenge'

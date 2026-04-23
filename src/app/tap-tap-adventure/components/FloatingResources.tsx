@@ -7,6 +7,7 @@ export interface ResourceEvent {
   type: 'gold' | 'reputation' | 'item'
   value: number    // positive = gain, negative = loss
   label?: string   // item name for type 'item'
+  rarity?: string  // item rarity for color coding
 }
 
 interface FloatingResourcesProps {
@@ -34,7 +35,18 @@ function FloatingResource({ event, index }: { event: ResourceEvent; index: numbe
   if (!visible) return null
 
   const isPositive = event.value > 0
-  const color = isPositive ? 'text-green-400' : 'text-red-400'
+  // Color by rarity for item events, otherwise by positive/negative
+  const RARITY_TEXT_COLORS: Record<string, string> = {
+    uncommon: 'text-green-400',
+    rare: 'text-blue-400',
+    epic: 'text-purple-400',
+    legendary: 'text-amber-400',
+  }
+  const defaultColor = isPositive ? 'text-green-400' : 'text-red-400'
+  const color = event.type === 'item' && event.rarity && event.rarity !== 'common'
+    ? (RARITY_TEXT_COLORS[event.rarity] ?? defaultColor)
+    : defaultColor
+  const isRareItem = event.type === 'item' && (event.rarity === 'rare' || event.rarity === 'epic' || event.rarity === 'legendary')
   const icon = event.type === 'gold' ? '💰' : event.type === 'reputation' ? '⭐' : '🎁'
   const label = event.type === 'item' ? event.label : event.type === 'gold' ? 'Gold' : 'Rep'
   const sign = isPositive ? '+' : ''
@@ -43,7 +55,7 @@ function FloatingResource({ event, index }: { event: ResourceEvent; index: numbe
 
   return (
     <span
-      className={`absolute animate-float-up pointer-events-none ${color} text-sm font-bold drop-shadow-lg whitespace-nowrap`}
+      className={`absolute animate-float-up pointer-events-none ${color} text-sm font-bold drop-shadow-lg whitespace-nowrap ${isRareItem ? 'drop-shadow-[0_0_6px_currentColor]' : ''}`}
       style={{
         left: '50%',
         top: `${topOffset}px`,

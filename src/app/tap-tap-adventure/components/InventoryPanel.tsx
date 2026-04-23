@@ -38,6 +38,8 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const character = useGameStore(s => s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId))
+  const newItemIds = useGameStore(s => s.gameState.newItemIds ?? [])
+  const clearNewItemId = useGameStore(s => s.clearNewItemId)
   const equipment = (character?.equipment ?? { weapon: null, armor: null, accessory: null }) as EquipmentSlots
 
   const handleUse = useCallback((item: Item) => {
@@ -96,7 +98,9 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       longPressTimerRef.current = null
     }
     setDetailItem(item)
-  }, [])
+    // Clear "new" badge when item is viewed
+    clearNewItemId(item.id)
+  }, [clearNewItemId])
 
   const itemsToDisplay = (inventory ?? []).filter(item => {
     if (activeTab === 'active') {
@@ -183,8 +187,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
             className="space-y-0 w-full"
             renderItem={(item: Item) => {
               const rarityStyle = RARITY_COLORS[item.rarity ?? 'common']
+              const isNew = newItemIds.includes(item.id)
               const borderClass = item.isHeirloom
                 ? `${rarityStyle.border} ring-1 ring-amber-500/30`
+                : isNew
+                ? `${rarityStyle.border} ring-1 ring-indigo-400/60 animate-pulse`
                 : rarityStyle.border
               return (
               <div
@@ -197,6 +204,11 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                 {item.quantity > 1 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                     x{item.quantity}
+                  </span>
+                )}
+                {isNew && (
+                  <span className="absolute -top-1.5 -left-1.5 bg-indigo-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full tracking-wide">
+                    NEW
                   </span>
                 )}
                 <div className="flex-1">
