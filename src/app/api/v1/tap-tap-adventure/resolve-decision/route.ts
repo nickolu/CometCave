@@ -116,14 +116,44 @@ export async function POST(req: NextRequest) {
         })
       } catch (err) {
         console.error('continue-exploring LLM generation failed', err)
+        const fallbackId = `fallback-explore-${Date.now()}`
+        const fallbackDecisionPoint: FantasyDecisionPoint = {
+          id: `decision-${fallbackId}`,
+          eventId: fallbackId,
+          prompt: `You explore ${landmarkState.exploringLandmarkName}, but the area seems quiet for now. What would you like to do?`,
+          options: [
+            {
+              id: 'continue-exploring',
+              text: 'Continue Exploring',
+              successProbability: 1.0,
+              successDescription: 'You press on, searching for something of interest.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You press on, searching for something of interest.',
+            },
+            {
+              id: 'leave-landmark',
+              text: 'Leave Landmark',
+              successProbability: 1.0,
+              successDescription: 'You decide to move on from this place.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You decide to move on from this place.',
+            },
+          ],
+          resolved: false,
+        }
         return NextResponse.json({
-          updatedCharacter: { ...character, landmarkState: { ...landmarkState, exploring: false, explorationDepth: 0, exploringLandmarkName: undefined } },
+          updatedCharacter,
           resultDescription: `You've explored all there is to see in ${landmarkState.exploringLandmarkName}.`,
           appliedEffects: {},
           selectedOptionId: optionId,
           selectedOptionText: 'Continue exploring',
           outcomeDescription: `There is nothing more to find in ${landmarkState.exploringLandmarkName}.`,
           resourceDelta: {},
+          decisionPoint: fallbackDecisionPoint,
         })
       }
     }
@@ -195,7 +225,35 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(response)
       } catch (err) {
         console.error('explore-landmark LLM generation failed', err)
-        // Fallback: return a generic response without a new decision point
+        const fallbackId = `fallback-explore-${Date.now()}`
+        const fallbackDecisionPoint: FantasyDecisionPoint = {
+          id: `decision-${fallbackId}`,
+          eventId: fallbackId,
+          prompt: `You explore ${exploredLandmark?.name ?? 'the landmark'}, but the area seems quiet for now. What would you like to do?`,
+          options: [
+            {
+              id: 'continue-exploring',
+              text: 'Continue Exploring',
+              successProbability: 1.0,
+              successDescription: 'You press on, searching for something of interest.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You press on, searching for something of interest.',
+            },
+            {
+              id: 'leave-landmark',
+              text: 'Leave Landmark',
+              successProbability: 1.0,
+              successDescription: 'You decide to move on from this place.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You decide to move on from this place.',
+            },
+          ],
+          resolved: false,
+        }
         const fallbackResponse: ResolveDecisionResponse & { rewardItems?: Item[]; triggersCombat?: boolean } = {
           updatedCharacter,
           resultDescription: `You explore ${exploredLandmark?.name ?? 'the landmark'} but find nothing remarkable.`,
@@ -204,6 +262,7 @@ export async function POST(req: NextRequest) {
           selectedOptionText: option.text,
           outcomeDescription: `You explore ${exploredLandmark?.name ?? 'the landmark'} but find nothing remarkable.`,
           resourceDelta: {},
+          decisionPoint: fallbackDecisionPoint,
         }
         return NextResponse.json(fallbackResponse)
       }
