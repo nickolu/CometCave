@@ -296,7 +296,8 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
     if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
     if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal`)
     const bonusStr = bonusParts.length > 0 ? bonusParts.join(', ') : 'no bonuses'
-    return `${getMountDisplayName(mount)} — ${bonusStr} (${mount.dailyCost} gp/day)`
+    const hpStr = mount.hp !== undefined && mount.maxHp !== undefined ? ` | HP: ${mount.hp}/${mount.maxHp}` : ''
+    return `${getMountDisplayName(mount)} — ${bonusStr} (${mount.dailyCost} gp/day)${hpStr}`
   }
 
   const mountRarityColor: Record<string, string> = {
@@ -362,6 +363,15 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
             >
               <span>{activeMount.icon}</span>
               <span className="hidden sm:inline text-[10px]">{getMountDisplayName(activeMount)}</span>
+              {activeMount.hp !== undefined && activeMount.maxHp !== undefined && (
+                <span className={`text-[9px] ml-0.5 ${
+                  activeMount.hp / activeMount.maxHp > 0.5 ? 'text-green-400' :
+                  activeMount.hp / activeMount.maxHp > 0.25 ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
+                  {activeMount.hp}/{activeMount.maxHp}
+                </span>
+              )}
             </button>
             <button
               className="text-[9px] sm:text-[10px] text-red-400 hover:text-red-300 border border-red-400/30 rounded px-1 py-0.5 bg-[#2a2b3f] hover:bg-[#3a3c56]"
