@@ -53,9 +53,15 @@ export function useResolveDecisionMutation() {
         const landmarkState = character.landmarkState
         if (landmarkState) {
           const landmarkName = landmarkState.exploringLandmarkName ?? 'the landmark'
+          // Mark the current landmark as explored
+          const exploredIndex = landmarkState.activeTargetIndex ?? 0
+          const updatedLandmarks = landmarkState.landmarks.map((lm, i) =>
+            i === exploredIndex ? { ...lm, explored: true } : lm
+          )
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
+              landmarks: updatedLandmarks,
               exploring: false,
               explorationDepth: 0,
               exploringLandmarkName: undefined,
@@ -82,9 +88,9 @@ export function useResolveDecisionMutation() {
       if (optionId === 'bypass-landmark' || optionId.startsWith('bypass-toward-')) {
         const landmarkState = character.landmarkState
         if (landmarkState) {
-          const bypassedLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
+          // Use activeTargetIndex (not nextLandmarkIndex) to identify the bypassed landmark
+          const bypassedLandmark = landmarkState.landmarks[landmarkState.activeTargetIndex ?? 0]
           const landmarkName = bypassedLandmark?.name ?? 'the landmark'
-          const newNextLandmarkIndex = landmarkState.nextLandmarkIndex + 1
 
           // Determine target based on which direction was chosen
           let newActiveTargetIndex: number
@@ -98,7 +104,7 @@ export function useResolveDecisionMutation() {
           } else {
             // Original bypass-landmark behavior: go to next target
             newActiveTargetIndex = Math.min(
-              newNextLandmarkIndex,
+              (landmarkState.activeTargetIndex ?? 0) + 1,
               landmarkState.landmarks.length
             )
           }
@@ -106,7 +112,7 @@ export function useResolveDecisionMutation() {
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
-              nextLandmarkIndex: newNextLandmarkIndex,
+              nextLandmarkIndex: newActiveTargetIndex, // keep in sync with activeTargetIndex
               activeTargetIndex: newActiveTargetIndex,
               exploring: false,
             },
