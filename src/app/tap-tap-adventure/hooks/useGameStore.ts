@@ -270,8 +270,13 @@ export const useGameStore = create<GameStore>()(
                 const isExit = activeIdx >= ls.landmarks.length
                 let targetPos: Vec2 | null = null
 
-                if (isExit && ls.exitPosition) {
-                  targetPos = ls.exitPosition
+                if (isExit) {
+                  if (ls.exitPositions && ls.exitPositions.length > 0) {
+                    const exitIdx = activeIdx - ls.landmarks.length
+                    targetPos = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition ?? null
+                  } else if (ls.exitPosition) {
+                    targetPos = ls.exitPosition
+                  }
                 } else if (!isExit && ls.landmarks[activeIdx]?.position) {
                   targetPos = ls.landmarks[activeIdx].position!
                 }
@@ -1320,8 +1325,13 @@ export const useGameStore = create<GameStore>()(
               const activeIdx = ls.activeTargetIndex ?? 0
               const isExit = activeIdx >= ls.landmarks.length
               let targetPos: Vec2 | null = null
-              if (isExit && ls.exitPosition) {
-                targetPos = ls.exitPosition
+              if (isExit) {
+                if (ls.exitPositions && ls.exitPositions.length > 0) {
+                  const exitIdx = activeIdx - ls.landmarks.length
+                  targetPos = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition ?? null
+                } else if (ls.exitPosition) {
+                  targetPos = ls.exitPosition
+                }
               } else if (!isExit && ls.landmarks[activeIdx]?.position) {
                 targetPos = ls.landmarks[activeIdx].position!
               }

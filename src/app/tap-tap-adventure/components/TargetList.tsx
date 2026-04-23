@@ -25,6 +25,13 @@ interface Target {
   position2d?: { x: number; y: number }
 }
 
+interface ExitTargetInfo {
+  regionId: string
+  name: string
+  icon: string
+  position: { x: number; y: number }
+}
+
 interface TargetListProps {
   landmarks: LandmarkInfo[]
   positionInRegion: number
@@ -34,6 +41,7 @@ interface TargetListProps {
   onSelectTarget: (index: number) => void
   disabled: boolean
   characterPosition?: { x: number; y: number }
+  exitTargets?: ExitTargetInfo[]
 }
 
 export function TargetList({
@@ -45,8 +53,13 @@ export function TargetList({
   onSelectTarget,
   disabled,
   characterPosition,
+  exitTargets,
 }: TargetListProps) {
-  // Build target list: landmarks + region exit (hidden landmarks are excluded from display)
+  // Build target list: landmarks + per-exit targets (hidden landmarks are excluded from display)
+  const exitList = exitTargets && exitTargets.length > 0
+    ? exitTargets
+    : [{ regionId: '', name: regionName ? `Leave ${regionName}` : 'Leave Region', icon: '🚪', position: { x: 490, y: 250 } }]
+
   const targets: Target[] = [
     ...landmarks
       .map((lm, i) => ({
@@ -61,14 +74,14 @@ export function TargetList({
         position2d: lm.position,
       }))
       .filter(t => !t.hidden),
-    {
-      index: landmarks.length,
-      name: regionName ? `Leave ${regionName}` : 'Leave Region',
-      icon: '🚪',
+    ...exitList.map((exit, i) => ({
+      index: landmarks.length + i,
+      name: exit.name,
+      icon: exit.icon,
       type: 'region_exit' as const,
       position: regionLength,
-      position2d: { x: 490, y: 250 },
-    },
+      position2d: exit.position,
+    })),
   ]
 
   return (
