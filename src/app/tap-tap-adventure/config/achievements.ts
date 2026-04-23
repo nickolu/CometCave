@@ -217,4 +217,24 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🌍',
     reward: { gold: 500, reputation: 100 },
   },
+
+  // Spell Combo achievements
+  {
+    id: 'combo_first_combo',
+    name: 'First Combo',
+    description: 'Trigger any spell combo for the first time',
+    category: 'special',
+    requirement: 1,
+    icon: '✨',
+    reward: { gold: 20, reputation: 5 },
+  },
+  {
+    id: 'combo_master',
+    name: 'Combo Master',
+    description: 'Discover all 8 spell combos',
+    category: 'special',
+    requirement: 8,
+    icon: '🔮',
+    reward: { gold: 200, reputation: 25 },
+  },
 ]

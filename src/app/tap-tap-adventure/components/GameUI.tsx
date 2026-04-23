@@ -47,6 +47,7 @@ import { CraftingPanel } from './CraftingPanel'
 import { EnchantingPanel } from './EnchantingPanel'
 import { ExplorationSpellsPanel } from './ExplorationSpellsPanel'
 import { BestiaryPanel } from './BestiaryPanel'
+import { SpellComboPanel } from './SpellComboPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { TargetList } from './TargetList'
@@ -741,6 +742,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             <DailyChallengesPanel />
             <AchievementPanel achievements={gameState.achievements ?? []} />
             <BestiaryPanel bestiary={character?.bestiary ?? []} />
+            <SpellComboPanel discoveredCombos={character?.discoveredCombos ?? []} />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
             />
@@ -945,7 +947,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               </div>
             )}
             {mobileCategory === 'quest' && questSubTab === 'bestiary' && character && (
-              <BestiaryPanel bestiary={character.bestiary ?? []} />
+              <>
+                <BestiaryPanel bestiary={character.bestiary ?? []} />
+                <SpellComboPanel discoveredCombos={character.discoveredCombos ?? []} />
+              </>
             )}
 
             {/* Social panels */}

@@ -21,6 +21,7 @@ import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 import { getDeathFlavorText, getStoryContext, getPermadeathEpitaph } from '@/app/tap-tap-adventure/lib/deathFlavorText'
 import { FloatingDamage, DamageEvent } from './FloatingDamage'
+import { SpellComboPanel } from './SpellComboPanel'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
   const pct = Math.max(0, Math.min(100, (current / max) * 100))
@@ -804,6 +805,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
           </div>
         )}
       </div>
+
+      {/* Spell Combos reference (collapsed by default) */}
+      <SpellComboPanel discoveredCombos={character?.discoveredCombos ?? []} />
 
       {/* Turn counter with combat pressure indicator */}
       <div className="text-center text-xs">

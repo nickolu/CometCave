@@ -123,6 +123,20 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
         })
       }
 
+      // Detect spell combos in new log entries and record discoveries
+      {
+        const prevLogLen = combatState.combatLog.length
+        const newEntries = data.combatState.combatLog.slice(prevLogLen)
+        const comboEntry = newEntries.find(e => e.action === 'spell_combo')
+        if (comboEntry) {
+          const match = comboEntry.description.match(/^COMBO: ([^!]+)!/)
+          if (match) {
+            const comboId = match[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')
+            useGameStore.getState().discoverCombo(comboId)
+          }
+        }
+      }
+
       if (data.combatState.status === 'active') {
         // Combat continues — play sounds based on what happened
         // Check for critical hits in new log entries
