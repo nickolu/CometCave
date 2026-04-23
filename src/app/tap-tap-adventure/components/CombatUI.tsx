@@ -524,12 +524,21 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 className={`text-xs ${
                   entry.isCritical
                     ? 'text-yellow-300 font-bold'
+                    : entry.action === 'heal' || entry.action === 'use_item'
+                    ? 'text-emerald-300'
+                    : entry.action === 'defend'
+                    ? 'text-sky-300'
                     : entry.actor === 'player' ? 'text-blue-300' : 'text-red-300'
                 }`}
               >
                 <span className="text-slate-500">T{entry.turn}:</span>{' '}
                 {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
                 {entry.action === 'status_effect' && <span className="mr-1">{entry.description.toLowerCase().includes('poison') ? '☠️' : '🔥'}</span>}
+                {entry.action === 'heal' && <span className="mr-1">❤️</span>}
+                {entry.action === 'defend' && <span className="mr-1">🛡️</span>}
+                {entry.action === 'use_item' && <span className="mr-1">🧪</span>}
+                {entry.action === 'flee' && <span className="mr-1">💨</span>}
+                {entry.action === 'mercenary_attack' && <span className="mr-1">⚔️</span>}
                 {entry.action === 'spell_combo' ? (
                   <><span className="text-purple-400 font-bold">COMBO! </span>{entry.description.replace(/^COMBO: [^!]+! /, '')}</>
                 ) : entry.description.includes('Super effective') ? (
