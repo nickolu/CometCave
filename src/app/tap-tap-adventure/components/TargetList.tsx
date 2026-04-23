@@ -45,6 +45,25 @@ interface TargetListProps {
   exitTargets?: ExitTargetInfo[]
 }
 
+type DiscoveryTier = 'hidden' | 'distant' | 'unknown' | 'revealed'
+
+function getDiscoveryTier(stepsRemaining: number, isExplored: boolean): DiscoveryTier {
+  if (isExplored) return 'revealed'
+  if (stepsRemaining > 100) return 'hidden'
+  if (stepsRemaining > 50) return 'distant'
+  if (stepsRemaining > 20) return 'unknown'
+  return 'revealed'
+}
+
+function getDiscoveryDisplay(tier: DiscoveryTier, realName: string, realIcon: string) {
+  switch (tier) {
+    case 'hidden': return { name: 'Distant landmark', icon: '🔍' }
+    case 'distant': return { name: 'Distant landmark', icon: '🔍' }
+    case 'unknown': return { name: 'Unknown landmark', icon: '❓' }
+    case 'revealed': return { name: realName, icon: realIcon }
+  }
+}
+
 export function TargetList({
   landmarks,
   positionInRegion,
@@ -101,14 +120,16 @@ export function TargetList({
             const stepsRemaining = characterPosition && activeTarget.position2d
               ? Math.ceil(euclidean(characterPosition, activeTarget.position2d))
               : Math.max(0, activeTarget.position - positionInRegion)
+            const tier = activeTarget.type === 'region_exit' ? 'revealed' : getDiscoveryTier(stepsRemaining, isExplored)
+            const display = getDiscoveryDisplay(tier, activeTarget.name, activeTarget.icon)
 
             return (
               <div className="flex items-center gap-1">
                 <div className="flex-1 flex items-center justify-between px-2.5 py-1.5 rounded text-xs bg-indigo-900/50 border border-indigo-500/60 text-indigo-200">
                   <span className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-sm flex-shrink-0">{activeTarget.icon}</span>
-                    <span className="truncate font-medium">{activeTarget.name}</span>
-                    {activeTarget.hasShop && (
+                    <span className="text-sm flex-shrink-0">{display.icon}</span>
+                    <span className="truncate font-medium">{display.name}</span>
+                    {tier === 'revealed' && activeTarget.hasShop && (
                       <span className="text-[9px] px-1 py-0.5 rounded bg-yellow-900/40 border border-yellow-600/40 text-yellow-300 flex-shrink-0">
                         Shop
                       </span>
@@ -153,6 +174,9 @@ export function TargetList({
           const stepsRemaining = characterPosition && target.position2d
             ? Math.ceil(euclidean(characterPosition, target.position2d))
             : Math.max(0, target.position - positionInRegion)
+          const tier = target.type === 'region_exit' ? 'revealed' : getDiscoveryTier(stepsRemaining, isExplored)
+          if (tier === 'hidden') return null
+          const display = getDiscoveryDisplay(tier, target.name, target.icon)
 
           return (
             <button
@@ -173,9 +197,9 @@ export function TargetList({
               } disabled:cursor-not-allowed`}
             >
               <span className="flex items-center gap-1.5 min-w-0">
-                <span className="text-sm flex-shrink-0">{target.icon}</span>
-                <span className="truncate font-medium">{target.name}</span>
-                {target.hasShop && (
+                <span className="text-sm flex-shrink-0">{display.icon}</span>
+                <span className="truncate font-medium">{display.name}</span>
+                {tier === 'revealed' && target.hasShop && (
                   <span className="text-[9px] px-1 py-0.5 rounded bg-yellow-900/40 border border-yellow-600/40 text-yellow-300 flex-shrink-0">
                     Shop
                   </span>
