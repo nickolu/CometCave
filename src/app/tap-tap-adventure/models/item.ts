@@ -21,6 +21,8 @@ export const ItemEffectsSchema = z.object({
   cleanse: z.boolean().optional(),
   /** Temporary damage multiplier boost (e.g., 1.5 = +50% damage for 2 turns) */
   damageBoost: z.number().optional(),
+  /** Reveals a hidden landmark in the current region when used */
+  revealLandmark: z.boolean().optional(),
 })
 export type ItemEffects = z.infer<typeof ItemEffectsSchema>
 

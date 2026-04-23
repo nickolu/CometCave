@@ -69,6 +69,26 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     updatedCharacter.charisma += effects.charisma
     effectMessages.push(`${effects.charisma > 0 ? '+' : ''}${effects.charisma} Charisma`)
   }
+  if (effects.revealLandmark) {
+    const ls = updatedCharacter.landmarkState
+    if (ls) {
+      const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
+      if (hiddenIdx !== -1) {
+        const updatedLandmarks = ls.landmarks.map((lm, i) =>
+          i === hiddenIdx ? { ...lm, hidden: false } : lm
+        )
+        updatedCharacter = {
+          ...updatedCharacter,
+          landmarkState: { ...ls, landmarks: updatedLandmarks },
+        }
+        effectMessages.push(`Revealed a hidden landmark: ${ls.landmarks[hiddenIdx].name}`)
+      } else {
+        effectMessages.push('No hidden landmarks to reveal')
+      }
+    } else {
+      effectMessages.push('No landmarks in this area')
+    }
+  }
 
   // Update inventory: decrement quantity or remove
   const updatedInventory = character.inventory

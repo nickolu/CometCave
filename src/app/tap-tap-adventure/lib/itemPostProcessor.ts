@@ -53,6 +53,16 @@ function inferRarity(item: Item): Item['rarity'] {
 }
 
 function inferItemTypeAndEffectsInternal(item: Item): Item {
+  const nameLower = item.name.toLowerCase()
+
+  // Detect map/chart/atlas items: ensure revealLandmark effect is set
+  if (matchesAny(nameLower, ['map', 'chart', 'atlas']) && item.type === 'consumable') {
+    return {
+      ...item,
+      effects: { ...item.effects, revealLandmark: true },
+    }
+  }
+
   // Already fully specified
   if (item.type === 'consumable' && item.effects && Object.keys(item.effects).length > 0) {
     return item
@@ -63,7 +73,7 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     return item
   }
 
-  const name = item.name.toLowerCase()
+  const name = nameLower
 
   // Detect spell scrolls by name pattern (when no type set and has spell data)
   if (!item.type || item.type === 'misc') {
