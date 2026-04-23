@@ -1813,7 +1813,8 @@ export function getCombatRewards(
   const loot: Item[] = []
   if (enemy.lootTable) {
     for (const item of enemy.lootTable) {
-      const baseDropChance = combatState.isBoss ? 1.0 : 0.3 + character.luck * 0.03
+      // Secret bosses guarantee 100% item drop; regular bosses also guarantee; others use luck-based chance
+      const baseDropChance = (combatState.isBoss || combatState.isSecretBoss) ? 1.0 : 0.3 + character.luck * 0.03
       const dropChance = Math.min(1, (baseDropChance + lootBonus.percentage / 100) * diffMods.lootChanceMultiplier)
       if (Math.random() < dropChance) {
         loot.push(item)
@@ -1822,11 +1823,14 @@ export function getCombatRewards(
   }
 
   // Assign rarity to loot items that don't have one
-  const rarityWeights = combatState.isBoss
-    ? { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 }
-    : combatState.isMiniBoss
-      ? { common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 }
-      : { common: 0.5, uncommon: 0.3, rare: 0.15, epic: 0.04, legendary: 0.01 }
+  // Secret bosses: elite rarity weights (20% rare, 50% epic, 30% legendary)
+  const rarityWeights = combatState.isSecretBoss
+    ? { common: 0, uncommon: 0, rare: 0.2, epic: 0.5, legendary: 0.3 }
+    : combatState.isBoss
+      ? { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.3, legendary: 0.1 }
+      : combatState.isMiniBoss
+        ? { common: 0.1, uncommon: 0.3, rare: 0.4, epic: 0.15, legendary: 0.05 }
+        : { common: 0.5, uncommon: 0.3, rare: 0.15, epic: 0.04, legendary: 0.01 }
 
   function rollRarity(weights: Record<string, number>): string {
     const roll = Math.random()

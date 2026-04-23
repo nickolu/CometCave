@@ -406,4 +406,66 @@ describe('Combat Engine', () => {
       vi.restoreAllMocks()
     })
   })
+
+  describe('getCombatRewards — secret boss loot', () => {
+    const baseLootItem = { id: 'loot-1', name: 'Ancient Relic', description: 'A relic', quantity: 1 }
+
+    it('secret boss guarantees 100% item drop', () => {
+      const combat = makeActiveCombat({
+        isSecretBoss: true,
+        enemy: { ...makeActiveCombat().enemy, lootTable: [baseLootItem] },
+      })
+      // Even with Math.random = 0.99 (normally would miss at 30% chance), secret boss always drops
+      vi.spyOn(Math, 'random').mockReturnValue(0.99)
+      const rewards = getCombatRewards(combat, baseChar)
+      expect(rewards.loot.length).toBe(1)
+      vi.restoreAllMocks()
+    })
+
+    it('secret boss applies elite rarity weights (no common/uncommon)', () => {
+      const combat = makeActiveCombat({
+        isSecretBoss: true,
+        enemy: {
+          ...makeActiveCombat().enemy,
+          lootTable: Array.from({ length: 10 }, (_, i) => ({
+            id: `loot-${i}`,
+            name: `Relic ${i}`,
+            description: 'A relic',
+            quantity: 1,
+          })),
+        },
+      })
+      // Use fixed Math.random sequence: first 10 calls for drop (all drop since secret boss),
+      // next calls for rarity rolls
+      let callCount = 0
+      vi.spyOn(Math, 'random').mockImplementation(() => {
+        callCount++
+        // First 10 calls: item drop checks (all pass for secret boss)
+        // After that: rarity rolls — alternate between 0.1 (rare), 0.5 (epic), 0.8 (legendary)
+        const rarityValue = [0.1, 0.5, 0.8][callCount % 3]
+        return rarityValue
+      })
+      const rewards = getCombatRewards(combat, baseChar)
+      // All loot should be rare, epic, or legendary — no common or uncommon
+      for (const item of rewards.loot) {
+        expect(['rare', 'epic', 'legendary']).toContain(item.rarity)
+      }
+      vi.restoreAllMocks()
+    })
+
+    it('regular boss uses standard boss rarity weights (no common)', () => {
+      const combat = makeActiveCombat({
+        isBoss: true,
+        enemy: {
+          ...makeActiveCombat().enemy,
+          lootTable: [{ id: 'loot-boss', name: 'Boss Loot', description: 'Boss', quantity: 1 }],
+        },
+      })
+      // Roll = 0.05 → rare (cumulative: uncommon=0.2, rare=0.6, epic=0.9, legendary=1.0)
+      vi.spyOn(Math, 'random').mockReturnValue(0.05)
+      const rewards = getCombatRewards(combat, baseChar)
+      expect(rewards.loot[0]?.rarity).toBe('uncommon')
+      vi.restoreAllMocks()
+    })
+  })
 })

@@ -358,6 +358,11 @@ export async function POST(req: NextRequest) {
       const depth = currentLandmarkState.explorationDepth ?? 1
       const maxDepth = 2 + Math.floor(Math.abs(hashString(currentLandmarkState.exploringLandmarkName)) % 4)
 
+      // Find the currently-explored landmark to check isSecret
+      const exploredLandmarkIndex = currentLandmarkState.activeTargetIndex ?? 0
+      const exploredLandmark = currentLandmarkState.landmarks[exploredLandmarkIndex]
+      const isSecretLandmark = exploredLandmark?.isSecret === true
+
       if (depth < maxDepth) {
         const continueDecision: FantasyDecisionPoint = {
           id: `decision-continue-${Date.now()}`,
@@ -388,8 +393,40 @@ export async function POST(req: NextRequest) {
           resolved: false,
         }
         response.decisionPoint = continueDecision
+      } else if (isSecretLandmark) {
+        // Max depth reached on a secret landmark — boss encounter instead of ending
+        const guardianDecision: FantasyDecisionPoint = {
+          id: `decision-guardian-${Date.now()}`,
+          eventId: `guardian-${Date.now()}`,
+          prompt: `As you reach the innermost sanctum of ${currentLandmarkState.exploringLandmarkName}, a powerful guardian emerges from the shadows. This ancient protector has watched over this secret place since time immemorial. The air crackles with dangerous energy — this will be no ordinary fight.`,
+          options: [
+            {
+              id: 'fight-secret-boss',
+              text: 'Face the Guardian',
+              successProbability: 1.0,
+              successDescription: 'You steel yourself and charge at the guardian!',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You engage the guardian in battle!',
+              triggersCombat: true,
+            },
+            {
+              id: 'leave-landmark',
+              text: 'Retreat — this is too dangerous',
+              successProbability: 1.0,
+              successDescription: 'You back away carefully and slip out of the sanctum.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You retreat from ${currentLandmarkState.exploringLandmarkName}.`,
+            },
+          ],
+          resolved: false,
+        }
+        response.decisionPoint = guardianDecision
       } else {
-        // Max depth reached — end exploration
+        // Max depth reached on a normal landmark — end exploration
         response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
         updatedCharacter = {
           ...updatedCharacter,
