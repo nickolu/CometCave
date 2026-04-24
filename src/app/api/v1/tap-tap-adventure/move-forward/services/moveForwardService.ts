@@ -180,7 +180,7 @@ export async function moveForwardService(
         const dist = nextLm.distanceFromEntry - newPositionInRegion
         bypassOptions.push({
           id: `bypass-toward-${i}`,
-          text: `${nextLm.icon} Head toward ${nextLm.name} (${dist} steps)`,
+          text: `${nextLm.icon} Head toward ${nextLm.name} (${dist} km)`,
           successProbability: 1.0,
           successDescription: `You leave ${activeLandmark.name} behind and head toward ${nextLm.name}.`,
           successEffects: {},
@@ -194,7 +194,7 @@ export async function moveForwardService(
       const exitDist = (landmarkState.regionLength ?? 200) - newPositionInRegion
       bypassOptions.push({
         id: `bypass-toward-exit`,
-        text: `🚪 Head toward ${region.name} border (${exitDist} steps)`,
+        text: `🚪 Head toward ${region.name} border (${exitDist} km)`,
         successProbability: 1.0,
         successDescription: `You leave ${activeLandmark.name} behind and continue toward the edge of ${region.name}.`,
         successEffects: {},

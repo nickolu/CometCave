@@ -194,7 +194,7 @@ export function getStoryContext(
 
   // 4. Long distance
   if (character.distance > 1000) {
-    return `After ${character.distance} steps into the unknown, the journey ends here.`
+    return `After ${character.distance} km into the unknown, the journey ends here.`
   }
 
   return null
