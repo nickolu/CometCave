@@ -156,6 +156,7 @@ export interface GameStore {
   dismissLootCelebration: () => void
   clearNewItemId: (itemId: string) => void
   clearSocialEncounter: () => void
+  updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -1749,6 +1750,22 @@ export const useGameStore = create<GameStore>()(
       clearSocialEncounter: () => set(state => ({
         gameState: { ...state.gameState, socialEncounter: null }
       })),
+      updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(c => c.id === selectedCharacter.id)
+            if (charIndex === -1) return
+            const party = state.gameState.characters[charIndex].party
+            if (!party) return
+            const memberIndex = party.findIndex(m => m.id === memberId)
+            if (memberIndex === -1) return
+            const current = party[memberIndex].relationship ?? 0
+            party[memberIndex].relationship = Math.max(-100, Math.min(100, current + dispositionDelta))
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)

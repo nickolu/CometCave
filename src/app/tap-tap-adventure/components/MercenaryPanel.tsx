@@ -9,6 +9,7 @@ import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
 import { getTavernRecruits } from '@/app/tap-tap-adventure/lib/partyRecruitment'
 import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
+import { PartyDialoguePanel } from '@/app/tap-tap-adventure/components/PartyDialoguePanel'
 
 interface MercenaryPanelProps {
   character: FantasyCharacter
@@ -60,9 +61,10 @@ function HpBar({ current, max }: { current: number; max: number }) {
 }
 
 export function MercenaryPanel({ character }: MercenaryPanelProps) {
-  const { recruitMercenary, dismissMercenary, setActiveMercenary, recruitTavernMember, removePartyMember } = useGameStore()
+  const { recruitMercenary, dismissMercenary, setActiveMercenary, recruitTavernMember, removePartyMember, updatePartyMemberRelationship } = useGameStore()
   const [isExpanded, setIsExpanded] = useState(false)
   const [dismissConfirm, setDismissConfirm] = useState<string | null>(null)
+  const [talkingTo, setTalkingTo] = useState<string | null>(null)
 
   // Stable tavern selection per character level — prevents re-randomization on each render
   const tavernMercs = useMemo(
@@ -265,8 +267,16 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
                         onClick={() => setDismissConfirm(null)}>No</button>
                     </>
                   ) : (
-                    <button className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
-                      onClick={() => setDismissConfirm(`party-${member.id}`)}>Dismiss</button>
+                    <>
+                      <button
+                        className="text-[10px] px-1.5 py-0.5 bg-indigo-900/30 text-indigo-300 rounded hover:bg-indigo-800/40 transition-colors"
+                        onClick={() => setTalkingTo(member.id)}
+                      >
+                        Talk
+                      </button>
+                      <button className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
+                        onClick={() => setDismissConfirm(`party-${member.id}`)}>Dismiss</button>
+                    </>
                   )}
                 </div>
               </div>
@@ -274,6 +284,24 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
           </div>
         </div>
       )}
+
+      {/* Party Dialogue Panel */}
+      {talkingTo && (() => {
+        const member = partyMembers.find(m => m.id === talkingTo)
+        if (!member) return null
+        return (
+          <PartyDialoguePanel
+            member={member}
+            characterName={character.name}
+            characterClass={character.classData?.name ?? character.class ?? 'Adventurer'}
+            characterLevel={character.level}
+            characterCharisma={character.charisma ?? 5}
+            disposition={member.relationship ?? 0}
+            onDispositionChange={(delta) => updatePartyMemberRelationship(member.id, delta)}
+            onClose={() => setTalkingTo(null)}
+          />
+        )
+      })()}
 
       {/* Tavern Recruits (Party Members) */}
       <div>
