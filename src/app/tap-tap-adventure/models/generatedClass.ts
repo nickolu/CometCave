@@ -2,6 +2,17 @@ import { z } from 'zod'
 
 import { SpellEffectSchema, SpellSchoolSchema } from './spell'
 
+export const StartingWeaponSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  effects: z.object({
+    strength: z.number().optional(),
+    intelligence: z.number().optional(),
+    range: z.enum(['close', 'mid', 'far']),
+  }),
+})
+export type StartingWeapon = z.infer<typeof StartingWeaponSchema>
+
 export const GeneratedClassStartingAbilitySchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -29,5 +40,6 @@ export const GeneratedClassSchema = z.object({
   manaMultiplier: z.number().min(0.5).max(1.5),
   spellSlots: z.number().min(2).max(6),
   startingAbility: GeneratedClassStartingAbilitySchema,
+  startingWeapon: StartingWeaponSchema.optional(),
 })
 export type GeneratedClass = z.infer<typeof GeneratedClassSchema>

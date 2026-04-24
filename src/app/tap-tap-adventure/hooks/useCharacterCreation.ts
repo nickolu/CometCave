@@ -229,6 +229,20 @@ export function useCharacterCreation() {
       }
     }
 
+    let startingEquipment: { weapon: Item | null; armor: null; accessory: null } = { weapon: null, armor: null, accessory: null }
+    if (classData?.startingWeapon) {
+      const weaponItem: Item = {
+        id: `starting-weapon-${Date.now()}`,
+        name: classData.startingWeapon.name,
+        description: classData.startingWeapon.description,
+        quantity: 1,
+        type: 'equipment',
+        effects: classData.startingWeapon.effects,
+      }
+      startingInventory.push(weaponItem)
+      startingEquipment = { weapon: weaponItem, armor: null, accessory: null }
+    }
+
     // Apply meta-progression bonuses from eternal upgrades
     const metaBonuses = getMetaBonuses()
     const boostedStrength = finalStats.strength + metaBonuses.bonusStrength
@@ -268,6 +282,7 @@ export function useCharacterCreation() {
       classSkillTree,
       unlockedTreeSkillIds: [],
       inventory: startingInventory,
+      equipment: startingEquipment,
       gold: boostedGold,
       difficultyMode: selectedDifficulty.id,
     }
