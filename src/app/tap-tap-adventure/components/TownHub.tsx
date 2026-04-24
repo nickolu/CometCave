@@ -34,25 +34,10 @@ const FEATURE_CONFIGS: Record<string, FeatureConfig> = {
       'bg-amber-900/40 hover:bg-amber-800/60 border-amber-600/40 text-amber-200 hover:text-amber-100',
   },
   'rest-at-inn': {
-    icon: '🛏️',
-    label: 'Rest at Inn',
+    icon: '🍺',
+    label: 'Tavern & Inn',
     className:
       'bg-teal-900/40 hover:bg-teal-800/60 border-teal-600/40 text-teal-200 hover:text-teal-100',
-    disabledClassName:
-      'bg-slate-900/40 border-slate-700/40 text-slate-500 cursor-not-allowed opacity-60',
-    isDisabled: (option, character) => {
-      const match = option.text.match(/\((\d+) gold\)/)
-      if (!match) return false
-      const cost = parseInt(match[1], 10)
-      return character.gold < cost
-    },
-    disabledReason: (option, character) => {
-      const match = option.text.match(/\((\d+) gold\)/)
-      if (!match) return null
-      const cost = parseInt(match[1], 10)
-      if (character.gold < cost) return `Need ${cost} gold (have ${character.gold})`
-      return null
-    },
   },
   'hire-transport': {
     icon: '🐴',

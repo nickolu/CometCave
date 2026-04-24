@@ -63,6 +63,7 @@ import { EventDialog, EventResult } from './EventDialog'
 import { StablePanel } from './StablePanel'
 import { MailboxPanel } from './MailboxPanel'
 import { NoticeBoard } from './NoticeBoard'
+import { TavernPanel } from './TavernPanel'
 import { TownHub } from './TownHub'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -166,6 +167,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showStablePanel, setShowStablePanel] = useState(false)
   const [showMailbox, setShowMailbox] = useState(false)
   const [showNoticeBoard, setShowNoticeBoard] = useState(false)
+  const [showTavern, setShowTavern] = useState(false)
+  const restFromTavern = useRef(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
   const [townNPC, setTownNPC] = useState<GameNPC | null>(null)
 
@@ -182,6 +185,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   useEffect(() => {
     setTownNPC(null)
     setShowNoticeBoard(false)
+    setShowTavern(false)
   }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
@@ -274,6 +278,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setShowNoticeBoard(true)
       return
     }
+    // Tavern: open the tavern panel client-side (bypass if triggered from within the panel)
+    if (optionId === 'rest-at-inn' && !restFromTavern.current) {
+      setShowTavern(true)
+      return
+    }
+    restFromTavern.current = false
     // Town NPC: open dialogue panel for the selected NPC (client-side only)
     if (optionId.startsWith('talk-to-npc-')) {
       const npcId = optionId.replace('talk-to-npc-', '')
@@ -673,6 +683,19 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                       setShowNoticeBoard(false)
                     }}
                     onClose={() => setShowNoticeBoard(false)}
+                  />
+                )}
+                {showTavern && character && (
+                  <TavernPanel
+                    character={character}
+                    townName={character.landmarkState?.exploringLandmarkName ?? 'the town'}
+                    onRest={() => {
+                      setShowTavern(false)
+                      restFromTavern.current = true
+                      handleResolveDecision('rest-at-inn')
+                    }}
+                    isResting={resolveDecisionPending}
+                    onClose={() => setShowTavern(false)}
                   />
                 )}
                 {townNPC && character && (

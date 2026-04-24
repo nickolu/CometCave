@@ -196,9 +196,12 @@ export async function POST(req: NextRequest) {
       }
 
       const regionId = character.currentRegion ?? 'green_meadows'
+      const bountyAtmosphere = townLandmark?.encounterPrompt
+        ? `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! ${townLandmark.encounterPrompt} What would you like to do?`
+        : `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}. What would you like to do?`
       const townHub = buildTownHubDecisionPoint({
         townName: townLandmark?.name ?? 'the town',
-        prompt: `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}. What would you like to do?`,
+        prompt: bountyAtmosphere,
         regionId,
         features: townLandmark ? {
           hasShop: townLandmark.hasShop,
@@ -252,9 +255,12 @@ export async function POST(req: NextRequest) {
         }
 
         const sneakRegionId = character.currentRegion ?? 'green_meadows'
+        const sneakAtmosphere = townLandmark?.encounterPrompt
+          ? `You slip past the guards! Keep a low profile — your bounty is still active. ${townLandmark.encounterPrompt} What would you like to do?`
+          : `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active. What would you like to do?`
         const townHub = buildTownHubDecisionPoint({
           townName: townLandmark?.name ?? 'the town',
-          prompt: `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active. What would you like to do?`,
+          prompt: sneakAtmosphere,
           regionId: sneakRegionId,
           features: townLandmark ? {
             hasShop: townLandmark.hasShop,
@@ -352,9 +358,12 @@ export async function POST(req: NextRequest) {
       }
 
       const enterRegionId = character.currentRegion ?? 'green_meadows'
+      const enterAtmosphere = townLandmark?.encounterPrompt
+        ? `${townLandmark.encounterPrompt} What would you like to do?`
+        : `Welcome to ${townLandmark?.name ?? 'the town'}! What would you like to do?`
       const townHub = buildTownHubDecisionPoint({
         townName: townLandmark?.name ?? 'the town',
-        prompt: `Welcome to ${townLandmark?.name ?? 'the town'}! The town square is alive with merchants, travelers, and townsfolk going about their day. What would you like to do?`,
+        prompt: enterAtmosphere,
         regionId: enterRegionId,
         features: townLandmark ? {
           hasShop: townLandmark.hasShop,
@@ -650,9 +659,12 @@ export async function POST(req: NextRequest) {
       const targetIndex = landmarkState?.activeTargetIndex ?? 0
       const townLandmark = landmarkState?.landmarks[targetIndex]
 
+      const backAtmosphere = townLandmark?.encounterPrompt
+        ? `You return to the town square. ${townLandmark.encounterPrompt} What would you like to do?`
+        : `You return to the town square of ${townName}. What would you like to do?`
       const townHub = buildTownHubDecisionPoint({
         townName,
-        prompt: `You return to the town square of ${townName}. What would you like to do?`,
+        prompt: backAtmosphere,
         regionId: backRegionId,
         features: townLandmark ? {
           hasShop: townLandmark.hasShop,
