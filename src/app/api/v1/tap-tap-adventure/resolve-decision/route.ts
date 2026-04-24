@@ -10,6 +10,21 @@ import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
+import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
+
+function buildNPCOptions(regionId: string): FantasyDecisionOption[] {
+  const regionNPCs = getNPCsForRegion(regionId)
+  return regionNPCs.map(npc => ({
+    id: `talk-to-npc-${npc.id}`,
+    text: `${npc.icon} Talk to ${npc.name} — ${npc.role}`,
+    successProbability: 1.0,
+    successDescription: `You approach ${npc.name}.`,
+    successEffects: {},
+    failureDescription: '',
+    failureEffects: {},
+    resultDescription: `You talk to ${npc.name}.`,
+  }))
+}
 
 function hashString(str: string): number {
   let hash = 0
@@ -463,6 +478,7 @@ export async function POST(req: NextRequest) {
             failureEffects: {},
             resultDescription: 'You check your mailbox.',
           },
+          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
           {
             id: 'leave-town',
             text: '🚪 Leave Town',
@@ -552,6 +568,7 @@ export async function POST(req: NextRequest) {
             failureEffects: {},
             resultDescription: 'You check your mailbox.',
           },
+          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
           {
             id: 'leave-town',
             text: '🚪 Leave Town',
@@ -656,6 +673,7 @@ export async function POST(req: NextRequest) {
             failureEffects: {},
             resultDescription: 'You check your mailbox.',
           },
+          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
           {
             id: 'leave-town',
             text: '🚪 Leave Town',
@@ -778,6 +796,7 @@ export async function POST(req: NextRequest) {
               failureEffects: {},
               resultDescription: 'You check your mailbox.',
             },
+            ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
             {
               id: 'leave-town',
               text: '🚪 Leave Town',
@@ -913,6 +932,7 @@ export async function POST(req: NextRequest) {
               failureEffects: {},
               resultDescription: 'You check your mailbox.',
             },
+            ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
             {
               id: 'leave-town',
               text: '🚪 Leave Town',
@@ -1027,6 +1047,7 @@ export async function POST(req: NextRequest) {
             failureEffects: {},
             resultDescription: 'You check your mailbox.',
           },
+          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
           {
             id: 'leave-town',
             text: '🚪 Leave Town',
@@ -1114,6 +1135,7 @@ export async function POST(req: NextRequest) {
             failureEffects: {},
             resultDescription: 'You check your mailbox.',
           },
+          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
           {
             id: 'leave-town',
             text: '🚪 Leave Town',
@@ -1203,6 +1225,7 @@ export async function POST(req: NextRequest) {
             failureEffects: {},
             resultDescription: 'You check your mailbox.',
           },
+          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
           {
             id: 'leave-town',
             text: '🚪 Leave Town',

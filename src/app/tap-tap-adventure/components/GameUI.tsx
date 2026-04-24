@@ -57,6 +57,7 @@ import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { createPartyMember } from '@/app/tap-tap-adventure/lib/partyRecruitment'
+import { getNPCById, type GameNPC } from '@/app/tap-tap-adventure/config/npcs'
 import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
 import { StablePanel } from './StablePanel'
@@ -164,6 +165,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showStablePanel, setShowStablePanel] = useState(false)
   const [showMailbox, setShowMailbox] = useState(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
+  const [townNPC, setTownNPC] = useState<GameNPC | null>(null)
 
   useEffect(() => {
     if (gameState?.decisionPoint && !gameState.decisionPoint.resolved) {
@@ -172,6 +174,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       return () => clearTimeout(timer)
     }
     setDecisionGracePeriod(false)
+  }, [gameState?.decisionPoint?.id])
+
+  // Clear town NPC panel when decision point changes (e.g. player leaves town)
+  useEffect(() => {
+    setTownNPC(null)
   }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
@@ -259,6 +266,15 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setShowMailbox(true)
       return
     }
+    // Town NPC: open dialogue panel for the selected NPC (client-side only)
+    if (optionId.startsWith('talk-to-npc-')) {
+      const npcId = optionId.replace('talk-to-npc-', '')
+      const npc = getNPCById(npcId)
+      if (npc) {
+        setTownNPC(npc)
+      }
+      return
+    }
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
@@ -273,6 +289,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       onResult: (result) => {
         // Don't show results for options that navigate away (bypass, travel, explore-landmark, etc)
         const skipResults = optionId.startsWith('bypass-') || optionId.startsWith('travel-') ||
+          optionId.startsWith('talk-to-npc-') ||
           optionId === 'explore-landmark' || optionId === 'leave-landmark' ||
           optionId === 'continue-exploring' || optionId === 'visit-shop' ||
           optionId === 'back-to-town' || optionId === 'pay-bounty' ||
@@ -635,7 +652,48 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   isResolving={resolveDecisionPending}
                   character={character!}
                   onSelectOption={handleResolveDecision}
+                  npcDispositions={Object.fromEntries(
+                    Object.entries(character?.npcEncounters ?? {}).map(([id, enc]) => [id, enc.disposition ?? 0])
+                  )}
                 />
+                {townNPC && character && (
+                  <NPCDialoguePanel
+                    npc={townNPC}
+                    characterName={character.name}
+                    characterClass={character.class}
+                    characterLevel={character.level}
+                    reputation={character.reputation}
+                    region={character.currentRegion ?? 'green_meadows'}
+                    characterCharisma={character.charisma ?? 5}
+                    activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
+                    disposition={character.npcEncounters?.[townNPC.id]?.disposition ?? 0}
+                    hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                    hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                    onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                      recordNPCEncounter(townNPC.id, dispositionDelta, reward, revealLandmark)
+                    }}
+                    onClose={() => setTownNPC(null)}
+                    onRecruit={() => {
+                      const member = createPartyMember({
+                        id: `npc-${townNPC.id}`,
+                        name: townNPC.name,
+                        description: townNPC.description,
+                        icon: townNPC.icon,
+                        level: character.level,
+                        dailyCost: Math.max(1, Math.floor(character.level / 2)),
+                        rarity: 'uncommon',
+                        personality: townNPC.personality,
+                        relationship: character.npcEncounters?.[townNPC.id]?.disposition ?? 0,
+                        role: 'combatant',
+                      })
+                      const added = addPartyMember(member)
+                      if (added) {
+                        setTownNPC(null)
+                      }
+                    }}
+                    isRecruited={(character.party ?? []).some(m => m.id === `npc-${townNPC.id}`)}
+                  />
+                )}
               </>
             ) : (
               <>
