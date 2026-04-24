@@ -12,6 +12,7 @@ import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNaming
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
 import { ELEMENT_COLORS, getElementalMultiplier } from '@/app/tap-tap-adventure/config/elements'
 import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
+import { getXpForNextLevel } from '@/app/tap-tap-adventure/lib/spellProgression'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getWeatherType } from '@/app/tap-tap-adventure/config/weather'
@@ -815,7 +816,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
                   disabled={disabled}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">{spell.name}</span>
+                    <span className="font-semibold">{spell.name}<span className="text-[10px] text-amber-400 ml-1">Lv{spell.spellLevel ?? 1}</span></span>
                     <div className="flex items-center gap-2">
                       {effectiveness && !disabled && (
                         <span className={`text-[9px] font-bold ${effectiveness.color}`}>
@@ -830,6 +831,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
                   <div className="text-[10px] text-slate-400 mt-0.5">
                     {spell.description}
                   </div>
+                  {(spell.spellLevel ?? 1) < 5 && (
+                    <div className="text-[10px] text-slate-600">
+                      XP: {spell.spellXp ?? 0}/{getXpForNextLevel(spell.spellLevel ?? 1)}
+                    </div>
+                  )}
                   {onCooldown && (
                     <span className="text-[10px] text-yellow-400">
                       Cooldown: {spellCooldowns[spell.id]} turns

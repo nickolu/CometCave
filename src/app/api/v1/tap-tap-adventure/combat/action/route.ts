@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { processPlayerAction, getCombatRewards } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { applyDeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
+import { getSpellLevel } from '@/app/tap-tap-adventure/lib/spellProgression'
 import { CombatActionRequestSchema } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
@@ -36,6 +37,27 @@ export async function POST(req: NextRequest) {
         gold: Math.max(0, character.gold - goldLoss),
       }
       rewards = { gold: -goldLoss, loot: [] }
+    }
+
+    // Grant spell XP if a spell was cast this turn
+    if (actionParsed.action === 'cast_spell' && actionParsed.spellId) {
+      const castLog = updatedCombat.combatLog.find(
+        (l: any) => l.turn === updatedCombat.turnNumber && l.actor === 'player' && l.action === 'cast_spell' && !l.description?.includes('fizzle')
+      )
+      if (castLog && updatedCharacter.spellbook) {
+        const spellIdx = updatedCharacter.spellbook.findIndex((s: any) => s.id === actionParsed.spellId)
+        if (spellIdx >= 0) {
+          const spell = updatedCharacter.spellbook[spellIdx]
+          const newXp = (spell.spellXp ?? 0) + 1
+          const newLevel = getSpellLevel(newXp)
+          updatedCharacter = {
+            ...updatedCharacter,
+            spellbook: updatedCharacter.spellbook.map((s: any, i: number) =>
+              i === spellIdx ? { ...s, spellXp: newXp, spellLevel: newLevel } : s
+            ),
+          }
+        }
+      }
     }
 
     // If mount died in combat, remove it from character
