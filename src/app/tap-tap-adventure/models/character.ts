@@ -6,6 +6,7 @@ import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
 import { MountSchema } from './mount'
 import { MercenarySchema } from './mercenary'
+import { PartyMemberSchema } from './partyMember'
 import { MainQuestSchema } from './quest'
 import { SpellSchema, ActiveExplorationSpellSchema } from './spell'
 import { BestiaryEntrySchema } from './bestiary'
@@ -58,6 +59,7 @@ export const FantasyCharacterSchema = z.object({
   activeMount: MountSchema.nullable().optional(),
   activeMercenary: MercenarySchema.nullable().optional(),
   mercenaryRoster: z.array(MercenarySchema).optional(),
+  party: z.array(PartyMemberSchema).default([]),
   unlockedSkills: z.array(z.string()).optional(),
   classSkillTree: ClassSkillTreeSchema.optional(),
   unlockedTreeSkillIds: z.array(z.string()).optional(),

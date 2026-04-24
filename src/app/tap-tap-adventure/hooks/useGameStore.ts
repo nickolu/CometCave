@@ -26,6 +26,7 @@ import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
+import { PartyMember, MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
 import { getMercenaryMaxHp } from '@/app/tap-tap-adventure/config/mercenaries'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
@@ -85,6 +86,7 @@ const defaultCharacter: FantasyCharacter = {
   activeMount: null,
   activeMercenary: null,
   mercenaryRoster: [],
+  party: [],
   difficultyMode: 'normal',
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
@@ -124,6 +126,10 @@ export interface GameStore {
   recruitMercenary: (mercenary: Mercenary) => boolean
   dismissMercenary: (mercenaryId: string) => void
   setActiveMercenary: (mercenaryId: string) => void
+  addPartyMember: (member: PartyMember) => boolean
+  removePartyMember: (memberId: string) => void
+  renamePartyMember: (memberId: string, newName: string) => void
+  healPartyMember: (memberId: string, amount: number) => void
   addHeirloom: (item: Item) => void
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
@@ -943,6 +949,67 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      addPartyMember: (member: PartyMember) => {
+        const character = get().getSelectedCharacter()
+        if (!character) return false
+        const party = character.party ?? []
+        if (party.length >= MAX_PARTY_SIZE) return false
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const char = state.gameState.characters[charIndex]
+            if (!char.party) char.party = []
+            char.party.push(member)
+          })
+        )
+        return true
+      },
+
+      removePartyMember: (memberId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const char = state.gameState.characters[charIndex]
+            char.party = (char.party ?? []).filter(m => m.id !== memberId)
+          })
+        )
+      },
+
+      renamePartyMember: (memberId: string, newName: string) => {
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const member = (state.gameState.characters[charIndex].party ?? []).find(m => m.id === memberId)
+            if (member) member.customName = newName
+          })
+        )
+      },
+
+      healPartyMember: (memberId: string, amount: number) => {
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const member = (state.gameState.characters[charIndex].party ?? []).find(m => m.id === memberId)
+            if (member) {
+              member.hp = Math.min(member.maxHp, member.hp + amount)
+            }
+          })
+        )
+      },
+
       addHeirloom: (item: Item) => {
         set(
           produce((state: GameStore) => {
@@ -1648,7 +1715,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 35,
+      version: 36,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1814,6 +1881,10 @@ export const useGameStore = create<GameStore>()(
             // v35: Add bounty field
             if ((char as FantasyCharacter).bounty === undefined) {
               ;(char as FantasyCharacter).bounty = 0
+            }
+            // v36: Add party array
+            if (!(char as FantasyCharacter).party) {
+              ;(char as FantasyCharacter).party = []
             }
           }
         }
