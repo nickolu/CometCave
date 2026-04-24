@@ -35,7 +35,7 @@ const shopSchemaForOpenAI = {
           name: { type: 'string' },
           description: { type: 'string' },
           quantity: { type: 'number' },
-          type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc'] },
+          type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'trade_good', 'spell_scroll'] },
           price: { type: 'number' },
           rarity: { type: 'string', enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
           effects: {

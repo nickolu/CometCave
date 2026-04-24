@@ -1642,7 +1642,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 33,
+      version: 34,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1798,6 +1798,12 @@ export const useGameStore = create<GameStore>()(
             // v32: Add discoveredCombos
             if (!(char as FantasyCharacter).discoveredCombos) {
               ;(char as FantasyCharacter).discoveredCombos = []
+            }
+            // v34: Reclassify misc items as trade_good
+            if ((char as FantasyCharacter).inventory) {
+              for (const item of (char as FantasyCharacter).inventory) {
+                if (item.type === 'misc') item.type = 'trade_good'
+              }
             }
           }
         }

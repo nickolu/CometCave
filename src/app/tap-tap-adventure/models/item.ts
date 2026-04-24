@@ -32,7 +32,7 @@ export const ItemSchema = z.object({
   description: z.string(),
   quantity: z.number(),
   status: z.enum(['active', 'deleted']).optional(),
-  type: z.enum(['consumable', 'equipment', 'quest', 'misc', 'spell_scroll']).optional(),
+  type: z.enum(['consumable', 'equipment', 'quest', 'misc', 'spell_scroll', 'trade_good']).optional(),
   effects: ItemEffectsSchema.optional(),
   price: z.number().optional(),
   spell: SpellSchema.optional(),
