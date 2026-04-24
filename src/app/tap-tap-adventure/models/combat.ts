@@ -110,7 +110,7 @@ export const CombatPlayerStateSchema = z.object({
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
-export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn', 'move_closer', 'move_away'])
+export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn', 'move_closer', 'move_away', 'switch_target'])
 export type CombatAction = z.infer<typeof CombatActionSchema>
 
 export const CombatActionRequestSchema = z.object({
@@ -175,5 +175,6 @@ export const CombatStateSchema = z.object({
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),
   partyMemberStates: z.array(PartyMemberCombatStateSchema).optional(),
+  additionalEnemies: z.array(CombatEnemySchema).optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>

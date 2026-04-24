@@ -446,6 +446,29 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <FloatingDamage events={damageEvents.filter(e => e.target === 'enemy')} />
       </div>
 
+      {/* Additional enemies */}
+      {combatState.additionalEnemies?.map((addEnemy, idx) => (
+        addEnemy.hp > 0 ? (
+          <div key={addEnemy.id} className="bg-red-900/10 border border-red-900/30 rounded-lg p-2 space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-red-300">{addEnemy.name}</span>
+              <span className="text-[10px] text-slate-400">Lv {addEnemy.level}</span>
+            </div>
+            <HpBar current={addEnemy.hp} max={addEnemy.maxHp} label="" color="text-red-400" />
+            <button
+              className="text-[10px] px-2 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
+              onClick={() => handleAction('switch_target', idx.toString())}
+            >
+              Target
+            </button>
+          </div>
+        ) : (
+          <div key={addEnemy.id} className="bg-slate-900/30 border border-slate-800 rounded-lg p-2">
+            <span className="text-xs text-slate-600 line-through">{addEnemy.name} — Defeated</span>
+          </div>
+        )
+      ))}
+
       {/* Enemy telegraph warning */}
       {combatState.enemyTelegraph && (
         <div className={`border rounded-lg p-2 text-center text-sm animate-pulse ${
