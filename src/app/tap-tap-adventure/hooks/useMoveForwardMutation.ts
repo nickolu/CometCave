@@ -20,6 +20,8 @@ export interface MoveForwardResponse {
   decisionPoint?: FantasyDecisionPoint | null
   shopEvent?: boolean | null
   genericMessage?: string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  socialEncounter?: { npc: any; scenario: string } | null
 }
 
 export function useMoveForwardMutation() {
@@ -72,6 +74,13 @@ export function useMoveForwardMutation() {
           quantity: reward.quantity,
         })
         addItem(item)
+      }
+
+      if (data.socialEncounter) {
+        useGameStore.getState().setGameState({
+          ...useGameStore.getState().gameState,
+          socialEncounter: data.socialEncounter,
+        })
       }
 
       if (data.shopEvent) {

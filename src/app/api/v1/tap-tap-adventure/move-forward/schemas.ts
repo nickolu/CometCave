@@ -16,6 +16,21 @@ export const MoveForwardResponseSchema = z.object({
   decisionPoint: z.any().optional().nullable(),
   combatEncounter: z.any().optional().nullable(),
   shopEvent: z.boolean().optional().nullable(),
+  socialEncounter: z.object({
+    npc: z.object({
+      id: z.string(),
+      name: z.string(),
+      role: z.string(),
+      description: z.string(),
+      regionId: z.string(),
+      personality: z.string(),
+      icon: z.string(),
+      greeting: z.string(),
+      personalityWeights: z.record(z.string(), z.number()).optional(),
+      topics: z.array(z.string()).optional(),
+    }),
+    scenario: z.string(),
+  }).optional().nullable(),
   genericMessage: z.string().optional().nullable(),
   landmarkArrival: z.object({
     name: z.string(),
