@@ -56,6 +56,7 @@ import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboard
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
+import { ContactsList } from './ContactsList'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -968,6 +969,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             )}
             {mobileCategory === 'social' && socialSubTab === 'factions' && character && (
               <FactionPanel character={character} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'npc' && character && (
+              <ContactsList character={character} />
             )}
             {mobileCategory === 'social' && socialSubTab === 'leaderboard' && (
               <AdventureLeaderboard onBack={() => setMobileCategory(null)} />
