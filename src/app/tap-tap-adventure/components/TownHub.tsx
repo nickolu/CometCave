@@ -72,6 +72,11 @@ const FEATURE_CONFIGS: Record<string, FeatureConfig> = {
     className:
       'bg-purple-900/40 hover:bg-purple-800/60 border-purple-600/40 text-purple-200 hover:text-purple-100',
   },
+  'visit-notice-board': {
+    icon: '📋',
+    label: 'Notice Board',
+    className: 'bg-indigo-900/40 hover:bg-indigo-800/60 border-indigo-600/40 text-indigo-200 hover:text-indigo-100',
+  },
 }
 
 export function TownHub({
