@@ -57,6 +57,7 @@ export const FantasyCharacterSchema = z.object({
   activeExplorationSpells: z.array(ActiveExplorationSpellSchema).optional(),
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),
+  mountRoster: z.array(MountSchema).default([]),
   activeMercenary: MercenarySchema.nullable().optional(),
   mercenaryRoster: z.array(MercenarySchema).optional(),
   party: z.array(PartyMemberSchema).default([]),

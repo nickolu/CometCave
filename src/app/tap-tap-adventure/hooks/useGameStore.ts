@@ -86,6 +86,7 @@ const defaultCharacter: FantasyCharacter = {
   spellbook: [],
   classData: undefined,
   activeMount: null,
+  mountRoster: [],
   activeMercenary: null,
   mercenaryRoster: [],
   party: [],
@@ -125,6 +126,9 @@ export interface GameStore {
   setMount: (mount: Mount | null, customName?: string) => void
   damageMountHp: (damage: number) => void
   killMount: () => void
+  stashMount: () => boolean
+  retrieveMount: (mountId: string) => boolean
+  healMount: (mountId: string, isActive: boolean) => boolean
   recruitMercenary: (mercenary: Mercenary) => boolean
   dismissMercenary: (mercenaryId: string) => void
   setActiveMercenary: (mercenaryId: string) => void
@@ -897,6 +901,82 @@ export const useGameStore = create<GameStore>()(
             }
           })
         )
+      },
+      stashMount: () => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+        if (!char.activeMount) return false
+        const roster = char.mountRoster ?? []
+        if (roster.length >= 5) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          if (!c.activeMount) return
+          if (!c.mountRoster) c.mountRoster = []
+          c.mountRoster.push(c.activeMount!)
+          c.activeMount = null
+        }))
+        return true
+      },
+      retrieveMount: (mountId: string) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+        const roster = char.mountRoster ?? []
+        const mountIdx = roster.findIndex(m => m.id === mountId)
+        if (mountIdx < 0) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          if (!c.mountRoster) return
+          const mount = c.mountRoster[mountIdx]
+          if (c.activeMount) {
+            c.mountRoster[mountIdx] = c.activeMount
+          } else {
+            c.mountRoster.splice(mountIdx, 1)
+          }
+          c.activeMount = mount
+        }))
+        return true
+      },
+      healMount: (mountId: string, isActive: boolean) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+
+        let mount: Mount | null | undefined
+        if (isActive) {
+          mount = char.activeMount
+        } else {
+          mount = (char.mountRoster ?? []).find(m => m.id === mountId)
+        }
+        if (!mount) return false
+
+        const maxHp = mount.maxHp ?? getMountMaxHp(mount.rarity)
+        const currentHp = mount.hp ?? maxHp
+        if (currentHp >= maxHp) return false
+
+        const healCost = Math.max(1, Math.ceil((maxHp - currentHp) * 0.5))
+        if (char.gold < healCost) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          c.gold -= healCost
+          if (isActive && c.activeMount) {
+            c.activeMount.hp = maxHp
+          } else if (c.mountRoster) {
+            const mi = c.mountRoster.findIndex(m => m.id === mountId)
+            if (mi >= 0) c.mountRoster[mi].hp = c.mountRoster[mi].maxHp ?? getMountMaxHp(c.mountRoster[mi].rarity)
+          }
+        }))
+        return true
       },
       recruitMercenary: (mercenary: Mercenary) => {
         const selectedCharacter = get().getSelectedCharacter()
@@ -1769,7 +1849,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 37,
+      version: 38,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1953,6 +2033,10 @@ export const useGameStore = create<GameStore>()(
                   member.maxHp = combatStats.maxHp
                 }
               }
+            }
+            // v38: Initialize mountRoster if missing
+            if (!(char as FantasyCharacter).mountRoster) {
+              ;(char as FantasyCharacter).mountRoster = []
             }
           }
         }

@@ -59,6 +59,7 @@ import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { createPartyMember } from '@/app/tap-tap-adventure/lib/partyRecruitment'
 import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
+import { StablePanel } from './StablePanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -158,6 +159,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
   const [showNPCPanel, setShowNPCPanel] = useState(false)
+  const [showStablePanel, setShowStablePanel] = useState(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
 
   useEffect(() => {
@@ -244,6 +246,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setDecisionPoint(null)
       return
     }
+    // Stable: open the stable panel client-side
+    if (optionId === 'visit-stable') {
+      setShowStablePanel(true)
+      return
+    }
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
@@ -261,7 +268,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           optionId === 'explore-landmark' || optionId === 'leave-landmark' ||
           optionId === 'continue-exploring' || optionId === 'visit-shop' ||
           optionId === 'back-to-town' || optionId === 'pay-bounty' ||
-          optionId === 'fight-secret-boss'
+          optionId === 'fight-secret-boss' || optionId === 'visit-stable'
         if (!skipResults && result.outcomeDescription) {
           setEventResult({
             outcomeDescription: result.outcomeDescription,
@@ -665,6 +672,13 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
                 </div>
 
+                {/* Stable panel — shown when the player visits the stable */}
+                {showStablePanel && character && (
+                  <StablePanel
+                    character={character}
+                    onClose={() => setShowStablePanel(false)}
+                  />
+                )}
                 {/* Event dialog overlay — shown when there's an active decision point or pending result */}
                 {(gameState.decisionPoint || eventResult) && (() => {
                   const isLandmarkArrival = gameState.decisionPoint?.options?.some(
