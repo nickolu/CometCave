@@ -25,8 +25,8 @@ const TYPE_FILTERS = [
   { value: 'consumable', label: 'Consumable' },
   { value: 'equipment', label: 'Equipment' },
   { value: 'spell_scroll', label: 'Spell' },
+  { value: 'trade_good', label: 'Trade' },
   { value: 'quest', label: 'Quest' },
-  { value: 'misc', label: 'Misc' },
 ]
 
 export function InventoryPanel({ inventory }: InventoryPanelProps) {
@@ -326,7 +326,16 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                       Equip
                     </Button>
                   )}
-                  {activeTab === 'active' ? (
+                  {activeTab === 'active' && item.type === 'trade_good' && (
+                    <Button
+                      className="flex-1 bg-amber-700 hover:bg-amber-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
+                      onClick={() => handleUse(item)}
+                      title={`Sell for gold`}
+                    >
+                      Sell
+                    </Button>
+                  )}
+                  {activeTab === 'active' && item.type !== 'quest' ? (
                     <Button
                       className="flex-1 bg-red-700 hover:bg-red-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleDiscard(item)}
@@ -334,7 +343,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                     >
                       Discard
                     </Button>
-                  ) : (
+                  ) : activeTab === 'deleted' ? (
                     <Button
                       className="flex-1 bg-blue-700 hover:bg-blue-800 text-white text-sm py-3 px-3 rounded-md transition-colors"
                       onClick={() => handleRestore(item)}
@@ -342,7 +351,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                     >
                       Restore
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
               )

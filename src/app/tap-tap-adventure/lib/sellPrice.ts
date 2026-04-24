@@ -9,6 +9,8 @@ import { Item } from '@/app/tap-tap-adventure/models/item'
  *   - Other / no type: 3
  */
 export function calculateSellPrice(item: Item): number {
+  if (item.type === 'quest') return 0
+
   if (item.price != null && item.price > 0) {
     return Math.floor(item.price * 0.5)
   }
@@ -18,6 +20,8 @@ export function calculateSellPrice(item: Item): number {
   switch (item.type) {
     case 'equipment':
       return 10 + effectSum * 5
+    case 'trade_good':
+      return 15 + effectSum * 3
     case 'consumable':
       return 5 + effectSum * 3
     default:
