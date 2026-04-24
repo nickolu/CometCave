@@ -13,6 +13,7 @@ import { Item } from '@/app/tap-tap-adventure/models/types'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
 import { ItemEffects } from '@/app/tap-tap-adventure/models/item'
+import { getNPCDispositionPriceMultiplier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 
 type ShopTab = 'buy' | 'sell'
 
@@ -83,6 +84,9 @@ export function ShopUI() {
 
   const character = gameState.characters.find(c => c.id === gameState.selectedCharacterId)
   if (!character) return null
+
+  const npcDiscount = getNPCDispositionPriceMultiplier(character.npcEncounters)
+  const npcDiscountPercent = Math.round((1 - npcDiscount) * 100)
 
   const handlePurchase = async (item: Item) => {
     if (!item.price || character.gold < item.price) return
@@ -264,6 +268,11 @@ export function ShopUI() {
       </p>
       <div className="text-sm text-center text-yellow-400 font-semibold">
         Your Gold: {character.gold}
+        {npcDiscountPercent > 0 && (
+          <span className="text-xs text-green-400 ml-2">
+            ({npcDiscountPercent}% NPC discount applied)
+          </span>
+        )}
       </div>
 
       {/* Tab toggle */}

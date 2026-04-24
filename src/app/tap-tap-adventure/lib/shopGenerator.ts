@@ -6,7 +6,7 @@ import { Item, ItemSchema } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getMountPrice, getShopMount } from '@/app/tap-tap-adventure/config/mounts'
 
-import { getCharismaPriceMultiplier, getReputationPriceMultiplier } from './contextBuilder'
+import { getCharismaPriceMultiplier, getNPCDispositionPriceMultiplier, getReputationPriceMultiplier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 import { generateSpellForLevel } from './spellGenerator'
 
@@ -149,7 +149,7 @@ ${JSON.stringify({ name: character.name, race: character.race, class: character.
     if (toolCall && toolCall.function?.name === 'generate_shop') {
       const parsed = JSON.parse(toolCall.function.arguments)
       const validated = shopResponseSchema.parse(parsed)
-      const priceMultiplier = Math.max(0.60, getReputationPriceMultiplier(character.reputation) * getCharismaPriceMultiplier(character.charisma))
+      const priceMultiplier = Math.max(0.60, getReputationPriceMultiplier(character.reputation) * getCharismaPriceMultiplier(character.charisma) * getNPCDispositionPriceMultiplier(character.npcEncounters))
       return validated.items.map(item => inferItemTypeAndEffects({
         ...item,
         price: item.price !== undefined ? Math.round(item.price * priceMultiplier) : undefined,
