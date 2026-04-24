@@ -24,13 +24,13 @@ export interface Region {
 }
 
 export const REGIONS: Record<string, Region> = {
-  starting_village: {
-    id: 'starting_village',
-    name: 'Starting Village',
-    description: 'A safe hub where adventurers rest and resupply. No combat here.',
+  hearthwood: {
+    id: 'hearthwood',
+    name: 'Hearthwood',
+    description: 'A warm and welcoming hamlet nestled in a sunlit valley. Adventurers rest, resupply, and share tales by the hearth.',
     difficulty: 'easy',
     difficultyMultiplier: 0.5,
-    theme: 'peaceful village with taverns, shops, and friendly NPCs',
+    theme: 'cozy hamlet with a central hearth, welcoming taverns, artisan shops, and friendly townsfolk',
     enemyTypes: [],
     element: 'none',
     connectedRegions: ['green_meadows'],
@@ -48,11 +48,11 @@ export const REGIONS: Record<string, Region> = {
     theme: 'rolling green hills, wildflower meadows, gentle streams, and scattered farmsteads',
     enemyTypes: ['wolves', 'bandits', 'wild boars'],
     element: 'nature',
-    connectedRegions: ['starting_village', 'dark_forest', 'sunken_ruins'],
+    connectedRegions: ['hearthwood', 'dark_forest', 'sunken_ruins'],
     minLevel: 0,
     icon: '\u{1F33F}',
     startingCombatDistance: 'far',
-    parentRegion: 'starting_village',
+    parentRegion: 'hearthwood',
     childRegions: ['dark_forest', 'sunken_ruins'],
     bounds: { width: 500, height: 500 },
   },

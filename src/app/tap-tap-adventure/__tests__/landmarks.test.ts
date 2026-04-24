@@ -4,7 +4,7 @@ import { getTemplatesForRegion, LANDMARK_TEMPLATES } from '../config/landmarks'
 import { getRegion } from '../config/regions'
 
 const ALL_REGION_IDS = [
-  'starting_village',
+  'hearthwood',
   'green_meadows',
   'dark_forest',
   'sunken_ruins',
