@@ -68,7 +68,7 @@ export async function moveForwardService(
         positionInRegion: 0,
         activeTargetIndex: 0,
         regionLength,
-        position: { x: 0, y: 0 },
+        position: { x: Math.round(regionSize / 2), y: Math.round(regionSize / 2) },
         exitPosition: exitPositions[0]?.position ?? { x: Math.round(regionSize * 0.98), y: Math.round(regionSize / 2) },
         exitPositions,
         regionBounds: { width: regionSize, height: regionSize },
