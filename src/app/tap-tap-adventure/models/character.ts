@@ -122,6 +122,7 @@ export const FantasyCharacterSchema = z.object({
       hasMailbox: z.boolean().optional(),
       hasNoticeBoard: z.boolean().optional(),
       hasTransport: z.boolean().optional(),
+      hasCrafting: z.boolean().optional(),
     })),
     entryDistance: z.number(),
     nextLandmarkIndex: z.number(),

@@ -62,6 +62,11 @@ const FEATURE_CONFIGS: Record<string, FeatureConfig> = {
     label: 'Notice Board',
     className: 'bg-indigo-900/40 hover:bg-indigo-800/60 border-indigo-600/40 text-indigo-200 hover:text-indigo-100',
   },
+  'visit-blacksmith': {
+    icon: '⚒️',
+    label: 'Visit Blacksmith',
+    className: 'bg-orange-900/40 hover:bg-orange-800/60 border-orange-600/40 text-orange-200 hover:text-orange-100',
+  },
 }
 
 export function TownHub({

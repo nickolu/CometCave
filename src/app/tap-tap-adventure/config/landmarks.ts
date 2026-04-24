@@ -14,6 +14,7 @@ export interface LandmarkTemplate {
   hasMailbox?: boolean
   hasNoticeBoard?: boolean
   hasTransport?: boolean
+  hasCrafting?: boolean
 }
 
 export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
@@ -63,6 +64,7 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       hasMailbox: false,
       hasNoticeBoard: false,
       hasTransport: false,
+      hasCrafting: true,
     },
     {
       id: 'sv_well',
@@ -441,6 +443,7 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       hasMailbox: false,
       hasNoticeBoard: false,
       hasTransport: false,
+      hasCrafting: true,
     },
     {
       id: 'vf_shrine',

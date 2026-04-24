@@ -168,6 +168,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showMailbox, setShowMailbox] = useState(false)
   const [showNoticeBoard, setShowNoticeBoard] = useState(false)
   const [showTavern, setShowTavern] = useState(false)
+  const [showBlacksmith, setShowBlacksmith] = useState(false)
   const restFromTavern = useRef(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
   const [townNPC, setTownNPC] = useState<GameNPC | null>(null)
@@ -186,6 +187,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     setTownNPC(null)
     setShowNoticeBoard(false)
     setShowTavern(false)
+    setShowBlacksmith(false)
   }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
@@ -278,6 +280,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setShowNoticeBoard(true)
       return
     }
+    // Blacksmith: open the crafting panel client-side
+    if (optionId === 'visit-blacksmith') {
+      setShowBlacksmith(true)
+      return
+    }
     // Tavern: open the tavern panel client-side (bypass if triggered from within the panel)
     if (optionId === 'rest-at-inn' && !restFromTavern.current) {
       setShowTavern(true)
@@ -312,7 +319,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           optionId === 'continue-exploring' || optionId === 'visit-shop' ||
           optionId === 'back-to-town' || optionId === 'pay-bounty' ||
           optionId === 'fight-secret-boss' || optionId === 'visit-stable' ||
-          optionId === 'check-mailbox' || optionId === 'visit-notice-board' || optionId === 'rest-at-inn' ||
+          optionId === 'check-mailbox' || optionId === 'visit-notice-board' || optionId === 'rest-at-inn' || optionId === 'visit-blacksmith' ||
           optionId === 'hire-transport' || optionId === 'leave-town' ||
           optionId === 'enter-town'
         if (!skipResults && result.outcomeDescription) {
@@ -735,6 +742,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     }}
                     isRecruited={(character.party ?? []).some(m => m.id === `npc-${townNPC.id}`)}
                   />
+                )}
+                {showBlacksmith && (
+                  <div className="space-y-2">
+                    <button className="text-[10px] text-slate-400 hover:text-slate-200" onClick={() => setShowBlacksmith(false)}>← Back to Town</button>
+                    <CraftingPanel />
+                  </div>
                 )}
               </>
             ) : (

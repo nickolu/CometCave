@@ -9,6 +9,7 @@ interface TownFeatures {
   hasMailbox?: boolean
   hasNoticeBoard?: boolean
   hasTransport?: boolean
+  hasCrafting?: boolean
 }
 
 export function buildTownHubDecisionPoint(params: {
@@ -106,6 +107,21 @@ export function buildTownHubDecisionPoint(params: {
       failureDescription: '',
       failureEffects: {},
       resultDescription: 'You check the notice board.',
+    })
+  }
+
+  const hasCrafting = features?.hasCrafting === true
+
+  if (hasCrafting) {
+    options.push({
+      id: 'visit-blacksmith',
+      text: '⚒️ Visit the Blacksmith',
+      successProbability: 1.0,
+      successDescription: 'You head to the forge to craft and repair.',
+      successEffects: {},
+      failureDescription: '',
+      failureEffects: {},
+      resultDescription: 'You visit the blacksmith.',
     })
   }
 
