@@ -183,8 +183,9 @@ export async function POST(req: NextRequest) {
       // Build enriched context with landmark's encounterPrompt prepended
       const MAX_CONTEXT = 1500
       const baseContext = buildStoryContext(character, storyEvents)
+      const explorationDepth = updatedLandmarkState?.explorationDepth ?? 1
       const landmarkPrefix = exploredLandmark
-        ? `Landmark: ${exploredLandmark.name} (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\n\n`
+        ? `Landmark: ${exploredLandmark.name} (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\nExploration depth: ${explorationDepth}. Scale rewards with depth — deeper encounters should have greater risks and greater rewards.\n\n`
         : ''
       const combined = landmarkPrefix + baseContext
       const enrichedContext = combined.length > MAX_CONTEXT ? combined.slice(0, MAX_CONTEXT) : combined
@@ -229,17 +230,27 @@ export async function POST(req: NextRequest) {
         const fallbackDecisionPoint: FantasyDecisionPoint = {
           id: `decision-${fallbackId}`,
           eventId: fallbackId,
-          prompt: `You explore ${exploredLandmark?.name ?? 'the landmark'}, but the area seems quiet for now. What would you like to do?`,
+          prompt: `You explore ${exploredLandmark?.name ?? 'the landmark'} and discover a dimly lit chamber. Ancient symbols line the walls, and you notice what could be hidden compartments. What would you like to do?`,
           options: [
             {
+              id: 'search-treasure',
+              text: 'Search for hidden treasure',
+              successProbability: 0.7,
+              successDescription: 'You find a hidden cache of coins and supplies!',
+              successEffects: { gold: 15, reputation: 1 },
+              failureDescription: 'You trigger a trap while searching! A dart grazes your arm.',
+              failureEffects: { gold: -5, statusChange: 'Wounded' },
+              resultDescription: 'You search the area thoroughly.',
+            },
+            {
               id: 'continue-exploring',
-              text: 'Continue Exploring',
-              successProbability: 1.0,
-              successDescription: 'You press on, searching for something of interest.',
-              successEffects: {},
-              failureDescription: '',
+              text: 'Continue Exploring cautiously',
+              successProbability: 0.9,
+              successDescription: 'You find a few coins and something interesting.',
+              successEffects: { gold: 5 },
+              failureDescription: 'The area proves difficult to navigate.',
               failureEffects: {},
-              resultDescription: 'You press on, searching for something of interest.',
+              resultDescription: 'You explore cautiously.',
             },
             {
               id: 'leave-landmark',
@@ -427,7 +438,16 @@ export async function POST(req: NextRequest) {
         response.decisionPoint = guardianDecision
       } else {
         // Max depth reached on a normal landmark — end exploration, mark as explored
-        response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
+        // Award completion bonus scaled by region difficulty
+        const completionGold = Math.round(20 * regionMult)
+        const completionRep = 2
+
+        updatedCharacter = {
+          ...updatedCharacter,
+          gold: (updatedCharacter.gold ?? 0) + completionGold,
+          reputation: (updatedCharacter.reputation ?? 0) + completionRep,
+        }
+
         const updatedLandmarks = currentLandmarkState.landmarks.map(lm =>
           lm.name === currentLandmarkState.exploringLandmarkName
             ? { ...lm, explored: true }
@@ -443,7 +463,10 @@ export async function POST(req: NextRequest) {
             exploringLandmarkName: undefined,
           },
         }
+
+        response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer. Exploration complete! +${completionGold} gold, +${completionRep} reputation.`
         response.updatedCharacter = updatedCharacter
+        response.appliedEffects = { ...response.appliedEffects, gold: completionGold, reputation: completionRep }
       }
     }
 

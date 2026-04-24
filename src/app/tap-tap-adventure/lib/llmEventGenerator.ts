@@ -363,6 +363,9 @@ When rewarding items, sometimes include consumable items (type: "consumable") wi
 Sometimes include equipment items (type: "equipment") like weapons, armor, or accessories with stat-boosting effects. Examples: a steel sword with +2 strength, iron armor with +2 intelligence, or a lucky charm with +1 luck.
 Sometimes reward spell scrolls — items with type "spell_scroll" containing a spell with a creative name, 2-3 effects, optional conditions, and tags. The spell field should have: id, name, description, school (arcane/nature/shadow/war), manaCost, cooldown, target (enemy/self), effects array, optional conditions array, and tags array.
 
+IMPORTANT — Encounter effects:
+Every encounter option MUST include meaningful successEffects and failureEffects with mechanical rewards or consequences. Do NOT create purely narrative encounters with empty effects. At minimum, include gold, reputation, or statusChange in each outcome path. Scale rewards by risk — dangerous options should offer higher gold (15-40) or item rewards but also include negative consequences on failure (gold loss, negative reputation, statusChange like "Wounded" or "Cursed"). Safe options should give smaller but guaranteed rewards (5-10 gold, +1 reputation). Example successEffects: { "gold": 15, "reputation": 1 }. Example failureEffects: { "gold": -5, "statusChange": "Bruised" }.
+
 IMPORTANT — Combat events:
 Exactly 1 of the 3 events MUST be a combat encounter (bandits, monsters, aggressive creatures, rivals, etc.). That event MUST include at least one option with "triggersCombat": true — this represents the character choosing to fight. The other options on that event can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). The remaining 2 events should be non-combat (exploration, social, discovery, etc.) with NO options that have triggersCombat. This ensures approximately 25% of events over time involve combat potential.
 
