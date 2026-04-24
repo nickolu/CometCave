@@ -259,3 +259,84 @@ describe('getTemplatesForRegion', () => {
     expect(uniqueIds.size).toBe(allIds.length)
   })
 })
+
+describe('LandmarkTemplate feature flags', () => {
+  it('Willowbrook (gm_hamlet) has all features enabled', () => {
+    const templates = getTemplatesForRegion('green_meadows')
+    const willowbrook = templates.find(t => t.id === 'gm_hamlet')
+    expect(willowbrook).toBeDefined()
+    expect(willowbrook?.hasInn).toBe(true)
+    expect(willowbrook?.hasStable).toBe(true)
+    expect(willowbrook?.hasMailbox).toBe(true)
+    expect(willowbrook?.hasNoticeBoard).toBe(true)
+    expect(willowbrook?.hasTransport).toBe(true)
+  })
+
+  it("Garron's Forge (sv_blacksmith) has no extra features", () => {
+    const templates = getTemplatesForRegion('hearthwood')
+    const forge = templates.find(t => t.id === 'sv_blacksmith')
+    expect(forge).toBeDefined()
+    expect(forge?.hasInn).toBe(false)
+    expect(forge?.hasStable).toBe(false)
+    expect(forge?.hasMailbox).toBe(false)
+    expect(forge?.hasNoticeBoard).toBe(false)
+    expect(forge?.hasTransport).toBe(false)
+  })
+
+  it('The Rusty Flagon (sv_tavern) has inn, mailbox, notice board but no stable or transport', () => {
+    const templates = getTemplatesForRegion('hearthwood')
+    const tavern = templates.find(t => t.id === 'sv_tavern')
+    expect(tavern).toBeDefined()
+    expect(tavern?.hasInn).toBe(true)
+    expect(tavern?.hasStable).toBe(false)
+    expect(tavern?.hasMailbox).toBe(true)
+    expect(tavern?.hasNoticeBoard).toBe(true)
+    expect(tavern?.hasTransport).toBe(false)
+  })
+
+  it("Puck's Bazaar (fg_market) only has transport", () => {
+    const templates = getTemplatesForRegion('feywild_grove')
+    const bazaar = templates.find(t => t.id === 'fg_market')
+    expect(bazaar).toBeDefined()
+    expect(bazaar?.hasInn).toBe(false)
+    expect(bazaar?.hasStable).toBe(false)
+    expect(bazaar?.hasMailbox).toBe(false)
+    expect(bazaar?.hasNoticeBoard).toBe(false)
+    expect(bazaar?.hasTransport).toBe(true)
+  })
+
+  it('Non-town landmarks do not have feature flags', () => {
+    const templates = getTemplatesForRegion('hearthwood')
+    const noticeBoard = templates.find(t => t.id === 'sv_notice_board')
+    expect(noticeBoard).toBeDefined()
+    expect(noticeBoard?.hasInn).toBeUndefined()
+    expect(noticeBoard?.hasStable).toBeUndefined()
+    expect(noticeBoard?.hasMailbox).toBeUndefined()
+    expect(noticeBoard?.hasNoticeBoard).toBeUndefined()
+    expect(noticeBoard?.hasTransport).toBeUndefined()
+  })
+
+  it('feature flags are preserved through generateLandmarks for town landmarks', () => {
+    const landmarks = generateLandmarks('green_meadows', 'test-char', 0, 1, 100)
+    const townLandmark = landmarks.find(lm => lm.type === 'town')
+    expect(townLandmark).toBeDefined()
+    // green_meadows only has gm_hamlet as town, which has all features
+    expect(townLandmark?.hasInn).toBe(true)
+    expect(townLandmark?.hasStable).toBe(true)
+    expect(townLandmark?.hasMailbox).toBe(true)
+    expect(townLandmark?.hasNoticeBoard).toBe(true)
+    expect(townLandmark?.hasTransport).toBe(true)
+  })
+
+  it('non-town generated landmarks have undefined feature flags', () => {
+    const landmarks = generateLandmarks('green_meadows', 'test-char', 0, 1, 100)
+    const nonTownLandmarks = landmarks.filter(lm => lm.type !== 'town' && !lm.isSecret)
+    for (const lm of nonTownLandmarks) {
+      expect(lm.hasInn).toBeUndefined()
+      expect(lm.hasStable).toBeUndefined()
+      expect(lm.hasMailbox).toBeUndefined()
+      expect(lm.hasNoticeBoard).toBeUndefined()
+      expect(lm.hasTransport).toBeUndefined()
+    }
+  })
+})

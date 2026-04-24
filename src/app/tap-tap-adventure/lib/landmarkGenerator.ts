@@ -14,6 +14,11 @@ export interface GeneratedLandmark {
   isSecret?: boolean
   explored: boolean
   position: { x: number; y: number }
+  hasInn?: boolean
+  hasStable?: boolean
+  hasMailbox?: boolean
+  hasNoticeBoard?: boolean
+  hasTransport?: boolean
 }
 
 // Simple string hash for seeded random
@@ -103,6 +108,11 @@ export function generateLandmarks(
       hidden: false,
       explored: false,
       position,
+      hasInn: template.hasInn,
+      hasStable: template.hasStable,
+      hasMailbox: template.hasMailbox,
+      hasNoticeBoard: template.hasNoticeBoard,
+      hasTransport: template.hasTransport,
     })
     currentDist += Math.floor((25 + Math.floor(rng() * 26)) * difficultyMultiplier) // 25-50, scaled
   }
@@ -131,6 +141,11 @@ export function generateLandmarks(
       isSecret: true,
       explored: false,
       position: secretPosition,
+      hasInn: secretTemplate.hasInn,
+      hasStable: secretTemplate.hasStable,
+      hasMailbox: secretTemplate.hasMailbox,
+      hasNoticeBoard: secretTemplate.hasNoticeBoard,
+      hasTransport: secretTemplate.hasTransport,
     })
     landmarks.sort((a, b) => a.distanceFromEntry - b.distanceFromEntry)
   }
