@@ -123,7 +123,7 @@ export const SpellSchema = z.object({
   tags: z.array(z.string()),
   explorationEffect: ExplorationEffectSchema.optional(),
   explorationManaCost: z.number().optional(),
-  spellXp: z.number().default(0),
-  spellLevel: z.number().default(1),
+  spellXp: z.number().optional(),
+  spellLevel: z.number().optional(),
 })
 export type Spell = z.infer<typeof SpellSchema>
