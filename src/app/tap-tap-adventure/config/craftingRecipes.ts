@@ -192,7 +192,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] = [
       name: 'Purification Tonic',
       description: 'A bitter brew that cleanses all negative status effects.',
       type: 'consumable',
-      effects: { cleanse: 1, heal: 5 },
+      effects: { cleanse: true, heal: 5 },
     },
   },
   // --- Equipment ---
