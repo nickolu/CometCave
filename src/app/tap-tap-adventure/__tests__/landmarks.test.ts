@@ -100,6 +100,14 @@ describe('generateLandmarks', () => {
     }
   })
 
+  it('should always include at least one town landmark when region has town templates', () => {
+    for (let i = 0; i < 50; i++) {
+      const landmarks = generateLandmarks('green_meadows', `test-char-${i}`, 0)
+      const hasTown = landmarks.some(l => l.type === 'town')
+      expect(hasTown).toBe(true)
+    }
+  })
+
   it('each landmark has required fields', () => {
     const landmarks = generateLandmarks('green_meadows', 'char-1')
     for (const lm of landmarks) {
