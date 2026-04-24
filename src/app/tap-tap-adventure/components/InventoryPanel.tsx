@@ -172,7 +172,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
         </div>
       )}
       {feedbackMessage && (
-        <div className="mb-2 p-2 bg-green-900/50 border border-green-700 rounded-md text-green-300 text-sm animate-pulse">
+        <div className="mb-2 p-2 bg-green-900/50 border border-green-700 rounded-md text-green-300 text-sm">
           {feedbackMessage}
         </div>
       )}
@@ -191,7 +191,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
               const borderClass = item.isHeirloom
                 ? `${rarityStyle.border} ring-1 ring-amber-500/30`
                 : isNew
-                ? `${rarityStyle.border} ring-1 ring-indigo-400/60 animate-pulse`
+                ? `${rarityStyle.border} ring-1 ring-indigo-400/60`
                 : rarityStyle.border
               return (
               <div
