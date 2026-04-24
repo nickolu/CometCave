@@ -549,6 +549,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                         hpAfterCombat: combatState.playerState.hp,
                         maxHp: combatState.playerState.maxHp,
                         isBoss: combatState.isBoss ?? false,
+                        turnCount: combatState.turnNumber,
+                        partyAlive: (combatState.partyMemberStates ?? []).filter(m => !m.isKnockedOut).length,
+                        partyTotal: (combatState.partyMemberStates ?? []).length,
+                        enemyLevel: combatState.enemy.level,
+                        playerLevel: character.level,
                       }
                     )
                     updateAchievements(achievements)
