@@ -158,6 +158,241 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Handle enter-town: set up town hub and present town menu
+    if (optionId === 'enter-town') {
+      const landmarkState = character.landmarkState
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      const updatedLandmarkState = landmarkState
+        ? {
+            ...landmarkState,
+            exploring: true,
+            explorationDepth: 0,
+            exploringLandmarkName: townLandmark?.name ?? 'the town',
+          }
+        : undefined
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        landmarkState: updatedLandmarkState,
+      }
+
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `Welcome to ${townLandmark?.name ?? 'the town'}! The town square is alive with merchants, travelers, and townsfolk going about their day. What would you like to do?`,
+        options: [
+          {
+            id: 'visit-shop',
+            text: '🏪 Visit the Shop',
+            successProbability: 1.0,
+            successDescription: 'You browse the merchant\'s wares.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn',
+            text: `🛏️ Rest at the Inn (${innCost} gold)`,
+            successProbability: 1.0,
+            successDescription: `You pay ${innCost} gold for a warm meal and a soft bed. You feel completely refreshed!`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You rest at the inn for ${innCost} gold.`,
+          },
+          {
+            id: 'leave-town',
+            text: '🚪 Leave Town',
+            successProbability: 1.0,
+            successDescription: `You wave goodbye and head back out on the road.`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You leave ${townLandmark?.name ?? 'the town'}.`,
+          },
+        ],
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You enter ${townLandmark?.name ?? 'the town'}.`,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `You walk through the gates of ${townLandmark?.name ?? 'the town'}.`,
+        resourceDelta: {},
+        decisionPoint: townHub,
+        shopEvent: true,
+      })
+    }
+
+    // Handle visit-shop: show town hub again with shop triggered
+    if (optionId === 'visit-shop') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `You've browsed the shop. What else would you like to do in ${townName}?`,
+        options: [
+          {
+            id: 'visit-shop',
+            text: '🏪 Visit the Shop again',
+            successProbability: 1.0,
+            successDescription: 'You browse the merchant\'s wares.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn',
+            text: `🛏️ Rest at the Inn (${innCost} gold)`,
+            successProbability: 1.0,
+            successDescription: `You pay ${innCost} gold for a warm meal and a soft bed.`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You rest at the inn.`,
+          },
+          {
+            id: 'leave-town',
+            text: '🚪 Leave Town',
+            successProbability: 1.0,
+            successDescription: `You wave goodbye and head back out on the road.`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You leave ${townName}.`,
+          },
+        ],
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You browse the shop\'s offerings.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You browse the shop.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        shopEvent: true,
+      })
+    }
+
+    // Handle rest-at-inn: pay gold, restore HP and MP to full
+    if (optionId === 'rest-at-inn') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      let updatedCharacter = { ...character }
+      let outcomeDesc: string
+
+      if ((updatedCharacter.gold ?? 0) >= innCost) {
+        updatedCharacter = {
+          ...updatedCharacter,
+          gold: (updatedCharacter.gold ?? 0) - innCost,
+          hp: updatedCharacter.maxHp ?? 100,
+          mana: updatedCharacter.maxMana ?? 50,
+        }
+        outcomeDesc = `You pay ${innCost} gold and enjoy a warm meal and a comfortable bed. You wake feeling completely refreshed! HP and MP fully restored.`
+      } else {
+        outcomeDesc = `You don't have enough gold to stay at the inn. You need ${innCost} gold.`
+      }
+
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `${outcomeDesc} What else would you like to do in ${townName}?`,
+        options: [
+          {
+            id: 'visit-shop',
+            text: '🏪 Visit the Shop',
+            successProbability: 1.0,
+            successDescription: 'You browse the merchant\'s wares.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn',
+            text: `🛏️ Rest at the Inn (${innCost} gold)`,
+            successProbability: 1.0,
+            successDescription: `You pay ${innCost} gold for rest.`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You rest at the inn.',
+          },
+          {
+            id: 'leave-town',
+            text: '🚪 Leave Town',
+            successProbability: 1.0,
+            successDescription: `You head back out on the road.`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You leave ${townName}.`,
+          },
+        ],
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: outcomeDesc,
+        appliedEffects: (updatedCharacter.gold ?? 0) !== (character.gold ?? 0) ? { gold: -innCost } : {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: outcomeDesc,
+        resourceDelta: (updatedCharacter.gold ?? 0) !== (character.gold ?? 0) ? { gold: -innCost } : {},
+        decisionPoint: townHub,
+      })
+    }
+
+    // Handle leave-town: exit town without marking as explored
+    if (optionId === 'leave-town') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        landmarkState: landmarkState
+          ? {
+              ...landmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            }
+          : undefined,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You leave ${townName} and continue your journey.`,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `You leave ${townName} and head back out on the road.`,
+        resourceDelta: {},
+      })
+    }
+
     // Handle explore-landmark: use activeTargetIndex to find the landmark the player walked to
     if (optionId === 'explore-landmark') {
       const landmarkState = character.landmarkState
@@ -438,6 +673,10 @@ export async function POST(req: NextRequest) {
         response.decisionPoint = guardianDecision
       } else {
         // Max depth reached on a normal landmark — end exploration, mark as explored
+        // (Towns use their own hub flow and should never reach this code path)
+        const exploredLandmarkForCompletion = currentLandmarkState.landmarks[exploredLandmarkIndex]
+        const isTown = exploredLandmarkForCompletion?.type === 'town'
+
         // Award completion bonus scaled by region difficulty
         const completionGold = Math.round(20 * regionMult)
         const completionRep = 2
@@ -449,7 +688,7 @@ export async function POST(req: NextRequest) {
         }
 
         const updatedLandmarks = currentLandmarkState.landmarks.map(lm =>
-          lm.name === currentLandmarkState.exploringLandmarkName
+          lm.name === currentLandmarkState.exploringLandmarkName && !isTown
             ? { ...lm, explored: true }
             : lm
         )

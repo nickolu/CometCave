@@ -214,22 +214,38 @@ export async function moveForwardService(
         decisionPoint: {
           id: `decision-${arrivalEventId}`,
           eventId: arrivalEventId,
-          prompt: activeLandmark.explored
-            ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. You've already explored this place thoroughly. What do you do?`
-            : `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} What do you do?`,
-          options: [
-            ...(activeLandmark.explored ? [] : [{
-              id: 'explore-landmark',
-              text: `Explore ${activeLandmark.name}`,
-              successProbability: 1.0,
-              successDescription: `You venture into ${activeLandmark.name} to see what awaits.`,
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: `You explore ${activeLandmark.name}.`,
-            }]),
-            ...bypassOptions,
-          ],
+          prompt: activeLandmark.type === 'town'
+            ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} The town is bustling with activity. What would you like to do?`
+            : (activeLandmark.explored
+              ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. You've already explored this place thoroughly. What do you do?`
+              : `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} What do you do?`),
+          options: activeLandmark.type === 'town'
+            ? [
+                {
+                  id: 'enter-town',
+                  text: `🏘️ Enter ${activeLandmark.name}`,
+                  successProbability: 1.0,
+                  successDescription: `You walk through the gates of ${activeLandmark.name}.`,
+                  successEffects: {},
+                  failureDescription: '',
+                  failureEffects: {},
+                  resultDescription: `You enter ${activeLandmark.name}.`,
+                },
+                ...bypassOptions,
+              ]
+            : [
+                ...(activeLandmark.explored ? [] : [{
+                  id: 'explore-landmark',
+                  text: `Explore ${activeLandmark.name}`,
+                  successProbability: 1.0,
+                  successDescription: `You venture into ${activeLandmark.name} to see what awaits.`,
+                  successEffects: {},
+                  failureDescription: '',
+                  failureEffects: {},
+                  resultDescription: `You explore ${activeLandmark.name}.`,
+                }]),
+                ...bypassOptions,
+              ],
           resolved: false,
         },
         shopEvent: activeLandmark.hasShop ? true : undefined,
