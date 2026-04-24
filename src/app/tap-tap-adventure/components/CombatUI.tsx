@@ -301,10 +301,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
           if (ap >= (AP_COSTS.flee ?? 3)) { e.preventDefault(); handleAction('flee') }
           break
         case 'q': // Move Closer
-          if ((ap >= (AP_COSTS.move_closer ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'close') { e.preventDefault(); handleAction('move_closer') }
+          if ((ap >= (AP_COSTS.move_closer ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'close' && ((playerState.stamina ?? 6) > 0 || (playerState.mountMovesRemaining ?? 0) > 0)) { e.preventDefault(); handleAction('move_closer') }
           break
         case 'e': // Move Away
-          if ((ap >= (AP_COSTS.move_away ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'far') { e.preventDefault(); handleAction('move_away') }
+          if ((ap >= (AP_COSTS.move_away ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'far' && ((playerState.stamina ?? 6) > 0 || (playerState.mountMovesRemaining ?? 0) > 0)) { e.preventDefault(); handleAction('move_away') }
           break
         case 'z': // End Turn
           e.preventDefault(); handleAction('end_turn')
@@ -535,6 +535,19 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}
+        {/* Stamina bar */}
+        {combatState.combatDistance && (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-amber-400 w-8">STA</span>
+            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-500 rounded-full transition-all"
+                style={{ width: `${Math.max(0, Math.min(100, ((playerState.stamina ?? 6) / (playerState.maxStamina ?? 6)) * 100))}%` }}
+              />
+            </div>
+            <span className="text-amber-400 text-right w-6">{playerState.stamina ?? 6}/{playerState.maxStamina ?? 6}</span>
+          </div>
+        )}
         {/* Status effects HUD */}
         <StatusEffectsHUD
           statusEffects={playerState.statusEffects ?? []}
@@ -699,25 +712,25 @@ export function CombatUI({ combatState }: CombatUIProps) {
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
+              combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-cyan-900/50 border-cyan-800 hover:bg-cyan-800 text-white'
             }`}
             onClick={() => handleAction('move_closer')}
-            disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
+            disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[Q]</span>Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP`})
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[Q]</span>Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP · 1 STA`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
+              combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-teal-900/50 border-teal-800 hover:bg-teal-800 text-white'
             }`}
             onClick={() => handleAction('move_away')}
-            disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
+            disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[E]</span>Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP`})
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[E]</span>Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP · 1 STA`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${

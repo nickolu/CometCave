@@ -78,6 +78,8 @@ function makeActiveCombat(overrides: Partial<CombatState> = {}): CombatState {
       maxMana: 0,
       ap: 3,
       maxAp: 3,
+      stamina: 6,
+      maxStamina: 6,
     },
     turnNumber: 0,
     combatLog: [],

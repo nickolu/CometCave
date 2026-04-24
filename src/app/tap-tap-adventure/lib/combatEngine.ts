@@ -175,6 +175,8 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
       : undefined,
     bonusCritChance: bonusCritChance > 0 ? bonusCritChance : undefined,
     dodgeChance: dodgeChance > 0 ? dodgeChance : undefined,
+    stamina: 6,
+    maxStamina: 6,
   }
 }
 
@@ -1349,11 +1351,19 @@ export function processPlayerAction(
             playerState.ap += apCost
             playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
             playerState.mountMovesRemaining = (playerState.mountMovesRemaining ?? 1) - 1
+          } else if ((playerState.stamina ?? 6) <= 0) {
+            // Out of stamina — can't move without mount
+            newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: "You're too exhausted to move!" })
+            playerState.ap += apCost
+            playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+            break
+          } else {
+            playerState.stamina = (playerState.stamina ?? 6) - 1
           }
           combatDistance = combatDistance === 'far' ? 'mid' : 'close'
           const moveDesc = usedMountMove
             ? `Your mount carries you to ${combatDistance} range!`
-            : `You close the distance to ${combatDistance} range!`
+            : `You close the distance to ${combatDistance} range! (Stamina: ${playerState.stamina}/${playerState.maxStamina ?? 6})`
           newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: moveDesc })
         }
         break
@@ -1371,11 +1381,18 @@ export function processPlayerAction(
             playerState.ap += apCost
             playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
             playerState.mountMovesRemaining = (playerState.mountMovesRemaining ?? 1) - 1
+          } else if ((playerState.stamina ?? 6) <= 0) {
+            newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: "You're too exhausted to move!" })
+            playerState.ap += apCost
+            playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+            break
+          } else {
+            playerState.stamina = (playerState.stamina ?? 6) - 1
           }
           combatDistance = combatDistance === 'close' ? 'mid' : 'far'
           const moveDesc = usedMountMove
             ? `Your mount swiftly carries you back to ${combatDistance} range!`
-            : `You move back to ${combatDistance} range!`
+            : `You move back to ${combatDistance} range! (Stamina: ${playerState.stamina}/${playerState.maxStamina ?? 6})`
           newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: moveDesc })
         }
         break
@@ -1949,6 +1966,14 @@ export function processPlayerAction(
 
   // Tick spell cooldowns at end of full turn
   playerState = tickSpellCooldowns(playerState)
+
+  // Stamina regen: +1 if the player did not move this turn (check BEFORE clearing turnActions)
+  const movedThisTurn = (playerState.turnActions ?? []).some(
+    a => a === 'move_closer' || a === 'move_away'
+  )
+  if (!movedThisTurn && (playerState.stamina ?? 6) < (playerState.maxStamina ?? 6)) {
+    playerState.stamina = Math.min((playerState.maxStamina ?? 6), (playerState.stamina ?? 6) + 1)
+  }
 
   // Reset AP for next turn, clear turn actions, clear defending
   playerState.ap = playerState.maxAp ?? MAX_AP

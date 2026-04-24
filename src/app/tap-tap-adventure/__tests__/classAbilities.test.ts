@@ -63,6 +63,8 @@ function makeCombat(overrides: Partial<CombatState> = {}): CombatState {
       maxMana: 0,
       ap: 2,
       maxAp: 2,
+      stamina: 6,
+      maxStamina: 6,
     },
     turnNumber: 0,
     combatLog: [],
@@ -158,6 +160,8 @@ describe('Class Abilities', () => {
           maxMana: 0,
           ap: 2,
           maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Mage')
@@ -193,6 +197,8 @@ describe('Class Abilities', () => {
           maxMana: 0,
           ap: 2,
           maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Rogue')
@@ -232,6 +238,8 @@ describe('Class Abilities', () => {
           maxMana: 0,
           ap: 2,
           maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Rogue')
@@ -284,6 +292,8 @@ describe('Class Abilities', () => {
           maxMana: 0,
           ap: 2,
           maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Ranger')
@@ -323,6 +333,8 @@ describe('Class Abilities', () => {
           maxMana: 0,
           ap: 2,
           maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Warrior')
@@ -361,6 +373,8 @@ describe('Class Abilities', () => {
           maxMana: 0,
           ap: 2,
           maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Warrior')
