@@ -13,6 +13,8 @@ export function applyEffects(
     mountDamage?: number
     mountDeath?: boolean
     revealLandmark?: boolean
+    hpChange?: number
+    mpChange?: number
   }
 ): FantasyCharacter {
   if (!effects) return character
@@ -35,6 +37,22 @@ export function applyEffects(
     status: effects.statusChange
       ? (effects.statusChange as FantasyCharacter['status'])
       : character.status,
+  }
+
+  // HP change: clamp to [1, maxHp] (don't kill via events, leave at 1 HP minimum)
+  if (effects.hpChange) {
+    const currentHp = updatedCharacter.hp ?? updatedCharacter.maxHp ?? 100
+    const maxHp = updatedCharacter.maxHp ?? 100
+    const newHp = Math.max(1, Math.min(maxHp, currentHp + effects.hpChange))
+    updatedCharacter = { ...updatedCharacter, hp: newHp }
+  }
+
+  // MP change: clamp to [0, maxMana]
+  if (effects.mpChange) {
+    const currentMp = updatedCharacter.mana ?? updatedCharacter.maxMana ?? 50
+    const maxMp = updatedCharacter.maxMana ?? 50
+    const newMp = Math.max(0, Math.min(maxMp, currentMp + effects.mpChange))
+    updatedCharacter = { ...updatedCharacter, mana: newMp }
   }
 
   // Faction reputation gain
