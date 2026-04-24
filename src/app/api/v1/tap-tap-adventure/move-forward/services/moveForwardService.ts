@@ -214,9 +214,11 @@ export async function moveForwardService(
         decisionPoint: {
           id: `decision-${arrivalEventId}`,
           eventId: arrivalEventId,
-          prompt: `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} What do you do?`,
+          prompt: activeLandmark.explored
+            ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. You've already explored this place thoroughly. What do you do?`
+            : `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} What do you do?`,
           options: [
-            {
+            ...(activeLandmark.explored ? [] : [{
               id: 'explore-landmark',
               text: `Explore ${activeLandmark.name}`,
               successProbability: 1.0,
@@ -225,7 +227,7 @@ export async function moveForwardService(
               failureDescription: '',
               failureEffects: {},
               resultDescription: `You explore ${activeLandmark.name}.`,
-            },
+            }]),
             ...bypassOptions,
           ],
           resolved: false,
