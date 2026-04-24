@@ -20,6 +20,8 @@ interface NPCDialoguePanelProps {
   hiddenLandmarkType?: string
   onEncounterUpdate: (dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => void
   onClose: () => void
+  onRecruit?: () => void
+  isRecruited?: boolean
 }
 
 export function NPCDialoguePanel({
@@ -36,6 +38,8 @@ export function NPCDialoguePanel({
   hiddenLandmarkType,
   onEncounterUpdate,
   onClose,
+  onRecruit,
+  isRecruited = false,
 }: NPCDialoguePanelProps) {
   const effectiveCharisma = characterCharisma + activeCharismaBonus
   const {
@@ -252,6 +256,14 @@ export function NPCDialoguePanel({
 
       {/* Action row */}
       <div className="flex gap-2">
+        {npc.combatRole === 'combatant' && !isRecruited && disposition >= 20 && onRecruit && (
+          <Button
+            className="flex-1 text-sm border border-green-700 bg-green-800 hover:bg-green-700 text-white py-2 rounded"
+            onClick={onRecruit}
+          >
+            Join my party
+          </Button>
+        )}
         <Button
           className="flex-1 text-sm border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white py-2 rounded"
           onClick={onClose}

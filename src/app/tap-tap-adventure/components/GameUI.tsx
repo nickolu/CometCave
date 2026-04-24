@@ -56,6 +56,7 @@ import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboard
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
+import type { PartyMember } from '@/app/tap-tap-adventure/models/partyMember'
 import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
 
@@ -141,6 +142,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     dismissLootCelebration,
     clearSocialEncounter,
     recordNPCEncounter,
+    addPartyMember,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
@@ -717,6 +719,33 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                             clearSocialEncounter()
                             setDecisionPoint(null)
                           }}
+                          onRecruit={() => {
+                            const member: PartyMember = {
+                              id: `npc-${socialEncounter.npc.id}`,
+                              name: socialEncounter.npc.name,
+                              description: socialEncounter.npc.description,
+                              icon: socialEncounter.npc.icon,
+                              className: socialEncounter.npc.role,
+                              level: character.level,
+                              hp: 30 + character.level * 5,
+                              maxHp: 30 + character.level * 5,
+                              stats: { strength: 5, intelligence: 5, luck: 5, charisma: 5 },
+                              equipment: { weapon: null, armor: null, accessory: null },
+                              dailyCost: Math.max(1, Math.floor(character.level / 2)),
+                              recruitCost: 0,
+                              rarity: 'uncommon',
+                              personality: socialEncounter.npc.personality,
+                              relationship: character.npcEncounters?.[socialEncounter.npc.id]?.disposition ?? 0,
+                              role: 'combatant',
+                            }
+                            const added = addPartyMember(member)
+                            if (added) {
+                              setShowNPCPanel(false)
+                              clearSocialEncounter()
+                              setDecisionPoint(null)
+                            }
+                          }}
+                          isRecruited={(character.party ?? []).some(m => m.id === `npc-${socialEncounter.npc.id}`)}
                         />
                       ) : null}
                     />
