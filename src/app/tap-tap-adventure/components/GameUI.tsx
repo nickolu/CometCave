@@ -630,6 +630,35 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 {gameState.genericMessage && (
                   <div className="text-sm">{gameState.genericMessage}</div>
                 )}
+                {/* Inline area map — always visible while traveling */}
+                {character?.landmarkState && (
+                  <div className="mt-2">
+                    <AreaMap
+                      playerPosition={character.landmarkState.position ?? { x: 0, y: 0 }}
+                      landmarks={character.landmarkState.landmarks.map((lm, i) => ({
+                        index: i,
+                        name: lm.name,
+                        icon: lm.icon,
+                        position: lm.position ?? { x: 0, y: 0 },
+                        explored: lm.explored ?? false,
+                        hidden: lm.hidden ?? false,
+                        hasShop: lm.hasShop ?? false,
+                      }))}
+                      exits={(character.landmarkState.exitPositions ?? []).map((exit, i) => ({
+                        index: character.landmarkState!.landmarks.length + i,
+                        name: exit.name,
+                        icon: exit.icon,
+                        position: exit.position,
+                      }))}
+                      activeTargetIndex={character.landmarkState.activeTargetIndex ?? 0}
+                      regionBounds={character.landmarkState.regionBounds ?? { width: 500, height: 500 }}
+                      regionName={getRegion(character.currentRegion ?? 'green_meadows').name}
+                      regionIcon={getRegion(character.currentRegion ?? 'green_meadows').icon}
+                      onSelectTarget={(i) => setActiveTarget(i)}
+                      compact
+                    />
+                  </div>
+                )}
                 <div className="select-text">
                   <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
                 </div>
