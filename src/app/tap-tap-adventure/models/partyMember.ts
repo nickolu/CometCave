@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ItemSchema } from './item'
+import { GeneratedClassSchema } from '../models/generatedClass'
 
 export const PartyMemberSchema = z.object({
   id: z.string(),
@@ -10,6 +11,7 @@ export const PartyMemberSchema = z.object({
 
   // Class info
   className: z.string(),
+  generatedClass: GeneratedClassSchema.optional(),
 
   // Combat stats
   level: z.number().default(1),

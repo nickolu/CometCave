@@ -3,6 +3,7 @@ import { OpenAI } from 'openai'
 import { FALLBACK_CLASSES } from '@/app/tap-tap-adventure/config/fallbackClasses'
 import { GeneratedClass, GeneratedClassStartingAbility, StartingWeapon } from '@/app/tap-tap-adventure/models/generatedClass'
 import { SpellEffect, SpellElement, SpellSchool } from '@/app/tap-tap-adventure/models/spell'
+import { seededRandom } from '@/app/tap-tap-adventure/lib/landmarkGenerator'
 
 export const COMBAT_STYLES = [
   // Physical
@@ -565,4 +566,36 @@ export function pickRandomFallback(excludeIds: Set<string> = new Set()): Generat
     return FALLBACK_CLASSES[Math.floor(Math.random() * FALLBACK_CLASSES.length)]
   }
   return available[Math.floor(Math.random() * available.length)]
+}
+
+/**
+ * Deterministically pick a fallback class for an NPC based on their name.
+ * No API call — instant, offline, deterministic.
+ */
+export function getClassForNPC(npcName: string): GeneratedClass {
+  const rng = seededRandom(npcName)
+  const index = Math.floor(rng() * FALLBACK_CLASSES.length)
+  return FALLBACK_CLASSES[index]
+}
+
+/**
+ * Derive combat stats from a GeneratedClass and level.
+ */
+export function deriveNPCCombatStats(genClass: GeneratedClass, level: number): {
+  hp: number
+  maxHp: number
+  stats: { strength: number; intelligence: number; luck: number; charisma: number }
+} {
+  const { statDistribution } = genClass
+  const hp = 20 + statDistribution.strength * 3 + level * 5
+  return {
+    hp,
+    maxHp: hp,
+    stats: {
+      strength: statDistribution.strength,
+      intelligence: statDistribution.intelligence,
+      luck: statDistribution.luck,
+      charisma: statDistribution.charisma,
+    },
+  }
 }
