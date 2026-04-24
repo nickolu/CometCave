@@ -61,6 +61,7 @@ import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
 import { StablePanel } from './StablePanel'
 import { MailboxPanel } from './MailboxPanel'
+import { TownHub } from './TownHub'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -276,7 +277,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           optionId === 'continue-exploring' || optionId === 'visit-shop' ||
           optionId === 'back-to-town' || optionId === 'pay-bounty' ||
           optionId === 'fight-secret-boss' || optionId === 'visit-stable' ||
-          optionId === 'check-mailbox'
+          optionId === 'check-mailbox' || optionId === 'rest-at-inn' ||
+          optionId === 'hire-transport' || optionId === 'leave-town' ||
+          optionId === 'enter-town'
         if (!skipResults && result.outcomeDescription) {
           setEventResult({
             outcomeDescription: result.outcomeDescription,
@@ -579,6 +582,61 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               />
             ) : gameState.shopState?.isOpen ? (
               <ShopUI />
+            ) : (() => {
+              const isTownHub =
+                !!gameState.decisionPoint &&
+                !gameState.decisionPoint.resolved &&
+                gameState.decisionPoint.options.some(o => o.id === 'leave-town') &&
+                character?.landmarkState?.exploring === true
+              return isTownHub
+            })() ? (
+              <>
+                {/* Region info — shown above TownHub */}
+                {(() => {
+                  const dist = character?.distance ?? 0
+                  const region = getRegion(character?.currentRegion ?? 'green_meadows')
+                  const diff = DIFFICULTY_STYLES[region.difficulty]
+                  const elem = ELEMENT_STYLES[region.element] ?? ELEMENT_STYLES.none
+                  const day = calculateDay(dist)
+                  const timeOfDay = getTimeOfDay(dist)
+                  const ls = character?.landmarkState
+
+                  return (
+                    <div className="space-y-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold">{region.icon} {region.name}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 border rounded ${diff.color}`}>{diff.label}</span>
+                        {region.element !== 'none' && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${elem.color}`}>{region.element}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 italic leading-snug">{region.description}</p>
+                      <p className="text-xs text-slate-500">Day {day} &mdash; {timeOfDay}</p>
+                      {ls && (
+                        <TargetList
+                          landmarks={ls.landmarks}
+                          positionInRegion={ls.positionInRegion ?? 0}
+                          activeTargetIndex={ls.activeTargetIndex ?? 0}
+                          regionLength={ls.regionLength ?? 200}
+                          regionName={region.name}
+                          onSelectTarget={(i) => setActiveTarget(i)}
+                          disabled={moveForwardPending || resolveDecisionPending}
+                          characterPosition={ls.position}
+                          exitTargets={ls.exitPositions}
+                        />
+                      )}
+                    </div>
+                  )
+                })()}
+                <TownHub
+                  townName={character?.landmarkState?.exploringLandmarkName ?? 'Town'}
+                  townIcon={character?.landmarkState?.landmarks[character?.landmarkState?.activeTargetIndex ?? 0]?.icon}
+                  decisionPoint={gameState.decisionPoint!}
+                  isResolving={resolveDecisionPending}
+                  character={character!}
+                  onSelectOption={handleResolveDecision}
+                />
+              </>
             ) : (
               <>
                 {/* Region info — always visible behind the event dialog */}
