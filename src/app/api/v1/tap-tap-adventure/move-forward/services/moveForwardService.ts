@@ -198,6 +198,27 @@ export async function moveForwardService(
     // Re-read landmark after potential reveal
     activeLandmark = landmarkState.landmarks[activeTargetIndex]
 
+    // Auto-advance past explored non-town landmarks
+    if (activeLandmark && activeLandmark.explored && activeLandmark.type !== 'town' && hasArrivedAtLandmark) {
+      const newIndex = Math.min(activeTargetIndex + 1, landmarkState.landmarks.length)
+      return {
+        character: {
+          ...updatedCharacter,
+          landmarkState: {
+            ...landmarkState,
+            positionInRegion: newPositionInRegion,
+            position: updatedPosition,
+            activeTargetIndex: newIndex,
+            nextLandmarkIndex: newIndex,
+          },
+        },
+        event: null,
+        decisionPoint: null,
+        genericMessage: `You pass by ${activeLandmark.name} — you've already explored this place.`,
+        landmarkProgress: null,
+      }
+    }
+
     if (activeLandmark && !activeLandmark.hidden && hasArrivedAtLandmark) {
       const arrivalEventId = `landmark-arrival-${Date.now()}`
 

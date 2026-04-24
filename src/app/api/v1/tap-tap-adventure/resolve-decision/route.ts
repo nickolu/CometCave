@@ -949,11 +949,15 @@ export async function POST(req: NextRequest) {
       const updatedLandmarkState = landmarkState
         ? {
             ...landmarkState,
-            // Don't auto-advance indexes — player stays at this landmark until they leave
             nextLandmarkIndex: targetIndex,
             exploring: true,
             explorationDepth: 1,
             exploringLandmarkName: exploredLandmark?.name ?? 'the landmark',
+            // Mark landmark explored immediately and snap position
+            landmarks: landmarkState.landmarks.map((lm, i) =>
+              i === targetIndex ? { ...lm, explored: true } : lm
+            ),
+            ...(exploredLandmark?.position ? { position: exploredLandmark.position } : {}),
           }
         : undefined
 
@@ -967,7 +971,7 @@ export async function POST(req: NextRequest) {
       const baseContext = buildStoryContext(character, storyEvents)
       const explorationDepth = updatedLandmarkState?.explorationDepth ?? 1
       const landmarkPrefix = exploredLandmark
-        ? `Landmark: ${exploredLandmark.name} (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\nExploration depth: ${explorationDepth}. Scale rewards with depth — deeper encounters should have greater risks and greater rewards.\n\n`
+        ? `IMPORTANT: This encounter takes place INSIDE the landmark "${exploredLandmark.name}" (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\nDo NOT generate a generic road or travel event. The encounter MUST be directly related to this specific location.\nExploration depth: ${explorationDepth}. Scale rewards with depth — deeper encounters should have greater risks and greater rewards.\n\n`
         : ''
       const combined = landmarkPrefix + baseContext
       const enrichedContext = combined.length > MAX_CONTEXT ? combined.slice(0, MAX_CONTEXT) : combined
