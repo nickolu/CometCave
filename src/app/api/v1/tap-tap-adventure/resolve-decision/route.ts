@@ -1160,7 +1160,7 @@ export async function POST(req: NextRequest) {
         const continueDecision: FantasyDecisionPoint = {
           id: `decision-continue-${Date.now()}`,
           eventId: `continue-explore-${Date.now()}`,
-          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover... (Encounter ${depth} of ~${maxDepth})`,
+          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover...`,
           options: [
             {
               id: 'continue-exploring',
@@ -1239,6 +1239,7 @@ export async function POST(req: NextRequest) {
             ? { ...lm, explored: true }
             : lm
         )
+        const newLandmarkIndex = Math.min(exploredLandmarkIndex + 1, currentLandmarkState.landmarks.length)
         updatedCharacter = {
           ...updatedCharacter,
           landmarkState: {
@@ -1247,6 +1248,8 @@ export async function POST(req: NextRequest) {
             exploring: false,
             explorationDepth: 0,
             exploringLandmarkName: undefined,
+            activeTargetIndex: newLandmarkIndex,
+            nextLandmarkIndex: newLandmarkIndex,
           },
         }
 
