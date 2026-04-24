@@ -50,12 +50,64 @@ import {
 } from '@/app/tap-tap-adventure/lib/dailyChallengeTracker'
 import { DailyChallengeType } from '@/app/tap-tap-adventure/models/dailyChallenge'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
-import { getRelationshipTier, getNPCById } from '@/app/tap-tap-adventure/config/npcs'
+import { getRelationshipTier, getNPCById, GameNPC } from '@/app/tap-tap-adventure/config/npcs'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
 import { getEnchantCost, getEnchantBonusStat, MAX_ENCHANT_LEVEL } from '@/app/tap-tap-adventure/config/enchanting'
 import { moveToward, Vec2 } from '@/app/tap-tap-adventure/lib/movementUtils'
+
+function generateNPCReply(
+  npc: GameNPC,
+  playerMessage: string,
+  disposition: number
+): { body: string; gold: number; items?: { name: string; description: string; type?: string; rarity?: string }[] } {
+  const isWise = npc.personality.toLowerCase().includes('wise')
+  const isMerchant = npc.personality.toLowerCase().includes('merchant') || npc.personality.toLowerCase().includes('deal') || npc.personality.toLowerCase().includes('trade')
+  const isMystic = npc.personality.toLowerCase().includes('mystic') || npc.personality.toLowerCase().includes('cryptic') || npc.personality.toLowerCase().includes('spirit')
+  const isGrim = npc.personality.toLowerCase().includes('grim') || npc.personality.toLowerCase().includes('stern') || npc.personality.toLowerCase().includes('hardened')
+
+  const friendlyPrefix = disposition >= 50 ? 'Dear friend' : disposition >= 20 ? 'Greetings' : 'Traveler'
+
+  let templates: { body: string; gold: number; items?: { name: string; description: string; type?: string; rarity?: string }[] }[]
+
+  if (isWise) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nYour words carry the weight of one who has seen much. Remember — the greatest treasure is not gold, but the wisdom gained along the way.\n\nMay your path be clear.\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nThank you for writing. I have been reflecting on your journey, and I believe you are ready for greater challenges. Trust your instincts — they have served you well.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour message brought warmth to these old bones. I found something in my study that might aid you. Use it wisely.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 10), items: disposition >= 50 ? [{ name: "Sage's Scroll", description: 'A scroll containing a fragment of ancient wisdom.', type: 'consumable', rarity: 'uncommon' }] : undefined },
+    ]
+  } else if (isMerchant) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nAlways good to hear from a valued customer! Business is booming — stop by when you can and I'll have something special set aside for you.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour message couldn't have come at a better time! I just acquired some fascinating merchandise. Here's a small advance on our next deal.\n\n— ${npc.name}`, gold: Math.floor(8 + Math.random() * 12) },
+      { body: `${friendlyPrefix},\n\nA fellow traveler brought something interesting through town. I thought of you immediately! Consider this a gift between business partners.\n\n— ${npc.name}`, gold: Math.floor(3 + Math.random() * 8), items: [{ name: 'Trade Sample', description: 'A sample of exotic goods from a distant land.', type: 'material', rarity: 'common' }] },
+    ]
+  } else if (isMystic) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nThe wind carried your words to me before the letter arrived. The stars align for you — something important approaches. Be ready.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nI sensed your message through the veil. The spirits whisper of a hidden path near where you travel. Look where shadows meet the light.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour words resonated through the ethereal. I have channeled a small blessing into this letter — may it shield you from harm.\n\n— ${npc.name}`, gold: 0, items: disposition >= 30 ? [{ name: 'Spirit Ward', description: 'A ward imbued with protective spiritual energy.', type: 'consumable', rarity: 'uncommon' }] : undefined },
+    ]
+  } else if (isGrim) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nI don't have much time for letters, but your message was... appreciated. The wastes are harsh, and it's good to know someone remembers those of us out here.\n\nStay sharp.\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour words are noted. I've seen too many fall to carelessness. Don't become another name on my list. Here's something to help keep you alive.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 8) },
+    ]
+  } else {
+    templates = [
+      { body: `${friendlyPrefix},\n\nThank you for your kind message. It's always good to hear from a fellow adventurer. Safe travels out there!\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour letter brightened my day! Things have been busy here, but I wanted to send a little something back. Take care of yourself.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 10) },
+      { body: `${friendlyPrefix},\n\nI received your message with pleasure. The road between us may be long, but friendship knows no distance. Until we meet again!\n\n— ${npc.name}`, gold: 0, items: disposition >= 40 ? [{ name: 'Friendship Token', description: 'A small token of friendship, warm to the touch.', type: 'material', rarity: 'common' }] : undefined },
+    ]
+  }
+
+  // Suppress unused variable warning
+  void playerMessage
+
+  return templates[Math.floor(Math.random() * templates.length)]
+}
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -99,6 +151,7 @@ const defaultCharacter: FantasyCharacter = {
   bestiary: [],
   npcEncounters: {},
   mailbox: [],
+  pendingReplies: [],
 }
 
 export interface GameStore {
@@ -164,6 +217,8 @@ export interface GameStore {
   updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => void
   markMailRead: (mailId: string) => void
   claimMailGold: (mailId: string) => void
+  sendMail: (toNpcId: string, message: string) => boolean
+  claimMailItems: (mailId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -407,6 +462,44 @@ export const useGameStore = create<GameStore>()(
                   day: newDay,
                 })
               }
+            }
+
+            // Process pending mail replies
+            if (newDay > oldDay && updatedCharacter.pendingReplies && updatedCharacter.pendingReplies.length > 0) {
+              const readyReplies = updatedCharacter.pendingReplies.filter(r => newDay >= r.replyDay)
+              const remaining = updatedCharacter.pendingReplies.filter(r => newDay < r.replyDay)
+
+              for (const reply of readyReplies) {
+                const npc = getNPCById(reply.toNpcId)
+                if (!npc) continue
+
+                const disposition = updatedCharacter.npcEncounters?.[reply.toNpcId]?.disposition ?? 0
+                const replyMsg = generateNPCReply(npc, reply.playerMessage, disposition)
+
+                if (!updatedCharacter.mailbox) updatedCharacter.mailbox = []
+                updatedCharacter.mailbox.push({
+                  id: `mail-reply-${reply.toNpcId}-${newDay}-${Math.floor(Math.random() * 10000)}`,
+                  fromNpcId: reply.toNpcId,
+                  fromName: reply.toNpcName,
+                  fromIcon: reply.toNpcIcon,
+                  subject: `Re: Your message`,
+                  body: replyMsg.body,
+                  attachedGold: replyMsg.gold > 0 ? replyMsg.gold : undefined,
+                  attachedItems: replyMsg.items?.length ? replyMsg.items : undefined,
+                  read: false,
+                  day: newDay,
+                })
+              }
+              updatedCharacter = { ...updatedCharacter, pendingReplies: remaining }
+            }
+
+            // Mailbox storage limits: max 50 messages, auto-delete old read messages
+            if (newDay > oldDay && updatedCharacter.mailbox && updatedCharacter.mailbox.length > 50) {
+              const sorted = [...updatedCharacter.mailbox].sort((a, b) => {
+                if (a.read !== b.read) return a.read ? 1 : -1
+                return b.day - a.day
+              })
+              updatedCharacter = { ...updatedCharacter, mailbox: sorted.slice(0, 50) }
             }
 
             // Weather change every WEATHER_CHANGE_INTERVAL distance steps
@@ -1888,6 +1981,61 @@ export const useGameStore = create<GameStore>()(
             mail.attachedGold = 0
             mail.read = true
           }
+        }))
+      },
+
+      sendMail: (toNpcId: string, message: string) => {
+        const char = get().getSelectedCharacter()
+        if (!char) return false
+
+        const region = getRegion(char.currentRegion ?? 'green_meadows')
+        const sendCost = Math.max(5, Math.round(5 * region.difficultyMultiplier))
+        if ((char.gold ?? 0) < sendCost) return false
+
+        const npc = getNPCById(toNpcId)
+        if (!npc) return false
+
+        const currentDay = calculateDay(char.distance ?? 0)
+        const replyDelay = 1 + Math.floor(Math.random() * 5) // 1-5 days
+
+        set(produce((state: GameStore) => {
+          const c = state.gameState.characters.find(ch => ch.id === char.id)
+          if (!c) return
+          c.gold -= sendCost
+          if (!c.pendingReplies) c.pendingReplies = []
+          c.pendingReplies.push({
+            id: `reply-${toNpcId}-${currentDay}-${Math.floor(Math.random() * 10000)}`,
+            toNpcId,
+            toNpcName: npc.name,
+            toNpcIcon: npc.icon,
+            playerMessage: message,
+            sentDay: currentDay,
+            replyDay: currentDay + replyDelay,
+          })
+        }))
+        return true
+      },
+
+      claimMailItems: (mailId: string) => {
+        set(produce((state: GameStore) => {
+          const char = state.gameState.characters.find(c => c.id === state.gameState.selectedCharacterId)
+          if (!char?.mailbox) return
+          const mail = char.mailbox.find(m => m.id === mailId)
+          if (!mail?.attachedItems || mail.itemsClaimed) return
+          // Add items to inventory
+          for (const item of mail.attachedItems) {
+            if (!char.inventory) char.inventory = []
+            char.inventory.push({
+              id: `mail-item-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+              name: item.name,
+              description: item.description,
+              type: (item.type as 'consumable' | 'equipment' | 'quest' | 'misc' | 'spell_scroll' | 'trade_good') ?? 'consumable',
+              rarity: (item.rarity as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary') ?? 'common',
+              quantity: 1,
+            })
+          }
+          mail.itemsClaimed = true
+          mail.read = true
         }))
       },
 
