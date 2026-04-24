@@ -62,6 +62,7 @@ import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
 import { StablePanel } from './StablePanel'
 import { MailboxPanel } from './MailboxPanel'
+import { NoticeBoard } from './NoticeBoard'
 import { TownHub } from './TownHub'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
@@ -164,6 +165,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showNPCPanel, setShowNPCPanel] = useState(false)
   const [showStablePanel, setShowStablePanel] = useState(false)
   const [showMailbox, setShowMailbox] = useState(false)
+  const [showNoticeBoard, setShowNoticeBoard] = useState(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
   const [townNPC, setTownNPC] = useState<GameNPC | null>(null)
 
@@ -176,9 +178,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     setDecisionGracePeriod(false)
   }, [gameState?.decisionPoint?.id])
 
-  // Clear town NPC panel when decision point changes (e.g. player leaves town)
+  // Clear town NPC panel and notice board when decision point changes (e.g. player leaves town)
   useEffect(() => {
     setTownNPC(null)
+    setShowNoticeBoard(false)
   }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
@@ -266,6 +269,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setShowMailbox(true)
       return
     }
+    // Notice Board: open the notice board panel client-side
+    if (optionId === 'visit-notice-board') {
+      setShowNoticeBoard(true)
+      return
+    }
     // Town NPC: open dialogue panel for the selected NPC (client-side only)
     if (optionId.startsWith('talk-to-npc-')) {
       const npcId = optionId.replace('talk-to-npc-', '')
@@ -294,7 +302,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           optionId === 'continue-exploring' || optionId === 'visit-shop' ||
           optionId === 'back-to-town' || optionId === 'pay-bounty' ||
           optionId === 'fight-secret-boss' || optionId === 'visit-stable' ||
-          optionId === 'check-mailbox' || optionId === 'rest-at-inn' ||
+          optionId === 'check-mailbox' || optionId === 'visit-notice-board' || optionId === 'rest-at-inn' ||
           optionId === 'hire-transport' || optionId === 'leave-town' ||
           optionId === 'enter-town'
         if (!skipResults && result.outcomeDescription) {
@@ -656,6 +664,17 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     Object.entries(character?.npcEncounters ?? {}).map(([id, enc]) => [id, enc.disposition ?? 0])
                   )}
                 />
+                {showNoticeBoard && character && (
+                  <NoticeBoard
+                    character={character}
+                    activeQuest={gameState.activeQuest ?? null}
+                    onAcceptQuest={(quest) => {
+                      useGameStore.getState().setActiveQuest(quest)
+                      setShowNoticeBoard(false)
+                    }}
+                    onClose={() => setShowNoticeBoard(false)}
+                  />
+                )}
                 {townNPC && character && (
                   <NPCDialoguePanel
                     npc={townNPC}
