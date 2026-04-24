@@ -130,6 +130,7 @@ export interface GameStore {
   setActiveMercenary: (mercenaryId: string) => void
   addPartyMember: (member: PartyMember) => boolean
   removePartyMember: (memberId: string) => void
+  recruitTavernMember: (member: PartyMember) => boolean
   renamePartyMember: (memberId: string, newName: string) => void
   healPartyMember: (memberId: string, amount: number) => void
   addHeirloom: (item: Item) => void
@@ -982,6 +983,26 @@ export const useGameStore = create<GameStore>()(
             char.party.push(member)
           })
         )
+        return true
+      },
+
+      recruitTavernMember: (member: PartyMember) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+
+        if ((char.party?.length ?? 0) >= MAX_PARTY_SIZE) return false
+        if (char.gold < (member.recruitCost ?? 0)) return false
+        if (char.party?.some(m => m.id === member.id)) return false
+
+        set(produce((draft: GameStore) => {
+          const dChar = draft.gameState.characters[idx]
+          dChar.gold -= member.recruitCost ?? 0
+          if (!dChar.party) dChar.party = []
+          dChar.party.push(member)
+        }))
         return true
       },
 
