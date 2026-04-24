@@ -66,8 +66,17 @@ export function generateLandmarks(
   const seed = `${regionId}-${characterId}-${visitCount}`
   const rng = seededRandom(seed)
 
-  // Pick 3 landmarks from templates (shuffled deterministically)
-  const selected = seededShuffle([...templates], rng).slice(0, 3) as LandmarkTemplate[]
+  // Pick 3 landmarks, always including at least 1 town if available
+  const towns = templates.filter(t => t.type === 'town')
+  const nonTowns = templates.filter(t => t.type !== 'town')
+  let selected: LandmarkTemplate[]
+  if (towns.length > 0) {
+    const shuffledTowns = seededShuffle([...towns], rng)
+    const shuffledNonTowns = seededShuffle([...nonTowns], rng)
+    selected = [shuffledTowns[0], ...shuffledNonTowns.slice(0, 2)] as LandmarkTemplate[]
+  } else {
+    selected = seededShuffle([...templates], rng).slice(0, 3) as LandmarkTemplate[]
+  }
 
   // Scale positions within the region size (margin = 10% of size)
   const margin = regionSize * 0.1
