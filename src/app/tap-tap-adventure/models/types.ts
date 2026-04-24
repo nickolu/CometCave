@@ -137,3 +137,5 @@ export type {
   MetaProgressionStateSchema,
 } from './metaProgression'
 export type { BestiaryEntry, BestiaryEntrySchema } from './bestiary'
+export type { PartyMember } from './partyMember'
+export { PartyMemberSchema, MAX_PARTY_SIZE } from './partyMember'
