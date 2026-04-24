@@ -15,6 +15,28 @@ import { moveToward, hasArrived, Vec2 } from '@/app/tap-tap-adventure/lib/moveme
 
 const BASE_DISTANCE = 1
 
+function getBypassDiscoveryTier(distance: number, isExplored: boolean, isHidden: boolean = false): 'hidden' | 'distant' | 'unknown' | 'revealed' {
+  if (isExplored) return 'revealed'
+  if (isHidden) {
+    if (distance > 100) return 'hidden'
+    if (distance > 20) return 'unknown'
+    return 'revealed'
+  }
+  if (distance > 100) return 'hidden'
+  if (distance > 50) return 'distant'
+  if (distance > 20) return 'unknown'
+  return 'revealed'
+}
+
+function getBypassDisplayName(tier: string, realName: string, realIcon: string): { name: string; icon: string } {
+  switch (tier) {
+    case 'hidden': return { name: 'Distant landmark', icon: '🔍' }
+    case 'distant': return { name: 'Distant landmark', icon: '🔍' }
+    case 'unknown': return { name: 'Unknown landmark', icon: '❓' }
+    default: return { name: realName, icon: realIcon }
+  }
+}
+
 export async function moveForwardService(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[] = []
@@ -158,6 +180,21 @@ export async function moveForwardService(
       ? hasArrived(charPos, targetPos)
       : newPositionInRegion >= (activeLandmark?.distanceFromEntry ?? Infinity)
 
+    // Auto-reveal hidden landmarks within 20km
+    if (activeLandmark && activeLandmark.hidden) {
+      const charPos2d = updatedPosition
+      const targetPos2d = activeLandmark.position
+      const distToHidden = (charPos2d && targetPos2d)
+        ? Math.sqrt(Math.pow(charPos2d.x - targetPos2d.x, 2) + Math.pow(charPos2d.y - targetPos2d.y, 2))
+        : activeLandmark.distanceFromEntry - newPositionInRegion
+      if (distToHidden <= 20) {
+        const revealedLandmarks = landmarkState.landmarks.map((lm, i) =>
+          i === activeTargetIndex ? { ...lm, hidden: false } : lm
+        )
+        ;(landmarkState as typeof landmarkState).landmarks = revealedLandmarks
+      }
+    }
+
     if (activeLandmark && !activeLandmark.hidden && hasArrivedAtLandmark) {
       const arrivalEventId = `landmark-arrival-${Date.now()}`
 
@@ -178,15 +215,18 @@ export async function moveForwardService(
       for (let i = activeTargetIndex + 1; i < landmarkState.landmarks.length; i++) {
         const nextLm = landmarkState.landmarks[i]
         const dist = nextLm.distanceFromEntry - newPositionInRegion
+        const tier = getBypassDiscoveryTier(dist, nextLm.explored ?? false, nextLm.hidden ?? false)
+        if (tier === 'hidden') continue
+        const display = getBypassDisplayName(tier, nextLm.name, nextLm.icon)
         bypassOptions.push({
           id: `bypass-toward-${i}`,
-          text: `${nextLm.icon} Head toward ${nextLm.name} (${dist} steps)`,
+          text: `${display.icon} Head toward ${display.name} (${dist} km)`,
           successProbability: 1.0,
-          successDescription: `You leave ${activeLandmark.name} behind and head toward ${nextLm.name}.`,
+          successDescription: `You leave ${activeLandmark.name} behind and head toward ${display.name}.`,
           successEffects: {},
           failureDescription: '',
           failureEffects: {},
-          resultDescription: `You pass by ${activeLandmark.name} and head toward ${nextLm.name}.`,
+          resultDescription: `You pass by ${activeLandmark.name} and head toward ${display.name}.`,
         })
       }
 
@@ -194,7 +234,7 @@ export async function moveForwardService(
       const exitDist = (landmarkState.regionLength ?? 200) - newPositionInRegion
       bypassOptions.push({
         id: `bypass-toward-exit`,
-        text: `🚪 Head toward ${region.name} border (${exitDist} steps)`,
+        text: `🚪 Head toward ${region.name} border (${exitDist} km)`,
         successProbability: 1.0,
         successDescription: `You leave ${activeLandmark.name} behind and continue toward the edge of ${region.name}.`,
         successEffects: {},
