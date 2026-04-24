@@ -30,7 +30,7 @@ export const FantasyCharacterSchema = z.object({
   level: z.number(),
   abilities: z.array(FantasyAbilitySchema),
   locationId: z.string(),
-  gold: z.number(),
+  gold: z.number().min(0),
   reputation: z.number(),
   distance: z.number(),
   status: z.enum(['active', 'retired', 'dead']),

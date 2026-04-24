@@ -1,5 +1,6 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
+import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 
 export interface UseItemResult {
   character: FantasyCharacter
@@ -37,7 +38,7 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
   const effectMessages: string[] = []
 
   if (effects.gold) {
-    updatedCharacter.gold += effects.gold
+    updatedCharacter.gold = clampGold(updatedCharacter.gold + effects.gold)
     effectMessages.push(`${effects.gold > 0 ? '+' : ''}${effects.gold} Gold`)
   }
   if (effects.reputation) {

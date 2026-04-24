@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { ACHIEVEMENTS } from '@/app/tap-tap-adventure/config/achievements'
-import { clampReputation } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { clampReputation, clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { getMetaBonuses, MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
@@ -894,7 +894,7 @@ export const useGameStore = create<GameStore>()(
             const updatedRoster = [...(char.mercenaryRoster ?? []), fullMercenary]
             state.gameState.characters[charIndex] = {
               ...char,
-              gold: char.gold - mercenary.recruitCost,
+              gold: clampGold(char.gold - mercenary.recruitCost),
               mercenaryRoster: updatedRoster,
               activeMercenary: char.activeMercenary ?? fullMercenary,
             }
@@ -1096,7 +1096,7 @@ export const useGameStore = create<GameStore>()(
             if (!char.campState) {
               char.campState = { buildingLevels: {} }
             }
-            char.gold -= cost
+            char.gold = clampGold(char.gold - cost)
             char.campState.buildingLevels[buildingId] = currentLevel + 1
           })
         )
@@ -1152,7 +1152,7 @@ export const useGameStore = create<GameStore>()(
             )
             if (charIndex === -1) return
             const char = state.gameState.characters[charIndex]
-            char.gold -= gear.price
+            char.gold = clampGold(char.gold - gear.price)
             char.inventory = [...char.inventory, newItem]
           })
         )
@@ -1233,7 +1233,7 @@ export const useGameStore = create<GameStore>()(
             if (charIndex === -1) return
             const char = state.gameState.characters[charIndex]
             // Deduct gold
-            char.gold -= cost
+            char.gold = clampGold(char.gold - cost)
             // Update equipped item
             const currentEquipment = char.equipment ?? { weapon: null, armor: null, accessory: null }
             char.equipment = {
@@ -1922,6 +1922,9 @@ export function useGameStateBuilder() {
     // Clamp reputation if it's being updated
     if (characterUpdate.reputation !== undefined) {
       characterUpdate = { ...characterUpdate, reputation: clampReputation(characterUpdate.reputation) }
+    }
+    if (characterUpdate.gold !== undefined) {
+      characterUpdate = { ...characterUpdate, gold: clampGold(characterUpdate.gold) }
     }
 
     // Create a new character object and recalculate level from distance
