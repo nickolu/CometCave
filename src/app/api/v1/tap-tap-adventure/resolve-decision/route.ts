@@ -21,6 +21,42 @@ function hashString(str: string): number {
   return hash
 }
 
+function buildTownEntryHints(character: FantasyCharacter): string {
+  const hints: string[] = []
+
+  // Unread mail
+  const currentDay = Math.floor((character.distance ?? 0) / 50) + 1
+  const unreadMail = (character.mailbox ?? []).filter(m => !m.read && m.day <= currentDay)
+  if (unreadMail.length > 0) {
+    hints.push(`📬 You have ${unreadMail.length} unread message${unreadMail.length > 1 ? 's' : ''} at the mailbox.`)
+  }
+
+  // Pending mail replies
+  const pendingReplies = (character.pendingReplies ?? []).filter(r => r.replyDay <= currentDay)
+  if (pendingReplies.length > 0) {
+    hints.push(`✉️ ${pendingReplies.length} letter${pendingReplies.length > 1 ? 's have' : ' has'} arrived in response to your messages.`)
+  }
+
+  // Low HP
+  const hp = character.hp ?? character.maxHp ?? 100
+  const maxHp = character.maxHp ?? 100
+  if (hp < maxHp * 0.5) {
+    hints.push(`🛏️ The innkeeper eyes your wounds with concern — you could use some rest.`)
+  }
+
+  // No active quest — hint about notice board
+  if (!character.mainQuest || character.mainQuest.status !== 'active') {
+    hints.push(`📋 The notice board might have work for an adventurer like you.`)
+  }
+
+  // Low gold
+  if ((character.gold ?? 0) <= 5) {
+    hints.push(`🪙 Your coin purse feels dangerously light.`)
+  }
+
+  return hints.length > 0 ? '\n\n' + hints.join('\n') : ''
+}
+
 type ResolveDecisionRequest = {
   character: FantasyCharacter
   decisionPoint: FantasyDecisionPoint
@@ -196,9 +232,10 @@ export async function POST(req: NextRequest) {
       }
 
       const regionId = character.currentRegion ?? 'green_meadows'
+      const entryHints = buildTownEntryHints(updatedCharacter)
       const bountyAtmosphere = townLandmark?.encounterPrompt
-        ? `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! ${townLandmark.encounterPrompt} What would you like to do?`
-        : `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}. What would you like to do?`
+        ? `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! ${townLandmark.encounterPrompt}${entryHints}\n\nWhat would you like to do?`
+        : `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}.${entryHints}\n\nWhat would you like to do?`
       const townHub = buildTownHubDecisionPoint({
         townName: townLandmark?.name ?? 'the town',
         prompt: bountyAtmosphere,
@@ -210,6 +247,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
@@ -255,9 +293,10 @@ export async function POST(req: NextRequest) {
         }
 
         const sneakRegionId = character.currentRegion ?? 'green_meadows'
+        const entryHints = buildTownEntryHints(character)
         const sneakAtmosphere = townLandmark?.encounterPrompt
-          ? `You slip past the guards! Keep a low profile — your bounty is still active. ${townLandmark.encounterPrompt} What would you like to do?`
-          : `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active. What would you like to do?`
+          ? `You slip past the guards! Keep a low profile — your bounty is still active. ${townLandmark.encounterPrompt}${entryHints}\n\nWhat would you like to do?`
+          : `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active.${entryHints}\n\nWhat would you like to do?`
         const townHub = buildTownHubDecisionPoint({
           townName: townLandmark?.name ?? 'the town',
           prompt: sneakAtmosphere,
@@ -269,6 +308,7 @@ export async function POST(req: NextRequest) {
             hasMailbox: townLandmark.hasMailbox,
             hasNoticeBoard: townLandmark.hasNoticeBoard,
             hasTransport: townLandmark.hasTransport,
+            hasCrafting: townLandmark.hasCrafting,
           } : undefined,
         })
 
@@ -358,9 +398,10 @@ export async function POST(req: NextRequest) {
       }
 
       const enterRegionId = character.currentRegion ?? 'green_meadows'
+      const entryHints = buildTownEntryHints(character)
       const enterAtmosphere = townLandmark?.encounterPrompt
-        ? `${townLandmark.encounterPrompt} What would you like to do?`
-        : `Welcome to ${townLandmark?.name ?? 'the town'}! What would you like to do?`
+        ? `${townLandmark.encounterPrompt}${entryHints}\n\nWhat would you like to do?`
+        : `Welcome to ${townLandmark?.name ?? 'the town'}!${entryHints}\n\nWhat would you like to do?`
       const townHub = buildTownHubDecisionPoint({
         townName: townLandmark?.name ?? 'the town',
         prompt: enterAtmosphere,
@@ -372,6 +413,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
@@ -407,6 +449,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
@@ -459,6 +502,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
@@ -528,6 +572,7 @@ export async function POST(req: NextRequest) {
             hasMailbox: townLandmark.hasMailbox,
             hasNoticeBoard: townLandmark.hasNoticeBoard,
             hasTransport: townLandmark.hasTransport,
+            hasCrafting: townLandmark.hasCrafting,
           } : undefined,
         })
         return NextResponse.json({
@@ -610,6 +655,7 @@ export async function POST(req: NextRequest) {
             hasMailbox: ttTownLandmark.hasMailbox,
             hasNoticeBoard: ttTownLandmark.hasNoticeBoard,
             hasTransport: ttTownLandmark.hasTransport,
+            hasCrafting: ttTownLandmark.hasCrafting,
           } : undefined,
         })
         return NextResponse.json({
@@ -673,6 +719,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
       return NextResponse.json({
@@ -706,6 +753,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
@@ -741,6 +789,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
@@ -776,6 +825,7 @@ export async function POST(req: NextRequest) {
           hasMailbox: townLandmark.hasMailbox,
           hasNoticeBoard: townLandmark.hasNoticeBoard,
           hasTransport: townLandmark.hasTransport,
+          hasCrafting: townLandmark.hasCrafting,
         } : undefined,
       })
 
