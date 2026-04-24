@@ -29,11 +29,12 @@ export interface ResolveDecisionResponse {
   mountDamage?: number
   mountDied?: boolean
   decisionPoint?: FantasyDecisionPoint | null
+  shopEvent?: boolean
 }
 
 export function useResolveDecisionMutation() {
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, addStoryEvent, commit, setCombatState, setDecisionPoint, updateSelectedCharacter } = useGameStateBuilder()
+  const { addItem, addStoryEvent, commit, setCombatState, setDecisionPoint, setShopState, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
@@ -301,6 +302,21 @@ export function useResolveDecisionMutation() {
       if (data.decisionPoint) {
         soundEngine.playEvent()
         setDecisionPoint(data.decisionPoint)
+      }
+
+      // If server returned a shopEvent flag, generate shop items and open the shop
+      if (data.shopEvent) {
+        soundEngine.playGold()
+        const currentCharacter = getSelectedCharacter()
+        const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character: currentCharacter ?? data.updatedCharacter }),
+        })
+        if (shopRes.ok) {
+          const shopData = await shopRes.json()
+          setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
+        }
       }
 
       // Check if this event grants a mount (mount discovery events)
