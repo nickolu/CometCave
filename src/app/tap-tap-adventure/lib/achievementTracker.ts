@@ -88,7 +88,7 @@ function getProgress(
   if (achievementId === 'combat_speedrunner') {
     const existing = currentAchievements.find(a => a.achievementId === achievementId)
     if (existing?.completed) return existing.progress
-    if (event?.type === 'combat_win' && event.turnCount <= 3) return 1
+    if (event?.type === 'combat_win' && (event.turnCount ?? 999) <= 3) return 1
     return existing?.progress ?? 0
   }
 
@@ -96,7 +96,7 @@ function getProgress(
   if (achievementId === 'combat_underdog') {
     const existing = currentAchievements.find(a => a.achievementId === achievementId)
     if (existing?.completed) return existing.progress
-    if (event?.type === 'combat_win' && event.enemyLevel - event.playerLevel >= 3) return 1
+    if (event?.type === 'combat_win' && (event.enemyLevel ?? 0) - (event.playerLevel ?? 999) >= 3) return 1
     return existing?.progress ?? 0
   }
 
@@ -104,7 +104,7 @@ function getProgress(
   if (achievementId === 'combat_flawless') {
     const existing = currentAchievements.find(a => a.achievementId === achievementId)
     if (existing?.completed) return existing.progress
-    if (event?.type === 'combat_win' && event.isBoss && event.partyTotal > 0 && event.partyAlive === event.partyTotal) return 1
+    if (event?.type === 'combat_win' && event.isBoss && (event.partyTotal ?? 0) > 0 && event.partyAlive === event.partyTotal) return 1
     return existing?.progress ?? 0
   }
 
@@ -112,7 +112,7 @@ function getProgress(
   if (achievementId === 'combat_party_leader') {
     const existing = currentAchievements.find(a => a.achievementId === achievementId)
     if (existing?.completed) return existing.progress
-    if (event?.type === 'combat_win' && event.partyAlive >= 3) return 1
+    if (event?.type === 'combat_win' && (event.partyAlive ?? 0) >= 3) return 1
     return existing?.progress ?? 0
   }
 
@@ -144,7 +144,7 @@ function getProgress(
   if (achievementId === 'combat_endurance') {
     const existing = currentAchievements.find(a => a.achievementId === achievementId)
     if (existing?.completed) return existing.progress
-    if (event?.type === 'combat_win' && event.turnCount >= 15) return 1
+    if (event?.type === 'combat_win' && (event.turnCount ?? 0) >= 15) return 1
     return existing?.progress ?? 0
   }
 
