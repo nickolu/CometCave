@@ -1160,7 +1160,7 @@ export async function POST(req: NextRequest) {
         const continueDecision: FantasyDecisionPoint = {
           id: `decision-continue-${Date.now()}`,
           eventId: `continue-explore-${Date.now()}`,
-          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover... (Encounter ${depth} of ~${maxDepth})`,
+          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover...`,
           options: [
             {
               id: 'continue-exploring',
