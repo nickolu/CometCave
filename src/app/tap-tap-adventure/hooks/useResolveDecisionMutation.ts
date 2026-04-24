@@ -41,11 +41,19 @@ export function useResolveDecisionMutation() {
       optionId,
       onSuccess,
       onResourceDelta,
+      onResult,
     }: {
       decisionPoint: FantasyDecisionPoint
       optionId: string
       onSuccess?: () => void
       onResourceDelta?: (delta: ResolveDecisionResponse['resourceDelta']) => void
+      onResult?: (result: {
+        outcomeDescription?: string
+        resourceDelta?: { gold?: number; reputation?: number }
+        rewardItems?: Item[]
+        mountDamage?: number
+        mountDied?: boolean
+      }) => void
     }) => {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
@@ -344,6 +352,14 @@ export function useResolveDecisionMutation() {
           }
         }
       }
+
+      onResult?.({
+        outcomeDescription: newStoryEvent.outcomeDescription,
+        resourceDelta: data.resourceDelta,
+        rewardItems: rewardItems,
+        mountDamage: data.mountDamage,
+        mountDied: data.mountDied,
+      })
 
       commit()
       onSuccess?.()

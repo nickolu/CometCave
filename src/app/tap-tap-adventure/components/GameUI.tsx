@@ -57,6 +57,7 @@ import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { ContactsList } from './ContactsList'
+import { EventDialog, EventResult } from './EventDialog'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -155,6 +156,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
   const [showNPCPanel, setShowNPCPanel] = useState(false)
+  const [eventResult, setEventResult] = useState<EventResult | null>(null)
 
   useEffect(() => {
     if (gameState?.decisionPoint && !gameState.decisionPoint.resolved) {
@@ -249,6 +251,23 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
         const currentDP = useGameStore.getState().gameState.decisionPoint
         if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
           setDecisionPoint(null)
+        }
+      },
+      onResult: (result) => {
+        // Don't show results for options that navigate away (bypass, travel, explore-landmark, etc)
+        const skipResults = optionId.startsWith('bypass-') || optionId.startsWith('travel-') ||
+          optionId === 'explore-landmark' || optionId === 'leave-landmark' ||
+          optionId === 'continue-exploring' || optionId === 'visit-shop' ||
+          optionId === 'back-to-town' || optionId === 'pay-bounty' ||
+          optionId === 'fight-secret-boss'
+        if (!skipResults && result.outcomeDescription) {
+          setEventResult({
+            outcomeDescription: result.outcomeDescription,
+            resourceDelta: result.resourceDelta,
+            rewardItems: result.rewardItems?.map(item => ({ name: item.name, description: item.description })),
+            mountDamage: result.mountDamage,
+            mountDied: result.mountDied,
+          })
         }
       },
       onResourceDelta: (delta) => {
@@ -538,137 +557,9 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               />
             ) : gameState.shopState?.isOpen ? (
               <ShopUI />
-            ) : gameState.decisionPoint ? (
-              <>
-                {(() => {
-                  const isLandmarkArrival = gameState.decisionPoint?.options?.some(
-                    (o: { id: string }) => o.id === 'explore-landmark' || o.id === 'bypass-landmark'
-                  )
-                  // Find landmark data from character state (the one we just arrived at)
-                  // nextLandmarkIndex has NOT been incremented yet at this point (server didn't increment it)
-                  const arrivalLandmark = isLandmarkArrival && character?.landmarkState
-                    ? character.landmarkState.landmarks[character.landmarkState.nextLandmarkIndex]
-                    : null
-
-                  if (arrivalLandmark) {
-                    return (
-                      <div className="text-center mb-4 pb-2 border-b border-indigo-600/40">
-                        <div className="text-3xl mb-1">{arrivalLandmark.icon}</div>
-                        <h4 className="font-semibold uppercase text-indigo-300">{arrivalLandmark.name}</h4>
-                        <p className="text-xs text-slate-400 italic mt-1">{arrivalLandmark.description}</p>
-                        {arrivalLandmark.hasShop && (
-                          <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-yellow-900/40 border border-yellow-600/40 text-yellow-300">
-                            🛒 Shop Available
-                          </span>
-                        )}
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <h4 className={`font-semibold w-full text-center uppercase border-b pb-2 mb-4 ${
-                      gameState.decisionPoint?.isLegendary
-                        ? 'text-amber-400 border-amber-500/50'
-                        : 'border-[#3a3c56]'
-                    }`}>
-                      {gameState.decisionPoint?.isLegendary ? '✨ Legendary Encounter ✨' : 'Event'}
-                    </h4>
-                  )
-                })()}
-                {showNPCPanel && socialEncounter && character && (
-                  <div className="mt-2">
-                    <NPCDialoguePanel
-                      npc={socialEncounter.npc}
-                      characterName={character.name}
-                      characterClass={character.class}
-                      characterLevel={character.level}
-                      reputation={character.reputation}
-                      region={character.currentRegion ?? 'green_meadows'}
-                      characterCharisma={character.charisma ?? 5}
-                      activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
-                      disposition={character.npcEncounters?.[socialEncounter.npc.id]?.disposition ?? 0}
-                      hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
-                      hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
-                      onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
-                        recordNPCEncounter(socialEncounter.npc.id, dispositionDelta, reward, revealLandmark)
-                      }}
-                      onClose={() => {
-                        setShowNPCPanel(false)
-                        clearSocialEncounter()
-                        setDecisionPoint(null)
-                      }}
-                    />
-                  </div>
-                )}
-                {!showNPCPanel && !gameState.decisionPoint.resolved && (
-                  <div>
-                    <div className="font-semibold mb-6 break-words">{gameState.decisionPoint.prompt}</div>
-                    {resolveDecisionPending ? (
-                      <div className="flex flex-col items-center gap-3 py-6 text-slate-400">
-                        <LoaderCircle className="animate-spin h-6 w-6" />
-                        <span className="text-sm">Resolving your choice...</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 mt-2">
-                        {gameState.decisionPoint.options.map((option: { id: string; text: string; successEffects?: { reputation?: number }; failureEffects?: { reputation?: number }; effects?: { reputation?: number } }, index: number) => {
-                          if (!option) return null
-                          if (!gameState.decisionPoint) return null
-
-                          // Enrich crossroads travel options with region data
-                          const isTravelOption = option.id.startsWith('travel-')
-                          const travelRegionId = isTravelOption ? option.id.replace('travel-', '') : null
-                          const travelRegion = travelRegionId ? REGIONS[travelRegionId] : null
-                          const diffStyle = travelRegion ? DIFFICULTY_STYLES[travelRegion.difficulty] : null
-                          const elemStyle = travelRegion && travelRegion.element !== 'none' ? ELEMENT_STYLES[travelRegion.element] : null
-                          const borderColor = diffStyle
-                            ? travelRegion!.difficulty === 'easy' ? 'border-green-600/50'
-                              : travelRegion!.difficulty === 'medium' ? 'border-yellow-600/50'
-                              : travelRegion!.difficulty === 'hard' ? 'border-orange-600/50'
-                              : travelRegion!.difficulty === 'very_hard' ? 'border-red-600/50'
-                              : 'border-purple-600/50'
-                            : 'border-[#3a3c56]'
-
-                          return (
-                            <Button
-                              key={option.id}
-                              className={`block w-full text-left whitespace-normal h-auto border bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-3 text-base mt-2 rounded disabled:opacity-60 ${borderColor}`}
-                              disabled={resolveDecisionPending || decisionGracePeriod}
-                              onClick={() => {
-                                handleResolveDecision(option.id)
-                              }}
-                            >
-                              <span className="hidden sm:inline text-slate-400 mr-2 text-xs font-mono">[{index + 1}]</span>
-                              {option.text}
-                              {travelRegion && (
-                                <span className="flex items-center gap-1.5 mt-1.5">
-                                  {diffStyle && (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${diffStyle.color}`}>
-                                      {diffStyle.label}
-                                    </span>
-                                  )}
-                                  {elemStyle && (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${elemStyle.color}`}>
-                                      {travelRegion.element}
-                                    </span>
-                                  )}
-                                  {travelRegion.minLevel > 0 && (
-                                    <span className="text-[10px] text-slate-500">
-                                      Lv.{travelRegion.minLevel}+
-                                    </span>
-                                  )}
-                                </span>
-                              )}
-                            </Button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
             ) : (
               <>
-                {/* Region info */}
+                {/* Region info — always visible behind the event dialog */}
                 {(() => {
                   const dist = character?.distance ?? 0
                   const region = getRegion(character?.currentRegion ?? 'green_meadows')
@@ -742,6 +633,66 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 <div className="select-text">
                   <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
                 </div>
+
+                {/* Event dialog overlay — shown when there's an active decision point or pending result */}
+                {(gameState.decisionPoint || eventResult) && (() => {
+                  const isLandmarkArrival = gameState.decisionPoint?.options?.some(
+                    (o: { id: string }) => o.id === 'explore-landmark' || o.id === 'bypass-landmark'
+                  ) ?? false
+                  const arrivalLandmark = isLandmarkArrival && character?.landmarkState
+                    ? character.landmarkState.landmarks[character.landmarkState.nextLandmarkIndex]
+                    : null
+
+                  return (
+                    <EventDialog
+                      decisionPoint={gameState.decisionPoint ?? null}
+                      isLandmarkArrival={isLandmarkArrival}
+                      arrivalLandmark={arrivalLandmark ? {
+                        name: arrivalLandmark.name,
+                        icon: arrivalLandmark.icon,
+                        description: arrivalLandmark.description ?? '',
+                        hasShop: arrivalLandmark.hasShop ?? false,
+                      } : null}
+                      isLegendary={gameState.decisionPoint?.isLegendary ?? false}
+                      isResolving={resolveDecisionPending}
+                      decisionGracePeriod={decisionGracePeriod}
+                      onSelectOption={handleResolveDecision}
+                      eventResult={eventResult}
+                      onDismissResult={() => {
+                        setEventResult(null)
+                        // Only clear the decision point if it hasn't already been cleared by the server response
+                        const currentDP = useGameStore.getState().gameState.decisionPoint
+                        if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
+                          setDecisionPoint(null)
+                        }
+                      }}
+                      showNPCPanel={showNPCPanel}
+                      npcPanelContent={showNPCPanel && socialEncounter && character ? (
+                        <NPCDialoguePanel
+                          npc={socialEncounter.npc}
+                          characterName={character.name}
+                          characterClass={character.class}
+                          characterLevel={character.level}
+                          reputation={character.reputation}
+                          region={character.currentRegion ?? 'green_meadows'}
+                          characterCharisma={character.charisma ?? 5}
+                          activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
+                          disposition={character.npcEncounters?.[socialEncounter.npc.id]?.disposition ?? 0}
+                          hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                          hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                          onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                            recordNPCEncounter(socialEncounter.npc.id, dispositionDelta, reward, revealLandmark)
+                          }}
+                          onClose={() => {
+                            setShowNPCPanel(false)
+                            clearSocialEncounter()
+                            setDecisionPoint(null)
+                          }}
+                        />
+                      ) : null}
+                    />
+                  )
+                })()}
               </>
             )}
           </div>
