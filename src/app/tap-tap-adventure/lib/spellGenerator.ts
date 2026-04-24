@@ -184,25 +184,25 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
       {
         type: 'cha_boost',
         value: 2 + Math.floor(level / 5),
-        description: `Boosts your charisma by ${2 + Math.floor(level / 5)} for NPC interactions (10 steps).`,
+        description: `Boosts your charisma by ${2 + Math.floor(level / 5)} for NPC interactions (10 km).`,
         duration: 10,
       },
       {
         type: 'faster_travel',
         value: 2,
-        description: `Doubles your travel speed for 20 steps.`,
+        description: `Doubles your travel speed for 20 km.`,
         duration: 20,
       },
       {
         type: 'auto_stealth',
         value: 1,
-        description: `Renders you unseen, avoiding random encounters for 8 steps.`,
+        description: `Renders you unseen, avoiding random encounters for 8 km.`,
         duration: 8,
       },
       {
         type: 'loot_bonus',
         value: 1.25,
-        description: `Increases loot quality for 25 steps.`,
+        description: `Increases loot quality for 25 km.`,
         duration: 25,
       },
       {
