@@ -60,6 +60,7 @@ import { createPartyMember } from '@/app/tap-tap-adventure/lib/partyRecruitment'
 import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
 import { StablePanel } from './StablePanel'
+import { MailboxPanel } from './MailboxPanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -160,6 +161,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
   const [showNPCPanel, setShowNPCPanel] = useState(false)
   const [showStablePanel, setShowStablePanel] = useState(false)
+  const [showMailbox, setShowMailbox] = useState(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
 
   useEffect(() => {
@@ -251,6 +253,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setShowStablePanel(true)
       return
     }
+    // Mailbox: open the mailbox panel client-side
+    if (optionId === 'check-mailbox') {
+      setShowMailbox(true)
+      return
+    }
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
@@ -268,7 +275,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           optionId === 'explore-landmark' || optionId === 'leave-landmark' ||
           optionId === 'continue-exploring' || optionId === 'visit-shop' ||
           optionId === 'back-to-town' || optionId === 'pay-bounty' ||
-          optionId === 'fight-secret-boss' || optionId === 'visit-stable'
+          optionId === 'fight-secret-boss' || optionId === 'visit-stable' ||
+          optionId === 'check-mailbox'
         if (!skipResults && result.outcomeDescription) {
           setEventResult({
             outcomeDescription: result.outcomeDescription,
@@ -677,6 +685,13 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   <StablePanel
                     character={character}
                     onClose={() => setShowStablePanel(false)}
+                  />
+                )}
+                {/* Mailbox panel — shown when the player checks their mailbox */}
+                {showMailbox && character && (
+                  <MailboxPanel
+                    character={character}
+                    onClose={() => setShowMailbox(false)}
                   />
                 )}
                 {/* Event dialog overlay — shown when there's an active decision point or pending result */}

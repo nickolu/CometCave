@@ -224,6 +224,11 @@ export async function POST(req: NextRequest) {
             failureDescription: '', failureEffects: {}, resultDescription: 'You visit the stable.',
           },
           {
+            id: 'check-mailbox', text: '📬 Check Mailbox', successProbability: 1.0,
+            successDescription: 'You check your mailbox for messages.', successEffects: {},
+            failureDescription: '', failureEffects: {}, resultDescription: 'You check your mailbox.',
+          },
+          {
             id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
             successDescription: 'You leave.', successEffects: {},
             failureDescription: '', failureEffects: {}, resultDescription: `You leave.`,
@@ -300,6 +305,11 @@ export async function POST(req: NextRequest) {
               id: 'visit-stable', text: '🐴 Visit the Stable', successProbability: 1.0,
               successDescription: 'You visit the stable to manage your mounts.', successEffects: {},
               failureDescription: '', failureEffects: {}, resultDescription: 'You visit the stable.',
+            },
+            {
+              id: 'check-mailbox', text: '📬 Check Mailbox', successProbability: 1.0,
+              successDescription: 'You check your mailbox for messages.', successEffects: {},
+              failureDescription: '', failureEffects: {}, resultDescription: 'You check your mailbox.',
             },
             {
               id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
@@ -444,6 +454,16 @@ export async function POST(req: NextRequest) {
             resultDescription: 'You visit the stable.',
           },
           {
+            id: 'check-mailbox',
+            text: '📬 Check Mailbox',
+            successProbability: 1.0,
+            successDescription: 'You check your mailbox for messages.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check your mailbox.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -521,6 +541,16 @@ export async function POST(req: NextRequest) {
             failureDescription: '',
             failureEffects: {},
             resultDescription: 'You visit the stable.',
+          },
+          {
+            id: 'check-mailbox',
+            text: '📬 Check Mailbox',
+            successProbability: 1.0,
+            successDescription: 'You check your mailbox for messages.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check your mailbox.',
           },
           {
             id: 'leave-town',
@@ -615,6 +645,16 @@ export async function POST(req: NextRequest) {
             failureDescription: '',
             failureEffects: {},
             resultDescription: 'You visit the stable.',
+          },
+          {
+            id: 'check-mailbox',
+            text: '📬 Check Mailbox',
+            successProbability: 1.0,
+            successDescription: 'You check your mailbox for messages.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check your mailbox.',
           },
           {
             id: 'leave-town',
@@ -727,6 +767,16 @@ export async function POST(req: NextRequest) {
               failureDescription: '',
               failureEffects: {},
               resultDescription: 'You visit the stable.',
+            },
+            {
+              id: 'check-mailbox',
+              text: '📬 Check Mailbox',
+              successProbability: 1.0,
+              successDescription: 'You check your mailbox for messages.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You check your mailbox.',
             },
             {
               id: 'leave-town',
@@ -854,6 +904,16 @@ export async function POST(req: NextRequest) {
               resultDescription: 'You visit the stable.',
             },
             {
+              id: 'check-mailbox',
+              text: '📬 Check Mailbox',
+              successProbability: 1.0,
+              successDescription: 'You check your mailbox for messages.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You check your mailbox.',
+            },
+            {
               id: 'leave-town',
               text: '🚪 Leave Town',
               successProbability: 1.0,
@@ -958,6 +1018,16 @@ export async function POST(req: NextRequest) {
             resultDescription: 'You visit the stable.',
           },
           {
+            id: 'check-mailbox',
+            text: '📬 Check Mailbox',
+            successProbability: 1.0,
+            successDescription: 'You check your mailbox for messages.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check your mailbox.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -1035,6 +1105,16 @@ export async function POST(req: NextRequest) {
             resultDescription: 'You visit the stable.',
           },
           {
+            id: 'check-mailbox',
+            text: '📬 Check Mailbox',
+            successProbability: 1.0,
+            successDescription: 'You check your mailbox for messages.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check your mailbox.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -1058,6 +1138,95 @@ export async function POST(req: NextRequest) {
         resourceDelta: {},
         decisionPoint: townHub,
         stableOpen: true,
+      })
+    }
+
+    // Handle check-mailbox: client-side panel, server just returns town hub
+    if (optionId === 'check-mailbox') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `You check your mailbox. What else would you like to do in ${townName}?`,
+        options: [
+          {
+            id: 'visit-shop',
+            text: '🏪 Visit the Shop',
+            successProbability: 1.0,
+            successDescription: 'You browse the wares.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn',
+            text: `🛏️ Rest at the Inn (${innCost} gold)`,
+            successProbability: 1.0,
+            successDescription: 'You rest.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You rest.',
+          },
+          {
+            id: 'hire-transport',
+            text: '🐴 Hire Transport',
+            successProbability: 1.0,
+            successDescription: 'You check transport.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check transport.',
+          },
+          {
+            id: 'visit-stable',
+            text: '🐴 Visit the Stable',
+            successProbability: 1.0,
+            successDescription: 'You visit the stable.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the stable.',
+          },
+          {
+            id: 'check-mailbox',
+            text: '📬 Check Mailbox again',
+            successProbability: 1.0,
+            successDescription: 'You check your mailbox again.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check your mailbox.',
+          },
+          {
+            id: 'leave-town',
+            text: '🚪 Leave Town',
+            successProbability: 1.0,
+            successDescription: 'You leave.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You leave ${townName}.`,
+          },
+        ],
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You check your mailbox.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You check your mailbox for messages.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        mailboxOpen: true,
       })
     }
 

@@ -50,7 +50,7 @@ import {
 } from '@/app/tap-tap-adventure/lib/dailyChallengeTracker'
 import { DailyChallengeType } from '@/app/tap-tap-adventure/models/dailyChallenge'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
-import { getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
+import { getRelationshipTier, getNPCById } from '@/app/tap-tap-adventure/config/npcs'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
@@ -98,6 +98,7 @@ const defaultCharacter: FantasyCharacter = {
   factionReputations: {},
   bestiary: [],
   npcEncounters: {},
+  mailbox: [],
 }
 
 export interface GameStore {
@@ -161,6 +162,8 @@ export interface GameStore {
   clearNewItemId: (itemId: string) => void
   clearSocialEncounter: () => void
   updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => void
+  markMailRead: (mailId: string) => void
+  claimMailGold: (mailId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -367,6 +370,42 @@ export const useGameStore = create<GameStore>()(
                 ...updatedCharacter,
                 gold: newGold,
                 party: remainingParty,
+              }
+            }
+
+            // NPC unsolicited mail: friendly NPCs may send messages on day boundary
+            if (newDay > oldDay) {
+              const encounters = updatedCharacter.npcEncounters ?? {}
+              for (const [npcId, encounter] of Object.entries(encounters)) {
+                if ((encounter.disposition ?? 0) < 20) continue  // only friendly+ NPCs
+                const chance = 0.03 * (encounter.disposition / 100)  // ~1.5% at friendly, ~3% at bonded
+                if (Math.random() >= chance) continue
+
+                const npc = getNPCById(npcId)
+                if (!npc) continue
+
+                // Generate a simple message
+                const messages = [
+                  { subject: 'Greetings, friend', body: `I hope your travels are going well. Stay safe on the roads — I've heard reports of increased monster activity lately.\n\n— ${npc.name}`, gold: 0 },
+                  { subject: 'A small gift', body: `I found some extra coin and thought of you. Consider it a token of our friendship.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 10) },
+                  { subject: 'Word of advice', body: `An old friend once told me: the strongest warriors know when to retreat. Don't be afraid to rest at an inn when you need it.\n\n— ${npc.name}`, gold: 0 },
+                  { subject: 'Thinking of you', body: `It's been quiet here since your last visit. The townsfolk still talk about your adventures. Come visit when you can!\n\n— ${npc.name}`, gold: 0 },
+                  { subject: 'A lucky find', body: `I stumbled upon some gold while tidying up. You need it more than I do — put it toward your next adventure!\n\n— ${npc.name}`, gold: Math.floor(8 + Math.random() * 15) },
+                ]
+                const msg = messages[Math.floor(Math.random() * messages.length)]
+
+                if (!updatedCharacter.mailbox) updatedCharacter.mailbox = []
+                updatedCharacter.mailbox.push({
+                  id: `mail-${npcId}-${newDay}-${Math.floor(Math.random() * 10000)}`,
+                  fromNpcId: npcId,
+                  fromName: npc.name,
+                  fromIcon: npc.icon,
+                  subject: msg.subject,
+                  body: msg.body,
+                  attachedGold: msg.gold > 0 ? msg.gold : undefined,
+                  read: false,
+                  day: newDay,
+                })
               }
             }
 
@@ -1830,6 +1869,28 @@ export const useGameStore = create<GameStore>()(
       clearSocialEncounter: () => set(state => ({
         gameState: { ...state.gameState, socialEncounter: null }
       })),
+      markMailRead: (mailId: string) => {
+        set(produce((state: GameStore) => {
+          const char = state.gameState.characters.find(c => c.id === state.gameState.selectedCharacterId)
+          if (!char?.mailbox) return
+          const mail = char.mailbox.find(m => m.id === mailId)
+          if (mail) mail.read = true
+        }))
+      },
+
+      claimMailGold: (mailId: string) => {
+        set(produce((state: GameStore) => {
+          const char = state.gameState.characters.find(c => c.id === state.gameState.selectedCharacterId)
+          if (!char?.mailbox) return
+          const mail = char.mailbox.find(m => m.id === mailId)
+          if (mail?.attachedGold && mail.attachedGold > 0) {
+            char.gold += mail.attachedGold
+            mail.attachedGold = 0
+            mail.read = true
+          }
+        }))
+      },
+
       updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => {
         set(
           produce((state: GameStore) => {
@@ -1849,7 +1910,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 38,
+      version: 39,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -2037,6 +2098,10 @@ export const useGameStore = create<GameStore>()(
             // v38: Initialize mountRoster if missing
             if (!(char as FantasyCharacter).mountRoster) {
               ;(char as FantasyCharacter).mountRoster = []
+            }
+            // v39: Initialize mailbox if missing
+            if (!(char as FantasyCharacter).mailbox) {
+              ;(char as FantasyCharacter).mailbox = []
             }
           }
         }
