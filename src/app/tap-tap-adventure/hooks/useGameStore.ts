@@ -65,6 +65,7 @@ const defaultCharacter: FantasyCharacter = {
   locationId: '',
   gold: 0,
   reputation: 0,
+  bounty: 0,
   distance: 0,
   status: 'active',
   strength: 0,
@@ -1647,7 +1648,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 34,
+      version: 35,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1809,6 +1810,10 @@ export const useGameStore = create<GameStore>()(
               for (const item of (char as FantasyCharacter).inventory) {
                 if (item.type === 'misc') item.type = 'trade_good'
               }
+            }
+            // v35: Add bounty field
+            if ((char as FantasyCharacter).bounty === undefined) {
+              ;(char as FantasyCharacter).bounty = 0
             }
           }
         }

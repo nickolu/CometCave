@@ -32,6 +32,7 @@ export const FantasyCharacterSchema = z.object({
   locationId: z.string(),
   gold: z.number().min(0),
   reputation: z.number(),
+  bounty: z.number().min(0).optional().default(0),
   distance: z.number(),
   status: z.enum(['active', 'retired', 'dead']),
   strength: z.number(),

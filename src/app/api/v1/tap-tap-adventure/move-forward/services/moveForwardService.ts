@@ -216,13 +216,36 @@ export async function moveForwardService(
           id: `decision-${arrivalEventId}`,
           eventId: arrivalEventId,
           prompt: activeLandmark.type === 'town'
-            ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} The town is bustling with activity. What would you like to do?`
+            ? ((character.bounty ?? 0) > 0
+              ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} Guards at the gate eye you suspiciously — there's a bounty of ${character.bounty} gold on your head!`
+              : `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} The town is bustling with activity. What would you like to do?`)
             : (activeLandmark.explored
               ? `${activeLandmark.icon} You arrive at ${activeLandmark.name}. You've already explored this place thoroughly. What do you do?`
               : `${activeLandmark.icon} You arrive at ${activeLandmark.name}. ${activeLandmark.description} What do you do?`),
           options: activeLandmark.type === 'town'
             ? [
-                {
+                ...((character.bounty ?? 0) > 0 ? [
+                  {
+                    id: 'pay-bounty',
+                    text: `💰 Pay bounty (${character.bounty} gold) to enter`,
+                    successProbability: 1.0,
+                    successDescription: `You pay your ${character.bounty} gold bounty and the guards let you through.`,
+                    successEffects: {},
+                    failureDescription: '',
+                    failureEffects: {},
+                    resultDescription: `You pay your bounty and enter ${activeLandmark.name}.`,
+                  },
+                  {
+                    id: 'sneak-into-town',
+                    text: `🤫 Try to sneak in`,
+                    successProbability: 0.4,
+                    successDescription: `You slip past the guards unnoticed.`,
+                    successEffects: {},
+                    failureDescription: `The guards spot you! Your bounty increases.`,
+                    failureEffects: {},
+                    resultDescription: `You try to sneak past the guards.`,
+                  },
+                ] : [{
                   id: 'enter-town',
                   text: `🏘️ Enter ${activeLandmark.name}`,
                   successProbability: 1.0,
@@ -231,7 +254,7 @@ export async function moveForwardService(
                   failureDescription: '',
                   failureEffects: {},
                   resultDescription: `You enter ${activeLandmark.name}.`,
-                },
+                }]),
                 ...bypassOptions,
               ]
             : [
@@ -560,6 +583,72 @@ export async function moveForwardService(
         scenario,
       },
       landmarkProgress,
+    }
+  }
+
+  // Bounty hunter encounter: chance scales with bounty amount
+  const bountyAmount = character.bounty ?? 0
+  if (bountyAmount > 0 && newDistance > 20) {
+    const bountyHunterChance = Math.min(0.25, bountyAmount / 400) // up to 25% at 100+ bounty
+    if (Math.random() < bountyHunterChance) {
+      const hunterEventId = `bounty-hunter-${Date.now()}`
+      return {
+        character: {
+          ...updatedCharacter,
+          landmarkState: {
+            ...landmarkState,
+            positionInRegion: newPositionInRegion,
+            position: updatedPosition,
+          },
+        },
+        event: {
+          id: hunterEventId,
+          type: 'bounty_hunter',
+          characterId: character.id,
+          locationId: character.locationId,
+          timestamp: new Date().toISOString(),
+        },
+        decisionPoint: {
+          id: `decision-${hunterEventId}`,
+          eventId: hunterEventId,
+          prompt: `⚔️ A bounty hunter steps out from the shadows, blocking your path. "There's a bounty of ${bountyAmount} gold on your head. You can pay up, or we can settle this the hard way."`,
+          options: [
+            {
+              id: 'pay-bounty-hunter',
+              text: `💰 Pay the bounty (${bountyAmount} gold)`,
+              successProbability: 1.0,
+              successDescription: `You hand over ${bountyAmount} gold. The bounty hunter pockets it and disappears.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You pay the bounty hunter.`,
+            },
+            {
+              id: 'fight-bounty-hunter',
+              text: '⚔️ Fight the bounty hunter',
+              successProbability: 1.0,
+              successDescription: 'You draw your weapon!',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You fight the bounty hunter!',
+              triggersCombat: true,
+            },
+            {
+              id: 'flee-bounty-hunter',
+              text: '🏃 Try to flee',
+              successProbability: 0.5,
+              successDescription: 'You dash away before the hunter can react!',
+              successEffects: {},
+              failureDescription: 'The hunter is too fast — they corner you. The bounty increases!',
+              failureEffects: { bountyChange: Math.ceil(bountyAmount * 0.25) },
+              resultDescription: 'You try to run.',
+            },
+          ],
+          resolved: false,
+        },
+        landmarkProgress,
+      }
     }
   }
 
