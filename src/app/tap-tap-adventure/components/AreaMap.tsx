@@ -28,6 +28,7 @@ interface AreaMapProps {
   regionName: string
   regionIcon: string
   onSelectTarget: (index: number) => void
+  compact?: boolean
 }
 
 type DiscoveryTier = 'hidden' | 'distant' | 'unknown' | 'revealed'
@@ -59,6 +60,7 @@ export function AreaMap({
   regionName,
   regionIcon,
   onSelectTarget,
+  compact = false,
 }: AreaMapProps) {
   const worldW = regionBounds.width || 500
   const worldH = regionBounds.height || 500
@@ -96,11 +98,13 @@ export function AreaMap({
   const r100 = 100 * avgScale
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-400 font-medium">{regionIcon} {regionName} — Area Map</p>
-      </div>
-      <div className="relative w-full" style={{ paddingBottom: '100%' }}>
+    <div className={compact ? 'space-y-1' : 'space-y-2'}>
+      {!compact && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-400 font-medium">{regionIcon} {regionName} — Area Map</p>
+        </div>
+      )}
+      <div className="relative w-full" style={{ paddingBottom: compact ? '60%' : '100%' }}>
         <svg
           className="absolute inset-0 w-full h-full rounded-lg border border-[#2a2b3f]"
           viewBox="0 0 500 500"
