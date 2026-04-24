@@ -33,7 +33,6 @@ import { MainQuestPanel } from './MainQuestPanel'
 import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
-import { RegionMap } from './RegionMap'
 import { TravelConfirmDialog } from './TravelConfirmDialog'
 import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { SettingsPanel } from './SettingsPanel'
@@ -52,6 +51,7 @@ import { SpellComboPanel } from './SpellComboPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
 import { TargetList } from './TargetList'
 import { AreaMap } from './AreaMap'
+import { WorldMap } from './WorldMap'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
@@ -789,13 +789,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   onSelectTarget={(i) => setActiveTarget(i)}
                 />
               ) : (
-                <RegionMap
-                  currentRegionId={character?.currentRegion ?? 'green_meadows'}
-                  characterLevel={character?.level ?? 1}
-                  visitedRegions={character?.visitedRegions ?? []}
-                  conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
-                  onRegionClick={handleRegionClick}
-                />
+                character && <WorldMap character={character} />
               )}
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
@@ -946,13 +940,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     onSelectTarget={(i) => setActiveTarget(i)}
                   />
                 ) : (
-                  <RegionMap
-                    currentRegionId={character?.currentRegion ?? 'green_meadows'}
-                    characterLevel={character?.level ?? 1}
-                    visitedRegions={character?.visitedRegions ?? []}
-                    conqueredRegions={character?.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)) ?? []}
-                    onRegionClick={handleRegionClick}
-                  />
+                  character && <WorldMap character={character} />
                 )}
               </div>
             )}
