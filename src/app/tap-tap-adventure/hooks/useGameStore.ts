@@ -27,6 +27,7 @@ import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
 import { PartyMember, MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
+import { processPartyUpkeep } from '@/app/tap-tap-adventure/lib/partyUpkeep'
 import { getClassForNPC, deriveNPCCombatStats } from '@/app/tap-tap-adventure/lib/classGenerator'
 import { getMercenaryMaxHp } from '@/app/tap-tap-adventure/config/mercenaries'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
@@ -346,6 +347,20 @@ export const useGameStore = create<GameStore>()(
                 updatedCharacter = { ...updatedCharacter, activeMercenary: null }
               } else {
                 updatedCharacter = { ...updatedCharacter, gold: mercGold }
+              }
+            }
+
+            // Party member daily upkeep
+            if (newDay > oldDay && updatedCharacter.party?.length > 0) {
+              const { remainingParty, newGold } = processPartyUpkeep(
+                updatedCharacter.party,
+                updatedCharacter.gold,
+                campBonuses.partyUpkeepDiscountPct
+              )
+              updatedCharacter = {
+                ...updatedCharacter,
+                gold: newGold,
+                party: remainingParty,
               }
             }
 
