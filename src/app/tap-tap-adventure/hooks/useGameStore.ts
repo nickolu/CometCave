@@ -27,6 +27,7 @@ import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
 import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
 import { PartyMember, MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
+import { getClassForNPC, deriveNPCCombatStats } from '@/app/tap-tap-adventure/lib/classGenerator'
 import { getMercenaryMaxHp } from '@/app/tap-tap-adventure/config/mercenaries'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
@@ -1715,7 +1716,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 36,
+      version: 37,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1885,6 +1886,20 @@ export const useGameStore = create<GameStore>()(
             // v36: Add party array
             if (!(char as FantasyCharacter).party) {
               ;(char as FantasyCharacter).party = []
+            }
+            // v37: Backfill generatedClass on party members
+            if ((char as FantasyCharacter).party) {
+              for (const member of (char as FantasyCharacter).party!) {
+                if (!member.generatedClass) {
+                  const npcClass = getClassForNPC(member.name)
+                  const combatStats = deriveNPCCombatStats(npcClass, member.level ?? 1)
+                  member.generatedClass = npcClass
+                  member.className = npcClass.name
+                  member.stats = combatStats.stats
+                  member.hp = Math.min(member.hp, combatStats.maxHp)
+                  member.maxHp = combatStats.maxHp
+                }
+              }
             }
           }
         }

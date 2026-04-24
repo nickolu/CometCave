@@ -57,6 +57,7 @@ import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
 import { NPCDialoguePanel } from './NPCDialoguePanel'
 import type { PartyMember } from '@/app/tap-tap-adventure/models/partyMember'
+import { getClassForNPC, deriveNPCCombatStats } from '@/app/tap-tap-adventure/lib/classGenerator'
 import { ContactsList } from './ContactsList'
 import { EventDialog, EventResult } from './EventDialog'
 
@@ -720,16 +721,19 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                             setDecisionPoint(null)
                           }}
                           onRecruit={() => {
+                            const npcClass = getClassForNPC(socialEncounter.npc.name)
+                            const combatStats = deriveNPCCombatStats(npcClass, character.level)
                             const member: PartyMember = {
                               id: `npc-${socialEncounter.npc.id}`,
                               name: socialEncounter.npc.name,
                               description: socialEncounter.npc.description,
                               icon: socialEncounter.npc.icon,
-                              className: socialEncounter.npc.role,
+                              className: npcClass.name,
+                              generatedClass: npcClass,
                               level: character.level,
-                              hp: 30 + character.level * 5,
-                              maxHp: 30 + character.level * 5,
-                              stats: { strength: 5, intelligence: 5, luck: 5, charisma: 5 },
+                              hp: combatStats.hp,
+                              maxHp: combatStats.maxHp,
+                              stats: combatStats.stats,
                               equipment: { weapon: null, armor: null, accessory: null },
                               dailyCost: Math.max(1, Math.floor(character.level / 2)),
                               recruitCost: 0,
