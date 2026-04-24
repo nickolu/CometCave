@@ -58,6 +58,18 @@ export function getCharismaPriceMultiplier(charisma: number): number {
   return 1.0 - discount
 }
 
+export function getNPCDispositionPriceMultiplier(npcEncounters?: Record<string, { disposition: number }>): number {
+  if (!npcEncounters) return 1.0
+  const dispositions = Object.values(npcEncounters).map(e => e.disposition)
+  if (dispositions.length === 0) return 1.0
+  const maxDisposition = Math.max(...dispositions)
+  // Discount tiers based on best NPC relationship
+  if (maxDisposition >= 80) return 0.85  // Bonded: 15% discount
+  if (maxDisposition >= 50) return 0.90  // Trusted: 10% discount
+  if (maxDisposition >= 20) return 0.95  // Friendly: 5% discount
+  return 1.0 // Neutral or worse: no discount
+}
+
 export function buildStoryContext(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[],
