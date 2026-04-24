@@ -4,6 +4,7 @@ import React from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from './ui/button'
 import type { FantasyDecisionPoint, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+import { getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 
 interface TownHubProps {
   townName: string
@@ -13,6 +14,7 @@ interface TownHubProps {
   character: FantasyCharacter
   onSelectOption: (optionId: string) => void
   statusMessage?: string | null
+  npcDispositions?: Record<string, number>
 }
 
 interface FeatureConfig {
@@ -79,8 +81,12 @@ export function TownHub({
   isResolving,
   character,
   onSelectOption,
+  npcDispositions,
 }: TownHubProps) {
-  const mainOptions = decisionPoint.options.filter(o => o.id !== 'leave-town')
+  const featureOptions = decisionPoint.options.filter(
+    o => o.id !== 'leave-town' && !o.id.startsWith('talk-to-npc-')
+  )
+  const npcOptions = decisionPoint.options.filter(o => o.id.startsWith('talk-to-npc-'))
   const leaveOption = decisionPoint.options.find(o => o.id === 'leave-town')
 
   return (
@@ -115,7 +121,7 @@ export function TownHub({
 
       {/* Feature buttons */}
       <div className="p-4 space-y-2">
-        {mainOptions.map(option => {
+        {featureOptions.map(option => {
           const config = FEATURE_CONFIGS[option.id]
           const icon = config?.icon ?? '✨'
           const disabled =
@@ -146,6 +152,44 @@ export function TownHub({
             </div>
           )
         })}
+
+        {/* Townspeople section */}
+        {npcOptions.length > 0 && (
+          <>
+            <div className="border-t border-[#2a2c42] my-3 flex items-center gap-2">
+              <span className="text-xs text-slate-500 whitespace-nowrap">Townspeople</span>
+              <div className="flex-1 border-t border-[#2a2c42]" />
+            </div>
+            {npcOptions.map(option => {
+              const npcId = option.id.replace('talk-to-npc-', '')
+              const disposition = npcDispositions?.[npcId] ?? 0
+              const tier = getRelationshipTier(disposition)
+              const npcClassName = isResolving
+                ? 'bg-slate-900/40 border-slate-700/40 text-slate-500 cursor-not-allowed opacity-60'
+                : 'bg-emerald-900/40 hover:bg-emerald-800/60 border-emerald-600/40 text-emerald-200 hover:text-emerald-100'
+
+              return (
+                <button
+                  key={option.id}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors text-left ${npcClassName}`}
+                  onClick={() => !isResolving && onSelectOption(option.id)}
+                  disabled={isResolving}
+                >
+                  <span className="text-xl leading-none flex-shrink-0">
+                    {/* Extract the emoji from the option text (first grapheme cluster) */}
+                    {[...option.text][0]}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-sm leading-tight">{option.text.slice([...option.text][0].length).trim()}</div>
+                    {disposition !== 0 && (
+                      <div className={`text-xs mt-0.5 ${tier.color}`}>{tier.label}</div>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </>
+        )}
 
         {/* Divider before leave */}
         {leaveOption && (
