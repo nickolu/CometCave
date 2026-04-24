@@ -220,6 +220,7 @@ export function useCharacterCreation() {
       party: [],
       mountRoster: [],
       mailbox: [],
+      pendingReplies: [],
     }
     const maxMana = calculateMaxMana(tempChar)
 

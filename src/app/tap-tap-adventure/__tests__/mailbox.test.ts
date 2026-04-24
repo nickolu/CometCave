@@ -10,6 +10,9 @@ type MailMessage = {
   subject: string
   body: string
   attachedGold?: number
+  attachedItems?: { name: string; description: string; type?: string; rarity?: string }[]
+  goldClaimed?: boolean
+  itemsClaimed?: boolean
   read: boolean
   day: number
 }
@@ -98,6 +101,69 @@ describe('Mailbox schema', () => {
     const char = makeCharacter({ mailbox: mail })
     expect(char.mailbox[0].attachedGold).toBeUndefined()
   })
+
+  it('accepts mail with attachedItems', () => {
+    const mail: MailMessage[] = [
+      {
+        id: 'mail-npc1-4-001',
+        fromNpcId: 'npc1',
+        fromName: 'Wise Elder',
+        fromIcon: '🧙',
+        subject: 'A gift',
+        body: 'A scroll for you.',
+        attachedItems: [{ name: "Sage's Scroll", description: 'Ancient wisdom.', type: 'consumable', rarity: 'uncommon' }],
+        read: false,
+        day: 4,
+      },
+    ]
+    const char = makeCharacter({ mailbox: mail })
+    expect(char.mailbox[0].attachedItems).toHaveLength(1)
+    expect(char.mailbox[0].attachedItems![0].name).toBe("Sage's Scroll")
+    expect(char.mailbox[0].attachedItems![0].rarity).toBe('uncommon')
+  })
+
+  it('itemsClaimed defaults to undefined', () => {
+    const mail: MailMessage[] = [
+      {
+        id: 'mail-npc1-5-002',
+        fromNpcId: 'npc1',
+        fromName: 'Tom',
+        fromIcon: '🧙',
+        subject: 'Test',
+        body: 'Body.',
+        read: false,
+        day: 5,
+      },
+    ]
+    const char = makeCharacter({ mailbox: mail })
+    expect(char.mailbox[0].itemsClaimed).toBeUndefined()
+  })
+})
+
+describe('pendingReplies schema', () => {
+  it('defaults to empty array when not specified', () => {
+    const char = makeCharacter()
+    expect(char.pendingReplies).toEqual([])
+  })
+
+  it('accepts pendingReplies with correct fields', () => {
+    const replies = [
+      {
+        id: 'reply-npc1-1-1234',
+        toNpcId: 'elder_maren',
+        toNpcName: 'Elder Maren',
+        toNpcIcon: '🧝',
+        playerMessage: 'Hello!',
+        sentDay: 1,
+        replyDay: 4,
+      },
+    ]
+    const char = makeCharacter({ pendingReplies: replies })
+    expect(char.pendingReplies).toHaveLength(1)
+    expect(char.pendingReplies[0].toNpcId).toBe('elder_maren')
+    expect(char.pendingReplies[0].sentDay).toBe(1)
+    expect(char.pendingReplies[0].replyDay).toBe(4)
+  })
 })
 
 describe('Mail gold claim logic', () => {
@@ -154,5 +220,69 @@ describe('Mail day visibility filter', () => {
     const visibleMail = allMail.filter(m => m.day <= currentDay)
     expect(visibleMail).toHaveLength(2)
     expect(visibleMail.some(m => m.subject === 'Future')).toBe(false)
+  })
+})
+
+describe('Mailbox storage limit', () => {
+  it('keeps max 50 messages, prioritizing unread', () => {
+    // Create 60 messages — 10 unread, 50 read
+    const messages: MailMessage[] = []
+    for (let i = 0; i < 50; i++) {
+      messages.push({
+        id: `mail-read-${i}`,
+        fromNpcId: 'npc1',
+        fromName: 'Tom',
+        fromIcon: '🧙',
+        subject: `Read message ${i}`,
+        body: '...',
+        read: true,
+        day: i + 1,
+      })
+    }
+    for (let i = 0; i < 10; i++) {
+      messages.push({
+        id: `mail-unread-${i}`,
+        fromNpcId: 'npc1',
+        fromName: 'Tom',
+        fromIcon: '🧙',
+        subject: `Unread message ${i}`,
+        body: '...',
+        read: false,
+        day: i + 51,
+      })
+    }
+
+    // Simulate the mailbox cleanup logic
+    const sorted = [...messages].sort((a, b) => {
+      if (a.read !== b.read) return a.read ? 1 : -1
+      return b.day - a.day
+    })
+    const trimmed = sorted.slice(0, 50)
+
+    expect(trimmed).toHaveLength(50)
+    // All unread messages should be kept
+    const unreadKept = trimmed.filter(m => !m.read)
+    expect(unreadKept).toHaveLength(10)
+    // Only the 40 most recent read messages are kept
+    const readKept = trimmed.filter(m => m.read)
+    expect(readKept).toHaveLength(40)
+  })
+})
+
+describe('Pending reply processing', () => {
+  it('identifies replies ready to be delivered', () => {
+    const pendingReplies = [
+      { id: 'r1', toNpcId: 'npc1', toNpcName: 'Tom', toNpcIcon: '🧙', playerMessage: 'Hi', sentDay: 1, replyDay: 3 },
+      { id: 'r2', toNpcId: 'npc2', toNpcName: 'Bob', toNpcIcon: '🧝', playerMessage: 'Hey', sentDay: 2, replyDay: 7 },
+    ]
+    const newDay = 5
+
+    const readyReplies = pendingReplies.filter(r => newDay >= r.replyDay)
+    const remaining = pendingReplies.filter(r => newDay < r.replyDay)
+
+    expect(readyReplies).toHaveLength(1)
+    expect(readyReplies[0].id).toBe('r1')
+    expect(remaining).toHaveLength(1)
+    expect(remaining[0].id).toBe('r2')
   })
 })
