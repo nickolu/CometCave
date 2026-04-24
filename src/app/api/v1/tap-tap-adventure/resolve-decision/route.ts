@@ -10,21 +10,7 @@ import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
-import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
-
-function buildNPCOptions(regionId: string): FantasyDecisionOption[] {
-  const regionNPCs = getNPCsForRegion(regionId)
-  return regionNPCs.map(npc => ({
-    id: `talk-to-npc-${npc.id}`,
-    text: `${npc.icon} Talk to ${npc.name} — ${npc.role}`,
-    successProbability: 1.0,
-    successDescription: `You approach ${npc.name}.`,
-    successEffects: {},
-    failureDescription: '',
-    failureEffects: {},
-    resultDescription: `You talk to ${npc.name}.`,
-  }))
-}
+import { buildTownHubDecisionPoint } from './townHubBuilder'
 
 function hashString(str: string): number {
   let hash = 0
@@ -209,53 +195,20 @@ export async function POST(req: NextRequest) {
         landmarkState: updatedLandmarkState,
       }
 
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
-
-      // Return the standard town hub (same as enter-town)
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const regionId = character.currentRegion ?? 'green_meadows'
+      const townHub = buildTownHubDecisionPoint({
+        townName: townLandmark?.name ?? 'the town',
         prompt: `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}. What would you like to do?`,
-        options: [
-          {
-            id: 'visit-shop', text: '🏪 Visit the Shop', successProbability: 1.0,
-            successDescription: 'You browse the wares.', successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn', text: `🛏️ Rest at the Inn (${innCost} gold)`, successProbability: 1.0,
-            successDescription: `You pay ${innCost} gold for rest.`, successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: 'You rest.',
-          },
-          {
-            id: 'hire-transport', text: '🐴 Hire Transport', successProbability: 1.0,
-            successDescription: 'You check transport.', successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: 'You check transport.',
-          },
-          {
-            id: 'visit-stable', text: '🐴 Visit the Stable', successProbability: 1.0,
-            successDescription: 'You visit the stable to manage your mounts.', successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox', text: '📬 Check Mailbox', successProbability: 1.0,
-            successDescription: 'You check your mailbox for messages.', successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board', text: '📋 Notice Board', successProbability: 1.0,
-            successDescription: 'You check the town notice board.', successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: 'You check the notice board.',
-          },
-          {
-            id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
-            successDescription: 'You leave.', successEffects: {},
-            failureDescription: '', failureEffects: {}, resultDescription: `You leave.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter,
@@ -298,52 +251,20 @@ export async function POST(req: NextRequest) {
           landmarkState: updatedLandmarkState,
         }
 
-        const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-        const innCost = Math.round(10 * regionMult)
-
-        const townHub: FantasyDecisionPoint = {
-          id: `decision-town-hub-${Date.now()}`,
-          eventId: `town-hub-${Date.now()}`,
+        const sneakRegionId = character.currentRegion ?? 'green_meadows'
+        const townHub = buildTownHubDecisionPoint({
+          townName: townLandmark?.name ?? 'the town',
           prompt: `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active. What would you like to do?`,
-          options: [
-            {
-              id: 'visit-shop', text: '🏪 Visit the Shop', successProbability: 1.0,
-              successDescription: 'You browse the wares.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You visit the shop.',
-            },
-            {
-              id: 'rest-at-inn', text: `🛏️ Rest at the Inn (${innCost} gold)`, successProbability: 1.0,
-              successDescription: 'You rest.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You rest.',
-            },
-            {
-              id: 'hire-transport', text: '🐴 Hire Transport', successProbability: 1.0,
-              successDescription: 'You check transport.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You check transport.',
-            },
-            {
-              id: 'visit-stable', text: '🐴 Visit the Stable', successProbability: 1.0,
-              successDescription: 'You visit the stable to manage your mounts.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You visit the stable.',
-            },
-            {
-              id: 'check-mailbox', text: '📬 Check Mailbox', successProbability: 1.0,
-              successDescription: 'You check your mailbox for messages.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You check your mailbox.',
-            },
-            {
-              id: 'visit-notice-board', text: '📋 Notice Board', successProbability: 1.0,
-              successDescription: 'You check the town notice board.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You check the notice board.',
-            },
-            {
-              id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
-              successDescription: 'You leave.', successEffects: {},
-              failureDescription: '', failureEffects: {}, resultDescription: 'You leave.',
-            },
-          ],
-          resolved: false,
-        }
+          regionId: sneakRegionId,
+          features: townLandmark ? {
+            hasShop: townLandmark.hasShop,
+            hasInn: townLandmark.hasInn,
+            hasStable: townLandmark.hasStable,
+            hasMailbox: townLandmark.hasMailbox,
+            hasNoticeBoard: townLandmark.hasNoticeBoard,
+            hasTransport: townLandmark.hasTransport,
+          } : undefined,
+        })
 
         return NextResponse.json({
           updatedCharacter,
@@ -430,88 +351,20 @@ export async function POST(req: NextRequest) {
         landmarkState: updatedLandmarkState,
       }
 
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
-
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const enterRegionId = character.currentRegion ?? 'green_meadows'
+      const townHub = buildTownHubDecisionPoint({
+        townName: townLandmark?.name ?? 'the town',
         prompt: `Welcome to ${townLandmark?.name ?? 'the town'}! The town square is alive with merchants, travelers, and townsfolk going about their day. What would you like to do?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop',
-            successProbability: 1.0,
-            successDescription: 'You browse the merchant\'s wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: `You pay ${innCost} gold for a warm meal and a soft bed. You feel completely refreshed!`,
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You rest at the inn for ${innCost} gold.`,
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check the transport board for available destinations.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check available transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable',
-            successProbability: 1.0,
-            successDescription: 'You visit the town stable to manage your mounts.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox for messages.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board',
-            successProbability: 1.0,
-            successDescription: 'You check the town notice board.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: `You wave goodbye and head back out on the road.`,
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townLandmark?.name ?? 'the town'}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: enterRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter,
@@ -530,88 +383,23 @@ export async function POST(req: NextRequest) {
     if (optionId === 'visit-shop') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+      const shopRegionId = character.currentRegion ?? 'green_meadows'
 
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const townHub = buildTownHubDecisionPoint({
+        townName,
         prompt: `You've browsed the shop. What else would you like to do in ${townName}?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop again',
-            successProbability: 1.0,
-            successDescription: 'You browse the merchant\'s wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: `You pay ${innCost} gold for a warm meal and a soft bed.`,
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You rest at the inn.`,
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check the transport board for available destinations.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check available transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable',
-            successProbability: 1.0,
-            successDescription: 'You visit the town stable to manage your mounts.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox for messages.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board',
-            successProbability: 1.0,
-            successDescription: 'You check the town notice board.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: `You wave goodbye and head back out on the road.`,
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townName}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: shopRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter: character,
@@ -630,8 +418,11 @@ export async function POST(req: NextRequest) {
     if (optionId === 'rest-at-inn') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innRegionId = character.currentRegion ?? 'green_meadows'
+      const regionMult = getRegion(innRegionId).difficultyMultiplier
       const innCost = Math.round(10 * regionMult)
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
       let updatedCharacter = { ...character }
       let outcomeDesc: string
@@ -648,85 +439,19 @@ export async function POST(req: NextRequest) {
         outcomeDesc = `You don't have enough gold to stay at the inn. You need ${innCost} gold.`
       }
 
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const townHub = buildTownHubDecisionPoint({
+        townName,
         prompt: `${outcomeDesc} What else would you like to do in ${townName}?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop',
-            successProbability: 1.0,
-            successDescription: 'You browse the merchant\'s wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: `You pay ${innCost} gold for rest.`,
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You rest at the inn.',
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check the transport board for available destinations.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check available transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable',
-            successProbability: 1.0,
-            successDescription: 'You visit the town stable to manage your mounts.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox for messages.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board',
-            successProbability: 1.0,
-            successDescription: 'You check the town notice board.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: `You head back out on the road.`,
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townName}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: innRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter,
@@ -744,9 +469,11 @@ export async function POST(req: NextRequest) {
     if (optionId === 'hire-transport') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
+      const transportRegionId = character.currentRegion ?? 'green_meadows'
+      const regionMult = getRegion(transportRegionId).difficultyMultiplier
       const charPos = landmarkState?.position ?? { x: 0, y: 0 }
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
       // Build destination options from known (non-hidden) landmarks
       const destinations = (landmarkState?.landmarks ?? [])
@@ -781,85 +508,19 @@ export async function POST(req: NextRequest) {
 
       if (destinationOptions.length === 0) {
         // No destinations — return to town hub
-        const townHub: FantasyDecisionPoint = {
-          id: `decision-town-hub-${Date.now()}`,
-          eventId: `town-hub-${Date.now()}`,
+        const townHub = buildTownHubDecisionPoint({
+          townName,
           prompt: `There are no available transport destinations from ${townName}. What else would you like to do?`,
-          options: [
-            {
-              id: 'visit-shop',
-              text: '🏪 Visit the Shop',
-              successProbability: 1.0,
-              successDescription: 'You browse the merchant\'s wares.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You visit the shop.',
-            },
-            {
-              id: 'rest-at-inn',
-              text: `🛏️ Rest at the Inn (${innCost} gold)`,
-              successProbability: 1.0,
-              successDescription: `You pay ${innCost} gold for rest.`,
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You rest at the inn.',
-            },
-            {
-              id: 'hire-transport',
-              text: '🐴 Hire Transport',
-              successProbability: 1.0,
-              successDescription: 'You check for transport.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You check transport.',
-            },
-            {
-              id: 'visit-stable',
-              text: '🐴 Visit the Stable',
-              successProbability: 1.0,
-              successDescription: 'You visit the town stable to manage your mounts.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You visit the stable.',
-            },
-            {
-              id: 'check-mailbox',
-              text: '📬 Check Mailbox',
-              successProbability: 1.0,
-              successDescription: 'You check your mailbox for messages.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You check your mailbox.',
-            },
-            {
-              id: 'visit-notice-board',
-              text: '📋 Notice Board',
-              successProbability: 1.0,
-              successDescription: 'You check the town notice board.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You check the notice board.',
-            },
-            ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-            {
-              id: 'leave-town',
-              text: '🚪 Leave Town',
-              successProbability: 1.0,
-              successDescription: 'You head back on the road.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: `You leave ${townName}.`,
-            },
-          ],
-          resolved: false,
-        }
+          regionId: transportRegionId,
+          features: townLandmark ? {
+            hasShop: townLandmark.hasShop,
+            hasInn: townLandmark.hasInn,
+            hasStable: townLandmark.hasStable,
+            hasMailbox: townLandmark.hasMailbox,
+            hasNoticeBoard: townLandmark.hasNoticeBoard,
+            hasTransport: townLandmark.hasTransport,
+          } : undefined,
+        })
         return NextResponse.json({
           updatedCharacter: character,
           resultDescription: 'No transport destinations available.',
@@ -910,8 +571,11 @@ export async function POST(req: NextRequest) {
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
       const destIndex = parseInt(optionId.replace('transport-to-', ''), 10)
       const destLandmark = landmarkState?.landmarks[destIndex]
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const ttRegionId = character.currentRegion ?? 'green_meadows'
+      const regionMult = getRegion(ttRegionId).difficultyMultiplier
       const charPos = landmarkState?.position ?? { x: 0, y: 0 }
+      const ttTargetIndex = landmarkState?.activeTargetIndex ?? 0
+      const ttTownLandmark = landmarkState?.landmarks[ttTargetIndex]
 
       if (!destLandmark || !destLandmark.position) {
         return NextResponse.json({ error: 'Invalid transport destination' }, { status: 400 })
@@ -926,86 +590,19 @@ export async function POST(req: NextRequest) {
 
       if ((character.gold ?? 0) < price) {
         // Not enough gold — show message and return to town hub
-        const innCost = Math.round(10 * regionMult)
-        const townHub: FantasyDecisionPoint = {
-          id: `decision-town-hub-${Date.now()}`,
-          eventId: `town-hub-${Date.now()}`,
+        const townHub = buildTownHubDecisionPoint({
+          townName,
           prompt: `You don't have enough gold for transport to ${destLandmark.name}. You need ${price} gold but only have ${character.gold ?? 0}. What would you like to do?`,
-          options: [
-            {
-              id: 'visit-shop',
-              text: '🏪 Visit the Shop',
-              successProbability: 1.0,
-              successDescription: 'You browse the wares.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You visit the shop.',
-            },
-            {
-              id: 'rest-at-inn',
-              text: `🛏️ Rest at the Inn (${innCost} gold)`,
-              successProbability: 1.0,
-              successDescription: 'You rest.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You rest.',
-            },
-            {
-              id: 'hire-transport',
-              text: '🐴 Hire Transport',
-              successProbability: 1.0,
-              successDescription: 'You check transport.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You check transport.',
-            },
-            {
-              id: 'visit-stable',
-              text: '🐴 Visit the Stable',
-              successProbability: 1.0,
-              successDescription: 'You visit the town stable to manage your mounts.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You visit the stable.',
-            },
-            {
-              id: 'check-mailbox',
-              text: '📬 Check Mailbox',
-              successProbability: 1.0,
-              successDescription: 'You check your mailbox for messages.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You check your mailbox.',
-            },
-            {
-              id: 'visit-notice-board',
-              text: '📋 Notice Board',
-              successProbability: 1.0,
-              successDescription: 'You check the town notice board.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: 'You check the notice board.',
-            },
-            ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-            {
-              id: 'leave-town',
-              text: '🚪 Leave Town',
-              successProbability: 1.0,
-              successDescription: 'You leave.',
-              successEffects: {},
-              failureDescription: '',
-              failureEffects: {},
-              resultDescription: `You leave ${townName}.`,
-            },
-          ],
-          resolved: false,
-        }
+          regionId: ttRegionId,
+          features: ttTownLandmark ? {
+            hasShop: ttTownLandmark.hasShop,
+            hasInn: ttTownLandmark.hasInn,
+            hasStable: ttTownLandmark.hasStable,
+            hasMailbox: ttTownLandmark.hasMailbox,
+            hasNoticeBoard: ttTownLandmark.hasNoticeBoard,
+            hasTransport: ttTownLandmark.hasTransport,
+          } : undefined,
+        })
         return NextResponse.json({
           updatedCharacter: character,
           resultDescription: `Not enough gold for transport to ${destLandmark.name}.`,
@@ -1049,88 +646,23 @@ export async function POST(req: NextRequest) {
     if (optionId === 'back-to-town') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
+      const backRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const townHub = buildTownHubDecisionPoint({
+        townName,
         prompt: `You return to the town square of ${townName}. What would you like to do?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop',
-            successProbability: 1.0,
-            successDescription: 'You browse the wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: 'You rest.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You rest.',
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check transport.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable',
-            successProbability: 1.0,
-            successDescription: 'You visit the town stable to manage your mounts.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox for messages.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board',
-            successProbability: 1.0,
-            successDescription: 'You check the town notice board.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: 'You leave.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townName}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: backRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
       return NextResponse.json({
         updatedCharacter: character,
         resultDescription: `You return to ${townName}.`,
@@ -1147,88 +679,23 @@ export async function POST(req: NextRequest) {
     if (optionId === 'visit-stable') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
+      const stableRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const townHub = buildTownHubDecisionPoint({
+        townName,
         prompt: `You visit the town stable. Here you can stash, retrieve, and heal your mounts. What else would you like to do in ${townName}?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop',
-            successProbability: 1.0,
-            successDescription: 'You browse the wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: 'You rest.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You rest.',
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check transport.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable again',
-            successProbability: 1.0,
-            successDescription: 'You visit the stable again.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox for messages.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board',
-            successProbability: 1.0,
-            successDescription: 'You check the town notice board.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: 'You leave.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townName}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: stableRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter: character,
@@ -1247,88 +714,23 @@ export async function POST(req: NextRequest) {
     if (optionId === 'check-mailbox') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
+      const mailboxRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const townHub = buildTownHubDecisionPoint({
+        townName,
         prompt: `You check your mailbox. What else would you like to do in ${townName}?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop',
-            successProbability: 1.0,
-            successDescription: 'You browse the wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: 'You rest.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You rest.',
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check transport.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable',
-            successProbability: 1.0,
-            successDescription: 'You visit the stable.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox again',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox again.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board',
-            successProbability: 1.0,
-            successDescription: 'You check the town notice board.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: 'You leave.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townName}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: mailboxRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter: character,
@@ -1347,88 +749,23 @@ export async function POST(req: NextRequest) {
     if (optionId === 'visit-notice-board') {
       const landmarkState = character.landmarkState
       const townName = landmarkState?.exploringLandmarkName ?? 'the town'
-      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
-      const innCost = Math.round(10 * regionMult)
+      const noticeBoardRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
-      const townHub: FantasyDecisionPoint = {
-        id: `decision-town-hub-${Date.now()}`,
-        eventId: `town-hub-${Date.now()}`,
+      const townHub = buildTownHubDecisionPoint({
+        townName,
         prompt: `You check the notice board. What else would you like to do in ${townName}?`,
-        options: [
-          {
-            id: 'visit-shop',
-            text: '🏪 Visit the Shop',
-            successProbability: 1.0,
-            successDescription: 'You browse the wares.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the shop.',
-          },
-          {
-            id: 'rest-at-inn',
-            text: `🛏️ Rest at the Inn (${innCost} gold)`,
-            successProbability: 1.0,
-            successDescription: 'You rest.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You rest.',
-          },
-          {
-            id: 'hire-transport',
-            text: '🐴 Hire Transport',
-            successProbability: 1.0,
-            successDescription: 'You check transport.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check transport.',
-          },
-          {
-            id: 'visit-stable',
-            text: '🐴 Visit the Stable',
-            successProbability: 1.0,
-            successDescription: 'You visit the stable.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You visit the stable.',
-          },
-          {
-            id: 'check-mailbox',
-            text: '📬 Check Mailbox',
-            successProbability: 1.0,
-            successDescription: 'You check your mailbox.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check your mailbox.',
-          },
-          {
-            id: 'visit-notice-board',
-            text: '📋 Notice Board again',
-            successProbability: 1.0,
-            successDescription: 'You check the notice board again.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: 'You check the notice board.',
-          },
-          ...buildNPCOptions(character.currentRegion ?? 'green_meadows'),
-          {
-            id: 'leave-town',
-            text: '🚪 Leave Town',
-            successProbability: 1.0,
-            successDescription: 'You leave.',
-            successEffects: {},
-            failureDescription: '',
-            failureEffects: {},
-            resultDescription: `You leave ${townName}.`,
-          },
-        ],
-        resolved: false,
-      }
+        regionId: noticeBoardRegionId,
+        features: townLandmark ? {
+          hasShop: townLandmark.hasShop,
+          hasInn: townLandmark.hasInn,
+          hasStable: townLandmark.hasStable,
+          hasMailbox: townLandmark.hasMailbox,
+          hasNoticeBoard: townLandmark.hasNoticeBoard,
+          hasTransport: townLandmark.hasTransport,
+        } : undefined,
+      })
 
       return NextResponse.json({
         updatedCharacter: character,
