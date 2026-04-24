@@ -219,6 +219,11 @@ export async function POST(req: NextRequest) {
             failureDescription: '', failureEffects: {}, resultDescription: 'You check transport.',
           },
           {
+            id: 'visit-stable', text: '🐴 Visit the Stable', successProbability: 1.0,
+            successDescription: 'You visit the stable to manage your mounts.', successEffects: {},
+            failureDescription: '', failureEffects: {}, resultDescription: 'You visit the stable.',
+          },
+          {
             id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
             successDescription: 'You leave.', successEffects: {},
             failureDescription: '', failureEffects: {}, resultDescription: `You leave.`,
@@ -290,6 +295,11 @@ export async function POST(req: NextRequest) {
               id: 'hire-transport', text: '🐴 Hire Transport', successProbability: 1.0,
               successDescription: 'You check transport.', successEffects: {},
               failureDescription: '', failureEffects: {}, resultDescription: 'You check transport.',
+            },
+            {
+              id: 'visit-stable', text: '🐴 Visit the Stable', successProbability: 1.0,
+              successDescription: 'You visit the stable to manage your mounts.', successEffects: {},
+              failureDescription: '', failureEffects: {}, resultDescription: 'You visit the stable.',
             },
             {
               id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
@@ -424,6 +434,16 @@ export async function POST(req: NextRequest) {
             resultDescription: 'You check available transport.',
           },
           {
+            id: 'visit-stable',
+            text: '🐴 Visit the Stable',
+            successProbability: 1.0,
+            successDescription: 'You visit the town stable to manage your mounts.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the stable.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -491,6 +511,16 @@ export async function POST(req: NextRequest) {
             failureDescription: '',
             failureEffects: {},
             resultDescription: 'You check available transport.',
+          },
+          {
+            id: 'visit-stable',
+            text: '🐴 Visit the Stable',
+            successProbability: 1.0,
+            successDescription: 'You visit the town stable to manage your mounts.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the stable.',
           },
           {
             id: 'leave-town',
@@ -575,6 +605,16 @@ export async function POST(req: NextRequest) {
             failureDescription: '',
             failureEffects: {},
             resultDescription: 'You check available transport.',
+          },
+          {
+            id: 'visit-stable',
+            text: '🐴 Visit the Stable',
+            successProbability: 1.0,
+            successDescription: 'You visit the town stable to manage your mounts.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the stable.',
           },
           {
             id: 'leave-town',
@@ -677,6 +717,16 @@ export async function POST(req: NextRequest) {
               failureDescription: '',
               failureEffects: {},
               resultDescription: 'You check transport.',
+            },
+            {
+              id: 'visit-stable',
+              text: '🐴 Visit the Stable',
+              successProbability: 1.0,
+              successDescription: 'You visit the town stable to manage your mounts.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You visit the stable.',
             },
             {
               id: 'leave-town',
@@ -794,6 +844,16 @@ export async function POST(req: NextRequest) {
               resultDescription: 'You check transport.',
             },
             {
+              id: 'visit-stable',
+              text: '🐴 Visit the Stable',
+              successProbability: 1.0,
+              successDescription: 'You visit the town stable to manage your mounts.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You visit the stable.',
+            },
+            {
               id: 'leave-town',
               text: '🚪 Leave Town',
               successProbability: 1.0,
@@ -888,6 +948,16 @@ export async function POST(req: NextRequest) {
             resultDescription: 'You check transport.',
           },
           {
+            id: 'visit-stable',
+            text: '🐴 Visit the Stable',
+            successProbability: 1.0,
+            successDescription: 'You visit the town stable to manage your mounts.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the stable.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -909,6 +979,85 @@ export async function POST(req: NextRequest) {
         outcomeDescription: `You return to the town square.`,
         resourceDelta: {},
         decisionPoint: townHub,
+      })
+    }
+
+    // Handle visit-stable: return the town hub with stableOpen flag so client shows StablePanel
+    if (optionId === 'visit-stable') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `You visit the town stable. Here you can stash, retrieve, and heal your mounts. What else would you like to do in ${townName}?`,
+        options: [
+          {
+            id: 'visit-shop',
+            text: '🏪 Visit the Shop',
+            successProbability: 1.0,
+            successDescription: 'You browse the wares.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn',
+            text: `🛏️ Rest at the Inn (${innCost} gold)`,
+            successProbability: 1.0,
+            successDescription: 'You rest.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You rest.',
+          },
+          {
+            id: 'hire-transport',
+            text: '🐴 Hire Transport',
+            successProbability: 1.0,
+            successDescription: 'You check transport.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check transport.',
+          },
+          {
+            id: 'visit-stable',
+            text: '🐴 Visit the Stable again',
+            successProbability: 1.0,
+            successDescription: 'You visit the stable again.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the stable.',
+          },
+          {
+            id: 'leave-town',
+            text: '🚪 Leave Town',
+            successProbability: 1.0,
+            successDescription: 'You leave.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You leave ${townName}.`,
+          },
+        ],
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You head to the town stable.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You visit the town stable.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        stableOpen: true,
       })
     }
 

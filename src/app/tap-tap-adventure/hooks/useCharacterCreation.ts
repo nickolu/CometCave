@@ -218,6 +218,7 @@ export function useCharacterCreation() {
       factionReputations: {},
       bounty: 0,
       party: [],
+      mountRoster: [],
     }
     const maxMana = calculateMaxMana(tempChar)
 
