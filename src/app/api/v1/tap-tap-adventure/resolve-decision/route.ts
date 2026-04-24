@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
-import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { buildStoryContext, clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import {
   applyEffects,
   calculateEffectiveProbability,
@@ -156,6 +156,213 @@ export async function POST(req: NextRequest) {
           decisionPoint: fallbackDecisionPoint,
         })
       }
+    }
+
+    // Handle pay-bounty: pay bounty to enter town
+    if (optionId === 'pay-bounty') {
+      const landmarkState = character.landmarkState
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+      const bountyAmount = character.bounty ?? 0
+
+      if ((character.gold ?? 0) < bountyAmount) {
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: `You don't have enough gold to pay your bounty of ${bountyAmount} gold.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You need ${bountyAmount} gold but only have ${character.gold ?? 0}.`,
+          resourceDelta: {},
+        })
+      }
+
+      // Pay bounty and enter town (same as enter-town flow)
+      const updatedLandmarkState = landmarkState
+        ? {
+            ...landmarkState,
+            exploring: true,
+            explorationDepth: 0,
+            exploringLandmarkName: townLandmark?.name ?? 'the town',
+          }
+        : undefined
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        gold: clampGold((character.gold ?? 0) - bountyAmount),
+        bounty: 0,
+        landmarkState: updatedLandmarkState,
+      }
+
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      // Return the standard town hub (same as enter-town)
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}. What would you like to do?`,
+        options: [
+          {
+            id: 'visit-shop', text: '🏪 Visit the Shop', successProbability: 1.0,
+            successDescription: 'You browse the wares.', successEffects: {},
+            failureDescription: '', failureEffects: {}, resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn', text: `🛏️ Rest at the Inn (${innCost} gold)`, successProbability: 1.0,
+            successDescription: `You pay ${innCost} gold for rest.`, successEffects: {},
+            failureDescription: '', failureEffects: {}, resultDescription: 'You rest.',
+          },
+          {
+            id: 'hire-transport', text: '🐴 Hire Transport', successProbability: 1.0,
+            successDescription: 'You check transport.', successEffects: {},
+            failureDescription: '', failureEffects: {}, resultDescription: 'You check transport.',
+          },
+          {
+            id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
+            successDescription: 'You leave.', successEffects: {},
+            failureDescription: '', failureEffects: {}, resultDescription: `You leave.`,
+          },
+        ],
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You pay your ${bountyAmount} gold bounty. Your name is cleared!`,
+        appliedEffects: { gold: -bountyAmount },
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `Bounty paid! (-${bountyAmount} gold)`,
+        resourceDelta: { gold: -bountyAmount },
+        decisionPoint: townHub,
+        shopEvent: true,
+      })
+    }
+
+    // Handle sneak-into-town: risky attempt to enter town with bounty
+    if (optionId === 'sneak-into-town') {
+      const landmarkState = character.landmarkState
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+      const bountyAmount = character.bounty ?? 0
+
+      // Success based on luck (higher luck = better chance)
+      const luckBonus = Math.min(0.3, (character.luck ?? 0) * 0.02)
+      const sneakChance = 0.35 + luckBonus
+      const success = Math.random() < sneakChance
+
+      if (success) {
+        // Sneak in successfully — enter town but bounty remains
+        const updatedLandmarkState = landmarkState
+          ? {
+              ...landmarkState,
+              exploring: true,
+              explorationDepth: 0,
+              exploringLandmarkName: townLandmark?.name ?? 'the town',
+            }
+          : undefined
+
+        const updatedCharacter: FantasyCharacter = {
+          ...character,
+          landmarkState: updatedLandmarkState,
+        }
+
+        const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+        const innCost = Math.round(10 * regionMult)
+
+        const townHub: FantasyDecisionPoint = {
+          id: `decision-town-hub-${Date.now()}`,
+          eventId: `town-hub-${Date.now()}`,
+          prompt: `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active. What would you like to do?`,
+          options: [
+            {
+              id: 'visit-shop', text: '🏪 Visit the Shop', successProbability: 1.0,
+              successDescription: 'You browse the wares.', successEffects: {},
+              failureDescription: '', failureEffects: {}, resultDescription: 'You visit the shop.',
+            },
+            {
+              id: 'rest-at-inn', text: `🛏️ Rest at the Inn (${innCost} gold)`, successProbability: 1.0,
+              successDescription: 'You rest.', successEffects: {},
+              failureDescription: '', failureEffects: {}, resultDescription: 'You rest.',
+            },
+            {
+              id: 'hire-transport', text: '🐴 Hire Transport', successProbability: 1.0,
+              successDescription: 'You check transport.', successEffects: {},
+              failureDescription: '', failureEffects: {}, resultDescription: 'You check transport.',
+            },
+            {
+              id: 'leave-town', text: '🚪 Leave Town', successProbability: 1.0,
+              successDescription: 'You leave.', successEffects: {},
+              failureDescription: '', failureEffects: {}, resultDescription: 'You leave.',
+            },
+          ],
+          resolved: false,
+        }
+
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `You successfully sneak into ${townLandmark?.name ?? 'the town'}!`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You slip past the guards unnoticed.`,
+          resourceDelta: {},
+          decisionPoint: townHub,
+          shopEvent: true,
+        })
+      } else {
+        // Failed sneak — bounty increases by 25%
+        const bountyIncrease = Math.max(5, Math.ceil(bountyAmount * 0.25))
+        const updatedCharacter: FantasyCharacter = {
+          ...character,
+          bounty: bountyAmount + bountyIncrease,
+        }
+
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `The guards spot you! "Halt! Your bounty just went up!" (+${bountyIncrease} bounty)`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You're caught trying to sneak in! Bounty increased to ${bountyAmount + bountyIncrease} gold.`,
+          resourceDelta: {},
+        })
+      }
+    }
+
+    // Handle pay-bounty-hunter: pay bounty to the hunter
+    if (optionId === 'pay-bounty-hunter') {
+      const bountyAmount = character.bounty ?? 0
+
+      if ((character.gold ?? 0) < bountyAmount) {
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: `You don't have enough gold. The bounty hunter draws their weapon!`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You can't afford to pay. The hunter attacks!`,
+          resourceDelta: {},
+          triggersCombat: true,
+        })
+      }
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        gold: clampGold((character.gold ?? 0) - bountyAmount),
+        bounty: 0,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You hand over ${bountyAmount} gold. The bounty hunter nods and disappears into the shadows. Your name is cleared.`,
+        appliedEffects: { gold: -bountyAmount },
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `Bounty paid! (-${bountyAmount} gold). Your record is clean.`,
+        resourceDelta: { gold: -bountyAmount },
+      })
     }
 
     // Handle enter-town: set up town hub and present town menu

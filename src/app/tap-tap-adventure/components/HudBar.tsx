@@ -411,6 +411,12 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
             </div>
           )
         })()}
+        {(character?.bounty ?? 0) > 0 && (
+          <div className="text-xs text-red-400 flex items-center gap-1">
+            <span>💀</span>
+            <span>Bounty: {character!.bounty}g</span>
+          </div>
+        )}
         <div className="hidden sm:flex items-center gap-1 sm:gap-4">
           {STATS_RIGHT.map(renderStat)}
         </div>

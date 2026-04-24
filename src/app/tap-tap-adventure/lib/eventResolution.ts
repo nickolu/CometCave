@@ -16,6 +16,7 @@ export function applyEffects(
     revealLandmark?: boolean
     hpChange?: number
     mpChange?: number
+    bountyChange?: number
   }
 ): FantasyCharacter {
   if (!effects) return character
@@ -54,6 +55,17 @@ export function applyEffects(
     const maxMp = updatedCharacter.maxMana ?? 50
     const newMp = Math.max(0, Math.min(maxMp, currentMp + effects.mpChange))
     updatedCharacter = { ...updatedCharacter, mana: newMp }
+  }
+
+  // Bounty change
+  if (effects.bountyChange) {
+    const currentBounty = updatedCharacter.bounty ?? 0
+    updatedCharacter = { ...updatedCharacter, bounty: Math.max(0, currentBounty + effects.bountyChange) }
+  }
+
+  // Auto-bounty from very low reputation
+  if ((updatedCharacter.reputation ?? 0) < -30 && (updatedCharacter.bounty ?? 0) === 0) {
+    updatedCharacter = { ...updatedCharacter, bounty: Math.abs(updatedCharacter.reputation ?? 0) }
   }
 
   // Faction reputation gain
