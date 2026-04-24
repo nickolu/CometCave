@@ -6,6 +6,9 @@ import { getTavernMercenaries, getMercenaryMaxHp } from '@/app/tap-tap-adventure
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
+import { getTavernRecruits } from '@/app/tap-tap-adventure/lib/partyRecruitment'
+import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
+import { MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
 
 interface MercenaryPanelProps {
   character: FantasyCharacter
@@ -57,7 +60,7 @@ function HpBar({ current, max }: { current: number; max: number }) {
 }
 
 export function MercenaryPanel({ character }: MercenaryPanelProps) {
-  const { recruitMercenary, dismissMercenary, setActiveMercenary } = useGameStore()
+  const { recruitMercenary, dismissMercenary, setActiveMercenary, recruitTavernMember, removePartyMember } = useGameStore()
   const [isExpanded, setIsExpanded] = useState(false)
   const [dismissConfirm, setDismissConfirm] = useState<string | null>(null)
 
@@ -67,6 +70,13 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [character.level]
   )
+
+  const day = calculateDay(character.distance ?? 0)
+  const tavernRecruits = useMemo(
+    () => getTavernRecruits(character.level, character.currentRegion ?? 'green_meadows', day),
+    [character.level, character.currentRegion, day]
+  )
+  const partyMembers = character.party ?? []
 
   const roster = character.mercenaryRoster ?? []
   const active = character.activeMercenary
@@ -230,6 +240,84 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
           </div>
         </div>
       )}
+
+      {/* Party Members */}
+      {partyMembers.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Companions ({partyMembers.length}/{MAX_PARTY_SIZE})</h4>
+          <div className="space-y-1.5">
+            {partyMembers.map(member => (
+              <div key={member.id} className="bg-[#252638] border border-[#3a3c56] rounded p-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">{member.icon}</span>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">{member.customName ?? member.name}</div>
+                    <div className="text-[10px] text-slate-400">{member.className}</div>
+                    <div className="text-[10px] text-slate-500">Lv {member.level} · {member.dailyCost}g/day</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {dismissConfirm === `party-${member.id}` ? (
+                    <>
+                      <button className="text-[10px] px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded hover:bg-red-800/50"
+                        onClick={() => { removePartyMember(member.id); setDismissConfirm(null) }}>Yes</button>
+                      <button className="text-[10px] px-1.5 py-0.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50"
+                        onClick={() => setDismissConfirm(null)}>No</button>
+                    </>
+                  ) : (
+                    <button className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
+                      onClick={() => setDismissConfirm(`party-${member.id}`)}>Dismiss</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tavern Recruits (Party Members) */}
+      <div>
+        <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Hire Companions</h4>
+        {(partyMembers.length >= MAX_PARTY_SIZE) && (
+          <div className="text-[10px] text-amber-500 mb-2">Party full ({MAX_PARTY_SIZE}/{MAX_PARTY_SIZE}). Dismiss a companion to hire more.</div>
+        )}
+        <div className="space-y-1.5">
+          {tavernRecruits.map(recruit => {
+            const alreadyHave = partyMembers.some(m => m.name === recruit.name)
+            const canAfford = character.gold >= (recruit.recruitCost ?? 0)
+            const partyFull = partyMembers.length >= MAX_PARTY_SIZE
+            const disabled = !canAfford || partyFull || alreadyHave
+
+            return (
+              <div key={recruit.id} className="bg-[#252638] border border-[#3a3c56] rounded p-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg">{recruit.icon}</span>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">{recruit.name}</div>
+                    <div className="text-[10px] text-slate-400">{recruit.className}</div>
+                    <div className="text-[10px] text-slate-500">Lv {recruit.level} · {recruit.dailyCost}g/day</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {alreadyHave ? (
+                    <span className="text-[10px] text-green-400">In party</span>
+                  ) : (
+                    <button
+                      className={`text-[10px] px-2 py-1 rounded transition-colors ${
+                        disabled ? 'bg-slate-700/40 text-slate-500 cursor-not-allowed' : 'bg-amber-700/50 text-amber-300 hover:bg-amber-600/60'
+                      }`}
+                      disabled={disabled}
+                      onClick={() => recruitTavernMember(recruit)}
+                    >
+                      {recruit.recruitCost}g Hire
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       {/* Tavern */}
       <div>
