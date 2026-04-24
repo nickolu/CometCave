@@ -54,6 +54,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Persist party member HP from combat state back to character
+    if (updatedCombat.partyMemberStates?.length && updatedCharacter.party?.length) {
+      updatedCharacter = {
+        ...updatedCharacter,
+        party: updatedCharacter.party.map((member: any) => {
+          const combatMember = updatedCombat.partyMemberStates?.find((m: any) => m.memberId === member.id)
+          if (!combatMember) return member
+          // After victory, KO'd members get 1 HP back
+          const postCombatHp = combatMember.isKnockedOut && updatedCombat.status === 'victory'
+            ? 1
+            : combatMember.hp
+          return { ...member, hp: Math.max(0, postCombatHp) }
+        }),
+      }
+    }
+
     return NextResponse.json({
       combatState: updatedCombat,
       rewards,

@@ -14,6 +14,7 @@ import {
   CombatPlayerState,
   CombatState,
   EnemyTelegraph,
+  PartyMemberCombatState,
   StatusEffect,
   TurnPhase,
 } from '@/app/tap-tap-adventure/models/combat'
@@ -589,6 +590,62 @@ function applyMercenaryAutoAttack(
 }
 
 /**
+ * Party member auto-attacks: each non-KO party member attacks the enemy.
+ * Simple v1: attack only, defend if HP < 30%.
+ */
+export function applyPartyMemberAttacks(
+  partyStates: PartyMemberCombatState[],
+  enemy: CombatEnemy,
+  turnNumber: number
+): { enemy: CombatEnemy; partyStates: PartyMemberCombatState[]; logs: CombatLogEntry[]; killedEnemy: boolean } {
+  const logs: CombatLogEntry[] = []
+  let updatedEnemy = { ...enemy }
+  const updatedParty = partyStates.map(m => ({ ...m }))
+  let killedEnemy = false
+
+  for (const member of updatedParty) {
+    if (member.isKnockedOut || killedEnemy) continue
+
+    // If HP < 30%, defend instead of attacking
+    if (member.hp / member.maxHp < 0.3) {
+      logs.push({
+        turn: turnNumber,
+        actor: 'party_member' as const,
+        action: 'defend',
+        description: `${member.icon} ${member.name} takes a defensive stance.`,
+      })
+      continue
+    }
+
+    // Attack: strength-based damage with variance
+    const baseDmg = member.attack
+    const raw = baseDmg - updatedEnemy.defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
+    const damage = Math.max(1, Math.round(raw))
+    updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - damage) }
+
+    logs.push({
+      turn: turnNumber,
+      actor: 'party_member' as const,
+      action: 'attack',
+      damage,
+      description: `${member.icon} ${member.name} attacks ${enemy.name} for ${damage} damage!`,
+    })
+
+    if (updatedEnemy.hp <= 0) {
+      killedEnemy = true
+      logs.push({
+        turn: turnNumber,
+        actor: 'party_member' as const,
+        action: 'victory',
+        description: `${member.name} delivers the killing blow on ${enemy.name}!`,
+      })
+    }
+  }
+
+  return { enemy: updatedEnemy, partyStates: updatedParty, logs, killedEnemy }
+}
+
+/**
  * Boss phase change: when a boss drops below 50% HP, boost their stats.
  * For the final boss, supports 3 phases triggered at 66% and 33% HP.
  */
@@ -793,6 +850,7 @@ export function processPlayerAction(
   let mountDied = false
   const bossAlreadyPhased = isBoss && !combatState.isFinalBoss ? enemy.name.includes('(Enraged)') : false
   let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
+  let partyMemberStates = combatState.partyMemberStates ? combatState.partyMemberStates.map(m => ({ ...m })) : undefined
   // Only propagate combatDistance in returns if the original state had it set
   // This ensures backward compatibility with combat states created before range was added
   let rangeSystemActive = combatState.combatDistance !== undefined
@@ -830,6 +888,7 @@ export function processPlayerAction(
         combatLog: [...combatLog, ...newLogs],
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
+        partyMemberStates,
       },
     }
   }
@@ -888,6 +947,7 @@ export function processPlayerAction(
             isBoss,
             ...(rangeSystemActive ? { combatDistance } : {}),
             turnPhase: 'player',
+            partyMemberStates,
           },
           consumedItemId,
         }
@@ -1342,6 +1402,7 @@ export function processPlayerAction(
         isBoss,
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
+        partyMemberStates,
       },
       consumedItemId,
     }
@@ -1701,6 +1762,42 @@ export function processPlayerAction(
     }
   }
 
+  // Enemy occasionally strikes a party member (separate from main attack)
+  if (status === 'active' && partyMemberStates?.length) {
+    const aliveMembers = partyMemberStates.filter(m => !m.isKnockedOut)
+    if (aliveMembers.length > 0 && Math.random() < 0.25) {
+      const targetIdx = Math.floor(Math.random() * aliveMembers.length)
+      const target = aliveMembers[targetIdx]
+      const strikeDmg = Math.max(1, Math.floor(enemy.attack * 0.4) - target.defense)
+      const memberIdx = partyMemberStates.findIndex(m => m.memberId === target.memberId)
+      const newHp = Math.max(0, partyMemberStates[memberIdx].hp - strikeDmg)
+      const isKnockedOut = newHp <= 0
+      partyMemberStates[memberIdx] = {
+        ...partyMemberStates[memberIdx],
+        hp: newHp,
+        isKnockedOut,
+      }
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'enemy' as const,
+        action: 'attack',
+        damage: strikeDmg,
+        description: `${enemy.name} lashes out at ${target.name} for ${strikeDmg} damage!${isKnockedOut ? ` ${target.name} is knocked out!` : ''}`,
+      })
+    }
+  }
+
+  // Party member auto-attacks fire at end of each full turn
+  if (status === 'active' && partyMemberStates?.length) {
+    const partyResult = applyPartyMemberAttacks(partyMemberStates, enemy, turnNumber)
+    enemy = partyResult.enemy
+    partyMemberStates = partyResult.partyStates
+    newLogs.push(...partyResult.logs)
+    if (partyResult.killedEnemy) {
+      status = 'victory'
+    }
+  }
+
   // Tick buffs at end of full turn
   playerState = tickBuffs(playerState)
 
@@ -1784,6 +1881,7 @@ export function processPlayerAction(
       isBoss,
       ...(rangeSystemActive ? { combatDistance } : {}),
       turnPhase: 'enemy_done',
+      partyMemberStates,
     },
     consumedItemId,
     mountDied,

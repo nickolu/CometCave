@@ -59,6 +59,20 @@ export async function POST(req: NextRequest) {
 
     const playerState = initializePlayerCombatState(character)
 
+    // Initialize party member combat states
+    const partyMemberStates = ((character.party ?? []) as any[])
+      .filter((m: any) => m.role === 'combatant' && m.hp > 0)
+      .map((m: any) => ({
+        memberId: m.id,
+        name: m.customName ?? m.name,
+        icon: m.icon ?? '⚔️',
+        hp: m.hp,
+        maxHp: m.maxHp,
+        attack: m.stats?.strength ?? 5,
+        defense: Math.floor((m.stats?.strength ?? 5) / 2),
+        isKnockedOut: false,
+      }))
+
     // Clear exploration shield — it's been consumed by combat init
     const updatedCharacter = character.explorationShield
       ? { ...character, explorationShield: 0 }
@@ -79,6 +93,7 @@ export async function POST(req: NextRequest) {
       isSecretBoss: isSecretBoss || undefined,
       combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
+      partyMemberStates: partyMemberStates.length > 0 ? partyMemberStates : undefined,
     }
 
     return NextResponse.json({ combatState, updatedCharacter: character.explorationShield ? updatedCharacter : undefined })
