@@ -191,6 +191,8 @@ describe('Collection Achievements', () => {
       effects: [],
       cooldown: 1,
       tags: [],
+      spellXp: 0,
+      spellLevel: 1,
     }))
     const char = { ...baseChar, spellbook: spells }
     const { newlyCompleted } = checkAchievements(char, baseGameState, [])
