@@ -426,12 +426,18 @@ export async function POST(req: NextRequest) {
         }
         response.decisionPoint = guardianDecision
       } else {
-        // Max depth reached on a normal landmark — end exploration
+        // Max depth reached on a normal landmark — end exploration, mark as explored
         response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
+        const updatedLandmarks = currentLandmarkState.landmarks.map(lm =>
+          lm.name === currentLandmarkState.exploringLandmarkName
+            ? { ...lm, explored: true }
+            : lm
+        )
         updatedCharacter = {
           ...updatedCharacter,
           landmarkState: {
             ...currentLandmarkState,
+            landmarks: updatedLandmarks,
             exploring: false,
             explorationDepth: 0,
             exploringLandmarkName: undefined,
