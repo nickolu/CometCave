@@ -49,6 +49,10 @@ export function clampReputation(value: number): number {
   return Math.max(-100, Math.min(200, value))
 }
 
+export function clampGold(value: number): number {
+  return Math.max(0, value)
+}
+
 export function getCharismaPriceMultiplier(charisma: number): number {
   const discount = Math.min(0.10, (charisma - 5) * 0.01)
   return 1.0 - discount

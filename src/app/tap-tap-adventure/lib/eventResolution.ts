@@ -2,6 +2,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionOption } from '@/app/tap-tap-adventure/models/story'
 import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 import { getFactionForRegion, FACTIONS } from '@/app/tap-tap-adventure/config/factions'
+import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 
 export function applyEffects(
   character: FantasyCharacter,
@@ -31,7 +32,7 @@ export function applyEffects(
 
   let updatedCharacter: FantasyCharacter = {
     ...character,
-    gold: character.gold + adjustedGold,
+    gold: clampGold(character.gold + adjustedGold),
     reputation: character.reputation + adjustedRep,
     distance: character.distance + (effects.distance ?? 0),
     status: effects.statusChange
