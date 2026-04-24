@@ -60,6 +60,7 @@ export function useResolveDecisionMutation() {
           const updatedLandmarks = landmarkState.landmarks.map((lm, i) =>
             i === exploredIndex ? { ...lm, explored: true } : lm
           )
+          const newIndex = Math.min((landmarkState.activeTargetIndex ?? 0) + 1, landmarkState.landmarks.length)
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
@@ -67,6 +68,8 @@ export function useResolveDecisionMutation() {
               exploring: false,
               explorationDepth: 0,
               exploringLandmarkName: undefined,
+              activeTargetIndex: newIndex,
+              nextLandmarkIndex: newIndex,
             },
           })
           const chosenOption = decisionPoint.options.find(o => o.id === optionId)

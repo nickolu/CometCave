@@ -170,7 +170,7 @@ export async function moveForwardService(
 
   if (!isExitTarget) {
     // Landmark target arrival
-    const activeLandmark = landmarkState.landmarks[activeTargetIndex]
+    let activeLandmark = landmarkState.landmarks[activeTargetIndex]
 
     // Check arrival: use 2D when data exists, fall back to 1D only when no 2D data
     const charPos = updatedPosition
@@ -194,6 +194,9 @@ export async function moveForwardService(
         ;(landmarkState as typeof landmarkState).landmarks = revealedLandmarks
       }
     }
+
+    // Re-read landmark after potential reveal
+    activeLandmark = landmarkState.landmarks[activeTargetIndex]
 
     if (activeLandmark && !activeLandmark.hidden && hasArrivedAtLandmark) {
       const arrivalEventId = `landmark-arrival-${Date.now()}`

@@ -1239,6 +1239,7 @@ export async function POST(req: NextRequest) {
             ? { ...lm, explored: true }
             : lm
         )
+        const newLandmarkIndex = Math.min(exploredLandmarkIndex + 1, currentLandmarkState.landmarks.length)
         updatedCharacter = {
           ...updatedCharacter,
           landmarkState: {
@@ -1247,6 +1248,8 @@ export async function POST(req: NextRequest) {
             exploring: false,
             explorationDepth: 0,
             exploringLandmarkName: undefined,
+            activeTargetIndex: newLandmarkIndex,
+            nextLandmarkIndex: newLandmarkIndex,
           },
         }
 
