@@ -145,6 +145,7 @@ export interface GameStore {
   discoverCombo: (comboId: string) => void
   dismissLootCelebration: () => void
   clearNewItemId: (itemId: string) => void
+  clearSocialEncounter: () => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -442,6 +443,7 @@ export const useGameStore = create<GameStore>()(
                 shopState: null,
                 activeQuest: null,
                 genericMessage: null,
+                socialEncounter: null,
               },
             }
           })
@@ -1639,6 +1641,9 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      clearSocialEncounter: () => set(state => ({
+        gameState: { ...state.gameState, socialEncounter: null }
+      })),
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)

@@ -121,6 +121,9 @@ type GameState = {
   pendingLootCelebration: Item | null
   /** IDs of items recently added to inventory — cleared when viewed */
   newItemIds: string[]
+  /** Active social encounter NPC and scenario, set by move-forward and cleared after dialogue */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  socialEncounter?: { npc: any; scenario: string } | null
 }
 export type { GameState, DailyRewardState, RunSummaryData }
 export type { DailyChallenge, DailyChallengeType, DailyChallengesState } from './dailyChallenge'

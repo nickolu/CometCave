@@ -55,6 +55,7 @@ import { AreaMap } from './AreaMap'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
+import { NPCDialoguePanel } from './NPCDialoguePanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -136,6 +137,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     claimDailyReward,
     setActiveTarget,
     dismissLootCelebration,
+    clearSocialEncounter,
+    recordNPCEncounter,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
@@ -150,6 +153,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [mapView, setMapView] = useState<'area' | 'world'>('area')
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
+  const [showNPCPanel, setShowNPCPanel] = useState(false)
 
   useEffect(() => {
     if (gameState?.decisionPoint && !gameState.decisionPoint.resolved) {
@@ -221,7 +225,20 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     soundEngine.playCrossroads()
   }, [travelTarget, character, updateSelectedCharacter, addStoryEvent, commit])
 
+  const socialEncounter = gameState.socialEncounter
+
   const handleResolveDecision = (optionId: string) => {
+    // Social encounter: "Talk to NPC" opens the dialogue panel client-side
+    if (optionId === 'engage-conversation' && socialEncounter) {
+      setShowNPCPanel(true)
+      return
+    }
+    // Social encounter: "Walk away" clears the encounter and dismisses the decision
+    if (optionId === 'walk-away' && socialEncounter) {
+      clearSocialEncounter()
+      setDecisionPoint(null)
+      return
+    }
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
@@ -557,7 +574,32 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     </h4>
                   )
                 })()}
-                {!gameState.decisionPoint.resolved && (
+                {showNPCPanel && socialEncounter && character && (
+                  <div className="mt-2">
+                    <NPCDialoguePanel
+                      npc={socialEncounter.npc}
+                      characterName={character.name}
+                      characterClass={character.class}
+                      characterLevel={character.level}
+                      reputation={character.reputation}
+                      region={character.currentRegion ?? 'green_meadows'}
+                      characterCharisma={character.charisma ?? 5}
+                      activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
+                      disposition={character.npcEncounters?.[socialEncounter.npc.id]?.disposition ?? 0}
+                      hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                      hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                      onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                        recordNPCEncounter(socialEncounter.npc.id, dispositionDelta, reward, revealLandmark)
+                      }}
+                      onClose={() => {
+                        setShowNPCPanel(false)
+                        clearSocialEncounter()
+                        setDecisionPoint(null)
+                      }}
+                    />
+                  </div>
+                )}
+                {!showNPCPanel && !gameState.decisionPoint.resolved && (
                   <div>
                     <div className="font-semibold mb-6 break-words">{gameState.decisionPoint.prompt}</div>
                     {resolveDecisionPending ? (

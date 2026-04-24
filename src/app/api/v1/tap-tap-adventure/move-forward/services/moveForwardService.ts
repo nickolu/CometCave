@@ -1,5 +1,6 @@
 import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward/schemas'
 import { getRegion, getConnectedRegions, canEnterRegion } from '@/app/tap-tap-adventure/config/regions'
+import { getRandomEncounterNPC } from '@/app/tap-tap-adventure/config/npcs'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateLLMEvents, generateLegendaryEvent } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import {
@@ -501,6 +502,63 @@ export async function moveForwardService(
       },
       decisionPoint: null,
       shopEvent: true,
+      landmarkProgress,
+    }
+  }
+
+  // Social NPC encounter: ~10% chance every step after distance 30
+  if (newDistance > 30 && Math.random() < 0.10) {
+    const encounterNPC = getRandomEncounterNPC()
+    const scenario = `You encounter ${encounterNPC.name} on the road. ${encounterNPC.description}`
+
+    return {
+      character: {
+        ...updatedCharacter,
+        landmarkState: {
+          ...landmarkState,
+          positionInRegion: newPositionInRegion,
+          position: updatedPosition,
+        },
+      },
+      event: {
+        id: `social-encounter-${Date.now()}`,
+        type: 'social_encounter',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      },
+      decisionPoint: {
+        id: `decision-social-${Date.now()}`,
+        eventId: `social-encounter-${Date.now()}`,
+        prompt: `${encounterNPC.icon} ${scenario}`,
+        options: [
+          {
+            id: 'engage-conversation',
+            text: `💬 Talk to ${encounterNPC.name}`,
+            successProbability: 1.0,
+            successDescription: `You approach ${encounterNPC.name} to have a conversation.`,
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You approach ${encounterNPC.name}.`,
+          },
+          {
+            id: 'walk-away',
+            text: '🚶 Continue on your way',
+            successProbability: 1.0,
+            successDescription: 'You nod politely and continue walking.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You continue on your way.',
+          },
+        ],
+        resolved: false,
+      },
+      socialEncounter: {
+        npc: encounterNPC,
+        scenario,
+      },
       landmarkProgress,
     }
   }
