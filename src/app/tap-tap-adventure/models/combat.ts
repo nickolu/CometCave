@@ -122,13 +122,25 @@ export type CombatActionRequest = z.infer<typeof CombatActionRequestSchema>
 
 export const CombatLogEntrySchema = z.object({
   turn: z.number(),
-  actor: z.enum(['player', 'enemy']),
+  actor: z.enum(['player', 'enemy', 'party_member']),
   action: z.string(),
   damage: z.number().optional(),
   description: z.string(),
   isCritical: z.boolean().optional(),
 })
 export type CombatLogEntry = z.infer<typeof CombatLogEntrySchema>
+
+export const PartyMemberCombatStateSchema = z.object({
+  memberId: z.string(),
+  name: z.string(),
+  icon: z.string().default('⚔️'),
+  hp: z.number(),
+  maxHp: z.number(),
+  attack: z.number(),
+  defense: z.number(),
+  isKnockedOut: z.boolean().default(false),
+})
+export type PartyMemberCombatState = z.infer<typeof PartyMemberCombatStateSchema>
 
 export const CombatStatusSchema = z.enum(['active', 'victory', 'defeat', 'fled'])
 export type CombatStatus = z.infer<typeof CombatStatusSchema>
@@ -162,5 +174,6 @@ export const CombatStateSchema = z.object({
   combatDistance: CombatDistanceSchema.optional(),
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),
+  partyMemberStates: z.array(PartyMemberCombatStateSchema).optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>

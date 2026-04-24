@@ -499,6 +499,16 @@ export function CombatUI({ combatState }: CombatUIProps) {
             color="text-amber-400"
           />
         )}
+        {/* Party member HP bars */}
+        {combatState.partyMemberStates?.map(member => (
+          <HpBar
+            key={member.memberId}
+            current={member.hp}
+            max={member.maxHp}
+            label={`${member.icon} ${member.name}${member.isKnockedOut ? ' (KO)' : ''}`}
+            color={member.isKnockedOut ? 'text-slate-500' : 'text-emerald-400'}
+          />
+        ))}
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}
