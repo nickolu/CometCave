@@ -91,6 +91,19 @@ function GeneratedClassCard({
         <span className="text-xs text-slate-500">{generatedClass.spellSlots} spell slots</span>
         <span className="text-xs text-slate-500">{generatedClass.manaMultiplier}x mana</span>
       </div>
+      {generatedClass.startingWeapon && (
+        <div className="mt-2 pt-2 border-t border-[#3a3c56]">
+          <div className="text-xs text-amber-300 font-medium">
+            {'⚔️ '}{generatedClass.startingWeapon.name}
+            <span className="ml-1 text-slate-500 font-normal">({generatedClass.startingWeapon.effects.range} range)</span>
+          </div>
+          <div className="text-xs text-slate-500 mt-0.5">
+            {generatedClass.startingWeapon.effects.strength ? `+${generatedClass.startingWeapon.effects.strength} STR` : ''}
+            {generatedClass.startingWeapon.effects.strength && generatedClass.startingWeapon.effects.intelligence ? ' · ' : ''}
+            {generatedClass.startingWeapon.effects.intelligence ? `+${generatedClass.startingWeapon.effects.intelligence} INT` : ''}
+          </div>
+        </div>
+      )}
       <div className="mt-2 pt-2 border-t border-[#3a3c56]">
         <div className="text-xs text-indigo-300 font-medium">{generatedClass.startingAbility.name}</div>
         <div className="text-xs text-slate-500 mt-0.5">{generatedClass.startingAbility.description}</div>
