@@ -24,7 +24,7 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
+import { assignMountPersonality, getMountMaxHp, getMountSellPrice, getMountPrice } from '@/app/tap-tap-adventure/config/mounts'
 import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
 import { PartyMember, MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
 import { processPartyUpkeep } from '@/app/tap-tap-adventure/lib/partyUpkeep'
@@ -130,6 +130,8 @@ export interface GameStore {
   stashMount: () => boolean
   retrieveMount: (mountId: string) => boolean
   healMount: (mountId: string, isActive: boolean) => boolean
+  sellMount: (mountId: string, isActive: boolean) => boolean
+  buyStableMount: (mount: Mount) => boolean
   recruitMercenary: (mercenary: Mercenary) => boolean
   dismissMercenary: (mercenaryId: string) => void
   setActiveMercenary: (mercenaryId: string) => void
@@ -1013,6 +1015,57 @@ export const useGameStore = create<GameStore>()(
           } else if (c.mountRoster) {
             const mi = c.mountRoster.findIndex(m => m.id === mountId)
             if (mi >= 0) c.mountRoster[mi].hp = c.mountRoster[mi].maxHp ?? getMountMaxHp(c.mountRoster[mi].rarity)
+          }
+        }))
+        return true
+      },
+      sellMount: (mountId: string, isActive: boolean) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+
+        if (isActive) {
+          if (!char.activeMount || char.activeMount.id !== mountId) return false
+          const sellPrice = getMountSellPrice(char.activeMount.rarity)
+          set(produce((draft: GameStore) => {
+            const c = draft.gameState.characters[idx]
+            c.gold += sellPrice
+            c.activeMount = null
+          }))
+        } else {
+          const rosterIdx = (char.mountRoster ?? []).findIndex(m => m.id === mountId)
+          if (rosterIdx < 0) return false
+          const mount = char.mountRoster![rosterIdx]
+          const sellPrice = getMountSellPrice(mount.rarity)
+          set(produce((draft: GameStore) => {
+            const c = draft.gameState.characters[idx]
+            c.gold += sellPrice
+            c.mountRoster!.splice(rosterIdx, 1)
+          }))
+        }
+        return true
+      },
+      buyStableMount: (mount: Mount) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+        const price = getMountPrice(mount.rarity)
+        if (char.gold < price) return false
+
+        const roster = char.mountRoster ?? []
+        if (char.activeMount && roster.length >= 5) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          c.gold -= price
+          if (!c.activeMount) {
+            c.activeMount = mount
+          } else {
+            c.mountRoster = [...(c.mountRoster ?? []), mount]
           }
         }))
         return true
