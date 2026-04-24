@@ -851,6 +851,7 @@ export function processPlayerAction(
   const bossAlreadyPhased = isBoss && !combatState.isFinalBoss ? enemy.name.includes('(Enraged)') : false
   let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
   let partyMemberStates = combatState.partyMemberStates ? combatState.partyMemberStates.map(m => ({ ...m })) : undefined
+  let additionalEnemies = combatState.additionalEnemies ? combatState.additionalEnemies.map(e => ({ ...e })) : undefined
   // Only propagate combatDistance in returns if the original state had it set
   // This ensures backward compatibility with combat states created before range was added
   let rangeSystemActive = combatState.combatDistance !== undefined
@@ -868,6 +869,33 @@ export function processPlayerAction(
   }
   if (!playerState.turnActions) {
     playerState.turnActions = []
+  }
+
+  // Switch target is free (0 AP) — just swap primary and additional enemy
+  if (action.action === 'switch_target' && action.itemId !== undefined && additionalEnemies?.length) {
+    const targetIdx = parseInt(action.itemId, 10)
+    if (targetIdx >= 0 && targetIdx < additionalEnemies.length && additionalEnemies[targetIdx].hp > 0) {
+      const old = enemy
+      enemy = additionalEnemies[targetIdx]
+      additionalEnemies[targetIdx] = old
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'player' as const,
+        action: 'switch_target',
+        description: `You switch your focus to ${enemy.name}!`,
+      })
+      return {
+        combatState: {
+          ...combatState,
+          enemy,
+          playerState,
+          combatLog: [...combatLog, ...newLogs],
+          turnPhase: 'player',
+          partyMemberStates,
+          additionalEnemies,
+        },
+      }
+    }
   }
 
   // Check AP cost for the requested action
@@ -889,6 +917,7 @@ export function processPlayerAction(
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
         partyMemberStates,
+        additionalEnemies,
       },
     }
   }
@@ -948,6 +977,7 @@ export function processPlayerAction(
             ...(rangeSystemActive ? { combatDistance } : {}),
             turnPhase: 'player',
             partyMemberStates,
+            additionalEnemies,
           },
           consumedItemId,
         }
@@ -1145,6 +1175,7 @@ export function processPlayerAction(
               enemyTelegraph: null,
               ...(rangeSystemActive ? { combatDistance } : {}),
               turnPhase: 'enemy_done',
+              additionalEnemies,
             },
           }
         }
@@ -1365,13 +1396,44 @@ export function processPlayerAction(
 
   // Check victory
   if (enemy.hp <= 0) {
-    status = 'victory'
+    const defeatedName = enemy.name
     newLogs.push({
       turn: turnNumber,
       actor: 'player',
       action: 'victory',
-      description: `You defeated ${enemy.name}!`,
+      description: `You defeated ${defeatedName}!`,
     })
+    // If additional enemies remain alive, auto-switch to next target
+    if (additionalEnemies?.some(e => e.hp > 0)) {
+      const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
+      const nextEnemy = additionalEnemies[nextIdx]
+      const remainingAdditional = additionalEnemies.filter((_, i) => i !== nextIdx)
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'player' as const,
+        action: 'switch_target',
+        description: `${defeatedName} is defeated! You focus on ${nextEnemy.name}!`,
+      })
+      const nextTelegraph = generateEnemyTelegraph(nextEnemy, turnNumber, !!isBoss)
+      return {
+        combatState: {
+          ...combatState,
+          enemy: nextEnemy,
+          playerState: tickBuffs(playerState),
+          turnNumber,
+          combatLog: [...combatLog, ...newLogs],
+          status: 'active',
+          enemyTelegraph: nextTelegraph,
+          isBoss,
+          ...(rangeSystemActive ? { combatDistance } : {}),
+          turnPhase: 'enemy_done',
+          partyMemberStates,
+          additionalEnemies: remainingAdditional.length > 0 ? remainingAdditional : undefined,
+        },
+        consumedItemId,
+      }
+    }
+    status = 'victory'
     return {
       combatState: {
         ...combatState,
@@ -1383,6 +1445,7 @@ export function processPlayerAction(
         enemyTelegraph: null,
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'enemy_done',
+        additionalEnemies: undefined,
       },
       consumedItemId,
     }
@@ -1403,6 +1466,7 @@ export function processPlayerAction(
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
         partyMemberStates,
+        additionalEnemies,
       },
       consumedItemId,
     }
@@ -1794,7 +1858,84 @@ export function processPlayerAction(
     partyMemberStates = partyResult.partyStates
     newLogs.push(...partyResult.logs)
     if (partyResult.killedEnemy) {
-      status = 'victory'
+      // If additional enemies remain, auto-switch target instead of declaring victory
+      if (additionalEnemies?.some(e => e.hp > 0)) {
+        const defeatedName = enemy.name
+        const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
+        enemy = additionalEnemies[nextIdx]
+        additionalEnemies = additionalEnemies.filter((_, i) => i !== nextIdx)
+        newLogs.push({
+          turn: turnNumber, actor: 'party_member' as const, action: 'switch_target',
+          description: `${defeatedName} is defeated! ${enemy.name} remains!`,
+        })
+      } else {
+        status = 'victory'
+      }
+    }
+  }
+
+  // Party members also strike additional enemies (round-robin assignment)
+  if (status === 'active' && additionalEnemies?.length && partyMemberStates?.length) {
+    const aliveParty = partyMemberStates.filter(m => !m.isKnockedOut)
+    for (let i = 0; i < additionalEnemies.length; i++) {
+      if (additionalEnemies[i].hp <= 0) continue
+      const assignedMember = aliveParty[i % aliveParty.length]
+      if (!assignedMember) continue
+      const baseDmg = assignedMember.attack
+      const raw = baseDmg - additionalEnemies[i].defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
+      const damage = Math.max(1, Math.round(raw))
+      additionalEnemies[i] = { ...additionalEnemies[i], hp: Math.max(0, additionalEnemies[i].hp - damage) }
+      newLogs.push({
+        turn: turnNumber, actor: 'party_member' as const, action: 'attack', damage,
+        description: `${assignedMember.icon} ${assignedMember.name} attacks ${additionalEnemies[i].name} for ${damage} damage!`,
+      })
+      if (additionalEnemies[i].hp <= 0) {
+        newLogs.push({
+          turn: turnNumber, actor: 'party_member' as const, action: 'victory',
+          description: `${assignedMember.name} defeats ${additionalEnemies[i].name}!`,
+        })
+      }
+    }
+  }
+
+  // Additional enemies auto-attack player/party at end of turn
+  if (status === 'active' && additionalEnemies?.length) {
+    for (let i = 0; i < additionalEnemies.length; i++) {
+      const addEnemy = additionalEnemies[i]
+      if (addEnemy.hp <= 0) continue
+
+      // 40% chance to target a party member, 60% player
+      const aliveMembers = partyMemberStates?.filter(m => !m.isKnockedOut) ?? []
+      const shouldTargetMember = aliveMembers.length > 0 && Math.random() < 0.4
+
+      if (shouldTargetMember) {
+        const tIdx = Math.floor(Math.random() * aliveMembers.length)
+        const target = aliveMembers[tIdx]
+        const dmg = Math.max(1, addEnemy.attack - target.defense)
+        const mIdx = partyMemberStates!.findIndex(m => m.memberId === target.memberId)
+        const newHp = Math.max(0, partyMemberStates![mIdx].hp - dmg)
+        partyMemberStates![mIdx] = { ...partyMemberStates![mIdx], hp: newHp, isKnockedOut: newHp <= 0 }
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy' as const, action: 'attack', damage: dmg,
+          description: `${addEnemy.name} attacks ${target.name} for ${dmg} damage!${newHp <= 0 ? ` ${target.name} is knocked out!` : ''}`,
+        })
+      } else {
+        // Attack player
+        const dmg = addEnemy.attack - playerState.defense * 0.5
+        const finalDmg = playerState.isDefending ? Math.max(1, Math.floor(dmg * 0.5)) : Math.max(1, Math.round(dmg))
+        playerState = { ...playerState, hp: Math.max(0, playerState.hp - finalDmg) }
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy' as const, action: 'attack', damage: finalDmg,
+          description: `${addEnemy.name} attacks you for ${finalDmg} damage!`,
+        })
+        if (playerState.hp <= 0) {
+          status = 'defeat'
+          newLogs.push({
+            turn: turnNumber, actor: 'enemy' as const, action: 'defeat',
+            description: `You have been defeated by ${addEnemy.name}...`,
+          })
+        }
+      }
     }
   }
 
@@ -1864,6 +2005,19 @@ export function processPlayerAction(
     }
   }
 
+  // If primary enemy was defeated (e.g. by status effects) but additional enemies remain, auto-switch
+  if (status === 'victory' && additionalEnemies?.some(e => e.hp > 0)) {
+    const defeatedName = enemy.name
+    const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
+    enemy = additionalEnemies[nextIdx]
+    additionalEnemies = additionalEnemies.filter((_, i) => i !== nextIdx)
+    status = 'active'
+    newLogs.push({
+      turn: turnNumber, actor: 'player' as const, action: 'switch_target',
+      description: `${defeatedName} is defeated! ${enemy.name} remains!`,
+    })
+  }
+
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'
     ? generateEnemyTelegraph(enemy, turnNumber, !!isBoss)
@@ -1882,6 +2036,7 @@ export function processPlayerAction(
       ...(rangeSystemActive ? { combatDistance } : {}),
       turnPhase: 'enemy_done',
       partyMemberStates,
+      additionalEnemies: additionalEnemies && additionalEnemies.length > 0 ? additionalEnemies : undefined,
     },
     consumedItemId,
     mountDied,
@@ -1906,7 +2061,16 @@ export function getCombatRewards(
   const lootBonus = getSkillBonus(skills, 'loot_chance')
   const diffMods = getDifficultyModifiers(character.difficultyMode)
   const regionMult = regionMultiplier ?? 1
-  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+  let gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+
+  // Add gold from defeated additional enemies
+  if (combatState.additionalEnemies?.length) {
+    for (const addEnemy of combatState.additionalEnemies) {
+      if (addEnemy.hp <= 0) {
+        gold += Math.round(addEnemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+      }
+    }
+  }
 
   const loot: Item[] = []
   if (enemy.lootTable) {

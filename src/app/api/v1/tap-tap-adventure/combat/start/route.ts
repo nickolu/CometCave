@@ -5,7 +5,8 @@ import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { initializePlayerCombatState } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { generateCombatEncounter, generateBossEncounter, generateMiniBossEncounter, generateFinalBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
-import { CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { CombatState, CombatEnemy } from '@/app/tap-tap-adventure/models/combat'
+import { getEnemyCount, generateEnemyVariant, scaleBossForParty } from '@/app/tap-tap-adventure/lib/enemyVariants'
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,15 +74,35 @@ export async function POST(req: NextRequest) {
         isKnockedOut: false,
       }))
 
+    const partySize = partyMemberStates.length
+    const isBossEncounter = isFinalBoss || effectiveIsBoss || isMiniBoss
+
+    // Scale boss stats for party size (instead of adding enemies)
+    const finalEnemy: CombatEnemy = isBossEncounter ? scaleBossForParty(enemy, partySize) : enemy
+
+    // Generate a stable combat ID first so we can use it for seeding
+    const combatId = `combat-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+
+    // Generate additional enemies for non-boss fights with party members
+    let additionalEnemies: CombatEnemy[] | undefined
+    if (!isBossEncounter && partySize > 0) {
+      const count = getEnemyCount(partySize, false) - 1 // -1 because primary enemy counts
+      if (count > 0) {
+        additionalEnemies = Array.from({ length: count }, (_, i) =>
+          generateEnemyVariant(finalEnemy, i, combatId)
+        )
+      }
+    }
+
     // Clear exploration shield — it's been consumed by combat init
     const updatedCharacter = character.explorationShield
       ? { ...character, explorationShield: 0 }
       : character
 
     const combatState: CombatState = {
-      id: `combat-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      id: combatId,
       eventId: `event-combat-${Date.now()}`,
-      enemy,
+      enemy: finalEnemy,
       playerState,
       turnNumber: 0,
       combatLog: [],
@@ -94,6 +115,7 @@ export async function POST(req: NextRequest) {
       combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
       partyMemberStates: partyMemberStates.length > 0 ? partyMemberStates : undefined,
+      additionalEnemies,
     }
 
     return NextResponse.json({ combatState, updatedCharacter: character.explorationShield ? updatedCharacter : undefined })
