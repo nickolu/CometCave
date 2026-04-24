@@ -99,7 +99,7 @@ export const WEATHER_TYPES: Record<WeatherId, WeatherType> = {
 
 /** Weighted weather pools per region. Keys must match region IDs in config/regions.ts */
 export const REGION_WEATHER_POOLS: Record<string, RegionWeatherPool> = {
-  starting_village: { clear: 10 },
+  hearthwood: { clear: 10 },
   green_meadows: { clear: 5, rain: 3, storm: 1, fog: 1 },
   dark_forest: { clear: 2, fog: 5, rain: 3, storm: 1 },
   crystal_caves: { clear: 5, fog: 3, blizzard: 2 },

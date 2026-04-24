@@ -12,7 +12,7 @@ export interface LandmarkTemplate {
 }
 
 export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
-  starting_village: [
+  hearthwood: [
     {
       id: 'sv_notice_board',
       name: 'Notice Board',
@@ -651,7 +651,7 @@ export function getTemplatesForRegion(regionId: string): LandmarkTemplate[] {
 }
 
 export const SECRET_LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
-  starting_village: [
+  hearthwood: [
     { id: 'sv_hidden_cellar', name: 'Hidden Cellar', type: 'dungeon', description: 'A concealed entrance beneath the cobblestones leads to a forgotten cellar.', icon: '🕳️', hasShop: false, encounterPrompt: 'A damp cellar filled with old crates and cobwebs. Something glints in the darkness.', isSecret: true },
   ],
   green_meadows: [

@@ -1972,7 +1972,7 @@ export const useGameStore = create<GameStore>()(
               ;(char as FantasyCharacter).mainQuest = createMainQuest()
               // Mark milestones as claimed for already-visited regions (no retroactive gold)
               const visited = (char as FantasyCharacter).visitedRegions ?? ['green_meadows']
-              const count = visited.filter((r: string) => r !== 'starting_village').length
+              const count = visited.filter((r: string) => r !== 'hearthwood').length
               for (const m of (char as FantasyCharacter).mainQuest!.milestones) {
                 if (count >= m.regionsRequired) m.claimed = true
               }

@@ -11,7 +11,7 @@ import {
 describe('Region definitions', () => {
   it('should define all expected regions', () => {
     const expectedIds = [
-      'starting_village',
+      'hearthwood',
       'green_meadows',
       'dark_forest',
       'crystal_caves',
@@ -55,7 +55,7 @@ describe('Region definitions', () => {
   })
 
   it('should have correct difficulty multipliers', () => {
-    expect(REGIONS.starting_village.difficultyMultiplier).toBe(0.5)
+    expect(REGIONS.hearthwood.difficultyMultiplier).toBe(0.5)
     expect(REGIONS.green_meadows.difficultyMultiplier).toBe(0.8)
     expect(REGIONS.dark_forest.difficultyMultiplier).toBe(1.0)
     expect(REGIONS.crystal_caves.difficultyMultiplier).toBe(1.1)
@@ -88,7 +88,7 @@ describe('Region definitions', () => {
 
 describe('Min level requirements', () => {
   it('starting areas should have low level requirements', () => {
-    expect(REGIONS.starting_village.minLevel).toBe(0)
+    expect(REGIONS.hearthwood.minLevel).toBe(0)
     expect(REGIONS.green_meadows.minLevel).toBe(0)
     expect(REGIONS.dark_forest.minLevel).toBe(1)
   })
@@ -132,13 +132,13 @@ describe('getConnectedRegions', () => {
   it('should return connected Region objects', () => {
     const connected = getConnectedRegions('green_meadows')
     const ids = connected.map(r => r.id)
-    expect(ids).toContain('starting_village')
+    expect(ids).toContain('hearthwood')
     expect(ids).toContain('dark_forest')
     expect(ids).toContain('sunken_ruins')
   })
 
   it('should return correct number of connections', () => {
-    expect(getConnectedRegions('starting_village')).toHaveLength(1)
+    expect(getConnectedRegions('hearthwood')).toHaveLength(1)
     expect(getConnectedRegions('green_meadows')).toHaveLength(3)
     expect(getConnectedRegions('sky_citadel')).toHaveLength(2) // dragons_spine + abyssal_depths
   })
@@ -232,12 +232,12 @@ describe('Tree structure fields', () => {
     }
   })
 
-  it('starting_village should be the root (no parent)', () => {
-    expect(REGIONS.starting_village.parentRegion).toBeUndefined()
+  it('hearthwood should be the root (no parent)', () => {
+    expect(REGIONS.hearthwood.parentRegion).toBeUndefined()
   })
 
-  it('starting_village should have children', () => {
-    expect(REGIONS.starting_village.childRegions).toContain('green_meadows')
+  it('hearthwood should have children', () => {
+    expect(REGIONS.hearthwood.childRegions).toContain('green_meadows')
   })
 })
 
