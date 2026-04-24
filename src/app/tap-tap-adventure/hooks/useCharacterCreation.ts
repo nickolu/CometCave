@@ -216,6 +216,7 @@ export function useCharacterCreation() {
       currentWeather: 'clear',
       visitedRegions: ['green_meadows'],
       factionReputations: {},
+      bounty: 0,
     }
     const maxMana = calculateMaxMana(tempChar)
 
