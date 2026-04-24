@@ -19,6 +19,7 @@ export interface GeneratedLandmark {
   hasMailbox?: boolean
   hasNoticeBoard?: boolean
   hasTransport?: boolean
+  hasCrafting?: boolean
 }
 
 // Simple string hash for seeded random
@@ -113,6 +114,7 @@ export function generateLandmarks(
       hasMailbox: template.hasMailbox,
       hasNoticeBoard: template.hasNoticeBoard,
       hasTransport: template.hasTransport,
+      hasCrafting: template.hasCrafting,
     })
     currentDist += Math.floor((25 + Math.floor(rng() * 26)) * difficultyMultiplier) // 25-50, scaled
   }
@@ -146,6 +148,7 @@ export function generateLandmarks(
       hasMailbox: secretTemplate.hasMailbox,
       hasNoticeBoard: secretTemplate.hasNoticeBoard,
       hasTransport: secretTemplate.hasTransport,
+      hasCrafting: secretTemplate.hasCrafting,
     })
     landmarks.sort((a, b) => a.distanceFromEntry - b.distanceFromEntry)
   }
