@@ -207,6 +207,16 @@ export async function POST(req: NextRequest) {
             resultDescription: `You rest at the inn for ${innCost} gold.`,
           },
           {
+            id: 'hire-transport',
+            text: '🐴 Hire Transport',
+            successProbability: 1.0,
+            successDescription: 'You check the transport board for available destinations.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check available transport.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -264,6 +274,16 @@ export async function POST(req: NextRequest) {
             failureDescription: '',
             failureEffects: {},
             resultDescription: `You rest at the inn.`,
+          },
+          {
+            id: 'hire-transport',
+            text: '🐴 Hire Transport',
+            successProbability: 1.0,
+            successDescription: 'You check the transport board for available destinations.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check available transport.',
           },
           {
             id: 'leave-town',
@@ -340,6 +360,16 @@ export async function POST(req: NextRequest) {
             resultDescription: 'You rest at the inn.',
           },
           {
+            id: 'hire-transport',
+            text: '🐴 Hire Transport',
+            successProbability: 1.0,
+            successDescription: 'You check the transport board for available destinations.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check available transport.',
+          },
+          {
             id: 'leave-town',
             text: '🚪 Leave Town',
             successProbability: 1.0,
@@ -361,6 +391,316 @@ export async function POST(req: NextRequest) {
         selectedOptionText: option.text,
         outcomeDescription: outcomeDesc,
         resourceDelta: (updatedCharacter.gold ?? 0) !== (character.gold ?? 0) ? { gold: -innCost } : {},
+        decisionPoint: townHub,
+      })
+    }
+
+    // Handle hire-transport: show available destinations with prices
+    if (optionId === 'hire-transport') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+      const charPos = landmarkState?.position ?? { x: 0, y: 0 }
+
+      // Build destination options from known (non-hidden) landmarks
+      const destinations = (landmarkState?.landmarks ?? [])
+        .map((lm, idx) => ({ ...lm, index: idx }))
+        .filter(lm => {
+          // Filter out: hidden landmarks, the current landmark, landmarks without positions
+          if (lm.hidden) return false
+          if (lm.name === townName) return false
+          if (!lm.position) return false
+          return true
+        })
+        .map(lm => {
+          const dist = Math.sqrt(
+            Math.pow((lm.position!.x - charPos.x), 2) +
+            Math.pow((lm.position!.y - charPos.y), 2)
+          )
+          const price = Math.max(5, Math.ceil(dist * 0.5 * regionMult))
+          return { ...lm, dist, price }
+        })
+        .sort((a, b) => a.dist - b.dist)
+
+      const destinationOptions = destinations.map(dest => ({
+        id: `transport-to-${dest.index}`,
+        text: `${dest.icon} ${dest.name} — ${dest.price} gold (${Math.round(dest.dist)} steps)`,
+        successProbability: 1.0,
+        successDescription: `The driver takes you to ${dest.name}.`,
+        successEffects: {},
+        failureDescription: '',
+        failureEffects: {},
+        resultDescription: `You travel to ${dest.name}.`,
+      }))
+
+      if (destinationOptions.length === 0) {
+        // No destinations — return to town hub
+        const townHub: FantasyDecisionPoint = {
+          id: `decision-town-hub-${Date.now()}`,
+          eventId: `town-hub-${Date.now()}`,
+          prompt: `There are no available transport destinations from ${townName}. What else would you like to do?`,
+          options: [
+            {
+              id: 'visit-shop',
+              text: '🏪 Visit the Shop',
+              successProbability: 1.0,
+              successDescription: 'You browse the merchant\'s wares.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You visit the shop.',
+            },
+            {
+              id: 'rest-at-inn',
+              text: `🛏️ Rest at the Inn (${innCost} gold)`,
+              successProbability: 1.0,
+              successDescription: `You pay ${innCost} gold for rest.`,
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You rest at the inn.',
+            },
+            {
+              id: 'hire-transport',
+              text: '🐴 Hire Transport',
+              successProbability: 1.0,
+              successDescription: 'You check for transport.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You check transport.',
+            },
+            {
+              id: 'leave-town',
+              text: '🚪 Leave Town',
+              successProbability: 1.0,
+              successDescription: 'You head back on the road.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You leave ${townName}.`,
+            },
+          ],
+          resolved: false,
+        }
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: 'No transport destinations available.',
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: 'No transport destinations available from here.',
+          resourceDelta: {},
+          decisionPoint: townHub,
+        })
+      }
+
+      // Add a back option
+      destinationOptions.push({
+        id: 'back-to-town',
+        text: '↩️ Back to town',
+        successProbability: 1.0,
+        successDescription: 'You return to the town square.',
+        successEffects: {},
+        failureDescription: '',
+        failureEffects: {},
+        resultDescription: 'You go back.',
+      })
+
+      const transportBoard: FantasyDecisionPoint = {
+        id: `decision-transport-${Date.now()}`,
+        eventId: `transport-${Date.now()}`,
+        prompt: `🐴 Transport Board — Choose your destination from ${townName}:`,
+        options: destinationOptions,
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You check the transport board.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You review available transport destinations.',
+        resourceDelta: {},
+        decisionPoint: transportBoard,
+      })
+    }
+
+    // Handle transport-to-X: pay gold and teleport to destination landmark
+    if (optionId.startsWith('transport-to-')) {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const destIndex = parseInt(optionId.replace('transport-to-', ''), 10)
+      const destLandmark = landmarkState?.landmarks[destIndex]
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const charPos = landmarkState?.position ?? { x: 0, y: 0 }
+
+      if (!destLandmark || !destLandmark.position) {
+        return NextResponse.json({ error: 'Invalid transport destination' }, { status: 400 })
+      }
+
+      // Calculate price
+      const dist = Math.sqrt(
+        Math.pow((destLandmark.position.x - charPos.x), 2) +
+        Math.pow((destLandmark.position.y - charPos.y), 2)
+      )
+      const price = Math.max(5, Math.ceil(dist * 0.5 * regionMult))
+
+      if ((character.gold ?? 0) < price) {
+        // Not enough gold — show message and return to town hub
+        const innCost = Math.round(10 * regionMult)
+        const townHub: FantasyDecisionPoint = {
+          id: `decision-town-hub-${Date.now()}`,
+          eventId: `town-hub-${Date.now()}`,
+          prompt: `You don't have enough gold for transport to ${destLandmark.name}. You need ${price} gold but only have ${character.gold ?? 0}. What would you like to do?`,
+          options: [
+            {
+              id: 'visit-shop',
+              text: '🏪 Visit the Shop',
+              successProbability: 1.0,
+              successDescription: 'You browse the wares.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You visit the shop.',
+            },
+            {
+              id: 'rest-at-inn',
+              text: `🛏️ Rest at the Inn (${innCost} gold)`,
+              successProbability: 1.0,
+              successDescription: 'You rest.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You rest.',
+            },
+            {
+              id: 'hire-transport',
+              text: '🐴 Hire Transport',
+              successProbability: 1.0,
+              successDescription: 'You check transport.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You check transport.',
+            },
+            {
+              id: 'leave-town',
+              text: '🚪 Leave Town',
+              successProbability: 1.0,
+              successDescription: 'You leave.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You leave ${townName}.`,
+            },
+          ],
+          resolved: false,
+        }
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: `Not enough gold for transport to ${destLandmark.name}.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You need ${price} gold but only have ${character.gold ?? 0}.`,
+          resourceDelta: {},
+          decisionPoint: townHub,
+        })
+      }
+
+      // Deduct gold and teleport
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        gold: (character.gold ?? 0) - price,
+        landmarkState: landmarkState
+          ? {
+              ...landmarkState,
+              position: destLandmark.position,
+              activeTargetIndex: destIndex,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            }
+          : undefined,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You hire transport to ${destLandmark.name} for ${price} gold. The journey is swift and uneventful.`,
+        appliedEffects: { gold: -price },
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `🐴 You arrive at ${destLandmark.name} after a comfortable ride. (-${price} gold)`,
+        resourceDelta: { gold: -price },
+      })
+    }
+
+    // Handle back-to-town: return to town hub from transport board
+    if (optionId === 'back-to-town') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const regionMult = getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+
+      const townHub: FantasyDecisionPoint = {
+        id: `decision-town-hub-${Date.now()}`,
+        eventId: `town-hub-${Date.now()}`,
+        prompt: `You return to the town square of ${townName}. What would you like to do?`,
+        options: [
+          {
+            id: 'visit-shop',
+            text: '🏪 Visit the Shop',
+            successProbability: 1.0,
+            successDescription: 'You browse the wares.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You visit the shop.',
+          },
+          {
+            id: 'rest-at-inn',
+            text: `🛏️ Rest at the Inn (${innCost} gold)`,
+            successProbability: 1.0,
+            successDescription: 'You rest.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You rest.',
+          },
+          {
+            id: 'hire-transport',
+            text: '🐴 Hire Transport',
+            successProbability: 1.0,
+            successDescription: 'You check transport.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: 'You check transport.',
+          },
+          {
+            id: 'leave-town',
+            text: '🚪 Leave Town',
+            successProbability: 1.0,
+            successDescription: 'You leave.',
+            successEffects: {},
+            failureDescription: '',
+            failureEffects: {},
+            resultDescription: `You leave ${townName}.`,
+          },
+        ],
+        resolved: false,
+      }
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: `You return to ${townName}.`,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `You return to the town square.`,
+        resourceDelta: {},
         decisionPoint: townHub,
       })
     }
