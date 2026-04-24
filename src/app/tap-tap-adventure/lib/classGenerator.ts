@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai'
 
 import { FALLBACK_CLASSES } from '@/app/tap-tap-adventure/config/fallbackClasses'
-import { GeneratedClass, GeneratedClassStartingAbility } from '@/app/tap-tap-adventure/models/generatedClass'
+import { GeneratedClass, GeneratedClassStartingAbility, StartingWeapon } from '@/app/tap-tap-adventure/models/generatedClass'
 import { SpellEffect, SpellElement, SpellSchool } from '@/app/tap-tap-adventure/models/spell'
 
 export const COMBAT_STYLES = [
@@ -284,6 +284,46 @@ const EFFECT_TEMPLATES: Record<string, EffectTemplate[]> = {
   ],
 }
 
+const WEAPON_TEMPLATES: Record<string, { name: string; effects: { strength?: number; intelligence?: number; range: 'close' | 'mid' | 'far' } }[]> = {
+  martial: [
+    { name: 'Iron Longsword', effects: { strength: 3, range: 'close' } },
+    { name: 'Battle Axe', effects: { strength: 3, range: 'close' } },
+    { name: 'War Hammer', effects: { strength: 3, range: 'close' } },
+  ],
+  arcane: [
+    { name: 'Crystal Wand', effects: { intelligence: 3, range: 'far' } },
+    { name: 'Arcane Scepter', effects: { intelligence: 3, range: 'far' } },
+    { name: 'Mystic Orb', effects: { intelligence: 3, range: 'far' } },
+  ],
+  divine: [
+    { name: 'Holy Mace', effects: { strength: 2, intelligence: 1, range: 'close' } },
+    { name: 'Blessed Flail', effects: { strength: 2, intelligence: 1, range: 'close' } },
+    { name: 'Sacred Hammer', effects: { strength: 2, intelligence: 1, range: 'close' } },
+  ],
+  primal: [
+    { name: 'Hunting Spear', effects: { strength: 2, intelligence: 1, range: 'mid' } },
+    { name: 'Oak Quarterstaff', effects: { strength: 2, intelligence: 1, range: 'mid' } },
+    { name: 'Bone Club', effects: { strength: 2, intelligence: 1, range: 'mid' } },
+  ],
+  shadow: [
+    { name: 'Shadow Daggers', effects: { strength: 3, range: 'close' } },
+    { name: 'Venomed Blade', effects: { strength: 3, range: 'close' } },
+    { name: 'Stiletto', effects: { strength: 3, range: 'close' } },
+  ],
+  psionic: [
+    { name: 'Mind Crystal', effects: { intelligence: 3, range: 'far' } },
+    { name: 'Psi Focus', effects: { intelligence: 3, range: 'far' } },
+    { name: 'Thought Shard', effects: { intelligence: 3, range: 'far' } },
+  ],
+}
+
+export function generateStartingWeapon(style: string, modifier: string): Omit<StartingWeapon, 'name' | 'description'> {
+  const category = getStyleCategory(style)
+  const templates = WEAPON_TEMPLATES[category] ?? WEAPON_TEMPLATES.martial
+  const template = templates[Math.floor(Math.random() * templates.length)]
+  return { effects: template.effects }
+}
+
 /**
  * Generate a starting ability's mechanical data from style, modifier, and school.
  * Picks a random effect template for the style category.
@@ -405,8 +445,10 @@ const classNamingFunctions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                 description: { type: 'string', description: '1-2 sentence flavor text that matches the actual mechanics' },
                 abilityName: { type: 'string', description: 'Creative name for the starting ability' },
                 abilityDescription: { type: 'string', description: 'Short description of the ability that accurately reflects its effects' },
+                weaponName: { type: 'string', description: 'Creative name for the starting weapon that matches the class theme' },
+                weaponDescription: { type: 'string', description: 'One sentence describing the starting weapon' },
               },
-              required: ['name', 'description', 'abilityName', 'abilityDescription'],
+              required: ['name', 'description', 'abilityName', 'abilityDescription', 'weaponName', 'weaponDescription'],
             },
             minItems: 5,
             maxItems: 5,
@@ -435,7 +477,8 @@ export async function generateClassFromSeed(
     const stats = generateStatDistribution(style)
     const { manaMultiplier, spellSlots } = generateManaAndSlots(style)
     const ability = generateStartingAbility(style, modifier, school)
-    return { stats, manaMultiplier, spellSlots, ability }
+    const weapon = generateStartingWeapon(style, modifier)
+    return { stats, manaMultiplier, spellSlots, ability, weapon }
   })
 
   // Step 2: Ask LLM only for creative names/descriptions
@@ -445,11 +488,13 @@ export async function generateClassFromSeed(
 - Stats: STR ${cls.stats.strength}, INT ${cls.stats.intelligence}, LCK ${cls.stats.luck}, CHA ${cls.stats.charisma}
 - Spell school: ${school}
 - Starting ability target: ${cls.ability.target}
-- Starting ability effects: ${describeEffects(cls.ability.effects)}`
+- Starting ability effects: ${describeEffects(cls.ability.effects)}
+- Starting weapon range: ${cls.weapon.effects.range}, stats: STR +${cls.weapon.effects.strength ?? 0}, INT +${cls.weapon.effects.intelligence ?? 0}`
   }).join('\n\n')
 
   const prompt = `Given these 5 fantasy character classes with pre-built mechanics, generate a creative name for each class and a 1-2 sentence description.
 Also name each starting ability and describe what it does.
+Also name the starting weapon and describe it in one sentence. The weapon should match the class theme.
 
 DO NOT invent new mechanics. Each description must accurately reflect the effects listed.
 
@@ -474,6 +519,8 @@ ${classDescriptions}`
     description: string
     abilityName: string
     abilityDescription: string
+    weaponName: string
+    weaponDescription: string
   }[]
 
   // Step 3: Combine mechanical data with LLM-generated names
@@ -494,6 +541,11 @@ ${classDescriptions}`
         name: named.abilityName,
         description: named.abilityDescription,
         ...mech.ability,
+      },
+      startingWeapon: {
+        name: named.weaponName,
+        description: named.weaponDescription,
+        ...mech.weapon,
       },
     }
   })
