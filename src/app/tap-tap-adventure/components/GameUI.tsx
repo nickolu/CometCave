@@ -50,10 +50,8 @@ import { ExplorationSpellsPanel } from './ExplorationSpellsPanel'
 import { BestiaryPanel } from './BestiaryPanel'
 import { SpellComboPanel } from './SpellComboPanel'
 import { DailyChallengesPanel } from './DailyChallengesPanel'
-import { NPCDialoguePanel } from './NPCDialoguePanel'
 import { TargetList } from './TargetList'
 import { AreaMap } from './AreaMap'
-import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
 import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
 import { RunHistoryPanel } from '@/app/tap-tap-adventure/components/RunHistoryPanel'
@@ -136,7 +134,6 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     updateAchievements,
     applyAchievementRewards,
     claimDailyReward,
-    recordNPCEncounter,
     setActiveTarget,
     dismissLootCelebration,
   } = useGameStore()
@@ -152,7 +149,6 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [moreSubTab, setMoreSubTab] = useState<MoreSubTab>('status')
   const [mapView, setMapView] = useState<'area' | 'world'>('area')
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
-  const [showNPCPanel, setShowNPCPanel] = useState(false)
   const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
 
   useEffect(() => {
@@ -672,48 +668,6 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     </div>
                   )
                 })()}
-                {/* NPC button and panel */}
-                {(() => {
-                  const regionNPCs = getNPCsForRegion(character?.currentRegion ?? 'green_meadows')
-                  if (regionNPCs.length === 0) return null
-                  const npc = regionNPCs[0]
-                  const encounters = character?.npcEncounters ?? {}
-                  const disposition = encounters[npc.id]?.disposition ?? 0
-                  return (
-                    <div>
-                      {showNPCPanel ? (
-                        <NPCDialoguePanel
-                          npc={npc}
-                          characterName={character?.name ?? 'Adventurer'}
-                          characterClass={character?.class ?? 'Unknown'}
-                          characterLevel={character?.level ?? 1}
-                          reputation={character?.reputation ?? 0}
-                          region={character?.currentRegion ?? 'green_meadows'}
-                          characterCharisma={character?.charisma ?? 5}
-                          activeCharismaBonus={character?.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
-                          disposition={disposition}
-                          hiddenLandmarkName={character?.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
-                          hiddenLandmarkType={character?.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
-                          onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
-                            recordNPCEncounter(npc.id, dispositionDelta, reward, revealLandmark)
-                          }}
-                          onClose={() => {
-                            setShowNPCPanel(false)
-                          }}
-                        />
-                      ) : (
-                        <button
-                          className="w-full text-left text-xs bg-[#1e1f30] border border-[#3a3c56] hover:border-indigo-700/50 rounded-lg px-3 py-2 text-slate-300 transition-colors"
-                          onClick={() => setShowNPCPanel(true)}
-                        >
-                          <span className="mr-1.5">{npc.icon}</span>
-                          <span className="font-semibold">{npc.name}</span>
-                          <span className="text-slate-500 ml-1">is nearby &mdash; Talk?</span>
-                        </button>
-                      )}
-                    </div>
-                  )
-                })()}
                 <div className="relative">
                   <FloatingResources events={floatingResources} />
                   <Button
@@ -976,35 +930,6 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
             {mobileCategory === 'social' && socialSubTab === 'leaderboard' && (
               <AdventureLeaderboard onBack={() => setMobileCategory(null)} />
             )}
-            {mobileCategory === 'social' && socialSubTab === 'npc' && character && (() => {
-              const regionNPCs = getNPCsForRegion(character.currentRegion ?? 'green_meadows')
-              if (regionNPCs.length === 0) return <p className="text-sm text-slate-400">No NPCs in this region.</p>
-              const npc = regionNPCs[0]
-              const encounters = character.npcEncounters ?? {}
-              const disposition = encounters[npc.id]?.disposition ?? 0
-              return (
-                <NPCDialoguePanel
-                  npc={npc}
-                  characterName={character.name}
-                  characterClass={character.class}
-                  characterLevel={character.level}
-                  reputation={character.reputation}
-                  region={character.currentRegion ?? 'green_meadows'}
-                  characterCharisma={character.charisma ?? 5}
-                  activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
-                  disposition={disposition}
-                  hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
-                  hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
-                  onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
-                    recordNPCEncounter(npc.id, dispositionDelta, reward, revealLandmark)
-                  }}
-                  onClose={() => {
-                    setMobileCategory(null)
-                  }}
-                />
-              )
-            })()}
-
             {/* More panels */}
             {mobileCategory === 'more' && moreSubTab === 'status' && (
               <StatsPanel />
