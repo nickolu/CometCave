@@ -36,6 +36,8 @@ export interface LLMEventOption {
     mountDamage?: number
     mountDeath?: boolean
     revealLandmark?: boolean
+    hpChange?: number
+    mpChange?: number
   }
   failureDescription: string
   failureEffects: {
@@ -46,6 +48,8 @@ export interface LLMEventOption {
     mountDamage?: number
     mountDeath?: boolean
     revealLandmark?: boolean
+    hpChange?: number
+    mpChange?: number
   }
   triggersCombat?: boolean
 }
@@ -86,6 +90,8 @@ const eventOptionSchema = z.object({
     mountDamage: z.number().optional(),
     mountDeath: z.boolean().optional(),
     revealLandmark: z.boolean().optional(),
+    hpChange: z.number().optional(),
+    mpChange: z.number().optional(),
   }),
   failureDescription: z.string(),
   failureEffects: z.object({
@@ -96,6 +102,8 @@ const eventOptionSchema = z.object({
     mountDamage: z.number().optional(),
     mountDeath: z.boolean().optional(),
     revealLandmark: z.boolean().optional(),
+    hpChange: z.number().optional(),
+    mpChange: z.number().optional(),
   }),
   triggersCombat: z.boolean().optional(),
 })
@@ -186,6 +194,8 @@ const eventOptionSchemaForOpenAI = {
         mountDamage: { type: 'number', description: 'HP damage dealt to the character\'s mount (if they have one). Use 3-10 for minor damage, 10-20 for serious damage.' },
         mountDeath: { type: 'boolean', description: 'Set to true only if the mount is killed outright by the event outcome.' },
         revealLandmark: { type: 'boolean', description: 'Set to true if this event reveals a hidden landmark nearby. Only use when the narrative involves discovering a hidden location, receiving a treasure map, or learning about a secret place from an NPC.' },
+        hpChange: { type: 'number', description: 'HP change for the character. Negative values deal damage (e.g., -10 for a trap), positive values heal (e.g., 15 for a healing spring). Do not reduce below 1 HP.' },
+        mpChange: { type: 'number', description: 'Mana change for the character. Negative values drain mana (e.g., -10 for a curse), positive values restore mana (e.g., 15 for a mana spring).' },
       },
     },
     failureDescription: { type: 'string' },
@@ -202,6 +212,8 @@ const eventOptionSchemaForOpenAI = {
         mountDamage: { type: 'number', description: 'HP damage dealt to the character\'s mount (if they have one). Use 3-10 for minor damage, 10-20 for serious damage.' },
         mountDeath: { type: 'boolean', description: 'Set to true only if the mount is killed outright by the event outcome.' },
         revealLandmark: { type: 'boolean', description: 'Set to true if this event reveals a hidden landmark nearby. Only use when the narrative involves discovering a hidden location, receiving a treasure map, or learning about a secret place from an NPC.' },
+        hpChange: { type: 'number', description: 'HP change for the character. Negative values deal damage (e.g., -10 for a trap), positive values heal (e.g., 15 for a healing spring). Do not reduce below 1 HP.' },
+        mpChange: { type: 'number', description: 'Mana change for the character. Negative values drain mana (e.g., -10 for a curse), positive values restore mana (e.g., 15 for a mana spring).' },
       },
     },
     triggersCombat: { type: 'boolean', description: 'Set to true if this option leads to a fight' },
@@ -365,6 +377,8 @@ Sometimes reward spell scrolls — items with type "spell_scroll" containing a s
 
 IMPORTANT — Encounter effects:
 Every encounter option MUST include meaningful successEffects and failureEffects with mechanical rewards or consequences. Do NOT create purely narrative encounters with empty effects. At minimum, include gold, reputation, or statusChange in each outcome path. Scale rewards by risk — dangerous options should offer higher gold (15-40) or item rewards but also include negative consequences on failure (gold loss, negative reputation, statusChange like "Wounded" or "Cursed"). Safe options should give smaller but guaranteed rewards (5-10 gold, +1 reputation). Example successEffects: { "gold": 15, "reputation": 1 }. Example failureEffects: { "gold": -5, "statusChange": "Bruised" }.
+
+You can also use hpChange (negative for damage, positive for healing) and mpChange (negative for drain, positive for restore) to make encounters affect the character's health and mana. Examples: a poisoned trap with hpChange: -15, a healing spring with hpChange: 20 and mpChange: 10, a mana-draining curse with mpChange: -20. Use these to create more varied and impactful encounters.
 
 IMPORTANT — Combat events:
 Exactly 1 of the 3 events MUST be a combat encounter (bandits, monsters, aggressive creatures, rivals, etc.). That event MUST include at least one option with "triggersCombat": true — this represents the character choosing to fight. The other options on that event can be peaceful alternatives (negotiate, flee, pay a toll, sneak past). The remaining 2 events should be non-combat (exploration, social, discovery, etc.) with NO options that have triggersCombat. This ensures approximately 25% of events over time involve combat potential.
@@ -2242,6 +2256,165 @@ function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
           successEffects: { gold: 25, reputation: -10 },
           failureDescription: 'A fleeing villager catches you looting and screams "Thief!" You grab what you can and run.',
           failureEffects: { gold: 10, reputation: -8 } },
+      ],
+    },
+    // HP/MP effect events
+    {
+      id: `fb-poison-trap-${s}`,
+      description: 'A tripwire stretches across the path ahead, nearly invisible in the dim light. A faint hiss warns of a pressurized poison mechanism behind it.',
+      options: [
+        { id: `disarm-trap-${s}`, text: 'Carefully disarm the trap', successProbability: 0.6,
+          successDescription: 'You deftly disarm the mechanism and find a hidden compartment with coins inside.',
+          successEffects: { gold: 12, reputation: 2 },
+          failureDescription: 'The trap triggers! Poisoned darts nick your skin before you can fully dodge.',
+          failureEffects: { hpChange: -12, reputation: -1 } },
+        { id: `leap-trap-${s}`, text: 'Leap over the tripwire', successProbability: 0.7,
+          successDescription: 'You clear the wire cleanly and land safely on the other side.',
+          successEffects: { reputation: 1 },
+          failureDescription: 'Your foot catches the wire. Poison darts graze your arm as you stumble through.',
+          failureEffects: { hpChange: -8 } },
+      ],
+    },
+    {
+      id: `fb-healing-spring-${s}`,
+      description: 'You discover a hidden spring nestled among mossy rocks. The water glows faintly with a warm golden light and carries a scent of wildflowers and magic.',
+      options: [
+        { id: `drink-spring-${s}`, text: 'Drink deeply from the spring', successProbability: 0.9,
+          successDescription: 'The blessed water flows through you, mending wounds and restoring your magical reserves.',
+          successEffects: { hpChange: 20, mpChange: 10, reputation: 1 },
+          failureDescription: 'The spring\'s magic is faint today. You feel mildly refreshed.',
+          failureEffects: { hpChange: 5 } },
+        { id: `fill-flask-spring-${s}`, text: 'Fill your flask and move on', successProbability: 1.0,
+          successDescription: 'You carefully fill your flask with the glowing water for later use.',
+          successEffects: { rewardItems: processFallbackRewardItems([{ id: `spring-water-${s}`, name: 'Blessed Spring Water', description: 'Softly glowing water that restores vitality', quantity: 1, type: 'consumable', effects: { heal: 15 } }]) },
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-mana-drain-crystal-${s}`,
+      description: 'A pulsing violet crystal juts from the earth beside the path. It hums with an eerie resonance that makes your head swim and your magic feel sluggish.',
+      options: [
+        { id: `touch-crystal-${s}`, text: 'Touch the crystal and absorb its energy', successProbability: 0.5,
+          successDescription: 'The crystal\'s energy transfers into you — mana drained but its gold veins crack free.',
+          successEffects: { gold: 25, mpChange: -15 },
+          failureDescription: 'The crystal flares and shatters, draining your mana without yielding anything valuable.',
+          failureEffects: { mpChange: -15 } },
+        { id: `avoid-crystal-${s}`, text: 'Give it a wide berth', successProbability: 1.0,
+          successDescription: 'You sidestep the unsettling crystal and continue down the path.',
+          successEffects: {}, failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-wandering-healer-hp-${s}`,
+      description: 'A robed healer tends a small campfire at the roadside, her hands glowing faintly. "Sit, traveler. I can mend what ails you — for a price."',
+      options: [
+        { id: `pay-healer-hp-${s}`, text: 'Pay 10 gold to be healed', successProbability: 0.95,
+          successDescription: 'The healer works her magic with practiced skill. Your wounds close and your body feels renewed.',
+          successEffects: { gold: -10, hpChange: 30 },
+          failureDescription: 'The healer tries her best but your wounds are stubborn. A partial recovery, at least.',
+          failureEffects: { gold: -10, hpChange: 10 } },
+        { id: `chat-healer-${s}`, text: 'Share news of the road in exchange', successProbability: 0.7,
+          successDescription: 'The healer appreciates fresh gossip and offers a quick blessing in return.',
+          successEffects: { reputation: 2, hpChange: 10 },
+          failureDescription: 'She has already heard your news. She waves you off with a polite smile.',
+          failureEffects: { reputation: 1 } },
+      ],
+    },
+    {
+      id: `fb-cursed-chest-${s}`,
+      description: 'A gilded chest sits in the middle of the path, conspicuously unguarded. Faint dark runes line its edges — this smells of a curse.',
+      options: [
+        { id: `open-cursed-${s}`, text: 'Open the chest anyway', successProbability: 0.6,
+          successDescription: 'The curse lashes out as the lid lifts, but you endure it. Inside: a fine haul of gold.',
+          successEffects: { gold: 30, hpChange: -10 },
+          failureDescription: 'The curse hits full force. You slam the lid shut and stagger away, hurt and empty-handed.',
+          failureEffects: { hpChange: -15 } },
+        { id: `dispel-runes-${s}`, text: 'Try to dispel the runes first', successProbability: 0.4,
+          successDescription: 'The runes dissolve under your touch. You open the chest freely and claim the gold within.',
+          successEffects: { gold: 30, reputation: 2 },
+          failureDescription: 'The runes resist your effort. The chest remains sealed and the runes glow more angrily.',
+          failureEffects: { reputation: -1 } },
+      ],
+    },
+    {
+      id: `fb-meditation-circle-${s}`,
+      description: 'Ancient stones arranged in a perfect circle emanate a calm, blue radiance. The air within hums with latent arcane energy, soothing and inviting.',
+      options: [
+        { id: `meditate-circle-${s}`, text: 'Sit within the circle and meditate', successProbability: 0.8,
+          successDescription: 'The circle\'s magic fills your mind. Your mana surges back as arcane energy flows into you.',
+          successEffects: { mpChange: 25, reputation: 2 },
+          failureDescription: 'The circle\'s energy is too subtle to fully absorb, but you feel calmer.',
+          failureEffects: { mpChange: 5 } },
+        { id: `study-circle-${s}`, text: 'Study the rune arrangement', successProbability: 0.6,
+          successDescription: 'You sketch the rune pattern — a scholar would pay well for this knowledge.',
+          successEffects: { gold: 8, reputation: 1 },
+          failureDescription: 'The runes are too complex to decipher quickly. You move on.',
+          failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-thorny-path-${s}`,
+      description: 'A shortcut through a dense thorny thicket would cut hours from your journey. The thorns are cruel-looking, but the path beyond is clearly faster.',
+      options: [
+        { id: `push-thorns-${s}`, text: 'Push through the thorny shortcut', successProbability: 0.6,
+          successDescription: 'You force your way through, clothes torn and skin scratched, but reach your destination much faster.',
+          successEffects: { hpChange: -8, reputation: 1 },
+          failureDescription: 'The thorns are worse than expected. You push through badly scratched and no better off for time.',
+          failureEffects: { hpChange: -12 } },
+        { id: `take-road-${s}`, text: 'Take the longer road', successProbability: 1.0,
+          successDescription: 'The longer route is uneventful. Slow but steady.',
+          successEffects: {}, failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-corrupted-fountain-${s}`,
+      description: 'A stone fountain gurgles with dark, swirling water. Strange runes are carved into its basin. The water smells of ozone and old magic.',
+      options: [
+        { id: `drink-fountain-${s}`, text: 'Drink from the corrupted fountain', successProbability: 0.6,
+          successDescription: 'The dark water burns slightly going down but fills you with crackling arcane power.',
+          successEffects: { mpChange: 15, hpChange: -5 },
+          failureDescription: 'The corruption overwhelms the benefit. You feel drained on both counts.',
+          failureEffects: { hpChange: -10, mpChange: -5 } },
+        { id: `study-fountain-${s}`, text: 'Study the runes instead', successProbability: 0.5,
+          successDescription: 'The runes reveal an arcane formula. You transcribe it carefully.',
+          successEffects: { reputation: 2, rewardItems: processFallbackRewardItems([{ id: `rune-notes-${s}`, name: 'Rune Transcription', description: 'Notes on corrupted arcane script', quantity: 1, type: 'consumable', effects: { intelligence: 1 } }]) },
+          failureDescription: 'The runes shift and blur as you watch, impossible to copy.',
+          failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-bandit-ambush-hp-${s}`,
+      description: 'A band of cutthroats drops from the trees, surrounding you. The leader sneers: "Your coin or your life, traveler. We are not picky."',
+      options: [
+        { id: `fight-ambush-${s}`, text: 'Draw your weapon and fight', triggersCombat: true,
+          successProbability: 0.5, successDescription: 'Steel rings as you engage the ambushers!',
+          successEffects: {}, failureDescription: 'Steel rings as you engage the ambushers!', failureEffects: {} },
+        { id: `pay-ambush-${s}`, text: 'Pay the toll (15 gold)', successProbability: 0.8,
+          successDescription: 'They take the gold and melt back into the trees, satisfied.',
+          successEffects: { gold: -15, reputation: -1 },
+          failureDescription: 'They rough you up even after taking your gold. Petty cruelty.',
+          failureEffects: { gold: -15, hpChange: -8, reputation: -2 } },
+        { id: `bluff-ambush-${s}`, text: 'Bluff about powerful allies nearby', successProbability: 0.35,
+          successDescription: 'They glance around nervously, then scatter. You walk away unscathed.',
+          successEffects: { reputation: 2 },
+          failureDescription: '"Nice try." They laugh and take a swing at you before demanding gold.',
+          failureEffects: { hpChange: -10, gold: -8 } },
+      ],
+    },
+    {
+      id: `fb-mysterious-altar-${s}`,
+      description: 'An ancient altar carved from black stone pulses with a deep crimson glow. Offerings of coin and bone surround it. The air feels heavy with divine expectation.',
+      options: [
+        { id: `offer-altar-${s}`, text: 'Offer gold at the altar (20 gold)', successProbability: 0.7,
+          successDescription: 'The altar\'s glow intensifies and a warm light washes over you, mending wounds and blessing your journey.',
+          successEffects: { gold: -20, reputation: 5, hpChange: 15 },
+          failureDescription: 'The altar is silent. Your offering disappears but nothing is granted.',
+          failureEffects: { gold: -20 } },
+        { id: `deface-altar-${s}`, text: 'Deface the altar for its materials', successProbability: 0.5,
+          successDescription: 'You pry loose several precious stones from the altar\'s surface.',
+          successEffects: { gold: 15, reputation: -4 },
+          failureDescription: 'The altar resists your tools. A shock of dark energy throws you back.',
+          failureEffects: { hpChange: -10, reputation: -3 } },
       ],
     },
   ]
