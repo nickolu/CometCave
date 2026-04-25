@@ -10,7 +10,7 @@ import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
-import { buildTownHubDecisionPoint } from './townHubBuilder'
+import { buildTownHubDecisionPoint, extractTownFeatures } from './townHubBuilder'
 import { maybeGenerateTownEvent } from './townEventGenerator'
 
 function hashString(str: string): number {
@@ -241,15 +241,7 @@ export async function POST(req: NextRequest) {
         townName: townLandmark?.name ?? 'the town',
         prompt: bountyAtmosphere,
         regionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -302,15 +294,7 @@ export async function POST(req: NextRequest) {
           townName: townLandmark?.name ?? 'the town',
           prompt: sneakAtmosphere,
           regionId: sneakRegionId,
-          features: townLandmark ? {
-            hasShop: townLandmark.hasShop,
-            hasInn: townLandmark.hasInn,
-            hasStable: townLandmark.hasStable,
-            hasMailbox: townLandmark.hasMailbox,
-            hasNoticeBoard: townLandmark.hasNoticeBoard,
-            hasTransport: townLandmark.hasTransport,
-            hasCrafting: townLandmark.hasCrafting,
-          } : undefined,
+          features: extractTownFeatures(townLandmark),
         })
 
         return NextResponse.json({
@@ -422,15 +406,7 @@ export async function POST(req: NextRequest) {
         townName: townLandmark?.name ?? 'the town',
         prompt: enterAtmosphere,
         regionId: enterRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -458,15 +434,7 @@ export async function POST(req: NextRequest) {
         townName,
         prompt: `You've browsed the shop. What else would you like to do in ${townName}?`,
         regionId: shopRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -511,15 +479,7 @@ export async function POST(req: NextRequest) {
         townName,
         prompt: `${outcomeDesc} What else would you like to do in ${townName}?`,
         regionId: innRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -581,15 +541,7 @@ export async function POST(req: NextRequest) {
           townName,
           prompt: `There are no available transport destinations from ${townName}. What else would you like to do?`,
           regionId: transportRegionId,
-          features: townLandmark ? {
-            hasShop: townLandmark.hasShop,
-            hasInn: townLandmark.hasInn,
-            hasStable: townLandmark.hasStable,
-            hasMailbox: townLandmark.hasMailbox,
-            hasNoticeBoard: townLandmark.hasNoticeBoard,
-            hasTransport: townLandmark.hasTransport,
-            hasCrafting: townLandmark.hasCrafting,
-          } : undefined,
+          features: extractTownFeatures(townLandmark),
         })
         return NextResponse.json({
           updatedCharacter: character,
@@ -664,15 +616,7 @@ export async function POST(req: NextRequest) {
           townName,
           prompt: `You don't have enough gold for transport to ${destLandmark.name}. You need ${price} gold but only have ${character.gold ?? 0}. What would you like to do?`,
           regionId: ttRegionId,
-          features: ttTownLandmark ? {
-            hasShop: ttTownLandmark.hasShop,
-            hasInn: ttTownLandmark.hasInn,
-            hasStable: ttTownLandmark.hasStable,
-            hasMailbox: ttTownLandmark.hasMailbox,
-            hasNoticeBoard: ttTownLandmark.hasNoticeBoard,
-            hasTransport: ttTownLandmark.hasTransport,
-            hasCrafting: ttTownLandmark.hasCrafting,
-          } : undefined,
+          features: extractTownFeatures(ttTownLandmark),
         })
         return NextResponse.json({
           updatedCharacter: character,
@@ -728,15 +672,7 @@ export async function POST(req: NextRequest) {
         townName,
         prompt: backAtmosphere,
         regionId: backRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
       return NextResponse.json({
         updatedCharacter: character,
@@ -762,15 +698,7 @@ export async function POST(req: NextRequest) {
         townName,
         prompt: `You visit the town stable. Here you can stash, retrieve, and heal your mounts. What else would you like to do in ${townName}?`,
         regionId: stableRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -798,15 +726,7 @@ export async function POST(req: NextRequest) {
         townName,
         prompt: `You check your mailbox. What else would you like to do in ${townName}?`,
         regionId: mailboxRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -834,15 +754,7 @@ export async function POST(req: NextRequest) {
         townName,
         prompt: `You check the notice board. What else would you like to do in ${townName}?`,
         regionId: noticeBoardRegionId,
-        features: townLandmark ? {
-          hasShop: townLandmark.hasShop,
-          hasInn: townLandmark.hasInn,
-          hasStable: townLandmark.hasStable,
-          hasMailbox: townLandmark.hasMailbox,
-          hasNoticeBoard: townLandmark.hasNoticeBoard,
-          hasTransport: townLandmark.hasTransport,
-          hasCrafting: townLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(townLandmark),
       })
 
       return NextResponse.json({
@@ -894,15 +806,7 @@ export async function POST(req: NextRequest) {
         townName: teTownName,
         prompt: `${teOutcomeDesc}\n\nYou continue into ${teTownName}.${teEntryHints}\n\nWhat would you like to do?`,
         regionId: teRegionId,
-        features: teTownLandmark ? {
-          hasShop: teTownLandmark.hasShop,
-          hasInn: teTownLandmark.hasInn,
-          hasStable: teTownLandmark.hasStable,
-          hasMailbox: teTownLandmark.hasMailbox,
-          hasNoticeBoard: teTownLandmark.hasNoticeBoard,
-          hasTransport: teTownLandmark.hasTransport,
-          hasCrafting: teTownLandmark.hasCrafting,
-        } : undefined,
+        features: extractTownFeatures(teTownLandmark),
       })
 
       const teGoldDelta = (teUpdatedCharacter.gold ?? 0) - (character.gold ?? 0)
