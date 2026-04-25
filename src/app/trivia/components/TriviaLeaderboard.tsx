@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useTriviaStore } from '../hooks/useTriviaStore'
+import { getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 
 type Period = 'daily' | 'weekly' | 'alltime'
 
@@ -39,6 +40,7 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [showNameDialog, setShowNameDialog] = useState(!userData.displayName && !userData.nameSkipped)
   const [nameInput, setNameInput] = useState(userData.displayName ?? '')
+  const [copied, setCopied] = useState(false)
 
   const currentName = userData.displayName?.toLowerCase().trim() ?? ''
 
@@ -65,6 +67,38 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     if (trimmed.length > 0 && trimmed.length <= 20) {
       setDisplayName(trimmed)
       setShowNameDialog(false)
+    }
+  }
+
+  const handleShareLeaderboard = async () => {
+    if (!data?.entries || data.entries.length === 0) return
+
+    const today = getTodayPST()
+    const category = getDailyCategory(today)
+    const date = new Date(today + 'T12:00:00')
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const medals = ['🥇', '🥈', '🥉']
+
+    const lines = (data.entries as DailyEntry[]).slice(0, 5).map((entry: DailyEntry, i: number) => {
+      const prefix = i < 3 ? medals[i] : `${i + 1}.`
+      return `${prefix} ${entry.displayName ?? 'Unknown'} — ${(entry.score ?? 0).toLocaleString()} pts`
+    })
+
+    const shareText = [
+      `🏆 CometCave Daily Trivia — ${dateStr}`,
+      `Theme: ${category.icon} ${category.name}`,
+      '',
+      ...lines,
+      '',
+      '🔗 Play today\'s trivia: https://cometcave.com/trivia',
+    ].join('\n')
+
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback
     }
   }
 
@@ -188,6 +222,17 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Share leaderboard button — daily tab only */}
+      {period === 'daily' && data?.entries?.length > 0 && (
+        <Button
+          variant="outline"
+          onClick={handleShareLeaderboard}
+          className="w-full"
+        >
+          {copied ? '✅ Copied!' : '📋 Share Leaderboard'}
+        </Button>
+      )}
 
       <Button variant="outline" onClick={onBack} className="w-full">
         Back to Trivia
