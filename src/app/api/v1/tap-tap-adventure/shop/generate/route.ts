@@ -4,12 +4,12 @@ import { generateShopItems, generateShopMount } from '@/app/tap-tap-adventure/li
 
 export async function POST(req: NextRequest) {
   try {
-    const { character } = await req.json()
+    const { character, townName, townDescription } = await req.json()
     if (!character) {
       return NextResponse.json({ error: 'Character is required' }, { status: 400 })
     }
 
-    const shopItems = await generateShopItems(character)
+    const shopItems = await generateShopItems(character, townName, townDescription)
     const shopMount = generateShopMount(character)
     return NextResponse.json({ shopItems, shopMount })
   } catch (err) {
