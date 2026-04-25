@@ -65,6 +65,7 @@ import { MailboxPanel } from './MailboxPanel'
 import { NoticeBoard } from './NoticeBoard'
 import { TavernPanel } from './TavernPanel'
 import { TownHub } from './TownHub'
+import { WaypointPanel } from './WaypointPanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -169,6 +170,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [showNoticeBoard, setShowNoticeBoard] = useState(false)
   const [showTavern, setShowTavern] = useState(false)
   const [showBlacksmith, setShowBlacksmith] = useState(false)
+  const [showWaypoints, setShowWaypoints] = useState(false)
   const restFromTavern = useRef(false)
   const [eventResult, setEventResult] = useState<EventResult | null>(null)
   const [townNPC, setTownNPC] = useState<GameNPC | null>(null)
@@ -188,6 +190,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     setShowNoticeBoard(false)
     setShowTavern(false)
     setShowBlacksmith(false)
+    setShowWaypoints(false)
   }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
@@ -285,6 +288,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       setShowBlacksmith(true)
       return
     }
+    // Waypoints: open the waypoint panel client-side
+    if (optionId === 'visit-waypoints') {
+      setShowWaypoints(true)
+      return
+    }
     // Tavern: open the tavern panel client-side (bypass if triggered from within the panel)
     if (optionId === 'rest-at-inn' && !restFromTavern.current) {
       setShowTavern(true)
@@ -321,7 +329,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           optionId === 'fight-secret-boss' || optionId === 'visit-stable' ||
           optionId === 'check-mailbox' || optionId === 'visit-notice-board' || optionId === 'rest-at-inn' || optionId === 'visit-blacksmith' ||
           optionId === 'hire-transport' || optionId === 'leave-town' ||
-          optionId === 'enter-town'
+          optionId === 'enter-town' || optionId === 'visit-waypoints'
         if (!skipResults && result.outcomeDescription) {
           setEventResult({
             outcomeDescription: result.outcomeDescription,
@@ -748,6 +756,24 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     <button className="text-[10px] text-slate-400 hover:text-slate-200" onClick={() => setShowBlacksmith(false)}>← Back to Town</button>
                     <CraftingPanel />
                   </div>
+                )}
+                {showWaypoints && character && (
+                  <WaypointPanel
+                    character={character}
+                    currentTownName={character.landmarkState?.exploringLandmarkName ?? 'the town'}
+                    onTravel={(regionId, _landmarkId, cost) => {
+                      setShowWaypoints(false)
+                      const newGold = Math.max(0, (character.gold ?? 0) - cost)
+                      updateSelectedCharacter({
+                        gold: newGold,
+                        currentRegion: regionId,
+                        currentWeather: rollWeather(regionId),
+                        landmarkState: undefined,
+                      })
+                      setDecisionPoint(null)
+                    }}
+                    onClose={() => setShowWaypoints(false)}
+                  />
                 )}
               </>
             ) : (

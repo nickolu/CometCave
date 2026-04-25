@@ -146,6 +146,7 @@ const defaultCharacter: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   visitedRegions: ['green_meadows'],
+  visitedTowns: [],
   mainQuest: createMainQuest(),
   factionReputations: {},
   bestiary: [],

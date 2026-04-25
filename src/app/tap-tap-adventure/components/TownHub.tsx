@@ -67,6 +67,11 @@ const FEATURE_CONFIGS: Record<string, FeatureConfig> = {
     label: 'Visit Blacksmith',
     className: 'bg-orange-900/40 hover:bg-orange-800/60 border-orange-600/40 text-orange-200 hover:text-orange-100',
   },
+  'visit-waypoints': {
+    icon: '🗺️',
+    label: 'Waypoints',
+    className: 'bg-cyan-900/40 hover:bg-cyan-800/60 border-cyan-600/40 text-cyan-200 hover:text-cyan-100',
+  },
 }
 
 export function TownHub({

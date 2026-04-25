@@ -215,6 +215,7 @@ export function useCharacterCreation() {
       currentRegion: 'green_meadows',
       currentWeather: 'clear',
       visitedRegions: ['green_meadows'],
+      visitedTowns: [],
       factionReputations: {},
       bounty: 0,
       party: [],

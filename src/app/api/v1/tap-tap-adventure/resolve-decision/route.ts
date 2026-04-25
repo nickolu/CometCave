@@ -225,11 +225,33 @@ export async function POST(req: NextRequest) {
           }
         : undefined
 
-      const updatedCharacter: FantasyCharacter = {
+      let updatedCharacter: FantasyCharacter = {
         ...character,
         gold: clampGold((character.gold ?? 0) - bountyAmount),
         bounty: 0,
         landmarkState: updatedLandmarkState,
+      }
+
+      // Record this town as visited for fast-travel waypoints
+      if (townLandmark) {
+        const bountyRegionId = character.currentRegion ?? 'green_meadows'
+        const alreadyVisited = (updatedCharacter.visitedTowns ?? []).some(
+          t => t.landmarkId === townLandmark.templateId && t.regionId === bountyRegionId
+        )
+        if (!alreadyVisited) {
+          updatedCharacter = {
+            ...updatedCharacter,
+            visitedTowns: [
+              ...(updatedCharacter.visitedTowns ?? []),
+              {
+                name: townLandmark.name,
+                icon: townLandmark.icon,
+                regionId: bountyRegionId,
+                landmarkId: townLandmark.templateId,
+              },
+            ],
+          }
+        }
       }
 
       const regionId = character.currentRegion ?? 'green_meadows'
@@ -280,9 +302,31 @@ export async function POST(req: NextRequest) {
             }
           : undefined
 
-        const updatedCharacter: FantasyCharacter = {
+        let updatedCharacter: FantasyCharacter = {
           ...character,
           landmarkState: updatedLandmarkState,
+        }
+
+        // Record this town as visited for fast-travel waypoints
+        if (townLandmark) {
+          const sneakVisitRegionId = character.currentRegion ?? 'green_meadows'
+          const alreadyVisited = (updatedCharacter.visitedTowns ?? []).some(
+            t => t.landmarkId === townLandmark.templateId && t.regionId === sneakVisitRegionId
+          )
+          if (!alreadyVisited) {
+            updatedCharacter = {
+              ...updatedCharacter,
+              visitedTowns: [
+                ...(updatedCharacter.visitedTowns ?? []),
+                {
+                  name: townLandmark.name,
+                  icon: townLandmark.icon,
+                  regionId: sneakVisitRegionId,
+                  landmarkId: townLandmark.templateId,
+                },
+              ],
+            }
+          }
         }
 
         const sneakRegionId = character.currentRegion ?? 'green_meadows'
@@ -377,9 +421,31 @@ export async function POST(req: NextRequest) {
           }
         : undefined
 
-      const updatedCharacter: FantasyCharacter = {
+      let updatedCharacter: FantasyCharacter = {
         ...character,
         landmarkState: updatedLandmarkState,
+      }
+
+      // Record this town as visited for fast-travel waypoints
+      if (townLandmark) {
+        const enterRegionIdForVisit = character.currentRegion ?? 'green_meadows'
+        const alreadyVisited = (updatedCharacter.visitedTowns ?? []).some(
+          t => t.landmarkId === townLandmark.templateId && t.regionId === enterRegionIdForVisit
+        )
+        if (!alreadyVisited) {
+          updatedCharacter = {
+            ...updatedCharacter,
+            visitedTowns: [
+              ...(updatedCharacter.visitedTowns ?? []),
+              {
+                name: townLandmark.name,
+                icon: townLandmark.icon,
+                regionId: enterRegionIdForVisit,
+                landmarkId: townLandmark.templateId,
+              },
+            ],
+          }
+        }
       }
 
       // Check for random town event (~15% chance)
