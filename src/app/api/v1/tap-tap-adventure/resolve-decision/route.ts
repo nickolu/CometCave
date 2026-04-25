@@ -11,6 +11,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
 import { buildTownHubDecisionPoint } from './townHubBuilder'
+import { maybeGenerateTownEvent } from './townEventGenerator'
 
 function hashString(str: string): number {
   let hash = 0
@@ -395,6 +396,21 @@ export async function POST(req: NextRequest) {
       const updatedCharacter: FantasyCharacter = {
         ...character,
         landmarkState: updatedLandmarkState,
+      }
+
+      // Check for random town event (~15% chance)
+      const townEvent = maybeGenerateTownEvent(updatedCharacter, townLandmark?.name ?? 'the town')
+      if (townEvent) {
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `You enter ${townLandmark?.name ?? 'the town'} and something catches your attention...`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `Something happens as you enter ${townLandmark?.name ?? 'the town'}...`,
+          resourceDelta: {},
+          decisionPoint: townEvent,
+        })
       }
 
       const enterRegionId = character.currentRegion ?? 'green_meadows'
@@ -839,6 +855,71 @@ export async function POST(req: NextRequest) {
         resourceDelta: {},
         decisionPoint: townHub,
         noticeBoardOpen: true,
+      })
+    }
+
+    // Handle town-event-* options: apply effects then show the town hub
+    if (optionId.startsWith('town-event-')) {
+      const teState = character.landmarkState
+      const teTownName = teState?.exploringLandmarkName ?? 'the town'
+      const teTargetIndex = teState?.activeTargetIndex ?? 0
+      const teTownLandmark = teState?.landmarks[teTargetIndex]
+      const teRegionId = character.currentRegion ?? 'green_meadows'
+
+      const teProb = option.successProbability ?? 1.0
+      const teRoll = Math.random()
+      const teSuccess = teRoll < teProb
+
+      let teUpdatedCharacter = { ...character }
+      let teOutcomeDesc: string
+
+      if (teSuccess) {
+        const effects = option.successEffects ?? {}
+        const goldDelta = typeof effects.gold === 'number' ? effects.gold : 0
+        const repDelta = typeof effects.reputation === 'number' ? effects.reputation : 0
+        if (goldDelta !== 0) teUpdatedCharacter.gold = Math.max(0, (teUpdatedCharacter.gold ?? 0) + goldDelta)
+        if (repDelta !== 0) teUpdatedCharacter.reputation = (teUpdatedCharacter.reputation ?? 0) + repDelta
+        teOutcomeDesc = option.successDescription ?? 'You handle the situation well.'
+      } else {
+        const effects = option.failureEffects ?? {}
+        const goldDelta = typeof effects.gold === 'number' ? effects.gold : 0
+        const repDelta = typeof effects.reputation === 'number' ? effects.reputation : 0
+        if (goldDelta !== 0) teUpdatedCharacter.gold = Math.max(0, (teUpdatedCharacter.gold ?? 0) + goldDelta)
+        if (repDelta !== 0) teUpdatedCharacter.reputation = (teUpdatedCharacter.reputation ?? 0) + repDelta
+        teOutcomeDesc = option.failureDescription ?? "Things don't go as planned."
+      }
+
+      const teEntryHints = buildTownEntryHints(teUpdatedCharacter)
+      const teTownHub = buildTownHubDecisionPoint({
+        townName: teTownName,
+        prompt: `${teOutcomeDesc}\n\nYou continue into ${teTownName}.${teEntryHints}\n\nWhat would you like to do?`,
+        regionId: teRegionId,
+        features: teTownLandmark ? {
+          hasShop: teTownLandmark.hasShop,
+          hasInn: teTownLandmark.hasInn,
+          hasStable: teTownLandmark.hasStable,
+          hasMailbox: teTownLandmark.hasMailbox,
+          hasNoticeBoard: teTownLandmark.hasNoticeBoard,
+          hasTransport: teTownLandmark.hasTransport,
+          hasCrafting: teTownLandmark.hasCrafting,
+        } : undefined,
+      })
+
+      const teGoldDelta = (teUpdatedCharacter.gold ?? 0) - (character.gold ?? 0)
+      const teRepDelta = (teUpdatedCharacter.reputation ?? 0) - (character.reputation ?? 0)
+
+      return NextResponse.json({
+        updatedCharacter: teUpdatedCharacter,
+        resultDescription: teOutcomeDesc,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: teOutcomeDesc,
+        resourceDelta: {
+          ...(teGoldDelta !== 0 ? { gold: teGoldDelta } : {}),
+          ...(teRepDelta !== 0 ? { reputation: teRepDelta } : {}),
+        },
+        decisionPoint: teTownHub,
       })
     }
 
