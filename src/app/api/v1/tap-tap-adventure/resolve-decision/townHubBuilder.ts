@@ -2,7 +2,7 @@ import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { getNPCsForRegion } from '@/app/tap-tap-adventure/config/npcs'
 import { FantasyDecisionOption, FantasyDecisionPoint } from '@/app/tap-tap-adventure/models/story'
 
-interface TownFeatures {
+export interface TownFeatures {
   hasShop?: boolean
   hasInn?: boolean
   hasStable?: boolean
@@ -10,6 +10,28 @@ interface TownFeatures {
   hasNoticeBoard?: boolean
   hasTransport?: boolean
   hasCrafting?: boolean
+}
+
+/** Extract town feature flags from a landmark. Returns undefined if landmark is falsy. */
+export function extractTownFeatures(landmark: {
+  hasShop?: boolean
+  hasInn?: boolean
+  hasStable?: boolean
+  hasMailbox?: boolean
+  hasNoticeBoard?: boolean
+  hasTransport?: boolean
+  hasCrafting?: boolean
+} | null | undefined): TownFeatures | undefined {
+  if (!landmark) return undefined
+  return {
+    hasShop: landmark.hasShop,
+    hasInn: landmark.hasInn,
+    hasStable: landmark.hasStable,
+    hasMailbox: landmark.hasMailbox,
+    hasNoticeBoard: landmark.hasNoticeBoard,
+    hasTransport: landmark.hasTransport,
+    hasCrafting: landmark.hasCrafting,
+  }
 }
 
 export function buildTownHubDecisionPoint(params: {
