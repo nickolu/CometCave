@@ -4,10 +4,10 @@ import { getFallbackShopItems } from '@/app/tap-tap-adventure/lib/shopGenerator'
 
 describe('shopGenerator', () => {
   describe('getFallbackShopItems', () => {
-    it('returns 5 or 6 items (4 consumables + 1-2 spell scrolls)', () => {
+    it('returns 5 to 7 items (4 consumables + 1-2 spell scrolls + optional map)', () => {
       const items = getFallbackShopItems(1)
       expect(items.length).toBeGreaterThanOrEqual(5)
-      expect(items.length).toBeLessThanOrEqual(6)
+      expect(items.length).toBeLessThanOrEqual(7)
     })
 
     it('all items have required fields', () => {

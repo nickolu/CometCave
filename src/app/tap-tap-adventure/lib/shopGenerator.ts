@@ -97,16 +97,30 @@ export function generateShopMount(character: FantasyCharacter): ShopMount | null
   return { mount, price }
 }
 
-export async function generateShopItems(character: FantasyCharacter): Promise<Item[]> {
+export async function generateShopItems(
+  character: FantasyCharacter,
+  townName?: string,
+  townDescription?: string
+): Promise<Item[]> {
   try {
     const basePrice = 10 + character.level * 5
+    const shopContext = townName
+      ? `Generate 3-5 shop items for the merchant's shop at "${townName}"${townDescription ? ` — ${townDescription}` : ''}. The items should be thematically appropriate for this specific shop AND suitable for a level ${character.level} ${character.class} ${character.race} character.
+
+Shop theme guidance:
+- If this is a forge/smithy/blacksmith, focus on weapons, armor, and metal goods
+- If this is a tavern/inn, focus on food, drinks, potions, and consumables
+- If this is a market/bazaar, offer a diverse mix of trade goods and exotic items
+- If this is an outpost/camp, focus on survival supplies and basic equipment
+- Match the shop's personality to its name and description`
+      : `Generate 3-5 shop items for a fantasy merchant's shop. The items should be appropriate for a level ${character.level} ${character.class} ${character.race} character.`
     const openai = getOpenAIClient()
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
           role: 'user',
-          content: `Generate 3-5 shop items for a fantasy merchant's shop. The items should be appropriate for a level ${character.level} ${character.class} ${character.race} character.
+          content: `${shopContext}
 
 Price guidelines for level ${character.level}:
 - Cheap items: ${Math.round(basePrice * 0.5)}-${basePrice} gold

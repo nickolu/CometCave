@@ -308,10 +308,16 @@ export function useResolveDecisionMutation() {
       if (data.shopEvent) {
         soundEngine.playGold()
         const currentCharacter = getSelectedCharacter()
+        const landmarkState = (currentCharacter ?? data.updatedCharacter)?.landmarkState
+        const townLandmark = landmarkState?.landmarks?.[landmarkState?.activeTargetIndex ?? 0]
         const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ character: currentCharacter ?? data.updatedCharacter }),
+          body: JSON.stringify({
+            character: currentCharacter ?? data.updatedCharacter,
+            townName: landmarkState?.exploringLandmarkName,
+            townDescription: townLandmark?.description,
+          }),
         })
         if (shopRes.ok) {
           const shopData = await shopRes.json()
