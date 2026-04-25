@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-02-0",
       "question": "What is the maximum level you can have in a single class in Dungeons and Dragons (5e)?",
       "options": [
-        "30",
+        "20",
         "15",
         "25",
-        "20"
+        "30"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Board Games",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-02-1",
       "question": "In a standard game of Monopoly, what colour are the two cheapest properties?",
       "options": [
-        "Green",
-        "Yellow",
+        "Brown",
         "Blue",
-        "Brown"
+        "Yellow",
+        "Green"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Board Games",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-02-2",
       "question": "When was the board game Twister, released to the public?",
       "options": [
-        "January 1969",
-        "February 1966",
+        "April 1966",
         "September 1965",
-        "April 1966"
+        "February 1966",
+        "January 1969"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Board Games",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-02-3",
       "question": "What letter is used to refer to blue mana in the card game Magic The Gathering?",
       "options": [
-        "L",
         "E",
         "B",
-        "U"
+        "U",
+        "L"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Board Games",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-02-4",
       "question": "In \"Magic: The Gathering\", what instant card has the highest converted mana cost?",
       "options": [
-        " Chant of Vitu-Ghazi",
-        "Assert Authority",
+        "Blinkmoth Infusion",
         "Vitalizing Wind",
-        "Blinkmoth Infusion"
+        " Chant of Vitu-Ghazi",
+        "Assert Authority"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Board Games",
@@ -78,9 +78,9 @@
       "question": "Some of the \"Fallen Empires\" cards from \"Magic: The Gathering\" were misprinted on the backs of which other card game?",
       "options": [
         "Pokemon",
-        "Yu-Gi-Oh",
+        "Wyvern",
         "Dominion",
-        "Wyvern"
+        "Yu-Gi-Oh"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Board Games",

@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-05-0",
       "question": "What comes after a Million, a Billion, and a Trillion?",
       "options": [
-        "Quintillion",
         "Septillion",
         "Sextillion",
-        "Quadrillion"
+        "Quadrillion",
+        "Quintillion"
       ],
       "difficulty": "easy",
       "category": "Science: Mathematics",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-05-1",
       "question": "The metric prefix \"atto-\" makes a measurement how much smaller than the base unit?",
       "options": [
-        "One Quadrillionth",
-        "One Septillionth",
+        "One Quintillionth",
         "One Billionth",
-        "One Quintillionth"
+        "One Quadrillionth",
+        "One Septillionth"
       ],
       "difficulty": "easy",
       "category": "Science: Mathematics",
@@ -36,9 +36,9 @@
       "question": "How many sides does a Möbius strip have?",
       "options": [
         "3",
-        "4",
+        "1",
         "2",
-        "1"
+        "4"
       ],
       "difficulty": "easy",
       "category": "Science: Mathematics",
@@ -50,9 +50,9 @@
       "question": "What is the derivative of sin(x)",
       "options": [
         "csc(x)",
-        "-sin(x)",
+        "cos(x)",
         "-cos(x)",
-        "cos(x)"
+        "-sin(x)"
       ],
       "difficulty": "medium",
       "category": "Science: Mathematics",
@@ -64,9 +64,9 @@
       "question": "What type of function is x&sup2;+2x+1?",
       "options": [
         "Linear",
-        "Exponential",
         "Rational",
-        "Quadratic"
+        "Quadratic",
+        "Exponential"
       ],
       "difficulty": "medium",
       "category": "Science: Mathematics",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-05-05-5",
       "question": "The French mathematician Évariste Galois is primarily known for his work in which?",
       "options": [
-        "Galois' Continued Fractions",
-        "Galois' Method for PDE's ",
         "Abelian Integration",
-        "Galois Theory"
+        "Galois' Continued Fractions",
+        "Galois Theory",
+        "Galois' Method for PDE's "
       ],
       "difficulty": "hard",
       "category": "Science: Mathematics",

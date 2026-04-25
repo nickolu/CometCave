@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-25-0",
       "question": "In which fast food chain can you order a Jamocha Shake?",
       "options": [
-        "McDonald's",
-        "Burger King",
+        "Arby's",
         "Wendy's",
-        "Arby's"
+        "McDonald's",
+        "Burger King"
       ],
       "difficulty": "easy",
       "category": "General Knowledge",
@@ -22,9 +22,9 @@
       "question": "What do the letters of the fast food chain KFC stand for?",
       "options": [
         "Kentucky Fresh Cheese",
-        "Kiwi Food Cut",
+        "Kentucky Fried Chicken",
         "Kibbled Freaky Cow",
-        "Kentucky Fried Chicken"
+        "Kiwi Food Cut"
       ],
       "difficulty": "easy",
       "category": "General Knowledge",
@@ -36,9 +36,9 @@
       "question": "How tall is the Burj Khalifa?",
       "options": [
         "2,546 ft",
-        "3,024 ft",
+        "2,722 ft",
         "2,717 ft",
-        "2,722 ft"
+        "3,024 ft"
       ],
       "difficulty": "easy",
       "category": "General Knowledge",
@@ -50,9 +50,9 @@
       "question": "Which of these Nicktoons were NOT originally a short on Oh Yeah! Cartoons before becoming their own series?",
       "options": [
         "My Life as a Teenage Robot",
-        "The Fairly OddParents",
         "ChalkZone",
-        "Danny Phantom"
+        "Danny Phantom",
+        "The Fairly OddParents"
       ],
       "difficulty": "medium",
       "category": "General Knowledge",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-25-4",
       "question": "What character was once considered to be the 27th letter of the alphabet?",
       "options": [
-        "Tilde",
-        "Pilcrow",
         "Interrobang",
-        "Ampersand"
+        "Tilde",
+        "Ampersand",
+        "Pilcrow"
       ],
       "difficulty": "medium",
       "category": "General Knowledge",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-04-25-5",
       "question": "What is the romanized Korean word for \"heart\"?",
       "options": [
-        "Aejeong",
-        "Segseu",
+        "Simjang",
         "Jeongsin",
-        "Simjang"
+        "Aejeong",
+        "Segseu"
       ],
       "difficulty": "hard",
       "category": "General Knowledge",

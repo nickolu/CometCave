@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-29-0",
       "question": "How many plays is Shakespeare generally considered to have written?",
       "options": [
-        "54",
-        "25",
         "18",
-        "37"
+        "54",
+        "37",
+        "25"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Musicals & Theatres",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-29-1",
       "question": "Which Shakespeare play inspired the musical 'West Side Story'?",
       "options": [
-        "Hamlet",
-        "Macbeth",
+        "Romeo & Juliet",
         "Othello",
-        "Romeo & Juliet"
+        "Hamlet",
+        "Macbeth"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Musicals & Theatres",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-29-2",
       "question": "Who wrote the award winning musical \"In The Heights\"?",
       "options": [
-        "Francis Scott Key",
+        "Lin-Manuel Miranda",
         "John Phillips Sousa",
-        "Steven Sondheim",
-        "Lin-Manuel Miranda"
+        "Francis Scott Key",
+        "Steven Sondheim"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Musicals & Theatres",
@@ -51,8 +51,8 @@
       "options": [
         "Renee Elise-Goldberry",
         "Leslie Odom Jr.",
-        "Lin-Manuel Miranda",
-        "Alex Lacamoire"
+        "Alex Lacamoire",
+        "Lin-Manuel Miranda"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Musicals & Theatres",
@@ -65,8 +65,8 @@
       "options": [
         "The Color Purple",
         "Newsies",
-        "American Idiot",
-        "Rent"
+        "Rent",
+        "American Idiot"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Musicals & Theatres",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-04-29-5",
       "question": "Who serves as the speaker of the prologue in Shakespeare's Romeo and Juliet?",
       "options": [
+        "Chorus",
         "Montague",
         "Capulet",
-        "Refrain",
-        "Chorus"
+        "Refrain"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Musicals & Theatres",

@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-06-0",
       "question": "Who was the only god from Greece who did not get a name change in Rome?",
       "options": [
-        "Zeus",
-        "Athena",
+        "Apollo",
         "Demeter",
-        "Apollo"
+        "Zeus",
+        "Athena"
       ],
       "difficulty": "easy",
       "category": "Mythology",
@@ -22,9 +22,9 @@
       "question": "Who was the King of Gods in Ancient Greek mythology?",
       "options": [
         "Apollo",
-        "Hermes",
+        "Zeus",
         "Poseidon",
-        "Zeus"
+        "Hermes"
       ],
       "difficulty": "easy",
       "category": "Mythology",
@@ -36,9 +36,9 @@
       "question": "What mythology did the god \"Apollo\" come from?",
       "options": [
         "Greek and Chinese",
-        "Greek, Roman and Norse",
+        "Greek and Roman",
         "Roman and Spanish",
-        "Greek and Roman"
+        "Greek, Roman and Norse"
       ],
       "difficulty": "easy",
       "category": "Mythology",
@@ -50,9 +50,9 @@
       "question": "The Maori hold that which island nation was founded by Kupe, who discovered it under a long white cloud?",
       "options": [
         "Fiji",
-        "Hawaii",
         "Vanuatu",
-        "New Zealand"
+        "New Zealand",
+        "Hawaii"
       ],
       "difficulty": "medium",
       "category": "Mythology",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-06-4",
       "question": "Who is the God Loki's son? ",
       "options": [
-        "Hel",
-        "Sigyn",
         "Odin",
-        "Fenrir "
+        "Hel",
+        "Fenrir ",
+        "Sigyn"
       ],
       "difficulty": "medium",
       "category": "Mythology",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-05-06-5",
       "question": "What immense structure is referred to in Norse Mythology as the Yggdrasil.",
       "options": [
-        "Mountain",
-        "Castle",
+        "Tree",
         "Temple",
-        "Tree"
+        "Mountain",
+        "Castle"
       ],
       "difficulty": "hard",
       "category": "Mythology",
