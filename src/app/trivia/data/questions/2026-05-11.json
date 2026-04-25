@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-11-0",
       "question": "Who painted the biblical fresco The Creation of Adam?",
       "options": [
-        "Caravaggio",
+        "Michelangelo",
         "Rembrandt",
         "Leonardo da Vinci",
-        "Michelangelo"
+        "Caravaggio"
       ],
       "difficulty": "easy",
       "category": "Art",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-11-1",
       "question": "What is the world's oldest known piece of fiction?",
       "options": [
-        "Papyrus of Ani",
-        "Code of Hammurabi",
+        "Epic of Gilgamesh",
         "Rosetta Stone",
-        "Epic of Gilgamesh"
+        "Code of Hammurabi",
+        "Papyrus of Ani"
       ],
       "difficulty": "easy",
       "category": "Art",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-11-2",
       "question": "Who painted the Mona Lisa?",
       "options": [
-        "Pablo Picasso",
-        "Michelangelo",
+        "Leonardo da Vinci ",
         " Vincent van Gogh",
-        "Leonardo da Vinci "
+        "Michelangelo",
+        "Pablo Picasso"
       ],
       "difficulty": "easy",
       "category": "Art",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-11-3",
       "question": "In \"Last Supper\" by Leonardo Da Vinci, what two colors were the robes worn by Jesus?",
       "options": [
-        "Red and Yellow",
         "Red and Black",
         "Red and White",
-        "Red and Blue"
+        "Red and Blue",
+        "Red and Yellow"
       ],
       "difficulty": "medium",
       "category": "Art",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-11-4",
       "question": "What nationality was the surrealist painter Salvador Dali?",
       "options": [
-        "French",
-        "Portuguese",
+        "Spanish",
         "Italian",
-        "Spanish"
+        "French",
+        "Portuguese"
       ],
       "difficulty": "medium",
       "category": "Art",
@@ -78,9 +78,9 @@
       "question": "What nationality was the famous artist Van Gogh?",
       "options": [
         "French",
-        "Polish",
+        "Dutch",
         "Russian",
-        "Dutch"
+        "Polish"
       ],
       "difficulty": "hard",
       "category": "Art",

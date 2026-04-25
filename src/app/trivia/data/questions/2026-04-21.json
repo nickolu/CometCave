@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-21-0",
       "question": "In \"Homestuck\" what is Dave Strider's guardian?",
       "options": [
-        "Becquerel",
+        "Bro",
         "Doc Scratch",
         "Halley",
-        "Bro"
+        "Becquerel"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Comics",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-21-1",
       "question": "What is the alter-ego of the DC comics character \"Superman\"?",
       "options": [
-        "Arthur Curry",
-        "John Jones",
+        "Clark Kent",
         "Bruce Wayne",
-        "Clark Kent"
+        "John Jones",
+        "Arthur Curry"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Comics",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-21-2",
       "question": "In the Marvel comic \"The Superior Spider-Man\", Peter Parker's body is taken over by which character?",
       "options": [
-        "Mary Jane",
-        "Eddie Brock ",
+        "Otto Octavius ",
         "Norman Osborn",
-        "Otto Octavius "
+        "Eddie Brock ",
+        "Mary Jane"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Comics",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-21-3",
       "question": "Which \"Green Arrow\" sidekick commonly wears a baseball cap?",
       "options": [
-        "Black Canary",
         "Dick Grayson",
         "Emiko Queen",
-        "Roy Harper"
+        "Roy Harper",
+        "Black Canary"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Comics",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-21-4",
       "question": "Who is the second person to take up the mantle of Night Owl in the Watchmen graphic novel?",
       "options": [
-        "Nelson Gardner",
-        "Hollis Mason",
+        "Daniel Dreiberg",
         "Adrian Veidt",
-        "Daniel Dreiberg"
+        "Nelson Gardner",
+        "Hollis Mason"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Comics",
@@ -78,9 +78,9 @@
       "question": "Which pulp hero made appearances in Hellboy and BPRD comics before getting his own spin-off?",
       "options": [
         "Roger the Homunculus",
-        "The Spider",
+        "Lobster Johnson",
         "The Wendigo",
-        "Lobster Johnson"
+        "The Spider"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Comics",

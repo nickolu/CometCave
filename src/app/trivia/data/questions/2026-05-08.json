@@ -8,9 +8,9 @@
       "question": "Which country was NOT part of the Soviet Union?",
       "options": [
         "Turkmenistan",
-        "Tajikistan",
+        "Romania",
         "Belarus",
-        "Romania"
+        "Tajikistan"
       ],
       "difficulty": "easy",
       "category": "Geography",
@@ -22,9 +22,9 @@
       "question": "Which area of Eastern Europe is famous for its association with vampires?",
       "options": [
         "Silesia",
-        "Slovakia",
         "Macedonia",
-        "Transylvania"
+        "Transylvania",
+        "Slovakia"
       ],
       "difficulty": "easy",
       "category": "Geography",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-08-2",
       "question": "What is the largest country, by area, that has only one time zone?",
       "options": [
-        "Canada",
-        "India",
         "Russia",
-        "China"
+        "Canada",
+        "China",
+        "India"
       ],
       "difficulty": "easy",
       "category": "Geography",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-08-3",
       "question": "How many timezones does Russia have?",
       "options": [
-        "6",
-        "24",
+        "11",
         "16",
-        "11"
+        "6",
+        "24"
       ],
       "difficulty": "medium",
       "category": "Geography",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-08-4",
       "question": "What was the African nation of Zimbabwe formerly known as?",
       "options": [
-        "Zambia",
+        "Rhodesia",
         "Mozambique",
-        " Bulawayo",
-        "Rhodesia"
+        "Zambia",
+        " Bulawayo"
       ],
       "difficulty": "medium",
       "category": "Geography",
@@ -79,8 +79,8 @@
       "options": [
         "Port Moresby",
         "Port-au-Prince",
-        "Port Vila",
-        "Port Louis"
+        "Port Louis",
+        "Port Vila"
       ],
       "difficulty": "hard",
       "category": "Geography",

@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-16-0",
       "question": "Which of the following Pacific Islander countries is ruled by a constitutional monarchy?",
       "options": [
-        "Palau",
-        "Kiribati",
+        "Tonga",
         "Fiji",
-        "Tonga"
+        "Palau",
+        "Kiribati"
       ],
       "difficulty": "easy",
       "category": "Politics",
@@ -22,9 +22,9 @@
       "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
       "options": [
         "Marco Rubio",
-        "Bernie Sanders",
+        "Donald Trump",
         "Ted Cruz",
-        "Donald Trump"
+        "Bernie Sanders"
       ],
       "difficulty": "easy",
       "category": "Politics",
@@ -36,9 +36,9 @@
       "question": "Who was South Africa's first Black President?",
       "options": [
         "Mangosuthu Buthelezi",
-        "Steve Biko ",
+        "Nelson Mandela",
         "Bishop Tutu",
-        "Nelson Mandela"
+        "Steve Biko "
       ],
       "difficulty": "easy",
       "category": "Politics",
@@ -50,9 +50,9 @@
       "question": "The 2014 movie \"The Raid 2: Berandal\" was mainly filmed in which Asian country?",
       "options": [
         "Thailand",
-        "Malaysia",
         "Brunei",
-        "Indonesia"
+        "Indonesia",
+        "Malaysia"
       ],
       "difficulty": "medium",
       "category": "Politics",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-16-4",
       "question": "What was the personal nickname of the 40th Governor of the US State Louisiana, Huey Long?",
       "options": [
-        "The Hoot Owl",
-        "The Oracle",
         "The Champ",
-        "The Kingfish"
+        "The Hoot Owl",
+        "The Kingfish",
+        "The Oracle"
       ],
       "difficulty": "medium",
       "category": "Politics",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-04-16-5",
       "question": "In June 2017, Saudi Arabia and Egypt broke off ties with which country over its supposed support for terrorism?",
       "options": [
-        "Bahrain",
-        "United States of America",
+        "Qatar",
         "Russia",
-        "Qatar"
+        "Bahrain",
+        "United States of America"
       ],
       "difficulty": "hard",
       "category": "Politics",

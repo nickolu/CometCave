@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-13-0",
       "question": "By definition, where does an abyssopelagic animal live?",
       "options": [
-        "In the desert",
-        "Inside a tree",
+        "At the bottom of the ocean",
         "On top of a mountain",
-        "At the bottom of the ocean"
+        "Inside a tree",
+        "In the desert"
       ],
       "difficulty": "easy",
       "category": "Animals",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-13-1",
       "question": "Which class of animals are newts members of?",
       "options": [
-        "Fish",
         "Reptiles",
         "Mammals",
-        "Amphibian"
+        "Amphibian",
+        "Fish"
       ],
       "difficulty": "easy",
       "category": "Animals",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-13-2",
       "question": "How many teeth does an adult rabbit have?",
       "options": [
-        "30",
-        "26",
+        "28",
         "24",
-        "28"
+        "30",
+        "26"
       ],
       "difficulty": "easy",
       "category": "Animals",
@@ -50,9 +50,9 @@
       "question": "What is the collective noun for rats?",
       "options": [
         "Race",
-        "Drift",
+        "Mischief",
         "Pack",
-        "Mischief"
+        "Drift"
       ],
       "difficulty": "medium",
       "category": "Animals",
@@ -64,9 +64,9 @@
       "question": "Which dog breed is named after a region in Croatia",
       "options": [
         "Chihuahua ",
-        "Pomeranian",
+        "Dalmatian",
         "Pekingnese",
-        "Dalmatian"
+        "Pomeranian"
       ],
       "difficulty": "medium",
       "category": "Animals",
@@ -78,9 +78,9 @@
       "question": "What scientific family does the Aardwolf belong to?",
       "options": [
         "Canidae",
-        "Eupleridae",
         "Felidae",
-        "Hyaenidae"
+        "Hyaenidae",
+        "Eupleridae"
       ],
       "difficulty": "hard",
       "category": "Animals",

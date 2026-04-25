@@ -8,9 +8,9 @@
       "question": "Who directed the Kill Bill movies?",
       "options": [
         "Arnold Schwarzenegger",
-        "David Lean",
+        "Quentin Tarantino",
         "Stanley Kubrick",
-        "Quentin Tarantino"
+        "David Lean"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Film",
@@ -22,9 +22,9 @@
       "question": "In the 1995 film \"Balto\", who are Steele's accomplices?",
       "options": [
         "Dusty, Kirby, and Ralph",
-        "Jenna, Sylvie, and Dixie",
         "Nuk, Yak, and Sumac",
-        "Kaltag, Nikki, and Star"
+        "Kaltag, Nikki, and Star",
+        "Jenna, Sylvie, and Dixie"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Film",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-27-2",
       "question": "Who directed the 2015 movie \"The Revenant\"?",
       "options": [
-        "David Fincher",
-        "Wes Anderson",
         "Christopher Nolan",
-        "Alejandro G. Iñárritu"
+        "David Fincher",
+        "Alejandro G. Iñárritu",
+        "Wes Anderson"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Film",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-27-3",
       "question": "In \"The Hobbit,\" who was head of the White Council? ",
       "options": [
-        "Gandalf",
-        "Elrond",
+        "Saruman",
         "Lady Galadriel ",
-        "Saruman"
+        "Gandalf",
+        "Elrond"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Film",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-27-4",
       "question": "What is the name of the Artificial Intelligence system in the 1983 film, \"WarGames\"?",
       "options": [
-        "Master Control Program",
+        "War Operation Plan Response",
         "West Campus Analog Computer",
-        "Self Evolving Thought Helix",
-        "War Operation Plan Response"
+        "Master Control Program",
+        "Self Evolving Thought Helix"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Film",
@@ -79,8 +79,8 @@
       "options": [
         "Sergio Leone, Ennio Morricone, and Tonino Delli Colli",
         "Aldo Giuffrè, Mario Brega, and Luigi Pistilli",
-        "Yul Brynner, Steve McQueen, and Charles Bronson",
-        "Clint Eastwood, Eli Wallach, and Lee Van Cleef"
+        "Clint Eastwood, Eli Wallach, and Lee Van Cleef",
+        "Yul Brynner, Steve McQueen, and Charles Bronson"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Film",

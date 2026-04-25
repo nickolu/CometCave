@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-15-0",
       "question": "The main six year old protagonist in Calvin and Hobbes is named after what theologian?",
       "options": [
-        "Calvin Klein",
-        "Phillip Calvin McGraw",
+        "John Calvin",
         "Calvin Coolidge",
-        "John Calvin"
+        "Calvin Klein",
+        "Phillip Calvin McGraw"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Comics",
@@ -22,9 +22,9 @@
       "question": "Who is the creator of the comic series \"The Walking Dead\"?",
       "options": [
         "Stan Lee",
-        "Robert Crumb",
+        "Robert Kirkman",
         "Malcolm Wheeler-Nicholson",
-        "Robert Kirkman"
+        "Robert Crumb"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Comics",
@@ -36,9 +36,9 @@
       "question": "In Black Hammer, what city did the heroes save from the Anti-God?",
       "options": [
         "Mega-City One",
-        "Rockwood",
+        "Spiral City",
         "Star City",
-        "Spiral City"
+        "Rockwood"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Comics",
@@ -50,9 +50,9 @@
       "question": "What is Homestuck character Gamzee's last name?",
       "options": [
         "Makera",
-        "Makare",
         "Makrea",
-        "Makara"
+        "Makara",
+        "Makare"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Comics",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-15-4",
       "question": "What was the name of the first Robin in the Batman comics?",
       "options": [
-        "Bruce Wayne",
-        "Jason Todd",
         "Tim Drake",
-        "Dick Grayson"
+        "Bruce Wayne",
+        "Dick Grayson",
+        "Jason Todd"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Comics",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-05-15-5",
       "question": "Which of the following rings from the DC Comics' \"Lantern Corps\" are classified as Parasitic?",
       "options": [
-        "White (Life)",
-        "Yellow (Fear)",
+        "Indigo (Compassion)",
         "Green (Willpower)",
-        "Indigo (Compassion)"
+        "White (Life)",
+        "Yellow (Fear)"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Comics",

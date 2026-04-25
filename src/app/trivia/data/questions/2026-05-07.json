@@ -8,9 +8,9 @@
       "question": "Which city did the former NHL team \"The Nordiques\" originiate from?",
       "options": [
         "Houston",
-        "New York",
+        "Quebec City",
         "Montreal",
-        "Quebec City"
+        "New York"
       ],
       "difficulty": "easy",
       "category": "Sports",
@@ -22,9 +22,9 @@
       "question": "This Canadian television sportscaster is known for his \"Hockey Night in Canada\" role, a commentary show during hockey games.",
       "options": [
         "Don McKellar",
-        "Don Taylor ",
+        "Don Cherry",
         "Donald Sutherland",
-        "Don Cherry"
+        "Don Taylor "
       ],
       "difficulty": "easy",
       "category": "Sports",
@@ -36,9 +36,9 @@
       "question": "Which of these teams has Jaromir Jagr not played for?",
       "options": [
         "Calgary Flames",
-        "New Jersey Devils",
         "Dallas Stars",
-        "New York Islanders"
+        "New York Islanders",
+        "New Jersey Devils"
       ],
       "difficulty": "easy",
       "category": "Sports",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-07-3",
       "question": "What is the highest belt you can get in Taekwondo?",
       "options": [
-        "White",
-        "Green",
         "Red",
-        "Black"
+        "White",
+        "Black",
+        "Green"
       ],
       "difficulty": "medium",
       "category": "Sports",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-07-4",
       "question": "Which football manager won more trophies than any other during his tenure at English football club Manchester United?",
       "options": [
-        "Louis van Gaal",
-        "José Mourinho",
+        "Sir Alex Ferguson",
         "David Moyes",
-        "Sir Alex Ferguson"
+        "Louis van Gaal",
+        "José Mourinho"
       ],
       "difficulty": "medium",
       "category": "Sports",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-05-07-5",
       "question": "The Mazda 787B won the 24 Hours of Le Mans in what year?",
       "options": [
-        "1990",
+        "1991",
         "2000",
-        "1987",
-        "1991"
+        "1990",
+        "1987"
       ],
       "difficulty": "hard",
       "category": "Sports",

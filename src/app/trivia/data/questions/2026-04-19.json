@@ -8,9 +8,9 @@
       "question": "How many teeth does an adult rabbit have?",
       "options": [
         "30",
-        "26",
         "24",
-        "28"
+        "28",
+        "26"
       ],
       "difficulty": "easy",
       "category": "Animals",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-19-1",
       "question": "What is the fastest  land animal?",
       "options": [
-        "Thomson's Gazelle",
-        "Pronghorn Antelope",
         "Lion",
-        "Cheetah"
+        "Thomson's Gazelle",
+        "Cheetah",
+        "Pronghorn Antelope"
       ],
       "difficulty": "easy",
       "category": "Animals",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-19-2",
       "question": "Which class of animals are newts members of?",
       "options": [
-        "Reptiles",
-        "Mammals",
+        "Amphibian",
         "Fish",
-        "Amphibian"
+        "Reptiles",
+        "Mammals"
       ],
       "difficulty": "easy",
       "category": "Animals",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-19-3",
       "question": "\"Decapods\" are an order of ten-footed crustaceans.  Which of these are NOT decapods?",
       "options": [
-        "Shrimp",
+        "Krill",
         "Crabs",
-        "Lobsters",
-        "Krill"
+        "Shrimp",
+        "Lobsters"
       ],
       "difficulty": "medium",
       "category": "Animals",
@@ -65,8 +65,8 @@
       "options": [
         "10%",
         "45%",
-        "80%",
-        "25%"
+        "25%",
+        "80%"
       ],
       "difficulty": "medium",
       "category": "Animals",
@@ -79,8 +79,8 @@
       "options": [
         "Cormorant",
         "Secretary bird",
-        "Cassowary",
-        "Hoatzin"
+        "Hoatzin",
+        "Cassowary"
       ],
       "difficulty": "hard",
       "category": "Animals",
