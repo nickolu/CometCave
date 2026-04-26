@@ -2163,7 +2163,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 40,
+      version: 41,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -2225,7 +2225,7 @@ export const useGameStore = create<GameStore>()(
               ;(char as FantasyCharacter).mainQuest = createMainQuest()
               // Mark milestones as claimed for already-visited regions (no retroactive gold)
               const visited = (char as FantasyCharacter).visitedRegions ?? ['green_meadows']
-              const count = visited.filter((r: string) => r !== 'hearthwood').length
+              const count = visited.filter((r: string) => r !== 'green_meadows').length
               for (const m of (char as FantasyCharacter).mainQuest!.milestones) {
                 if (count >= m.regionsRequired) m.claimed = true
               }
@@ -2396,6 +2396,22 @@ export const useGameStore = create<GameStore>()(
         // v40: Add runHistory
         if (state?.gameState && !('runHistory' in state.gameState)) {
           (state.gameState as GameState).runHistory = []
+        }
+        // v41: Migrate hearthwood characters to green_meadows (hearthwood is now a landmark, not a region)
+        if (state?.gameState?.characters) {
+          for (const char of state.gameState.characters) {
+            if ((char as FantasyCharacter).currentRegion === 'hearthwood') {
+              ;(char as FantasyCharacter).currentRegion = 'green_meadows'
+              // Reset landmark state so it regenerates for green_meadows
+              ;(char as FantasyCharacter).landmarkState = undefined as any
+            }
+            // Remove hearthwood from visitedRegions
+            if ((char as FantasyCharacter).visitedRegions) {
+              ;(char as FantasyCharacter).visitedRegions = (char as FantasyCharacter).visitedRegions!.filter(
+                (r: string) => r !== 'hearthwood'
+              )
+            }
+          }
         }
         return state
       },
