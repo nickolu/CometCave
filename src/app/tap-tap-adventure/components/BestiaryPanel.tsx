@@ -38,6 +38,9 @@ function getWeaknessResistance(enemyElement?: string): { weak: SpellElement[]; r
 
 export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [elementFilter, setElementFilter] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'name' | 'level' | 'defeated'>('level')
 
   const count = bestiary.length
 
@@ -55,9 +58,23 @@ export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
     )
   }
 
+  // Filter and sort
+  const filteredBestiary = bestiary
+    .filter(entry => {
+      if (searchQuery && !entry.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
+      if (elementFilter && entry.element !== elementFilter) return false
+      return true
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name)
+      if (sortBy === 'level') return b.level - a.level
+      if (sortBy === 'defeated') return b.timesDefeated - a.timesDefeated
+      return 0
+    })
+
   // Group entries by region
   const byRegion = new Map<string, BestiaryEntry[]>()
-  for (const entry of bestiary) {
+  for (const entry of filteredBestiary) {
     const existing = byRegion.get(entry.region)
     if (existing) {
       existing.push(entry)
@@ -77,9 +94,62 @@ export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
         >
           Bestiary
         </button>
-        <span className="text-xs text-slate-400">{count} discovered</span>
+        <span className="text-xs text-slate-400">
+          {filteredBestiary.length !== bestiary.length
+            ? `${filteredBestiary.length} / ${count} shown`
+            : `${count} discovered`}
+        </span>
       </div>
 
+      {/* Search and filters */}
+      <div className="space-y-2">
+        <input
+          type="text"
+          placeholder="Search enemies..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="w-full bg-[#161723] border border-[#2a2b3f] rounded px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"
+        />
+        <div className="flex flex-wrap gap-1">
+          <button
+            className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+              !elementFilter ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+            }`}
+            onClick={() => setElementFilter(null)}
+          >
+            All
+          </button>
+          {['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane'].map(el => (
+            <button
+              key={el}
+              className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                elementFilter === el ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+              }`}
+              onClick={() => setElementFilter(elementFilter === el ? null : el)}
+            >
+              {ELEMENT_ICONS[el]} {el}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 text-[10px]">
+          <span className="text-slate-500 self-center">Sort:</span>
+          {(['level', 'name', 'defeated'] as const).map(opt => (
+            <button
+              key={opt}
+              className={`px-1.5 py-0.5 rounded transition-colors capitalize ${
+                sortBy === opt ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+              }`}
+              onClick={() => setSortBy(opt)}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredBestiary.length === 0 && count > 0 && (
+        <p className="text-xs text-slate-500 italic">No enemies match your filters.</p>
+      )}
       {count === 0 && (
         <p className="text-xs text-slate-500 italic">No monsters encountered yet. Defeat enemies to fill your bestiary.</p>
       )}
