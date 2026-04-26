@@ -2135,6 +2135,23 @@ export function getCombatRewards(
     }
   }
 
+  // Secret bosses always drop at least one item
+  if (combatState.isSecretBoss && loot.length === 0) {
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+    loot.push({
+      id: `secret-boss-loot-${suffix}`,
+      name: 'Guardian\'s Treasure',
+      description: 'A powerful artifact left behind by the defeated guardian.',
+      quantity: 1,
+      type: 'equipment',
+      rarity: Math.random() < 0.3 ? 'legendary' : 'epic',
+      effects: {
+        strength: 3 + Math.floor(character.level * 1.5),
+        intelligence: 2 + character.level,
+      },
+    })
+  }
+
   // Regular (non-boss) enemies have a chance to drop a spell scroll
   if (!combatState.isBoss) {
     const spellDropChance = 0.05 + character.level * 0.01

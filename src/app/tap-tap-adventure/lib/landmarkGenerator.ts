@@ -11,7 +11,7 @@ export interface GeneratedLandmark {
   encounterPrompt: string
   distanceFromEntry: number
   hidden: boolean
-  isSecret?: boolean
+  isSecret: boolean
   explored: boolean
   position: { x: number; y: number }
   hasInn?: boolean
@@ -107,6 +107,7 @@ export function generateLandmarks(
       encounterPrompt: template.encounterPrompt,
       distanceFromEntry: currentDist,
       hidden: false,
+      isSecret: false,
       explored: false,
       position,
       hasInn: template.hasInn,
