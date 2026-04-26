@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-10-0",
       "question": "Who was South Africa's first Black President?",
       "options": [
-        "Mangosuthu Buthelezi",
         "Bishop Tutu",
+        "Nelson Mandela",
         "Steve Biko ",
-        "Nelson Mandela"
+        "Mangosuthu Buthelezi"
       ],
       "difficulty": "easy",
       "category": "Politics",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-10-1",
       "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
       "options": [
-        "Marco Rubio",
+        "Donald Trump",
         "Bernie Sanders",
         "Ted Cruz",
-        "Donald Trump"
+        "Marco Rubio"
       ],
       "difficulty": "easy",
       "category": "Politics",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-10-2",
       "question": "The largest consumer market in 2015 was...",
       "options": [
-        "Germany",
-        "Japan",
+        "The United States of America",
         "United Kingdom",
-        "The United States of America"
+        "Japan",
+        "Germany"
       ],
       "difficulty": "easy",
       "category": "Politics",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-10-3",
       "question": "Due to the Nagoya Resolution, China agreed to allow Taiwan to compete separately in international sporting events under what name?",
       "options": [
-        "Chinese Taiwan",
-        "Republic of Taiwan",
+        "Chinese Taipei",
         "Republic of Taipei ",
-        "Chinese Taipei"
+        "Republic of Taiwan",
+        "Chinese Taiwan"
       ],
       "difficulty": "medium",
       "category": "Politics",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-10-4",
       "question": "Who succeeded Joseph Stalin as General Secretary of the Communist Party of the Soviet Union?",
       "options": [
-        "Mikhail Gorbachev",
         "Boris Yeltsin",
         "Leonid Brezhnev",
-        "Nikita Khrushchev"
+        "Nikita Khrushchev",
+        "Mikhail Gorbachev"
       ],
       "difficulty": "medium",
       "category": "Politics",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-05-10-5",
       "question": "Which nation joined NATO as its 29th member in 2017?",
       "options": [
-        "Estonia",
-        "Iceland",
+        "Montenegro",
         "Andorra",
-        "Montenegro"
+        "Estonia",
+        "Iceland"
       ],
       "difficulty": "hard",
       "category": "Politics",

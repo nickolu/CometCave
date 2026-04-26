@@ -6,7 +6,7 @@ import { Item, ItemSchema } from '@/app/tap-tap-adventure/models/item'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getMountPrice, getShopMount } from '@/app/tap-tap-adventure/config/mounts'
 
-import { getCharismaPriceMultiplier, getReputationPriceMultiplier } from './contextBuilder'
+import { getCharismaPriceMultiplier, getNPCDispositionPriceMultiplier, getReputationPriceMultiplier } from './contextBuilder'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 import { generateSpellForLevel } from './spellGenerator'
 
@@ -35,7 +35,7 @@ const shopSchemaForOpenAI = {
           name: { type: 'string' },
           description: { type: 'string' },
           quantity: { type: 'number' },
-          type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'misc'] },
+          type: { type: 'string', enum: ['consumable', 'equipment', 'quest', 'trade_good', 'spell_scroll'] },
           price: { type: 'number' },
           rarity: { type: 'string', enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
           effects: {
@@ -47,7 +47,40 @@ const shopSchemaForOpenAI = {
               intelligence: { type: 'number' },
               luck: { type: 'number' },
               heal: { type: 'number', description: 'Directly restores this amount of HP. Use for healing items instead of strength.' },
+              revealLandmark: { type: 'boolean', description: 'Set to true for map items that reveal hidden landmarks. Use for items like treasure maps, ancient charts, or cartographer notes.' },
             },
+          },
+          onHitEffect: {
+            type: 'object',
+            description: 'On-hit effect for equipment items (uncommon+). Triggers with a chance on each attack.',
+            properties: {
+              type: { type: 'string', enum: ['poison', 'burn', 'freeze', 'lifesteal', 'stun', 'bleed'] },
+              chance: { type: 'number', description: 'Probability (0-1) of triggering per hit' },
+              damage: { type: 'number', description: 'Damage per turn for DoT effects' },
+              duration: { type: 'number', description: 'Duration in turns' },
+              description: { type: 'string' },
+            },
+            required: ['type', 'chance', 'description'],
+          },
+          passiveEffect: {
+            type: 'object',
+            description: 'Passive effect for equipment items (rare+). Always active while equipped.',
+            properties: {
+              type: { type: 'string', enum: ['crit_bonus', 'thorns', 'dodge', 'lifesteal_passive', 'poison_immunity', 'burn_immunity', 'double_gold', 'hp_regen', 'mana_regen', 'loot_bonus', 'xp_bonus'] },
+              value: { type: 'number', description: 'Effect magnitude (e.g. 0.05 = 5% for crit_bonus)' },
+              description: { type: 'string' },
+            },
+            required: ['type', 'value', 'description'],
+          },
+          drawback: {
+            type: 'object',
+            description: 'Stat penalty for powerful items (epic+). Balances strong bonuses.',
+            properties: {
+              stat: { type: 'string', description: 'Stat to reduce: strength, intelligence, luck, charisma' },
+              value: { type: 'number', description: 'Amount to reduce (use negative values, e.g. -2)' },
+              description: { type: 'string' },
+            },
+            required: ['stat', 'value', 'description'],
           },
         },
         required: ['id', 'name', 'description', 'quantity', 'price'],
@@ -64,16 +97,30 @@ export function generateShopMount(character: FantasyCharacter): ShopMount | null
   return { mount, price }
 }
 
-export async function generateShopItems(character: FantasyCharacter): Promise<Item[]> {
+export async function generateShopItems(
+  character: FantasyCharacter,
+  townName?: string,
+  townDescription?: string
+): Promise<Item[]> {
   try {
     const basePrice = 10 + character.level * 5
+    const shopContext = townName
+      ? `Generate 3-5 shop items for the merchant's shop at "${townName}"${townDescription ? ` — ${townDescription}` : ''}. The items should be thematically appropriate for this specific shop AND suitable for a level ${character.level} ${character.class} ${character.race} character.
+
+Shop theme guidance:
+- If this is a forge/smithy/blacksmith, focus on weapons, armor, and metal goods
+- If this is a tavern/inn, focus on food, drinks, potions, and consumables
+- If this is a market/bazaar, offer a diverse mix of trade goods and exotic items
+- If this is an outpost/camp, focus on survival supplies and basic equipment
+- Match the shop's personality to its name and description`
+      : `Generate 3-5 shop items for a fantasy merchant's shop. The items should be appropriate for a level ${character.level} ${character.class} ${character.race} character.`
     const openai = getOpenAIClient()
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
           role: 'user',
-          content: `Generate 3-5 shop items for a fantasy merchant's shop. The items should be appropriate for a level ${character.level} ${character.class} ${character.race} character.
+          content: `${shopContext}
 
 Price guidelines for level ${character.level}:
 - Cheap items: ${Math.round(basePrice * 0.5)}-${basePrice} gold
@@ -85,11 +132,13 @@ Include a mix of:
 - Stat-boosting items (strength, intelligence, luck)
 - Interesting thematic items that fit the fantasy setting
 - Occasionally a spell scroll (type: "spell_scroll") with a spell object containing id, name, description, school, manaCost, cooldown, target, effects, and tags
+- Occasionally a map or chart (type: "consumable" with effects: { revealLandmark: true }) that reveals hidden landmarks. Price these at 2-3x the base price. Use names like "Treasure Map", "Ancient Chart", "Explorer's Map", etc.
 
 Each item needs a unique id (e.g. "shop-item-1"), a creative name, a short description, quantity of 1, a gold price, and effects.
 
 - Each item should have a rarity: common (basic supplies), uncommon (quality goods), rare (special finds), epic (very rare), legendary (once in a lifetime)
 - Most items should be common or uncommon. Include at most 1 rare item. Epic/legendary items should almost never appear in shops.
+- For rare+ equipment items, include an onHitEffect or passiveEffect. For epic+ equipment items, consider adding a drawback to balance the power.
 
 Character:
 ${JSON.stringify({ name: character.name, race: character.race, class: character.class, level: character.level }, null, 2)}`,
@@ -114,7 +163,7 @@ ${JSON.stringify({ name: character.name, race: character.race, class: character.
     if (toolCall && toolCall.function?.name === 'generate_shop') {
       const parsed = JSON.parse(toolCall.function.arguments)
       const validated = shopResponseSchema.parse(parsed)
-      const priceMultiplier = Math.max(0.60, getReputationPriceMultiplier(character.reputation) * getCharismaPriceMultiplier(character.charisma))
+      const priceMultiplier = Math.max(0.60, getReputationPriceMultiplier(character.reputation) * getCharismaPriceMultiplier(character.charisma) * getNPCDispositionPriceMultiplier(character.npcEncounters))
       return validated.items.map(item => inferItemTypeAndEffects({
         ...item,
         price: item.price !== undefined ? Math.round(item.price * priceMultiplier) : undefined,
@@ -202,6 +251,21 @@ export function getFallbackShopItems(level: number, reputation: number = 0, char
       price: Math.round(spellPrice * reputationMultiplier),
       spell: spell2,
       rarity: 'rare',
+    })
+  }
+
+  // 40% chance to stock a region map
+  if (Math.random() < 0.4) {
+    const mapPrice = basePrice * 2
+    items.push({
+      id: `shop-map-${suffix}`,
+      name: 'Mysterious Map Fragment',
+      description: 'A weathered parchment that reveals the location of a hidden place in this region.',
+      quantity: 1,
+      type: 'consumable',
+      price: Math.round(mapPrice * reputationMultiplier),
+      effects: { revealLandmark: true },
+      rarity: 'uncommon',
     })
   }
 

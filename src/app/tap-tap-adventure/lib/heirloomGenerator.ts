@@ -106,7 +106,7 @@ function generateEquipmentHeirloom(character: FantasyCharacter): Item {
     effects,
     isHeirloom: true,
     rarity,
-    loreText: `Carried by ${character.name} through ${character.distance ?? 0} steps of adventure.`,
+    loreText: `Carried by ${character.name} through ${character.distance ?? 0} km of adventure.`,
     ...(onHitEffect ? { onHitEffect } : {}),
     ...(drawback ? { drawback } : {}),
   }

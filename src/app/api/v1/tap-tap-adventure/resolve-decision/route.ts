@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
-import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { buildStoryContext, clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import {
   applyEffects,
   calculateEffectiveProbability,
@@ -10,6 +10,8 @@ import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
+import { buildTownHubDecisionPoint, extractTownFeatures } from './townHubBuilder'
+import { maybeGenerateTownEvent } from './townEventGenerator'
 
 function hashString(str: string): number {
   let hash = 0
@@ -18,6 +20,42 @@ function hashString(str: string): number {
     hash = hash & hash
   }
   return hash
+}
+
+function buildTownEntryHints(character: FantasyCharacter): string {
+  const hints: string[] = []
+
+  // Unread mail
+  const currentDay = Math.floor((character.distance ?? 0) / 50) + 1
+  const unreadMail = (character.mailbox ?? []).filter(m => !m.read && m.day <= currentDay)
+  if (unreadMail.length > 0) {
+    hints.push(`📬 You have ${unreadMail.length} unread message${unreadMail.length > 1 ? 's' : ''} at the mailbox.`)
+  }
+
+  // Pending mail replies
+  const pendingReplies = (character.pendingReplies ?? []).filter(r => r.replyDay <= currentDay)
+  if (pendingReplies.length > 0) {
+    hints.push(`✉️ ${pendingReplies.length} letter${pendingReplies.length > 1 ? 's have' : ' has'} arrived in response to your messages.`)
+  }
+
+  // Low HP
+  const hp = character.hp ?? character.maxHp ?? 100
+  const maxHp = character.maxHp ?? 100
+  if (hp < maxHp * 0.5) {
+    hints.push(`🛏️ The innkeeper eyes your wounds with concern — you could use some rest.`)
+  }
+
+  // No active quest — hint about notice board
+  if (!character.mainQuest || character.mainQuest.status !== 'active') {
+    hints.push(`📋 The notice board might have work for an adventurer like you.`)
+  }
+
+  // Low gold
+  if ((character.gold ?? 0) <= 5) {
+    hints.push(`🪙 Your coin purse feels dangerously light.`)
+  }
+
+  return hints.length > 0 ? '\n\n' + hints.join('\n') : ''
 }
 
 type ResolveDecisionRequest = {
@@ -116,34 +154,791 @@ export async function POST(req: NextRequest) {
         })
       } catch (err) {
         console.error('continue-exploring LLM generation failed', err)
+        const fallbackId = `fallback-explore-${Date.now()}`
+        const fallbackDecisionPoint: FantasyDecisionPoint = {
+          id: `decision-${fallbackId}`,
+          eventId: fallbackId,
+          prompt: `You explore ${landmarkState.exploringLandmarkName}, but the area seems quiet for now. What would you like to do?`,
+          options: [
+            {
+              id: 'continue-exploring',
+              text: 'Continue Exploring',
+              successProbability: 1.0,
+              successDescription: 'You press on, searching for something of interest.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You press on, searching for something of interest.',
+            },
+            {
+              id: 'leave-landmark',
+              text: 'Leave Landmark',
+              successProbability: 1.0,
+              successDescription: 'You decide to move on from this place.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You decide to move on from this place.',
+            },
+          ],
+          resolved: false,
+        }
         return NextResponse.json({
-          updatedCharacter: { ...character, landmarkState: { ...landmarkState, exploring: false, explorationDepth: 0, exploringLandmarkName: undefined } },
+          updatedCharacter,
           resultDescription: `You've explored all there is to see in ${landmarkState.exploringLandmarkName}.`,
           appliedEffects: {},
           selectedOptionId: optionId,
           selectedOptionText: 'Continue exploring',
           outcomeDescription: `There is nothing more to find in ${landmarkState.exploringLandmarkName}.`,
           resourceDelta: {},
+          decisionPoint: fallbackDecisionPoint,
         })
       }
     }
 
-    // Handle explore-landmark: increment nextLandmarkIndex, call LLM with landmark context
-    if (optionId === 'explore-landmark') {
+    // Handle pay-bounty: pay bounty to enter town
+    if (optionId === 'pay-bounty') {
       const landmarkState = character.landmarkState
-      const exploredLandmark = landmarkState?.landmarks[landmarkState.nextLandmarkIndex]
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+      const bountyAmount = character.bounty ?? 0
+
+      if ((character.gold ?? 0) < bountyAmount) {
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: `You don't have enough gold to pay your bounty of ${bountyAmount} gold.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You need ${bountyAmount} gold but only have ${character.gold ?? 0}.`,
+          resourceDelta: {},
+        })
+      }
+
+      // Pay bounty and enter town (same as enter-town flow)
+      const updatedLandmarkState = landmarkState
+        ? {
+            ...landmarkState,
+            exploring: true,
+            explorationDepth: 0,
+            exploringLandmarkName: townLandmark?.name ?? 'the town',
+          }
+        : undefined
+
+      let updatedCharacter: FantasyCharacter = {
+        ...character,
+        gold: clampGold((character.gold ?? 0) - bountyAmount),
+        bounty: 0,
+        landmarkState: updatedLandmarkState,
+      }
+
+      // Record this town as visited for fast-travel waypoints
+      if (townLandmark) {
+        const bountyRegionId = character.currentRegion ?? 'green_meadows'
+        const alreadyVisited = (updatedCharacter.visitedTowns ?? []).some(
+          t => t.landmarkId === townLandmark.templateId && t.regionId === bountyRegionId
+        )
+        if (!alreadyVisited) {
+          updatedCharacter = {
+            ...updatedCharacter,
+            visitedTowns: [
+              ...(updatedCharacter.visitedTowns ?? []),
+              {
+                name: townLandmark.name,
+                icon: townLandmark.icon,
+                regionId: bountyRegionId,
+                landmarkId: townLandmark.templateId,
+              },
+            ],
+          }
+        }
+      }
+
+      const regionId = character.currentRegion ?? 'green_meadows'
+      const entryHints = buildTownEntryHints(updatedCharacter)
+      const bountyAtmosphere = townLandmark?.encounterPrompt
+        ? `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! ${townLandmark.encounterPrompt}${entryHints}\n\nWhat would you like to do?`
+        : `You pay your ${bountyAmount} gold bounty to the guards. Your name is cleared! Welcome to ${townLandmark?.name ?? 'the town'}.${entryHints}\n\nWhat would you like to do?`
+      const townHub = buildTownHubDecisionPoint({
+        townName: townLandmark?.name ?? 'the town',
+        prompt: bountyAtmosphere,
+        regionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You pay your ${bountyAmount} gold bounty. Your name is cleared!`,
+        appliedEffects: { gold: -bountyAmount },
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `Bounty paid! (-${bountyAmount} gold)`,
+        resourceDelta: { gold: -bountyAmount },
+        decisionPoint: townHub,
+        shopEvent: true,
+      })
+    }
+
+    // Handle sneak-into-town: risky attempt to enter town with bounty
+    if (optionId === 'sneak-into-town') {
+      const landmarkState = character.landmarkState
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+      const bountyAmount = character.bounty ?? 0
+
+      // Success based on luck (higher luck = better chance)
+      const luckBonus = Math.min(0.3, (character.luck ?? 0) * 0.02)
+      const sneakChance = 0.35 + luckBonus
+      const success = Math.random() < sneakChance
+
+      if (success) {
+        // Sneak in successfully — enter town but bounty remains
+        const updatedLandmarkState = landmarkState
+          ? {
+              ...landmarkState,
+              exploring: true,
+              explorationDepth: 0,
+              exploringLandmarkName: townLandmark?.name ?? 'the town',
+            }
+          : undefined
+
+        let updatedCharacter: FantasyCharacter = {
+          ...character,
+          landmarkState: updatedLandmarkState,
+        }
+
+        // Record this town as visited for fast-travel waypoints
+        if (townLandmark) {
+          const sneakVisitRegionId = character.currentRegion ?? 'green_meadows'
+          const alreadyVisited = (updatedCharacter.visitedTowns ?? []).some(
+            t => t.landmarkId === townLandmark.templateId && t.regionId === sneakVisitRegionId
+          )
+          if (!alreadyVisited) {
+            updatedCharacter = {
+              ...updatedCharacter,
+              visitedTowns: [
+                ...(updatedCharacter.visitedTowns ?? []),
+                {
+                  name: townLandmark.name,
+                  icon: townLandmark.icon,
+                  regionId: sneakVisitRegionId,
+                  landmarkId: townLandmark.templateId,
+                },
+              ],
+            }
+          }
+        }
+
+        const sneakRegionId = character.currentRegion ?? 'green_meadows'
+        const entryHints = buildTownEntryHints(character)
+        const sneakAtmosphere = townLandmark?.encounterPrompt
+          ? `You slip past the guards! Keep a low profile — your bounty is still active. ${townLandmark.encounterPrompt}${entryHints}\n\nWhat would you like to do?`
+          : `You slip past the guards! You're inside ${townLandmark?.name ?? 'the town'}, but keep a low profile — your bounty is still active.${entryHints}\n\nWhat would you like to do?`
+        const townHub = buildTownHubDecisionPoint({
+          townName: townLandmark?.name ?? 'the town',
+          prompt: sneakAtmosphere,
+          regionId: sneakRegionId,
+          features: extractTownFeatures(townLandmark),
+        })
+
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `You successfully sneak into ${townLandmark?.name ?? 'the town'}!`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You slip past the guards unnoticed.`,
+          resourceDelta: {},
+          decisionPoint: townHub,
+          shopEvent: true,
+        })
+      } else {
+        // Failed sneak — bounty increases by 25%
+        const bountyIncrease = Math.max(5, Math.ceil(bountyAmount * 0.25))
+        const updatedCharacter: FantasyCharacter = {
+          ...character,
+          bounty: bountyAmount + bountyIncrease,
+        }
+
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `The guards spot you! "Halt! Your bounty just went up!" (+${bountyIncrease} bounty)`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You're caught trying to sneak in! Bounty increased to ${bountyAmount + bountyIncrease} gold.`,
+          resourceDelta: {},
+        })
+      }
+    }
+
+    // Handle pay-bounty-hunter: pay bounty to the hunter
+    if (optionId === 'pay-bounty-hunter') {
+      const bountyAmount = character.bounty ?? 0
+
+      if ((character.gold ?? 0) < bountyAmount) {
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: `You don't have enough gold. The bounty hunter draws their weapon!`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You can't afford to pay. The hunter attacks!`,
+          resourceDelta: {},
+          triggersCombat: true,
+        })
+      }
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        gold: clampGold((character.gold ?? 0) - bountyAmount),
+        bounty: 0,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You hand over ${bountyAmount} gold. The bounty hunter nods and disappears into the shadows. Your name is cleared.`,
+        appliedEffects: { gold: -bountyAmount },
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `Bounty paid! (-${bountyAmount} gold). Your record is clean.`,
+        resourceDelta: { gold: -bountyAmount },
+      })
+    }
+
+    // Handle enter-town: set up town hub and present town menu
+    if (optionId === 'enter-town') {
+      const landmarkState = character.landmarkState
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
 
       const updatedLandmarkState = landmarkState
         ? {
             ...landmarkState,
-            nextLandmarkIndex: landmarkState.nextLandmarkIndex + 1,
-            activeTargetIndex: Math.min(
-              landmarkState.nextLandmarkIndex + 1,
-              landmarkState.landmarks.length
-            ),
+            exploring: true,
+            explorationDepth: 0,
+            exploringLandmarkName: townLandmark?.name ?? 'the town',
+          }
+        : undefined
+
+      let updatedCharacter: FantasyCharacter = {
+        ...character,
+        landmarkState: updatedLandmarkState,
+      }
+
+      // Record this town as visited for fast-travel waypoints
+      if (townLandmark) {
+        const enterRegionIdForVisit = character.currentRegion ?? 'green_meadows'
+        const alreadyVisited = (updatedCharacter.visitedTowns ?? []).some(
+          t => t.landmarkId === townLandmark.templateId && t.regionId === enterRegionIdForVisit
+        )
+        if (!alreadyVisited) {
+          updatedCharacter = {
+            ...updatedCharacter,
+            visitedTowns: [
+              ...(updatedCharacter.visitedTowns ?? []),
+              {
+                name: townLandmark.name,
+                icon: townLandmark.icon,
+                regionId: enterRegionIdForVisit,
+                landmarkId: townLandmark.templateId,
+              },
+            ],
+          }
+        }
+      }
+
+      // Check for random town event (~15% chance)
+      const townEvent = maybeGenerateTownEvent(updatedCharacter, townLandmark?.name ?? 'the town')
+      if (townEvent) {
+        return NextResponse.json({
+          updatedCharacter,
+          resultDescription: `You enter ${townLandmark?.name ?? 'the town'} and something catches your attention...`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `Something happens as you enter ${townLandmark?.name ?? 'the town'}...`,
+          resourceDelta: {},
+          decisionPoint: townEvent,
+        })
+      }
+
+      const enterRegionId = character.currentRegion ?? 'green_meadows'
+      const entryHints = buildTownEntryHints(character)
+      const enterAtmosphere = townLandmark?.encounterPrompt
+        ? `${townLandmark.encounterPrompt}${entryHints}\n\nWhat would you like to do?`
+        : `Welcome to ${townLandmark?.name ?? 'the town'}!${entryHints}\n\nWhat would you like to do?`
+      const townHub = buildTownHubDecisionPoint({
+        townName: townLandmark?.name ?? 'the town',
+        prompt: enterAtmosphere,
+        regionId: enterRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You enter ${townLandmark?.name ?? 'the town'}.`,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `You walk through the gates of ${townLandmark?.name ?? 'the town'}.`,
+        resourceDelta: {},
+        decisionPoint: townHub,
+        shopEvent: true,
+      })
+    }
+
+    // Handle visit-shop: show town hub again with shop triggered
+    if (optionId === 'visit-shop') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+      const shopRegionId = character.currentRegion ?? 'green_meadows'
+
+      const townHub = buildTownHubDecisionPoint({
+        townName,
+        prompt: `You've browsed the shop. What else would you like to do in ${townName}?`,
+        regionId: shopRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You browse the shop\'s offerings.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You browse the shop.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        shopEvent: true,
+      })
+    }
+
+    // Handle rest-at-inn: pay gold, restore HP and MP to full
+    if (optionId === 'rest-at-inn') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const innRegionId = character.currentRegion ?? 'green_meadows'
+      const regionMult = getRegion(innRegionId).difficultyMultiplier
+      const innCost = Math.round(10 * regionMult)
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      let updatedCharacter = { ...character }
+      let outcomeDesc: string
+
+      if ((updatedCharacter.gold ?? 0) >= innCost) {
+        updatedCharacter = {
+          ...updatedCharacter,
+          gold: (updatedCharacter.gold ?? 0) - innCost,
+          hp: updatedCharacter.maxHp ?? 100,
+          mana: updatedCharacter.maxMana ?? 50,
+        }
+        outcomeDesc = `You pay ${innCost} gold and enjoy a warm meal and a comfortable bed. You wake feeling completely refreshed! HP and MP fully restored.`
+      } else {
+        outcomeDesc = `You don't have enough gold to stay at the inn. You need ${innCost} gold.`
+      }
+
+      const townHub = buildTownHubDecisionPoint({
+        townName,
+        prompt: `${outcomeDesc} What else would you like to do in ${townName}?`,
+        regionId: innRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: outcomeDesc,
+        appliedEffects: (updatedCharacter.gold ?? 0) !== (character.gold ?? 0) ? { gold: -innCost } : {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: outcomeDesc,
+        resourceDelta: (updatedCharacter.gold ?? 0) !== (character.gold ?? 0) ? { gold: -innCost } : {},
+        decisionPoint: townHub,
+      })
+    }
+
+    // Handle hire-transport: show available destinations with prices
+    if (optionId === 'hire-transport') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const transportRegionId = character.currentRegion ?? 'green_meadows'
+      const regionMult = getRegion(transportRegionId).difficultyMultiplier
+      const charPos = landmarkState?.position ?? { x: 0, y: 0 }
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      // Build destination options from known (non-hidden) landmarks
+      const destinations = (landmarkState?.landmarks ?? [])
+        .map((lm, idx) => ({ ...lm, index: idx }))
+        .filter(lm => {
+          // Filter out: hidden landmarks, the current landmark, landmarks without positions
+          if (lm.hidden) return false
+          if (lm.name === townName) return false
+          if (!lm.position) return false
+          return true
+        })
+        .map(lm => {
+          const dist = Math.sqrt(
+            Math.pow((lm.position!.x - charPos.x), 2) +
+            Math.pow((lm.position!.y - charPos.y), 2)
+          )
+          const price = Math.max(5, Math.ceil(dist * 0.5 * regionMult))
+          return { ...lm, dist, price }
+        })
+        .sort((a, b) => a.dist - b.dist)
+
+      const destinationOptions = destinations.map(dest => ({
+        id: `transport-to-${dest.index}`,
+        text: `${dest.icon} ${dest.name} — ${dest.price} gold (${Math.round(dest.dist)} steps)`,
+        successProbability: 1.0,
+        successDescription: `The driver takes you to ${dest.name}.`,
+        successEffects: {},
+        failureDescription: '',
+        failureEffects: {},
+        resultDescription: `You travel to ${dest.name}.`,
+      }))
+
+      if (destinationOptions.length === 0) {
+        // No destinations — return to town hub
+        const townHub = buildTownHubDecisionPoint({
+          townName,
+          prompt: `There are no available transport destinations from ${townName}. What else would you like to do?`,
+          regionId: transportRegionId,
+          features: extractTownFeatures(townLandmark),
+        })
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: 'No transport destinations available.',
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: 'No transport destinations available from here.',
+          resourceDelta: {},
+          decisionPoint: townHub,
+        })
+      }
+
+      // Add a back option
+      destinationOptions.push({
+        id: 'back-to-town',
+        text: '↩️ Back to town',
+        successProbability: 1.0,
+        successDescription: 'You return to the town square.',
+        successEffects: {},
+        failureDescription: '',
+        failureEffects: {},
+        resultDescription: 'You go back.',
+      })
+
+      const transportBoard: FantasyDecisionPoint = {
+        id: `decision-transport-${Date.now()}`,
+        eventId: `transport-${Date.now()}`,
+        prompt: `🐴 Transport Board — Choose your destination from ${townName}:`,
+        options: destinationOptions,
+        resolved: false,
+      }
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You check the transport board.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You review available transport destinations.',
+        resourceDelta: {},
+        decisionPoint: transportBoard,
+      })
+    }
+
+    // Handle transport-to-X: pay gold and teleport to destination landmark
+    if (optionId.startsWith('transport-to-')) {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const destIndex = parseInt(optionId.replace('transport-to-', ''), 10)
+      const destLandmark = landmarkState?.landmarks[destIndex]
+      const ttRegionId = character.currentRegion ?? 'green_meadows'
+      const regionMult = getRegion(ttRegionId).difficultyMultiplier
+      const charPos = landmarkState?.position ?? { x: 0, y: 0 }
+      const ttTargetIndex = landmarkState?.activeTargetIndex ?? 0
+      const ttTownLandmark = landmarkState?.landmarks[ttTargetIndex]
+
+      if (!destLandmark || !destLandmark.position) {
+        return NextResponse.json({ error: 'Invalid transport destination' }, { status: 400 })
+      }
+
+      // Calculate price
+      const dist = Math.sqrt(
+        Math.pow((destLandmark.position.x - charPos.x), 2) +
+        Math.pow((destLandmark.position.y - charPos.y), 2)
+      )
+      const price = Math.max(5, Math.ceil(dist * 0.5 * regionMult))
+
+      if ((character.gold ?? 0) < price) {
+        // Not enough gold — show message and return to town hub
+        const townHub = buildTownHubDecisionPoint({
+          townName,
+          prompt: `You don't have enough gold for transport to ${destLandmark.name}. You need ${price} gold but only have ${character.gold ?? 0}. What would you like to do?`,
+          regionId: ttRegionId,
+          features: extractTownFeatures(ttTownLandmark),
+        })
+        return NextResponse.json({
+          updatedCharacter: character,
+          resultDescription: `Not enough gold for transport to ${destLandmark.name}.`,
+          appliedEffects: {},
+          selectedOptionId: optionId,
+          selectedOptionText: option.text,
+          outcomeDescription: `You need ${price} gold but only have ${character.gold ?? 0}.`,
+          resourceDelta: {},
+          decisionPoint: townHub,
+        })
+      }
+
+      // Deduct gold and teleport
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        gold: (character.gold ?? 0) - price,
+        landmarkState: landmarkState
+          ? {
+              ...landmarkState,
+              position: destLandmark.position,
+              activeTargetIndex: destIndex,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            }
+          : undefined,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You hire transport to ${destLandmark.name} for ${price} gold. The journey is swift and uneventful.`,
+        appliedEffects: { gold: -price },
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `🐴 You arrive at ${destLandmark.name} after a comfortable ride. (-${price} gold)`,
+        resourceDelta: { gold: -price },
+      })
+    }
+
+    // Handle back-to-town: return to town hub from transport board
+    if (optionId === 'back-to-town') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const backRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      const backAtmosphere = townLandmark?.encounterPrompt
+        ? `You return to the town square. ${townLandmark.encounterPrompt} What would you like to do?`
+        : `You return to the town square of ${townName}. What would you like to do?`
+      const townHub = buildTownHubDecisionPoint({
+        townName,
+        prompt: backAtmosphere,
+        regionId: backRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: `You return to ${townName}.`,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `You return to the town square.`,
+        resourceDelta: {},
+        decisionPoint: townHub,
+      })
+    }
+
+    // Handle visit-stable: return the town hub with stableOpen flag so client shows StablePanel
+    if (optionId === 'visit-stable') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const stableRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      const townHub = buildTownHubDecisionPoint({
+        townName,
+        prompt: `You visit the town stable. Here you can stash, retrieve, and heal your mounts. What else would you like to do in ${townName}?`,
+        regionId: stableRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You head to the town stable.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You visit the town stable.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        stableOpen: true,
+      })
+    }
+
+    // Handle check-mailbox: client-side panel, server just returns town hub
+    if (optionId === 'check-mailbox') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const mailboxRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      const townHub = buildTownHubDecisionPoint({
+        townName,
+        prompt: `You check your mailbox. What else would you like to do in ${townName}?`,
+        regionId: mailboxRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You check your mailbox.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You check your mailbox for messages.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        mailboxOpen: true,
+      })
+    }
+
+    // Handle visit-notice-board: client-side panel, server just returns town hub
+    if (optionId === 'visit-notice-board') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+      const noticeBoardRegionId = character.currentRegion ?? 'green_meadows'
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const townLandmark = landmarkState?.landmarks[targetIndex]
+
+      const townHub = buildTownHubDecisionPoint({
+        townName,
+        prompt: `You check the notice board. What else would you like to do in ${townName}?`,
+        regionId: noticeBoardRegionId,
+        features: extractTownFeatures(townLandmark),
+      })
+
+      return NextResponse.json({
+        updatedCharacter: character,
+        resultDescription: 'You check the notice board.',
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: 'You check the town notice board.',
+        resourceDelta: {},
+        decisionPoint: townHub,
+        noticeBoardOpen: true,
+      })
+    }
+
+    // Handle town-event-* options: apply effects then show the town hub
+    if (optionId.startsWith('town-event-')) {
+      const teState = character.landmarkState
+      const teTownName = teState?.exploringLandmarkName ?? 'the town'
+      const teTargetIndex = teState?.activeTargetIndex ?? 0
+      const teTownLandmark = teState?.landmarks[teTargetIndex]
+      const teRegionId = character.currentRegion ?? 'green_meadows'
+
+      const teProb = option.successProbability ?? 1.0
+      const teRoll = Math.random()
+      const teSuccess = teRoll < teProb
+
+      let teUpdatedCharacter = { ...character }
+      let teOutcomeDesc: string
+
+      if (teSuccess) {
+        const effects = option.successEffects ?? {}
+        const goldDelta = typeof effects.gold === 'number' ? effects.gold : 0
+        const repDelta = typeof effects.reputation === 'number' ? effects.reputation : 0
+        if (goldDelta !== 0) teUpdatedCharacter.gold = Math.max(0, (teUpdatedCharacter.gold ?? 0) + goldDelta)
+        if (repDelta !== 0) teUpdatedCharacter.reputation = (teUpdatedCharacter.reputation ?? 0) + repDelta
+        teOutcomeDesc = option.successDescription ?? 'You handle the situation well.'
+      } else {
+        const effects = option.failureEffects ?? {}
+        const goldDelta = typeof effects.gold === 'number' ? effects.gold : 0
+        const repDelta = typeof effects.reputation === 'number' ? effects.reputation : 0
+        if (goldDelta !== 0) teUpdatedCharacter.gold = Math.max(0, (teUpdatedCharacter.gold ?? 0) + goldDelta)
+        if (repDelta !== 0) teUpdatedCharacter.reputation = (teUpdatedCharacter.reputation ?? 0) + repDelta
+        teOutcomeDesc = option.failureDescription ?? "Things don't go as planned."
+      }
+
+      const teEntryHints = buildTownEntryHints(teUpdatedCharacter)
+      const teTownHub = buildTownHubDecisionPoint({
+        townName: teTownName,
+        prompt: `${teOutcomeDesc}\n\nYou continue into ${teTownName}.${teEntryHints}\n\nWhat would you like to do?`,
+        regionId: teRegionId,
+        features: extractTownFeatures(teTownLandmark),
+      })
+
+      const teGoldDelta = (teUpdatedCharacter.gold ?? 0) - (character.gold ?? 0)
+      const teRepDelta = (teUpdatedCharacter.reputation ?? 0) - (character.reputation ?? 0)
+
+      return NextResponse.json({
+        updatedCharacter: teUpdatedCharacter,
+        resultDescription: teOutcomeDesc,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: teOutcomeDesc,
+        resourceDelta: {
+          ...(teGoldDelta !== 0 ? { gold: teGoldDelta } : {}),
+          ...(teRepDelta !== 0 ? { reputation: teRepDelta } : {}),
+        },
+        decisionPoint: teTownHub,
+      })
+    }
+
+    // Handle leave-town: exit town without marking as explored
+    if (optionId === 'leave-town') {
+      const landmarkState = character.landmarkState
+      const townName = landmarkState?.exploringLandmarkName ?? 'the town'
+
+      const updatedCharacter: FantasyCharacter = {
+        ...character,
+        landmarkState: landmarkState
+          ? {
+              ...landmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            }
+          : undefined,
+      }
+
+      return NextResponse.json({
+        updatedCharacter,
+        resultDescription: `You leave ${townName} and continue your journey.`,
+        appliedEffects: {},
+        selectedOptionId: optionId,
+        selectedOptionText: option.text,
+        outcomeDescription: `You leave ${townName} and head back out on the road.`,
+        resourceDelta: {},
+      })
+    }
+
+    // Handle explore-landmark: use activeTargetIndex to find the landmark the player walked to
+    if (optionId === 'explore-landmark') {
+      const landmarkState = character.landmarkState
+      const targetIndex = landmarkState?.activeTargetIndex ?? 0
+      const exploredLandmark = landmarkState?.landmarks[targetIndex]
+
+      const updatedLandmarkState = landmarkState
+        ? {
+            ...landmarkState,
+            nextLandmarkIndex: targetIndex,
             exploring: true,
             explorationDepth: 1,
             exploringLandmarkName: exploredLandmark?.name ?? 'the landmark',
+            // Mark landmark explored immediately and snap position
+            landmarks: landmarkState.landmarks.map((lm, i) =>
+              i === targetIndex ? { ...lm, explored: true } : lm
+            ),
+            ...(exploredLandmark?.position ? { position: exploredLandmark.position } : {}),
           }
         : undefined
 
@@ -155,8 +950,9 @@ export async function POST(req: NextRequest) {
       // Build enriched context with landmark's encounterPrompt prepended
       const MAX_CONTEXT = 1500
       const baseContext = buildStoryContext(character, storyEvents)
+      const explorationDepth = updatedLandmarkState?.explorationDepth ?? 1
       const landmarkPrefix = exploredLandmark
-        ? `Landmark: ${exploredLandmark.name} (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\n\n`
+        ? `IMPORTANT: This encounter takes place INSIDE the landmark "${exploredLandmark.name}" (${exploredLandmark.type}). ${exploredLandmark.encounterPrompt}\nDo NOT generate a generic road or travel event. The encounter MUST be directly related to this specific location.\nExploration depth: ${explorationDepth}. Scale rewards with depth — deeper encounters should have greater risks and greater rewards.\n\n`
         : ''
       const combined = landmarkPrefix + baseContext
       const enrichedContext = combined.length > MAX_CONTEXT ? combined.slice(0, MAX_CONTEXT) : combined
@@ -197,7 +993,45 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(response)
       } catch (err) {
         console.error('explore-landmark LLM generation failed', err)
-        // Fallback: return a generic response without a new decision point
+        const fallbackId = `fallback-explore-${Date.now()}`
+        const fallbackDecisionPoint: FantasyDecisionPoint = {
+          id: `decision-${fallbackId}`,
+          eventId: fallbackId,
+          prompt: `You explore ${exploredLandmark?.name ?? 'the landmark'} and discover a dimly lit chamber. Ancient symbols line the walls, and you notice what could be hidden compartments. What would you like to do?`,
+          options: [
+            {
+              id: 'search-treasure',
+              text: 'Search for hidden treasure',
+              successProbability: 0.7,
+              successDescription: 'You find a hidden cache of coins and supplies!',
+              successEffects: { gold: 15, reputation: 1 },
+              failureDescription: 'You trigger a trap while searching! A dart grazes your arm.',
+              failureEffects: { gold: -5, statusChange: 'Wounded' },
+              resultDescription: 'You search the area thoroughly.',
+            },
+            {
+              id: 'continue-exploring',
+              text: 'Continue Exploring cautiously',
+              successProbability: 0.9,
+              successDescription: 'You find a few coins and something interesting.',
+              successEffects: { gold: 5 },
+              failureDescription: 'The area proves difficult to navigate.',
+              failureEffects: {},
+              resultDescription: 'You explore cautiously.',
+            },
+            {
+              id: 'leave-landmark',
+              text: 'Leave Landmark',
+              successProbability: 1.0,
+              successDescription: 'You decide to move on from this place.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You decide to move on from this place.',
+            },
+          ],
+          resolved: false,
+        }
         const fallbackResponse: ResolveDecisionResponse & { rewardItems?: Item[]; triggersCombat?: boolean } = {
           updatedCharacter,
           resultDescription: `You explore ${exploredLandmark?.name ?? 'the landmark'} but find nothing remarkable.`,
@@ -206,6 +1040,7 @@ export async function POST(req: NextRequest) {
           selectedOptionText: option.text,
           outcomeDescription: `You explore ${exploredLandmark?.name ?? 'the landmark'} but find nothing remarkable.`,
           resourceDelta: {},
+          decisionPoint: fallbackDecisionPoint,
         }
         return NextResponse.json(fallbackResponse)
       }
@@ -301,11 +1136,16 @@ export async function POST(req: NextRequest) {
       const depth = currentLandmarkState.explorationDepth ?? 1
       const maxDepth = 2 + Math.floor(Math.abs(hashString(currentLandmarkState.exploringLandmarkName)) % 4)
 
+      // Find the currently-explored landmark to check isSecret
+      const exploredLandmarkIndex = currentLandmarkState.activeTargetIndex ?? 0
+      const exploredLandmark = currentLandmarkState.landmarks[exploredLandmarkIndex]
+      const isSecretLandmark = exploredLandmark?.isSecret === true
+
       if (depth < maxDepth) {
         const continueDecision: FantasyDecisionPoint = {
           id: `decision-continue-${Date.now()}`,
           eventId: `continue-explore-${Date.now()}`,
-          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover... (Encounter ${depth} of ~${maxDepth})`,
+          prompt: `You pause and look around ${currentLandmarkState.exploringLandmarkName}. There seems to be more to discover...`,
           options: [
             {
               id: 'continue-exploring',
@@ -331,69 +1171,76 @@ export async function POST(req: NextRequest) {
           resolved: false,
         }
         response.decisionPoint = continueDecision
-      } else {
-        // Max depth reached
-        const exploringLandmark = currentLandmarkState.landmarks?.find(
-          lm => lm.name === currentLandmarkState.exploringLandmarkName
-        )
-
-        if (exploringLandmark?.isSecret) {
-          // Secret landmark — final encounter is a boss fight!
-          const bossDecision: FantasyDecisionPoint = {
-            id: `decision-boss-${Date.now()}`,
-            eventId: `boss-encounter-${Date.now()}`,
-            prompt: `As you reach the deepest chamber of ${currentLandmarkState.exploringLandmarkName}, a powerful guardian emerges from the shadows! This ancient protector will not let you leave with its treasures without a fight.`,
-            options: [
-              {
-                id: 'fight-secret-boss',
-                text: `⚔️ Fight the Guardian of ${currentLandmarkState.exploringLandmarkName}`,
-                successProbability: 1.0,
-                successDescription: `You face the guardian of ${currentLandmarkState.exploringLandmarkName}!`,
-                successEffects: {},
-                failureDescription: '',
-                failureEffects: {},
-                resultDescription: `You engage the guardian in combat!`,
-                triggersCombat: true,
-              },
-              {
-                id: 'flee-secret-boss',
-                text: 'Retreat — this guardian is too powerful',
-                successProbability: 1.0,
-                successDescription: `You wisely retreat from ${currentLandmarkState.exploringLandmarkName}.`,
-                successEffects: {},
-                failureDescription: '',
-                failureEffects: {},
-                resultDescription: `You flee the guardian.`,
-              },
-            ],
-            resolved: false,
-          }
-          response.decisionPoint = bossDecision
-          // End exploration state — boss fight is the finale
-          updatedCharacter = {
-            ...updatedCharacter,
-            landmarkState: {
-              ...currentLandmarkState,
-              exploring: false,
-              explorationDepth: 0,
-              exploringLandmarkName: undefined,
+      } else if (isSecretLandmark) {
+        // Max depth reached on a secret landmark — boss encounter instead of ending
+        const guardianDecision: FantasyDecisionPoint = {
+          id: `decision-guardian-${Date.now()}`,
+          eventId: `guardian-${Date.now()}`,
+          prompt: `As you reach the innermost sanctum of ${currentLandmarkState.exploringLandmarkName}, a powerful guardian emerges from the shadows. This ancient protector has watched over this secret place since time immemorial. The air crackles with dangerous energy — this will be no ordinary fight.`,
+          options: [
+            {
+              id: 'fight-secret-boss',
+              text: 'Face the Guardian',
+              successProbability: 1.0,
+              successDescription: 'You steel yourself and charge at the guardian!',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: 'You engage the guardian in battle!',
+              triggersCombat: true,
             },
-          }
-          response.updatedCharacter = updatedCharacter
-        } else {
-          // Regular landmark — end exploration normally
-          response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer.`
-          updatedCharacter = {
-            ...updatedCharacter,
-            landmarkState: {
-              ...currentLandmarkState,
-              exploring: false,
-              explorationDepth: 0,
-              exploringLandmarkName: undefined,
+            {
+              id: 'leave-landmark',
+              text: 'Retreat — this is too dangerous',
+              successProbability: 1.0,
+              successDescription: 'You back away carefully and slip out of the sanctum.',
+              successEffects: {},
+              failureDescription: '',
+              failureEffects: {},
+              resultDescription: `You retreat from ${currentLandmarkState.exploringLandmarkName}.`,
             },
-          }
-          response.updatedCharacter = updatedCharacter
+          ],
+          resolved: false,
         }
+        response.decisionPoint = guardianDecision
+      } else {
+        // Max depth reached on a normal landmark — end exploration, mark as explored
+        // (Towns use their own hub flow and should never reach this code path)
+        const exploredLandmarkForCompletion = currentLandmarkState.landmarks[exploredLandmarkIndex]
+        const isTown = exploredLandmarkForCompletion?.type === 'town'
+
+        // Award completion bonus scaled by region difficulty
+        const completionGold = Math.round(20 * regionMult)
+        const completionRep = 2
+
+        updatedCharacter = {
+          ...updatedCharacter,
+          gold: (updatedCharacter.gold ?? 0) + completionGold,
+          reputation: (updatedCharacter.reputation ?? 0) + completionRep,
+        }
+
+        const updatedLandmarks = currentLandmarkState.landmarks.map(lm =>
+          lm.name === currentLandmarkState.exploringLandmarkName && !isTown
+            ? { ...lm, explored: true }
+            : lm
+        )
+        const newLandmarkIndex = Math.min(exploredLandmarkIndex + 1, currentLandmarkState.landmarks.length)
+        updatedCharacter = {
+          ...updatedCharacter,
+          landmarkState: {
+            ...currentLandmarkState,
+            landmarks: updatedLandmarks,
+            exploring: false,
+            explorationDepth: 0,
+            exploringLandmarkName: undefined,
+            activeTargetIndex: newLandmarkIndex,
+            nextLandmarkIndex: newLandmarkIndex,
+          },
+        }
+
+        response.outcomeDescription = `${response.outcomeDescription ?? ''} You've explored everything ${currentLandmarkState.exploringLandmarkName} has to offer. Exploration complete! +${completionGold} gold, +${completionRep} reputation.`
+        response.updatedCharacter = updatedCharacter
+        response.appliedEffects = { ...response.appliedEffects, gold: completionGold, reputation: completionRep }
       }
     }
 

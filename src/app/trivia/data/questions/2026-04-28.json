@@ -8,9 +8,9 @@
       "question": "Which of these is the name of a song by Tears for Fears?",
       "options": [
         "Scream",
-        "Yell",
         "Shriek",
-        "Shout"
+        "Shout",
+        "Yell"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Music",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-28-1",
       "question": "The band Muse released their first album, Showbiz, in what year?",
       "options": [
-        "2000",
-        "2001",
         "1998",
-        "1999"
+        "2000",
+        "1999",
+        "2001"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Music",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-28-2",
       "question": "What was Daft Punk's first studio album?",
       "options": [
-        "Random Access Memories",
-        "Human After All",
+        "Homework",
         "Discovery",
-        "Homework"
+        "Random Access Memories",
+        "Human After All"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Music",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-28-3",
       "question": "Which one of these artists appears in the album Deltron 3030?",
       "options": [
-        "Lamarr Kendrick",
+        "Dan the Automater",
         "CeeLo Green",
-        "Danger Mouse",
-        "Dan the Automater"
+        "Lamarr Kendrick",
+        "Danger Mouse"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Music",
@@ -65,8 +65,8 @@
       "options": [
         "2014",
         "2009",
-        "2011",
-        "2013"
+        "2013",
+        "2011"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Music",
@@ -79,8 +79,8 @@
       "options": [
         "Bottomless Pit",
         "The Money Store",
-        "The Powers That B",
-        "No Love Deep Web"
+        "No Love Deep Web",
+        "The Powers That B"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Music",

@@ -13,7 +13,7 @@ interface RegionMapProps {
 
 // Absolute SVG coordinates in 400x1100 viewBox (bottom = high y, top = low y)
 const TREE_LAYOUT: Record<string, { x: number; y: number }> = {
-  starting_village:  { x: 200, y: 1040 },
+  hearthwood:        { x: 200, y: 1040 },
   green_meadows:     { x: 200, y:  940 },
   dark_forest:       { x:  95, y:  845 },
   sunken_ruins:      { x: 305, y:  845 },
@@ -31,7 +31,7 @@ const TREE_LAYOUT: Record<string, { x: number; y: number }> = {
 }
 
 const TERRAIN_GRADIENTS: Record<string, [string, string]> = {
-  starting_village:  ['#4a5e3a', '#2d3b22'],
+  hearthwood:        ['#4a5e3a', '#2d3b22'],
   green_meadows:     ['#3a7d44', '#1e4d2b'],
   dark_forest:       ['#1a2e1a', '#0d1a0d'],
   sunken_ruins:      ['#1a3a4a', '#0d2233'],
@@ -366,7 +366,7 @@ export function RegionMap({
 }: RegionMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const regions = Object.values(REGIONS)
-  const visited = new Set([...visitedRegions, currentRegionId, 'starting_village'])
+  const visited = new Set([...visitedRegions, currentRegionId, 'hearthwood'])
 
   // Auto-scroll to current region on mount / change
   useEffect(() => {

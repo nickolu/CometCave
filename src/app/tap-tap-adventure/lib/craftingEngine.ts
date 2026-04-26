@@ -1,6 +1,7 @@
 import { CraftingRecipe } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
+import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 
 /**
  * Check whether a character can craft the given recipe.
@@ -73,7 +74,7 @@ export function applyCraft(
 
   return {
     ...character,
-    gold: character.gold - recipe.goldCost,
+    gold: clampGold(character.gold - recipe.goldCost),
     inventory: updatedInventory,
   }
 }

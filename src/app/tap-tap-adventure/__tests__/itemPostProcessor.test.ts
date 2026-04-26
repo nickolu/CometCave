@@ -94,10 +94,10 @@ describe('itemPostProcessor', () => {
   })
 
   describe('charms', () => {
-    it('infers amulet as consumable with luck', () => {
+    it('infers amulet as equipment with luck', () => {
       const item = makeItem({ name: 'Ancient Amulet' })
       const result = inferItemTypeAndEffects(item)
-      expect(result.type).toBe('consumable')
+      expect(result.type).toBe('equipment')
       expect(result.effects?.luck).toBe(2)
     })
 

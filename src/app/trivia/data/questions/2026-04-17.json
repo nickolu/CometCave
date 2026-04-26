@@ -8,9 +8,9 @@
       "question": "What is the world's oldest known piece of fiction?",
       "options": [
         "Code of Hammurabi",
-        "Rosetta Stone",
+        "Epic of Gilgamesh",
         "Papyrus of Ani",
-        "Epic of Gilgamesh"
+        "Rosetta Stone"
       ],
       "difficulty": "easy",
       "category": "Art",
@@ -22,9 +22,9 @@
       "question": "Who painted the biblical fresco The Creation of Adam?",
       "options": [
         "Leonardo da Vinci",
-        "Rembrandt",
+        "Michelangelo",
         "Caravaggio",
-        "Michelangelo"
+        "Rembrandt"
       ],
       "difficulty": "easy",
       "category": "Art",
@@ -36,9 +36,9 @@
       "question": "What is a fundamental element of the Gothic style of architecture?",
       "options": [
         "coffered ceilings",
-        "internal frescoes",
         "façades surmounted by a pediment ",
-        "pointed arch"
+        "pointed arch",
+        "internal frescoes"
       ],
       "difficulty": "easy",
       "category": "Art",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-17-3",
       "question": "Which artist painted \"The Treachery of Images,\" a painting of a pipe with the description \"this is not a pipe\"?",
       "options": [
-        "Matisse",
-        "Munch ",
         "Modigliani",
-        "Magritte"
+        "Matisse",
+        "Magritte",
+        "Munch "
       ],
       "difficulty": "medium",
       "category": "Art",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-17-4",
       "question": "Which artist's style was to use small different colored dots to create a picture?",
       "options": [
-        "Paul Cézanne",
-        "Vincent Van Gogh",
+        "Georges Seurat",
         "Henri Rousseau",
-        "Georges Seurat"
+        "Paul Cézanne",
+        "Vincent Van Gogh"
       ],
       "difficulty": "medium",
       "category": "Art",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-04-17-5",
       "question": "Which art movement was Pablo Picasso known for co-founding?",
       "options": [
-        "Futurism",
+        "Cubism",
         "Expressionism",
-        "Impressionism",
-        "Cubism"
+        "Futurism",
+        "Impressionism"
       ],
       "difficulty": "hard",
       "category": "Art",

@@ -9,10 +9,16 @@ export interface LandmarkTemplate {
   hasShop: boolean
   encounterPrompt: string
   isSecret?: boolean
+  hasInn?: boolean
+  hasStable?: boolean
+  hasMailbox?: boolean
+  hasNoticeBoard?: boolean
+  hasTransport?: boolean
+  hasCrafting?: boolean
 }
 
 export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
-  starting_village: [
+  hearthwood: [
     {
       id: 'sv_notice_board',
       name: 'Notice Board',
@@ -30,6 +36,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🍺',
       hasShop: true,
       encounterPrompt: 'A warm, bustling tavern filled with the smell of roasted meat and spilled ale. The barkeep is friendly and the locals are chatty.',
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: true,
+      hasNoticeBoard: true,
+      hasTransport: false,
     },
     {
       id: 'sv_temple',
@@ -48,6 +59,12 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '⚒️',
       hasShop: true,
       encounterPrompt: "A hot smithy where sparks fly and the smell of molten iron fills the air. The blacksmith Garron is gruff but fair, selling quality wares.",
+      hasInn: false,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: false,
+      hasTransport: false,
+      hasCrafting: true,
     },
     {
       id: 'sv_well',
@@ -78,6 +95,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🏘️',
       hasShop: true,
       encounterPrompt: 'A small farming hamlet with smoke rising from chimneys. Farmers and traveling merchants mingle at the market stalls.',
+      hasInn: true,
+      hasStable: true,
+      hasMailbox: true,
+      hasNoticeBoard: true,
+      hasTransport: true,
     },
     {
       id: 'gm_shrine',
@@ -117,6 +139,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🏕️',
       hasShop: true,
       encounterPrompt: "A stout log cabin with iron-reinforced shutters. A cautious merchant trades supplies here, relying on the forest folk for protection.",
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: false,
+      hasTransport: false,
     },
     {
       id: 'df_altar',
@@ -156,6 +183,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '⚓',
       hasShop: true,
       encounterPrompt: 'A hidden cove beneath a partially submerged arch. Salvagers and traders barter over damp relics and ancient artifacts dredged from the ruins.',
+      hasInn: false,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: true,
     },
     {
       id: 'sr_shrine',
@@ -195,6 +227,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🎪',
       hasShop: true,
       encounterPrompt: "A bizarre floating market where fey merchants sell wares that shift form moment to moment. Prices are strange and often paid in memories or promises.",
+      hasInn: false,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: false,
+      hasTransport: true,
     },
     {
       id: 'fg_gate',
@@ -225,6 +262,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '⛏️',
       hasShop: true,
       encounterPrompt: 'A lamp-lit camp of miners deep in the caves. They trade raw crystals for food and equipment and know every tunnel in this section.',
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: false,
     },
     {
       id: 'cc_font',
@@ -264,6 +306,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🏴‍☠️',
       hasShop: true,
       encounterPrompt: 'A fortified outpost built from the bones of titanic creatures. The merchants here are hardened survivors who trade in cursed relics and survival supplies.',
+      hasInn: true,
+      hasStable: true,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: false,
     },
     {
       id: 'bw_crypt',
@@ -303,6 +350,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🌴',
       hasShop: true,
       encounterPrompt: 'A precious oasis in the burning desert. Merchants charge outrageous prices for water and shade, knowing travelers have no choice but to pay.',
+      hasInn: true,
+      hasStable: true,
+      hasMailbox: true,
+      hasNoticeBoard: true,
+      hasTransport: true,
     },
     {
       id: 'sw_ruin',
@@ -342,6 +394,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🏔️',
       hasShop: true,
       encounterPrompt: 'A squat stone lodge dug into the mountainside, its chimney belching smoke against the howling wind. Frostbitten travelers trade furs and survival gear inside.',
+      hasInn: true,
+      hasStable: true,
+      hasMailbox: true,
+      hasNoticeBoard: true,
+      hasTransport: false,
     },
     {
       id: 'fp_shrine',
@@ -381,6 +438,12 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🔨',
       hasShop: true,
       encounterPrompt: "An ancient dwarven forge still blazing with volcanic heat. A lone craftsman of unknown age tends it, selling masterwork items at prices that seem almost too fair.",
+      hasInn: false,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: false,
+      hasTransport: false,
+      hasCrafting: true,
     },
     {
       id: 'vf_shrine',
@@ -429,6 +492,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🏴',
       hasShop: true,
       encounterPrompt: 'A fortified camp of dragonkin who have made a truce with travelers. They trade in draconic artifacts, scales, and lore in exchange for food and metal goods.',
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: false,
     },
     {
       id: 'ds_shrine',
@@ -468,6 +536,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🌑',
       hasShop: true,
       encounterPrompt: 'A surreal market that flickers in and out of reality. Shadow merchants sell items that cast no reflection, speaking in whispers about prices paid in memories.',
+      hasInn: false,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: true,
     },
     {
       id: 'shr_portal',
@@ -498,6 +571,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '☁️',
       hasShop: true,
       encounterPrompt: 'A trading post built atop a magically solid cloud. Sky merchants trade in rare aerial components and the view from here is breathtaking — and terrifying.',
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: true,
+      hasNoticeBoard: true,
+      hasTransport: true,
     },
     {
       id: 'sc_shrine',
@@ -537,6 +615,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🔭',
       hasShop: true,
       encounterPrompt: 'A watertight station of unknown origin staffed by robed scholars who seem unaffected by the crushing pressure. They trade knowledge and strange artifacts.',
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: false,
     },
     {
       id: 'ad_biolumen',
@@ -594,6 +677,11 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
       icon: '🌟',
       hasShop: true,
       encounterPrompt: 'A market tended by minor divine beings who trade in blessings, sacred relics, and divine contracts. The prices are steep but the goods are unlike anything found below.',
+      hasInn: true,
+      hasStable: false,
+      hasMailbox: false,
+      hasNoticeBoard: true,
+      hasTransport: true,
     },
     {
       id: 'ct_altar',
@@ -643,6 +731,11 @@ const GENERIC_LANDMARKS: LandmarkTemplate[] = [
     icon: '🏕️',
     hasShop: true,
     encounterPrompt: 'A well-stocked merchant camp on the roadside. The merchant is friendly but wary, keeping a hand near a hidden weapon while making small talk.',
+    hasInn: false,
+    hasStable: false,
+    hasMailbox: false,
+    hasNoticeBoard: false,
+    hasTransport: false,
   },
 ]
 
@@ -651,7 +744,7 @@ export function getTemplatesForRegion(regionId: string): LandmarkTemplate[] {
 }
 
 export const SECRET_LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
-  starting_village: [
+  hearthwood: [
     { id: 'sv_hidden_cellar', name: 'Hidden Cellar', type: 'dungeon', description: 'A concealed entrance beneath the cobblestones leads to a forgotten cellar.', icon: '🕳️', hasShop: false, encounterPrompt: 'A damp cellar filled with old crates and cobwebs. Something glints in the darkness.', isSecret: true },
   ],
   green_meadows: [

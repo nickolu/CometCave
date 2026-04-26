@@ -17,6 +17,7 @@ import {
   getCurseHealingMultiplier,
 } from './statusEffects'
 import { checkSpellCombo, getSpellElement } from './spellCombos'
+import { getSpellLevelMultiplier } from './spellProgression'
 
 export interface CastSpellResult {
   playerState: CombatPlayerState
@@ -161,8 +162,9 @@ export function castSpell(
   let totalDamageDealt = 0
 
   for (const effect of spell.effects ?? []) {
-    const damageMultiplier = synergyMultiplier * schoolMultiplier * (doubleDamage ? 2 : 1)
-    const healMultiplier = synergyMultiplier * (doubleHeal ? 2 : 1)
+    const levelMultiplier = getSpellLevelMultiplier(spell.spellLevel ?? 1)
+    const damageMultiplier = synergyMultiplier * schoolMultiplier * (doubleDamage ? 2 : 1) * levelMultiplier
+    const healMultiplier = synergyMultiplier * (doubleHeal ? 2 : 1) * levelMultiplier
     const durationBonus = extendDuration ? 2 : 0
 
     switch (effect.type) {

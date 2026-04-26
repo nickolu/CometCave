@@ -4,7 +4,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { GameState } from '@/app/tap-tap-adventure/models/types'
 
 export type AchievementEvent =
-  | { type: 'combat_win'; hpAfterCombat: number; maxHp: number; isBoss: boolean }
+  | { type: 'combat_win'; hpAfterCombat: number; maxHp: number; isBoss: boolean; turnCount?: number; partyAlive?: number; partyTotal?: number; enemyLevel?: number; playerLevel?: number }
   | { type: 'shop_purchase' }
   | { type: 'death' }
 
@@ -84,6 +84,70 @@ function getProgress(
     return current
   }
 
+  // Speedrunner — win in 3 or fewer turns (event-based)
+  if (achievementId === 'combat_speedrunner') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && (event.turnCount ?? 999) <= 3) return 1
+    return existing?.progress ?? 0
+  }
+
+  // Underdog — defeat enemy 3+ levels above player (event-based)
+  if (achievementId === 'combat_underdog') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && (event.enemyLevel ?? 0) - (event.playerLevel ?? 999) >= 3) return 1
+    return existing?.progress ?? 0
+  }
+
+  // Flawless — win boss fight with all party members alive (event-based)
+  if (achievementId === 'combat_flawless') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && event.isBoss && (event.partyTotal ?? 0) > 0 && event.partyAlive === event.partyTotal) return 1
+    return existing?.progress ?? 0
+  }
+
+  // Party Leader — win with 3 party members alive (event-based)
+  if (achievementId === 'combat_party_leader') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && (event.partyAlive ?? 0) >= 3) return 1
+    return existing?.progress ?? 0
+  }
+
+  // Boss Slayer 10 — cumulative boss kills
+  if (achievementId === 'combat_boss_slayer_10') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    const current = existing?.progress ?? 0
+    if (event?.type === 'combat_win' && event.isBoss) return current + 1
+    return current
+  }
+
+  // Battle Veteran — cumulative 100 wins
+  if (achievementId === 'combat_veteran') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    const current = existing?.progress ?? 0
+    if (event?.type === 'combat_win') return current + 1
+    return current
+  }
+
+  // Close Call — win with < 10% HP
+  if (achievementId === 'combat_close_call') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && event.hpAfterCombat > 0 && event.hpAfterCombat / event.maxHp < 0.1) return 1
+    return existing?.progress ?? 0
+  }
+
+  // War of Attrition — win combat lasting 15+ turns
+  if (achievementId === 'combat_endurance') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && (event.turnCount ?? 0) >= 15) return 1
+    return existing?.progress ?? 0
+  }
+
   // Untouchable — event-based (win at full HP)
   if (achievementId === 'combat_untouchable') {
     const existing = currentAchievements.find(a => a.achievementId === achievementId)
@@ -158,6 +222,15 @@ function getProgress(
       return 1
     }
     return existing?.progress ?? 0
+  }
+
+  // Spell combo achievements — snapshot of discoveredCombos
+  if (achievementId === 'combo_first_combo') {
+    return (character.discoveredCombos?.length ?? 0) >= 1 ? 1 : 0
+  }
+
+  if (achievementId === 'combo_master') {
+    return character.discoveredCombos?.length ?? 0
   }
 
   return 0

@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware'
 
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { ACHIEVEMENTS } from '@/app/tap-tap-adventure/config/achievements'
-import { clampReputation } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { clampReputation, clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { getMetaBonuses, MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
@@ -24,8 +24,11 @@ import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { getEquipmentSlot, EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { assignMountPersonality, getMountMaxHp } from '@/app/tap-tap-adventure/config/mounts'
+import { assignMountPersonality, getMountMaxHp, getMountSellPrice, getMountPrice } from '@/app/tap-tap-adventure/config/mounts'
 import { Mercenary } from '@/app/tap-tap-adventure/models/mercenary'
+import { PartyMember, MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
+import { processPartyUpkeep } from '@/app/tap-tap-adventure/lib/partyUpkeep'
+import { getClassForNPC, deriveNPCCombatStats } from '@/app/tap-tap-adventure/lib/classGenerator'
 import { getMercenaryMaxHp } from '@/app/tap-tap-adventure/config/mercenaries'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import {
@@ -47,11 +50,64 @@ import {
 } from '@/app/tap-tap-adventure/lib/dailyChallengeTracker'
 import { DailyChallengeType } from '@/app/tap-tap-adventure/models/dailyChallenge'
 import { FACTIONS, FactionId } from '@/app/tap-tap-adventure/config/factions'
-import { getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
+import { getRelationshipTier, getNPCById, GameNPC } from '@/app/tap-tap-adventure/config/npcs'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { rollWeather, WEATHER_CHANGE_INTERVAL } from '@/app/tap-tap-adventure/config/weather'
 import { CRAFTING_RECIPES } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft, applyCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
 import { getEnchantCost, getEnchantBonusStat, MAX_ENCHANT_LEVEL } from '@/app/tap-tap-adventure/config/enchanting'
+import { moveToward, Vec2 } from '@/app/tap-tap-adventure/lib/movementUtils'
+
+function generateNPCReply(
+  npc: GameNPC,
+  playerMessage: string,
+  disposition: number
+): { body: string; gold: number; items?: { name: string; description: string; type?: string; rarity?: string }[] } {
+  const isWise = npc.personality.toLowerCase().includes('wise')
+  const isMerchant = npc.personality.toLowerCase().includes('merchant') || npc.personality.toLowerCase().includes('deal') || npc.personality.toLowerCase().includes('trade')
+  const isMystic = npc.personality.toLowerCase().includes('mystic') || npc.personality.toLowerCase().includes('cryptic') || npc.personality.toLowerCase().includes('spirit')
+  const isGrim = npc.personality.toLowerCase().includes('grim') || npc.personality.toLowerCase().includes('stern') || npc.personality.toLowerCase().includes('hardened')
+
+  const friendlyPrefix = disposition >= 50 ? 'Dear friend' : disposition >= 20 ? 'Greetings' : 'Traveler'
+
+  let templates: { body: string; gold: number; items?: { name: string; description: string; type?: string; rarity?: string }[] }[]
+
+  if (isWise) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nYour words carry the weight of one who has seen much. Remember — the greatest treasure is not gold, but the wisdom gained along the way.\n\nMay your path be clear.\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nThank you for writing. I have been reflecting on your journey, and I believe you are ready for greater challenges. Trust your instincts — they have served you well.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour message brought warmth to these old bones. I found something in my study that might aid you. Use it wisely.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 10), items: disposition >= 50 ? [{ name: "Sage's Scroll", description: 'A scroll containing a fragment of ancient wisdom.', type: 'consumable', rarity: 'uncommon' }] : undefined },
+    ]
+  } else if (isMerchant) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nAlways good to hear from a valued customer! Business is booming — stop by when you can and I'll have something special set aside for you.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour message couldn't have come at a better time! I just acquired some fascinating merchandise. Here's a small advance on our next deal.\n\n— ${npc.name}`, gold: Math.floor(8 + Math.random() * 12) },
+      { body: `${friendlyPrefix},\n\nA fellow traveler brought something interesting through town. I thought of you immediately! Consider this a gift between business partners.\n\n— ${npc.name}`, gold: Math.floor(3 + Math.random() * 8), items: [{ name: 'Trade Sample', description: 'A sample of exotic goods from a distant land.', type: 'material', rarity: 'common' }] },
+    ]
+  } else if (isMystic) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nThe wind carried your words to me before the letter arrived. The stars align for you — something important approaches. Be ready.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nI sensed your message through the veil. The spirits whisper of a hidden path near where you travel. Look where shadows meet the light.\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour words resonated through the ethereal. I have channeled a small blessing into this letter — may it shield you from harm.\n\n— ${npc.name}`, gold: 0, items: disposition >= 30 ? [{ name: 'Spirit Ward', description: 'A ward imbued with protective spiritual energy.', type: 'consumable', rarity: 'uncommon' }] : undefined },
+    ]
+  } else if (isGrim) {
+    templates = [
+      { body: `${friendlyPrefix},\n\nI don't have much time for letters, but your message was... appreciated. The wastes are harsh, and it's good to know someone remembers those of us out here.\n\nStay sharp.\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour words are noted. I've seen too many fall to carelessness. Don't become another name on my list. Here's something to help keep you alive.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 8) },
+    ]
+  } else {
+    templates = [
+      { body: `${friendlyPrefix},\n\nThank you for your kind message. It's always good to hear from a fellow adventurer. Safe travels out there!\n\n— ${npc.name}`, gold: 0 },
+      { body: `${friendlyPrefix},\n\nYour letter brightened my day! Things have been busy here, but I wanted to send a little something back. Take care of yourself.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 10) },
+      { body: `${friendlyPrefix},\n\nI received your message with pleasure. The road between us may be long, but friendship knows no distance. Until we meet again!\n\n— ${npc.name}`, gold: 0, items: disposition >= 40 ? [{ name: 'Friendship Token', description: 'A small token of friendship, warm to the touch.', type: 'material', rarity: 'common' }] : undefined },
+    ]
+  }
+
+  // Suppress unused variable warning
+  void playerMessage
+
+  return templates[Math.floor(Math.random() * templates.length)]
+}
 
 const defaultCharacter: FantasyCharacter = {
   id: '',
@@ -64,6 +120,7 @@ const defaultCharacter: FantasyCharacter = {
   locationId: '',
   gold: 0,
   reputation: 0,
+  bounty: 0,
   distance: 0,
   status: 'active',
   strength: 0,
@@ -81,16 +138,21 @@ const defaultCharacter: FantasyCharacter = {
   spellbook: [],
   classData: undefined,
   activeMount: null,
+  mountRoster: [],
   activeMercenary: null,
   mercenaryRoster: [],
+  party: [],
   difficultyMode: 'normal',
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   visitedRegions: ['green_meadows'],
+  visitedTowns: [],
   mainQuest: createMainQuest(),
   factionReputations: {},
   bestiary: [],
   npcEncounters: {},
+  mailbox: [],
+  pendingReplies: [],
 }
 
 export interface GameStore {
@@ -100,7 +162,7 @@ export interface GameStore {
   clearGameState: () => void
   deleteCharacter: (id: string) => void
   getSelectedCharacter: () => FantasyCharacter | null
-  incrementDistance: () => void
+  incrementDistance: (distanceMultiplier?: number) => void
   selectCharacter: (id: string) => void
   setCombatState: (combatState: CombatState | null) => void
   setShopState: (shopState: ShopState | null) => void
@@ -119,9 +181,19 @@ export interface GameStore {
   setMount: (mount: Mount | null, customName?: string) => void
   damageMountHp: (damage: number) => void
   killMount: () => void
+  stashMount: () => boolean
+  retrieveMount: (mountId: string) => boolean
+  healMount: (mountId: string, isActive: boolean) => boolean
+  sellMount: (mountId: string, isActive: boolean) => boolean
+  buyStableMount: (mount: Mount) => boolean
   recruitMercenary: (mercenary: Mercenary) => boolean
   dismissMercenary: (mercenaryId: string) => void
   setActiveMercenary: (mercenaryId: string) => void
+  addPartyMember: (member: PartyMember) => boolean
+  removePartyMember: (memberId: string) => void
+  recruitTavernMember: (member: PartyMember) => boolean
+  renamePartyMember: (memberId: string, newName: string) => void
+  healPartyMember: (memberId: string, amount: number) => void
   addHeirloom: (item: Item) => void
   claimHeirloom: (itemId: string) => Item | null
   retireCharacter: (characterId: string) => void
@@ -138,9 +210,18 @@ export interface GameStore {
   enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => { message: string; success: boolean } | null
   updateDailyChallengeProgress: (type: DailyChallengeType, amount: number) => void
   claimDailyChallengeBonus: () => { gold: number; reputation: number } | null
-  recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => void
+  recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => void
   setActiveTarget: (index: number) => void
   castExplorationSpell: (spellId: string) => { message: string; success: boolean } | null
+  discoverCombo: (comboId: string) => void
+  dismissLootCelebration: () => void
+  clearNewItemId: (itemId: string) => void
+  clearSocialEncounter: () => void
+  updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => void
+  markMailRead: (mailId: string) => void
+  claimMailGold: (mailId: string) => void
+  sendMail: (toNpcId: string, message: string) => boolean
+  claimMailItems: (mailId: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -222,11 +303,17 @@ export const useGameStore = create<GameStore>()(
         if (!state) return null
         return state.characters?.find(c => c.id === state.selectedCharacterId) ?? null
       },
-      incrementDistance: () => {
+      incrementDistance: (distanceMultiplier: number = 1) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
             if (!selectedCharacter) return
+
+            // Apply faster_travel multiplier from active exploration spells
+            const fasterTravelSpell = selectedCharacter.activeExplorationSpells?.find(s => s.effectType === 'faster_travel')
+            if (fasterTravelSpell?.value) {
+              distanceMultiplier = distanceMultiplier * fasterTravelSpell.value
+            }
 
             // Refresh daily challenges if date has changed
             const today = getTodayDateString()
@@ -242,12 +329,12 @@ export const useGameStore = create<GameStore>()(
               state.gameState.dailyChallenges = applyDailyChallengeProgress(
                 state.gameState.dailyChallenges,
                 'travel_distance',
-                1
+                distanceMultiplier
               )
             }
 
             const oldDistance = selectedCharacter.distance || 0
-            const newDistance = oldDistance + 1
+            const newDistance = oldDistance + distanceMultiplier
             const metaBonuses = get().getMetaBonuses()
             const campBonuses = get().getCampBonuses()
             let updatedCharacter = applyLevelFromDistance({
@@ -257,34 +344,50 @@ export const useGameStore = create<GameStore>()(
 
             // Increment positionInRegion so TargetList shows correct distance
             if (updatedCharacter.landmarkState) {
+              const ls = updatedCharacter.landmarkState
+              let newLandmarkState = {
+                ...ls,
+                positionInRegion: (ls.positionInRegion ?? 0) + distanceMultiplier,
+              }
+
+              // Update 2D position toward active target
+              if (ls.position && ls.regionBounds) {
+                const activeIdx = ls.activeTargetIndex ?? 0
+                const isExit = activeIdx >= ls.landmarks.length
+                let targetPos: Vec2 | null = null
+
+                if (isExit) {
+                  if (ls.exitPositions && ls.exitPositions.length > 0) {
+                    const exitIdx = activeIdx - ls.landmarks.length
+                    targetPos = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition ?? null
+                  } else if (ls.exitPosition) {
+                    targetPos = ls.exitPosition
+                  }
+                } else if (!isExit && ls.landmarks[activeIdx]?.position) {
+                  targetPos = ls.landmarks[activeIdx].position!
+                }
+
+                if (targetPos) {
+                  newLandmarkState = {
+                    ...newLandmarkState,
+                    position: moveToward(ls.position, targetPos, distanceMultiplier),
+                  }
+                }
+              }
+
               updatedCharacter = {
                 ...updatedCharacter,
-                landmarkState: {
-                  ...updatedCharacter.landmarkState,
-                  positionInRegion: (updatedCharacter.landmarkState.positionInRegion ?? 0) + 1,
-                },
+                landmarkState: newLandmarkState,
               }
             }
 
-            // Auto-skip hidden landmarks the player has walked past
-            if (updatedCharacter.landmarkState) {
-              const ls = updatedCharacter.landmarkState
-              let idx = ls.activeTargetIndex ?? 0
-              while (
-                idx < ls.landmarks.length &&
-                ls.landmarks[idx]?.hidden &&
-                (ls.positionInRegion ?? 0) >= ls.landmarks[idx].distanceFromEntry
-              ) {
-                idx++
-              }
-              if (idx !== (ls.activeTargetIndex ?? 0)) {
-                updatedCharacter = {
-                  ...updatedCharacter,
-                  landmarkState: {
-                    ...ls,
-                    activeTargetIndex: idx,
-                  },
-                }
+            // Tick active exploration spells (step-based duration)
+            if (updatedCharacter.activeExplorationSpells?.length) {
+              updatedCharacter = {
+                ...updatedCharacter,
+                activeExplorationSpells: updatedCharacter.activeExplorationSpells
+                  .map(s => ({ ...s, stepsRemaining: s.stepsRemaining - 1 }))
+                  .filter(s => s.stepsRemaining > 0),
               }
             }
 
@@ -312,6 +415,94 @@ export const useGameStore = create<GameStore>()(
               } else {
                 updatedCharacter = { ...updatedCharacter, gold: mercGold }
               }
+            }
+
+            // Party member daily upkeep
+            if (newDay > oldDay && updatedCharacter.party?.length > 0) {
+              const { remainingParty, newGold } = processPartyUpkeep(
+                updatedCharacter.party,
+                updatedCharacter.gold,
+                campBonuses.partyUpkeepDiscountPct
+              )
+              updatedCharacter = {
+                ...updatedCharacter,
+                gold: newGold,
+                party: remainingParty,
+              }
+            }
+
+            // NPC unsolicited mail: friendly NPCs may send messages on day boundary
+            if (newDay > oldDay) {
+              const encounters = updatedCharacter.npcEncounters ?? {}
+              for (const [npcId, encounter] of Object.entries(encounters)) {
+                if ((encounter.disposition ?? 0) < 20) continue  // only friendly+ NPCs
+                const chance = 0.03 * (encounter.disposition / 100)  // ~1.5% at friendly, ~3% at bonded
+                if (Math.random() >= chance) continue
+
+                const npc = getNPCById(npcId)
+                if (!npc) continue
+
+                // Generate a simple message
+                const messages = [
+                  { subject: 'Greetings, friend', body: `I hope your travels are going well. Stay safe on the roads — I've heard reports of increased monster activity lately.\n\n— ${npc.name}`, gold: 0 },
+                  { subject: 'A small gift', body: `I found some extra coin and thought of you. Consider it a token of our friendship.\n\n— ${npc.name}`, gold: Math.floor(5 + Math.random() * 10) },
+                  { subject: 'Word of advice', body: `An old friend once told me: the strongest warriors know when to retreat. Don't be afraid to rest at an inn when you need it.\n\n— ${npc.name}`, gold: 0 },
+                  { subject: 'Thinking of you', body: `It's been quiet here since your last visit. The townsfolk still talk about your adventures. Come visit when you can!\n\n— ${npc.name}`, gold: 0 },
+                  { subject: 'A lucky find', body: `I stumbled upon some gold while tidying up. You need it more than I do — put it toward your next adventure!\n\n— ${npc.name}`, gold: Math.floor(8 + Math.random() * 15) },
+                ]
+                const msg = messages[Math.floor(Math.random() * messages.length)]
+
+                if (!updatedCharacter.mailbox) updatedCharacter.mailbox = []
+                updatedCharacter.mailbox.push({
+                  id: `mail-${npcId}-${newDay}-${Math.floor(Math.random() * 10000)}`,
+                  fromNpcId: npcId,
+                  fromName: npc.name,
+                  fromIcon: npc.icon,
+                  subject: msg.subject,
+                  body: msg.body,
+                  attachedGold: msg.gold > 0 ? msg.gold : undefined,
+                  read: false,
+                  day: newDay,
+                })
+              }
+            }
+
+            // Process pending mail replies
+            if (newDay > oldDay && updatedCharacter.pendingReplies && updatedCharacter.pendingReplies.length > 0) {
+              const readyReplies = updatedCharacter.pendingReplies.filter(r => newDay >= r.replyDay)
+              const remaining = updatedCharacter.pendingReplies.filter(r => newDay < r.replyDay)
+
+              for (const reply of readyReplies) {
+                const npc = getNPCById(reply.toNpcId)
+                if (!npc) continue
+
+                const disposition = updatedCharacter.npcEncounters?.[reply.toNpcId]?.disposition ?? 0
+                const replyMsg = generateNPCReply(npc, reply.playerMessage, disposition)
+
+                if (!updatedCharacter.mailbox) updatedCharacter.mailbox = []
+                updatedCharacter.mailbox.push({
+                  id: `mail-reply-${reply.toNpcId}-${newDay}-${Math.floor(Math.random() * 10000)}`,
+                  fromNpcId: reply.toNpcId,
+                  fromName: reply.toNpcName,
+                  fromIcon: reply.toNpcIcon,
+                  subject: `Re: Your message`,
+                  body: replyMsg.body,
+                  attachedGold: replyMsg.gold > 0 ? replyMsg.gold : undefined,
+                  attachedItems: replyMsg.items?.length ? replyMsg.items : undefined,
+                  read: false,
+                  day: newDay,
+                })
+              }
+              updatedCharacter = { ...updatedCharacter, pendingReplies: remaining }
+            }
+
+            // Mailbox storage limits: max 50 messages, auto-delete old read messages
+            if (newDay > oldDay && updatedCharacter.mailbox && updatedCharacter.mailbox.length > 50) {
+              const sorted = [...updatedCharacter.mailbox].sort((a, b) => {
+                if (a.read !== b.read) return a.read ? 1 : -1
+                return b.day - a.day
+              })
+              updatedCharacter = { ...updatedCharacter, mailbox: sorted.slice(0, 50) }
             }
 
             // Weather change every WEATHER_CHANGE_INTERVAL distance steps
@@ -416,6 +607,7 @@ export const useGameStore = create<GameStore>()(
                 shopState: null,
                 activeQuest: null,
                 genericMessage: null,
+                socialEncounter: null,
               },
             }
           })
@@ -596,9 +788,39 @@ export const useGameStore = create<GameStore>()(
               statAdjustments[stat] = (statAdjustments[stat] ?? 0) - currentlyEquipped.drawback.value // reverse: subtract the negative = add
             }
 
+            let updatedSpellbook = selectedCharacter.spellbook ?? []
+
+            // If the new item grants a spell, add it to the spellbook
+            if (item.grantsSpell) {
+              const gs = item.grantsSpell
+              const alreadyKnown = updatedSpellbook.some(s => s.id === gs.spellId)
+              if (!alreadyKnown) {
+                const grantedSpell = {
+                  id: gs.spellId,
+                  name: gs.spellName,
+                  description: gs.description,
+                  school: 'arcane' as const,
+                  manaCost: gs.manaCostOverride ?? 0,
+                  cooldown: 0,
+                  target: 'enemy' as const,
+                  effects: [],
+                  tags: ['item_granted'],
+                  usesPerCombat: gs.usesPerCombat,
+                }
+                updatedSpellbook = [...updatedSpellbook, grantedSpell]
+              }
+            }
+
+            // If the item being replaced granted a spell, remove it
+            if (currentlyEquipped?.grantsSpell) {
+              const oldSpellId = currentlyEquipped.grantsSpell.spellId
+              updatedSpellbook = updatedSpellbook.filter(s => s.id !== oldSpellId)
+            }
+
             const charWithEquipment = {
               ...selectedCharacter,
               inventory: updatedInventory,
+              spellbook: updatedSpellbook,
               equipment: {
                 ...equipment,
                 [targetSlot]: item,
@@ -631,9 +853,17 @@ export const useGameStore = create<GameStore>()(
             const equippedItem = equipment[slot]
             if (!equippedItem) return
 
+            // Remove granted spell from spellbook if item had one
+            let updatedSpellbookOnUnequip = selectedCharacter.spellbook ?? []
+            if (equippedItem.grantsSpell) {
+              const removeSpellId = equippedItem.grantsSpell.spellId
+              updatedSpellbookOnUnequip = updatedSpellbookOnUnequip.filter(s => s.id !== removeSpellId)
+            }
+
             const updatedChar = {
               ...selectedCharacter,
               inventory: [...selectedCharacter.inventory, equippedItem],
+              spellbook: updatedSpellbookOnUnequip,
               equipment: {
                 ...equipment,
                 [slot]: null,
@@ -807,6 +1037,133 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      stashMount: () => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+        if (!char.activeMount) return false
+        const roster = char.mountRoster ?? []
+        if (roster.length >= 5) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          if (!c.activeMount) return
+          if (!c.mountRoster) c.mountRoster = []
+          c.mountRoster.push(c.activeMount!)
+          c.activeMount = null
+        }))
+        return true
+      },
+      retrieveMount: (mountId: string) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+        const roster = char.mountRoster ?? []
+        const mountIdx = roster.findIndex(m => m.id === mountId)
+        if (mountIdx < 0) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          if (!c.mountRoster) return
+          const mount = c.mountRoster[mountIdx]
+          if (c.activeMount) {
+            c.mountRoster[mountIdx] = c.activeMount
+          } else {
+            c.mountRoster.splice(mountIdx, 1)
+          }
+          c.activeMount = mount
+        }))
+        return true
+      },
+      healMount: (mountId: string, isActive: boolean) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+
+        let mount: Mount | null | undefined
+        if (isActive) {
+          mount = char.activeMount
+        } else {
+          mount = (char.mountRoster ?? []).find(m => m.id === mountId)
+        }
+        if (!mount) return false
+
+        const maxHp = mount.maxHp ?? getMountMaxHp(mount.rarity)
+        const currentHp = mount.hp ?? maxHp
+        if (currentHp >= maxHp) return false
+
+        const healCost = Math.max(1, Math.ceil((maxHp - currentHp) * 0.5))
+        if (char.gold < healCost) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          c.gold -= healCost
+          if (isActive && c.activeMount) {
+            c.activeMount.hp = maxHp
+          } else if (c.mountRoster) {
+            const mi = c.mountRoster.findIndex(m => m.id === mountId)
+            if (mi >= 0) c.mountRoster[mi].hp = c.mountRoster[mi].maxHp ?? getMountMaxHp(c.mountRoster[mi].rarity)
+          }
+        }))
+        return true
+      },
+      sellMount: (mountId: string, isActive: boolean) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+
+        if (isActive) {
+          if (!char.activeMount || char.activeMount.id !== mountId) return false
+          const sellPrice = getMountSellPrice(char.activeMount.rarity)
+          set(produce((draft: GameStore) => {
+            const c = draft.gameState.characters[idx]
+            c.gold += sellPrice
+            c.activeMount = null
+          }))
+        } else {
+          const rosterIdx = (char.mountRoster ?? []).findIndex(m => m.id === mountId)
+          if (rosterIdx < 0) return false
+          const mount = char.mountRoster![rosterIdx]
+          const sellPrice = getMountSellPrice(mount.rarity)
+          set(produce((draft: GameStore) => {
+            const c = draft.gameState.characters[idx]
+            c.gold += sellPrice
+            c.mountRoster!.splice(rosterIdx, 1)
+          }))
+        }
+        return true
+      },
+      buyStableMount: (mount: Mount) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+        const price = getMountPrice(mount.rarity)
+        if (char.gold < price) return false
+
+        const roster = char.mountRoster ?? []
+        if (char.activeMount && roster.length >= 5) return false
+
+        set(produce((draft: GameStore) => {
+          const c = draft.gameState.characters[idx]
+          c.gold -= price
+          if (!c.activeMount) {
+            c.activeMount = mount
+          } else {
+            c.mountRoster = [...(c.mountRoster ?? []), mount]
+          }
+        }))
+        return true
+      },
       recruitMercenary: (mercenary: Mercenary) => {
         const selectedCharacter = get().getSelectedCharacter()
         if (!selectedCharacter) return false
@@ -828,7 +1185,7 @@ export const useGameStore = create<GameStore>()(
             const updatedRoster = [...(char.mercenaryRoster ?? []), fullMercenary]
             state.gameState.characters[charIndex] = {
               ...char,
-              gold: char.gold - mercenary.recruitCost,
+              gold: clampGold(char.gold - mercenary.recruitCost),
               mercenaryRoster: updatedRoster,
               activeMercenary: char.activeMercenary ?? fullMercenary,
             }
@@ -876,6 +1233,87 @@ export const useGameStore = create<GameStore>()(
           })
         )
       },
+      addPartyMember: (member: PartyMember) => {
+        const character = get().getSelectedCharacter()
+        if (!character) return false
+        const party = character.party ?? []
+        if (party.length >= MAX_PARTY_SIZE) return false
+
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const char = state.gameState.characters[charIndex]
+            if (!char.party) char.party = []
+            char.party.push(member)
+          })
+        )
+        return true
+      },
+
+      recruitTavernMember: (member: PartyMember) => {
+        const state = get()
+        const characters = state.gameState.characters
+        const idx = characters.findIndex(c => c.id === state.gameState.selectedCharacterId)
+        if (idx < 0) return false
+        const char = characters[idx]
+
+        if ((char.party?.length ?? 0) >= MAX_PARTY_SIZE) return false
+        if (char.gold < (member.recruitCost ?? 0)) return false
+        if (char.party?.some(m => m.id === member.id)) return false
+
+        set(produce((draft: GameStore) => {
+          const dChar = draft.gameState.characters[idx]
+          dChar.gold -= member.recruitCost ?? 0
+          if (!dChar.party) dChar.party = []
+          dChar.party.push(member)
+        }))
+        return true
+      },
+
+      removePartyMember: (memberId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const char = state.gameState.characters[charIndex]
+            char.party = (char.party ?? []).filter(m => m.id !== memberId)
+          })
+        )
+      },
+
+      renamePartyMember: (memberId: string, newName: string) => {
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const member = (state.gameState.characters[charIndex].party ?? []).find(m => m.id === memberId)
+            if (member) member.customName = newName
+          })
+        )
+      },
+
+      healPartyMember: (memberId: string, amount: number) => {
+        set(
+          produce((state: GameStore) => {
+            const charIndex = state.gameState.characters.findIndex(
+              c => c.id === state.gameState.selectedCharacterId
+            )
+            if (charIndex < 0) return
+            const member = (state.gameState.characters[charIndex].party ?? []).find(m => m.id === memberId)
+            if (member) {
+              member.hp = Math.min(member.maxHp, member.hp + amount)
+            }
+          })
+        )
+      },
+
       addHeirloom: (item: Item) => {
         set(
           produce((state: GameStore) => {
@@ -1030,7 +1468,7 @@ export const useGameStore = create<GameStore>()(
             if (!char.campState) {
               char.campState = { buildingLevels: {} }
             }
-            char.gold -= cost
+            char.gold = clampGold(char.gold - cost)
             char.campState.buildingLevels[buildingId] = currentLevel + 1
           })
         )
@@ -1086,7 +1524,7 @@ export const useGameStore = create<GameStore>()(
             )
             if (charIndex === -1) return
             const char = state.gameState.characters[charIndex]
-            char.gold -= gear.price
+            char.gold = clampGold(char.gold - gear.price)
             char.inventory = [...char.inventory, newItem]
           })
         )
@@ -1167,7 +1605,7 @@ export const useGameStore = create<GameStore>()(
             if (charIndex === -1) return
             const char = state.gameState.characters[charIndex]
             // Deduct gold
-            char.gold -= cost
+            char.gold = clampGold(char.gold - cost)
             // Update equipped item
             const currentEquipment = char.equipment ?? { weapon: null, armor: null, accessory: null }
             char.equipment = {
@@ -1220,7 +1658,7 @@ export const useGameStore = create<GameStore>()(
         )
         return bonus
       },
-      recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => {
+      recordNPCEncounter: (npcId: string, dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => {
         set(
           produce((state: GameStore) => {
             const selectedCharacter = get().getSelectedCharacter()
@@ -1246,6 +1684,20 @@ export const useGameStore = create<GameStore>()(
               state.gameState.characters[charIndex].reputation = clampReputation(
                 state.gameState.characters[charIndex].reputation + reward.reputation
               )
+            }
+
+            // Reveal hidden landmark if NPC shared location info
+            if (revealLandmark) {
+              const ls = state.gameState.characters[charIndex].landmarkState
+              if (ls) {
+                const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
+                if (hiddenIdx !== -1) {
+                  const updatedLandmarks = ls.landmarks.map((lm, i) =>
+                    i === hiddenIdx ? { ...lm, hidden: false } : lm
+                  )
+                  state.gameState.characters[charIndex].landmarkState = { ...ls, landmarks: updatedLandmarks }
+                }
+              }
             }
           })
         )
@@ -1282,6 +1734,41 @@ export const useGameStore = create<GameStore>()(
           mana: currentMana - manaCost,
         }
 
+        // Handle duration-based exploration effects (active spell tracking)
+        if (effect.duration && effect.duration > 0) {
+          const activeSpells = [...(character.activeExplorationSpells ?? [])]
+          const existingIdx = activeSpells.findIndex(s => s.spellId === spell.id)
+          const newEntry = {
+            spellId: spell.id,
+            spellName: spell.name,
+            effectType: effect.type,
+            value: effect.value,
+            stepsRemaining: effect.duration,
+          }
+          if (existingIdx >= 0) {
+            activeSpells[existingIdx] = newEntry
+          } else {
+            activeSpells.push(newEntry)
+          }
+          updates.activeExplorationSpells = activeSpells
+          updates.mana = currentMana - manaCost
+
+          set(
+            produce((state: GameStore) => {
+              const charIndex = state.gameState.characters.findIndex(c => c.id === character.id)
+              if (charIndex === -1) return
+              state.gameState.characters[charIndex] = {
+                ...state.gameState.characters[charIndex],
+                ...updates,
+              }
+            })
+          )
+          return {
+            message: `${spell.name}: Active for ${effect.duration} steps! (${manaCost} MP spent)`,
+            success: true,
+          }
+        }
+
         switch (effect.type) {
           case 'heal': {
             const maxHp = character.maxHp ?? 100
@@ -1313,12 +1800,36 @@ export const useGameStore = create<GameStore>()(
             }
             const ls = character.landmarkState
             const newPosition = (ls.positionInRegion ?? 0) + effect.value
+            let newLsPosition = ls.position
+            if (ls.position && ls.regionBounds) {
+              const activeIdx = ls.activeTargetIndex ?? 0
+              const isExit = activeIdx >= ls.landmarks.length
+              let targetPos: Vec2 | null = null
+              if (isExit) {
+                if (ls.exitPositions && ls.exitPositions.length > 0) {
+                  const exitIdx = activeIdx - ls.landmarks.length
+                  targetPos = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition ?? null
+                } else if (ls.exitPosition) {
+                  targetPos = ls.exitPosition
+                }
+              } else if (!isExit && ls.landmarks[activeIdx]?.position) {
+                targetPos = ls.landmarks[activeIdx].position!
+              }
+              if (targetPos) {
+                let pos = ls.position
+                for (let i = 0; i < effect.value; i++) {
+                  pos = moveToward(pos, targetPos)
+                }
+                newLsPosition = pos
+              }
+            }
             updates.landmarkState = {
               ...ls,
               positionInRegion: newPosition,
+              position: newLsPosition,
             }
             updates.distance = (character.distance ?? 0) + effect.value
-            message = `${spell.name}: Advanced ${effect.value} steps! (${manaCost} MP spent)`
+            message = `${spell.name}: Advanced ${effect.value} km! (${manaCost} MP spent)`
             break
           }
           case 'shield': {
@@ -1356,6 +1867,83 @@ export const useGameStore = create<GameStore>()(
             message = `${spell.name}: You sense what lies ahead... ${landmark.icon} ${landmark.name} — ${landmark.encounterPrompt} (${manaCost} MP spent)`
             break
           }
+          case 'instant_travel': {
+            if (!character.landmarkState) {
+              return { message: 'No active travel to teleport through.', success: false }
+            }
+            const ls = character.landmarkState
+            const travelDist = effect.value
+            const newPosition = (ls.positionInRegion ?? 0) + travelDist
+            let newLsPosition = ls.position
+            if (ls.position && ls.regionBounds) {
+              const activeIdx = ls.activeTargetIndex ?? 0
+              const isExit = activeIdx >= ls.landmarks.length
+              let targetPos: Vec2 | null = null
+              if (isExit) {
+                if (ls.exitPositions && ls.exitPositions.length > 0) {
+                  const exitIdx = activeIdx - ls.landmarks.length
+                  targetPos = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition ?? null
+                } else if (ls.exitPosition) {
+                  targetPos = ls.exitPosition
+                }
+              } else if (!isExit && ls.landmarks[activeIdx]?.position) {
+                targetPos = ls.landmarks[activeIdx].position!
+              }
+              if (targetPos) {
+                let pos = ls.position
+                for (let i = 0; i < travelDist; i++) {
+                  pos = moveToward(pos, targetPos)
+                }
+                newLsPosition = pos
+              }
+            }
+            updates.landmarkState = {
+              ...ls,
+              positionInRegion: newPosition,
+              position: newLsPosition,
+            }
+            updates.distance = (character.distance ?? 0) + travelDist
+            message = `${spell.name}: Teleported ${travelDist} km instantly! (${manaCost} MP spent)`
+            break
+          }
+          case 'scouting': {
+            // Reveal the next hidden or upcoming landmark, similar to reveal
+            const ls = character.landmarkState
+            if (!ls) {
+              return { message: 'No active travel to scout ahead.', success: false }
+            }
+            const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
+            if (hiddenIdx !== -1) {
+              const scoutedLandmark = ls.landmarks[hiddenIdx]
+              const updatedLandmarks = ls.landmarks.map((lm, i) =>
+                i === hiddenIdx ? { ...lm, hidden: false } : lm
+              )
+              updates.landmarkState = { ...ls, landmarks: updatedLandmarks }
+              message = `${spell.name}: Your familiar scouted ahead! ${scoutedLandmark.icon} ${scoutedLandmark.name} has been revealed! (${manaCost} MP spent)`
+              break
+            }
+            const activeIdx2 = ls.activeTargetIndex ?? 0
+            if (activeIdx2 >= ls.landmarks.length) {
+              return { message: 'Nothing more to scout ahead.', success: false }
+            }
+            const upcomingLandmark = ls.landmarks[activeIdx2]
+            message = `${spell.name}: Your familiar reports... ${upcomingLandmark.icon} ${upcomingLandmark.name} lies ahead — ${upcomingLandmark.encounterPrompt} (${manaCost} MP spent)`
+            break
+          }
+          // Duration-based types are handled above before the switch.
+          // These cases are unreachable for instant casts but required for exhaustiveness.
+          case 'cha_boost':
+          case 'faster_travel':
+          case 'auto_stealth':
+          case 'animal_affinity':
+          case 'disguise':
+          case 'loot_bonus':
+          case 'bypass_guards':
+          case 'see_weaknesses':
+          case 'price_reduction': {
+            message = `${spell.name}: Effect applied! (${manaCost} MP spent)`
+            break
+          }
         }
 
         set(
@@ -1371,10 +1959,160 @@ export const useGameStore = create<GameStore>()(
 
         return { message, success: true }
       },
+      discoverCombo: (comboId: string) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(c => c.id === selectedCharacter.id)
+            if (charIndex === -1) return
+            const discovered = state.gameState.characters[charIndex].discoveredCombos ?? []
+            if (discovered.includes(comboId)) return
+            state.gameState.characters[charIndex].discoveredCombos = [...discovered, comboId]
+
+            // Check achievements after updating combo discovery
+            const updatedChar = state.gameState.characters[charIndex]
+            const { achievements, newlyCompleted } = checkAchievements(
+              updatedChar,
+              state.gameState,
+              state.gameState.achievements ?? []
+            )
+            state.gameState.achievements = achievements
+            if (newlyCompleted.length > 0) {
+              let goldGain = 0
+              let repGain = 0
+              for (const id of newlyCompleted) {
+                const config = ACHIEVEMENTS.find(a => a.id === id)
+                if (config?.reward) {
+                  goldGain += config.reward.gold ?? 0
+                  repGain += config.reward.reputation ?? 0
+                }
+                const pa = state.gameState.achievements.find(a => a.achievementId === id)
+                if (pa) pa.rewardClaimed = true
+              }
+              state.gameState.characters[charIndex] = {
+                ...state.gameState.characters[charIndex],
+                gold: state.gameState.characters[charIndex].gold + goldGain,
+                reputation: clampReputation(state.gameState.characters[charIndex].reputation + repGain),
+              }
+            }
+          })
+        )
+      },
+      dismissLootCelebration: () => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.pendingLootCelebration = null
+          })
+        )
+      },
+      clearNewItemId: (itemId: string) => {
+        set(
+          produce((state: GameStore) => {
+            state.gameState.newItemIds = (state.gameState.newItemIds ?? []).filter(id => id !== itemId)
+          })
+        )
+      },
+      clearSocialEncounter: () => set(state => ({
+        gameState: { ...state.gameState, socialEncounter: null }
+      })),
+      markMailRead: (mailId: string) => {
+        set(produce((state: GameStore) => {
+          const char = state.gameState.characters.find(c => c.id === state.gameState.selectedCharacterId)
+          if (!char?.mailbox) return
+          const mail = char.mailbox.find(m => m.id === mailId)
+          if (mail) mail.read = true
+        }))
+      },
+
+      claimMailGold: (mailId: string) => {
+        set(produce((state: GameStore) => {
+          const char = state.gameState.characters.find(c => c.id === state.gameState.selectedCharacterId)
+          if (!char?.mailbox) return
+          const mail = char.mailbox.find(m => m.id === mailId)
+          if (mail?.attachedGold && mail.attachedGold > 0) {
+            char.gold += mail.attachedGold
+            mail.attachedGold = 0
+            mail.read = true
+          }
+        }))
+      },
+
+      sendMail: (toNpcId: string, message: string) => {
+        const char = get().getSelectedCharacter()
+        if (!char) return false
+
+        const region = getRegion(char.currentRegion ?? 'green_meadows')
+        const sendCost = Math.max(5, Math.round(5 * region.difficultyMultiplier))
+        if ((char.gold ?? 0) < sendCost) return false
+
+        const npc = getNPCById(toNpcId)
+        if (!npc) return false
+
+        const currentDay = calculateDay(char.distance ?? 0)
+        const replyDelay = 1 + Math.floor(Math.random() * 5) // 1-5 days
+
+        set(produce((state: GameStore) => {
+          const c = state.gameState.characters.find(ch => ch.id === char.id)
+          if (!c) return
+          c.gold -= sendCost
+          if (!c.pendingReplies) c.pendingReplies = []
+          c.pendingReplies.push({
+            id: `reply-${toNpcId}-${currentDay}-${Math.floor(Math.random() * 10000)}`,
+            toNpcId,
+            toNpcName: npc.name,
+            toNpcIcon: npc.icon,
+            playerMessage: message,
+            sentDay: currentDay,
+            replyDay: currentDay + replyDelay,
+          })
+        }))
+        return true
+      },
+
+      claimMailItems: (mailId: string) => {
+        set(produce((state: GameStore) => {
+          const char = state.gameState.characters.find(c => c.id === state.gameState.selectedCharacterId)
+          if (!char?.mailbox) return
+          const mail = char.mailbox.find(m => m.id === mailId)
+          if (!mail?.attachedItems || mail.itemsClaimed) return
+          // Add items to inventory
+          for (const item of mail.attachedItems) {
+            if (!char.inventory) char.inventory = []
+            char.inventory.push({
+              id: `mail-item-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+              name: item.name,
+              description: item.description,
+              type: (item.type as 'consumable' | 'equipment' | 'quest' | 'misc' | 'spell_scroll' | 'trade_good') ?? 'consumable',
+              rarity: (item.rarity as 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary') ?? 'common',
+              quantity: 1,
+            })
+          }
+          mail.itemsClaimed = true
+          mail.read = true
+        }))
+      },
+
+      updatePartyMemberRelationship: (memberId: string, dispositionDelta: number) => {
+        set(
+          produce((state: GameStore) => {
+            const selectedCharacter = get().getSelectedCharacter()
+            if (!selectedCharacter) return
+            const charIndex = state.gameState.characters.findIndex(c => c.id === selectedCharacter.id)
+            if (charIndex === -1) return
+            const party = state.gameState.characters[charIndex].party
+            if (!party) return
+            const memberIndex = party.findIndex(m => m.id === memberId)
+            if (memberIndex === -1) return
+            const current = party[memberIndex].relationship ?? 0
+            party[memberIndex].relationship = Math.max(-100, Math.min(100, current + dispositionDelta))
+          })
+        )
+      },
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 26,
+      version: 39,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -1436,7 +2174,7 @@ export const useGameStore = create<GameStore>()(
               ;(char as FantasyCharacter).mainQuest = createMainQuest()
               // Mark milestones as claimed for already-visited regions (no retroactive gold)
               const visited = (char as FantasyCharacter).visitedRegions ?? ['green_meadows']
-              const count = visited.filter((r: string) => r !== 'starting_village').length
+              const count = visited.filter((r: string) => r !== 'hearthwood').length
               for (const m of (char as FantasyCharacter).mainQuest!.milestones) {
                 if (count >= m.regionsRequired) m.claimed = true
               }
@@ -1492,6 +2230,81 @@ export const useGameStore = create<GameStore>()(
                 }
               }
             }
+            // v27: Add 2D position to landmarkState
+            if ((char as FantasyCharacter).landmarkState && !(char as FantasyCharacter).landmarkState!.position) {
+              ;(char as FantasyCharacter).landmarkState!.position = { x: 0, y: 0 }
+            }
+            // v28: Add explored field to landmarks
+            if ((char as FantasyCharacter).landmarkState?.landmarks) {
+              (char as FantasyCharacter).landmarkState!.landmarks = (char as FantasyCharacter).landmarkState!.landmarks.map(lm => ({
+                ...lm,
+                explored: (lm as Record<string, unknown>).explored !== undefined ? Boolean((lm as Record<string, unknown>).explored) : false,
+              }))
+            }
+            // v29: Backfill rarity on all inventory items and equipped items
+            if ((char as FantasyCharacter).inventory) {
+              (char as FantasyCharacter).inventory = (char as FantasyCharacter).inventory.map(item => ({
+                ...item,
+                rarity: item.rarity ?? 'common',
+              }))
+            }
+            const eq = (char as FantasyCharacter).equipment
+            if (eq) {
+              if (eq.weapon && !eq.weapon.rarity) eq.weapon = { ...eq.weapon, rarity: 'common' }
+              if (eq.armor && !eq.armor.rarity) eq.armor = { ...eq.armor, rarity: 'common' }
+              if (eq.accessory && !eq.accessory.rarity) eq.accessory = { ...eq.accessory, rarity: 'common' }
+            }
+            // v30: Add activeExplorationSpells
+            if (!(char as FantasyCharacter).activeExplorationSpells) {
+              ;(char as FantasyCharacter).activeExplorationSpells = []
+            }
+            // v31: Backfill isSecret on existing landmarks (undefined → false for normal, keep true for secret)
+            if ((char as FantasyCharacter).landmarkState?.landmarks) {
+              (char as FantasyCharacter).landmarkState!.landmarks = (char as FantasyCharacter).landmarkState!.landmarks.map(lm => ({
+                ...lm,
+                isSecret: (lm as Record<string, unknown>).isSecret !== undefined ? Boolean((lm as Record<string, unknown>).isSecret) : false,
+              }))
+            }
+            // v32: Add discoveredCombos
+            if (!(char as FantasyCharacter).discoveredCombos) {
+              ;(char as FantasyCharacter).discoveredCombos = []
+            }
+            // v34: Reclassify misc items as trade_good
+            if ((char as FantasyCharacter).inventory) {
+              for (const item of (char as FantasyCharacter).inventory) {
+                if (item.type === 'misc') item.type = 'trade_good'
+              }
+            }
+            // v35: Add bounty field
+            if ((char as FantasyCharacter).bounty === undefined) {
+              ;(char as FantasyCharacter).bounty = 0
+            }
+            // v36: Add party array
+            if (!(char as FantasyCharacter).party) {
+              ;(char as FantasyCharacter).party = []
+            }
+            // v37: Backfill generatedClass on party members
+            if ((char as FantasyCharacter).party) {
+              for (const member of (char as FantasyCharacter).party!) {
+                if (!member.generatedClass) {
+                  const npcClass = getClassForNPC(member.name)
+                  const combatStats = deriveNPCCombatStats(npcClass, member.level ?? 1)
+                  member.generatedClass = npcClass
+                  member.className = npcClass.name
+                  member.stats = combatStats.stats
+                  member.hp = Math.min(member.hp, combatStats.maxHp)
+                  member.maxHp = combatStats.maxHp
+                }
+              }
+            }
+            // v38: Initialize mountRoster if missing
+            if (!(char as FantasyCharacter).mountRoster) {
+              ;(char as FantasyCharacter).mountRoster = []
+            }
+            // v39: Initialize mailbox if missing
+            if (!(char as FantasyCharacter).mailbox) {
+              ;(char as FantasyCharacter).mailbox = []
+            }
           }
         }
         // v6: Add activeQuest
@@ -1522,6 +2335,13 @@ export const useGameStore = create<GameStore>()(
         if (state?.gameState && !('dailyChallenges' in state.gameState)) {
           (state.gameState as GameState).dailyChallenges = null
         }
+        // v33: Add loot celebration and new item tracking
+        if (state?.gameState && !('pendingLootCelebration' in state.gameState)) {
+          (state.gameState as GameState).pendingLootCelebration = null
+        }
+        if (state?.gameState && !('newItemIds' in state.gameState)) {
+          (state.gameState as GameState).newItemIds = []
+        }
         return state
       },
     }
@@ -1549,6 +2369,13 @@ export function useGameStateBuilder() {
     const selectedCharacter = gameStateClone.characters?.find(c => c.id === selectedCharacterId)
     if (!selectedCharacter) return
     selectedCharacter.inventory.push(item)
+    // Track as new item
+    if (!gameStateClone.newItemIds) gameStateClone.newItemIds = []
+    gameStateClone.newItemIds.push(item.id)
+    // Trigger celebration for epic/legendary drops
+    if (item.rarity === 'epic' || item.rarity === 'legendary') {
+      gameStateClone.pendingLootCelebration = item
+    }
   }
 
   const MAX_STORY_EVENTS = 200
@@ -1590,6 +2417,9 @@ export function useGameStateBuilder() {
     // Clamp reputation if it's being updated
     if (characterUpdate.reputation !== undefined) {
       characterUpdate = { ...characterUpdate, reputation: clampReputation(characterUpdate.reputation) }
+    }
+    if (characterUpdate.gold !== undefined) {
+      characterUpdate = { ...characterUpdate, gold: clampGold(characterUpdate.gold) }
     }
 
     // Create a new character object and recalculate level from distance

@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { generateLandmarks, seededRandom } from '../lib/landmarkGenerator'
 import { getTemplatesForRegion, LANDMARK_TEMPLATES } from '../config/landmarks'
+import { getRegion } from '../config/regions'
 
 const ALL_REGION_IDS = [
-  'starting_village',
+  'hearthwood',
   'green_meadows',
   'dark_forest',
   'sunken_ruins',
@@ -21,9 +22,9 @@ const ALL_REGION_IDS = [
 ]
 
 // Helper to compute regionLength the same way the service does
-function generateRegionLength(regionId: string, charId: string, visitCount: number): number {
+function generateRegionLength(regionId: string, charId: string, visitCount: number, difficultyMultiplier: number = 1): number {
   const seed = `${regionId}-${charId}-${visitCount}-length`
-  return 150 + Math.floor(seededRandom(seed)() * 101)
+  return Math.floor((150 + Math.floor(seededRandom(seed)() * 101)) * difficultyMultiplier)
 }
 
 describe('generateLandmarks', () => {
@@ -77,21 +78,33 @@ describe('generateLandmarks', () => {
     expect(aIds).not.toBe(bIds)
   })
 
-  it('first landmark distance is in range 20-40', () => {
+  it('first landmark distance scales with region difficulty', () => {
     for (const regionId of ALL_REGION_IDS) {
-      const landmarks = generateLandmarks(regionId, 'char-1')
-      expect(landmarks[0].distanceFromEntry).toBeGreaterThanOrEqual(20)
-      expect(landmarks[0].distanceFromEntry).toBeLessThanOrEqual(40)
+      const region = getRegion(regionId)
+      const mult = region.difficultyMultiplier
+      const landmarks = generateLandmarks(regionId, 'char-1', 0, mult)
+      expect(landmarks[0].distanceFromEntry).toBeGreaterThanOrEqual(Math.floor(20 * mult))
+      expect(landmarks[0].distanceFromEntry).toBeLessThanOrEqual(Math.floor(40 * mult))
     }
   })
 
-  it('all landmark distances are in range [20, 140]', () => {
+  it('all landmark distances scale with region difficulty', () => {
     for (const regionId of ALL_REGION_IDS) {
-      const landmarks = generateLandmarks(regionId, 'char-1')
+      const region = getRegion(regionId)
+      const mult = region.difficultyMultiplier
+      const landmarks = generateLandmarks(regionId, 'char-1', 0, mult)
       for (const lm of landmarks) {
-        expect(lm.distanceFromEntry).toBeGreaterThanOrEqual(20)
-        expect(lm.distanceFromEntry).toBeLessThanOrEqual(140)
+        expect(lm.distanceFromEntry).toBeGreaterThanOrEqual(Math.floor(20 * mult) - 1)
+        expect(lm.distanceFromEntry).toBeLessThanOrEqual(Math.ceil(140 * mult))
       }
+    }
+  })
+
+  it('should always include at least one town landmark when region has town templates', () => {
+    for (let i = 0; i < 50; i++) {
+      const landmarks = generateLandmarks('green_meadows', `test-char-${i}`, 0)
+      const hasTown = landmarks.some(l => l.type === 'town')
+      expect(hasTown).toBe(true)
     }
   })
 
@@ -138,11 +151,12 @@ describe('seededRandom', () => {
 })
 
 describe('regionLength determinism', () => {
-  it('returns a value in [150, 250] for all known regions', () => {
+  it('returns a scaled value based on region difficulty', () => {
     for (const regionId of ALL_REGION_IDS) {
-      const len = generateRegionLength(regionId, 'char-test', 0)
-      expect(len).toBeGreaterThanOrEqual(150)
-      expect(len).toBeLessThanOrEqual(250)
+      const region = getRegion(regionId)
+      const len = generateRegionLength(regionId, 'char-test', 0, region.difficultyMultiplier)
+      expect(len).toBeGreaterThanOrEqual(Math.floor(150 * region.difficultyMultiplier))
+      expect(len).toBeLessThanOrEqual(Math.ceil(250 * region.difficultyMultiplier))
     }
   })
 
@@ -181,6 +195,41 @@ describe('regionLength determinism', () => {
   })
 })
 
+describe('secret landmarks', () => {
+  it('secret landmark has isSecret: true', () => {
+    // All known regions have a secret landmark — the last one added is always the secret one
+    for (const regionId of ALL_REGION_IDS) {
+      const landmarks = generateLandmarks(regionId, 'char-secret-test')
+      const secretLandmarks = landmarks.filter(lm => lm.isSecret === true)
+      expect(secretLandmarks.length).toBe(1)
+    }
+  })
+
+  it('secret landmark has hidden: true initially', () => {
+    for (const regionId of ALL_REGION_IDS) {
+      const landmarks = generateLandmarks(regionId, 'char-hidden-test')
+      const secretLandmark = landmarks.find(lm => lm.isSecret === true)
+      expect(secretLandmark).toBeDefined()
+      expect(secretLandmark!.hidden).toBe(true)
+    }
+  })
+
+  it('normal landmarks do not have isSecret: true', () => {
+    for (const regionId of ALL_REGION_IDS) {
+      const landmarks = generateLandmarks(regionId, 'char-normal-test')
+      const normalLandmarks = landmarks.filter(lm => !lm.isSecret)
+      // There should be 3 normal landmarks and 1 secret
+      expect(normalLandmarks.length).toBe(3)
+    }
+  })
+
+  it('unknown region produces no secret landmarks (no secret templates)', () => {
+    const landmarks = generateLandmarks('unknown_region', 'char-1')
+    const secretLandmarks = landmarks.filter(lm => lm.isSecret === true)
+    expect(secretLandmarks.length).toBe(0)
+  })
+})
+
 describe('getTemplatesForRegion', () => {
   it('returns at least 3 templates for every known region', () => {
     for (const regionId of ALL_REGION_IDS) {
@@ -208,5 +257,86 @@ describe('getTemplatesForRegion', () => {
     }
     const uniqueIds = new Set(allIds)
     expect(uniqueIds.size).toBe(allIds.length)
+  })
+})
+
+describe('LandmarkTemplate feature flags', () => {
+  it('Willowbrook (gm_hamlet) has all features enabled', () => {
+    const templates = getTemplatesForRegion('green_meadows')
+    const willowbrook = templates.find(t => t.id === 'gm_hamlet')
+    expect(willowbrook).toBeDefined()
+    expect(willowbrook?.hasInn).toBe(true)
+    expect(willowbrook?.hasStable).toBe(true)
+    expect(willowbrook?.hasMailbox).toBe(true)
+    expect(willowbrook?.hasNoticeBoard).toBe(true)
+    expect(willowbrook?.hasTransport).toBe(true)
+  })
+
+  it("Garron's Forge (sv_blacksmith) has no extra features", () => {
+    const templates = getTemplatesForRegion('hearthwood')
+    const forge = templates.find(t => t.id === 'sv_blacksmith')
+    expect(forge).toBeDefined()
+    expect(forge?.hasInn).toBe(false)
+    expect(forge?.hasStable).toBe(false)
+    expect(forge?.hasMailbox).toBe(false)
+    expect(forge?.hasNoticeBoard).toBe(false)
+    expect(forge?.hasTransport).toBe(false)
+  })
+
+  it('The Rusty Flagon (sv_tavern) has inn, mailbox, notice board but no stable or transport', () => {
+    const templates = getTemplatesForRegion('hearthwood')
+    const tavern = templates.find(t => t.id === 'sv_tavern')
+    expect(tavern).toBeDefined()
+    expect(tavern?.hasInn).toBe(true)
+    expect(tavern?.hasStable).toBe(false)
+    expect(tavern?.hasMailbox).toBe(true)
+    expect(tavern?.hasNoticeBoard).toBe(true)
+    expect(tavern?.hasTransport).toBe(false)
+  })
+
+  it("Puck's Bazaar (fg_market) only has transport", () => {
+    const templates = getTemplatesForRegion('feywild_grove')
+    const bazaar = templates.find(t => t.id === 'fg_market')
+    expect(bazaar).toBeDefined()
+    expect(bazaar?.hasInn).toBe(false)
+    expect(bazaar?.hasStable).toBe(false)
+    expect(bazaar?.hasMailbox).toBe(false)
+    expect(bazaar?.hasNoticeBoard).toBe(false)
+    expect(bazaar?.hasTransport).toBe(true)
+  })
+
+  it('Non-town landmarks do not have feature flags', () => {
+    const templates = getTemplatesForRegion('hearthwood')
+    const noticeBoard = templates.find(t => t.id === 'sv_notice_board')
+    expect(noticeBoard).toBeDefined()
+    expect(noticeBoard?.hasInn).toBeUndefined()
+    expect(noticeBoard?.hasStable).toBeUndefined()
+    expect(noticeBoard?.hasMailbox).toBeUndefined()
+    expect(noticeBoard?.hasNoticeBoard).toBeUndefined()
+    expect(noticeBoard?.hasTransport).toBeUndefined()
+  })
+
+  it('feature flags are preserved through generateLandmarks for town landmarks', () => {
+    const landmarks = generateLandmarks('green_meadows', 'test-char', 0, 1, 100)
+    const townLandmark = landmarks.find(lm => lm.type === 'town')
+    expect(townLandmark).toBeDefined()
+    // green_meadows only has gm_hamlet as town, which has all features
+    expect(townLandmark?.hasInn).toBe(true)
+    expect(townLandmark?.hasStable).toBe(true)
+    expect(townLandmark?.hasMailbox).toBe(true)
+    expect(townLandmark?.hasNoticeBoard).toBe(true)
+    expect(townLandmark?.hasTransport).toBe(true)
+  })
+
+  it('non-town generated landmarks have undefined feature flags', () => {
+    const landmarks = generateLandmarks('green_meadows', 'test-char', 0, 1, 100)
+    const nonTownLandmarks = landmarks.filter(lm => lm.type !== 'town' && !lm.isSecret)
+    for (const lm of nonTownLandmarks) {
+      expect(lm.hasInn).toBeUndefined()
+      expect(lm.hasStable).toBeUndefined()
+      expect(lm.hasMailbox).toBeUndefined()
+      expect(lm.hasNoticeBoard).toBeUndefined()
+      expect(lm.hasTransport).toBeUndefined()
+    }
   })
 })

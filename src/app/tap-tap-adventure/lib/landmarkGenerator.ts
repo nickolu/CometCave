@@ -1,4 +1,5 @@
 import { getTemplatesForRegion, getSecretTemplatesForRegion, LandmarkTemplate, LandmarkType } from '../config/landmarks'
+import { euclidean } from './movementUtils'
 
 export interface GeneratedLandmark {
   templateId: string
@@ -11,6 +12,14 @@ export interface GeneratedLandmark {
   distanceFromEntry: number
   hidden: boolean
   isSecret: boolean
+  explored: boolean
+  position: { x: number; y: number }
+  hasInn?: boolean
+  hasStable?: boolean
+  hasMailbox?: boolean
+  hasNoticeBoard?: boolean
+  hasTransport?: boolean
+  hasCrafting?: boolean
 }
 
 // Simple string hash for seeded random
@@ -55,20 +64,39 @@ function seededShuffle<T>(arr: T[], rng: () => number): T[] {
 export function generateLandmarks(
   regionId: string,
   characterId: string,
-  visitCount: number = 0
+  visitCount: number = 0,
+  difficultyMultiplier: number = 1,
+  regionSize: number = 100
 ): GeneratedLandmark[] {
   const templates = getTemplatesForRegion(regionId)
   const seed = `${regionId}-${characterId}-${visitCount}`
   const rng = seededRandom(seed)
 
-  // Pick 3 landmarks from templates (shuffled deterministically)
-  const selected = seededShuffle([...templates], rng).slice(0, 3) as LandmarkTemplate[]
+  // Pick 3 landmarks, always including at least 1 town if available
+  const towns = templates.filter(t => t.type === 'town')
+  const nonTowns = templates.filter(t => t.type !== 'town')
+  let selected: LandmarkTemplate[]
+  if (towns.length > 0) {
+    const shuffledTowns = seededShuffle([...towns], rng)
+    const shuffledNonTowns = seededShuffle([...nonTowns], rng)
+    selected = [shuffledTowns[0], ...shuffledNonTowns.slice(0, 2)] as LandmarkTemplate[]
+  } else {
+    selected = seededShuffle([...templates], rng).slice(0, 3) as LandmarkTemplate[]
+  }
 
-  // Assign distances: first at 20-40 steps, subsequent 25-50 steps apart
-  let currentDist = 20 + Math.floor(rng() * 21) // 20-40
+  // Scale positions within the region size (margin = 10% of size)
+  const margin = regionSize * 0.1
+  const range = regionSize - 2 * margin
+
+  // Assign distances: first at 20-40 steps, subsequent 25-50 steps apart (scaled by difficulty)
+  let currentDist = Math.floor((20 + Math.floor(rng() * 21)) * difficultyMultiplier) // 20-40, scaled
   const landmarks: GeneratedLandmark[] = []
 
   for (const template of selected) {
+    const position = {
+      x: Math.round(margin + rng() * range),
+      y: Math.round(margin + rng() * range),
+    }
     landmarks.push({
       templateId: template.id,
       name: template.name,
@@ -80,18 +108,29 @@ export function generateLandmarks(
       distanceFromEntry: currentDist,
       hidden: false,
       isSecret: false,
+      explored: false,
+      position,
+      hasInn: template.hasInn,
+      hasStable: template.hasStable,
+      hasMailbox: template.hasMailbox,
+      hasNoticeBoard: template.hasNoticeBoard,
+      hasTransport: template.hasTransport,
+      hasCrafting: template.hasCrafting,
     })
-    currentDist += 25 + Math.floor(rng() * 26) // 25-50
+    currentDist += Math.floor((25 + Math.floor(rng() * 26)) * difficultyMultiplier) // 25-50, scaled
   }
 
   // Add 1 secret landmark per region (hidden until revealed)
   const secretTemplates = getSecretTemplatesForRegion(regionId)
   if (secretTemplates.length > 0) {
     const secretTemplate = secretTemplates[Math.floor(rng() * secretTemplates.length)]
-    // Place secret landmark between existing landmarks (roughly middle of region)
     const secretDist = landmarks.length > 1
       ? Math.floor((landmarks[0].distanceFromEntry + landmarks[landmarks.length - 1].distanceFromEntry) / 2) + Math.floor(rng() * 15)
       : 30 + Math.floor(rng() * 20)
+    const secretPosition = {
+      x: Math.round(margin + rng() * range),
+      y: Math.round(margin + rng() * range),
+    }
     landmarks.push({
       templateId: secretTemplate.id,
       name: secretTemplate.name,
@@ -103,8 +142,15 @@ export function generateLandmarks(
       distanceFromEntry: secretDist,
       hidden: true,
       isSecret: true,
+      explored: false,
+      position: secretPosition,
+      hasInn: secretTemplate.hasInn,
+      hasStable: secretTemplate.hasStable,
+      hasMailbox: secretTemplate.hasMailbox,
+      hasNoticeBoard: secretTemplate.hasNoticeBoard,
+      hasTransport: secretTemplate.hasTransport,
+      hasCrafting: secretTemplate.hasCrafting,
     })
-    // Re-sort by distance
     landmarks.sort((a, b) => a.distanceFromEntry - b.distanceFromEntry)
   }
 

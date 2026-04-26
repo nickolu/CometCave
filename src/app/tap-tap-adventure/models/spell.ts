@@ -79,6 +79,17 @@ export const ExplorationEffectTypeSchema = z.enum([
   'speed_boost',
   'shield',
   'reveal',
+  'cha_boost',
+  'faster_travel',
+  'auto_stealth',
+  'animal_affinity',
+  'disguise',
+  'instant_travel',
+  'loot_bonus',
+  'scouting',
+  'bypass_guards',
+  'see_weaknesses',
+  'price_reduction',
 ])
 export type ExplorationEffectType = z.infer<typeof ExplorationEffectTypeSchema>
 
@@ -86,8 +97,18 @@ export const ExplorationEffectSchema = z.object({
   type: ExplorationEffectTypeSchema,
   value: z.number(),
   description: z.string(),
+  duration: z.number().optional(),
 })
 export type ExplorationEffect = z.infer<typeof ExplorationEffectSchema>
+
+export const ActiveExplorationSpellSchema = z.object({
+  spellId: z.string(),
+  spellName: z.string(),
+  effectType: ExplorationEffectTypeSchema,
+  value: z.number().optional(),
+  stepsRemaining: z.number(),
+})
+export type ActiveExplorationSpell = z.infer<typeof ActiveExplorationSpellSchema>
 
 export const SpellSchema = z.object({
   id: z.string(),
@@ -102,5 +123,7 @@ export const SpellSchema = z.object({
   tags: z.array(z.string()),
   explorationEffect: ExplorationEffectSchema.optional(),
   explorationManaCost: z.number().optional(),
+  spellXp: z.number().optional(),
+  spellLevel: z.number().optional(),
 })
 export type Spell = z.infer<typeof SpellSchema>

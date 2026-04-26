@@ -29,21 +29,32 @@ export interface ResolveDecisionResponse {
   mountDamage?: number
   mountDied?: boolean
   decisionPoint?: FantasyDecisionPoint | null
+  shopEvent?: boolean
 }
 
 export function useResolveDecisionMutation() {
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, addStoryEvent, commit, setCombatState, setDecisionPoint, updateSelectedCharacter } = useGameStateBuilder()
+  const { addItem, addStoryEvent, commit, setCombatState, setDecisionPoint, setShopState, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
       decisionPoint,
       optionId,
       onSuccess,
+      onResourceDelta,
+      onResult,
     }: {
       decisionPoint: FantasyDecisionPoint
       optionId: string
       onSuccess?: () => void
+      onResourceDelta?: (delta: ResolveDecisionResponse['resourceDelta']) => void
+      onResult?: (result: {
+        outcomeDescription?: string
+        resourceDelta?: { gold?: number; reputation?: number }
+        rewardItems?: Item[]
+        mountDamage?: number
+        mountDied?: boolean
+      }) => void
     }) => {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
@@ -83,12 +94,21 @@ export function useResolveDecisionMutation() {
         const landmarkState = character.landmarkState
         if (landmarkState) {
           const landmarkName = landmarkState.exploringLandmarkName ?? 'the landmark'
+          // Mark the current landmark as explored
+          const exploredIndex = landmarkState.activeTargetIndex ?? 0
+          const updatedLandmarks = landmarkState.landmarks.map((lm, i) =>
+            i === exploredIndex ? { ...lm, explored: true } : lm
+          )
+          const newIndex = Math.min((landmarkState.activeTargetIndex ?? 0) + 1, landmarkState.landmarks.length)
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
+              landmarks: updatedLandmarks,
               exploring: false,
               explorationDepth: 0,
               exploringLandmarkName: undefined,
+              activeTargetIndex: newIndex,
+              nextLandmarkIndex: newIndex,
             },
           })
           const chosenOption = decisionPoint.options.find(o => o.id === optionId)
@@ -112,9 +132,9 @@ export function useResolveDecisionMutation() {
       if (optionId === 'bypass-landmark' || optionId.startsWith('bypass-toward-')) {
         const landmarkState = character.landmarkState
         if (landmarkState) {
-          const bypassedLandmark = landmarkState.landmarks[landmarkState.nextLandmarkIndex]
+          // Use activeTargetIndex (not nextLandmarkIndex) to identify the bypassed landmark
+          const bypassedLandmark = landmarkState.landmarks[landmarkState.activeTargetIndex ?? 0]
           const landmarkName = bypassedLandmark?.name ?? 'the landmark'
-          const newNextLandmarkIndex = landmarkState.nextLandmarkIndex + 1
 
           // Determine target based on which direction was chosen
           let newActiveTargetIndex: number
@@ -128,7 +148,7 @@ export function useResolveDecisionMutation() {
           } else {
             // Original bypass-landmark behavior: go to next target
             newActiveTargetIndex = Math.min(
-              newNextLandmarkIndex,
+              (landmarkState.activeTargetIndex ?? 0) + 1,
               landmarkState.landmarks.length
             )
           }
@@ -136,7 +156,7 @@ export function useResolveDecisionMutation() {
           updateSelectedCharacter({
             landmarkState: {
               ...landmarkState,
-              nextLandmarkIndex: newNextLandmarkIndex,
+              nextLandmarkIndex: newActiveTargetIndex, // keep in sync with activeTargetIndex
               activeTargetIndex: newActiveTargetIndex,
               exploring: false,
             },
@@ -314,6 +334,27 @@ export function useResolveDecisionMutation() {
         setDecisionPoint(data.decisionPoint)
       }
 
+      // If server returned a shopEvent flag, generate shop items and open the shop
+      if (data.shopEvent) {
+        soundEngine.playGold()
+        const currentCharacter = getSelectedCharacter()
+        const landmarkState = (currentCharacter ?? data.updatedCharacter)?.landmarkState
+        const townLandmark = landmarkState?.landmarks?.[landmarkState?.activeTargetIndex ?? 0]
+        const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character: currentCharacter ?? data.updatedCharacter,
+            townName: landmarkState?.exploringLandmarkName,
+            townDescription: townLandmark?.description,
+          }),
+        })
+        if (shopRes.ok) {
+          const shopData = await shopRes.json()
+          setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
+        }
+      }
+
       // Check if this event grants a mount (mount discovery events)
       const isMountEvent = optionId.includes('tame-') || optionId.includes('claim-mount')
       if (isMountEvent && data.outcomeDescription && !data.outcomeDescription.includes('bolts') && !data.outcomeDescription.includes("won't let you")) {
@@ -327,16 +368,22 @@ export function useResolveDecisionMutation() {
         newStoryEvent.outcomeDescription = `${data.outcomeDescription} You gained a ${mount.name}! ${mount.icon}${replacedText}`
       }
 
+      // Notify caller of resource changes so floating notifications can be shown
+      if (data.resourceDelta) {
+        onResourceDelta?.(data.resourceDelta)
+      }
+
       // If the chosen option triggers combat, start a combat encounter
       // Pass the event description so the enemy matches the narrative
       if (data.triggersCombat) {
         soundEngine.playBoss()
         const { gameState } = useGameStore.getState()
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+        const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true
+        // Secret boss: triggered when player chooses to fight the secret landmark guardian
         const isSecretBoss = optionId === 'fight-secret-boss'
-        const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true || isSecretBoss
         // Mini-boss: 5% chance on non-boss combat when distance > 100
-        const isMiniBoss = !isBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
+        const isMiniBoss = !isBoss && !isSecretBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -344,7 +391,7 @@ export function useResolveDecisionMutation() {
             character: data.updatedCharacter,
             storyEvents: gameState.storyEvents,
             eventContext: decisionPoint.prompt,
-            isBoss,
+            isBoss: isBoss || isSecretBoss,
             isMiniBoss,
             isSecretBoss,
           }),
@@ -357,6 +404,14 @@ export function useResolveDecisionMutation() {
           }
         }
       }
+
+      onResult?.({
+        outcomeDescription: newStoryEvent.outcomeDescription,
+        resourceDelta: data.resourceDelta,
+        rewardItems: rewardItems,
+        mountDamage: data.mountDamage,
+        mountDied: data.mountDied,
+      })
 
       commit()
       onSuccess?.()

@@ -57,9 +57,9 @@ describe('Weather Config', () => {
 })
 
 describe('rollWeather', () => {
-  it('starting_village always returns clear', () => {
+  it('hearthwood always returns clear', () => {
     for (let i = 0; i < 100; i++) {
-      expect(rollWeather('starting_village')).toBe('clear')
+      expect(rollWeather('hearthwood')).toBe('clear')
     }
   })
 

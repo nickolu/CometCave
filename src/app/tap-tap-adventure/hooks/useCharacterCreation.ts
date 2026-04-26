@@ -215,7 +215,13 @@ export function useCharacterCreation() {
       currentRegion: 'green_meadows',
       currentWeather: 'clear',
       visitedRegions: ['green_meadows'],
+      visitedTowns: [],
       factionReputations: {},
+      bounty: 0,
+      party: [],
+      mountRoster: [],
+      mailbox: [],
+      pendingReplies: [],
     }
     const maxMana = calculateMaxMana(tempChar)
 
@@ -226,6 +232,21 @@ export function useCharacterCreation() {
       if (claimed) {
         startingInventory.push(claimed)
       }
+    }
+
+    let startingEquipment: { weapon: Item | null; armor: null; accessory: null } = { weapon: null, armor: null, accessory: null }
+    if (classData?.startingWeapon) {
+      const weaponItem: Item = {
+        id: `starting-weapon-${Date.now()}`,
+        name: classData.startingWeapon.name,
+        description: classData.startingWeapon.description,
+        quantity: 1,
+        type: 'equipment',
+        effects: classData.startingWeapon.effects,
+        rarity: 'common',
+      }
+      startingInventory.push(weaponItem)
+      startingEquipment = { weapon: weaponItem, armor: null, accessory: null }
     }
 
     // Apply meta-progression bonuses from eternal upgrades
@@ -267,6 +288,7 @@ export function useCharacterCreation() {
       classSkillTree,
       unlockedTreeSkillIds: [],
       inventory: startingInventory,
+      equipment: startingEquipment,
       gold: boostedGold,
       difficultyMode: selectedDifficulty.id,
     }

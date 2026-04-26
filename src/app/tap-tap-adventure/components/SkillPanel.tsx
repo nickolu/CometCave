@@ -21,7 +21,7 @@ function getRequirementText(requirement: { type: string; value: string | number 
     case 'level':
       return `Reach level ${requirement.value}`
     case 'distance':
-      return `Walk ${requirement.value} steps`
+      return `Travel ${requirement.value} km`
     case 'combats_won':
       return `Win ${requirement.value} combats`
     default:

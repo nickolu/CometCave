@@ -20,6 +20,8 @@ const DialogueRequestSchema = z.object({
   })).optional(),
   disposition: z.number().optional(),
   exchangeCount: z.number().optional(),
+  hiddenLandmarkName: z.string().optional(),
+  hiddenLandmarkType: z.string().optional(),
 })
 
 function getOpenAI() {
@@ -49,6 +51,8 @@ export async function POST(req: NextRequest) {
       conversationHistory,
       disposition = 0,
       exchangeCount = 1,
+      hiddenLandmarkName,
+      hiddenLandmarkType,
     } = parseResult.data
 
     const charisma = characterCharisma ?? 5
@@ -68,7 +72,14 @@ export async function POST(req: NextRequest) {
           .join(', ')
       : 'balanced'
 
-    const systemPrompt = `You are ${npc.name}, ${npc.role} in ${regionName}. Personality: ${npc.personality}
+    const landmarkHint = hiddenLandmarkName
+      ? `\n\nHIDDEN LANDMARK: There is a hidden landmark nearby called "${hiddenLandmarkName}" (${hiddenLandmarkType ?? 'location'}). If the player has good rapport with you (disposition > 30) and it feels narratively natural, you may share a rumor or hint about this place. When you do, set "revealLandmark": true in your response. Only reveal it occasionally — not every conversation.`
+      : ''
+
+    const combatContext = npc.combatRole === 'combatant'
+      ? `\nYou are a skilled fighter. If the player has earned your trust (disposition > 30), you may occasionally express interest in joining their adventures.`
+      : `\nYou are a non-combatant — you don't fight. You serve through trade, lore, or guidance.`
+    const systemPrompt = `You are ${npc.name}, ${npc.role} in ${regionName}. Personality: ${npc.personality}${combatContext}
 
 RELATIONSHIP: The player's current disposition toward you is ${disposition} (${tier.label}). Adjust your warmth and willingness accordingly.
 
@@ -79,7 +90,7 @@ CONVERSATION: This is exchange ${exchangeCount}.
 Evaluate the player's message for intent. Choose one of: flatter, charm, threaten, inquire, offend, lie, bore, neutral.
 Your personality preferences (how much you like each intent): ${weightsDescription}
 
-Respond in character. Keep responses under 4 sentences.
+Respond in character. Keep responses under 4 sentences.${landmarkHint}
 
 RESPOND WITH ONLY THIS JSON (no markdown, no code fences):
 {
@@ -87,7 +98,8 @@ RESPOND WITH ONLY THIS JSON (no markdown, no code fences):
   "intent": "detected intent",
   "dispositionDelta": <integer from -10 to 8>,
   "conversationComplete": <true if exchange >= 3 and conversation feels naturally concluded, otherwise false>,
-  "reward": { "gold": <integer 0-25>, "reputation": <integer 0-5> } or null
+  "reward": { "gold": <integer 0-25>, "reputation": <integer 0-5> } or null,
+  "revealLandmark": <true if you are revealing the hidden landmark to the player, otherwise omit>
 }`
 
     const userMessage = message
@@ -117,6 +129,7 @@ RESPOND WITH ONLY THIS JSON (no markdown, no code fences):
         dispositionDelta?: number
         conversationComplete?: boolean
         reward?: { gold?: number; reputation?: number } | null
+        revealLandmark?: boolean
       } = {}
 
       try {
@@ -144,6 +157,7 @@ RESPOND WITH ONLY THIS JSON (no markdown, no code fences):
         dispositionDelta,
         conversationComplete: parsed.conversationComplete ?? false,
         reward,
+        revealLandmark: parsed.revealLandmark === true ? true : undefined,
       })
     } catch (err) {
       console.error('NPC dialogue LLM call failed', err)

@@ -38,7 +38,7 @@ function RunCard({ character }: { character: FantasyCharacter }) {
       <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
         <span>{character.class}</span>
         <span>·</span>
-        <span>{(character.distance ?? 0).toLocaleString()} steps</span>
+        <span>{(character.distance ?? 0).toLocaleString()} km</span>
         <span>·</span>
         <span>{(character.gold ?? 0).toLocaleString()} gold</span>
         <span>·</span>
@@ -55,7 +55,7 @@ function RunCard({ character }: { character: FantasyCharacter }) {
           <div className="flex justify-between">
             <span className="text-slate-500">Stats</span>
             <span className="text-slate-300">
-              STR {character.strength} · INT {character.intelligence} · LCK {character.luck}
+              STR {character.strength} · INT {character.intelligence} · LCK {character.luck} · CHA {character.charisma}
             </span>
           </div>
           <div className="flex justify-between">

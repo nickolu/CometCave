@@ -84,12 +84,26 @@ function GeneratedClassCard({
         <span className="text-xs text-amber-400">STR {generatedClass.statDistribution.strength}</span>
         <span className="text-xs text-sky-400">INT {generatedClass.statDistribution.intelligence}</span>
         <span className="text-xs text-emerald-400">LCK {generatedClass.statDistribution.luck}</span>
+        <span className="text-xs text-pink-400">CHA {generatedClass.statDistribution.charisma}</span>
       </div>
       <div className="flex gap-2 mt-1 flex-wrap">
         <span className="text-xs text-purple-400">{generatedClass.favoredSchool}</span>
         <span className="text-xs text-slate-500">{generatedClass.spellSlots} spell slots</span>
         <span className="text-xs text-slate-500">{generatedClass.manaMultiplier}x mana</span>
       </div>
+      {generatedClass.startingWeapon && (
+        <div className="mt-2 pt-2 border-t border-[#3a3c56]">
+          <div className="text-xs text-amber-300 font-medium">
+            {'⚔️ '}{generatedClass.startingWeapon.name}
+            <span className="ml-1 text-slate-500 font-normal">({generatedClass.startingWeapon.effects.range} range)</span>
+          </div>
+          <div className="text-xs text-slate-500 mt-0.5">
+            {generatedClass.startingWeapon.effects.strength ? `+${generatedClass.startingWeapon.effects.strength} STR` : ''}
+            {generatedClass.startingWeapon.effects.strength && generatedClass.startingWeapon.effects.intelligence ? ' · ' : ''}
+            {generatedClass.startingWeapon.effects.intelligence ? `+${generatedClass.startingWeapon.effects.intelligence} INT` : ''}
+          </div>
+        </div>
+      )}
       <div className="mt-2 pt-2 border-t border-[#3a3c56]">
         <div className="text-xs text-indigo-300 font-medium">{generatedClass.startingAbility.name}</div>
         <div className="text-xs text-slate-500 mt-0.5">{generatedClass.startingAbility.description}</div>

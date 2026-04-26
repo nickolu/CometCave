@@ -8,9 +8,9 @@
       "question": "What does film maker Dan Bell typically focus his films on?",
       "options": [
         "Action Films",
-        "Documentaries ",
+        "Abandoned Buildings and Dead Malls",
         "Historic Landmarks",
-        "Abandoned Buildings and Dead Malls"
+        "Documentaries "
       ],
       "difficulty": "easy",
       "category": "Celebrities",
@@ -22,9 +22,9 @@
       "question": "By which name is Ramon Estevez better known as?",
       "options": [
         "Ramon Sheen",
-        "Emilio Estevez",
         "Charlie Sheen",
-        "Martin Sheen"
+        "Martin Sheen",
+        "Emilio Estevez"
       ],
       "difficulty": "easy",
       "category": "Celebrities",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-18-2",
       "question": "Aubrey Graham is better known as",
       "options": [
-        "Travis Scott",
-        "Lil Wayne",
         "2 Chainz",
-        "Drake"
+        "Travis Scott",
+        "Drake",
+        "Lil Wayne"
       ],
       "difficulty": "easy",
       "category": "Celebrities",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-18-3",
       "question": "What is generally considered to be William Shakespeare's birth date?",
       "options": [
-        "July 4th, 1409",
-        "December 1st, 1750",
+        "April 23rd, 1564",
         "September 29th, 1699",
-        "April 23rd, 1564"
+        "July 4th, 1409",
+        "December 1st, 1750"
       ],
       "difficulty": "medium",
       "category": "Celebrities",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-18-4",
       "question": "What year did radio icon Howard Stern start a job at radio station WNBC?",
       "options": [
-        "1984",
+        "1982",
         "1995",
-        "1985",
-        "1982"
+        "1984",
+        "1985"
       ],
       "difficulty": "medium",
       "category": "Celebrities",
@@ -79,8 +79,8 @@
       "options": [
         "1970",
         "1960",
-        "1972",
-        "1962 "
+        "1962 ",
+        "1972"
       ],
       "difficulty": "hard",
       "category": "Celebrities",

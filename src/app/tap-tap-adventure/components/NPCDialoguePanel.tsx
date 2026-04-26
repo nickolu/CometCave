@@ -14,9 +14,14 @@ interface NPCDialoguePanelProps {
   reputation: number
   region: string
   characterCharisma: number
+  activeCharismaBonus?: number
   disposition: number
-  onEncounterUpdate: (dispositionDelta: number, reward?: { gold?: number; reputation?: number }) => void
+  hiddenLandmarkName?: string
+  hiddenLandmarkType?: string
+  onEncounterUpdate: (dispositionDelta: number, reward?: { gold?: number; reputation?: number }, revealLandmark?: boolean) => void
   onClose: () => void
+  onRecruit?: () => void
+  isRecruited?: boolean
 }
 
 export function NPCDialoguePanel({
@@ -27,10 +32,16 @@ export function NPCDialoguePanel({
   reputation,
   region,
   characterCharisma,
+  activeCharismaBonus = 0,
   disposition,
+  hiddenLandmarkName,
+  hiddenLandmarkType,
   onEncounterUpdate,
   onClose,
+  onRecruit,
+  isRecruited = false,
 }: NPCDialoguePanelProps) {
+  const effectiveCharisma = characterCharisma + activeCharismaBonus
   const {
     isLoading,
     conversationLog,
@@ -75,8 +86,11 @@ export function NPCDialoguePanel({
         reputation,
         region,
         disposition,
+        hiddenLandmarkName,
+        hiddenLandmarkType,
+        characterCharisma: effectiveCharisma,
       }).then(result => {
-        onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward)
+        onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward, result?.revealLandmark)
         if (result?.reward) {
           const parts: string[] = []
           if (result.reward.gold) parts.push(`+${result.reward.gold} gold`)
@@ -105,9 +119,12 @@ export function NPCDialoguePanel({
       region,
       message: trimmed,
       disposition,
+      hiddenLandmarkName,
+      hiddenLandmarkType,
+      characterCharisma: effectiveCharisma,
     })
 
-    onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward)
+    onEncounterUpdate(result?.dispositionDelta ?? 0, result?.reward, result?.revealLandmark)
 
     if (result?.reward) {
       const parts: string[] = []
@@ -136,10 +153,24 @@ export function NPCDialoguePanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end gap-0.5">
             <span className={`text-[10px] font-semibold uppercase tracking-wide ${badgeColor}`}>
               {tier.label}
             </span>
+            {/* Disposition progress bar */}
+            <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  tier.tier === 'hostile' ? 'bg-red-500' :
+                  tier.tier === 'unfriendly' ? 'bg-orange-400' :
+                  tier.tier === 'neutral' ? 'bg-slate-400' :
+                  tier.tier === 'friendly' ? 'bg-green-400' :
+                  tier.tier === 'trusted' ? 'bg-blue-400' :
+                  'bg-amber-400'
+                }`}
+                style={{ width: `${Math.max(5, Math.min(100, ((disposition - tier.min) / (tier.max - tier.min)) * 100))}%` }}
+              />
+            </div>
             <span className="text-[9px] text-slate-500">({disposition > 0 ? '+' : ''}{disposition})</span>
           </div>
           <button
@@ -225,6 +256,14 @@ export function NPCDialoguePanel({
 
       {/* Action row */}
       <div className="flex gap-2">
+        {npc.combatRole === 'combatant' && !isRecruited && disposition >= 20 && onRecruit && (
+          <Button
+            className="flex-1 text-sm border border-green-700 bg-green-800 hover:bg-green-700 text-white py-2 rounded"
+            onClick={onRecruit}
+          >
+            Join my party
+          </Button>
+        )}
         <Button
           className="flex-1 text-sm border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white py-2 rounded"
           onClick={onClose}

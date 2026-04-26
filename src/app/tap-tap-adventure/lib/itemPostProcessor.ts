@@ -53,6 +53,17 @@ function inferRarity(item: Item): Item['rarity'] {
 }
 
 function inferItemTypeAndEffectsInternal(item: Item): Item {
+  const nameLower = item.name.toLowerCase()
+
+  // Detect map/chart/atlas items: force consumable with revealLandmark
+  if (matchesAny(nameLower, ['map', 'chart', 'atlas'])) {
+    return {
+      ...item,
+      type: 'consumable',
+      effects: { ...item.effects, revealLandmark: true },
+    }
+  }
+
   // Already fully specified
   if (item.type === 'consumable' && item.effects && Object.keys(item.effects).length > 0) {
     return item
@@ -63,7 +74,7 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     return item
   }
 
-  const name = item.name.toLowerCase()
+  const name = nameLower
 
   // Detect spell scrolls by name pattern (when no type set and has spell data)
   if (!item.type || item.type === 'misc') {
@@ -128,11 +139,11 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     }
   }
 
-  // Charms / Amulets (consumable by default, but equipment if explicitly typed)
+  // Charms / Amulets — wearable accessories
   if (matchesAny(name, ['charm', 'amulet', 'talisman', 'trinket', 'lucky'])) {
     return {
       ...item,
-      type: item.type === 'equipment' ? 'equipment' : 'consumable',
+      type: 'equipment',
       effects: item.effects ?? { luck: 2 },
     }
   }
@@ -186,6 +197,15 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     }
   }
 
+  // Trade goods: valuable items meant to be sold
+  if (matchesAny(name, ['pelt', 'hide', 'fur', 'silk', 'spice', 'ore', 'ingot', 'pearl', 'ivory', 'amber', 'relic', 'artifact', 'trophy', 'idol', 'figurine', 'tapestry', 'cloth', 'wine', 'perfume', 'incense'])) {
+    return {
+      ...item,
+      type: 'trade_good',
+      effects: item.effects ?? { gold: 20 },
+    }
+  }
+
   // Has effects but missing type
   if (item.effects && Object.keys(item.effects).length > 0) {
     return { ...item, type: 'consumable' }
@@ -197,6 +217,11 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
       ...item,
       effects: { heal: 5, luck: 1 },
     }
+  }
+
+  // Reclassify misc items as trade goods (they have no specific use)
+  if (item.type === 'misc') {
+    return { ...item, type: 'trade_good', effects: item.effects ?? { gold: 5 } }
   }
 
   return item

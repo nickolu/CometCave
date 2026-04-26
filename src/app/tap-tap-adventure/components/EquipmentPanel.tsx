@@ -30,9 +30,9 @@ const SLOT_ICONS: Record<EquipmentSlotType, string> = {
   accessory: 'LCK',
 }
 
-const COMPARE_STATS = ['strength', 'intelligence', 'luck'] as const
+const COMPARE_STATS = ['strength', 'intelligence', 'luck', 'charisma'] as const
 
-/** Sum the total stat value of an item across STR/INT/LCK */
+/** Sum the total stat value of an item across STR/INT/LCK/CHA */
 function itemStatTotal(item: Item | null): number {
   if (!item?.effects) return 0
   return COMPARE_STATS.reduce((sum, key) => sum + (item.effects?.[key] ?? 0), 0)
@@ -115,6 +115,11 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                           return (
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <div className={`font-bold text-sm truncate ${item.rarity && item.rarity !== 'common' ? rarityStyle.text : 'text-white'}`}>{item.name}</div>
+                              {item.enchantmentLevel && item.enchantmentLevel > 0 && (
+                                <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
+                                  +{item.enchantmentLevel}
+                                </span>
+                              )}
                               {item.rarity && item.rarity !== 'common' && (
                                 <span className={`text-[10px] px-1.5 py-0.5 ${rarityStyle.bg} ${rarityStyle.text} rounded`}>
                                   {rarityStyle.label}
@@ -139,6 +144,16 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
                         {item.onHitEffect && (
                           <div className="text-xs text-orange-400">
                             On Hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                          </div>
+                        )}
+                        {item.passiveEffect && (
+                          <div className="text-xs text-cyan-400">
+                            Passive: {item.passiveEffect.description}
+                          </div>
+                        )}
+                        {item.grantsSpell && (
+                          <div className="text-xs text-purple-400">
+                            Grants: {item.grantsSpell.spellName} ({item.grantsSpell.usesPerCombat}x/combat)
                           </div>
                         )}
                         {item.drawback && (

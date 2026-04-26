@@ -14,6 +14,7 @@ import {
   CombatPlayerState,
   CombatState,
   EnemyTelegraph,
+  PartyMemberCombatState,
   StatusEffect,
   TurnPhase,
 } from '@/app/tap-tap-adventure/models/combat'
@@ -110,6 +111,35 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     ? getMountFreeMoves(character.activeMount.rarity)
     : 0
 
+  // Gather passive effects from equipped items and apply drawback stat penalties
+  const equippedItems = [equipment.weapon, equipment.armor, equipment.accessory].filter(Boolean) as Item[]
+  let bonusCritChance = 0
+  let dodgeChance = 0
+  const initialStatusEffects: StatusEffect[] = []
+
+  for (const item of equippedItems) {
+    // Passive effects
+    if (item.passiveEffect) {
+      const pe = item.passiveEffect
+      if (pe.type === 'crit_bonus') bonusCritChance += pe.value
+      if (pe.type === 'dodge') dodgeChance += pe.value
+      if (pe.type === 'thorns') {
+        // Inject thorns as a persistent status effect (turnsRemaining = large number)
+        initialStatusEffects.push({
+          id: `passive-thorns-${item.id}`,
+          name: 'Thorns',
+          type: 'thorns',
+          value: pe.value,
+          turnsRemaining: 9999,
+          source: 'player',
+        })
+      }
+    }
+
+    // Note: drawback stat penalties are already applied to character stats on equip,
+    // so we do not re-apply them here to avoid double-counting.
+  }
+
   return {
     hp: currentHp,
     maxHp,
@@ -129,7 +159,7 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     activeSpellEffects: [],
     spellTagsUsed: [],
     shield: character.explorationShield ?? 0,
-    statusEffects: [],
+    statusEffects: initialStatusEffects,
     ap: MAX_AP,
     maxAp: MAX_AP,
     turnActions: [],
@@ -143,6 +173,10 @@ export function initializePlayerCombatState(character: FantasyCharacter): Combat
     mercenaryMaxHp: character.activeMercenary
       ? getMercenaryMaxHp(character.activeMercenary.rarity)
       : undefined,
+    bonusCritChance: bonusCritChance > 0 ? bonusCritChance : undefined,
+    dodgeChance: dodgeChance > 0 ? dodgeChance : undefined,
+    stamina: 6,
+    maxStamina: 6,
   }
 }
 
@@ -558,6 +592,62 @@ function applyMercenaryAutoAttack(
 }
 
 /**
+ * Party member auto-attacks: each non-KO party member attacks the enemy.
+ * Simple v1: attack only, defend if HP < 30%.
+ */
+export function applyPartyMemberAttacks(
+  partyStates: PartyMemberCombatState[],
+  enemy: CombatEnemy,
+  turnNumber: number
+): { enemy: CombatEnemy; partyStates: PartyMemberCombatState[]; logs: CombatLogEntry[]; killedEnemy: boolean } {
+  const logs: CombatLogEntry[] = []
+  let updatedEnemy = { ...enemy }
+  const updatedParty = partyStates.map(m => ({ ...m }))
+  let killedEnemy = false
+
+  for (const member of updatedParty) {
+    if (member.isKnockedOut || killedEnemy) continue
+
+    // If HP < 30%, defend instead of attacking
+    if (member.hp / member.maxHp < 0.3) {
+      logs.push({
+        turn: turnNumber,
+        actor: 'party_member' as const,
+        action: 'defend',
+        description: `${member.icon} ${member.name} takes a defensive stance.`,
+      })
+      continue
+    }
+
+    // Attack: strength-based damage with variance
+    const baseDmg = member.attack
+    const raw = baseDmg - updatedEnemy.defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
+    const damage = Math.max(1, Math.round(raw))
+    updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - damage) }
+
+    logs.push({
+      turn: turnNumber,
+      actor: 'party_member' as const,
+      action: 'attack',
+      damage,
+      description: `${member.icon} ${member.name} attacks ${enemy.name} for ${damage} damage!`,
+    })
+
+    if (updatedEnemy.hp <= 0) {
+      killedEnemy = true
+      logs.push({
+        turn: turnNumber,
+        actor: 'party_member' as const,
+        action: 'victory',
+        description: `${member.name} delivers the killing blow on ${enemy.name}!`,
+      })
+    }
+  }
+
+  return { enemy: updatedEnemy, partyStates: updatedParty, logs, killedEnemy }
+}
+
+/**
  * Boss phase change: when a boss drops below 50% HP, boost their stats.
  * For the final boss, supports 3 phases triggered at 66% and 33% HP.
  */
@@ -762,6 +852,8 @@ export function processPlayerAction(
   let mountDied = false
   const bossAlreadyPhased = isBoss && !combatState.isFinalBoss ? enemy.name.includes('(Enraged)') : false
   let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
+  let partyMemberStates = combatState.partyMemberStates ? combatState.partyMemberStates.map(m => ({ ...m })) : undefined
+  let additionalEnemies = combatState.additionalEnemies ? combatState.additionalEnemies.map(e => ({ ...e })) : undefined
   // Only propagate combatDistance in returns if the original state had it set
   // This ensures backward compatibility with combat states created before range was added
   let rangeSystemActive = combatState.combatDistance !== undefined
@@ -779,6 +871,33 @@ export function processPlayerAction(
   }
   if (!playerState.turnActions) {
     playerState.turnActions = []
+  }
+
+  // Switch target is free (0 AP) — just swap primary and additional enemy
+  if (action.action === 'switch_target' && action.itemId !== undefined && additionalEnemies?.length) {
+    const targetIdx = parseInt(action.itemId, 10)
+    if (targetIdx >= 0 && targetIdx < additionalEnemies.length && additionalEnemies[targetIdx].hp > 0) {
+      const old = enemy
+      enemy = additionalEnemies[targetIdx]
+      additionalEnemies[targetIdx] = old
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'player' as const,
+        action: 'switch_target',
+        description: `You switch your focus to ${enemy.name}!`,
+      })
+      return {
+        combatState: {
+          ...combatState,
+          enemy,
+          playerState,
+          combatLog: [...combatLog, ...newLogs],
+          turnPhase: 'player',
+          partyMemberStates,
+          additionalEnemies,
+        },
+      }
+    }
   }
 
   // Check AP cost for the requested action
@@ -799,6 +918,8 @@ export function processPlayerAction(
         combatLog: [...combatLog, ...newLogs],
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
+        partyMemberStates,
+        additionalEnemies,
       },
     }
   }
@@ -857,6 +978,8 @@ export function processPlayerAction(
             isBoss,
             ...(rangeSystemActive ? { combatDistance } : {}),
             turnPhase: 'player',
+            partyMemberStates,
+            additionalEnemies,
           },
           consumedItemId,
         }
@@ -874,7 +997,8 @@ export function processPlayerAction(
         const { damage: rawAtkDmg, elementalMultiplier, isCritical } = calculatePlayerDamage(
           playerState,
           effectiveEnemy,
-          character
+          character,
+          playerState.bonusCritChance ?? 0
         )
         const wRangeMult = rangeSystemActive
           ? getWeaponRangeMultiplier(
@@ -892,6 +1016,21 @@ export function processPlayerAction(
           enemy = onHitResult.enemy
           playerState = onHitResult.playerState
           newLogs.push(...onHitResult.logs)
+        }
+        // Apply lifesteal_passive from equipped items
+        {
+          const equippedItems = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+          for (const eqItem of equippedItems) {
+            if (eqItem.passiveEffect?.type === 'lifesteal_passive' && damage > 0) {
+              const healAmt = Math.max(1, Math.floor(damage * eqItem.passiveEffect.value))
+              const oldHp = playerState.hp
+              playerState = { ...playerState, hp: Math.min(playerState.maxHp, playerState.hp + healAmt) }
+              const actualHeal = playerState.hp - oldHp
+              if (actualHeal > 0) {
+                newLogs.push({ turn: turnNumber, actor: 'player', action: 'heal', description: `Lifesteal: restored ${actualHeal} HP!` })
+              }
+            }
+          }
         }
         const comboText =
           playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
@@ -933,6 +1072,21 @@ export function processPlayerAction(
           enemy = onHitResult.enemy
           playerState = onHitResult.playerState
           newLogs.push(...onHitResult.logs)
+        }
+        // Apply lifesteal_passive from equipped items
+        {
+          const equippedItems = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+          for (const eqItem of equippedItems) {
+            if (eqItem.passiveEffect?.type === 'lifesteal_passive' && damage > 0) {
+              const healAmt = Math.max(1, Math.floor(damage * eqItem.passiveEffect.value))
+              const oldHp = playerState.hp
+              playerState = { ...playerState, hp: Math.min(playerState.maxHp, playerState.hp + healAmt) }
+              const actualHeal = playerState.hp - oldHp
+              if (actualHeal > 0) {
+                newLogs.push({ turn: turnNumber, actor: 'player', action: 'heal', description: `Lifesteal: restored ${actualHeal} HP!` })
+              }
+            }
+          }
         }
         const comboText = playerState.comboCount > 1 ? ` (${playerState.comboCount}x combo!)` : ''
         const elemText = getEffectivenessText(elementalMultiplier)
@@ -1023,6 +1177,7 @@ export function processPlayerAction(
               enemyTelegraph: null,
               ...(rangeSystemActive ? { combatDistance } : {}),
               turnPhase: 'enemy_done',
+              additionalEnemies,
             },
           }
         }
@@ -1196,11 +1351,19 @@ export function processPlayerAction(
             playerState.ap += apCost
             playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
             playerState.mountMovesRemaining = (playerState.mountMovesRemaining ?? 1) - 1
+          } else if ((playerState.stamina ?? 6) <= 0) {
+            // Out of stamina — can't move without mount
+            newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: "You're too exhausted to move!" })
+            playerState.ap += apCost
+            playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+            break
+          } else {
+            playerState.stamina = (playerState.stamina ?? 6) - 1
           }
           combatDistance = combatDistance === 'far' ? 'mid' : 'close'
           const moveDesc = usedMountMove
             ? `Your mount carries you to ${combatDistance} range!`
-            : `You close the distance to ${combatDistance} range!`
+            : `You close the distance to ${combatDistance} range! (Stamina: ${playerState.stamina}/${playerState.maxStamina ?? 6})`
           newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_closer', description: moveDesc })
         }
         break
@@ -1218,11 +1381,18 @@ export function processPlayerAction(
             playerState.ap += apCost
             playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
             playerState.mountMovesRemaining = (playerState.mountMovesRemaining ?? 1) - 1
+          } else if ((playerState.stamina ?? 6) <= 0) {
+            newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: "You're too exhausted to move!" })
+            playerState.ap += apCost
+            playerState.turnActions = playerState.turnActions?.slice(0, -1) ?? []
+            break
+          } else {
+            playerState.stamina = (playerState.stamina ?? 6) - 1
           }
           combatDistance = combatDistance === 'close' ? 'mid' : 'far'
           const moveDesc = usedMountMove
             ? `Your mount swiftly carries you back to ${combatDistance} range!`
-            : `You move back to ${combatDistance} range!`
+            : `You move back to ${combatDistance} range! (Stamina: ${playerState.stamina}/${playerState.maxStamina ?? 6})`
           newLogs.push({ turn: turnNumber, actor: 'player', action: 'move_away', description: moveDesc })
         }
         break
@@ -1243,13 +1413,44 @@ export function processPlayerAction(
 
   // Check victory
   if (enemy.hp <= 0) {
-    status = 'victory'
+    const defeatedName = enemy.name
     newLogs.push({
       turn: turnNumber,
       actor: 'player',
       action: 'victory',
-      description: `You defeated ${enemy.name}!`,
+      description: `You defeated ${defeatedName}!`,
     })
+    // If additional enemies remain alive, auto-switch to next target
+    if (additionalEnemies?.some(e => e.hp > 0)) {
+      const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
+      const nextEnemy = additionalEnemies[nextIdx]
+      const remainingAdditional = additionalEnemies.filter((_, i) => i !== nextIdx)
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'player' as const,
+        action: 'switch_target',
+        description: `${defeatedName} is defeated! You focus on ${nextEnemy.name}!`,
+      })
+      const nextTelegraph = generateEnemyTelegraph(nextEnemy, turnNumber, !!isBoss)
+      return {
+        combatState: {
+          ...combatState,
+          enemy: nextEnemy,
+          playerState: tickBuffs(playerState),
+          turnNumber,
+          combatLog: [...combatLog, ...newLogs],
+          status: 'active',
+          enemyTelegraph: nextTelegraph,
+          isBoss,
+          ...(rangeSystemActive ? { combatDistance } : {}),
+          turnPhase: 'enemy_done',
+          partyMemberStates,
+          additionalEnemies: remainingAdditional.length > 0 ? remainingAdditional : undefined,
+        },
+        consumedItemId,
+      }
+    }
+    status = 'victory'
     return {
       combatState: {
         ...combatState,
@@ -1261,6 +1462,7 @@ export function processPlayerAction(
         enemyTelegraph: null,
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'enemy_done',
+        additionalEnemies: undefined,
       },
       consumedItemId,
     }
@@ -1280,6 +1482,8 @@ export function processPlayerAction(
         isBoss,
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
+        partyMemberStates,
+        additionalEnemies,
       },
       consumedItemId,
     }
@@ -1334,7 +1538,13 @@ export function processPlayerAction(
       ? undefined
       : result.logs.find(l => l.damage && l.damage > 0)
     let actualDamageDealt = 0
-    if (enemyDmgLog && enemyDmgLog.damage) {
+    // Dodge check: if player has dodge chance, they may evade the attack entirely
+    const playerDodgeChance = playerState.dodgeChance ?? 0
+    const playerDodged = playerDodgeChance > 0 && Math.random() < playerDodgeChance
+    if (playerDodged && enemyDmgLog) {
+      newLogs.push({ turn: turnNumber, actor: 'player', action: 'dodge', description: 'You nimbly dodge the attack!' })
+    }
+    if (!playerDodged && enemyDmgLog && enemyDmgLog.damage) {
       const originalDmg = enemyDmgLog.damage
       playerState.hp = Math.min(playerState.maxHp, playerState.hp + originalDmg)
 
@@ -1413,14 +1623,23 @@ export function processPlayerAction(
     // Enemy status ability: chance to inflict status effect on player
     if (enemy.statusAbility && actualDamageDealt > 0) {
       if (Math.random() < enemy.statusAbility.chance) {
-        const statusEffect = createStatusEffectFromAbility(
-          enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
-        )
-        playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
-        newLogs.push({
-          turn: turnNumber, actor: 'enemy', action: 'status_effect',
-          description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
-        })
+        // Check poison/burn immunity from passive effects
+        const equippedItemsForImmunity = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+        const hasPoisonImmunity = equippedItemsForImmunity.some(i => i.passiveEffect?.type === 'poison_immunity')
+        const hasBurnImmunity = equippedItemsForImmunity.some(i => i.passiveEffect?.type === 'burn_immunity')
+        const isImmune = (enemy.statusAbility.type === 'poison' && hasPoisonImmunity) || (enemy.statusAbility.type === 'burn' && hasBurnImmunity)
+        if (isImmune) {
+          newLogs.push({ turn: turnNumber, actor: 'player', action: 'status_effect', description: `You are immune to ${enemy.statusAbility.type}!` })
+        } else {
+          const statusEffect = createStatusEffectFromAbility(
+            enemy.statusAbility.type, enemy.statusAbility.value, enemy.statusAbility.duration, 'enemy'
+          )
+          playerState = { ...playerState, statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect) }
+          newLogs.push({
+            turn: turnNumber, actor: 'enemy', action: 'status_effect',
+            description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+          })
+        }
       }
     }
   } else {
@@ -1452,6 +1671,13 @@ export function processPlayerAction(
           description: `${enemy.name} swings wildly and misses in the poor visibility!`,
         })
       } else {
+      // Dodge check for fallback attack
+      const fbPlayerDodgeChance = playerState.dodgeChance ?? 0
+      const fbPlayerDodged = fbPlayerDodgeChance > 0 && Math.random() < fbPlayerDodgeChance
+      if (fbPlayerDodged) {
+        newLogs.push({ turn: turnNumber, actor: 'player', action: 'dodge', description: 'You nimbly dodge the attack!' })
+      }
+      if (!fbPlayerDodged) {
       const enemyDmg = Math.max(1, Math.round(enemyRawDmg * fbRangeMult))
       const dmgReduction = getActiveDamageReduction(playerState)
       const reducedDmg = Math.max(1, Math.round(enemyDmg * (1 - dmgReduction / 100)))
@@ -1528,24 +1754,34 @@ export function processPlayerAction(
       // Enemy status ability: chance to inflict status effect on player
       if (enemy.statusAbility) {
         if (Math.random() < enemy.statusAbility.chance) {
-          const statusEffect = createStatusEffectFromAbility(
-            enemy.statusAbility.type,
-            enemy.statusAbility.value,
-            enemy.statusAbility.duration,
-            'enemy'
-          )
-          playerState = {
-            ...playerState,
-            statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect),
+          // Check poison/burn immunity from passive effects
+          const fbEquippedItemsForImmunity = [character.equipment?.weapon, character.equipment?.armor, character.equipment?.accessory].filter(Boolean) as Item[]
+          const fbHasPoisonImmunity = fbEquippedItemsForImmunity.some(i => i.passiveEffect?.type === 'poison_immunity')
+          const fbHasBurnImmunity = fbEquippedItemsForImmunity.some(i => i.passiveEffect?.type === 'burn_immunity')
+          const fbIsImmune = (enemy.statusAbility.type === 'poison' && fbHasPoisonImmunity) || (enemy.statusAbility.type === 'burn' && fbHasBurnImmunity)
+          if (fbIsImmune) {
+            newLogs.push({ turn: turnNumber, actor: 'player', action: 'status_effect', description: `You are immune to ${enemy.statusAbility.type}!` })
+          } else {
+            const statusEffect = createStatusEffectFromAbility(
+              enemy.statusAbility.type,
+              enemy.statusAbility.value,
+              enemy.statusAbility.duration,
+              'enemy'
+            )
+            playerState = {
+              ...playerState,
+              statusEffects: applyStatusEffect(playerState.statusEffects ?? [], statusEffect),
+            }
+            newLogs.push({
+              turn: turnNumber,
+              actor: 'enemy',
+              action: 'status_effect',
+              description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
+            })
           }
-          newLogs.push({
-            turn: turnNumber,
-            actor: 'enemy',
-            action: 'status_effect',
-            description: `${enemy.name} inflicts ${statusEffect.name} on you!`,
-          })
         }
       }
+      } // end if (!fbPlayerDodged)
       } // end else (enemyRawDmg > 0)
     }
   }
@@ -1607,6 +1843,119 @@ export function processPlayerAction(
     }
   }
 
+  // Enemy occasionally strikes a party member (separate from main attack)
+  if (status === 'active' && partyMemberStates?.length) {
+    const aliveMembers = partyMemberStates.filter(m => !m.isKnockedOut)
+    if (aliveMembers.length > 0 && Math.random() < 0.25) {
+      const targetIdx = Math.floor(Math.random() * aliveMembers.length)
+      const target = aliveMembers[targetIdx]
+      const strikeDmg = Math.max(1, Math.floor(enemy.attack * 0.4) - target.defense)
+      const memberIdx = partyMemberStates.findIndex(m => m.memberId === target.memberId)
+      const newHp = Math.max(0, partyMemberStates[memberIdx].hp - strikeDmg)
+      const isKnockedOut = newHp <= 0
+      partyMemberStates[memberIdx] = {
+        ...partyMemberStates[memberIdx],
+        hp: newHp,
+        isKnockedOut,
+      }
+      newLogs.push({
+        turn: turnNumber,
+        actor: 'enemy' as const,
+        action: 'attack',
+        damage: strikeDmg,
+        description: `${enemy.name} lashes out at ${target.name} for ${strikeDmg} damage!${isKnockedOut ? ` ${target.name} is knocked out!` : ''}`,
+      })
+    }
+  }
+
+  // Party member auto-attacks fire at end of each full turn
+  if (status === 'active' && partyMemberStates?.length) {
+    const partyResult = applyPartyMemberAttacks(partyMemberStates, enemy, turnNumber)
+    enemy = partyResult.enemy
+    partyMemberStates = partyResult.partyStates
+    newLogs.push(...partyResult.logs)
+    if (partyResult.killedEnemy) {
+      // If additional enemies remain, auto-switch target instead of declaring victory
+      if (additionalEnemies?.some(e => e.hp > 0)) {
+        const defeatedName = enemy.name
+        const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
+        enemy = additionalEnemies[nextIdx]
+        additionalEnemies = additionalEnemies.filter((_, i) => i !== nextIdx)
+        newLogs.push({
+          turn: turnNumber, actor: 'party_member' as const, action: 'switch_target',
+          description: `${defeatedName} is defeated! ${enemy.name} remains!`,
+        })
+      } else {
+        status = 'victory'
+      }
+    }
+  }
+
+  // Party members also strike additional enemies (round-robin assignment)
+  if (status === 'active' && additionalEnemies?.length && partyMemberStates?.length) {
+    const aliveParty = partyMemberStates.filter(m => !m.isKnockedOut)
+    for (let i = 0; i < additionalEnemies.length; i++) {
+      if (additionalEnemies[i].hp <= 0) continue
+      const assignedMember = aliveParty[i % aliveParty.length]
+      if (!assignedMember) continue
+      const baseDmg = assignedMember.attack
+      const raw = baseDmg - additionalEnemies[i].defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
+      const damage = Math.max(1, Math.round(raw))
+      additionalEnemies[i] = { ...additionalEnemies[i], hp: Math.max(0, additionalEnemies[i].hp - damage) }
+      newLogs.push({
+        turn: turnNumber, actor: 'party_member' as const, action: 'attack', damage,
+        description: `${assignedMember.icon} ${assignedMember.name} attacks ${additionalEnemies[i].name} for ${damage} damage!`,
+      })
+      if (additionalEnemies[i].hp <= 0) {
+        newLogs.push({
+          turn: turnNumber, actor: 'party_member' as const, action: 'victory',
+          description: `${assignedMember.name} defeats ${additionalEnemies[i].name}!`,
+        })
+      }
+    }
+  }
+
+  // Additional enemies auto-attack player/party at end of turn
+  if (status === 'active' && additionalEnemies?.length) {
+    for (let i = 0; i < additionalEnemies.length; i++) {
+      const addEnemy = additionalEnemies[i]
+      if (addEnemy.hp <= 0) continue
+
+      // 40% chance to target a party member, 60% player
+      const aliveMembers = partyMemberStates?.filter(m => !m.isKnockedOut) ?? []
+      const shouldTargetMember = aliveMembers.length > 0 && Math.random() < 0.4
+
+      if (shouldTargetMember) {
+        const tIdx = Math.floor(Math.random() * aliveMembers.length)
+        const target = aliveMembers[tIdx]
+        const dmg = Math.max(1, addEnemy.attack - target.defense)
+        const mIdx = partyMemberStates!.findIndex(m => m.memberId === target.memberId)
+        const newHp = Math.max(0, partyMemberStates![mIdx].hp - dmg)
+        partyMemberStates![mIdx] = { ...partyMemberStates![mIdx], hp: newHp, isKnockedOut: newHp <= 0 }
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy' as const, action: 'attack', damage: dmg,
+          description: `${addEnemy.name} attacks ${target.name} for ${dmg} damage!${newHp <= 0 ? ` ${target.name} is knocked out!` : ''}`,
+        })
+      } else {
+        // Attack player
+        const dmg = addEnemy.attack - playerState.defense * 0.5
+        const finalDmg = playerState.isDefending ? Math.max(1, Math.floor(dmg * 0.5)) : Math.max(1, Math.round(dmg))
+        playerState = { ...playerState, hp: Math.max(0, playerState.hp - finalDmg) }
+        newLogs.push({
+          turn: turnNumber, actor: 'enemy' as const, action: 'attack', damage: finalDmg,
+          description: `${addEnemy.name} attacks you for ${finalDmg} damage!`,
+        })
+        if (playerState.hp <= 0) {
+          status = 'defeat'
+          newLogs.push({
+            turn: turnNumber, actor: 'enemy' as const, action: 'defeat',
+            description: `You have been defeated by ${addEnemy.name}...`,
+          })
+        }
+      }
+    }
+  }
+
   // Tick buffs at end of full turn
   playerState = tickBuffs(playerState)
 
@@ -1617,6 +1966,14 @@ export function processPlayerAction(
 
   // Tick spell cooldowns at end of full turn
   playerState = tickSpellCooldowns(playerState)
+
+  // Stamina regen: +1 if the player did not move this turn (check BEFORE clearing turnActions)
+  const movedThisTurn = (playerState.turnActions ?? []).some(
+    a => a === 'move_closer' || a === 'move_away'
+  )
+  if (!movedThisTurn && (playerState.stamina ?? 6) < (playerState.maxStamina ?? 6)) {
+    playerState.stamina = Math.min((playerState.maxStamina ?? 6), (playerState.stamina ?? 6) + 1)
+  }
 
   // Reset AP for next turn, clear turn actions, clear defending
   playerState.ap = playerState.maxAp ?? MAX_AP
@@ -1673,6 +2030,19 @@ export function processPlayerAction(
     }
   }
 
+  // If primary enemy was defeated (e.g. by status effects) but additional enemies remain, auto-switch
+  if (status === 'victory' && additionalEnemies?.some(e => e.hp > 0)) {
+    const defeatedName = enemy.name
+    const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
+    enemy = additionalEnemies[nextIdx]
+    additionalEnemies = additionalEnemies.filter((_, i) => i !== nextIdx)
+    status = 'active'
+    newLogs.push({
+      turn: turnNumber, actor: 'player' as const, action: 'switch_target',
+      description: `${defeatedName} is defeated! ${enemy.name} remains!`,
+    })
+  }
+
   // Generate telegraph for enemy's NEXT action
   const nextTelegraph = status === 'active'
     ? generateEnemyTelegraph(enemy, turnNumber, !!isBoss)
@@ -1690,6 +2060,8 @@ export function processPlayerAction(
       isBoss,
       ...(rangeSystemActive ? { combatDistance } : {}),
       turnPhase: 'enemy_done',
+      partyMemberStates,
+      additionalEnemies: additionalEnemies && additionalEnemies.length > 0 ? additionalEnemies : undefined,
     },
     consumedItemId,
     mountDied,
@@ -1714,12 +2086,22 @@ export function getCombatRewards(
   const lootBonus = getSkillBonus(skills, 'loot_chance')
   const diffMods = getDifficultyModifiers(character.difficultyMode)
   const regionMult = regionMultiplier ?? 1
-  const gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+  let gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+
+  // Add gold from defeated additional enemies
+  if (combatState.additionalEnemies?.length) {
+    for (const addEnemy of combatState.additionalEnemies) {
+      if (addEnemy.hp <= 0) {
+        gold += Math.round(addEnemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+      }
+    }
+  }
 
   const loot: Item[] = []
   if (enemy.lootTable) {
     for (const item of enemy.lootTable) {
-      const baseDropChance = combatState.isBoss ? 1.0 : 0.3 + character.luck * 0.03
+      // Secret bosses guarantee 100% item drop; regular bosses also guarantee; others use luck-based chance
+      const baseDropChance = (combatState.isBoss || combatState.isSecretBoss) ? 1.0 : 0.3 + character.luck * 0.03
       const dropChance = Math.min(1, (baseDropChance + lootBonus.percentage / 100) * diffMods.lootChanceMultiplier)
       if (Math.random() < dropChance) {
         loot.push(item)
@@ -1728,6 +2110,7 @@ export function getCombatRewards(
   }
 
   // Assign rarity to loot items that don't have one
+  // Secret bosses: elite rarity weights (20% rare, 50% epic, 30% legendary)
   const rarityWeights = combatState.isSecretBoss
     ? { common: 0, uncommon: 0, rare: 0.2, epic: 0.5, legendary: 0.3 }
     : combatState.isBoss
