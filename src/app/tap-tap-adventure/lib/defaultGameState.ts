@@ -22,6 +22,7 @@ export const defaultGameState: GameState = {
   dailyChallenges: null,
   metaProgression: null,
   runSummary: null,
+  runHistory: [],
   pendingLootCelebration: null,
   newItemIds: [],
 }

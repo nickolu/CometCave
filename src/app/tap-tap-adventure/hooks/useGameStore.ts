@@ -14,7 +14,7 @@ import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
 import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
-import { createMainQuest } from '@/app/tap-tap-adventure/lib/mainQuestManager'
+import { createMainQuest, CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { getUpgradeById } from '@/app/tap-tap-adventure/config/eternalUpgrades'
 import { getCampBonuses as computeCampBonuses, getBuildingById, CampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 import { getSpellConfigForCharacter } from '@/app/tap-tap-adventure/config/characterOptions'
@@ -37,6 +37,7 @@ import {
   GameState,
   Item,
   MetaProgressionState,
+  RunHistoryEntry,
   RunSummaryData,
   ShopState,
 } from '@/app/tap-tap-adventure/models/types'
@@ -205,6 +206,7 @@ export interface GameStore {
   getCampBonuses: () => CampBonuses
   setRunSummary: (summary: RunSummaryData) => void
   clearRunSummary: () => void
+  recordRun: (entry: RunHistoryEntry) => void
   purchaseFactionGear: (factionId: FactionId, gearId: string) => boolean
   craftItem: (recipeId: string) => { message: string; success: boolean } | null
   enchantItem: (slot: 'weapon' | 'armor' | 'accessory') => { message: string; success: boolean } | null
@@ -1389,6 +1391,27 @@ export const useGameStore = create<GameStore>()(
               heirloom,
             }
 
+            // Record run history for retirement
+            const retirementEntry: RunHistoryEntry = {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              characterName: characterSnapshot.name,
+              characterClass: characterSnapshot.class,
+              level: characterSnapshot.level,
+              distance: characterSnapshot.distance ?? 0,
+              gold: characterSnapshot.gold,
+              reputation: characterSnapshot.reputation ?? 0,
+              regionsConquered: (characterSnapshot.visitedRegions ?? []).filter((r: string) =>
+                CONQUERABLE_REGIONS.includes(r)
+              ).length,
+              reason: 'retirement',
+              essenceEarned: essence,
+              endedAt: new Date().toISOString(),
+              difficultyMode: characterSnapshot.difficultyMode,
+            }
+            const history = state.gameState.runHistory ?? []
+            const updated = [retirementEntry, ...history]
+            state.gameState.runHistory = updated.slice(0, 50)
+
             // Deselect if this was the active character
             if (state.gameState.selectedCharacterId === characterId) {
               state.gameState.selectedCharacterId = null
@@ -1489,6 +1512,15 @@ export const useGameStore = create<GameStore>()(
         set(
           produce((state: GameStore) => {
             state.gameState.runSummary = null
+          })
+        )
+      },
+      recordRun: (entry: RunHistoryEntry) => {
+        set(
+          produce((state: GameStore) => {
+            const history = state.gameState.runHistory ?? []
+            const updated = [entry, ...history]
+            state.gameState.runHistory = updated.slice(0, 50)
           })
         )
       },
@@ -2112,7 +2144,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'fantasy-tycoon-storage', // localStorage key (kept for backward compat)
-      version: 39,
+      version: 40,
       migrate: (persistedState: unknown) => {
         const state = persistedState as GameStore
         if (state?.gameState && !('combatState' in state.gameState)) {
@@ -2341,6 +2373,10 @@ export const useGameStore = create<GameStore>()(
         }
         if (state?.gameState && !('newItemIds' in state.gameState)) {
           (state.gameState as GameState).newItemIds = []
+        }
+        // v40: Add runHistory
+        if (state?.gameState && !('runHistory' in state.gameState)) {
+          (state.gameState as GameState).runHistory = []
         }
         return state
       },
