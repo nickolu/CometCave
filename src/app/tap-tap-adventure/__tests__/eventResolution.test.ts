@@ -59,4 +59,52 @@ describe('Decision Resolution', () => {
     // 0.2 + (2*0.05) + (1*0.1) + (5*0.001 reputation modifier) = 0.405
     expect(calculateEffectiveProbability(option, baseChar)).toBeCloseTo(0.405)
   })
+
+  it('grants a companion when party has room', () => {
+    const effects = {
+      grantCompanion: {
+        name: 'Test Companion',
+        description: 'A test ally',
+        icon: '🧑',
+        dailyCost: 0,
+        rarity: 'common' as const,
+      },
+    }
+    const updated = applyEffects(baseChar, effects)
+    expect(updated.party).toBeDefined()
+    expect(updated.party!.length).toBe(1)
+    expect(updated.party![0].name).toBe('Test Companion')
+  })
+
+  it('does not grant companion when party is full', () => {
+    const fullPartyChar = {
+      ...baseChar,
+      party: Array.from({ length: 3 }, (_, i) => ({
+        id: `member-${i}`,
+        name: `Member ${i}`,
+        description: 'test',
+        icon: '⚔️',
+        className: 'Warrior',
+        level: 1,
+        hp: 50,
+        maxHp: 50,
+        stats: { strength: 5, intelligence: 5, luck: 5, charisma: 5 },
+        equipment: { weapon: null, armor: null, accessory: null },
+        dailyCost: 0,
+        recruitCost: 0,
+        rarity: 'common' as const,
+        relationship: 0,
+        role: 'combatant' as const,
+      })),
+    }
+    const effects = {
+      grantCompanion: {
+        name: 'Extra Companion',
+        dailyCost: 0,
+        rarity: 'common' as const,
+      },
+    }
+    const updated = applyEffects(fullPartyChar as any, effects)
+    expect((updated.party ?? []).length).toBe(3) // Still 3, not 4
+  })
 })

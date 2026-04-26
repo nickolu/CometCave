@@ -43,6 +43,16 @@ export interface LLMEventOption {
     revealLandmark?: boolean
     hpChange?: number
     mpChange?: number
+    grantCompanion?: {
+      name: string
+      description?: string
+      icon?: string
+      level?: number
+      dailyCost?: number
+      rarity?: 'common' | 'uncommon' | 'rare' | 'legendary'
+      isTemporary?: boolean
+      turnsRemaining?: number
+    }
   }
   failureDescription: string
   failureEffects: {
@@ -55,6 +65,16 @@ export interface LLMEventOption {
     revealLandmark?: boolean
     hpChange?: number
     mpChange?: number
+    grantCompanion?: {
+      name: string
+      description?: string
+      icon?: string
+      level?: number
+      dailyCost?: number
+      rarity?: 'common' | 'uncommon' | 'rare' | 'legendary'
+      isTemporary?: boolean
+      turnsRemaining?: number
+    }
   }
   triggersCombat?: boolean
 }
@@ -2640,6 +2660,52 @@ function getDefaultEvents(regionId?: string): LLMGeneratedEvent[] {
         { id: `trade-${s}`, text: 'Browse their wares while they work', successProbability: 1.0,
           successDescription: 'Nothing catches your eye, but you exchange pleasantries.',
           successEffects: { reputation: 1 },
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
+    // Companion-granting events — uncommon/rare positive events
+    {
+      id: `fb-traveling-healer-companion-${s}`,
+      description: 'A wandering healer steps out from a side path, her herb satchel bulging. She looks you over with practiced eyes. "You seem like someone worth following for a while. I could use a traveling companion, and you could use someone to patch you up."',
+      options: [
+        { id: `accept-healer-companion-${s}`, text: 'Accept her offer to join your party', successProbability: 0.85,
+          successDescription: 'She clasps your hand warmly. "Then let\'s travel together a while." A skilled healer joins your party.',
+          successEffects: { reputation: 2, grantCompanion: { name: 'Traveling Healer', description: 'A wandering healer who offers to accompany you for a while.', icon: '🧑‍⚕️', dailyCost: 0, rarity: 'common' } },
+          failureDescription: 'She nods respectfully. "Another time, then. Safe travels."',
+          failureEffects: {} },
+        { id: `decline-healer-companion-${s}`, text: 'Decline politely', successProbability: 1.0,
+          successDescription: 'She smiles. "No worries. May the road treat you kindly." She heads off down the path.',
+          successEffects: { reputation: 1 },
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-mercenary-companion-${s}`,
+      description: 'A battle-worn soldier sits on a roadside rock, contract papers at his feet. He looks up as you pass. "Between jobs. My last employer\'s outfit collapsed. I\'m good in a fight — willing to tag along for a modest wage if you\'re heading somewhere interesting."',
+      options: [
+        { id: `hire-mercenary-${s}`, text: 'Take on the idle mercenary (1 gold/day)', successProbability: 0.8,
+          successDescription: 'He scoops up his gear with practiced efficiency. "Pleasure doing business." An experienced fighter joins your party.',
+          successEffects: { reputation: 1, grantCompanion: { name: 'Mercenary Without a Contract', description: 'An idle soldier looking for work. Reliable in a fight.', icon: '⚔️', dailyCost: 1, rarity: 'uncommon' } },
+          failureDescription: 'He looks you over again and shakes his head. "Actually, I think I\'ll wait for a better offer."',
+          failureEffects: {} },
+        { id: `pass-mercenary-${s}`, text: 'Keep walking', successProbability: 1.0,
+          successDescription: 'You continue on your way. The mercenary tips a salute and goes back to waiting.',
+          successEffects: {},
+          failureDescription: '', failureEffects: {} },
+      ],
+    },
+    {
+      id: `fb-rescued-prisoner-companion-${s}`,
+      description: 'You discover a bedraggled figure chained to a post at the side of a long-abandoned road — left behind, it seems, by raiders who took everything else. They look up at you with hollow but determined eyes. "Free me. Whatever you need after that, I will do."',
+      options: [
+        { id: `free-prisoner-${s}`, text: 'Break their chains and free them', successProbability: 0.9,
+          successDescription: 'The chains snap. They straighten up and grip your arm fiercely. "My life is yours until this debt is repaid." A grateful companion pledges loyalty to your cause.',
+          successEffects: { reputation: 5, grantCompanion: { name: 'Rescued Prisoner', description: 'Someone you freed who now pledges their loyalty to your cause.', icon: '🧑', dailyCost: 0, rarity: 'rare' } },
+          failureDescription: 'The chains resist your tools — you cannot free them today, but you leave what supplies you can spare.',
+          failureEffects: { reputation: 2 } },
+        { id: `leave-prisoner-${s}`, text: 'Pass by — you cannot get involved', successProbability: 1.0,
+          successDescription: 'You walk on with a heavy heart. Their eyes follow you until you round the bend.',
+          successEffects: { reputation: -2 },
           failureDescription: '', failureEffects: {} },
       ],
     },
