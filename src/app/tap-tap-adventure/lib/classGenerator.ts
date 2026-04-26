@@ -285,44 +285,44 @@ const EFFECT_TEMPLATES: Record<string, EffectTemplate[]> = {
   ],
 }
 
-const WEAPON_TEMPLATES: Record<string, { name: string; effects: { strength?: number; intelligence?: number; range: 'close' | 'mid' | 'far' } }[]> = {
+const WEAPON_TEMPLATES: Record<string, { name: string; description: string; effects: { strength?: number; intelligence?: number; range: 'close' | 'mid' | 'far' } }[]> = {
   martial: [
-    { name: 'Iron Longsword', effects: { strength: 3, range: 'close' } },
-    { name: 'Battle Axe', effects: { strength: 3, range: 'close' } },
-    { name: 'War Hammer', effects: { strength: 3, range: 'close' } },
+    { name: 'Iron Sword', description: 'A sturdy iron blade, well-balanced and reliable.', effects: { strength: 2, range: 'close' } },
+    { name: 'Wooden Club', description: 'A heavy wooden club, simple but effective.', effects: { strength: 2, range: 'close' } },
+    { name: 'Simple Axe', description: 'A basic hand axe with a sharp edge.', effects: { strength: 2, range: 'close' } },
   ],
   arcane: [
-    { name: 'Crystal Wand', effects: { intelligence: 3, range: 'far' } },
-    { name: 'Arcane Scepter', effects: { intelligence: 3, range: 'far' } },
-    { name: 'Mystic Orb', effects: { intelligence: 3, range: 'far' } },
+    { name: 'Apprentice Wand', description: 'A plain wooden wand, standard issue for novice mages.', effects: { intelligence: 2, range: 'far' } },
+    { name: 'Oak Staff', description: 'A tall oak staff, worn smooth from use.', effects: { intelligence: 2, range: 'far' } },
+    { name: 'Simple Scepter', description: 'A basic scepter topped with a dull crystal.', effects: { intelligence: 2, range: 'far' } },
   ],
   divine: [
-    { name: 'Holy Mace', effects: { strength: 2, intelligence: 1, range: 'close' } },
-    { name: 'Blessed Flail', effects: { strength: 2, intelligence: 1, range: 'close' } },
-    { name: 'Sacred Hammer', effects: { strength: 2, intelligence: 1, range: 'close' } },
+    { name: 'Wooden Mace', description: 'A sturdy mace with an iron-banded head.', effects: { strength: 1, intelligence: 1, range: 'close' } },
+    { name: 'Iron Flail', description: 'A simple flail with a weighted chain.', effects: { strength: 1, intelligence: 1, range: 'close' } },
+    { name: 'Plain Hammer', description: 'A well-worn hammer, practical and dependable.', effects: { strength: 1, intelligence: 1, range: 'close' } },
   ],
   primal: [
-    { name: 'Hunting Spear', effects: { strength: 2, intelligence: 1, range: 'mid' } },
-    { name: 'Oak Quarterstaff', effects: { strength: 2, intelligence: 1, range: 'mid' } },
-    { name: 'Bone Club', effects: { strength: 2, intelligence: 1, range: 'mid' } },
+    { name: 'Wooden Spear', description: 'A sharpened spear with a fire-hardened tip.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
+    { name: 'Hunting Bow', description: 'A simple shortbow made from flexible wood.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
+    { name: 'Quarterstaff', description: 'A solid wooden staff, good for keeping distance.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
   ],
   shadow: [
-    { name: 'Shadow Daggers', effects: { strength: 3, range: 'close' } },
-    { name: 'Venomed Blade', effects: { strength: 3, range: 'close' } },
-    { name: 'Stiletto', effects: { strength: 3, range: 'close' } },
+    { name: 'Worn Dagger', description: 'A short dagger with a leather-wrapped grip.', effects: { strength: 1, range: 'close' } },
+    { name: 'Rusty Shortsword', description: 'A battered shortsword, still sharp enough.', effects: { strength: 1, range: 'close' } },
+    { name: 'Chipped Knife', description: 'A utility knife pressed into service as a weapon.', effects: { strength: 1, range: 'close' } },
   ],
   psionic: [
-    { name: 'Mind Crystal', effects: { intelligence: 3, range: 'far' } },
-    { name: 'Psi Focus', effects: { intelligence: 3, range: 'far' } },
-    { name: 'Thought Shard', effects: { intelligence: 3, range: 'far' } },
+    { name: 'Crystal Focus', description: 'A rough crystal that hums faintly when held.', effects: { intelligence: 1, range: 'far' } },
+    { name: 'Simple Rod', description: 'A plain metal rod used to channel mental energy.', effects: { intelligence: 1, range: 'far' } },
+    { name: 'Glass Orb', description: 'A cloudy glass sphere, slightly warm to the touch.', effects: { intelligence: 1, range: 'far' } },
   ],
 }
 
-export function generateStartingWeapon(style: string, modifier: string): Omit<StartingWeapon, 'name' | 'description'> {
+export function generateStartingWeapon(style: string, modifier: string): StartingWeapon {
   const category = getStyleCategory(style)
   const templates = WEAPON_TEMPLATES[category] ?? WEAPON_TEMPLATES.martial
   const template = templates[Math.floor(Math.random() * templates.length)]
-  return { effects: template.effects }
+  return { name: template.name, description: template.description, effects: template.effects }
 }
 
 /**
@@ -446,10 +446,8 @@ const classNamingFunctions: OpenAI.Chat.Completions.ChatCompletionTool[] = [
                 description: { type: 'string', description: '1-2 sentence flavor text that matches the actual mechanics' },
                 abilityName: { type: 'string', description: 'Creative name for the starting ability' },
                 abilityDescription: { type: 'string', description: 'Short description of the ability that accurately reflects its effects' },
-                weaponName: { type: 'string', description: 'Creative name for the starting weapon that matches the class theme' },
-                weaponDescription: { type: 'string', description: 'One sentence describing the starting weapon' },
               },
-              required: ['name', 'description', 'abilityName', 'abilityDescription', 'weaponName', 'weaponDescription'],
+              required: ['name', 'description', 'abilityName', 'abilityDescription'],
             },
             minItems: 5,
             maxItems: 5,
@@ -495,7 +493,6 @@ export async function generateClassFromSeed(
 
   const prompt = `Given these 5 fantasy character classes with pre-built mechanics, generate a creative name for each class and a 1-2 sentence description.
 Also name each starting ability and describe what it does.
-Also name the starting weapon and describe it in one sentence. The weapon should match the class theme.
 
 DO NOT invent new mechanics. Each description must accurately reflect the effects listed.
 
@@ -520,8 +517,6 @@ ${classDescriptions}`
     description: string
     abilityName: string
     abilityDescription: string
-    weaponName: string
-    weaponDescription: string
   }[]
 
   // Step 3: Combine mechanical data with LLM-generated names
@@ -543,11 +538,7 @@ ${classDescriptions}`
         description: named.abilityDescription,
         ...mech.ability,
       },
-      startingWeapon: {
-        name: named.weaponName,
-        description: named.weaponDescription,
-        ...mech.weapon,
-      },
+      startingWeapon: mech.weapon,
     }
   })
 
