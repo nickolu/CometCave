@@ -766,35 +766,119 @@ export async function moveForwardService(
 
   let event: FantasyStoryEvent | null = null
   let decisionPoint: FantasyDecisionPoint | null = null
+  let socialEncounter: { npc: typeof import('@/app/tap-tap-adventure/config/npcs').ENCOUNTER_NPCS[0]; scenario: string } | undefined
 
   try {
     const context = buildStoryContext(character, storyEvents)
     const llmEvents = await generateLLMEvents(character, context)
     const llmEvent = llmEvents[0]
 
-    event = {
-      id: llmEvent.id,
-      type: 'decision_point',
-      characterId: character.id,
-      locationId: character.locationId,
-      timestamp: new Date().toISOString(),
-    }
-    decisionPoint = {
-      id: `decision-${llmEvent.id}`,
-      eventId: llmEvent.id,
-      prompt: llmEvent.description,
-      options: llmEvent.options.map(opt => ({
-        id: opt.id,
-        text: opt.text,
-        successProbability: opt.successProbability,
-        successDescription: opt.successDescription,
-        successEffects: opt.successEffects,
-        failureDescription: opt.failureDescription,
-        failureEffects: opt.failureEffects,
-        resultDescription: opt.successDescription,
-        triggersCombat: opt.triggersCombat,
-      })),
-      resolved: false,
+    // Detect NPC-talk options and upgrade to social encounter
+    const talkPatterns = /\b(talk|speak|approach|greet|chat|converse|ask|introduce)\b/i
+    const talkOption = llmEvent.options.find(opt => talkPatterns.test(opt.text))
+
+    if (talkOption) {
+      // Extract an NPC name from the event description or option text
+      // Try to find a capitalized name pattern in the description
+      const nameMatch = llmEvent.description.match(/(?:meet|encounter|see|find|spot|notice)\s+(?:a\s+)?(?:lone\s+|old\s+|young\s+|mysterious\s+|friendly\s+|weary\s+|retired\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i)
+      const npcName = nameMatch?.[1] ?? 'Stranger'
+
+      // Create a dynamic NPC for the social encounter
+      const dynamicNPC = {
+        id: `dynamic-npc-${Date.now()}`,
+        name: npcName,
+        role: 'Traveler',
+        description: llmEvent.description.slice(0, 200),
+        regionId: character.currentRegion ?? 'green_meadows',
+        personality: 'neutral',
+        icon: '🧑',
+        greeting: `You approach ${npcName}.`,
+        combatRole: 'non-combatant' as const,
+        topics: ['local area', 'rumors', 'trade'],
+      }
+
+      // Replace the talk option with engage-conversation and add walk-away
+      const upgradedOptions = [
+        {
+          id: 'engage-conversation',
+          text: `💬 Talk to ${npcName}`,
+          successProbability: 1.0,
+          successDescription: `You approach ${npcName} to have a conversation.`,
+          successEffects: {},
+          failureDescription: '',
+          failureEffects: {},
+          resultDescription: `You approach ${npcName}.`,
+        },
+        {
+          id: 'walk-away',
+          text: '🚶 Continue on your way',
+          successProbability: 1.0,
+          successDescription: 'You nod politely and continue walking.',
+          successEffects: {},
+          failureDescription: '',
+          failureEffects: {},
+          resultDescription: 'You continue on your way.',
+        },
+        // Keep non-talk options from the LLM (attack, ignore, etc.)
+        ...llmEvent.options
+          .filter(opt => opt.id !== talkOption.id && !talkPatterns.test(opt.text))
+          .map(opt => ({
+            id: opt.id,
+            text: opt.text,
+            successProbability: opt.successProbability,
+            successDescription: opt.successDescription,
+            successEffects: opt.successEffects,
+            failureDescription: opt.failureDescription,
+            failureEffects: opt.failureEffects,
+            resultDescription: opt.successDescription,
+            triggersCombat: opt.triggersCombat,
+          })),
+      ]
+
+      event = {
+        id: llmEvent.id,
+        type: 'social_encounter',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      }
+      decisionPoint = {
+        id: `decision-${llmEvent.id}`,
+        eventId: llmEvent.id,
+        prompt: llmEvent.description,
+        options: upgradedOptions,
+        resolved: false,
+      }
+      socialEncounter = {
+        npc: dynamicNPC,
+        scenario: llmEvent.description,
+      }
+    } else {
+      // Normal non-NPC event
+      event = {
+        id: llmEvent.id,
+        type: 'decision_point',
+        characterId: character.id,
+        locationId: character.locationId,
+        timestamp: new Date().toISOString(),
+      }
+      decisionPoint = {
+        id: `decision-${llmEvent.id}`,
+        eventId: llmEvent.id,
+        prompt: llmEvent.description,
+        options: llmEvent.options.map(opt => ({
+          id: opt.id,
+          text: opt.text,
+          successProbability: opt.successProbability,
+          successDescription: opt.successDescription,
+          successEffects: opt.successEffects,
+          failureDescription: opt.failureDescription,
+          failureEffects: opt.failureEffects,
+          resultDescription: opt.successDescription,
+          triggersCombat: opt.triggersCombat,
+        })),
+        resolved: false,
+      }
     }
   } catch (err) {
     console.error('moveForwardService failed', err)
@@ -813,6 +897,7 @@ export async function moveForwardService(
     },
     event,
     decisionPoint,
+    socialEncounter,
     landmarkProgress,
   }
 }
