@@ -315,6 +315,7 @@ export function useResolveDecisionMutation() {
           ? `You chose to fight: ${data.selectedOptionText}`
           : (data.outcomeDescription ?? ''),
         resourceDelta: data.resourceDelta,
+        rewardItems: rewardItems.length > 0 ? rewardItems : undefined,
       }
 
       // Append mount damage/death messages to outcome description
