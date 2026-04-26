@@ -245,7 +245,7 @@ export function useCharacterCreation() {
         effects: classData.startingWeapon.effects,
         rarity: 'common',
       }
-      startingInventory.push(weaponItem)
+      // Equip the weapon — don't add to inventory (equipped items are separate)
       startingEquipment = { weapon: weaponItem, armor: null, accessory: null }
     }
 
