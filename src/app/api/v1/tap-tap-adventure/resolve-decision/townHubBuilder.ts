@@ -91,6 +91,16 @@ export function buildTownHubDecisionPoint(params: {
       failureEffects: {},
       resultDescription: 'You check available transport.',
     })
+    options.push({
+      id: 'visit-waypoints',
+      text: '🗺️ Waypoints',
+      successProbability: 1.0,
+      successDescription: 'You check the waypoint board for fast travel destinations.',
+      successEffects: {},
+      failureDescription: '',
+      failureEffects: {},
+      resultDescription: 'You check the waypoint board.',
+    })
   }
 
   if (hasStable) {

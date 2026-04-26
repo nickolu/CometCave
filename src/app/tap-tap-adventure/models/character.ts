@@ -96,6 +96,12 @@ export const FantasyCharacterSchema = z.object({
   currentRegion: z.string().optional().default('green_meadows'),
   currentWeather: z.string().optional().default('clear'),
   visitedRegions: z.array(z.string()).optional(),
+  visitedTowns: z.array(z.object({
+    name: z.string(),
+    icon: z.string(),
+    regionId: z.string(),
+    landmarkId: z.string(),
+  })).optional().default([]),
   mainQuest: MainQuestSchema.optional(),
   campState: CampStateSchema.optional(),
   factionReputations: z.record(z.string(), z.number()).optional().default({}),
