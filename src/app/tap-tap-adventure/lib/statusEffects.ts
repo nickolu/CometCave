@@ -98,6 +98,11 @@ export function tickStatusEffects(
         logs.push({ turn: turnNumber, actor: 'player', action: 'status_effect', damage: effect.value, description: `${updatedEnemy.name} takes ${effect.value} burn damage! Their defense is reduced by 20%.` })
         break
       }
+      case 'bleed': {
+        updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - effect.value) }
+        logs.push({ turn: turnNumber, actor: 'player', action: 'status_effect', damage: effect.value, description: `${updatedEnemy.name} takes ${effect.value} bleed damage!` })
+        break
+      }
     }
   }
 
@@ -168,6 +173,15 @@ export function processReflect(
   return { reflectedDamage, updatedEffects: removeExpiredEffects(updatedEffects) }
 }
 
+export function getFreezeMultiplier(statusEffects: StatusEffect[] | undefined): number {
+  return hasStatusEffect(statusEffects, 'freeze') ? 0.5 : 1
+}
+
+export function checkStunSkip(statusEffects: StatusEffect[] | undefined): boolean {
+  if (!hasStatusEffect(statusEffects, 'stun')) return false
+  return true // stun always prevents action (unlike fear which is 50%)
+}
+
 export function createStatusEffectFromAbility(
   type: StatusEffectType,
   value: number,
@@ -183,6 +197,9 @@ export function createStatusEffectFromAbility(
     berserk: 'Berserk',
     fear: 'Feared',
     reflect: 'Reflecting',
+    freeze: 'Frozen',
+    stun: 'Stunned',
+    bleed: 'Bleeding',
   }
 
   return {

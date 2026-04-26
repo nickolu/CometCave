@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-23-0",
       "question": "Who is the colossal titan in \"Attack On Titan\"?",
       "options": [
-        "Reiner",
-        "Sasha",
+        "Bertolt Hoover",
         "Eren",
-        "Bertolt Hoover"
+        "Sasha",
+        "Reiner"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Japanese Anime & Manga",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-23-1",
       "question": "Which anime heavily features music from the genre \"Eurobeat\"?",
       "options": [
-        "Wangan Midnight",
         "Kino no Tabi",
         "Cowboy Bebop",
-        "Initial D"
+        "Initial D",
+        "Wangan Midnight"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Japanese Anime & Manga",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-23-2",
       "question": "Who is the main character with yellow hair in the anime Naruto?",
       "options": [
-        "Ten Ten",
-        "Sasuke",
+        "Naruto",
         "Kakashi",
-        "Naruto"
+        "Ten Ten",
+        "Sasuke"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Japanese Anime & Manga",
@@ -50,9 +50,9 @@
       "question": "Which studio made Cowboy Bebop?",
       "options": [
         "Bones",
-        "Pierriot",
+        "Sunrise",
         "Madhouse",
-        "Sunrise"
+        "Pierriot"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Japanese Anime & Manga",
@@ -64,9 +64,9 @@
       "question": "What year did the popular Vocaloid: Hatsune Miku come out?",
       "options": [
         "2008",
-        "2010",
+        "2007",
         "2000",
-        "2007"
+        "2010"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Japanese Anime & Manga",
@@ -78,9 +78,9 @@
       "question": "Who is One Punch Man voiced by in the Japanese version.",
       "options": [
         "Zach Aguilar",
-        "Kaito Ishikawa",
         "Max Mittelman ",
-        "Makoto Furukawa"
+        "Makoto Furukawa",
+        "Kaito Ishikawa"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Japanese Anime & Manga",

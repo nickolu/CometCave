@@ -15,6 +15,7 @@ export interface CampBonuses {
   reputationGainBonusPct: number
   mountUpkeepDiscountPct: number
   combatSuccessBonus: number
+  partyUpkeepDiscountPct: number
 }
 
 export const BASE_BUILDINGS: BaseBuilding[] = [
@@ -72,6 +73,15 @@ export const BASE_BUILDINGS: BaseBuilding[] = [
     costPerLevel: [100, 250, 600],
     effectDescription: '+5% combat success per level',
   },
+  {
+    id: 'barracks',
+    name: 'Barracks',
+    description: 'Quarters for your companions, reducing their daily upkeep.',
+    icon: '\uD83C\uDFE0',
+    maxLevel: 3,
+    costPerLevel: [100, 275, 650],
+    effectDescription: '-15% party member upkeep per level',
+  },
 ]
 
 export function getBuildingById(id: string): BaseBuilding | undefined {
@@ -86,6 +96,7 @@ export function getCampBonuses(buildingLevels: Record<string, number>): CampBonu
     reputationGainBonusPct: 0,
     mountUpkeepDiscountPct: 0,
     combatSuccessBonus: 0,
+    partyUpkeepDiscountPct: 0,
   }
 
   for (const building of BASE_BUILDINGS) {
@@ -110,6 +121,9 @@ export function getCampBonuses(buildingLevels: Record<string, number>): CampBonu
         break
       case 'watchtower':
         bonuses.combatSuccessBonus += 0.05 * level
+        break
+      case 'barracks':
+        bonuses.partyUpkeepDiscountPct += 15 * level
         break
     }
   }

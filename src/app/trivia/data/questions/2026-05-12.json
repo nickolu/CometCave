@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-12-0",
       "question": "What was the cause of Marilyn Monroes suicide?",
       "options": [
-        "House Fire",
-        "Gunshot",
+        "Drug Overdose",
         "Knife Attack",
-        "Drug Overdose"
+        "Gunshot",
+        "House Fire"
       ],
       "difficulty": "easy",
       "category": "Celebrities",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-12-1",
       "question": "What does film maker Dan Bell typically focus his films on?",
       "options": [
-        "Action Films",
-        "Documentaries ",
+        "Abandoned Buildings and Dead Malls",
         "Historic Landmarks",
-        "Abandoned Buildings and Dead Malls"
+        "Documentaries ",
+        "Action Films"
       ],
       "difficulty": "easy",
       "category": "Celebrities",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-12-2",
       "question": "By what name is Carlos Estevez better known? ",
       "options": [
-        "Ricky Martin",
         "Bruno Mars",
         "Joaquin Phoenix",
-        "Charlie Sheen"
+        "Charlie Sheen",
+        "Ricky Martin"
       ],
       "difficulty": "easy",
       "category": "Celebrities",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-12-3",
       "question": "Who is \"James Rolfe\" better known as?",
       "options": [
-        "TotalBiscuit",
-        "PewDiePie",
+        "The Angry Video Game Nerd",
         "PeanutButterGamer",
-        "The Angry Video Game Nerd"
+        "TotalBiscuit",
+        "PewDiePie"
       ],
       "difficulty": "medium",
       "category": "Celebrities",
@@ -64,9 +64,9 @@
       "question": "How much weight did Chris Pratt lose for his role as Star-Lord in \"Guardians of the Galaxy\"?",
       "options": [
         "50 lbs",
-        "70 lbs",
+        "60 lbs",
         "30 lbs",
-        "60 lbs"
+        "70 lbs"
       ],
       "difficulty": "medium",
       "category": "Celebrities",
@@ -78,9 +78,9 @@
       "question": "Billy Herrington is from which US state?",
       "options": [
         "Arizona",
-        "California",
+        "New York",
         "Georgia",
-        "New York"
+        "California"
       ],
       "difficulty": "hard",
       "category": "Celebrities",

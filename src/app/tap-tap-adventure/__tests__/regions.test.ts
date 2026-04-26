@@ -11,7 +11,7 @@ import {
 describe('Region definitions', () => {
   it('should define all expected regions', () => {
     const expectedIds = [
-      'starting_village',
+      'hearthwood',
       'green_meadows',
       'dark_forest',
       'crystal_caves',
@@ -55,18 +55,20 @@ describe('Region definitions', () => {
   })
 
   it('should have correct difficulty multipliers', () => {
-    expect(REGIONS.starting_village.difficultyMultiplier).toBe(0.5)
+    expect(REGIONS.hearthwood.difficultyMultiplier).toBe(0.5)
     expect(REGIONS.green_meadows.difficultyMultiplier).toBe(0.8)
     expect(REGIONS.dark_forest.difficultyMultiplier).toBe(1.0)
-    expect(REGIONS.crystal_caves.difficultyMultiplier).toBe(1.0)
+    expect(REGIONS.crystal_caves.difficultyMultiplier).toBe(1.1)
     expect(REGIONS.scorched_wastes.difficultyMultiplier).toBe(1.5)
     expect(REGIONS.frozen_peaks.difficultyMultiplier).toBe(1.5)
-    expect(REGIONS.shadow_realm.difficultyMultiplier).toBe(2.0)
-    expect(REGIONS.sky_citadel.difficultyMultiplier).toBe(2.0)
+    expect(REGIONS.shadow_realm.difficultyMultiplier).toBe(1.9)
+    expect(REGIONS.sky_citadel.difficultyMultiplier).toBe(2.2)
+    expect(REGIONS.abyssal_depths.difficultyMultiplier).toBe(2.4)
+    expect(REGIONS.celestial_throne.difficultyMultiplier).toBe(2.8)
     expect(REGIONS.sunken_ruins.difficultyMultiplier).toBe(1.0)
-    expect(REGIONS.volcanic_forge.difficultyMultiplier).toBe(1.5)
+    expect(REGIONS.volcanic_forge.difficultyMultiplier).toBe(1.7)
     expect(REGIONS.feywild_grove.difficultyMultiplier).toBe(1.2)
-    expect(REGIONS.bone_wastes.difficultyMultiplier).toBe(1.5)
+    expect(REGIONS.bone_wastes.difficultyMultiplier).toBe(1.3)
     expect(REGIONS.dragons_spine.difficultyMultiplier).toBe(2.0)
   })
 
@@ -85,29 +87,29 @@ describe('Region definitions', () => {
 })
 
 describe('Min level requirements', () => {
-  it('starting areas should have no level requirement', () => {
-    expect(REGIONS.starting_village.minLevel).toBe(0)
+  it('starting areas should have low level requirements', () => {
+    expect(REGIONS.hearthwood.minLevel).toBe(0)
     expect(REGIONS.green_meadows.minLevel).toBe(0)
-    expect(REGIONS.dark_forest.minLevel).toBe(0)
+    expect(REGIONS.dark_forest.minLevel).toBe(1)
   })
 
-  it('hard regions should require level 4', () => {
-    expect(REGIONS.scorched_wastes.minLevel).toBe(4)
-    expect(REGIONS.frozen_peaks.minLevel).toBe(4)
+  it('hard regions should require appropriate levels', () => {
+    expect(REGIONS.scorched_wastes.minLevel).toBe(5)
+    expect(REGIONS.frozen_peaks.minLevel).toBe(5)
     expect(REGIONS.bone_wastes.minLevel).toBe(4)
   })
 
   it('very hard regions should require higher levels', () => {
-    expect(REGIONS.shadow_realm.minLevel).toBe(5)
+    expect(REGIONS.shadow_realm.minLevel).toBe(6)
     expect(REGIONS.dragons_spine.minLevel).toBe(7)
     expect(REGIONS.sky_citadel.minLevel).toBe(8)
   })
 
   it('canEnterRegion should respect min level', () => {
     expect(canEnterRegion(REGIONS.green_meadows, 1)).toBe(true)
-    expect(canEnterRegion(REGIONS.scorched_wastes, 3)).toBe(false)
-    expect(canEnterRegion(REGIONS.scorched_wastes, 4)).toBe(true)
+    expect(canEnterRegion(REGIONS.scorched_wastes, 4)).toBe(false)
     expect(canEnterRegion(REGIONS.scorched_wastes, 5)).toBe(true)
+    expect(canEnterRegion(REGIONS.scorched_wastes, 6)).toBe(true)
     expect(canEnterRegion(REGIONS.sky_citadel, 7)).toBe(false)
     expect(canEnterRegion(REGIONS.sky_citadel, 8)).toBe(true)
   })
@@ -130,13 +132,13 @@ describe('getConnectedRegions', () => {
   it('should return connected Region objects', () => {
     const connected = getConnectedRegions('green_meadows')
     const ids = connected.map(r => r.id)
-    expect(ids).toContain('starting_village')
+    expect(ids).toContain('hearthwood')
     expect(ids).toContain('dark_forest')
     expect(ids).toContain('sunken_ruins')
   })
 
   it('should return correct number of connections', () => {
-    expect(getConnectedRegions('starting_village')).toHaveLength(1)
+    expect(getConnectedRegions('hearthwood')).toHaveLength(1)
     expect(getConnectedRegions('green_meadows')).toHaveLength(3)
     expect(getConnectedRegions('sky_citadel')).toHaveLength(2) // dragons_spine + abyssal_depths
   })
@@ -189,8 +191,8 @@ describe('New regions', () => {
 
   it('new regions should have correct min levels', () => {
     expect(REGIONS.sunken_ruins.minLevel).toBe(2)
-    expect(REGIONS.volcanic_forge.minLevel).toBe(5)
-    expect(REGIONS.feywild_grove.minLevel).toBe(2)
+    expect(REGIONS.volcanic_forge.minLevel).toBe(6)
+    expect(REGIONS.feywild_grove.minLevel).toBe(3)
     expect(REGIONS.bone_wastes.minLevel).toBe(4)
     expect(REGIONS.dragons_spine.minLevel).toBe(7)
   })
@@ -198,10 +200,44 @@ describe('New regions', () => {
   it('canEnterRegion should work for new regions', () => {
     expect(canEnterRegion(REGIONS.sunken_ruins, 1)).toBe(false)
     expect(canEnterRegion(REGIONS.sunken_ruins, 2)).toBe(true)
-    expect(canEnterRegion(REGIONS.volcanic_forge, 4)).toBe(false)
-    expect(canEnterRegion(REGIONS.volcanic_forge, 5)).toBe(true)
+    expect(canEnterRegion(REGIONS.volcanic_forge, 5)).toBe(false)
+    expect(canEnterRegion(REGIONS.volcanic_forge, 6)).toBe(true)
     expect(canEnterRegion(REGIONS.dragons_spine, 6)).toBe(false)
     expect(canEnterRegion(REGIONS.dragons_spine, 7)).toBe(true)
+  })
+})
+
+describe('Tree structure fields', () => {
+  it('parentRegion references should point to existing regions', () => {
+    for (const region of Object.values(REGIONS)) {
+      if (region.parentRegion) {
+        expect(
+          REGIONS[region.parentRegion],
+          `Region "${region.id}" references non-existent parent "${region.parentRegion}"`
+        ).toBeDefined()
+      }
+    }
+  })
+
+  it('childRegions references should point to existing regions', () => {
+    for (const region of Object.values(REGIONS)) {
+      if (region.childRegions) {
+        for (const childId of region.childRegions) {
+          expect(
+            REGIONS[childId],
+            `Region "${region.id}" references non-existent child "${childId}"`
+          ).toBeDefined()
+        }
+      }
+    }
+  })
+
+  it('hearthwood should be the root (no parent)', () => {
+    expect(REGIONS.hearthwood.parentRegion).toBeUndefined()
+  })
+
+  it('hearthwood should have children', () => {
+    expect(REGIONS.hearthwood.childRegions).toContain('green_meadows')
   })
 })
 

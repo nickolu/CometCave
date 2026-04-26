@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
+import { NamePrompt } from './NamePrompt'
 import type { TriviaGameResult } from '../models/trivia'
 
 const MAX_SCORE = 3150
@@ -88,8 +89,28 @@ interface TriviaResultsProps {
 
 export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
-  const { userData } = useTriviaStore()
+  const [namePromptDismissed, setNamePromptDismissed] = useState(false)
+  const { userData, setDisplayName } = useTriviaStore()
+  const [scoreSubmitted, setScoreSubmitted] = useState(!!userData.displayName)
   const countdown = useCountdown()
+
+  useEffect(() => {
+    if (userData.displayName && !scoreSubmitted) {
+      fetch('/api/v1/trivia/submit-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: userData.displayName,
+          date: result.date,
+          score: result.score,
+          correct: result.correct,
+          total: result.total,
+        }),
+      })
+        .then(() => setScoreSubmitted(true))
+        .catch((err) => console.error('Failed to submit score:', err))
+    }
+  }, [userData.displayName, scoreSubmitted, result])
   const scorePercent = Math.round((result.score / MAX_SCORE) * 100)
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
@@ -219,6 +240,24 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
       >
         {copied ? 'Copied!' : 'Share Score'}
       </Button>
+
+      {!userData.displayName && !namePromptDismissed && (
+        <NamePrompt
+          title="Join the leaderboard?"
+          description="Set a display name to save your score"
+          onSave={(name) => {
+            setDisplayName(name)
+            setNamePromptDismissed(true)
+          }}
+          onSkip={() => setNamePromptDismissed(true)}
+        />
+      )}
+
+      {scoreSubmitted && userData.displayName && (
+        <div className="text-center text-green-400/70 text-sm">
+          Score submitted to leaderboard
+        </div>
+      )}
 
       {/* Countdown to next reset */}
       <div className="text-center text-cream-white/40 text-sm">

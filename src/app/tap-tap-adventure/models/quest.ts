@@ -7,7 +7,7 @@ export const TimedQuestSchema = z.object({
   title: z.string(),
   description: z.string(),
   status: z.enum(['active', 'completed', 'failed']),
-  type: z.enum(['reach_distance', 'collect_gold', 'win_combat', 'gain_reputation']),
+  type: z.enum(['reach_distance', 'collect_gold', 'win_combat', 'gain_reputation', 'explore_landmarks', 'survive_combats', 'reach_level', 'hoard_items', 'visit_region']),
   // Target value to reach
   target: z.number(),
   // Starting value when quest was accepted

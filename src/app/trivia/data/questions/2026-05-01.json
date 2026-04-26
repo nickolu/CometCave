@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-01-0",
       "question": "In the game Half-Life, which enemy is showcased as the final boss?",
       "options": [
-        "Dr. Wallace Breen",
         "The Gonarch",
+        "The Nihilanth",
         "G-Man",
-        "The Nihilanth"
+        "Dr. Wallace Breen"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Video Games",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-01-1",
       "question": "In the Assassin's Creed series,what was the name of Desmond Miles given by Abstergo?",
       "options": [
-        "Subject 16",
+        "Subject 17",
         "Subject 18",
         "Alta&iuml;r Ibn-La'Ahad",
-        "Subject 17"
+        "Subject 16"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Video Games",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-01-2",
       "question": "In the Street Fighter franchise, what's Ken's surname?",
       "options": [
-        "Mitchell",
-        "Morrison",
+        "Masters",
         "Michaels",
-        "Masters"
+        "Morrison",
+        "Mitchell"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Video Games",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-01-3",
       "question": "When was the Sega Genesis released in Japan?",
       "options": [
-        "November 30, 1990",
-        "September 1, 1986",
+        "October 29, 1988",
         "August 14, 1989",
-        "October 29, 1988"
+        "September 1, 1986",
+        "November 30, 1990"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Video Games",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-05-01-4",
       "question": "In the game series \"The Legend of Zelda\", what was the first 3D game?",
       "options": [
-        "Majora's Mask",
         "A Link to the Past",
         "The Wind Waker",
-        "Ocarina of Time"
+        "Ocarina of Time",
+        "Majora's Mask"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Video Games",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-05-01-5",
       "question": "In the game \"VA-11 Hall-A\" during Virgilio's ending, Virgilio opens his own:",
       "options": [
-        "Bar",
-        "Law Firm",
+        "Curry Stand",
         "Museum",
-        "Curry Stand"
+        "Bar",
+        "Law Firm"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Video Games",

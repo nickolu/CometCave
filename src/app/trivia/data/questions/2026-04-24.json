@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-24-0",
       "question": "Which of these cartoons had a character named Heinz Doofenshmirtz?",
       "options": [
-        "Ben 10",
         "Batman: The Animated Series",
         "Ren & Stimpy",
-        "Phineas & Ferb"
+        "Phineas & Ferb",
+        "Ben 10"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Cartoon & Animations",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-24-1",
       "question": "In the 1993 Disney animated series \"Bonkers\", what is the name of Bonker's second partner?",
       "options": [
-        "Dick Tracy",
-        "Eddie Valiant",
+        "Miranda Wright",
         "Dr. Ludwig von Drake",
-        "Miranda Wright"
+        "Dick Tracy",
+        "Eddie Valiant"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Cartoon & Animations",
@@ -36,9 +36,9 @@
       "question": "Butters Stotch, Pip Pirrup, and Wendy Testaburger are all characters in which long running animated TV series?",
       "options": [
         "The Simpsons",
-        "Bob's Burgers",
+        "South Park",
         "Family Guy",
-        "South Park"
+        "Bob's Burgers"
       ],
       "difficulty": "easy",
       "category": "Entertainment: Cartoon & Animations",
@@ -50,9 +50,9 @@
       "question": "What was the number on Gerald's shirt in \"Hey Arnold!\"?",
       "options": [
         "88",
-        "83",
+        "33",
         "38",
-        "33"
+        "83"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Cartoon & Animations",
@@ -64,9 +64,9 @@
       "question": "Who voiced Finn in Adventure Time?",
       "options": [
         "Nolan North",
-        "John DiMaggio",
         "Tom Kenny",
-        "Jeremy Shada"
+        "Jeremy Shada",
+        "John DiMaggio"
       ],
       "difficulty": "medium",
       "category": "Entertainment: Cartoon & Animations",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-04-24-5",
       "question": "Who played Stan's dog in the South Park episode \"Big Gay Al's Big Gay Boat Ride\"?",
       "options": [
-        "Jay Leno",
-        "Matt Stone",
         "Robert Smith",
-        "George Clooney"
+        "Jay Leno",
+        "George Clooney",
+        "Matt Stone"
       ],
       "difficulty": "hard",
       "category": "Entertainment: Cartoon & Animations",

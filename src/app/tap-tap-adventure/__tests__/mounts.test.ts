@@ -32,6 +32,7 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     strength: 5,
     intelligence: 5,
     luck: 5,
+    charisma: 6,
     hp: 80,
     maxHp: 80,
     inventory: [],

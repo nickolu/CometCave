@@ -25,6 +25,13 @@ const baseChar: FantasyCharacter = {
   strength: 8,
   intelligence: 5,
   luck: 6,
+  charisma: 6,
+  deathCount: 0,
+  pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
   inventory: [
     {
       id: 'potion-1',
@@ -63,11 +70,22 @@ function makeActiveCombat(overrides: Partial<CombatState> = {}): CombatState {
       isDefending: false,
       activeBuffs: [],
       comboCount: 0,
+      abilityCooldown: 0,
+      enemyStunned: false,
+      shield: 0,
+      luck: 0,
+      mana: 0,
+      maxMana: 0,
+      ap: 3,
+      maxAp: 3,
+      stamina: 6,
+      maxStamina: 6,
     },
     turnNumber: 0,
     combatLog: [],
     status: 'active',
     scenario: 'A goblin appears!',
+    combatDistance: 'close',
     ...overrides,
   }
 }
@@ -112,8 +130,8 @@ describe('Combat Engine', () => {
       const { combatState: result } = processPlayerAction(combat, { action: 'attack' }, baseChar)
 
       expect(result.enemy.hp).toBeLessThan(30)
-      expect(result.combatLog.length).toBeGreaterThanOrEqual(2) // player attack + enemy attack
-      expect(result.turnNumber).toBe(1)
+      expect(result.combatLog.length).toBeGreaterThanOrEqual(1) // player attack log
+      expect(result.turnNumber).toBe(0)
       vi.restoreAllMocks()
     })
 
@@ -165,7 +183,7 @@ describe('Combat Engine', () => {
 
     it('sets defeat when player HP reaches 0', () => {
       const combat = makeActiveCombat({
-        playerState: { ...makeActiveCombat().playerState, hp: 1 },
+        playerState: { ...makeActiveCombat().playerState, hp: 1, ap: 1, maxAp: 1 },
         enemy: { ...makeActiveCombat().enemy, attack: 100 },
       })
       vi.spyOn(Math, 'random').mockReturnValue(0.5)
@@ -208,6 +226,247 @@ describe('Combat Engine', () => {
 
       expect(rewards.gold).toBe(15)
       expect(rewards.loot.length).toBeGreaterThanOrEqual(0)
+      vi.restoreAllMocks()
+    })
+  })
+
+  describe('passive effects from equipment', () => {
+    it('accumulates bonusCritChance from crit_bonus passive', () => {
+      const charWithCritBonus = {
+        ...baseChar,
+        equipment: {
+          weapon: {
+            id: 'crit-sword',
+            name: 'Crit Sword',
+            description: 'Sharp',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { strength: 3 },
+            passiveEffect: {
+              type: 'crit_bonus' as const,
+              value: 0.1,
+              description: '+10% crit chance',
+            },
+          },
+          armor: null,
+          accessory: null,
+        },
+      }
+      const state = initializePlayerCombatState(charWithCritBonus)
+      expect(state.bonusCritChance).toBeCloseTo(0.1)
+    })
+
+    it('sets dodgeChance from dodge passive', () => {
+      const charWithDodge = {
+        ...baseChar,
+        equipment: {
+          weapon: null,
+          armor: {
+            id: 'dodge-armor',
+            name: 'Shadow Cloak',
+            description: 'Light and evasive',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { intelligence: 2 },
+            passiveEffect: {
+              type: 'dodge' as const,
+              value: 0.15,
+              description: '15% dodge chance',
+            },
+          },
+          accessory: null,
+        },
+      }
+      const state = initializePlayerCombatState(charWithDodge)
+      expect(state.dodgeChance).toBeCloseTo(0.15)
+    })
+
+    it('injects thorns as a persistent status effect', () => {
+      const charWithThorns = {
+        ...baseChar,
+        equipment: {
+          weapon: null,
+          armor: {
+            id: 'thorn-armor',
+            name: 'Thornmail',
+            description: 'Spiky armor',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { intelligence: 2 },
+            passiveEffect: {
+              type: 'thorns' as const,
+              value: 5,
+              description: 'Returns 5 damage',
+            },
+          },
+          accessory: null,
+        },
+      }
+      const state = initializePlayerCombatState(charWithThorns)
+      const thornsEffect = (state.statusEffects ?? []).find(e => e.type === 'thorns')
+      expect(thornsEffect).toBeDefined()
+      expect(thornsEffect?.value).toBe(5)
+    })
+
+    it('applies lifesteal_passive healing after attack', () => {
+      const charWithLifesteal = {
+        ...baseChar,
+        equipment: {
+          weapon: {
+            id: 'lifesteal-sword',
+            name: 'Vampiric Blade',
+            description: 'Drains life',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { strength: 3 },
+            passiveEffect: {
+              type: 'lifesteal_passive' as const,
+              value: 0.2,
+              description: 'Heal 20% of damage dealt',
+            },
+          },
+          armor: null,
+          accessory: null,
+        },
+      }
+      const combat = makeActiveCombat({
+        playerState: { ...makeActiveCombat().playerState, hp: 50 }, // not at max
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      const { combatState: result } = processPlayerAction(combat, { action: 'attack' }, charWithLifesteal)
+
+      // Player should have healed (or at least a heal log entry)
+      const healLog = result.combatLog.find(l => l.action === 'heal' && l.description.includes('Lifesteal'))
+      expect(healLog).toBeDefined()
+      vi.restoreAllMocks()
+    })
+
+    it('dodge blocks incoming enemy damage', () => {
+      const combat = makeActiveCombat({
+        playerState: {
+          ...makeActiveCombat().playerState,
+          hp: 90,
+          ap: 1,
+          maxAp: 1,
+          dodgeChance: 1.0, // 100% dodge for deterministic test
+        },
+        enemy: { ...makeActiveCombat().enemy, attack: 50 }, // high attack to ensure damage would be felt
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.0) // always dodge
+      const { combatState: result } = processPlayerAction(combat, { action: 'defend' }, baseChar)
+
+      // Player should not have lost HP due to dodge
+      const dodgeLog = result.combatLog.find(l => l.action === 'dodge')
+      expect(dodgeLog).toBeDefined()
+      vi.restoreAllMocks()
+    })
+
+    it('poison_immunity prevents poison status effect from being applied', () => {
+      const charWithPoisonImmunity = {
+        ...baseChar,
+        equipment: {
+          weapon: null,
+          armor: {
+            id: 'immunity-armor',
+            name: 'Antivenom Plate',
+            description: 'Resists poison',
+            quantity: 1,
+            type: 'equipment' as const,
+            effects: { intelligence: 2 },
+            passiveEffect: {
+              type: 'poison_immunity' as const,
+              value: 1,
+              description: 'Immune to poison',
+            },
+          },
+          accessory: null,
+        },
+      }
+      const combat = makeActiveCombat({
+        playerState: { ...makeActiveCombat().playerState, ap: 1, maxAp: 1 },
+        enemy: {
+          ...makeActiveCombat().enemy,
+          attack: 5,
+          statusAbility: {
+            type: 'poison' as const,
+            value: 3,
+            duration: 3,
+            chance: 1.0, // 100% chance to poison
+          },
+        },
+      })
+      vi.spyOn(Math, 'random').mockReturnValue(0.0) // ensure status triggers
+      const { combatState: result } = processPlayerAction(combat, { action: 'defend' }, charWithPoisonImmunity)
+
+      // Should have immunity log, not poison
+      const immunityLog = result.combatLog.find(l => l.description.includes('immune'))
+      expect(immunityLog).toBeDefined()
+
+      // Should NOT have poison status effect on player
+      const poisonEffect = (result.playerState.statusEffects ?? []).find(e => e.type === 'poison')
+      expect(poisonEffect).toBeUndefined()
+      vi.restoreAllMocks()
+    })
+  })
+
+  describe('getCombatRewards — secret boss loot', () => {
+    const baseLootItem = { id: 'loot-1', name: 'Ancient Relic', description: 'A relic', quantity: 1 }
+
+    it('secret boss guarantees 100% item drop', () => {
+      const combat = makeActiveCombat({
+        isSecretBoss: true,
+        enemy: { ...makeActiveCombat().enemy, lootTable: [baseLootItem] },
+      })
+      // Even with Math.random = 0.99 (normally would miss at 30% chance), secret boss always drops
+      vi.spyOn(Math, 'random').mockReturnValue(0.99)
+      const rewards = getCombatRewards(combat, baseChar)
+      expect(rewards.loot.length).toBe(1)
+      vi.restoreAllMocks()
+    })
+
+    it('secret boss applies elite rarity weights (no common/uncommon)', () => {
+      const combat = makeActiveCombat({
+        isSecretBoss: true,
+        enemy: {
+          ...makeActiveCombat().enemy,
+          lootTable: Array.from({ length: 10 }, (_, i) => ({
+            id: `loot-${i}`,
+            name: `Relic ${i}`,
+            description: 'A relic',
+            quantity: 1,
+          })),
+        },
+      })
+      // Use fixed Math.random sequence: first 10 calls for drop (all drop since secret boss),
+      // next calls for rarity rolls
+      let callCount = 0
+      vi.spyOn(Math, 'random').mockImplementation(() => {
+        callCount++
+        // First 10 calls: item drop checks (all pass for secret boss)
+        // After that: rarity rolls — alternate between 0.1 (rare), 0.5 (epic), 0.8 (legendary)
+        const rarityValue = [0.1, 0.5, 0.8][callCount % 3]
+        return rarityValue
+      })
+      const rewards = getCombatRewards(combat, baseChar)
+      // All loot should be rare, epic, or legendary — no common or uncommon
+      for (const item of rewards.loot) {
+        expect(['rare', 'epic', 'legendary']).toContain(item.rarity)
+      }
+      vi.restoreAllMocks()
+    })
+
+    it('regular boss uses standard boss rarity weights (no common)', () => {
+      const combat = makeActiveCombat({
+        isBoss: true,
+        enemy: {
+          ...makeActiveCombat().enemy,
+          lootTable: [{ id: 'loot-boss', name: 'Boss Loot', description: 'Boss', quantity: 1 }],
+        },
+      })
+      // Roll = 0.05 → rare (cumulative: uncommon=0.2, rare=0.6, epic=0.9, legendary=1.0)
+      vi.spyOn(Math, 'random').mockReturnValue(0.05)
+      const rewards = getCombatRewards(combat, baseChar)
+      expect(rewards.loot[0]?.rarity).toBe('uncommon')
       vi.restoreAllMocks()
     })
   })

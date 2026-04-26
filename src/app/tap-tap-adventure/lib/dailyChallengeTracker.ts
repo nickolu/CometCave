@@ -36,7 +36,7 @@ interface ChallengeTemplate {
 const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
   {
     type: 'travel_distance',
-    descriptionFn: (target) => `Travel ${target} steps`,
+    descriptionFn: (target) => `Travel ${target} km`,
     targetFn: (bucket) => 50 + bucket * 30,
     goldRewardFn: (bucket) => 15 + bucket * 5,
   },

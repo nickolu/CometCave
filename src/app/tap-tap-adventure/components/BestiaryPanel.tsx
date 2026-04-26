@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { BestiaryEntry } from '@/app/tap-tap-adventure/models/bestiary'
+import { getElementalMultiplier } from '@/app/tap-tap-adventure/config/elements'
+import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
 
 const ELEMENT_STYLES: Record<string, string> = {
   nature: 'bg-green-900/40 text-green-300',
@@ -12,9 +14,26 @@ const ELEMENT_STYLES: Record<string, string> = {
   none: 'bg-slate-800/40 text-slate-400',
 }
 
+const ELEMENT_ICONS: Record<string, string> = {
+  fire: '🔥', ice: '❄️', lightning: '⚡', shadow: '🌑', nature: '🌿', arcane: '✨',
+}
+
 function getElementStyle(element?: string): string {
   if (!element) return ELEMENT_STYLES['none']
   return ELEMENT_STYLES[element] ?? ELEMENT_STYLES['none']
+}
+
+function getWeaknessResistance(enemyElement?: string): { weak: SpellElement[]; resists: SpellElement[] } {
+  if (!enemyElement || enemyElement === 'none') return { weak: [], resists: [] }
+  const allElements: SpellElement[] = ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane']
+  const weak: SpellElement[] = []
+  const resists: SpellElement[] = []
+  for (const atk of allElements) {
+    const mult = getElementalMultiplier(atk, enemyElement as SpellElement)
+    if (mult >= 2.0) weak.push(atk)
+    else if (mult <= 0.5) resists.push(atk)
+  }
+  return { weak, resists }
 }
 
 export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
@@ -100,6 +119,26 @@ export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
                   <span>ATK <span className="text-slate-200">{entry.attack}</span></span>
                   <span>DEF <span className="text-slate-200">{entry.defense}</span></span>
                 </div>
+                {(() => {
+                  const { weak, resists } = getWeaknessResistance(entry.element)
+                  if (weak.length === 0 && resists.length === 0) return null
+                  return (
+                    <div className="flex items-center gap-3 mt-1 text-[10px]">
+                      {weak.length > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <span className="text-green-500">Weak:</span>
+                          {weak.map(e => <span key={e} className="text-green-400" title={`${e} deals 2x`}>{ELEMENT_ICONS[e]}</span>)}
+                        </span>
+                      )}
+                      {resists.length > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <span className="text-red-500">Resists:</span>
+                          {resists.map(e => <span key={e} className="text-red-400" title={`${e} deals 0.5x`}>{ELEMENT_ICONS[e]}</span>)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })()}
                 {(entry.specialAbility || entry.statusAbility) && (
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {entry.specialAbility && (

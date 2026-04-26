@@ -56,6 +56,7 @@ export function useCharacterCreation() {
         strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
         intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
         luck: selectedGeneratedClass.statDistribution.luck + (selectedRace.modifiers.luck ?? 0),
+        charisma: DEFAULT_STAT_MIN + (selectedRace.modifiers.charisma ?? 0),
       }
     }
     if (selectedRace && selectedClass) {
@@ -65,6 +66,7 @@ export function useCharacterCreation() {
       strength: DEFAULT_STAT_MIN,
       intelligence: DEFAULT_STAT_MIN,
       luck: DEFAULT_STAT_MIN,
+      charisma: DEFAULT_STAT_MIN,
     }
   }, [selectedRace, selectedClass, selectedGeneratedClass])
 
@@ -122,6 +124,7 @@ export function useCharacterCreation() {
         strength: gc.statDistribution.strength - DEFAULT_STAT_MIN,
         intelligence: gc.statDistribution.intelligence - DEFAULT_STAT_MIN,
         luck: gc.statDistribution.luck - DEFAULT_STAT_MIN,
+        charisma: 0,
       },
     })
     setSkillTreeData(null)
@@ -150,7 +153,7 @@ export function useCharacterCreation() {
       cooldown: DEFAULT_ABILITY_COOLDOWN,
     }
 
-    let finalStats: { strength: number; intelligence: number; luck: number }
+    let finalStats: { strength: number; intelligence: number; luck: number; charisma: number }
     let className: string
     let spellbook: Spell[] = []
     let classData: GeneratedClass | undefined
@@ -161,6 +164,7 @@ export function useCharacterCreation() {
         strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
         intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
         luck: selectedGeneratedClass.statDistribution.luck + (selectedRace.modifiers.luck ?? 0),
+        charisma: DEFAULT_STAT_MIN + (selectedRace.modifiers.charisma ?? 0),
       }
       className = selectedGeneratedClass.name
       classData = selectedGeneratedClass
@@ -202,6 +206,7 @@ export function useCharacterCreation() {
       strength: finalStats.strength,
       intelligence: finalStats.intelligence,
       luck: finalStats.luck,
+      charisma: finalStats.charisma,
       inventory: [],
       deathCount: 0,
       pendingStatPoints: 0,
@@ -210,7 +215,13 @@ export function useCharacterCreation() {
       currentRegion: 'green_meadows',
       currentWeather: 'clear',
       visitedRegions: ['green_meadows'],
+      visitedTowns: [],
       factionReputations: {},
+      bounty: 0,
+      party: [],
+      mountRoster: [],
+      mailbox: [],
+      pendingReplies: [],
     }
     const maxMana = calculateMaxMana(tempChar)
 
@@ -223,11 +234,27 @@ export function useCharacterCreation() {
       }
     }
 
+    let startingEquipment: { weapon: Item | null; armor: null; accessory: null } = { weapon: null, armor: null, accessory: null }
+    if (classData?.startingWeapon) {
+      const weaponItem: Item = {
+        id: `starting-weapon-${Date.now()}`,
+        name: classData.startingWeapon.name,
+        description: classData.startingWeapon.description,
+        quantity: 1,
+        type: 'equipment',
+        effects: classData.startingWeapon.effects,
+        rarity: 'common',
+      }
+      startingInventory.push(weaponItem)
+      startingEquipment = { weapon: weaponItem, armor: null, accessory: null }
+    }
+
     // Apply meta-progression bonuses from eternal upgrades
     const metaBonuses = getMetaBonuses()
     const boostedStrength = finalStats.strength + metaBonuses.bonusStrength
     const boostedIntelligence = finalStats.intelligence + metaBonuses.bonusIntelligence
     const boostedLuck = finalStats.luck + metaBonuses.bonusLuck
+    const boostedCharisma = finalStats.charisma
     const boostedGold = metaBonuses.bonusGold
 
     // Recalculate mana/hp with boosted stats
@@ -236,6 +263,7 @@ export function useCharacterCreation() {
       strength: boostedStrength,
       intelligence: boostedIntelligence,
       luck: boostedLuck,
+      charisma: boostedCharisma,
     }
     const boostedMaxMana = calculateMaxMana(boostedTempChar) + metaBonuses.bonusMana
     const boostedMaxHp = calculateMaxHp(boostedTempChar) + metaBonuses.bonusHp
@@ -249,6 +277,7 @@ export function useCharacterCreation() {
       strength: boostedStrength,
       intelligence: boostedIntelligence,
       luck: boostedLuck,
+      charisma: boostedCharisma,
       abilities: [defaultAbility],
       hp: boostedMaxHp,
       maxHp: boostedMaxHp,
@@ -259,6 +288,7 @@ export function useCharacterCreation() {
       classSkillTree,
       unlockedTreeSkillIds: [],
       inventory: startingInventory,
+      equipment: startingEquipment,
       gold: boostedGold,
       difficultyMode: selectedDifficulty.id,
     }

@@ -49,6 +49,27 @@ export function clampReputation(value: number): number {
   return Math.max(-100, Math.min(200, value))
 }
 
+export function clampGold(value: number): number {
+  return Math.max(0, value)
+}
+
+export function getCharismaPriceMultiplier(charisma: number): number {
+  const discount = Math.min(0.10, (charisma - 5) * 0.01)
+  return 1.0 - discount
+}
+
+export function getNPCDispositionPriceMultiplier(npcEncounters?: Record<string, { disposition: number }>): number {
+  if (!npcEncounters) return 1.0
+  const dispositions = Object.values(npcEncounters).map(e => e.disposition)
+  if (dispositions.length === 0) return 1.0
+  const maxDisposition = Math.max(...dispositions)
+  // Discount tiers based on best NPC relationship
+  if (maxDisposition >= 80) return 0.85  // Bonded: 15% discount
+  if (maxDisposition >= 50) return 0.90  // Trusted: 10% discount
+  if (maxDisposition >= 20) return 0.95  // Friendly: 5% discount
+  return 1.0 // Neutral or worse: no discount
+}
+
 export function buildStoryContext(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[],
@@ -65,7 +86,7 @@ export function buildStoryContext(
   parts.push(
     `Character: ${character.name}, Level ${character.level} ${character.race} ${character.class}. ` +
     `Gold: ${character.gold}, Reputation: ${character.reputation} (${tier}), Distance: ${character.distance}. ` +
-    `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}.`
+    `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}, CHA ${character.charisma}.`
   )
   parts.push(`Reputation implications: ${REPUTATION_TIER_IMPLICATIONS[tier]}`)
 

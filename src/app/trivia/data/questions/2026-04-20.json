@@ -7,10 +7,10 @@
       "id": "opentdb-2026-04-20-0",
       "question": "Which car tire manufacturer is famous for its \"Eagle\" brand of tires, and is the official tire supplier of NASCAR?",
       "options": [
-        "Pirelli",
         "Bridgestone",
+        "Goodyear",
         "Michelin",
-        "Goodyear"
+        "Pirelli"
       ],
       "difficulty": "easy",
       "category": "Vehicles",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-04-20-1",
       "question": "Which of the following vehicles from Ford is named after a WW2 Fighter Plane?",
       "options": [
-        "Explorer",
+        "Mustang",
         "Galaxy",
         "Ranger",
-        "Mustang"
+        "Explorer"
       ],
       "difficulty": "easy",
       "category": "Vehicles",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-04-20-2",
       "question": "Jaguar Cars was previously owned by which car manfacturer?",
       "options": [
-        "General Motors",
-        "Fiat",
+        "Ford",
         "Chrysler",
-        "Ford"
+        "Fiat",
+        "General Motors"
       ],
       "difficulty": "easy",
       "category": "Vehicles",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-04-20-3",
       "question": "Which of the following passenger jets is the longest?",
       "options": [
-        "Airbus A350-1000",
-        "Boeing 787-10",
+        "Boeing 747-8",
         "Airbus A330-200",
-        "Boeing 747-8"
+        "Boeing 787-10",
+        "Airbus A350-1000"
       ],
       "difficulty": "medium",
       "category": "Vehicles",
@@ -63,10 +63,10 @@
       "id": "opentdb-2026-04-20-4",
       "question": "Which car brand does NOT belong to General Motors?",
       "options": [
-        "Buick",
         "Cadillac",
         "Chevrolet",
-        "Ford"
+        "Ford",
+        "Buick"
       ],
       "difficulty": "medium",
       "category": "Vehicles",
@@ -77,10 +77,10 @@
       "id": "opentdb-2026-04-20-5",
       "question": "The difference between the lengths of a Boeing 777-300ER and an Airbus A350-1000 is closest to:",
       "options": [
-        "1m",
-        "10m ",
+        "0.1m",
         "100m",
-        "0.1m"
+        "1m",
+        "10m "
       ],
       "difficulty": "hard",
       "category": "Vehicles",

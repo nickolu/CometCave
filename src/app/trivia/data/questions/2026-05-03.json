@@ -7,10 +7,10 @@
       "id": "opentdb-2026-05-03-0",
       "question": "Which type of rock is created by intense heat AND pressure?",
       "options": [
-        "Sedimentary",
-        "Diamond",
+        "Metamorphic",
         "Igneous",
-        "Metamorphic"
+        "Diamond",
+        "Sedimentary"
       ],
       "difficulty": "easy",
       "category": "Science & Nature",
@@ -21,10 +21,10 @@
       "id": "opentdb-2026-05-03-1",
       "question": "Which is the longest bone in the human body? ",
       "options": [
-        "Fibula",
-        "Ulna",
+        "Femur",
         "Scapula",
-        "Femur"
+        "Ulna",
+        "Fibula"
       ],
       "difficulty": "easy",
       "category": "Science & Nature",
@@ -35,10 +35,10 @@
       "id": "opentdb-2026-05-03-2",
       "question": "How many laws of thermodynamics are there?",
       "options": [
-        "Three",
         "Two",
         "Five",
-        "Four"
+        "Four",
+        "Three"
       ],
       "difficulty": "easy",
       "category": "Science & Nature",
@@ -49,10 +49,10 @@
       "id": "opentdb-2026-05-03-3",
       "question": "What stage of development do the majority of eukaryotic cells remain in for most of their life?",
       "options": [
-        "Stasis",
-        "Telophase",
+        "Interphase",
         "Prophase",
-        "Interphase"
+        "Stasis",
+        "Telophase"
       ],
       "difficulty": "medium",
       "category": "Science & Nature",
@@ -64,9 +64,9 @@
       "question": "In aeronautics, flaps and slats are used to control what on an aircraft?",
       "options": [
         "Thrust",
-        "Drag",
+        "Lift",
         "Weight ",
-        "Lift"
+        "Drag"
       ],
       "difficulty": "medium",
       "category": "Science & Nature",
@@ -78,9 +78,9 @@
       "question": "Which is not a type of neuron?",
       "options": [
         "Motor Neuron",
-        "Interneuron",
+        "Perceptual Neuron",
         "Sensory Neuron",
-        "Perceptual Neuron"
+        "Interneuron"
       ],
       "difficulty": "hard",
       "category": "Science & Nature",

@@ -109,8 +109,8 @@ export function QuestPanel() {
       const needed = quest.target - quest.startValue
       const done = Math.max(0, character.distance - quest.startValue)
       progress = Math.min(1, done / needed)
-      progressText = `${character.distance} / ${quest.target} steps`
-      targetDescription = `Travel to ${quest.target} steps`
+      progressText = `${character.distance} / ${quest.target} km`
+      targetDescription = `Travel ${quest.target} km`
       break
     }
     case 'collect_gold': {
@@ -132,6 +132,47 @@ export function QuestPanel() {
       progress = Math.min(1, done / needed)
       progressText = `${character.reputation} / ${quest.target} reputation`
       targetDescription = `Reach ${quest.target} reputation`
+      break
+    }
+    case 'explore_landmarks': {
+      const explored = (character.landmarkState?.landmarks ?? []).filter(lm => lm.explored).length
+      const needed = quest.target - quest.startValue
+      const done = Math.max(0, explored - quest.startValue)
+      progress = Math.min(1, done / Math.max(1, needed))
+      progressText = `${explored} / ${quest.target} explored`
+      targetDescription = `Explore ${quest.target} landmarks`
+      break
+    }
+    case 'survive_combats': {
+      const wins = quest.startValue
+      progress = Math.min(1, wins / quest.target)
+      progressText = `${wins} / ${quest.target} won`
+      targetDescription = `Win ${quest.target} battles`
+      break
+    }
+    case 'reach_level': {
+      const needed = quest.target - quest.startValue
+      const done = Math.max(0, character.level - quest.startValue)
+      progress = Math.min(1, done / Math.max(1, needed))
+      progressText = `Level ${character.level} / ${quest.target}`
+      targetDescription = `Reach level ${quest.target}`
+      break
+    }
+    case 'hoard_items': {
+      const needed = quest.target - quest.startValue
+      const done = Math.max(0, character.inventory.length - quest.startValue)
+      progress = Math.min(1, done / Math.max(1, needed))
+      progressText = `${character.inventory.length} / ${quest.target} items`
+      targetDescription = `Collect ${quest.target} items`
+      break
+    }
+    case 'visit_region': {
+      const visited = character.visitedRegions?.length ?? 1
+      const needed = quest.target - quest.startValue
+      const done = Math.max(0, visited - quest.startValue)
+      progress = Math.min(1, done / Math.max(1, needed))
+      progressText = `${visited} / ${quest.target} regions`
+      targetDescription = `Visit ${quest.target} regions`
       break
     }
   }
@@ -222,7 +263,7 @@ export function QuestPanel() {
 
       {/* Deadline detail */}
       <p className="text-[10px] text-slate-500">
-        ~{stepsUntilDeadline} steps until deadline
+        ~{stepsUntilDeadline} km until deadline
       </p>
 
       {/* Progress bar */}

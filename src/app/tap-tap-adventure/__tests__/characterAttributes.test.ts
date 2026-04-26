@@ -20,6 +20,13 @@ describe('Character Attribute Management', () => {
       strength: 2,
       intelligence: 3,
       luck: 1,
+      charisma: 6,
+      deathCount: 0,
+      pendingStatPoints: 0,
+      difficultyMode: 'normal',
+      currentRegion: 'green_meadows',
+      currentWeather: 'clear',
+      factionReputations: {},
       inventory: [],
     }
     expect(char.strength).toBe(2)
@@ -45,6 +52,13 @@ describe('Character Attribute Management', () => {
       strength: 2,
       intelligence: 3,
       luck: 1,
+      charisma: 6,
+      deathCount: 0,
+      pendingStatPoints: 0,
+      difficultyMode: 'normal',
+      currentRegion: 'green_meadows',
+      currentWeather: 'clear',
+      factionReputations: {},
       inventory: [],
     }
     char = { ...char, strength: char.strength + 1 }

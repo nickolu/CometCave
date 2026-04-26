@@ -22,16 +22,25 @@ const baseChar: FantasyCharacter = {
   strength: 5,
   intelligence: 3,
   luck: 2,
+  charisma: 6,
   hp: 100,
   maxHp: 100,
   inventory: [],
   equipment: { weapon: null, armor: null, accessory: null },
   deathCount: 0,
   pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
   mana: 20,
   maxMana: 20,
   spellbook: [],
   classData: undefined,
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  party: [],
 }
 
 const baseGameState: GameState = {
@@ -52,6 +61,8 @@ const baseGameState: GameState = {
   metaProgression: null,
   runSummary: null,
   runHistory: [],
+  pendingLootCelebration: null,
+  newItemIds: [],
 }
 
 describe('Achievement Definitions', () => {
@@ -176,12 +187,10 @@ describe('Collection Achievements', () => {
       name: `Spell ${i}`,
       description: 'Test',
       manaCost: 10,
-      damage: 15,
-      school: 'elemental' as const,
-      element: 'fire' as const,
+      school: 'arcane' as const,
+      target: 'enemy' as const,
       effects: [],
       cooldown: 1,
-      level: 1,
       tags: [],
     }))
     const char = { ...baseChar, spellbook: spells }

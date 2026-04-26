@@ -21,7 +21,14 @@ function makeChar(classId: string): FantasyCharacter {
     strength: 8,
     intelligence: 5,
     luck: 6,
+    charisma: 6,
     inventory: [],
+    deathCount: 0,
+    pendingStatPoints: 0,
+    difficultyMode: 'normal',
+    currentRegion: 'green_meadows',
+    currentWeather: 'clear',
+    factionReputations: {},
   }
 }
 
@@ -50,11 +57,20 @@ function makeCombat(overrides: Partial<CombatState> = {}): CombatState {
       comboCount: 0,
       abilityCooldown: 0,
       enemyStunned: false,
+      shield: 0,
+      luck: 0,
+      mana: 0,
+      maxMana: 0,
+      ap: 2,
+      maxAp: 2,
+      stamina: 6,
+      maxStamina: 6,
     },
     turnNumber: 0,
     combatLog: [],
     status: 'active',
     scenario: 'A goblin appears!',
+    combatDistance: 'close',
     ...overrides,
   }
 }
@@ -138,6 +154,14 @@ describe('Class Abilities', () => {
           comboCount: 0,
           abilityCooldown: 0,
           enemyStunned: true, // stun enemy so we can isolate recoil
+          shield: 0,
+          luck: 0,
+          mana: 0,
+          maxMana: 0,
+          ap: 2,
+          maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Mage')
@@ -167,6 +191,14 @@ describe('Class Abilities', () => {
           comboCount: 3,
           abilityCooldown: 0,
           enemyStunned: true, // stun enemy to isolate backstab
+          shield: 0,
+          luck: 0,
+          mana: 0,
+          maxMana: 0,
+          ap: 2,
+          maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Rogue')
@@ -200,6 +232,14 @@ describe('Class Abilities', () => {
           comboCount: 1,
           abilityCooldown: 0,
           enemyStunned: true,
+          shield: 0,
+          luck: 0,
+          mana: 0,
+          maxMana: 0,
+          ap: 2,
+          maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Rogue')
@@ -246,6 +286,14 @@ describe('Class Abilities', () => {
           comboCount: 0,
           abilityCooldown: 0,
           enemyStunned: true,
+          shield: 0,
+          luck: 0,
+          mana: 0,
+          maxMana: 0,
+          ap: 2,
+          maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Ranger')
@@ -279,6 +327,14 @@ describe('Class Abilities', () => {
           comboCount: 0,
           abilityCooldown: 2,
           enemyStunned: true,
+          shield: 0,
+          luck: 0,
+          mana: 0,
+          maxMana: 0,
+          ap: 2,
+          maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Warrior')
@@ -311,6 +367,14 @@ describe('Class Abilities', () => {
           comboCount: 0,
           abilityCooldown: 0,
           enemyStunned: false,
+          shield: 0,
+          luck: 0,
+          mana: 0,
+          maxMana: 0,
+          ap: 2,
+          maxAp: 2,
+          stamina: 6,
+          maxStamina: 6,
         },
       })
       const character = makeChar('Warrior')
@@ -320,18 +384,18 @@ describe('Class Abilities', () => {
       // Warrior cooldown is 3, then ticked once at end of turn = 2
       expect(result1.combatState.playerState.abilityCooldown).toBe(2)
 
-      // Next turn: attack to tick cooldown
+      // Next turn: end turn to tick cooldown
       const result2 = processPlayerAction(
         result1.combatState,
-        { action: 'attack' },
+        { action: 'end_turn' },
         character
       )
       expect(result2.combatState.playerState.abilityCooldown).toBe(1)
 
-      // Next turn: attack again
+      // Next turn: end turn again
       const result3 = processPlayerAction(
         result2.combatState,
-        { action: 'attack' },
+        { action: 'end_turn' },
         character
       )
       expect(result3.combatState.playerState.abilityCooldown).toBe(0)

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { processPlayerAction, getCombatRewards } from '@/app/tap-tap-adventure/lib/combatEngine'
 import { applyDeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
+import { getSpellLevel } from '@/app/tap-tap-adventure/lib/spellProgression'
 import { CombatActionRequestSchema } from '@/app/tap-tap-adventure/models/combat'
 
 export async function POST(req: NextRequest) {
@@ -38,6 +39,27 @@ export async function POST(req: NextRequest) {
       rewards = { gold: -goldLoss, loot: [] }
     }
 
+    // Grant spell XP if a spell was cast this turn
+    if (actionParsed.action === 'cast_spell' && actionParsed.spellId) {
+      const castLog = updatedCombat.combatLog.find(
+        (l: any) => l.turn === updatedCombat.turnNumber && l.actor === 'player' && l.action === 'cast_spell' && !l.description?.includes('fizzle')
+      )
+      if (castLog && updatedCharacter.spellbook) {
+        const spellIdx = updatedCharacter.spellbook.findIndex((s: any) => s.id === actionParsed.spellId)
+        if (spellIdx >= 0) {
+          const spell = updatedCharacter.spellbook[spellIdx]
+          const newXp = (spell.spellXp ?? 0) + 1
+          const newLevel = getSpellLevel(newXp)
+          updatedCharacter = {
+            ...updatedCharacter,
+            spellbook: updatedCharacter.spellbook.map((s: any, i: number) =>
+              i === spellIdx ? { ...s, spellXp: newXp, spellLevel: newLevel } : s
+            ),
+          }
+        }
+      }
+    }
+
     // If mount died in combat, remove it from character
     if (result.mountDied) {
       updatedCharacter = { ...updatedCharacter, activeMount: null }
@@ -51,6 +73,22 @@ export async function POST(req: NextRequest) {
           ...updatedCharacter.activeMercenary,
           hp: updatedCombat.playerState.mercenaryHp,
         },
+      }
+    }
+
+    // Persist party member HP from combat state back to character
+    if (updatedCombat.partyMemberStates?.length && updatedCharacter.party?.length) {
+      updatedCharacter = {
+        ...updatedCharacter,
+        party: updatedCharacter.party.map((member: any) => {
+          const combatMember = updatedCombat.partyMemberStates?.find((m: any) => m.memberId === member.id)
+          if (!combatMember) return member
+          // After victory, KO'd members get 1 HP back
+          const postCombatHp = combatMember.isKnockedOut && updatedCombat.status === 'victory'
+            ? 1
+            : combatMember.hp
+          return { ...member, hp: Math.max(0, postCombatHp) }
+        }),
       }
     }
 

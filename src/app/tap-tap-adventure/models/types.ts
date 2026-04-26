@@ -119,6 +119,13 @@ type GameState = {
   metaProgression: MetaProgressionState | null
   runSummary: RunSummaryData | null
   runHistory: RunHistoryEntry[]
+  /** Item awaiting a rarity celebration modal (epic/legendary drops) */
+  pendingLootCelebration: Item | null
+  /** IDs of items recently added to inventory — cleared when viewed */
+  newItemIds: string[]
+  /** Active social encounter NPC and scenario, set by move-forward and cleared after dialogue */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  socialEncounter?: { npc: any; scenario: string } | null
 }
 export type { GameState, DailyRewardState, RunSummaryData }
 export type { DailyChallenge, DailyChallengeType, DailyChallengesState } from './dailyChallenge'
@@ -133,3 +140,5 @@ export type {
 } from './metaProgression'
 export type { BestiaryEntry, BestiaryEntrySchema } from './bestiary'
 export type { RunHistoryEntry, RunHistoryEntrySchema } from './runHistory'
+export type { PartyMember } from './partyMember'
+export { PartyMemberSchema, MAX_PARTY_SIZE } from './partyMember'

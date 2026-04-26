@@ -92,7 +92,7 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
   const renderPrimary = (entry: AdventureScoreEntry): string => {
     switch (category) {
       case 'distance':
-        return `${entry.distance.toLocaleString()} steps`
+        return `${entry.distance.toLocaleString()} km`
       case 'level':
         return `Lv ${entry.level}`
       case 'gold':
@@ -107,7 +107,7 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
       case 'distance':
         return `Lv ${entry.level} ${entry.characterClass}`
       case 'level':
-        return `${entry.distance.toLocaleString()} steps`
+        return `${entry.distance.toLocaleString()} km`
       case 'gold':
         return `Lv ${entry.level} ${entry.characterClass}`
       case 'regionsConquered':

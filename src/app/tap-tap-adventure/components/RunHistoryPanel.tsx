@@ -1,124 +1,117 @@
 'use client'
 
 import { useState } from 'react'
-import { RunHistoryEntry } from '@/app/tap-tap-adventure/models/runHistory'
+import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import type { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
-const REASON_STYLES: Record<RunHistoryEntry['reason'], { icon: string; color: string; label: string }> = {
-  death: { icon: '💀', color: 'text-red-400', label: 'Died' },
-  permadeath: { icon: '💀', color: 'text-red-700', label: 'Permadeath' },
-  retirement: { icon: '🏳️', color: 'text-amber-400', label: 'Retired' },
-  victory: { icon: '👑', color: 'text-green-400', label: 'Victory' },
+const REASON_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  dead: { label: 'Slain', color: 'text-red-400', icon: '💀' },
+  retired: { label: 'Retired', color: 'text-amber-400', icon: '🏆' },
 }
 
-function formatDistance(d: number): string {
-  if (d >= 1000) return `${(d / 1000).toFixed(1)}k`
-  return `${d}`
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return iso
-  }
-}
-
-export function RunHistoryPanel({ runHistory }: { runHistory: RunHistoryEntry[] }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  const count = runHistory.length
-
-  if (!isExpanded) {
-    return (
-      <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-indigo-700/50 transition-colors"
-        onClick={() => setIsExpanded(true)}
-      >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-indigo-400">Run History</span>
-          <span className="text-xs text-slate-400">{count} {count === 1 ? 'run' : 'runs'}</span>
-        </div>
-      </button>
-    )
-  }
-
-  // Compute best run indicators
-  const bestLevel = count > 0 ? Math.max(...runHistory.map(r => r.level)) : 0
-  const bestDistance = count > 0 ? Math.max(...runHistory.map(r => r.distance)) : 0
+function RunCard({ character }: { character: FantasyCharacter }) {
+  const [expanded, setExpanded] = useState(false)
+  const reason = REASON_CONFIG[character.status] ?? REASON_CONFIG.dead
+  const region = getRegion(character.currentRegion ?? 'green_meadows')
+  const regionsVisited = (character.visitedRegions ?? []).length
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <button
-          className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
-        >
-          Run History
-        </button>
-        <span className="text-xs text-slate-400">{count} {count === 1 ? 'run' : 'runs'}</span>
+    <button
+      type="button"
+      onClick={() => setExpanded(!expanded)}
+      className="w-full text-left bg-[#161723] border border-[#3a3c56] rounded-lg p-2.5 hover:border-slate-500 transition-colors"
+    >
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm">{reason.icon}</span>
+          <span className="font-semibold text-sm text-slate-200 truncate">{character.name}</span>
+          <span className="text-xs text-slate-500">Lv.{character.level}</span>
+        </div>
+        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${reason.color} bg-slate-800/60`}>
+          {reason.label}
+        </span>
       </div>
 
-      {count === 0 && (
-        <p className="text-xs text-slate-500 italic">No completed runs yet. Finish a run to see your history here.</p>
-      )}
+      {/* Quick stats row */}
+      <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-400">
+        <span>{character.class}</span>
+        <span>·</span>
+        <span>{(character.distance ?? 0).toLocaleString()} km</span>
+        <span>·</span>
+        <span>{(character.gold ?? 0).toLocaleString()} gold</span>
+        <span>·</span>
+        <span>{regionsVisited} region{regionsVisited !== 1 ? 's' : ''}</span>
+      </div>
 
-      <div className="space-y-2">
-        {runHistory.map(entry => {
-          const style = REASON_STYLES[entry.reason]
-          const isBestLevel = entry.level === bestLevel && bestLevel > 0
-          const isBestDistance = entry.distance === bestDistance && bestDistance > 0
-
-          return (
-            <div
-              key={entry.id}
-              className="rounded p-2 text-xs bg-[#161723] border border-[#2a2b3f]"
-            >
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-semibold text-white">{entry.characterName}</span>
-                <span className="text-slate-400">{entry.characterClass}</span>
-                {entry.difficultyMode && entry.difficultyMode !== 'normal' && (
-                  <span className="text-[9px] font-bold uppercase tracking-wide bg-purple-900/40 text-purple-300 border border-purple-700/30 rounded px-1 py-0.5">
-                    {entry.difficultyMode}
-                  </span>
-                )}
-                <span className={`ml-auto font-semibold ${style.color}`}>
-                  {style.icon} {style.label}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mt-1 text-[10px] text-slate-400">
-                <span>
-                  Lv{' '}
-                  <span className={isBestLevel ? 'text-amber-300 font-semibold' : 'text-slate-200'}>
-                    {entry.level}
-                  </span>
-                  {isBestLevel && count > 1 && <span className="text-amber-400 ml-0.5">★</span>}
-                </span>
-                <span>
-                  Dist{' '}
-                  <span className={isBestDistance ? 'text-amber-300 font-semibold' : 'text-slate-200'}>
-                    {formatDistance(entry.distance)}
-                  </span>
-                  {isBestDistance && count > 1 && <span className="text-amber-400 ml-0.5">★</span>}
-                </span>
-                <span>
-                  Gold <span className="text-slate-200">{entry.gold}</span>
-                </span>
-                <span>
-                  Regions <span className="text-slate-200">{entry.regionsConquered}</span>
-                </span>
-                <span>
-                  Essence <span className="text-slate-200">{entry.essenceEarned}</span>
-                </span>
-              </div>
-
-              <div className="mt-1 text-[9px] text-slate-500">
-                {formatDate(entry.endedAt)}
-              </div>
+      {/* Expanded details */}
+      {expanded && (
+        <div className="mt-2 pt-2 border-t border-[#3a3c56] space-y-1.5 text-xs">
+          <div className="flex justify-between">
+            <span className="text-slate-500">Last Region</span>
+            <span className="text-slate-300">{region.icon} {region.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Stats</span>
+            <span className="text-slate-300">
+              STR {character.strength} · INT {character.intelligence} · LCK {character.luck} · CHA {character.charisma}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Deaths</span>
+            <span className="text-slate-300">{character.deathCount ?? 0}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Difficulty</span>
+            <span className="text-slate-300 capitalize">{character.difficultyMode ?? 'normal'}</span>
+          </div>
+          {character.equipment?.weapon && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Weapon</span>
+              <span className="text-slate-300 truncate ml-2">{character.equipment.weapon.name}</span>
             </div>
-          )
-        })}
-      </div>
+          )}
+        </div>
+      )}
+    </button>
+  )
+}
+
+export function RunHistoryPanel() {
+  const { gameState } = useGameStore()
+  const [isExpanded, setIsExpanded] = useState(true)
+
+  const pastRuns = (gameState.characters ?? [])
+    .filter(c => c.status === 'dead' || c.status === 'retired')
+    .sort((a, b) => (b.level ?? 0) - (a.level ?? 0))
+
+  return (
+    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[#252640] transition-colors"
+      >
+        <span className="text-sm font-semibold text-slate-200">
+          📜 Run History
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">{pastRuns.length} run{pastRuns.length !== 1 ? 's' : ''}</span>
+          <span className="text-slate-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="p-3 space-y-2">
+          {pastRuns.length === 0 ? (
+            <p className="text-xs text-slate-500 text-center py-4">
+              No completed runs yet. Your fallen and retired characters will appear here.
+            </p>
+          ) : (
+            pastRuns.map(char => <RunCard key={char.id} character={char} />)
+          )}
+        </div>
+      )}
     </div>
   )
 }

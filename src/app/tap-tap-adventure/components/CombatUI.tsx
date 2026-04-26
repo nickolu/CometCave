@@ -10,14 +10,19 @@ import { useCombatActionMutation } from '@/app/tap-tap-adventure/hooks/useCombat
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { isUsableInCombat } from '@/app/tap-tap-adventure/lib/combatItemEffects'
-import { ELEMENT_COLORS } from '@/app/tap-tap-adventure/config/elements'
+import { ELEMENT_COLORS, getElementalMultiplier } from '@/app/tap-tap-adventure/config/elements'
+import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
+import { getXpForNextLevel } from '@/app/tap-tap-adventure/lib/spellProgression'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
-import { CombatAction, CombatState, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
+import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { getWeatherType } from '@/app/tap-tap-adventure/config/weather'
+import { StatusEffectsHUD } from '@/app/tap-tap-adventure/components/StatusEffectsHUD'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 import { getDeathFlavorText, getStoryContext, getPermadeathEpitaph } from '@/app/tap-tap-adventure/lib/deathFlavorText'
 import { FloatingDamage, DamageEvent } from './FloatingDamage'
+import { SpellComboPanel } from './SpellComboPanel'
 
 function HpBar({ current, max, label, color }: { current: number; max: number; label: string; color: string }) {
   const pct = Math.max(0, Math.min(100, (current / max) * 100))
@@ -57,46 +62,85 @@ function ManaBar({ current, max }: { current: number; max: number }) {
     </div>
   )
 }
-function StatusEffectBadges({ effects, label }: { effects: StatusEffect[]; label: string }) {
-  if (effects.length === 0) return null
 
-  const iconMap: Record<string, string> = {
-    poison: '☠️',
-    burn: '🔥',
-    slow: '🐌',
-    curse: '💀',
-    thorns: '🌿',
-    berserk: '😡',
-    fear: '😨',
-    reflect: '🪞',
+const ELEMENT_ICONS: Record<string, string> = {
+  fire: '🔥', ice: '❄️', lightning: '⚡', shadow: '🌑', nature: '🌿', arcane: '✨',
+}
+
+function ElementalMatchup({ enemyElement }: { enemyElement: SpellElement | undefined }) {
+  if (!enemyElement || enemyElement === 'none') return null
+
+  const allElements: SpellElement[] = ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane']
+  const strong: SpellElement[] = []
+  const weak: SpellElement[] = []
+
+  for (const atk of allElements) {
+    const mult = getElementalMultiplier(atk, enemyElement)
+    if (mult >= 2.0) strong.push(atk)
+    else if (mult <= 0.5) weak.push(atk)
   }
 
-  const colorMap: Record<string, string> = {
-    poison: 'bg-green-900/50 text-green-400',
-    burn: 'bg-orange-900/50 text-orange-400',
-    slow: 'bg-blue-900/50 text-blue-400',
-    curse: 'bg-purple-900/50 text-purple-400',
-    thorns: 'bg-green-900/50 text-green-400',
-    berserk: 'bg-red-900/50 text-red-400',
-    fear: 'bg-yellow-900/50 text-yellow-400',
-    reflect: 'bg-slate-700/50 text-slate-300',
-  }
+  if (strong.length === 0 && weak.length === 0) return null
 
   return (
-    <div className="flex gap-1 flex-wrap">
-      {effects.map((effect, i) => (
-        <span
-          key={i}
-          className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
-          title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
-        >
-          {iconMap[effect.type] ?? '⬡'} {effect.name} ({effect.turnsRemaining}t)
+    <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1">
+      {strong.length > 0 && (
+        <span className="flex items-center gap-1">
+          <span className="text-green-500">Weak to</span>
+          {strong.map(e => (
+            <span key={e} className="text-green-400" title={`${e} deals 2x damage`}>
+              {ELEMENT_ICONS[e] ?? e}
+            </span>
+          ))}
         </span>
-      ))}
+      )}
+      {weak.length > 0 && (
+        <span className="flex items-center gap-1">
+          <span className="text-red-500">Resists</span>
+          {weak.map(e => (
+            <span key={e} className="text-red-400" title={`${e} deals 0.5x damage`}>
+              {ELEMENT_ICONS[e] ?? e}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   )
 }
 
+function WeatherBanner({ weatherId }: { weatherId: string }) {
+  if (!weatherId || weatherId === 'clear') return null
+  const weather = getWeatherType(weatherId)
+  if (weather.id === 'clear') return null
+
+  const effects: string[] = []
+  if (weather.accuracyMod > 0) effects.push(`-${Math.round(weather.accuracyMod * 100)}% enemy accuracy`)
+  if (weather.critChanceMod > 0) effects.push(`+${Math.round(weather.critChanceMod * 100)}% crit chance`)
+  if (weather.fireDamageMod > 0) effects.push(`+${Math.round(weather.fireDamageMod * 100)}% fire`)
+  if (weather.fireDamageMod < 0) effects.push(`${Math.round(weather.fireDamageMod * 100)}% fire`)
+  if (weather.iceDamageMod > 0) effects.push(`+${Math.round(weather.iceDamageMod * 100)}% ice`)
+  if (weather.iceDamageMod < 0) effects.push(`${Math.round(weather.iceDamageMod * 100)}% ice`)
+  if (weather.lightningDamageMod > 0) effects.push(`+${Math.round(weather.lightningDamageMod * 100)}% lightning`)
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-950/40 border border-sky-800/30 text-xs">
+      <span className="text-base leading-none">{weather.icon}</span>
+      <div className="flex-1 min-w-0">
+        <span className="font-semibold text-sky-200">{weather.name}</span>
+        {effects.length > 0 && (
+          <span className="ml-2 text-sky-300/70">
+            {effects.map((e, i) => (
+              <span key={i}>
+                {i > 0 && <span className="mx-1 text-sky-800">·</span>}
+                <span className={e.startsWith('-') ? 'text-red-400/80' : 'text-green-400/80'}>{e}</span>
+              </span>
+            ))}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface CombatUIProps {
   combatState: CombatState
@@ -222,6 +266,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const spellCooldowns = playerState.spellCooldowns ?? {}
   const currentMana = playerState.mana ?? 0
   const maxMana = playerState.maxMana ?? 0
+  const readySpellCount = spellbook.filter(
+    (s: Spell) => (spellCooldowns[s.id] ?? 0) === 0 && currentMana >= (s.manaCost ?? 0)
+  ).length
 
   const handleAction = useCallback(
     (action: CombatAction, itemId?: string) => {
@@ -255,10 +302,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
           if (ap >= (AP_COSTS.flee ?? 3)) { e.preventDefault(); handleAction('flee') }
           break
         case 'q': // Move Closer
-          if ((ap >= (AP_COSTS.move_closer ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'close') { e.preventDefault(); handleAction('move_closer') }
+          if ((ap >= (AP_COSTS.move_closer ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'close' && ((playerState.stamina ?? 6) > 0 || (playerState.mountMovesRemaining ?? 0) > 0)) { e.preventDefault(); handleAction('move_closer') }
           break
         case 'e': // Move Away
-          if ((ap >= (AP_COSTS.move_away ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'far') { e.preventDefault(); handleAction('move_away') }
+          if ((ap >= (AP_COSTS.move_away ?? 1) || (playerState.mountMovesRemaining ?? 0) > 0) && combatState.combatDistance !== 'far' && ((playerState.stamina ?? 6) > 0 || (playerState.mountMovesRemaining ?? 0) > 0)) { e.preventDefault(); handleAction('move_away') }
           break
         case 'z': // End Turn
           e.preventDefault(); handleAction('end_turn')
@@ -339,6 +386,9 @@ export function CombatUI({ combatState }: CombatUIProps) {
         <p className="text-sm text-slate-300 italic">{scenario}</p>
       </div>
 
+      {/* Weather banner */}
+      <WeatherBanner weatherId={character?.currentWeather ?? 'clear'} />
+
       {/* Enemy info — condensed for mobile */}
       <div className="relative bg-[#1e1f30] border border-red-900/30 rounded-lg p-2 sm:p-3 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -364,8 +414,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {showEnemyDesc && (
           <p className="text-xs text-slate-400">{enemy.description}</p>
         )}
+        <ElementalMatchup enemyElement={enemy.element as SpellElement | undefined} />
         <HpBar current={enemy.hp} max={enemy.maxHp} label="Enemy" color="text-red-400" />
-        <StatusEffectBadges effects={enemy.statusEffects ?? []} label="Enemy" />
+        <StatusEffectsHUD
+          statusEffects={enemy.statusEffects ?? []}
+          activeBuffs={[]}
+          activeSpellEffects={[]}
+          side="enemy"
+        />
         {/* Distance indicator */}
         {combatState.combatDistance && (
           <div className="flex items-center justify-center gap-2 mt-2 text-xs">
@@ -390,6 +446,29 @@ export function CombatUI({ combatState }: CombatUIProps) {
         )}
         <FloatingDamage events={damageEvents.filter(e => e.target === 'enemy')} />
       </div>
+
+      {/* Additional enemies */}
+      {combatState.additionalEnemies?.map((addEnemy, idx) => (
+        addEnemy.hp > 0 ? (
+          <div key={addEnemy.id} className="bg-red-900/10 border border-red-900/30 rounded-lg p-2 space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-red-300">{addEnemy.name}</span>
+              <span className="text-[10px] text-slate-400">Lv {addEnemy.level}</span>
+            </div>
+            <HpBar current={addEnemy.hp} max={addEnemy.maxHp} label="" color="text-red-400" />
+            <button
+              className="text-[10px] px-2 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
+              onClick={() => handleAction('switch_target', idx.toString())}
+            >
+              Target
+            </button>
+          </div>
+        ) : (
+          <div key={addEnemy.id} className="bg-slate-900/30 border border-slate-800 rounded-lg p-2">
+            <span className="text-xs text-slate-600 line-through">{addEnemy.name} — Defeated</span>
+          </div>
+        )
+      ))}
 
       {/* Enemy telegraph warning */}
       {combatState.enemyTelegraph && (
@@ -444,50 +523,39 @@ export function CombatUI({ combatState }: CombatUIProps) {
             color="text-amber-400"
           />
         )}
+        {/* Party member HP bars */}
+        {combatState.partyMemberStates?.map(member => (
+          <HpBar
+            key={member.memberId}
+            current={member.hp}
+            max={member.maxHp}
+            label={`${member.icon} ${member.name}${member.isKnockedOut ? ' (KO)' : ''}`}
+            color={member.isKnockedOut ? 'text-slate-500' : 'text-emerald-400'}
+          />
+        ))}
         {maxMana > 0 && (
           <ManaBar current={currentMana} max={maxMana} />
         )}
-        {/* Status badges row */}
-        {((playerState.activeSpellEffects ?? []).length > 0 || (playerState.activeBuffs ?? []).length > 0 || (playerState.statusEffects ?? []).length > 0) && (
-          <div className="flex gap-1 flex-wrap">
-            {(playerState.activeSpellEffects ?? []).map((effect, i) => (
-              <span key={`spell-${i}`} className={`text-[10px] px-1.5 py-0.5 rounded ${
-                effect.effectType === 'heal_over_time' ? 'bg-green-900/50 text-green-400' :
-                effect.effectType === 'damage_reduction' ? 'bg-cyan-900/50 text-cyan-400' :
-                effect.effectType === 'damage_over_time' || effect.effectType === 'bleed' ? 'bg-red-900/50 text-red-400' :
-                'bg-purple-900/50 text-purple-400'
-              }`}>
-                {effect.effectType.replace(/_/g, ' ')} ({effect.turnsRemaining}t)
-              </span>
-            ))}
-            {(playerState.activeBuffs ?? []).map((buff, i) => (
-              <span key={`buff-${i}`} className="text-[10px] px-1.5 py-0.5 bg-emerald-900/50 text-emerald-400 rounded">
-                +{buff.value} {buff.stat} ({buff.turnsRemaining}t)
-              </span>
-            ))}
-            {(playerState.statusEffects ?? []).map((effect, i) => {
-              const colorMap: Record<string, string> = {
-                poison: 'bg-green-900/50 text-green-400',
-                burn: 'bg-orange-900/50 text-orange-400',
-                slow: 'bg-blue-900/50 text-blue-400',
-                curse: 'bg-purple-900/50 text-purple-400',
-                thorns: 'bg-green-900/50 text-green-400',
-                berserk: 'bg-red-900/50 text-red-400',
-                fear: 'bg-yellow-900/50 text-yellow-400',
-                reflect: 'bg-slate-700/50 text-slate-300',
-              }
-              return (
-                <span
-                  key={`status-${i}`}
-                  className={`text-[10px] px-1.5 py-0.5 rounded ${colorMap[effect.type] ?? 'bg-slate-700/50 text-slate-300'}`}
-                  title={`${effect.name}: ${effect.value > 0 ? effect.value + ' per turn, ' : ''}${effect.turnsRemaining} turns remaining`}
-                >
-                  {effect.name} ({effect.turnsRemaining}t)
-                </span>
-              )
-            })}
+        {/* Stamina bar */}
+        {combatState.combatDistance && (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span className="text-amber-400 w-8">STA</span>
+            <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-500 rounded-full transition-all"
+                style={{ width: `${Math.max(0, Math.min(100, ((playerState.stamina ?? 6) / (playerState.maxStamina ?? 6)) * 100))}%` }}
+              />
+            </div>
+            <span className="text-amber-400 text-right w-6">{playerState.stamina ?? 6}/{playerState.maxStamina ?? 6}</span>
           </div>
         )}
+        {/* Status effects HUD */}
+        <StatusEffectsHUD
+          statusEffects={playerState.statusEffects ?? []}
+          activeBuffs={playerState.activeBuffs ?? []}
+          activeSpellEffects={playerState.activeSpellEffects ?? []}
+          side="player"
+        />
         <FloatingDamage events={damageEvents.filter(e => e.target === 'player')} />
       </div>
 
@@ -504,12 +572,21 @@ export function CombatUI({ combatState }: CombatUIProps) {
                 className={`text-xs ${
                   entry.isCritical
                     ? 'text-yellow-300 font-bold'
+                    : entry.action === 'heal' || entry.action === 'use_item'
+                    ? 'text-emerald-300'
+                    : entry.action === 'defend'
+                    ? 'text-sky-300'
                     : entry.actor === 'player' ? 'text-blue-300' : 'text-red-300'
                 }`}
               >
                 <span className="text-slate-500">T{entry.turn}:</span>{' '}
                 {entry.isCritical && <span className="text-yellow-400 mr-1">&#9733;</span>}
                 {entry.action === 'status_effect' && <span className="mr-1">{entry.description.toLowerCase().includes('poison') ? '☠️' : '🔥'}</span>}
+                {entry.action === 'heal' && <span className="mr-1">❤️</span>}
+                {entry.action === 'defend' && <span className="mr-1">🛡️</span>}
+                {entry.action === 'use_item' && <span className="mr-1">🧪</span>}
+                {entry.action === 'flee' && <span className="mr-1">💨</span>}
+                {entry.action === 'mercenary_attack' && <span className="mr-1">⚔️</span>}
                 {entry.action === 'spell_combo' ? (
                   <><span className="text-purple-400 font-bold">COMBO! </span>{entry.description.replace(/^COMBO: [^!]+! /, '')}</>
                 ) : entry.description.includes('Super effective') ? (
@@ -584,7 +661,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('attack')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.attack ?? 1) || !canAttackAtDistance}
           >
-            {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : `Attack (${AP_COSTS.attack} AP)`}
+            {isPending ? <LoaderCircle className="animate-spin h-4 w-4" /> : <><span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[A]</span>Attack ({AP_COSTS.attack} AP)</>}
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -595,7 +672,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('heavy_attack')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.heavy_attack ?? 2) || !canAttackAtDistance}
           >
-            Heavy Attack ({AP_COSTS.heavy_attack} AP)
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[H]</span>Heavy Attack ({AP_COSTS.heavy_attack} AP)
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -606,7 +683,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('defend')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.defend ?? 1)}
           >
-            Defend ({AP_COSTS.defend} AP)
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[D]</span>Defend ({AP_COSTS.defend} AP)
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors relative border ${
@@ -628,29 +705,33 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => { setShowSpellMenu(!showSpellMenu); setShowItemMenu(false) }}
             disabled={isPending || spellbook.length === 0 || (playerState.ap ?? 3) < (AP_COSTS.cast_spell ?? 2)}
           >
-            Cast Spell ({AP_COSTS.cast_spell} AP) {spellbook.length > 0 && `[${spellbook.length}]`}
+            Cast Spell ({AP_COSTS.cast_spell} AP) {spellbook.length > 0 && (
+              readySpellCount === spellbook.length
+                ? `[${spellbook.length}]`
+                : `[${readySpellCount}/${spellbook.length} ready]`
+            )}
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
+              combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-cyan-900/50 border-cyan-800 hover:bg-cyan-800 text-white'
             }`}
             onClick={() => handleAction('move_closer')}
-            disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
+            disabled={isPending || combatState.combatDistance === 'close' || ((playerState.ap ?? 3) < (AP_COSTS.move_closer ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP`})
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[Q]</span>Close In ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_closer} AP · 1 STA`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
-              combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)
+              combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)
                 ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
                 : 'bg-teal-900/50 border-teal-800 hover:bg-teal-800 text-white'
             }`}
             onClick={() => handleAction('move_away')}
-            disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0)}
+            disabled={isPending || combatState.combatDistance === 'far' || ((playerState.ap ?? 3) < (AP_COSTS.move_away ?? 1) && (playerState.mountMovesRemaining ?? 0) === 0) || ((playerState.stamina ?? 6) <= 0 && (playerState.mountMovesRemaining ?? 0) === 0)}
           >
-            Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP`})
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[E]</span>Back Away ({(playerState.mountMovesRemaining ?? 0) > 0 ? 'Free' : `${AP_COSTS.move_away} AP · 1 STA`})
           </Button>
           <Button
             className={`text-base py-3 rounded-md transition-colors border ${
@@ -661,14 +742,14 @@ export function CombatUI({ combatState }: CombatUIProps) {
             onClick={() => handleAction('flee')}
             disabled={isPending || (playerState.ap ?? 3) < (AP_COSTS.flee ?? 3)}
           >
-            Flee ({AP_COSTS.flee} AP)
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[F]</span>Flee ({AP_COSTS.flee} AP)
           </Button>
           <Button
             className="col-span-2 bg-yellow-900/50 border border-yellow-800 hover:bg-yellow-800 text-white text-base py-3 rounded-md transition-colors"
             onClick={() => handleAction('end_turn')}
             disabled={isPending}
           >
-            End Turn
+            <span className="hidden sm:inline text-slate-400 text-xs font-mono mr-1">[Z]</span>End Turn
           </Button>
         </div>
 
@@ -700,31 +781,61 @@ export function CombatUI({ combatState }: CombatUIProps) {
         {/* Spell selection dropdown */}
         {showSpellMenu && spellbook.length > 0 && (
           <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-2 space-y-1 max-h-48 overflow-y-auto">
-            {spellbook.map((spell: Spell) => {
+            {[...spellbook].sort((a: Spell, b: Spell) => {
+              const aReady = (spellCooldowns[a.id] ?? 0) === 0 ? 0 : 1
+              const bReady = (spellCooldowns[b.id] ?? 0) === 0 ? 0 : 1
+              return aReady - bReady
+            }).map((spell: Spell, _idx: number, sortedArr: Spell[]) => {
               const onCooldown = (spellCooldowns[spell.id] ?? 0) > 0
               const notEnoughMana = currentMana < (spell.manaCost ?? 0)
               const disabled = isPending || onCooldown || notEnoughMana
+              const isFirstCooldown = onCooldown && _idx > 0 && (spellCooldowns[sortedArr[_idx - 1].id] ?? 0) === 0
+
+              // Determine spell's primary element and effectiveness vs enemy
+              const spellElement = spell.effects?.find(e => e.element && e.element !== 'none')?.element as SpellElement | undefined
+              const enemyElement = enemy.element as SpellElement | undefined
+              const elemMult = spellElement && enemyElement ? getElementalMultiplier(spellElement, enemyElement) : 1
+              const effectiveness = elemMult >= 2 ? { label: 'Super effective!', color: 'text-green-400', border: 'border-green-600/50' }
+                : elemMult <= 0.5 ? { label: 'Resisted', color: 'text-red-400', border: 'border-red-600/50' }
+                : null
 
               return (
+                <div key={spell.id}>
+                  {isFirstCooldown && (
+                    <div className="text-[9px] text-slate-500 uppercase tracking-wide px-2 pt-1 pb-0.5">On Cooldown</div>
+                  )}
                 <Button
-                  key={spell.id}
                   className={`w-full text-left whitespace-normal h-auto text-xs py-2 px-3 rounded-md border ${
                     disabled
                       ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed'
-                      : 'bg-[#2a2b3f] border-[#3a3c56] hover:bg-[#3a3c56] text-white'
+                      : effectiveness
+                        ? `bg-[#2a2b3f] ${effectiveness.border} hover:bg-[#3a3c56] text-white`
+                        : 'bg-[#2a2b3f] border-[#3a3c56] hover:bg-[#3a3c56] text-white'
                   }`}
                   onClick={() => handleCastSpell(spell.id)}
                   disabled={disabled}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">{spell.name}</span>
-                    <span className={`text-[10px] ${notEnoughMana ? 'text-red-400' : 'text-blue-400'}`}>
-                      {spell.manaCost ?? 0} MP
-                    </span>
+                    <span className="font-semibold">{spell.name}<span className="text-[10px] text-amber-400 ml-1">Lv{spell.spellLevel ?? 1}</span></span>
+                    <div className="flex items-center gap-2">
+                      {effectiveness && !disabled && (
+                        <span className={`text-[9px] font-bold ${effectiveness.color}`}>
+                          {effectiveness.label}
+                        </span>
+                      )}
+                      <span className={`text-[10px] ${notEnoughMana ? 'text-red-400' : 'text-blue-400'}`}>
+                        {spell.manaCost ?? 0} MP
+                      </span>
+                    </div>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
                     {spell.description}
                   </div>
+                  {(spell.spellLevel ?? 1) < 5 && (
+                    <div className="text-[10px] text-slate-600">
+                      XP: {spell.spellXp ?? 0}/{getXpForNextLevel(spell.spellLevel ?? 1)}
+                    </div>
+                  )}
                   {onCooldown && (
                     <span className="text-[10px] text-yellow-400">
                       Cooldown: {spellCooldowns[spell.id]} turns
@@ -740,14 +851,38 @@ export function CombatUI({ combatState }: CombatUIProps) {
                     </div>
                   )}
                 </Button>
+                </div>
               )
             })}
           </div>
         )}
       </div>
 
-      <div className="text-center text-xs text-slate-500">
-        Turn {combatState.turnNumber}
+      {/* Spell Combos reference (collapsed by default) */}
+      <SpellComboPanel discoveredCombos={character?.discoveredCombos ?? []} />
+
+      {/* Turn counter with combat pressure indicator */}
+      <div className="text-center text-xs">
+        {(() => {
+          const turn = combatState.turnNumber ?? 1
+          if (turn >= 10) {
+            return (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-red-400 font-semibold animate-pulse">Turn {turn}</span>
+                <span className="text-red-500/70">— Prolonged fight! Enemy growing desperate</span>
+              </div>
+            )
+          }
+          if (turn >= 6) {
+            return (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-yellow-400 font-medium">Turn {turn}</span>
+                <span className="text-yellow-500/60">— Fight dragging on...</span>
+              </div>
+            )
+          }
+          return <span className="text-slate-500">Turn {turn}</span>
+        })()}
       </div>
 
       {pendingMountDrop && (
@@ -868,6 +1003,59 @@ export function CombatResult({ combatState, onContinue }: CombatResultProps) {
           )}
         </div>
       )}
+      {/* Combat performance summary */}
+      {(status === 'victory' || status === 'defeat') && combatState.combatLog.length > 0 && (() => {
+        const log = combatState.combatLog
+        const playerDamage = log.filter(e => e.actor === 'player' && e.damage).reduce((sum, e) => sum + (e.damage ?? 0), 0)
+        const damageTaken = log.filter(e => e.actor === 'enemy' && e.damage).reduce((sum, e) => sum + (e.damage ?? 0), 0)
+        const crits = log.filter(e => e.actor === 'player' && e.isCritical).length
+        const turns = combatState.turnNumber ?? 1
+        const hpLeft = combatState.playerState.hp
+        const maxHp = combatState.playerState.maxHp
+        const hpPct = Math.round((hpLeft / maxHp) * 100)
+
+        // Performance rating
+        const rating = status === 'defeat' ? null
+          : turns <= 3 ? { label: 'Flawless', color: 'text-yellow-300' }
+          : turns <= 6 && hpPct > 50 ? { label: 'Efficient', color: 'text-green-300' }
+          : turns <= 9 ? { label: 'Solid', color: 'text-blue-300' }
+          : { label: 'Hard-fought', color: 'text-orange-300' }
+
+        return (
+          <div className="bg-slate-900/50 border border-slate-700/50 rounded-lg p-3 text-xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-400 uppercase tracking-wide font-semibold text-[10px]">Combat Summary</span>
+              {rating && <span className={`font-bold ${rating.color}`}>{rating.label}</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Turns</span>
+                <span>{turns}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Damage dealt</span>
+                <span className="text-green-400">{playerDamage.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Damage taken</span>
+                <span className="text-red-400">{damageTaken.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">HP remaining</span>
+                <span className={hpPct > 50 ? 'text-green-400' : hpPct > 25 ? 'text-yellow-400' : 'text-red-400'}>
+                  {hpLeft}/{maxHp} ({hpPct}%)
+                </span>
+              </div>
+              {crits > 0 && (
+                <div className="flex justify-between col-span-2">
+                  <span className="text-slate-500">Critical hits</span>
+                  <span className="text-yellow-400">★ {crits}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
       {status === 'defeat' && (
         <>
           {/* Flavor text - visible immediately */}

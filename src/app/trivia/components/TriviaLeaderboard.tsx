@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useTriviaStore } from '../hooks/useTriviaStore'
+import { getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 
 type Period = 'daily' | 'weekly' | 'alltime'
 
@@ -37,8 +38,9 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showNameDialog, setShowNameDialog] = useState(!userData.displayName)
+  const [showNameDialog, setShowNameDialog] = useState(!userData.displayName && !userData.nameSkipped)
   const [nameInput, setNameInput] = useState(userData.displayName ?? '')
+  const [copied, setCopied] = useState(false)
 
   const currentName = userData.displayName?.toLowerCase().trim() ?? ''
 
@@ -68,6 +70,38 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     }
   }
 
+  const handleShareLeaderboard = async () => {
+    if (!data?.entries || data.entries.length === 0) return
+
+    const today = getTodayPST()
+    const category = getDailyCategory(today)
+    const date = new Date(today + 'T12:00:00')
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const medals = ['🥇', '🥈', '🥉']
+
+    const lines = (data.entries as DailyEntry[]).slice(0, 5).map((entry: DailyEntry, i: number) => {
+      const prefix = i < 3 ? medals[i] : `${i + 1}.`
+      return `${prefix} ${entry.displayName ?? 'Unknown'} — ${(entry.score ?? 0).toLocaleString()} pts`
+    })
+
+    const shareText = [
+      `🏆 CometCave Daily Trivia — ${dateStr}`,
+      `Theme: ${category.icon} ${category.name}`,
+      '',
+      ...lines,
+      '',
+      '🔗 Play today\'s trivia: https://cometcave.com/trivia',
+    ].join('\n')
+
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback
+    }
+  }
+
   const renderEntries = () => {
     if (!data || !data.entries) return null
 
@@ -81,14 +115,14 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (period === 'daily') {
       return data.entries.map((entry: DailyEntry, i: number) => {
-        const isCurrentUser = entry.displayName.toLowerCase().trim() === currentName
+        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
         return (
           <LeaderboardRow
             key={`${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName}
-            primary={entry.score.toLocaleString()}
-            secondary={`${entry.correct}/${entry.total} correct`}
+            name={entry.displayName ?? 'Unknown'}
+            primary={(entry.score ?? 0).toLocaleString()}
+            secondary={`${entry.correct ?? 0}/${entry.total ?? 0} correct`}
             isCurrentUser={isCurrentUser}
           />
         )
@@ -97,17 +131,18 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (period === 'weekly') {
       return data.entries.map((entry: WeeklyEntry, i: number) => {
-        const isCurrentUser = entry.displayName.toLowerCase().trim() === currentName
-        const accuracy = entry.totalQuestions > 0
-          ? Math.round((entry.totalCorrect / entry.totalQuestions) * 100)
+        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
+        const totalQ = entry.totalQuestions ?? 0
+        const accuracy = totalQ > 0
+          ? Math.round(((entry.totalCorrect ?? 0) / totalQ) * 100)
           : 0
         return (
           <LeaderboardRow
             key={`${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName}
-            primary={entry.totalScore.toLocaleString()}
-            secondary={`${entry.gamesPlayed} games · ${accuracy}%`}
+            name={entry.displayName ?? 'Unknown'}
+            primary={(entry.totalScore ?? 0).toLocaleString()}
+            secondary={`${entry.gamesPlayed ?? 0} games · ${accuracy}%`}
             isCurrentUser={isCurrentUser}
           />
         )
@@ -116,14 +151,15 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (period === 'alltime') {
       return data.entries.map((entry: AllTimeEntry, i: number) => {
-        const isCurrentUser = entry.displayName.toLowerCase().trim() === currentName
+        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
+        const wins = entry.weeklyWins ?? 0
         return (
           <LeaderboardRow
             key={`${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName}
-            primary={`${entry.weeklyWins} ${entry.weeklyWins === 1 ? 'win' : 'wins'}`}
-            secondary={`${entry.totalScore.toLocaleString()} pts`}
+            name={entry.displayName ?? 'Unknown'}
+            primary={`${wins} ${wins === 1 ? 'win' : 'wins'}`}
+            secondary={`${(entry.totalScore ?? 0).toLocaleString()} pts`}
             isCurrentUser={isCurrentUser}
           />
         )
@@ -186,6 +222,17 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Share leaderboard button — daily tab only */}
+      {period === 'daily' && data?.entries?.length > 0 && (
+        <Button
+          variant="outline"
+          onClick={handleShareLeaderboard}
+          className="w-full"
+        >
+          {copied ? '✅ Copied!' : '📋 Share Leaderboard'}
+        </Button>
+      )}
 
       <Button variant="outline" onClick={onBack} className="w-full">
         Back to Trivia

@@ -32,8 +32,14 @@ const baseChar: FantasyCharacter = {
   strength: 8,
   intelligence: 5,
   luck: 6,
+  charisma: 6,
   inventory: [],
   deathCount: 0,
+  pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
   equipment: { weapon: null, armor: null, accessory: null },
 }
 
