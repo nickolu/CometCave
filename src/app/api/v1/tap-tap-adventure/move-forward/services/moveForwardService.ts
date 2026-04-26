@@ -336,7 +336,8 @@ export async function moveForwardService(
               ],
           resolved: false,
         },
-        shopEvent: activeLandmark.hasShop ? true : undefined,
+        // Don't auto-open shop on town arrival — player enters town first, then visits shop from the hub menu
+        shopEvent: activeLandmark.type !== 'town' && activeLandmark.hasShop ? true : undefined,
         landmarkArrival: {
           name: activeLandmark.name,
           type: activeLandmark.type,
