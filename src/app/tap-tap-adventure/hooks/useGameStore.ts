@@ -1250,6 +1250,17 @@ export const useGameStore = create<GameStore>()(
             const char = state.gameState.characters[charIndex]
             if (!char.party) char.party = []
             char.party.push(member)
+
+            // Mark NPC as recruited to prevent duplicate recruitment
+            if (member.id.startsWith('npc-')) {
+              const npcId = member.id.replace('npc-', '')
+              if (!char.npcEncounters) char.npcEncounters = {}
+              if (char.npcEncounters[npcId]) {
+                char.npcEncounters[npcId].recruited = true
+              } else {
+                char.npcEncounters[npcId] = { timesSpoken: 0, disposition: 0, recruited: true }
+              }
+            }
           })
         )
         return true
@@ -1284,6 +1295,14 @@ export const useGameStore = create<GameStore>()(
             if (charIndex < 0) return
             const char = state.gameState.characters[charIndex]
             char.party = (char.party ?? []).filter(m => m.id !== memberId)
+
+            // Clear recruited flag so NPC can be re-recruited later
+            if (memberId.startsWith('npc-')) {
+              const npcId = memberId.replace('npc-', '')
+              if (char.npcEncounters?.[npcId]) {
+                char.npcEncounters[npcId].recruited = false
+              }
+            }
           })
         )
       },

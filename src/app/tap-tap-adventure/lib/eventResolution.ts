@@ -3,6 +3,8 @@ import { FantasyDecisionOption } from '@/app/tap-tap-adventure/models/story'
 import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
 import { getFactionForRegion, FACTIONS } from '@/app/tap-tap-adventure/config/factions'
 import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { createPartyMember } from '@/app/tap-tap-adventure/lib/partyRecruitment'
+import { MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
 
 export function applyEffects(
   character: FantasyCharacter,
@@ -17,6 +19,16 @@ export function applyEffects(
     hpChange?: number
     mpChange?: number
     bountyChange?: number
+    grantCompanion?: {
+      name: string
+      description?: string
+      icon?: string
+      level?: number
+      dailyCost?: number
+      rarity?: 'common' | 'uncommon' | 'rare' | 'legendary'
+      isTemporary?: boolean
+      turnsRemaining?: number
+    }
   }
 ): FantasyCharacter {
   if (!effects) return character
@@ -110,6 +122,28 @@ export function applyEffects(
       updatedCharacter = {
         ...updatedCharacter,
         landmarkState: { ...lmState, landmarks: updatedLandmarks },
+      }
+    }
+  }
+
+  // Grant companion
+  if (effects.grantCompanion) {
+    const party = updatedCharacter.party ?? []
+    if (party.length < MAX_PARTY_SIZE) {
+      const comp = effects.grantCompanion
+      const member = createPartyMember({
+        id: `event-companion-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+        name: comp.name,
+        description: comp.description,
+        icon: comp.icon ?? '⚔️',
+        level: comp.level ?? updatedCharacter.level,
+        dailyCost: comp.dailyCost ?? 0,
+        rarity: comp.rarity ?? 'common',
+        role: 'combatant',
+      })
+      updatedCharacter = {
+        ...updatedCharacter,
+        party: [...party, member],
       }
     }
   }
