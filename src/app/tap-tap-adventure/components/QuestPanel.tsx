@@ -5,8 +5,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { calculateDay, STEPS_PER_DAY } from '@/app/tap-tap-adventure/lib/leveling'
+import { createPartyMember } from '@/app/tap-tap-adventure/lib/partyRecruitment'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
+import { MAX_PARTY_SIZE } from '@/app/tap-tap-adventure/models/partyMember'
 import { QuestCelebration } from './QuestCelebration'
 
 function getUrgencyStyle(daysLeft: number): { badge: string; bar: string; border: string } {
@@ -28,7 +30,7 @@ function getUrgencyStyle(daysLeft: number): { badge: string; bar: string; border
 }
 
 function RewardPreview({ quest }: { quest: TimedQuest }) {
-  const hasRewards = quest.rewards.gold || quest.rewards.reputation || (quest.rewards.items && quest.rewards.items.length > 0)
+  const hasRewards = quest.rewards.gold || quest.rewards.reputation || (quest.rewards.items && quest.rewards.items.length > 0) || quest.rewards.companion
   if (!hasRewards) return null
 
   return (
@@ -44,6 +46,9 @@ function RewardPreview({ quest }: { quest: TimedQuest }) {
         {quest.rewards.items?.map(item => (
           <span key={item.id} className="text-[10px] text-purple-400">+ {item.name}</span>
         ))}
+        {quest.rewards.companion && (
+          <span className="text-[10px] text-green-400">+ {quest.rewards.companion.name} (companion)</span>
+        )}
       </div>
     </div>
   )
@@ -84,7 +89,21 @@ export function QuestPanel() {
     const updatedChars = gs.characters.map(c => {
       if (c.id !== character.id) return c
       const updatedInventory = [...c.inventory, ...(rewards.items ?? [])]
-      return { ...c, gold: updatedGold, reputation: updatedRep, inventory: updatedInventory }
+      let updatedParty = [...(c.party ?? [])]
+      if (rewards.companion && updatedParty.length < MAX_PARTY_SIZE) {
+        const member = createPartyMember({
+          id: `quest-companion-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          name: rewards.companion.name,
+          description: rewards.companion.description,
+          icon: rewards.companion.icon ?? '⚔️',
+          level: character.level,
+          dailyCost: 0,  // Quest companions are loyal — no upkeep
+          rarity: rewards.companion.rarity ?? 'common',
+          role: 'combatant',
+        })
+        updatedParty = [...updatedParty, member]
+      }
+      return { ...c, gold: updatedGold, reputation: updatedRep, inventory: updatedInventory, party: updatedParty }
     })
     setGameState({ ...gs, characters: updatedChars, activeQuest: null })
     setShowCelebration(false)
@@ -196,6 +215,7 @@ export function QuestPanel() {
           {quest.rewards.items?.map(item => (
             <div key={item.id}>+ {item.name}</div>
           ))}
+          {quest.rewards.companion && <div>+ {quest.rewards.companion.name} (companion)</div>}
         </div>
         <Button
           className="w-full bg-emerald-700 hover:bg-emerald-600 text-white text-xs py-1.5 rounded"

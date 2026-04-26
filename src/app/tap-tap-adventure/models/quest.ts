@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ItemSchema } from './item'
+import { PartyMemberSchema } from './partyMember'
 
 export const TimedQuestSchema = z.object({
   id: z.string(),
@@ -21,6 +22,12 @@ export const TimedQuestSchema = z.object({
     gold: z.number().optional(),
     reputation: z.number().optional(),
     items: z.array(ItemSchema).optional(),
+    companion: z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      icon: z.string().optional(),
+      rarity: z.enum(['common', 'uncommon', 'rare', 'legendary']).optional(),
+    }).optional(),
   }),
 })
 export type TimedQuest = z.infer<typeof TimedQuestSchema>
