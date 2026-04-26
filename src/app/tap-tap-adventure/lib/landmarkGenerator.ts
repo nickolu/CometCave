@@ -92,10 +92,14 @@ export function generateLandmarks(
   let currentDist = Math.floor((20 + Math.floor(rng() * 21)) * difficultyMultiplier) // 20-40, scaled
   const landmarks: GeneratedLandmark[] = []
 
-  for (const template of selected) {
+  for (let li = 0; li < selected.length; li++) {
+    const template = selected[li]
+    // Place the first landmark (guaranteed town) closer to origin so it's the nearest target
+    const posRange = li === 0 ? range * 0.4 : range
+    const posOffset = li === 0 ? margin : margin
     const position = {
-      x: Math.round(margin + rng() * range),
-      y: Math.round(margin + rng() * range),
+      x: Math.round(posOffset + rng() * posRange),
+      y: Math.round(posOffset + rng() * posRange),
     }
     landmarks.push({
       templateId: template.id,

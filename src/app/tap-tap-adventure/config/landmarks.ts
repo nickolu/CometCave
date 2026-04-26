@@ -79,6 +79,21 @@ export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
 
   green_meadows: [
     {
+      id: 'gm_hearthwood',
+      name: 'Hearthwood',
+      type: 'town',
+      description: 'A warm and welcoming hamlet nestled in a sunlit valley. Adventurers rest, resupply, and share tales by the hearth.',
+      icon: '🏘️',
+      hasShop: true,
+      encounterPrompt: 'A cozy hamlet with smoke rising from stone chimneys. The central hearth blazes in the town square, and friendly townsfolk wave as you approach.',
+      hasInn: true,
+      hasStable: true,
+      hasMailbox: true,
+      hasNoticeBoard: true,
+      hasTransport: false,
+      hasCrafting: true,
+    },
+    {
       id: 'gm_mill',
       name: 'The Old Mill',
       type: 'ruins',
