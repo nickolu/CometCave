@@ -24,7 +24,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['war', 'defense', 'iron'],
     },
-    startingWeapon: { name: 'Iron Greatsword', description: 'A massive iron blade, heavy but devastating.', effects: { strength: 3, range: 'close' } },
+    startingWeapon: { name: 'Iron Sword', description: 'A sturdy iron blade, well-balanced and reliable.', effects: { strength: 2, range: 'close' } },
   },
   {
     id: 'flame-knight',
@@ -48,7 +48,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['war', 'fire', 'melee'],
     },
-    startingWeapon: { name: 'Blazing Longsword', description: 'A sword wreathed in flickering flames.', effects: { strength: 3, range: 'close' } },
+    startingWeapon: { name: 'Wooden Club', description: 'A heavy wooden club, simple but effective.', effects: { strength: 2, range: 'close' } },
   },
   {
     id: 'storm-berserker',
@@ -72,7 +72,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['war', 'storm', 'melee'],
     },
-    startingWeapon: { name: 'Thunder Maul', description: 'A war hammer crackling with static charge.', effects: { strength: 3, range: 'close' } },
+    startingWeapon: { name: 'Simple Axe', description: 'A basic hand axe with a sharp edge.', effects: { strength: 2, range: 'close' } },
   },
 
   // Arcane
@@ -98,7 +98,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['arcane', 'ice', 'ranged'],
     },
-    startingWeapon: { name: 'Frost Scepter', description: 'A crystalline rod that radiates bitter cold.', effects: { intelligence: 3, range: 'far' } },
+    startingWeapon: { name: 'Apprentice Wand', description: 'A plain wooden wand, standard issue for novice mages.', effects: { intelligence: 2, range: 'far' } },
   },
   {
     id: 'void-channeler',
@@ -122,7 +122,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['arcane', 'void', 'ranged'],
     },
-    startingWeapon: { name: 'Void Staff', description: 'A staff carved from petrified shadow.', effects: { intelligence: 3, range: 'far' } },
+    startingWeapon: { name: 'Oak Staff', description: 'A tall oak staff, worn smooth from use.', effects: { intelligence: 2, range: 'far' } },
   },
   {
     id: 'tempest-sage',
@@ -146,7 +146,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['arcane', 'storm', 'ranged'],
     },
-    startingWeapon: { name: 'Storm Wand', description: 'A wand that hums with bottled lightning.', effects: { intelligence: 3, range: 'far' } },
+    startingWeapon: { name: 'Simple Scepter', description: 'A basic scepter topped with a dull crystal.', effects: { intelligence: 2, range: 'far' } },
   },
 
   // Shadow
@@ -172,7 +172,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['shadow', 'melee', 'stealth'],
     },
-    startingWeapon: { name: 'Umbral Daggers', description: 'Twin blades forged from solidified darkness.', effects: { strength: 3, range: 'close' } },
+    startingWeapon: { name: 'Worn Dagger', description: 'A short dagger with a leather-wrapped grip.', effects: { strength: 1, range: 'close' } },
   },
   {
     id: 'blood-stalker',
@@ -196,7 +196,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['shadow', 'blood', 'melee'],
     },
-    startingWeapon: { name: 'Crimson Fang', description: 'A curved blade with a thirst for blood.', effects: { strength: 3, range: 'close' } },
+    startingWeapon: { name: 'Rusty Shortsword', description: 'A battered shortsword, still sharp enough.', effects: { strength: 1, range: 'close' } },
   },
   {
     id: 'beast-lurker',
@@ -220,7 +220,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['shadow', 'beast', 'melee'],
     },
-    startingWeapon: { name: 'Predator Claws', description: 'Iron claws strapped to the knuckles.', effects: { strength: 3, range: 'close' } },
+    startingWeapon: { name: 'Chipped Knife', description: 'A utility knife pressed into service as a weapon.', effects: { strength: 1, range: 'close' } },
   },
 
   // Divine
@@ -246,7 +246,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['divine', 'light', 'defense'],
     },
-    startingWeapon: { name: 'Radiant Mace', description: 'A golden mace that glows with inner light.', effects: { strength: 2, intelligence: 1, range: 'close' } },
+    startingWeapon: { name: 'Wooden Mace', description: 'A sturdy mace with an iron-banded head.', effects: { strength: 1, intelligence: 1, range: 'close' } },
   },
   {
     id: 'nature-priest',
@@ -270,7 +270,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['nature', 'heal', 'divine'],
     },
-    startingWeapon: { name: 'Living Staff', description: 'A staff of living wood that sprouts tiny leaves.', effects: { strength: 2, intelligence: 1, range: 'close' } },
+    startingWeapon: { name: 'Iron Flail', description: 'A simple flail with a weighted chain.', effects: { strength: 1, intelligence: 1, range: 'close' } },
   },
   {
     id: 'time-keeper',
@@ -294,7 +294,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['divine', 'time', 'ranged'],
     },
-    startingWeapon: { name: 'Chrono Scepter', description: 'A scepter containing a tiny hourglass.', effects: { strength: 2, intelligence: 1, range: 'close' } },
+    startingWeapon: { name: 'Plain Hammer', description: 'A well-worn hammer, practical and dependable.', effects: { strength: 1, intelligence: 1, range: 'close' } },
   },
 
   // Primal
@@ -320,7 +320,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['primal', 'beast', 'melee'],
     },
-    startingWeapon: { name: 'Fang Spear', description: "A spear tipped with a great beast's fang.", effects: { strength: 2, intelligence: 1, range: 'mid' } },
+    startingWeapon: { name: 'Wooden Spear', description: 'A sharpened spear with a fire-hardened tip.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
   },
   {
     id: 'flame-shaman',
@@ -344,7 +344,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['primal', 'fire', 'totem'],
     },
-    startingWeapon: { name: 'Ember Staff', description: 'A gnarled staff with a perpetually glowing tip.', effects: { strength: 2, intelligence: 1, range: 'mid' } },
+    startingWeapon: { name: 'Hunting Bow', description: 'A simple shortbow made from flexible wood.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
   },
   {
     id: 'ice-warden',
@@ -368,7 +368,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['primal', 'ice', 'defense'],
     },
-    startingWeapon: { name: 'Frost Halberd', description: 'A polearm edged with permanent ice.', effects: { strength: 2, intelligence: 1, range: 'mid' } },
+    startingWeapon: { name: 'Quarterstaff', description: 'A solid wooden staff, good for keeping distance.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
   },
 
   // Psionic
@@ -394,7 +394,7 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['psionic', 'void', 'ranged'],
     },
-    startingWeapon: { name: 'Void Crystal', description: 'A hovering crystal that amplifies psychic power.', effects: { intelligence: 3, range: 'far' } },
+    startingWeapon: { name: 'Crystal Focus', description: 'A rough crystal that hums faintly when held.', effects: { intelligence: 1, range: 'far' } },
   },
   {
     id: 'blood-seer',
@@ -418,6 +418,6 @@ export const FALLBACK_CLASSES: GeneratedClass[] = [
       ],
       tags: ['psionic', 'blood', 'self-harm'],
     },
-    startingWeapon: { name: 'Sanguine Focus', description: 'A lens of hardened blood that channels psionic energy.', effects: { intelligence: 3, range: 'far' } },
+    startingWeapon: { name: 'Simple Rod', description: 'A plain metal rod used to channel mental energy.', effects: { intelligence: 1, range: 'far' } },
   },
 ]

@@ -242,6 +242,7 @@ export function useCharacterCreation() {
         quantity: 1,
         type: 'equipment',
         effects: classData.startingWeapon.effects,
+        rarity: 'common',
       }
       startingInventory.push(weaponItem)
       startingEquipment = { weapon: weaponItem, armor: null, accessory: null }
