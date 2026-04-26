@@ -4,7 +4,7 @@ import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import { calculateDay } from './leveling'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 
-type QuestType = 'reach_distance' | 'collect_gold' | 'win_combat' | 'gain_reputation'
+type QuestType = 'reach_distance' | 'collect_gold' | 'win_combat' | 'gain_reputation' | 'explore_landmarks' | 'survive_combats' | 'reach_level' | 'hoard_items' | 'visit_region'
 
 interface QuestTemplate {
   type: QuestType
@@ -47,6 +47,46 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     getTarget: (char) => char.reputation + 5 + Math.floor(Math.random() * 5),
     getDaysAllowed: () => 4 + Math.floor(Math.random() * 2),
     getStartValue: (char) => char.reputation,
+  },
+  {
+    type: 'explore_landmarks',
+    getTitle: (target) => `Explore ${target} Landmarks`,
+    getDescription: (target, days) => `Explore ${target} landmark${target > 1 ? 's' : ''} within ${days} days. Seek out points of interest!`,
+    getTarget: () => 2 + Math.floor(Math.random() * 2),
+    getDaysAllowed: () => 5 + Math.floor(Math.random() * 2),
+    getStartValue: (char) => (char.landmarkState?.landmarks ?? []).filter(lm => lm.explored).length,
+  },
+  {
+    type: 'survive_combats',
+    getTitle: (target) => `Win ${target} Battles`,
+    getDescription: (target, days) => `Win ${target} combat encounter${target > 1 ? 's' : ''} within ${days} days. Seek out worthy foes!`,
+    getTarget: () => 2 + Math.floor(Math.random() * 2),
+    getDaysAllowed: () => 4 + Math.floor(Math.random() * 2),
+    getStartValue: () => 0,
+  },
+  {
+    type: 'reach_level',
+    getTitle: (target) => `Reach Level ${target}`,
+    getDescription: (target, days) => `Advance to level ${target} within ${days} days. Defeat enemies and gain experience!`,
+    getTarget: (char) => char.level + 1,
+    getDaysAllowed: () => 5 + Math.floor(Math.random() * 3),
+    getStartValue: (char) => char.level,
+  },
+  {
+    type: 'hoard_items',
+    getTitle: (target) => `Collect ${target} Items`,
+    getDescription: (target, days) => `Gather ${target} item${target > 1 ? 's' : ''} in your inventory within ${days} days. Loot, buy, and craft!`,
+    getTarget: (char) => char.inventory.length + 3 + Math.floor(Math.random() * 3),
+    getDaysAllowed: () => 4 + Math.floor(Math.random() * 2),
+    getStartValue: (char) => char.inventory.length,
+  },
+  {
+    type: 'visit_region',
+    getTitle: () => 'Venture to New Lands',
+    getDescription: (_target, days) => `Enter a new region within ${days} days. Push forward past the edge of the known world!`,
+    getTarget: (char) => (char.visitedRegions?.length ?? 1) + 1,
+    getDaysAllowed: () => 6 + Math.floor(Math.random() * 3),
+    getStartValue: (char) => char.visitedRegions?.length ?? 1,
   },
 ]
 
@@ -111,6 +151,31 @@ export function checkQuestProgress(
       break
     case 'gain_reputation':
       completed = character.reputation >= quest.target
+      break
+    case 'explore_landmarks': {
+      const exploredCount = (character.landmarkState?.landmarks ?? []).filter(lm => lm.explored).length
+      completed = exploredCount >= quest.target
+      break
+    }
+    case 'survive_combats':
+      if (combatWon) {
+        const newProgress = (quest.startValue ?? 0) + 1
+        if (newProgress >= quest.target) {
+          completed = true
+        } else {
+          // Update startValue to track cumulative wins
+          return { ...quest, startValue: newProgress }
+        }
+      }
+      break
+    case 'reach_level':
+      completed = character.level >= quest.target
+      break
+    case 'hoard_items':
+      completed = character.inventory.length >= quest.target
+      break
+    case 'visit_region':
+      completed = (character.visitedRegions?.length ?? 1) >= quest.target
       break
   }
 
