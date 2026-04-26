@@ -1,4 +1,4 @@
-import { Spell, SpellEffect, SpellSchool, SpellElement, SpellCondition } from '@/app/tap-tap-adventure/models/spell'
+import { Spell, SpellEffect, SpellSchool, SpellElement, SpellCondition, ExplorationEffect } from '@/app/tap-tap-adventure/models/spell'
 
 const SPELL_NAMES: Record<string, string[]> = {
   arcane: ['Arcane Missile', 'Mana Surge', 'Ethereal Lance', 'Astral Barrage', 'Void Bolt'],
@@ -147,6 +147,84 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
 
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
+  // 30% chance for an exploration effect
+  let explorationEffect: ExplorationEffect | undefined
+  let explorationManaCost: number | undefined
+  if (Math.random() < 0.3) {
+    const instantExplorationTypes: ExplorationEffect[] = [
+      {
+        type: 'heal',
+        value: 10 + level * 5,
+        description: `Restores ${10 + level * 5} HP outside of combat.`,
+      },
+      {
+        type: 'mana_restore',
+        value: 5 + level * 2,
+        description: `Restores ${5 + level * 2} mana outside of combat.`,
+      },
+      {
+        type: 'speed_boost',
+        value: 3 + Math.floor(level / 2),
+        description: `Advances ${3 + Math.floor(level / 2)} km toward your target.`,
+      },
+      {
+        type: 'shield',
+        value: 8 + level * 3,
+        description: `Grants a ${8 + level * 3} point shield that activates in your next combat.`,
+      },
+      {
+        type: 'reveal',
+        value: 1,
+        description: `Reveals details about the next landmark ahead.`,
+      },
+    ]
+
+    // Duration-based exploration types available at level 5+
+    const durationExplorationTypes: ExplorationEffect[] = level >= 5 ? [
+      {
+        type: 'cha_boost',
+        value: 2 + Math.floor(level / 5),
+        description: `Boosts your charisma by ${2 + Math.floor(level / 5)} for NPC interactions (10 km).`,
+        duration: 10,
+      },
+      {
+        type: 'faster_travel',
+        value: 2,
+        description: `Doubles your travel speed for 20 km.`,
+        duration: 20,
+      },
+      {
+        type: 'auto_stealth',
+        value: 1,
+        description: `Renders you unseen, avoiding random encounters for 8 km.`,
+        duration: 8,
+      },
+      {
+        type: 'loot_bonus',
+        value: 1.25,
+        description: `Increases loot quality for 25 km.`,
+        duration: 25,
+      },
+      {
+        type: 'instant_travel',
+        value: 10 + level * 2,
+        description: `Instantly advances ${10 + level * 2} km toward your destination.`,
+      },
+      {
+        type: 'scouting',
+        value: 1,
+        description: `Reveals details about the next landmark ahead.`,
+      },
+    ] : []
+
+    // Duration types are rarer (~12% of the time when we get any exploration effect)
+    const usesDuration = durationExplorationTypes.length > 0 && Math.random() < 0.12
+    const explorationTypes = usesDuration ? durationExplorationTypes : instantExplorationTypes
+    const chosen = pickRandom(explorationTypes)
+    explorationEffect = chosen
+    explorationManaCost = Math.max(2, Math.floor(manaCost * 0.6)) // cheaper than combat cost
+  }
+
   return {
     id: `spell-${spellSchool}-${suffix}`,
     name: `${name}${level > 3 ? ' II' : ''}${level > 7 ? 'I' : ''}`,
@@ -158,5 +236,7 @@ export function generateSpellForLevel(level: number, school?: SpellSchool): Spel
     effects,
     conditions: conditions.length > 0 ? conditions : undefined,
     tags: [spellSchool, ...tags],
+    explorationEffect,
+    explorationManaCost,
   }
 }

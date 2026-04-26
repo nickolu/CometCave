@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-04",
+  "categoryId": 18,
+  "categoryName": "Science: Computers",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-04-0",
+      "question": "In web design, what does CSS stand for?",
+      "options": [
+        "Cascading Style Sheet",
+        "Counter Strike: Source",
+        "Computer Style Sheet",
+        "Corrective Style Sheet"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Cascading Style Sheet"
+    },
+    {
+      "id": "opentdb-2026-05-04-1",
+      "question": "In computing, what does LAN stand for?",
+      "options": [
+        "Light Access Node",
+        "Land Address Navigation",
+        "Local Area Network",
+        "Long Antenna Node"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Local Area Network"
+    },
+    {
+      "id": "opentdb-2026-05-04-2",
+      "question": "In computing, what does MIDI stand for?",
+      "options": [
+        "Musical Instrument Digital Interface",
+        "Modular Interface of Digital Instruments",
+        "Musical Interface of Digital Instruments",
+        "Musical Instrument Data Interface"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Musical Instrument Digital Interface"
+    },
+    {
+      "id": "opentdb-2026-05-04-3",
+      "question": "In CSS, which of these values CANNOT be used with the \"position\" property?",
+      "options": [
+        "absolute",
+        "center",
+        "static",
+        "relative"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "center"
+    },
+    {
+      "id": "opentdb-2026-05-04-4",
+      "question": "How many cores does the Intel i7-6950X have?",
+      "options": [
+        "8",
+        "10",
+        "12",
+        "4"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "10"
+    },
+    {
+      "id": "opentdb-2026-05-04-5",
+      "question": "Which kind of algorithm is Ron Rivest not famous for creating?",
+      "options": [
+        "Hashing algorithm",
+        "Asymmetric encryption",
+        "Secret sharing scheme",
+        "Stream cipher"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Secret sharing scheme"
+    },
+    {
+      "id": "ai-2026-05-04-6",
+      "question": "What is the name of the infamous software bug that caused a rocket to explode just 37 seconds after launch in 1996?",
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Ariane 5",
+      "explanation": "The Ariane 5 rocket explosion was caused by a software error related to the conversion of a 64-bit floating point number to a 16-bit integer, which led to an overflow. This incident highlights the critical importance of software reliability in aerospace engineering."
+    },
+    {
+      "id": "ai-2026-05-04-7",
+      "question": "Which significant event in internet history, often referred to as the 'dot-com bubble', reached its peak in March 2000 before a dramatic fall?",
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Dot-com crash",
+      "explanation": "The dot-com crash, also known as the dot-com bubble, was a period of excessive speculation in internet-based companies during the late 1990s. This bubble peaked in March 2000 when many of these internet companies saw their stock prices skyrocket, only to crash dramatically in subsequent months, leading to significant financial losses and marking a pivotal moment in internet history."
+    }
+  ]
+}

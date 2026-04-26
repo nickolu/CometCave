@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-11",
+  "categoryId": 25,
+  "categoryName": "Art",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-11-0",
+      "question": "Who painted the biblical fresco The Creation of Adam?",
+      "options": [
+        "Michelangelo",
+        "Rembrandt",
+        "Leonardo da Vinci",
+        "Caravaggio"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Michelangelo"
+    },
+    {
+      "id": "opentdb-2026-05-11-1",
+      "question": "What is the world's oldest known piece of fiction?",
+      "options": [
+        "Epic of Gilgamesh",
+        "Rosetta Stone",
+        "Code of Hammurabi",
+        "Papyrus of Ani"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Epic of Gilgamesh"
+    },
+    {
+      "id": "opentdb-2026-05-11-2",
+      "question": "Who painted the Mona Lisa?",
+      "options": [
+        "Leonardo da Vinci ",
+        " Vincent van Gogh",
+        "Michelangelo",
+        "Pablo Picasso"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Leonardo da Vinci "
+    },
+    {
+      "id": "opentdb-2026-05-11-3",
+      "question": "In \"Last Supper\" by Leonardo Da Vinci, what two colors were the robes worn by Jesus?",
+      "options": [
+        "Red and Black",
+        "Red and White",
+        "Red and Blue",
+        "Red and Yellow"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Red and Blue"
+    },
+    {
+      "id": "opentdb-2026-05-11-4",
+      "question": "What nationality was the surrealist painter Salvador Dali?",
+      "options": [
+        "Spanish",
+        "Italian",
+        "French",
+        "Portuguese"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Spanish"
+    },
+    {
+      "id": "opentdb-2026-05-11-5",
+      "question": "What nationality was the famous artist Van Gogh?",
+      "options": [
+        "French",
+        "Dutch",
+        "Russian",
+        "Polish"
+      ],
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Dutch"
+    },
+    {
+      "id": "ai-2026-05-11-6",
+      "question": "In photography, what term describes the difference in luminance or color that makes an object distinguishable from other objects and the background?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "Contrast",
+      "explanation": "Contrast in photography is the distinction between the brightest and darkest parts of an image. It is a critical element in creating depth, texture, and emphasis in photographs, helping to highlight the image's subject and mood."
+    },
+    {
+      "id": "ai-2026-05-11-7",
+      "question": "Which digital art cliche involves the overuse of neon color palettes and retro-futuristic aesthetics reminiscent of 1980s pop culture?",
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "Vaporwave",
+      "explanation": "Vaporwave is a subgenre of digital art and music that emerged in the early 2010s, characterized by its nostalgic blend of 1980s and 1990s aesthetics. It often features neon colors, glitch effects, and surreal imagery, making it a popular yet cliche theme in digital art circles. Its appeal lies in its critique of consumer capitalism and its exploration of retrofuturism."
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
+import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
 
@@ -149,39 +150,58 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   // Equipment stat bonuses from each piece
   const getEquipmentBonuses = (char: FantasyCharacter) => {
     const eq = char.equipment ?? { weapon: null, armor: null, accessory: null }
-    let str = 0, int = 0, lck = 0
+    let str = 0, int = 0, lck = 0, cha = 0
     for (const item of [eq.weapon, eq.armor, eq.accessory]) {
       if (item?.effects) {
         str += item.effects.strength ?? 0
         int += item.effects.intelligence ?? 0
         lck += item.effects.luck ?? 0
+        cha += item.effects.charisma ?? 0
       }
     }
-    return { strength: str, intelligence: int, luck: lck }
+    return { strength: str, intelligence: int, luck: lck, charisma: cha }
   }
 
   // Mount bonuses
   const getMountBonuses = () => {
-    if (!mount) return { strength: 0, intelligence: 0, luck: 0 }
+    if (!mount) return { strength: 0, intelligence: 0, luck: 0, charisma: 0 }
     return {
       strength: mount.bonuses.strength ?? 0,
       intelligence: mount.bonuses.intelligence ?? 0,
       luck: mount.bonuses.luck ?? 0,
+      charisma: 0,
     }
   }
 
   const equipBonuses = getEquipmentBonuses(character)
   const mountStatBonuses = getMountBonuses()
 
-  const baseStr = character.strength - equipBonuses.strength - mountStatBonuses.strength - metaBonuses.bonusStrength
-  const baseInt = character.intelligence - equipBonuses.intelligence - mountStatBonuses.intelligence - metaBonuses.bonusIntelligence
-  const baseLck = character.luck - equipBonuses.luck - mountStatBonuses.luck - metaBonuses.bonusLuck
+  const getSkillStatBonuses = () => {
+    const strBonus = getSkillBonus(unlockedSkills, 'strength')
+    const intBonus = getSkillBonus(unlockedSkills, 'intelligence')
+    const lckBonus = getSkillBonus(unlockedSkills, 'luck')
+    const chaBonus = getSkillBonus(unlockedSkills, 'charisma')
+    const allBonus = getSkillBonus(unlockedSkills, 'all_stats')
+    return {
+      strength: strBonus.flat + allBonus.flat,
+      intelligence: intBonus.flat + allBonus.flat,
+      luck: lckBonus.flat + allBonus.flat,
+      charisma: chaBonus.flat + allBonus.flat,
+    }
+  }
+  const skillBonuses = getSkillStatBonuses()
 
-  const formatBonus = (base: number, equip: number, mountB: number, meta: number) => {
+  const baseStr = character.strength - equipBonuses.strength - mountStatBonuses.strength - metaBonuses.bonusStrength - skillBonuses.strength
+  const baseInt = character.intelligence - equipBonuses.intelligence - mountStatBonuses.intelligence - metaBonuses.bonusIntelligence - skillBonuses.intelligence
+  const baseLck = character.luck - equipBonuses.luck - mountStatBonuses.luck - metaBonuses.bonusLuck - skillBonuses.luck
+  const baseCha = character.charisma - equipBonuses.charisma - mountStatBonuses.charisma - skillBonuses.charisma
+
+  const formatBonus = (base: number, equip: number, mountB: number, meta: number, skill: number) => {
     const parts: string[] = [`${base} base`]
     if (equip > 0) parts.push(`+${equip} equip`)
     if (mountB > 0) parts.push(`+${mountB} mount`)
     if (meta > 0) parts.push(`+${meta} eternal`)
+    if (skill > 0) parts.push(`+${skill} skills`)
     return parts.join(', ')
   }
 
@@ -221,7 +241,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   </span>
                 </span>
                 <span className="text-slate-400">Day {day}</span>
-                <span className="text-slate-400">{distance} steps</span>
+                <span className="text-slate-400">{distance} km</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-emerald-300 text-sm">
@@ -249,21 +269,28 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
                   <div className="text-xs text-slate-500 mb-1">Strength</div>
                   <div className="text-xl font-bold text-purple-300">{character.strength}</div>
                   <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseStr, equipBonuses.strength, mountStatBonuses.strength, metaBonuses.bonusStrength)}
+                    {formatBonus(baseStr, equipBonuses.strength, mountStatBonuses.strength, metaBonuses.bonusStrength, skillBonuses.strength)}
                   </div>
                 </div>
                 <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
                   <div className="text-xs text-slate-500 mb-1">Intelligence</div>
                   <div className="text-xl font-bold text-blue-300">{character.intelligence}</div>
                   <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseInt, equipBonuses.intelligence, mountStatBonuses.intelligence, metaBonuses.bonusIntelligence)}
+                    {formatBonus(baseInt, equipBonuses.intelligence, mountStatBonuses.intelligence, metaBonuses.bonusIntelligence, skillBonuses.intelligence)}
                   </div>
                 </div>
                 <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
                   <div className="text-xs text-slate-500 mb-1">Luck</div>
                   <div className="text-xl font-bold text-yellow-300">{character.luck}</div>
                   <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseLck, equipBonuses.luck, mountStatBonuses.luck, metaBonuses.bonusLuck)}
+                    {formatBonus(baseLck, equipBonuses.luck, mountStatBonuses.luck, metaBonuses.bonusLuck, skillBonuses.luck)}
+                  </div>
+                </div>
+                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
+                  <div className="text-xs text-slate-500 mb-1">Charisma</div>
+                  <div className="text-xl font-bold text-pink-400">{character.charisma}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {formatBonus(baseCha, equipBonuses.charisma, mountStatBonuses.charisma, 0, skillBonuses.charisma)}
                   </div>
                 </div>
                 <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
@@ -479,7 +506,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
               </div>
               <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
                 <div className="text-xs text-slate-500">Distance</div>
-                <div className="text-lg font-bold text-emerald-300">{distance} steps</div>
+                <div className="text-lg font-bold text-emerald-300">{distance} km</div>
               </div>
               <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
                 <div className="text-xs text-slate-500">Days Survived</div>

@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-02",
+  "categoryId": 16,
+  "categoryName": "Entertainment: Board Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-02-0",
+      "question": "What is the maximum level you can have in a single class in Dungeons and Dragons (5e)?",
+      "options": [
+        "20",
+        "15",
+        "25",
+        "30"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "20"
+    },
+    {
+      "id": "opentdb-2026-05-02-1",
+      "question": "In a standard game of Monopoly, what colour are the two cheapest properties?",
+      "options": [
+        "Brown",
+        "Blue",
+        "Yellow",
+        "Green"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Brown"
+    },
+    {
+      "id": "opentdb-2026-05-02-2",
+      "question": "When was the board game Twister, released to the public?",
+      "options": [
+        "April 1966",
+        "September 1965",
+        "February 1966",
+        "January 1969"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "April 1966"
+    },
+    {
+      "id": "opentdb-2026-05-02-3",
+      "question": "What letter is used to refer to blue mana in the card game Magic The Gathering?",
+      "options": [
+        "E",
+        "B",
+        "U",
+        "L"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "U"
+    },
+    {
+      "id": "opentdb-2026-05-02-4",
+      "question": "In \"Magic: The Gathering\", what instant card has the highest converted mana cost?",
+      "options": [
+        "Blinkmoth Infusion",
+        "Vitalizing Wind",
+        " Chant of Vitu-Ghazi",
+        "Assert Authority"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Blinkmoth Infusion"
+    },
+    {
+      "id": "opentdb-2026-05-02-5",
+      "question": "Some of the \"Fallen Empires\" cards from \"Magic: The Gathering\" were misprinted on the backs of which other card game?",
+      "options": [
+        "Pokemon",
+        "Wyvern",
+        "Dominion",
+        "Yu-Gi-Oh"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Wyvern"
+    },
+    {
+      "id": "ai-2026-05-02-6",
+      "question": "In which cooperative board game do players work together to treat infections and find cures for four diseases before a global outbreak occurs?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Pandemic",
+      "explanation": "Pandemic is a widely popular cooperative board game designed by Matt Leacock. Players must collaborate to manage disease outbreaks and find cures, offering a thrilling experience of teamwork and strategy. Its engaging mechanics make it a favorite among board game enthusiasts."
+    },
+    {
+      "id": "ai-2026-05-02-7",
+      "question": "In the board game 'Dungeons & Dragons', what is the name of the die typically used to determine initiative, the order of turns during combat?",
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "D20",
+      "explanation": "In Dungeons & Dragons, initiative is determined by rolling a twenty-sided die, commonly referred to as a D20. The result helps decide the order in which players and monsters act during combat, making it a crucial element of gameplay strategy."
+    }
+  ]
+}

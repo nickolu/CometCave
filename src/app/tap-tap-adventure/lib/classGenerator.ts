@@ -1,8 +1,9 @@
 import { OpenAI } from 'openai'
 
 import { FALLBACK_CLASSES } from '@/app/tap-tap-adventure/config/fallbackClasses'
-import { GeneratedClass, GeneratedClassStartingAbility } from '@/app/tap-tap-adventure/models/generatedClass'
+import { GeneratedClass, GeneratedClassStartingAbility, StartingWeapon } from '@/app/tap-tap-adventure/models/generatedClass'
 import { SpellEffect, SpellElement, SpellSchool } from '@/app/tap-tap-adventure/models/spell'
+import { seededRandom } from '@/app/tap-tap-adventure/lib/landmarkGenerator'
 
 export const COMBAT_STYLES = [
   // Physical
@@ -284,6 +285,46 @@ const EFFECT_TEMPLATES: Record<string, EffectTemplate[]> = {
   ],
 }
 
+const WEAPON_TEMPLATES: Record<string, { name: string; description: string; effects: { strength?: number; intelligence?: number; range: 'close' | 'mid' | 'far' } }[]> = {
+  martial: [
+    { name: 'Iron Sword', description: 'A sturdy iron blade, well-balanced and reliable.', effects: { strength: 2, range: 'close' } },
+    { name: 'Wooden Club', description: 'A heavy wooden club, simple but effective.', effects: { strength: 2, range: 'close' } },
+    { name: 'Simple Axe', description: 'A basic hand axe with a sharp edge.', effects: { strength: 2, range: 'close' } },
+  ],
+  arcane: [
+    { name: 'Apprentice Wand', description: 'A plain wooden wand, standard issue for novice mages.', effects: { intelligence: 2, range: 'far' } },
+    { name: 'Oak Staff', description: 'A tall oak staff, worn smooth from use.', effects: { intelligence: 2, range: 'far' } },
+    { name: 'Simple Scepter', description: 'A basic scepter topped with a dull crystal.', effects: { intelligence: 2, range: 'far' } },
+  ],
+  divine: [
+    { name: 'Wooden Mace', description: 'A sturdy mace with an iron-banded head.', effects: { strength: 1, intelligence: 1, range: 'close' } },
+    { name: 'Iron Flail', description: 'A simple flail with a weighted chain.', effects: { strength: 1, intelligence: 1, range: 'close' } },
+    { name: 'Plain Hammer', description: 'A well-worn hammer, practical and dependable.', effects: { strength: 1, intelligence: 1, range: 'close' } },
+  ],
+  primal: [
+    { name: 'Wooden Spear', description: 'A sharpened spear with a fire-hardened tip.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
+    { name: 'Hunting Bow', description: 'A simple shortbow made from flexible wood.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
+    { name: 'Quarterstaff', description: 'A solid wooden staff, good for keeping distance.', effects: { strength: 1, intelligence: 1, range: 'mid' } },
+  ],
+  shadow: [
+    { name: 'Worn Dagger', description: 'A short dagger with a leather-wrapped grip.', effects: { strength: 1, range: 'close' } },
+    { name: 'Rusty Shortsword', description: 'A battered shortsword, still sharp enough.', effects: { strength: 1, range: 'close' } },
+    { name: 'Chipped Knife', description: 'A utility knife pressed into service as a weapon.', effects: { strength: 1, range: 'close' } },
+  ],
+  psionic: [
+    { name: 'Crystal Focus', description: 'A rough crystal that hums faintly when held.', effects: { intelligence: 1, range: 'far' } },
+    { name: 'Simple Rod', description: 'A plain metal rod used to channel mental energy.', effects: { intelligence: 1, range: 'far' } },
+    { name: 'Glass Orb', description: 'A cloudy glass sphere, slightly warm to the touch.', effects: { intelligence: 1, range: 'far' } },
+  ],
+}
+
+export function generateStartingWeapon(style: string, modifier: string): StartingWeapon {
+  const category = getStyleCategory(style)
+  const templates = WEAPON_TEMPLATES[category] ?? WEAPON_TEMPLATES.martial
+  const template = templates[Math.floor(Math.random() * templates.length)]
+  return { name: template.name, description: template.description, effects: template.effects }
+}
+
 /**
  * Generate a starting ability's mechanical data from style, modifier, and school.
  * Picks a random effect template for the style category.
@@ -316,18 +357,19 @@ export function generateStatDistribution(style: string): {
   strength: number
   intelligence: number
   luck: number
+  charisma: number
 } {
   const category = getStyleCategory(style)
   // Base distributions per category with small random variance
-  const bases: Record<string, [number, number, number]> = {
-    martial:  [8, 4, 6],
-    arcane:   [3, 9, 6],
-    divine:   [5, 7, 6],
-    primal:   [7, 4, 7],
-    shadow:   [5, 4, 9],
-    psionic:  [3, 8, 7],
+  const bases: Record<string, [number, number, number, number]> = {
+    martial:  [8, 4, 6, 5],
+    arcane:   [3, 9, 6, 5],
+    divine:   [5, 7, 6, 6],
+    primal:   [7, 4, 7, 5],
+    shadow:   [5, 4, 9, 5],
+    psionic:  [3, 8, 7, 5],
   }
-  const [str, int, lck] = bases[category] ?? bases.martial
+  const [str, int, lck, cha] = bases[category] ?? bases.martial
 
   // Add small random variance (-1 to +1) while keeping total at 18 and within bounds
   const variance = Math.floor(Math.random() * 3) - 1 // -1, 0, or 1
@@ -339,7 +381,11 @@ export function generateStatDistribution(style: string): {
   const remaining = 18 - strength - luck
   intelligence = Math.max(3, Math.min(10, remaining))
 
-  return { strength, intelligence, luck }
+  // Charisma varies independently with small variance
+  const chaVariance = Math.floor(Math.random() * 3) - 1
+  const charisma = Math.max(3, Math.min(10, cha + chaVariance))
+
+  return { strength, intelligence, luck, charisma }
 }
 
 /**
@@ -430,17 +476,19 @@ export async function generateClassFromSeed(
     const stats = generateStatDistribution(style)
     const { manaMultiplier, spellSlots } = generateManaAndSlots(style)
     const ability = generateStartingAbility(style, modifier, school)
-    return { stats, manaMultiplier, spellSlots, ability }
+    const weapon = generateStartingWeapon(style, modifier)
+    return { stats, manaMultiplier, spellSlots, ability, weapon }
   })
 
   // Step 2: Ask LLM only for creative names/descriptions
   const classDescriptions = mechanicalClasses.map((cls, i) => {
     return `Class ${i + 1}:
 - Combat style: ${style}, Modifier: ${modifier}
-- Stats: STR ${cls.stats.strength}, INT ${cls.stats.intelligence}, LCK ${cls.stats.luck}
+- Stats: STR ${cls.stats.strength}, INT ${cls.stats.intelligence}, LCK ${cls.stats.luck}, CHA ${cls.stats.charisma}
 - Spell school: ${school}
 - Starting ability target: ${cls.ability.target}
-- Starting ability effects: ${describeEffects(cls.ability.effects)}`
+- Starting ability effects: ${describeEffects(cls.ability.effects)}
+- Starting weapon range: ${cls.weapon.effects.range}, stats: STR +${cls.weapon.effects.strength ?? 0}, INT +${cls.weapon.effects.intelligence ?? 0}`
   }).join('\n\n')
 
   const prompt = `Given these 5 fantasy character classes with pre-built mechanics, generate a creative name for each class and a 1-2 sentence description.
@@ -490,6 +538,7 @@ ${classDescriptions}`
         description: named.abilityDescription,
         ...mech.ability,
       },
+      startingWeapon: mech.weapon,
     }
   })
 
@@ -508,4 +557,36 @@ export function pickRandomFallback(excludeIds: Set<string> = new Set()): Generat
     return FALLBACK_CLASSES[Math.floor(Math.random() * FALLBACK_CLASSES.length)]
   }
   return available[Math.floor(Math.random() * available.length)]
+}
+
+/**
+ * Deterministically pick a fallback class for an NPC based on their name.
+ * No API call — instant, offline, deterministic.
+ */
+export function getClassForNPC(npcName: string): GeneratedClass {
+  const rng = seededRandom(npcName)
+  const index = Math.floor(rng() * FALLBACK_CLASSES.length)
+  return FALLBACK_CLASSES[index]
+}
+
+/**
+ * Derive combat stats from a GeneratedClass and level.
+ */
+export function deriveNPCCombatStats(genClass: GeneratedClass, level: number): {
+  hp: number
+  maxHp: number
+  stats: { strength: number; intelligence: number; luck: number; charisma: number }
+} {
+  const { statDistribution } = genClass
+  const hp = 20 + statDistribution.strength * 3 + level * 5
+  return {
+    hp,
+    maxHp: hp,
+    stats: {
+      strength: statDistribution.strength,
+      intelligence: statDistribution.intelligence,
+      luck: statDistribution.luck,
+      charisma: statDistribution.charisma,
+    },
+  }
 }

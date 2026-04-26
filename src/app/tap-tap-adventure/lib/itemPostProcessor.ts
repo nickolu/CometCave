@@ -13,6 +13,10 @@ const POTION_SUBRULES: KeywordRule[] = [
   { keywords: ['luck', 'fortune', 'lucky', 'chance'], effects: { luck: 2 } },
   { keywords: ['strength', 'power', 'might', 'vigor', 'brawn'], effects: { strength: 3 } },
   { keywords: ['gold', 'wealth', 'rich', 'greed'], effects: { gold: 20 } },
+  { keywords: ['shield', 'barrier', 'protection', 'ward', 'aegis'], effects: { shield: 15 } },
+  { keywords: ['mana', 'arcane', 'ether', 'spirit', 'mystic'], effects: { manaRestore: 15 } },
+  { keywords: ['antidote', 'cure', 'cleanse', 'purify', 'remedy'], effects: { cleanse: true } },
+  { keywords: ['rage', 'fury', 'berserk', 'wrath', 'destruction'], effects: { damageBoost: 1.5 } },
 ]
 
 const SCROLL_SUBRULES: KeywordRule[] = [
@@ -35,10 +39,31 @@ function findMatchingEffects(name: string, rules: KeywordRule[], fallback: ItemE
 
 export function inferItemTypeAndEffects(item: Item): Item {
   const inferred = inferItemTypeAndEffectsInternal(item)
-  return { ...inferred, description: generateItemDescription(inferred) }
+  const withDescription = { ...inferred, description: generateItemDescription(inferred) }
+  return withDescription.rarity ? withDescription : { ...withDescription, rarity: inferRarity(withDescription) }
+}
+
+function inferRarity(item: Item): Item['rarity'] {
+  const name = item.name.toLowerCase()
+  if (matchesAny(name, ['legendary', 'mythic', 'divine', 'godly'])) return 'legendary'
+  if (matchesAny(name, ['epic', 'ancient', 'primordial', 'eternal'])) return 'epic'
+  if (matchesAny(name, ['rare', 'enchanted', 'mystic', 'arcane'])) return 'rare'
+  if (matchesAny(name, ['fine', 'quality', 'superior', 'sturdy', 'sharp', 'greater'])) return 'uncommon'
+  return 'common'
 }
 
 function inferItemTypeAndEffectsInternal(item: Item): Item {
+  const nameLower = item.name.toLowerCase()
+
+  // Detect map/chart/atlas items: force consumable with revealLandmark
+  if (matchesAny(nameLower, ['map', 'chart', 'atlas'])) {
+    return {
+      ...item,
+      type: 'consumable',
+      effects: { ...item.effects, revealLandmark: true },
+    }
+  }
+
   // Already fully specified
   if (item.type === 'consumable' && item.effects && Object.keys(item.effects).length > 0) {
     return item
@@ -49,7 +74,7 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     return item
   }
 
-  const name = item.name.toLowerCase()
+  const name = nameLower
 
   // Detect spell scrolls by name pattern (when no type set and has spell data)
   if (!item.type || item.type === 'misc') {
@@ -96,11 +121,29 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     return { ...item, type: 'consumable', effects: item.effects ?? { gold: 15 } }
   }
 
-  // Charms / Amulets (consumable by default, but equipment if explicitly typed)
+  // Bombs / Throwables
+  if (matchesAny(name, ['bomb', 'grenade', 'explosive', 'firebomb', 'flashbang'])) {
+    return {
+      ...item,
+      type: 'consumable',
+      effects: item.effects ?? { damageBoost: 1.5 },
+    }
+  }
+
+  // Antidotes / Remedies
+  if (matchesAny(name, ['antidote', 'remedy', 'panacea', 'salve'])) {
+    return {
+      ...item,
+      type: 'consumable',
+      effects: item.effects ?? { cleanse: true, heal: 5 },
+    }
+  }
+
+  // Charms / Amulets — wearable accessories
   if (matchesAny(name, ['charm', 'amulet', 'talisman', 'trinket', 'lucky'])) {
     return {
       ...item,
-      type: item.type === 'equipment' ? 'equipment' : 'consumable',
+      type: 'equipment',
       effects: item.effects ?? { luck: 2 },
     }
   }
@@ -154,6 +197,15 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
     }
   }
 
+  // Trade goods: valuable items meant to be sold
+  if (matchesAny(name, ['pelt', 'hide', 'fur', 'silk', 'spice', 'ore', 'ingot', 'pearl', 'ivory', 'amber', 'relic', 'artifact', 'trophy', 'idol', 'figurine', 'tapestry', 'cloth', 'wine', 'perfume', 'incense'])) {
+    return {
+      ...item,
+      type: 'trade_good',
+      effects: item.effects ?? { gold: 20 },
+    }
+  }
+
   // Has effects but missing type
   if (item.effects && Object.keys(item.effects).length > 0) {
     return { ...item, type: 'consumable' }
@@ -165,6 +217,11 @@ function inferItemTypeAndEffectsInternal(item: Item): Item {
       ...item,
       effects: { heal: 5, luck: 1 },
     }
+  }
+
+  // Reclassify misc items as trade goods (they have no specific use)
+  if (item.type === 'misc') {
+    return { ...item, type: 'trade_good', effects: item.effects ?? { gold: 5 } }
   }
 
   return item

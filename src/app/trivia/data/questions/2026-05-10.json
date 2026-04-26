@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-10",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-10-0",
+      "question": "Who was South Africa's first Black President?",
+      "options": [
+        "Bishop Tutu",
+        "Nelson Mandela",
+        "Steve Biko ",
+        "Mangosuthu Buthelezi"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nelson Mandela"
+    },
+    {
+      "id": "opentdb-2026-05-10-1",
+      "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
+      "options": [
+        "Donald Trump",
+        "Bernie Sanders",
+        "Ted Cruz",
+        "Marco Rubio"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-05-10-2",
+      "question": "The largest consumer market in 2015 was...",
+      "options": [
+        "The United States of America",
+        "United Kingdom",
+        "Japan",
+        "Germany"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "The United States of America"
+    },
+    {
+      "id": "opentdb-2026-05-10-3",
+      "question": "Due to the Nagoya Resolution, China agreed to allow Taiwan to compete separately in international sporting events under what name?",
+      "options": [
+        "Chinese Taipei",
+        "Republic of Taipei ",
+        "Republic of Taiwan",
+        "Chinese Taiwan"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Chinese Taipei"
+    },
+    {
+      "id": "opentdb-2026-05-10-4",
+      "question": "Who succeeded Joseph Stalin as General Secretary of the Communist Party of the Soviet Union?",
+      "options": [
+        "Boris Yeltsin",
+        "Leonid Brezhnev",
+        "Nikita Khrushchev",
+        "Mikhail Gorbachev"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nikita Khrushchev"
+    },
+    {
+      "id": "opentdb-2026-05-10-5",
+      "question": "Which nation joined NATO as its 29th member in 2017?",
+      "options": [
+        "Montenegro",
+        "Andorra",
+        "Estonia",
+        "Iceland"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Montenegro"
+    },
+    {
+      "id": "ai-2026-05-10-6",
+      "question": "Which country is known for not having a written constitution despite being a constitutional monarchy?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "United Kingdom",
+      "explanation": "The United Kingdom is unique in that it does not have a single, written constitution. Instead, its constitutional framework is based on statutes, common law, and conventions. This makes it a notable counterexample to countries with explicit, formal written constitutions."
+    },
+    {
+      "id": "ai-2026-05-10-7",
+      "question": "Which constitutional document limited the powers of the English monarchy for the first time in 1215?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Magna Carta",
+      "explanation": "The Magna Carta, signed in 1215 by King John of England, was the first document to impose legal constraints on a monarch's power. It established the principle that the king was subject to the law, a foundational concept for constitutional governance."
+    }
+  ]
+}

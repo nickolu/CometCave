@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { WEATHER_TYPES, WeatherId } from '@/app/tap-tap-adventure/config/weather'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
@@ -21,6 +22,7 @@ type IconType =
   | 'purpleCircleIcon'
   | 'blueCircleIcon'
   | 'yellowMoonIcon'
+  | 'pinkStarIcon'
 
 const ICONS: Record<IconType, React.ReactNode> = {
   heartIcon: (
@@ -72,22 +74,28 @@ const ICONS: Record<IconType, React.ReactNode> = {
       <path d="M10 20C4.477 20 0 15.523 0 10S4.477 0 10 0c.34 0 .674.02 1 .058A8.001 8.001 0 0110 4a8 8 0 01-2.928 6A8.001 8.001 0 011 10c.02.326.04.66.058 1A10.004 10.004 0 0010 20z" />
     </svg>
   ),
+  pinkStarIcon: (
+    <svg width="20" height="20" fill="#F472B6" viewBox="0 0 20 20">
+      <path d="M10 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 14.27l-4.77 2.44.91-5.32L2.27 7.62l5.34-.78L10 2z" />
+    </svg>
+  ),
 } as const
 
 const STAT_LABELS: Record<IconType, string> = {
   heartIcon: 'HP',
   sunIcon: 'Gold',
   waterDropIcon: 'Reputation',
-  leafIcon: 'Steps',
+  leafIcon: 'km',
   fireIcon: 'Level',
   dayIcon: 'Day',
-  purpleCircleIcon: 'Strength',
-  blueCircleIcon: 'Intelligence',
-  yellowMoonIcon: 'Luck',
+  purpleCircleIcon: 'STR — Attack power, max HP',
+  blueCircleIcon: 'INT — Defense, mana pool',
+  yellowMoonIcon: 'LCK — Crit chance, loot, flee',
+  pinkStarIcon: 'CHA — Shop discounts, dialogue',
 } as const
 
 const STATS_LEFT: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon', 'leafIcon', 'fireIcon', 'dayIcon']
-const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon']
+const STATS_RIGHT: IconType[] = ['purpleCircleIcon', 'blueCircleIcon', 'yellowMoonIcon', 'pinkStarIcon']
 
 interface HudBarProps {
   onOpenStatus?: () => void
@@ -120,6 +128,7 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
       purpleCircleIcon: character?.strength ?? 0,
       blueCircleIcon: character?.intelligence ?? 0,
       yellowMoonIcon: character?.luck ?? 0,
+      pinkStarIcon: character?.charisma ?? 0,
     }),
     [character]
   ) as Record<IconType, number | string>
@@ -188,9 +197,9 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   const getTooltipText = useCallback((key: IconType): string => {
     switch (key) {
       case 'heartIcon': return `HP: ${hp}/${maxHp}`
-      case 'fireIcon': return `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} steps to next`
+      case 'fireIcon': return `Level ${level} — ${stepsIntoLevel}/${stepsNeeded} km to next`
       case 'waterDropIcon': return `Reputation: ${getReputationTier(stats[key] as number)} (${stats[key]})`
-      case 'dayIcon': return `Day ${day} (${50 - (distance % 50)} steps to next day)`
+      case 'dayIcon': return `Day ${day} (${50 - (distance % 50)} km to next day)`
       default: return STAT_LABELS[key]
     }
   }, [hp, maxHp, level, stepsIntoLevel, stepsNeeded, day, distance, stats])
@@ -214,8 +223,10 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   }
   const reputationTierColor = reputationTierColorMap[reputationTier]
 
+  const MOBILE_HIDDEN_STATS: IconType[] = ['waterDropIcon', 'leafIcon', 'dayIcon']
+
   const renderStat = (key: IconType) => (
-    <div key={key} className="relative">
+    <div key={key} className={`relative ${MOBILE_HIDDEN_STATS.includes(key) ? 'hidden sm:block' : ''}`}>
       <button
         className="flex flex-col items-center gap-0.5 text-xs sm:text-sm font-semibold"
         onClick={() => handleStatTap(key)}
@@ -285,7 +296,8 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
     if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
     if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal`)
     const bonusStr = bonusParts.length > 0 ? bonusParts.join(', ') : 'no bonuses'
-    return `${getMountDisplayName(mount)} — ${bonusStr} (${mount.dailyCost} gp/day)`
+    const hpStr = mount.hp !== undefined && mount.maxHp !== undefined ? ` | HP: ${mount.hp}/${mount.maxHp}` : ''
+    return `${getMountDisplayName(mount)} — ${bonusStr} (${mount.dailyCost} gp/day)${hpStr}`
   }
 
   const mountRarityColor: Record<string, string> = {
@@ -307,6 +319,34 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
         >
           {currentRegion.icon} {currentRegion.name}
         </span>
+        {/* Region danger indicator */}
+        {(() => {
+          const levelDiff = (currentRegion.minLevel ?? 0) - level
+          const mult = currentRegion.difficultyMultiplier ?? 1
+          const danger = levelDiff >= 4 ? { label: 'Deadly', color: 'border-red-500 text-red-400', icon: '☠️' }
+            : levelDiff >= 2 ? { label: 'Hard', color: 'border-orange-500 text-orange-400', icon: '⚠️' }
+            : mult >= 1.5 ? { label: 'Tough', color: 'border-yellow-500 text-yellow-400', icon: '💪' }
+            : null
+          return danger ? (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 border rounded ${danger.color} bg-[#2a2b3f]`}
+              title={`Region difficulty: ${currentRegion.difficulty} (${mult}x). Recommended level: ${currentRegion.minLevel}+`}
+            >
+              {danger.icon} {danger.label}
+            </span>
+          ) : null
+        })()}
+        {(() => {
+          const weatherType = WEATHER_TYPES[(character?.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
+          return weatherType.id !== 'clear' ? (
+            <span
+              className="text-[10px] px-1.5 py-0.5 border rounded border-sky-400 text-sky-300 bg-[#2a2b3f]"
+              title={`${weatherType.name}: ${weatherType.description}`}
+            >
+              {weatherType.icon} {weatherType.name}
+            </span>
+          ) : null
+        })()}
         {difficultyMode.id !== 'normal' && (
           <span
             className={`text-[10px] px-1.5 py-0.5 border rounded ${difficultyColor} bg-[#2a2b3f]`}
@@ -323,6 +363,15 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
             >
               <span>{activeMount.icon}</span>
               <span className="hidden sm:inline text-[10px]">{getMountDisplayName(activeMount)}</span>
+              {activeMount.hp !== undefined && activeMount.maxHp !== undefined && (
+                <span className={`text-[9px] ml-0.5 ${
+                  activeMount.hp / activeMount.maxHp > 0.5 ? 'text-green-400' :
+                  activeMount.hp / activeMount.maxHp > 0.25 ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
+                  {activeMount.hp}/{activeMount.maxHp}
+                </span>
+              )}
             </button>
             <button
               className="text-[9px] sm:text-[10px] text-red-400 hover:text-red-300 border border-red-400/30 rounded px-1 py-0.5 bg-[#2a2b3f] hover:bg-[#3a3c56]"
@@ -332,6 +381,40 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
               <span className="sm:hidden">&#10005;</span>
               <span className="hidden sm:inline">Release</span>
             </button>
+          </div>
+        )}
+        {character?.activeMercenary && (() => {
+          const merc = character.activeMercenary
+          const mercRarityColor: Record<string, string> = {
+            common: 'border-slate-400',
+            uncommon: 'border-green-400',
+            rare: 'border-blue-400',
+            legendary: 'border-yellow-400',
+          }
+          const mercHpColor = merc.hp !== undefined && merc.maxHp !== undefined
+            ? merc.hp / merc.maxHp > 0.5 ? 'text-green-400' : merc.hp / merc.maxHp > 0.25 ? 'text-yellow-400' : 'text-red-400'
+            : 'text-slate-400'
+          return (
+            <div className="flex items-center">
+              <span
+                className={`flex items-center gap-1 text-xs sm:text-sm font-semibold border rounded px-1.5 py-0.5 ${mercRarityColor[merc.rarity] ?? 'border-slate-400'} bg-[#2a2b3f]`}
+                title={`${merc.customName ?? merc.name} (${merc.class}) — ATK ${merc.attack}, DEF ${merc.defense} (${merc.dailyCost} gp/day)${merc.hp !== undefined && merc.maxHp !== undefined ? ` | HP: ${merc.hp}/${merc.maxHp}` : ''}`}
+              >
+                <span>{merc.icon}</span>
+                <span className="hidden sm:inline text-[10px]">{merc.customName ?? merc.name}</span>
+                {merc.hp !== undefined && merc.maxHp !== undefined && (
+                  <span className={`text-[9px] ml-0.5 ${mercHpColor}`}>
+                    {merc.hp}/{merc.maxHp}
+                  </span>
+                )}
+              </span>
+            </div>
+          )
+        })()}
+        {(character?.bounty ?? 0) > 0 && (
+          <div className="text-xs text-red-400 flex items-center gap-1">
+            <span>💀</span>
+            <span>Bounty: {character!.bounty}g</span>
           </div>
         )}
         <div className="hidden sm:flex items-center gap-1 sm:gap-4">

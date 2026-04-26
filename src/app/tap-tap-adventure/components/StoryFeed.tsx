@@ -26,19 +26,19 @@ function ResourceDeltaDisplay({ resourceDelta, isHighlighted }: ResourceDeltaDis
   const changes = [
     resourceDelta.gold !== undefined && resourceDelta.gold !== 0 ? (
       <span key="gold" className={getValueColor(resourceDelta.gold)}>
-        Gold {resourceDelta.gold > 0 ? '+' : ''}
+        💰 Gold {resourceDelta.gold > 0 ? '+' : ''}
         {resourceDelta.gold}
       </span>
     ) : null,
     resourceDelta.reputation !== undefined && resourceDelta.reputation !== 0 ? (
       <span key="reputation" className={getValueColor(resourceDelta.reputation)}>
-        Reputation {resourceDelta.reputation > 0 ? '+' : ''}
+        ⭐ Reputation {resourceDelta.reputation > 0 ? '+' : ''}
         {resourceDelta.reputation}
       </span>
     ) : null,
     resourceDelta.distance !== undefined && resourceDelta.distance !== 0 ? (
       <span key="distance" className={getValueColor(resourceDelta.distance)}>
-        Distance {resourceDelta.distance > 0 ? '+' : ''}
+        🗺️ Distance {resourceDelta.distance > 0 ? '+' : ''}
         {resourceDelta.distance}
       </span>
     ) : null,
@@ -52,7 +52,7 @@ function ResourceDeltaDisplay({ resourceDelta, isHighlighted }: ResourceDeltaDis
   if (changes.length === 0) return null
 
   return (
-    <div className={`mt-2 p-2 rounded-md ${isHighlighted ? 'bg-slate-600' : 'bg-slate-700'}`}>
+    <div className={`mt-2 p-2 rounded-md ${isHighlighted ? 'bg-slate-800/80 border border-slate-500/30' : 'bg-slate-700'}`}>
       <div className="text-sm flex flex-wrap gap-2">{changes}</div>
     </div>
   )
@@ -138,7 +138,7 @@ interface RewardItemDisplayProps {
 
 function RewardItemDisplay({ item, isHighlighted }: RewardItemDisplayProps) {
   return (
-    <div className={`p-2 rounded-md ${isHighlighted ? 'bg-slate-600' : 'bg-slate-700'}`}>
+    <div className={`p-2 rounded-md ${isHighlighted ? 'bg-yellow-900/30 border border-yellow-500/30' : 'bg-slate-700'}`}>
       <span className={isHighlighted ? 'text-slate-200' : 'text-slate-300'}>
         You received {item.quantity > 1 ? `${item.quantity} ` : ''}
         <span className={`font-semibold ${isHighlighted ? 'text-yellow-300' : 'text-yellow-400'}`}>
@@ -180,7 +180,7 @@ export function StoryFeed({
       setHighlightedEventId(newestEventId)
       const highlightTimer = setTimeout(() => {
         setHighlightedEventId(null)
-      }, 2000)
+      }, 5000)
 
       return () => {
         cancelAnimationFrame(animationFrameId)
@@ -205,15 +205,34 @@ export function StoryFeed({
           ...(storyEvent.rewardItems || []),
         ]
 
+        const hasRewards = (storyEvent.resourceDelta?.gold && storyEvent.resourceDelta.gold > 0) ||
+                           (storyEvent.resourceDelta?.reputation && storyEvent.resourceDelta.reputation > 0) ||
+                           allRewardItems.length > 0
+        const hasPenalties = (storyEvent.resourceDelta?.gold && storyEvent.resourceDelta.gold < 0) ||
+                             (storyEvent.resourceDelta?.reputation && storyEvent.resourceDelta.reputation < 0)
+
         return (
           <div
             key={`${storyEvent.id}-${storyEvent.timestamp}`}
-            className={`border-b border-slate-700 pb-2 mb-2 first:border-none last:mb-0 transition-colors duration-300 ease-in-out rounded-lg ${isHighlighted ? 'bg-slate-700' : 'bg-slate-800'} p-3`}
+            className={`pb-2 mb-2 last:mb-0 transition-all duration-500 ease-in-out rounded-lg p-3 ${
+              isHighlighted
+                ? hasRewards
+                  ? 'bg-emerald-950/60 border-2 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
+                  : hasPenalties
+                  ? 'bg-red-950/60 border-2 border-red-500/50 shadow-lg shadow-red-500/10'
+                  : 'bg-indigo-950/60 border-2 border-indigo-500/50 shadow-lg shadow-indigo-500/10'
+                : 'bg-slate-800 border border-slate-700/50'
+            }`}
           >
             <div className="flex justify-between items-center mb-2">
               <span className={`text-xs ${isHighlighted ? 'text-slate-300' : 'text-slate-400'}`}>
                 {new Date(storyEvent.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
+              {isHighlighted && storyEvent.type === 'decision_result' && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-800/50 text-indigo-300 border border-indigo-600/30">
+                  Result
+                </span>
+              )}
             </div>
 
             {storyEvent.decisionPoint && (

@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-05",
+  "categoryId": 19,
+  "categoryName": "Science: Mathematics",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-05-0",
+      "question": "What comes after a Million, a Billion, and a Trillion?",
+      "options": [
+        "Septillion",
+        "Sextillion",
+        "Quadrillion",
+        "Quintillion"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Quadrillion"
+    },
+    {
+      "id": "opentdb-2026-05-05-1",
+      "question": "The metric prefix \"atto-\" makes a measurement how much smaller than the base unit?",
+      "options": [
+        "One Quintillionth",
+        "One Billionth",
+        "One Quadrillionth",
+        "One Septillionth"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "One Quintillionth"
+    },
+    {
+      "id": "opentdb-2026-05-05-2",
+      "question": "How many sides does a Möbius strip have?",
+      "options": [
+        "3",
+        "1",
+        "2",
+        "4"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "1"
+    },
+    {
+      "id": "opentdb-2026-05-05-3",
+      "question": "What is the derivative of sin(x)",
+      "options": [
+        "csc(x)",
+        "cos(x)",
+        "-cos(x)",
+        "-sin(x)"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "cos(x)"
+    },
+    {
+      "id": "opentdb-2026-05-05-4",
+      "question": "What type of function is x&sup2;+2x+1?",
+      "options": [
+        "Linear",
+        "Rational",
+        "Quadratic",
+        "Exponential"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Quadratic"
+    },
+    {
+      "id": "opentdb-2026-05-05-5",
+      "question": "The French mathematician Évariste Galois is primarily known for his work in which?",
+      "options": [
+        "Abelian Integration",
+        "Galois' Continued Fractions",
+        "Galois Theory",
+        "Galois' Method for PDE's "
+      ],
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Galois Theory"
+    },
+    {
+      "id": "ai-2026-05-05-6",
+      "question": "What mathematician is famous for developing the concept of the Mandelbrot set, a well-known example of a fractal?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Benoit Mandelbrot",
+      "explanation": "Benoit Mandelbrot was a French-American mathematician who developed the concept of the Mandelbrot set. This set is famous for its intricate, self-similar patterns that are characteristic of fractals, showcasing the infinite complexity of mathematical structures."
+    },
+    {
+      "id": "ai-2026-05-05-7",
+      "question": "Which 17th-century mathematician is credited with laying the groundwork for the theory of probability through his correspondence with Pierre de Fermat?",
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Blaise Pascal",
+      "explanation": "Blaise Pascal, a French mathematician and philosopher, is credited with developing the foundational concepts of probability theory through his correspondence with Pierre de Fermat. Their collaborative work in 1654 addressed problems related to gambling and laid the groundwork for modern probability theory."
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-17",
+  "categoryId": 25,
+  "categoryName": "Art",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-17-0",
+      "question": "What is the world's oldest known piece of fiction?",
+      "options": [
+        "Code of Hammurabi",
+        "Epic of Gilgamesh",
+        "Papyrus of Ani",
+        "Rosetta Stone"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Epic of Gilgamesh"
+    },
+    {
+      "id": "opentdb-2026-04-17-1",
+      "question": "Who painted the biblical fresco The Creation of Adam?",
+      "options": [
+        "Leonardo da Vinci",
+        "Michelangelo",
+        "Caravaggio",
+        "Rembrandt"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Michelangelo"
+    },
+    {
+      "id": "opentdb-2026-04-17-2",
+      "question": "What is a fundamental element of the Gothic style of architecture?",
+      "options": [
+        "coffered ceilings",
+        "façades surmounted by a pediment ",
+        "pointed arch",
+        "internal frescoes"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "pointed arch"
+    },
+    {
+      "id": "opentdb-2026-04-17-3",
+      "question": "Which artist painted \"The Treachery of Images,\" a painting of a pipe with the description \"this is not a pipe\"?",
+      "options": [
+        "Modigliani",
+        "Matisse",
+        "Magritte",
+        "Munch "
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Magritte"
+    },
+    {
+      "id": "opentdb-2026-04-17-4",
+      "question": "Which artist's style was to use small different colored dots to create a picture?",
+      "options": [
+        "Georges Seurat",
+        "Henri Rousseau",
+        "Paul Cézanne",
+        "Vincent Van Gogh"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Georges Seurat"
+    },
+    {
+      "id": "opentdb-2026-04-17-5",
+      "question": "Which art movement was Pablo Picasso known for co-founding?",
+      "options": [
+        "Cubism",
+        "Expressionism",
+        "Futurism",
+        "Impressionism"
+      ],
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Cubism"
+    },
+    {
+      "id": "ai-2026-04-17-6",
+      "question": "What term is used in photography to describe the adjustable opening in a camera lens that controls the amount of light reaching the sensor?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "Aperture",
+      "explanation": "Aperture is a critical component in photography that affects exposure and depth of field. It is measured in f-stops and allows photographers to creatively control how much light enters the camera, influencing the brightness and sharpness of the image."
+    },
+    {
+      "id": "ai-2026-04-17-7",
+      "question": "Who is the digital artist known for pioneering the use of computer algorithms to create intricate generative artworks and is often considered a key figure in the field of generative art?",
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "Casey Reas",
+      "explanation": "Casey Reas is a prominent digital artist and educator who co-created Processing, a programming language specifically for the visual arts. His work explores the possibilities of generative art, where algorithms are used to produce complex and evolving visual patterns, making him a significant influence in the digital art world."
+    }
+  ]
+}

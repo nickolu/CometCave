@@ -7,10 +7,36 @@ import { Skill } from '@/app/tap-tap-adventure/models/skill'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 import type { MetaBonuses } from '@/app/tap-tap-adventure/lib/metaProgressionBonuses'
 
-/** Resolve unlocked Skill objects from the character's stored skill IDs. */
+/** Resolve unlocked global Skill objects from the character's stored skill IDs. */
 function resolveSkills(character: FantasyCharacter): Skill[] {
   const ids = character.unlockedSkills ?? []
   return SKILLS.filter(s => ids.includes(s.id))
+}
+
+/**
+ * Resolve unlocked class skill tree nodes as Skill-compatible objects.
+ * SkillTreeNode and Skill share the same `effect` structure, so the cast is safe.
+ */
+function resolveTreeSkills(character: FantasyCharacter): Skill[] {
+  const tree = character.classSkillTree
+  if (!tree) return []
+  const unlockedIds = new Set(character.unlockedTreeSkillIds ?? [])
+  return tree.nodes
+    .filter(n => unlockedIds.has(n.id))
+    .map(n => ({
+      id: n.id,
+      name: n.name,
+      description: n.description,
+      icon: n.icon,
+      category: 'combat' as const,
+      effect: n.effect,
+      requirement: { type: 'level' as const, value: n.requiredLevel },
+    }))
+}
+
+/** Resolve all unlocked skills (global + class tree). */
+function resolveAllSkills(character: FantasyCharacter): Skill[] {
+  return [...resolveSkills(character), ...resolveTreeSkills(character)]
 }
 
 const BASE_STEPS = 200
@@ -79,7 +105,7 @@ export function calculateDay(distance: number): number {
  * Applies passive skill bonuses (e.g. Thick Skin +10% max HP, Veteran +1 all stats).
  */
 export function calculateMaxHp(character: FantasyCharacter): number {
-  const skills = resolveSkills(character)
+  const skills = resolveAllSkills(character)
   const hpBonus = getSkillBonus(skills, 'maxHp')
   const allStatsBonus = getSkillBonus(skills, 'all_stats')
   const effectiveStr = character.strength + allStatsBonus.flat
@@ -92,7 +118,7 @@ export function calculateMaxHp(character: FantasyCharacter): number {
  * Applies passive skill bonuses (e.g. Mana Well +20% max mana).
  */
 export function calculateMaxMana(character: FantasyCharacter): number {
-  const skills = resolveSkills(character)
+  const skills = resolveAllSkills(character)
   const manaBonus = getSkillBonus(skills, 'maxMana')
   const allStatsBonus = getSkillBonus(skills, 'all_stats')
   const effectiveInt = (character.intelligence ?? 5) + allStatsBonus.flat
@@ -165,7 +191,7 @@ export function applyLevelFromDistance(
   const oldDistance = updated.distance - stepsGained
   const currentHp = updated.hp ?? maxHp
   const mountHealBonus = (updated.activeMount?.bonuses?.healRate ?? 0) + (updated.activeMount?.personality === 'gentle' ? 1 : 0)
-  const skills = resolveSkills(updated)
+  const skills = resolveAllSkills(updated)
   const healSkillBonus = getSkillBonus(skills, 'heal_rate')
   const diffMods = getDifficultyModifiers(updated.difficultyMode)
   const healTicks = Math.floor(updated.distance / HEAL_RATE) - Math.floor(oldDistance / HEAL_RATE)

@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-14",
+  "categoryId": 28,
+  "categoryName": "Vehicles",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-14-0",
+      "question": "Which car tire manufacturer is famous for its \"P Zero\" line?",
+      "options": [
+        "Bridgestone",
+        "Michelin",
+        "Pirelli",
+        "Goodyear"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Pirelli"
+    },
+    {
+      "id": "opentdb-2026-05-14-1",
+      "question": "What country was the Trabant 601 manufactured in?",
+      "options": [
+        "East Germany",
+        "France",
+        "Soviet Union",
+        "Hungary"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "East Germany"
+    },
+    {
+      "id": "opentdb-2026-05-14-2",
+      "question": "What animal is pictured on the logo of the automobile manufacturer Porsche?",
+      "options": [
+        "Bull",
+        "Horse",
+        "Cheetah",
+        "Lion"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Horse"
+    },
+    {
+      "id": "opentdb-2026-05-14-3",
+      "question": "What do the 4 Rings in Audi's Logo represent?",
+      "options": [
+        "States in which Audi makes the most sales",
+        "Previously independent automobile manufacturers",
+        "Countries in which Audi makes the most sales",
+        "Main cities vital to Audi"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Previously independent automobile manufacturers"
+    },
+    {
+      "id": "opentdb-2026-05-14-4",
+      "question": "What was the aircraft registration for the last Concorde built?",
+      "options": [
+        "F-BTSC",
+        "G-BOAC",
+        "G-BOAF",
+        "F-BVFF"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "G-BOAF"
+    },
+    {
+      "id": "opentdb-2026-05-14-5",
+      "question": "Which of these is NOT a car model produced by Malaysian car manufacturer Proton?",
+      "options": [
+        "Saga",
+        "Perdana",
+        "Kelisa",
+        "Inspira"
+      ],
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Kelisa"
+    },
+    {
+      "id": "ai-2026-05-14-6",
+      "question": "Which racing video game series is known for its 'It's a me, Mario!' meme?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Mario Kart",
+      "explanation": "The Mario Kart series, featuring characters from the Mario franchise, is famous for its fun racing gameplay. The phrase 'It's a me, Mario!' is iconic and often associated with the character Mario, making it a popular meme among fans."
+    },
+    {
+      "id": "ai-2026-05-14-7",
+      "question": "Which automotive designer is credited with creating the iconic 1964 1/2 Ford Mustang?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Lee Iacocca",
+      "explanation": "Lee Iacocca was a key figure in the creation of the Ford Mustang, which was first introduced in 1964. His vision for a sporty yet affordable car helped revolutionize the automotive industry, leading to the Mustang becoming an enduring symbol of American automotive culture."
+    }
+  ]
+}

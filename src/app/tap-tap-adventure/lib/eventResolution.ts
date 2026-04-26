@@ -1,5 +1,8 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyDecisionOption } from '@/app/tap-tap-adventure/models/story'
+import { getCampBonuses } from '@/app/tap-tap-adventure/config/baseBuildings'
+import { getFactionForRegion, FACTIONS } from '@/app/tap-tap-adventure/config/factions'
+import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 
 export function applyEffects(
   character: FantasyCharacter,
@@ -10,17 +13,77 @@ export function applyEffects(
     statusChange?: string
     mountDamage?: number
     mountDeath?: boolean
+    revealLandmark?: boolean
+    hpChange?: number
+    mpChange?: number
+    bountyChange?: number
   }
 ): FantasyCharacter {
   if (!effects) return character
+
+  const campBonuses = getCampBonuses(character.campState?.buildingLevels ?? {})
+  const goldGain = effects.gold ?? 0
+  const adjustedGold = goldGain > 0
+    ? Math.round(goldGain * (1 + campBonuses.goldEventBonusPct / 100))
+    : goldGain
+  const repGain = effects.reputation ?? 0
+  const adjustedRep = repGain > 0
+    ? Math.round(repGain * (1 + campBonuses.reputationGainBonusPct / 100))
+    : repGain
+
   let updatedCharacter: FantasyCharacter = {
     ...character,
-    gold: character.gold + (effects.gold ?? 0),
-    reputation: character.reputation + (effects.reputation ?? 0),
+    gold: clampGold(character.gold + adjustedGold),
+    reputation: character.reputation + adjustedRep,
     distance: character.distance + (effects.distance ?? 0),
     status: effects.statusChange
       ? (effects.statusChange as FantasyCharacter['status'])
       : character.status,
+  }
+
+  // HP change: clamp to [1, maxHp] (don't kill via events, leave at 1 HP minimum)
+  if (effects.hpChange) {
+    const currentHp = updatedCharacter.hp ?? updatedCharacter.maxHp ?? 100
+    const maxHp = updatedCharacter.maxHp ?? 100
+    const newHp = Math.max(1, Math.min(maxHp, currentHp + effects.hpChange))
+    updatedCharacter = { ...updatedCharacter, hp: newHp }
+  }
+
+  // MP change: clamp to [0, maxMana]
+  if (effects.mpChange) {
+    const currentMp = updatedCharacter.mana ?? updatedCharacter.maxMana ?? 50
+    const maxMp = updatedCharacter.maxMana ?? 50
+    const newMp = Math.max(0, Math.min(maxMp, currentMp + effects.mpChange))
+    updatedCharacter = { ...updatedCharacter, mana: newMp }
+  }
+
+  // Bounty change
+  if (effects.bountyChange) {
+    const currentBounty = updatedCharacter.bounty ?? 0
+    updatedCharacter = { ...updatedCharacter, bounty: Math.max(0, currentBounty + effects.bountyChange) }
+  }
+
+  // Auto-bounty from very low reputation
+  if ((updatedCharacter.reputation ?? 0) < -30 && (updatedCharacter.bounty ?? 0) === 0) {
+    updatedCharacter = { ...updatedCharacter, bounty: Math.abs(updatedCharacter.reputation ?? 0) }
+  }
+
+  // Faction reputation gain
+  if (adjustedRep > 0) {
+    const factionId = getFactionForRegion(character.currentRegion ?? 'green_meadows')
+    if (factionId) {
+      const factionReps = { ...(character.factionReputations ?? {}) }
+      const gain = Math.ceil(adjustedRep * 0.5)
+      factionReps[factionId] = Math.min(200, (factionReps[factionId] ?? 0) + gain)
+
+      const rivalId = FACTIONS[factionId].rivalFactionId
+      if (rivalId) {
+        const rivalPenalty = Math.ceil(gain * 0.5)
+        factionReps[rivalId] = Math.max(0, (factionReps[rivalId] ?? 0) - rivalPenalty)
+      }
+
+      updatedCharacter = { ...updatedCharacter, factionReputations: factionReps }
+    }
   }
 
   // Mount damage handling
@@ -33,6 +96,21 @@ export function applyEffects(
       updatedCharacter = newHp <= 0
         ? { ...updatedCharacter, activeMount: null }
         : { ...updatedCharacter, activeMount: { ...updatedCharacter.activeMount, hp: newHp } }
+    }
+  }
+
+  // Landmark revelation
+  if (effects.revealLandmark && updatedCharacter.landmarkState) {
+    const lmState = updatedCharacter.landmarkState
+    const hiddenIdx = lmState.landmarks.findIndex(lm => lm.hidden)
+    if (hiddenIdx !== -1) {
+      const updatedLandmarks = lmState.landmarks.map((lm, i) =>
+        i === hiddenIdx ? { ...lm, hidden: false } : lm
+      )
+      updatedCharacter = {
+        ...updatedCharacter,
+        landmarkState: { ...lmState, landmarks: updatedLandmarks },
+      }
     }
   }
 
@@ -50,8 +128,10 @@ export function calculateEffectiveProbability(
   }
   const base = typedOption.successProbability ?? 1
 
+  const campBonuses = getCampBonuses(character.campState?.buildingLevels ?? {})
+
   if (!typedOption.relevantAttributes || typedOption.relevantAttributes.length === 0) {
-    return Math.max(0, Math.min(1, base))
+    return Math.max(0, Math.min(1, base + campBonuses.combatSuccessBonus))
   }
 
   let modifier = 0
@@ -65,5 +145,5 @@ export function calculateEffectiveProbability(
   const reputationModifier = Math.max(-0.1, Math.min(0.1, character.reputation * 0.001))
   modifier += reputationModifier
 
-  return Math.max(0, Math.min(1, Number(base) + modifier))
+  return Math.max(0, Math.min(1, Number(base) + modifier + campBonuses.combatSuccessBonus))
 }

@@ -20,6 +20,13 @@ const baseChar: FantasyCharacter = {
   strength: 7,
   intelligence: 10,
   luck: 6,
+  charisma: 6,
+  deathCount: 0,
+  pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
   inventory: [
     { id: 'item-1', name: 'Healing Potion', description: 'Heals', quantity: 2 },
   ],

@@ -1,10 +1,15 @@
 import { z } from 'zod'
 
+import { ClassSkillTreeSchema } from './classSkillTree'
+import { CampStateSchema } from './camp'
 import { GeneratedClassSchema } from './generatedClass'
 import { ItemSchema } from './item'
 import { MountSchema } from './mount'
+import { MercenarySchema } from './mercenary'
+import { PartyMemberSchema } from './partyMember'
 import { MainQuestSchema } from './quest'
-import { SpellSchema } from './spell'
+import { SpellSchema, ActiveExplorationSpellSchema } from './spell'
+import { BestiaryEntrySchema } from './bestiary'
 
 /** All schemas in this file are the single source of truth for both runtime validation and static typing. */
 
@@ -26,13 +31,15 @@ export const FantasyCharacterSchema = z.object({
   level: z.number(),
   abilities: z.array(FantasyAbilitySchema),
   locationId: z.string(),
-  gold: z.number(),
+  gold: z.number().min(0),
   reputation: z.number(),
+  bounty: z.number().min(0).optional().default(0),
   distance: z.number(),
   status: z.enum(['active', 'retired', 'dead']),
   strength: z.number(),
   intelligence: z.number(),
   luck: z.number(),
+  charisma: z.number(),
   hp: z.number().optional(),
   maxHp: z.number().optional(),
   inventory: z.array(ItemSchema),
@@ -45,14 +52,102 @@ export const FantasyCharacterSchema = z.object({
   pendingStatPoints: z.number().default(0),
   mana: z.number().optional(),
   maxMana: z.number().optional(),
+  explorationShield: z.number().optional(),
   spellbook: z.array(SpellSchema).optional(),
+  activeExplorationSpells: z.array(ActiveExplorationSpellSchema).optional(),
   classData: GeneratedClassSchema.optional(),
   activeMount: MountSchema.nullable().optional(),
+  mountRoster: z.array(MountSchema).default([]),
+  mailbox: z.array(z.object({
+    id: z.string(),
+    fromNpcId: z.string(),
+    fromName: z.string(),
+    fromIcon: z.string().default('📧'),
+    subject: z.string(),
+    body: z.string(),
+    attachedGold: z.number().optional(),
+    attachedItems: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      type: z.string().optional(),
+      rarity: z.string().optional(),
+    })).optional(),
+    goldClaimed: z.boolean().optional(),
+    itemsClaimed: z.boolean().optional(),
+    read: z.boolean().default(false),
+    day: z.number(),
+  })).default([]),
+  pendingReplies: z.array(z.object({
+    id: z.string(),
+    toNpcId: z.string(),
+    toNpcName: z.string(),
+    toNpcIcon: z.string(),
+    playerMessage: z.string(),
+    sentDay: z.number(),
+    replyDay: z.number(),
+  })).default([]),
+  activeMercenary: MercenarySchema.nullable().optional(),
+  mercenaryRoster: z.array(MercenarySchema).optional(),
+  party: z.array(PartyMemberSchema).default([]),
   unlockedSkills: z.array(z.string()).optional(),
+  classSkillTree: ClassSkillTreeSchema.optional(),
+  unlockedTreeSkillIds: z.array(z.string()).optional(),
   difficultyMode: z.string().optional().default('normal'),
   currentRegion: z.string().optional().default('green_meadows'),
+  currentWeather: z.string().optional().default('clear'),
   visitedRegions: z.array(z.string()).optional(),
+  visitedTowns: z.array(z.object({
+    name: z.string(),
+    icon: z.string(),
+    regionId: z.string(),
+    landmarkId: z.string(),
+  })).optional().default([]),
   mainQuest: MainQuestSchema.optional(),
+  campState: CampStateSchema.optional(),
+  factionReputations: z.record(z.string(), z.number()).optional().default({}),
+  bestiary: z.array(BestiaryEntrySchema).optional(),
+  discoveredCombos: z.array(z.string()).optional(),
+  npcEncounters: z.record(z.string(), z.object({ timesSpoken: z.number(), disposition: z.number(), lastTier: z.string().optional(), recruited: z.boolean().optional() })).optional(),
+  landmarkState: z.object({
+    regionId: z.string(),
+    landmarks: z.array(z.object({
+      templateId: z.string(),
+      name: z.string(),
+      type: z.string(),
+      description: z.string(),
+      icon: z.string(),
+      hasShop: z.boolean(),
+      encounterPrompt: z.string(),
+      distanceFromEntry: z.number(),
+      hidden: z.boolean().default(false),
+      isSecret: z.boolean().default(false),
+      explored: z.boolean().default(false),
+      position: z.object({ x: z.number(), y: z.number() }).optional(),
+      hasInn: z.boolean().optional(),
+      hasStable: z.boolean().optional(),
+      hasMailbox: z.boolean().optional(),
+      hasNoticeBoard: z.boolean().optional(),
+      hasTransport: z.boolean().optional(),
+      hasCrafting: z.boolean().optional(),
+    })),
+    entryDistance: z.number(),
+    nextLandmarkIndex: z.number(),
+    exploring: z.boolean(),
+    explorationDepth: z.number().default(0),
+    exploringLandmarkName: z.string().optional(),
+    positionInRegion: z.number().default(0),
+    activeTargetIndex: z.number().default(0),
+    regionLength: z.number().default(200),
+    position: z.object({ x: z.number(), y: z.number() }).optional(),
+    exitPosition: z.object({ x: z.number(), y: z.number() }).optional(),
+    exitPositions: z.array(z.object({
+      regionId: z.string(),
+      name: z.string(),
+      icon: z.string(),
+      position: z.object({ x: z.number(), y: z.number() }),
+    })).optional(),
+    regionBounds: z.object({ width: z.number(), height: z.number() }).optional(),
+  }).optional(),
 })
 export type FantasyCharacter = z.infer<typeof FantasyCharacterSchema>
 

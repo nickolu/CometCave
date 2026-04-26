@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-22",
+  "categoryId": 30,
+  "categoryName": "Science: Gadgets",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-22-0",
+      "question": "When did the CD begin to appear on the consumer market?",
+      "options": [
+        "1982",
+        "1992",
+        "1962",
+        "1972"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "1982"
+    },
+    {
+      "id": "opentdb-2026-04-22-1",
+      "question": "Which gaming console is developed by Sony?",
+      "options": [
+        "PlayStation",
+        "Nintendo Switch",
+        "Atari",
+        "Xbox"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "PlayStation"
+    },
+    {
+      "id": "opentdb-2026-04-22-2",
+      "question": "When was the Tamagotchi digital pet released?",
+      "options": [
+        "1990",
+        "1992",
+        "1996",
+        "1989"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "1996"
+    },
+    {
+      "id": "opentdb-2026-04-22-3",
+      "question": "How does a centrifuge separate&nbsp;heavy and light particles?",
+      "options": [
+        "Spinning",
+        "Vibrating",
+        "Sifting",
+        "Ionizing"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "Spinning"
+    },
+    {
+      "id": "opentdb-2026-04-22-4",
+      "question": "Which company designed the \"Betamax\" video cassette format?",
+      "options": [
+        "Panasonic",
+        "Sony",
+        "LG",
+        "Fujitsu"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "Sony"
+    },
+    {
+      "id": "opentdb-2026-04-22-5",
+      "question": "Which of the following is the standard THX subwoofer crossover frequency?",
+      "options": [
+        "70 Hz",
+        "80 Hz",
+        "90 Hz",
+        "100 Hz"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "80 Hz"
+    },
+    {
+      "id": "ai-2026-04-22-6",
+      "question": "What unusual medical device, invented by Dr. John Gorrie in the 19th century, was originally designed to cool hospital rooms for patients with tropical diseases?",
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Ice machine",
+      "explanation": "Dr. John Gorrie invented the ice machine in the 1840s to create artificial ice. His goal was to cool rooms for patients suffering from yellow fever and malaria, showcasing an early use of refrigeration technology in the medical field."
+    },
+    {
+      "id": "ai-2026-04-22-7",
+      "question": "What was the name of the first drone to successfully deliver a package in an urban environment as part of a commercial service?",
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Flirtey",
+      "explanation": "Flirtey made history in 2016 by completing the first fully autonomous drone delivery in an urban environment in the United States. This milestone demonstrated the potential of drones in logistics and sparked increased interest and development in drone delivery services."
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-06",
+  "categoryId": 20,
+  "categoryName": "Mythology",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-06-0",
+      "question": "Who was the only god from Greece who did not get a name change in Rome?",
+      "options": [
+        "Apollo",
+        "Demeter",
+        "Zeus",
+        "Athena"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Apollo"
+    },
+    {
+      "id": "opentdb-2026-05-06-1",
+      "question": "Who was the King of Gods in Ancient Greek mythology?",
+      "options": [
+        "Apollo",
+        "Zeus",
+        "Poseidon",
+        "Hermes"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Zeus"
+    },
+    {
+      "id": "opentdb-2026-05-06-2",
+      "question": "What mythology did the god \"Apollo\" come from?",
+      "options": [
+        "Greek and Chinese",
+        "Greek and Roman",
+        "Roman and Spanish",
+        "Greek, Roman and Norse"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Greek and Roman"
+    },
+    {
+      "id": "opentdb-2026-05-06-3",
+      "question": "The Maori hold that which island nation was founded by Kupe, who discovered it under a long white cloud?",
+      "options": [
+        "Fiji",
+        "Vanuatu",
+        "New Zealand",
+        "Hawaii"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "New Zealand"
+    },
+    {
+      "id": "opentdb-2026-05-06-4",
+      "question": "Who is the God Loki's son? ",
+      "options": [
+        "Odin",
+        "Hel",
+        "Fenrir ",
+        "Sigyn"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Fenrir "
+    },
+    {
+      "id": "opentdb-2026-05-06-5",
+      "question": "What immense structure is referred to in Norse Mythology as the Yggdrasil.",
+      "options": [
+        "Tree",
+        "Temple",
+        "Mountain",
+        "Castle"
+      ],
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Tree"
+    },
+    {
+      "id": "ai-2026-05-06-6",
+      "question": "In Norse mythology, which trickster god is known for his cunning and shape-shifting abilities?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Loki",
+      "explanation": "Loki is a central figure in Norse mythology known for his mischief and ability to change his shape and sex. He plays a crucial role in many myths, often causing trouble for the gods but also helping them in some situations. His complex nature makes him one of the most intriguing figures in mythology."
+    },
+    {
+      "id": "ai-2026-05-06-7",
+      "question": "In Japanese mythology, who is the Shinto god of storms and the sea, known for causing chaos and is a key figure in the story of the creation of Japan?",
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Susanoo",
+      "explanation": "Susanoo is a prominent deity in Japanese mythology, revered as the god of storms and the sea. He is notorious for his tempestuous behavior, which often brings chaos and disorder. Despite his unruly nature, Susanoo plays a pivotal role in the mythological narrative of Japan's creation, showcasing the balance of chaos and harmony in Shinto beliefs."
+    }
+  ]
+}

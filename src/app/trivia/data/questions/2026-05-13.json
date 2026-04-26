@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-13",
+  "categoryId": 27,
+  "categoryName": "Animals",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-13-0",
+      "question": "By definition, where does an abyssopelagic animal live?",
+      "options": [
+        "At the bottom of the ocean",
+        "On top of a mountain",
+        "Inside a tree",
+        "In the desert"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "At the bottom of the ocean"
+    },
+    {
+      "id": "opentdb-2026-05-13-1",
+      "question": "Which class of animals are newts members of?",
+      "options": [
+        "Reptiles",
+        "Mammals",
+        "Amphibian",
+        "Fish"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Amphibian"
+    },
+    {
+      "id": "opentdb-2026-05-13-2",
+      "question": "How many teeth does an adult rabbit have?",
+      "options": [
+        "28",
+        "24",
+        "30",
+        "26"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "28"
+    },
+    {
+      "id": "opentdb-2026-05-13-3",
+      "question": "What is the collective noun for rats?",
+      "options": [
+        "Race",
+        "Mischief",
+        "Pack",
+        "Drift"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Mischief"
+    },
+    {
+      "id": "opentdb-2026-05-13-4",
+      "question": "Which dog breed is named after a region in Croatia",
+      "options": [
+        "Chihuahua ",
+        "Dalmatian",
+        "Pekingnese",
+        "Pomeranian"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Dalmatian"
+    },
+    {
+      "id": "opentdb-2026-05-13-5",
+      "question": "What scientific family does the Aardwolf belong to?",
+      "options": [
+        "Canidae",
+        "Felidae",
+        "Hyaenidae",
+        "Eupleridae"
+      ],
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Hyaenidae"
+    },
+    {
+      "id": "ai-2026-05-13-6",
+      "question": "What is the term used to describe the compromise cats make between their need for stealth and their need for speed?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Digitigrade locomotion",
+      "explanation": "Cats are digitigrade animals, meaning they walk on their toes. This adaptation allows them to move quietly and with agility, a tradeoff between stealth for hunting and speed for escaping predators. It is an interesting aspect of their evolutionary biology."
+    },
+    {
+      "id": "ai-2026-05-13-7",
+      "question": "What is the name of the first cat breed recognized by The International Cat Association (TICA) in 1979?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Maine Coon",
+      "explanation": "The Maine Coon was the first breed recognized by The International Cat Association (TICA) when it was founded in 1979. Known for its large size and tufted ears, the Maine Coon is one of the oldest natural cat breeds in North America and is often referred to as the 'gentle giant' of cats."
+    }
+  ]
+}

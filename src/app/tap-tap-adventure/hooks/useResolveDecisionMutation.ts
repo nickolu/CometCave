@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
 
@@ -27,24 +28,155 @@ export interface ResolveDecisionResponse {
   triggersCombat?: boolean
   mountDamage?: number
   mountDied?: boolean
+  decisionPoint?: FantasyDecisionPoint | null
+  shopEvent?: boolean
 }
 
 export function useResolveDecisionMutation() {
   const { getSelectedCharacter } = useGameStore()
-  const { addItem, addStoryEvent, commit, setCombatState, updateSelectedCharacter } = useGameStateBuilder()
+  const { addItem, addStoryEvent, commit, setCombatState, setDecisionPoint, setShopState, updateSelectedCharacter } = useGameStateBuilder()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({
       decisionPoint,
       optionId,
       onSuccess,
+      onResourceDelta,
+      onResult,
     }: {
       decisionPoint: FantasyDecisionPoint
       optionId: string
       onSuccess?: () => void
+      onResourceDelta?: (delta: ResolveDecisionResponse['resourceDelta']) => void
+      onResult?: (result: {
+        outcomeDescription?: string
+        resourceDelta?: { gold?: number; reputation?: number }
+        rewardItems?: Item[]
+        mountDamage?: number
+        mountDied?: boolean
+      }) => void
     }) => {
       const character = getSelectedCharacter()
       if (!character) throw new Error('No character found')
+
+      // Handle fleeing from a secret boss
+      if (optionId === 'flee-secret-boss') {
+        const landmarkState = character.landmarkState
+        if (landmarkState) {
+          const landmarkName = landmarkState.exploringLandmarkName ?? 'the landmark'
+          updateSelectedCharacter({
+            landmarkState: {
+              ...landmarkState,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+            },
+          })
+          const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'decision_result',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: chosenOption?.text ?? 'Retreat',
+            outcomeDescription: `You retreat from the guardian of ${landmarkName}. Perhaps you'll return when you're stronger.`,
+          })
+          commit()
+          onSuccess?.()
+        }
+        return
+      }
+
+      // Handle leaving a landmark during exploration
+      if (optionId === 'leave-landmark') {
+        const landmarkState = character.landmarkState
+        if (landmarkState) {
+          const landmarkName = landmarkState.exploringLandmarkName ?? 'the landmark'
+          // Mark the current landmark as explored
+          const exploredIndex = landmarkState.activeTargetIndex ?? 0
+          const updatedLandmarks = landmarkState.landmarks.map((lm, i) =>
+            i === exploredIndex ? { ...lm, explored: true } : lm
+          )
+          const newIndex = Math.min((landmarkState.activeTargetIndex ?? 0) + 1, landmarkState.landmarks.length)
+          updateSelectedCharacter({
+            landmarkState: {
+              ...landmarkState,
+              landmarks: updatedLandmarks,
+              exploring: false,
+              explorationDepth: 0,
+              exploringLandmarkName: undefined,
+              activeTargetIndex: newIndex,
+              nextLandmarkIndex: newIndex,
+            },
+          })
+          const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'decision_result',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: chosenOption?.text ?? 'Leave',
+            outcomeDescription: `You leave ${landmarkName} and continue your journey.`,
+          })
+          commit()
+          onSuccess?.()
+        }
+        return
+      }
+
+      // Handle landmark bypass client-side — just increment the index and continue
+      if (optionId === 'bypass-landmark' || optionId.startsWith('bypass-toward-')) {
+        const landmarkState = character.landmarkState
+        if (landmarkState) {
+          // Use activeTargetIndex (not nextLandmarkIndex) to identify the bypassed landmark
+          const bypassedLandmark = landmarkState.landmarks[landmarkState.activeTargetIndex ?? 0]
+          const landmarkName = bypassedLandmark?.name ?? 'the landmark'
+
+          // Determine target based on which direction was chosen
+          let newActiveTargetIndex: number
+          if (optionId.startsWith('bypass-toward-')) {
+            const targetPart = optionId.replace('bypass-toward-', '')
+            if (targetPart === 'exit') {
+              newActiveTargetIndex = landmarkState.landmarks.length
+            } else {
+              newActiveTargetIndex = parseInt(targetPart, 10)
+            }
+          } else {
+            // Original bypass-landmark behavior: go to next target
+            newActiveTargetIndex = Math.min(
+              (landmarkState.activeTargetIndex ?? 0) + 1,
+              landmarkState.landmarks.length
+            )
+          }
+
+          updateSelectedCharacter({
+            landmarkState: {
+              ...landmarkState,
+              nextLandmarkIndex: newActiveTargetIndex, // keep in sync with activeTargetIndex
+              activeTargetIndex: newActiveTargetIndex,
+              exploring: false,
+            },
+          })
+          const chosenOption = decisionPoint.options.find(o => o.id === optionId)
+          addStoryEvent({
+            id: `result-${Date.now()}`,
+            type: 'decision_result',
+            characterId: character.id,
+            locationId: character.locationId,
+            timestamp: new Date().toISOString(),
+            selectedOptionId: optionId,
+            selectedOptionText: chosenOption?.text ?? 'Pass by without stopping',
+            outcomeDescription: `You pass by ${landmarkName} and continue your journey.`,
+          })
+          commit()
+          onSuccess?.()
+        }
+        return
+      }
 
       // Handle crossroads region travel decisions client-side
       if (optionId.startsWith('travel-')) {
@@ -72,6 +204,9 @@ export function useResolveDecisionMutation() {
           if (combatRes.ok) {
             const combatData = await combatRes.json()
             setCombatState(combatData.combatState)
+            if (combatData.updatedCharacter) {
+              updateSelectedCharacter(combatData.updatedCharacter)
+            }
           }
           addStoryEvent({
             id: `result-${Date.now()}`,
@@ -89,7 +224,8 @@ export function useResolveDecisionMutation() {
         }
 
         soundEngine.playCrossroads()
-        updateSelectedCharacter({ currentRegion: regionId })
+        // Clear landmarkState so next step in new region initializes fresh landmarks
+        updateSelectedCharacter({ currentRegion: regionId, currentWeather: rollWeather(regionId), landmarkState: undefined })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         addStoryEvent({
           id: `result-${Date.now()}`,
@@ -106,6 +242,14 @@ export function useResolveDecisionMutation() {
         return
       }
       if (optionId === 'stay') {
+        // Clear landmarkState so the region re-initializes with fresh landmarks on the next step.
+        // Add current region to visitedRegions to vary the landmark seed.
+        const currentRegion = character.currentRegion ?? 'green_meadows'
+        const updatedVisitedRegions = [...(character.visitedRegions ?? []), currentRegion]
+        updateSelectedCharacter({
+          landmarkState: undefined,
+          visitedRegions: updatedVisitedRegions,
+        })
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         addStoryEvent({
           id: `result-${Date.now()}`,
@@ -122,6 +266,7 @@ export function useResolveDecisionMutation() {
         return
       }
 
+      const { gameState: gs } = useGameStore.getState()
       const res = await fetch('/api/v1/tap-tap-adventure/resolve-decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,6 +274,7 @@ export function useResolveDecisionMutation() {
           character,
           decisionPoint,
           optionId,
+          storyEvents: gs.storyEvents,
         }),
       })
 
@@ -182,6 +328,33 @@ export function useResolveDecisionMutation() {
 
       addStoryEvent(newStoryEvent)
 
+      // If server returned a new decision point (e.g. from explore-landmark), set it
+      if (data.decisionPoint) {
+        soundEngine.playEvent()
+        setDecisionPoint(data.decisionPoint)
+      }
+
+      // If server returned a shopEvent flag, generate shop items and open the shop
+      if (data.shopEvent) {
+        soundEngine.playGold()
+        const currentCharacter = getSelectedCharacter()
+        const landmarkState = (currentCharacter ?? data.updatedCharacter)?.landmarkState
+        const townLandmark = landmarkState?.landmarks?.[landmarkState?.activeTargetIndex ?? 0]
+        const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character: currentCharacter ?? data.updatedCharacter,
+            townName: landmarkState?.exploringLandmarkName,
+            townDescription: townLandmark?.description,
+          }),
+        })
+        if (shopRes.ok) {
+          const shopData = await shopRes.json()
+          setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
+        }
+      }
+
       // Check if this event grants a mount (mount discovery events)
       const isMountEvent = optionId.includes('tame-') || optionId.includes('claim-mount')
       if (isMountEvent && data.outcomeDescription && !data.outcomeDescription.includes('bolts') && !data.outcomeDescription.includes("won't let you")) {
@@ -195,6 +368,11 @@ export function useResolveDecisionMutation() {
         newStoryEvent.outcomeDescription = `${data.outcomeDescription} You gained a ${mount.name}! ${mount.icon}${replacedText}`
       }
 
+      // Notify caller of resource changes so floating notifications can be shown
+      if (data.resourceDelta) {
+        onResourceDelta?.(data.resourceDelta)
+      }
+
       // If the chosen option triggers combat, start a combat encounter
       // Pass the event description so the enemy matches the narrative
       if (data.triggersCombat) {
@@ -202,8 +380,10 @@ export function useResolveDecisionMutation() {
         const { gameState } = useGameStore.getState()
         const chosenOption = decisionPoint.options.find(o => o.id === optionId)
         const isBoss = (chosenOption as Record<string, unknown>)?.isBoss === true
+        // Secret boss: triggered when player chooses to fight the secret landmark guardian
+        const isSecretBoss = optionId === 'fight-secret-boss'
         // Mini-boss: 5% chance on non-boss combat when distance > 100
-        const isMiniBoss = !isBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
+        const isMiniBoss = !isBoss && !isSecretBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
         const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -211,15 +391,27 @@ export function useResolveDecisionMutation() {
             character: data.updatedCharacter,
             storyEvents: gameState.storyEvents,
             eventContext: decisionPoint.prompt,
-            isBoss,
+            isBoss: isBoss || isSecretBoss,
             isMiniBoss,
+            isSecretBoss,
           }),
         })
         if (combatRes.ok) {
           const combatData = await combatRes.json()
           setCombatState(combatData.combatState)
+          if (combatData.updatedCharacter) {
+            updateSelectedCharacter(combatData.updatedCharacter)
+          }
         }
       }
+
+      onResult?.({
+        outcomeDescription: newStoryEvent.outcomeDescription,
+        resourceDelta: data.resourceDelta,
+        rewardItems: rewardItems,
+        mountDamage: data.mountDamage,
+        mountDied: data.mountDied,
+      })
 
       commit()
       onSuccess?.()

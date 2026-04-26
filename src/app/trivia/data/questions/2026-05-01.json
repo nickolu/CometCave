@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-01",
+  "categoryId": 15,
+  "categoryName": "Entertainment: Video Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-01-0",
+      "question": "In the game Half-Life, which enemy is showcased as the final boss?",
+      "options": [
+        "The Gonarch",
+        "The Nihilanth",
+        "G-Man",
+        "Dr. Wallace Breen"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "The Nihilanth"
+    },
+    {
+      "id": "opentdb-2026-05-01-1",
+      "question": "In the Assassin's Creed series,what was the name of Desmond Miles given by Abstergo?",
+      "options": [
+        "Subject 17",
+        "Subject 18",
+        "Alta&iuml;r Ibn-La'Ahad",
+        "Subject 16"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Subject 17"
+    },
+    {
+      "id": "opentdb-2026-05-01-2",
+      "question": "In the Street Fighter franchise, what's Ken's surname?",
+      "options": [
+        "Masters",
+        "Michaels",
+        "Morrison",
+        "Mitchell"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Masters"
+    },
+    {
+      "id": "opentdb-2026-05-01-3",
+      "question": "When was the Sega Genesis released in Japan?",
+      "options": [
+        "October 29, 1988",
+        "August 14, 1989",
+        "September 1, 1986",
+        "November 30, 1990"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "October 29, 1988"
+    },
+    {
+      "id": "opentdb-2026-05-01-4",
+      "question": "In the game series \"The Legend of Zelda\", what was the first 3D game?",
+      "options": [
+        "A Link to the Past",
+        "The Wind Waker",
+        "Ocarina of Time",
+        "Majora's Mask"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Ocarina of Time"
+    },
+    {
+      "id": "opentdb-2026-05-01-5",
+      "question": "In the game \"VA-11 Hall-A\" during Virgilio's ending, Virgilio opens his own:",
+      "options": [
+        "Curry Stand",
+        "Museum",
+        "Bar",
+        "Law Firm"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Curry Stand"
+    },
+    {
+      "id": "ai-2026-05-01-6",
+      "question": "In which iconic Nintendo video game series would players often blow into cartridges to fix game-loading issues?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "The Legend of Zelda",
+      "explanation": "The Legend of Zelda series was originally released on cartridges for the Nintendo Entertainment System (NES). Players commonly believed blowing into the cartridge would help the game load properly, a practice that became a well-known gaming trope, despite its lack of technical efficacy."
+    },
+    {
+      "id": "ai-2026-05-01-7",
+      "question": "Who is credited as the inventor of the iconic 'grind' mechanic in the 'Tony Hawk's Pro Skater' video game series?",
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Neversoft",
+      "explanation": "Neversoft, the developer of the 'Tony Hawk's Pro Skater' series, introduced the 'grind' mechanic that became a staple in skateboarding video games. This mechanic allowed players to perform tricks on rails and ledges, adding depth and strategy to gameplay, which contributed significantly to the series' success and popularity."
+    }
+  ]
+}

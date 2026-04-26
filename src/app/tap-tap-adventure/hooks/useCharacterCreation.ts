@@ -21,8 +21,17 @@ import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { calculateMaxHp } from '@/app/tap-tap-adventure/lib/leveling'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { ClassSkillTree } from '@/app/tap-tap-adventure/models/classSkillTree'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+
+/** Map static class IDs to their combat style for skill tree generation. */
+const STATIC_CLASS_COMBAT_STYLES: Record<string, string> = {
+  warrior: 'martial',
+  mage: 'arcane',
+  rogue: 'shadow',
+  ranger: 'primal',
+}
 
 export function useCharacterCreation() {
   const { addCharacter, claimHeirloom, gameState, getMetaBonuses } = useGameStore()
@@ -35,6 +44,8 @@ export function useCharacterCreation() {
   const [isComplete, setIsComplete] = useState(false)
   const [selectedHeirloom, setSelectedHeirloom] = useState<Item | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyMode>(DIFFICULTY_MODES[0])
+  const [skillTreeData, setSkillTreeData] = useState<ClassSkillTree | null>(null)
+  const [isFetchingTree, setIsFetchingTree] = useState(false)
 
   const legacyHeirlooms = gameState?.legacyHeirlooms ?? []
   const hasHeirlooms = legacyHeirlooms.length > 0
@@ -45,6 +56,7 @@ export function useCharacterCreation() {
         strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
         intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
         luck: selectedGeneratedClass.statDistribution.luck + (selectedRace.modifiers.luck ?? 0),
+        charisma: DEFAULT_STAT_MIN + (selectedRace.modifiers.charisma ?? 0),
       }
     }
     if (selectedRace && selectedClass) {
@@ -54,6 +66,7 @@ export function useCharacterCreation() {
       strength: DEFAULT_STAT_MIN,
       intelligence: DEFAULT_STAT_MIN,
       luck: DEFAULT_STAT_MIN,
+      charisma: DEFAULT_STAT_MIN,
     }
   }, [selectedRace, selectedClass, selectedGeneratedClass])
 
@@ -62,6 +75,25 @@ export function useCharacterCreation() {
   }
 
   const isValid = Boolean(character.name?.trim()) && selectedRace !== null && (selectedClass !== null || selectedGeneratedClass !== null)
+
+  const fetchSkillTree = useCallback(async (classId: string, className: string, combatStyle: string) => {
+    setIsFetchingTree(true)
+    try {
+      const response = await fetch('/api/v1/tap-tap-adventure/skill-tree/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId, className, combatStyle }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setSkillTreeData(data.skillTree)
+      }
+    } catch {
+      // Silently fail — character will be created without a tree
+    } finally {
+      setIsFetchingTree(false)
+    }
+  }, [])
 
   const fetchGeneratedClasses = useCallback(async () => {
     setIsLoadingClasses(true)
@@ -92,9 +124,20 @@ export function useCharacterCreation() {
         strength: gc.statDistribution.strength - DEFAULT_STAT_MIN,
         intelligence: gc.statDistribution.intelligence - DEFAULT_STAT_MIN,
         luck: gc.statDistribution.luck - DEFAULT_STAT_MIN,
+        charisma: 0,
       },
     })
-  }, [])
+    setSkillTreeData(null)
+    fetchSkillTree(gc.id, gc.name, gc.combatStyle)
+  }, [fetchSkillTree])
+
+  const selectStaticClass = useCallback((classOption: ClassOption) => {
+    setSelectedClass(classOption)
+    setSelectedGeneratedClass(null)
+    setSkillTreeData(null)
+    const combatStyle = STATIC_CLASS_COMBAT_STYLES[classOption.id] ?? 'martial'
+    fetchSkillTree(classOption.id, classOption.name, combatStyle)
+  }, [fetchSkillTree])
 
   const completeCreation = () => {
     if (!isValid || !selectedRace || (!selectedClass && !selectedGeneratedClass)) return
@@ -110,16 +153,18 @@ export function useCharacterCreation() {
       cooldown: DEFAULT_ABILITY_COOLDOWN,
     }
 
-    let finalStats: { strength: number; intelligence: number; luck: number }
+    let finalStats: { strength: number; intelligence: number; luck: number; charisma: number }
     let className: string
     let spellbook: Spell[] = []
     let classData: GeneratedClass | undefined
+    let classSkillTree: ClassSkillTree | undefined = skillTreeData ?? undefined
 
     if (selectedGeneratedClass) {
       finalStats = {
         strength: selectedGeneratedClass.statDistribution.strength + (selectedRace.modifiers.strength ?? 0),
         intelligence: selectedGeneratedClass.statDistribution.intelligence + (selectedRace.modifiers.intelligence ?? 0),
         luck: selectedGeneratedClass.statDistribution.luck + (selectedRace.modifiers.luck ?? 0),
+        charisma: DEFAULT_STAT_MIN + (selectedRace.modifiers.charisma ?? 0),
       }
       className = selectedGeneratedClass.name
       classData = selectedGeneratedClass
@@ -161,13 +206,22 @@ export function useCharacterCreation() {
       strength: finalStats.strength,
       intelligence: finalStats.intelligence,
       luck: finalStats.luck,
+      charisma: finalStats.charisma,
       inventory: [],
       deathCount: 0,
       pendingStatPoints: 0,
       classData,
       difficultyMode: selectedDifficulty.id,
       currentRegion: 'green_meadows',
+      currentWeather: 'clear',
       visitedRegions: ['green_meadows'],
+      visitedTowns: [],
+      factionReputations: {},
+      bounty: 0,
+      party: [],
+      mountRoster: [],
+      mailbox: [],
+      pendingReplies: [],
     }
     const maxMana = calculateMaxMana(tempChar)
 
@@ -180,11 +234,27 @@ export function useCharacterCreation() {
       }
     }
 
+    let startingEquipment: { weapon: Item | null; armor: null; accessory: null } = { weapon: null, armor: null, accessory: null }
+    if (classData?.startingWeapon) {
+      const weaponItem: Item = {
+        id: `starting-weapon-${Date.now()}`,
+        name: classData.startingWeapon.name,
+        description: classData.startingWeapon.description,
+        quantity: 1,
+        type: 'equipment',
+        effects: classData.startingWeapon.effects,
+        rarity: 'common',
+      }
+      startingInventory.push(weaponItem)
+      startingEquipment = { weapon: weaponItem, armor: null, accessory: null }
+    }
+
     // Apply meta-progression bonuses from eternal upgrades
     const metaBonuses = getMetaBonuses()
     const boostedStrength = finalStats.strength + metaBonuses.bonusStrength
     const boostedIntelligence = finalStats.intelligence + metaBonuses.bonusIntelligence
     const boostedLuck = finalStats.luck + metaBonuses.bonusLuck
+    const boostedCharisma = finalStats.charisma
     const boostedGold = metaBonuses.bonusGold
 
     // Recalculate mana/hp with boosted stats
@@ -193,6 +263,7 @@ export function useCharacterCreation() {
       strength: boostedStrength,
       intelligence: boostedIntelligence,
       luck: boostedLuck,
+      charisma: boostedCharisma,
     }
     const boostedMaxMana = calculateMaxMana(boostedTempChar) + metaBonuses.bonusMana
     const boostedMaxHp = calculateMaxHp(boostedTempChar) + metaBonuses.bonusHp
@@ -206,6 +277,7 @@ export function useCharacterCreation() {
       strength: boostedStrength,
       intelligence: boostedIntelligence,
       luck: boostedLuck,
+      charisma: boostedCharisma,
       abilities: [defaultAbility],
       hp: boostedMaxHp,
       maxHp: boostedMaxHp,
@@ -213,7 +285,10 @@ export function useCharacterCreation() {
       maxMana: boostedMaxMana,
       spellbook,
       classData,
+      classSkillTree,
+      unlockedTreeSkillIds: [],
       inventory: startingInventory,
+      equipment: startingEquipment,
       gold: boostedGold,
       difficultyMode: selectedDifficulty.id,
     }
@@ -234,6 +309,7 @@ export function useCharacterCreation() {
     updateCharacter,
     setSelectedRace,
     setSelectedClass,
+    selectStaticClass,
     selectGeneratedClass,
     fetchGeneratedClasses,
     isComplete,
@@ -244,5 +320,7 @@ export function useCharacterCreation() {
     setSelectedHeirloom,
     selectedDifficulty,
     setSelectedDifficulty,
+    skillTreeData,
+    isFetchingTree,
   }
 }

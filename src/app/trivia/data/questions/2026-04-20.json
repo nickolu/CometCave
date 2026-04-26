@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-20",
+  "categoryId": 28,
+  "categoryName": "Vehicles",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-20-0",
+      "question": "Which car tire manufacturer is famous for its \"Eagle\" brand of tires, and is the official tire supplier of NASCAR?",
+      "options": [
+        "Bridgestone",
+        "Goodyear",
+        "Michelin",
+        "Pirelli"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Goodyear"
+    },
+    {
+      "id": "opentdb-2026-04-20-1",
+      "question": "Which of the following vehicles from Ford is named after a WW2 Fighter Plane?",
+      "options": [
+        "Mustang",
+        "Galaxy",
+        "Ranger",
+        "Explorer"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Mustang"
+    },
+    {
+      "id": "opentdb-2026-04-20-2",
+      "question": "Jaguar Cars was previously owned by which car manfacturer?",
+      "options": [
+        "Ford",
+        "Chrysler",
+        "Fiat",
+        "General Motors"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Ford"
+    },
+    {
+      "id": "opentdb-2026-04-20-3",
+      "question": "Which of the following passenger jets is the longest?",
+      "options": [
+        "Boeing 747-8",
+        "Airbus A330-200",
+        "Boeing 787-10",
+        "Airbus A350-1000"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Boeing 747-8"
+    },
+    {
+      "id": "opentdb-2026-04-20-4",
+      "question": "Which car brand does NOT belong to General Motors?",
+      "options": [
+        "Cadillac",
+        "Chevrolet",
+        "Ford",
+        "Buick"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Ford"
+    },
+    {
+      "id": "opentdb-2026-04-20-5",
+      "question": "The difference between the lengths of a Boeing 777-300ER and an Airbus A350-1000 is closest to:",
+      "options": [
+        "0.1m",
+        "100m",
+        "1m",
+        "10m "
+      ],
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "0.1m"
+    },
+    {
+      "id": "ai-2026-04-20-6",
+      "question": "What was the first car to win the inaugural Formula One World Championship in 1950?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Alfa Romeo 158",
+      "explanation": "The Alfa Romeo 158, driven by Giuseppe Farina, won the first Formula One World Championship race in 1950. This victory is significant as it marked the beginning of the modern era of Formula One racing, establishing the sport as a premier global motorsport event."
+    },
+    {
+      "id": "ai-2026-04-20-7",
+      "question": "Which classic car, introduced by a French manufacturer in 1955, was known for its futuristic design and hydropneumatic self-leveling suspension system?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Citroën DS",
+      "explanation": "The Citroën DS, launched in 1955, was celebrated for its innovative technology and sleek design, earning it a place in automotive history. Its hydropneumatic suspension offered an exceptionally smooth ride, making it one of the most advanced cars of its time, and it remains an icon of automotive engineering."
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
+import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
 
 export interface UseItemResult {
   character: FantasyCharacter
@@ -37,7 +38,7 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
   const effectMessages: string[] = []
 
   if (effects.gold) {
-    updatedCharacter.gold += effects.gold
+    updatedCharacter.gold = clampGold(updatedCharacter.gold + effects.gold)
     effectMessages.push(`${effects.gold > 0 ? '+' : ''}${effects.gold} Gold`)
   }
   if (effects.reputation) {
@@ -64,6 +65,30 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
   if (effects.luck) {
     updatedCharacter.luck += effects.luck
     effectMessages.push(`${effects.luck > 0 ? '+' : ''}${effects.luck} Luck`)
+  }
+  if (effects.charisma) {
+    updatedCharacter.charisma += effects.charisma
+    effectMessages.push(`${effects.charisma > 0 ? '+' : ''}${effects.charisma} Charisma`)
+  }
+  if (effects.revealLandmark) {
+    const ls = updatedCharacter.landmarkState
+    if (ls) {
+      const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
+      if (hiddenIdx !== -1) {
+        const updatedLandmarks = ls.landmarks.map((lm, i) =>
+          i === hiddenIdx ? { ...lm, hidden: false } : lm
+        )
+        updatedCharacter = {
+          ...updatedCharacter,
+          landmarkState: { ...ls, landmarks: updatedLandmarks },
+        }
+        effectMessages.push(`Revealed a hidden landmark: ${ls.landmarks[hiddenIdx].name}`)
+      } else {
+        effectMessages.push('No hidden landmarks to reveal')
+      }
+    } else {
+      effectMessages.push('No landmarks in this area')
+    }
   }
 
   // Update inventory: decrement quantity or remove

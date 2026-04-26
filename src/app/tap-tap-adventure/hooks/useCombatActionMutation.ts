@@ -3,14 +3,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { DeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
-import { claimNewMilestones, getConqueredCount } from '@/app/tap-tap-adventure/lib/mainQuestManager'
+import { claimNewMilestones, getConqueredCount, CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { CombatAction, CombatState } from '@/app/tap-tap-adventure/models/combat'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
+import { BestiaryEntry } from '@/app/tap-tap-adventure/models/bestiary'
 
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
@@ -30,7 +32,7 @@ interface CombatActionResponse {
 
 export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount) => void }) {
   const queryClient = useQueryClient()
-  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary } = useGameStore()
+  const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary, recordRun } = useGameStore()
   const {
     addItem,
     addStoryEvent,
@@ -111,6 +113,30 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
         }
       }
 
+      // Sync mercenary HP back to character
+      if (data.combatState.playerState.mercenaryHp !== undefined && character.activeMercenary) {
+        updateSelectedCharacter({
+          activeMercenary: {
+            ...character.activeMercenary,
+            hp: data.combatState.playerState.mercenaryHp,
+          },
+        })
+      }
+
+      // Detect spell combos in new log entries and record discoveries
+      {
+        const prevLogLen = combatState.combatLog.length
+        const newEntries = data.combatState.combatLog.slice(prevLogLen)
+        const comboEntry = newEntries.find(e => e.action === 'spell_combo')
+        if (comboEntry) {
+          const match = comboEntry.description.match(/^COMBO: ([^!]+)!/)
+          if (match) {
+            const comboId = match[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')
+            useGameStore.getState().discoverCombo(comboId)
+          }
+        }
+      }
+
       if (data.combatState.status === 'active') {
         // Combat continues — play sounds based on what happened
         // Check for critical hits in new log entries
@@ -135,6 +161,8 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
 
         if (data.combatState.status === 'victory' && data.rewards) {
           soundEngine.playVictory()
+          // Track daily challenge: win_combats
+          useGameStore.getState().updateDailyChallengeProgress('win_combats', 1)
           // Add loot items and collect for story event
           const processedLoot: Item[] = []
           for (const lootItem of data.rewards.loot) {
@@ -172,6 +200,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             updateSelectedCharacter({
               currentRegion: pendingRegionId,
               visitedRegions: updatedVisited,
+              currentWeather: rollWeather(pendingRegionId),
             })
             regionTravelText = ` You conquered the guardian and entered ${destRegion.icon} ${destRegion.name}!`
           }
@@ -204,14 +233,61 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             if (questStatus === 'completed') {
               const freshChar = useGameStore.getState().gameState.characters.find(c => c.id === character.id)
               const victoryEssence = awardSoulEssence(freshChar ?? character, 5)
+              const victoryChar = freshChar ?? character
               setRunSummary({
-                character: freshChar ? { ...freshChar } : { ...character },
+                character: { ...victoryChar },
                 reason: 'victory',
                 essenceEarned: victoryEssence,
                 heirloom: null,
               })
+              recordRun({
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+                characterName: victoryChar.name,
+                characterClass: victoryChar.class,
+                level: victoryChar.level,
+                distance: victoryChar.distance ?? 0,
+                gold: victoryChar.gold,
+                reputation: victoryChar.reputation ?? 0,
+                regionsConquered: (victoryChar.visitedRegions ?? []).filter(r => CONQUERABLE_REGIONS.includes(r)).length,
+                reason: 'victory',
+                essenceEarned: victoryEssence,
+                endedAt: new Date().toISOString(),
+                difficultyMode: victoryChar.difficultyMode,
+              })
               // Do NOT delete the character — post-game character persists
             }
+          }
+
+          // Update bestiary on victory
+          {
+            const existingBestiary: BestiaryEntry[] = character.bestiary ?? []
+            const enemyNameLower = enemy.name.toLowerCase()
+            const existingIndex = existingBestiary.findIndex(
+              e => e.name.toLowerCase() === enemyNameLower
+            )
+            let updatedBestiary: BestiaryEntry[]
+            if (existingIndex !== -1) {
+              updatedBestiary = existingBestiary.map((e, i) =>
+                i === existingIndex ? { ...e, timesDefeated: e.timesDefeated + 1 } : e
+              )
+            } else {
+              const newEntry: BestiaryEntry = {
+                name: enemy.name,
+                element: enemy.element,
+                level: enemy.level,
+                attack: enemy.attack,
+                defense: enemy.defense,
+                maxHp: enemy.maxHp,
+                specialAbility: enemy.specialAbility,
+                statusAbility: enemy.statusAbility,
+                region: character.currentRegion ?? 'green_meadows',
+                timesDefeated: 1,
+                firstEncountered: new Date().toISOString(),
+                isBoss: combatState.isBoss,
+              }
+              updatedBestiary = [...existingBestiary, newEntry]
+            }
+            updateSelectedCharacter({ bestiary: updatedBestiary })
           }
 
           addStoryEvent({
@@ -262,7 +338,23 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               heirloom,
             })
 
-            deleteCharacter(character.id)
+            recordRun({
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              characterName: character.name,
+              characterClass: character.class,
+              level: character.level,
+              distance: character.distance ?? 0,
+              gold: character.gold,
+              reputation: character.reputation ?? 0,
+              regionsConquered: (character.visitedRegions ?? []).filter(r => CONQUERABLE_REGIONS.includes(r)).length,
+              reason: 'permadeath',
+              essenceEarned,
+              endedAt: new Date().toISOString(),
+              difficultyMode: character.difficultyMode,
+            })
+
+            // NOTE: deleteCharacter is called AFTER commit() below
+            // to prevent commit() from overwriting the deletion with a stale snapshot
           } else {
             const penalty = data.deathPenalty
             const penaltyParts: string[] = []
@@ -304,6 +396,21 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               essenceEarned,
               heirloom,
             })
+
+            recordRun({
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              characterName: character.name,
+              characterClass: character.class,
+              level: character.level,
+              distance: character.distance ?? 0,
+              gold: character.gold,
+              reputation: character.reputation ?? 0,
+              regionsConquered: (character.visitedRegions ?? []).filter(r => CONQUERABLE_REGIONS.includes(r)).length,
+              reason: 'death',
+              essenceEarned,
+              endedAt: new Date().toISOString(),
+              difficultyMode: character.difficultyMode,
+            })
           }
         } else if (data.combatState.status === 'fled') {
           updateSelectedCharacter({ reputation: character.reputation - 2 })
@@ -334,6 +441,15 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
       }
 
       commit()
+
+      // Permadeath deletion must happen AFTER commit() to avoid the stale snapshot overwriting it
+      if (data.combatState.status === 'defeat') {
+        const diffMods = getDifficultyModifiers(character.difficultyMode)
+        if (diffMods.permadeath) {
+          deleteCharacter(character.id)
+        }
+      }
+
       return data
     },
     onSuccess: () => {

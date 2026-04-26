@@ -3,11 +3,13 @@
 import { PlayerAchievement } from './achievement'
 import { FantasyCharacter } from './character'
 import { CombatState } from './combat'
+import { DailyChallengesState } from './dailyChallenge'
 import { Item } from './item'
 import { FantasyLocation } from './location'
 import { MetaProgressionState } from './metaProgression'
 import { Mount } from './mount'
 import { TimedQuest } from './quest'
+import { RunHistoryEntry } from './runHistory'
 import { FantasyDecisionPoint, FantasyStoryEvent } from './story'
 
 export type ShopMountData = {
@@ -61,6 +63,7 @@ export type {
 } from './spell'
 export type { Mount, MountSchema, MountBonuses, MountBonusesSchema, MountRarity, MountRaritySchema, MountPersonality, MountPersonalitySchema } from './mount'
 export type { TimedQuest, TimedQuestSchema, MainQuest, MainQuestSchema, MainQuestMilestone, MainQuestMilestoneSchema } from './quest'
+export type { CampState, CampStateSchema } from './camp'
 export type {
   CombatState,
   CombatEnemy,
@@ -112,10 +115,20 @@ type GameState = {
   achievements: PlayerAchievement[]
   legacyHeirlooms: Item[]
   dailyReward: DailyRewardState | null
+  dailyChallenges: DailyChallengesState | null
   metaProgression: MetaProgressionState | null
   runSummary: RunSummaryData | null
+  runHistory: RunHistoryEntry[]
+  /** Item awaiting a rarity celebration modal (epic/legendary drops) */
+  pendingLootCelebration: Item | null
+  /** IDs of items recently added to inventory — cleared when viewed */
+  newItemIds: string[]
+  /** Active social encounter NPC and scenario, set by move-forward and cleared after dialogue */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  socialEncounter?: { npc: any; scenario: string } | null
 }
 export type { GameState, DailyRewardState, RunSummaryData }
+export type { DailyChallenge, DailyChallengeType, DailyChallengesState } from './dailyChallenge'
 export type { PlayerAchievement, Achievement, AchievementCategory } from './achievement'
 export type {
   EternalUpgrade,
@@ -125,3 +138,7 @@ export type {
   MetaProgressionState,
   MetaProgressionStateSchema,
 } from './metaProgression'
+export type { BestiaryEntry, BestiaryEntrySchema } from './bestiary'
+export type { RunHistoryEntry, RunHistoryEntrySchema } from './runHistory'
+export type { PartyMember } from './partyMember'
+export { PartyMemberSchema, MAX_PARTY_SIZE } from './partyMember'

@@ -1,6 +1,8 @@
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { WEATHER_TYPES, WeatherId } from '@/app/tap-tap-adventure/config/weather'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
+import { FACTIONS, FACTION_IDS, getFactionRepTier } from '@/app/tap-tap-adventure/config/factions'
 
 const MAX_CONTEXT_LENGTH = 1500
 
@@ -47,6 +49,27 @@ export function clampReputation(value: number): number {
   return Math.max(-100, Math.min(200, value))
 }
 
+export function clampGold(value: number): number {
+  return Math.max(0, value)
+}
+
+export function getCharismaPriceMultiplier(charisma: number): number {
+  const discount = Math.min(0.10, (charisma - 5) * 0.01)
+  return 1.0 - discount
+}
+
+export function getNPCDispositionPriceMultiplier(npcEncounters?: Record<string, { disposition: number }>): number {
+  if (!npcEncounters) return 1.0
+  const dispositions = Object.values(npcEncounters).map(e => e.disposition)
+  if (dispositions.length === 0) return 1.0
+  const maxDisposition = Math.max(...dispositions)
+  // Discount tiers based on best NPC relationship
+  if (maxDisposition >= 80) return 0.85  // Bonded: 15% discount
+  if (maxDisposition >= 50) return 0.90  // Trusted: 10% discount
+  if (maxDisposition >= 20) return 0.95  // Friendly: 5% discount
+  return 1.0 // Neutral or worse: no discount
+}
+
 export function buildStoryContext(
   character: FantasyCharacter,
   storyEvents: FantasyStoryEvent[],
@@ -63,7 +86,7 @@ export function buildStoryContext(
   parts.push(
     `Character: ${character.name}, Level ${character.level} ${character.race} ${character.class}. ` +
     `Gold: ${character.gold}, Reputation: ${character.reputation} (${tier}), Distance: ${character.distance}. ` +
-    `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}.`
+    `Stats: STR ${character.strength}, INT ${character.intelligence}, LCK ${character.luck}, CHA ${character.charisma}.`
   )
   parts.push(`Reputation implications: ${REPUTATION_TIER_IMPLICATIONS[tier]}`)
 
@@ -73,6 +96,25 @@ export function buildStoryContext(
     `Region: ${region.name} (${region.difficulty}) — ${region.theme}. ` +
     `Dominant element: ${region.element}. Common threats: ${region.enemyTypes.join(', ') || 'none'}.`
   )
+
+  // Weather context (skip for clear skies — no atmospheric effect to describe)
+  const weatherType = WEATHER_TYPES[(character.currentWeather ?? 'clear') as WeatherId] ?? WEATHER_TYPES.clear
+  if (weatherType.id !== 'clear') {
+    parts.push(`Weather: ${weatherType.icon} ${weatherType.name} — ${weatherType.description}`)
+  }
+
+  // Faction standings
+  const factionReps = character.factionReputations ?? {}
+  const activeFactions = FACTION_IDS
+    .filter(id => (factionReps[id] ?? 0) > 0)
+    .map(id => {
+      const rep = factionReps[id] ?? 0
+      const tier = getFactionRepTier(rep)
+      return `${FACTIONS[id].name}: ${rep} (${tier.label})`
+    })
+  if (activeFactions.length > 0) {
+    parts.push(`Faction rep: ${activeFactions.join(', ')}.`)
+  }
 
   // Mount info
   if (character.activeMount) {

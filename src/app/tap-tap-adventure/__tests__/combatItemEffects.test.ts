@@ -88,6 +88,18 @@ describe('combatItemEffects', () => {
       }
       expect(isUsableInCombat(item)).toBe(false)
     })
+
+    it('returns true for consumable with charisma effect', () => {
+      const item: Item = {
+        id: '1',
+        name: 'Charm Elixir',
+        description: 'test',
+        quantity: 1,
+        type: 'consumable',
+        effects: { charisma: 2 },
+      }
+      expect(isUsableInCombat(item)).toBe(true)
+    })
   })
 
   describe('applyCombatItemEffect', () => {
@@ -167,6 +179,23 @@ describe('combatItemEffects', () => {
       expect(playerState.activeBuffs![0].stat).toBe('attack')
       expect(playerState.activeBuffs![0].value).toBe(4) // 2 * 2
       expect(description).toContain('+4 attack')
+    })
+
+    it('adds defense buff from charisma effect', () => {
+      const item: Item = {
+        id: '1',
+        name: 'Charm Elixir',
+        description: 'test',
+        quantity: 1,
+        type: 'consumable',
+        effects: { charisma: 3 },
+      }
+      const { playerState, description } = applyCombatItemEffect(item, basePlayerState)
+      expect(playerState.activeBuffs).toHaveLength(1)
+      expect(playerState.activeBuffs![0].stat).toBe('defense')
+      expect(playerState.activeBuffs![0].value).toBe(6) // 3 * 2
+      expect(playerState.activeBuffs![0].turnsRemaining).toBe(3)
+      expect(description).toContain('+6 defense')
     })
 
     it('applies multiple effects simultaneously', () => {

@@ -1,0 +1,109 @@
+{
+  "date": "2026-05-09",
+  "categoryId": 23,
+  "categoryName": "History",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-09-0",
+      "question": "What was William Frederick Cody better known as?",
+      "options": [
+        "Wild Bill Hickok",
+        "Billy the Kid",
+        "Buffalo Bill",
+        "Pawnee Bill"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Buffalo Bill"
+    },
+    {
+      "id": "opentdb-2026-05-09-1",
+      "question": "Who was the Confederate general in the American Civil War?",
+      "options": [
+        "George B. McClellan",
+        "George A. Custer",
+        "Robert E. Lee",
+        "Ulysses S. Grant"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Robert E. Lee"
+    },
+    {
+      "id": "opentdb-2026-05-09-2",
+      "question": "Which country was Josef Stalin born in?",
+      "options": [
+        "Georgia",
+        "Germany",
+        "Russia",
+        "Poland"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Georgia"
+    },
+    {
+      "id": "opentdb-2026-05-09-3",
+      "question": "When was the People's Republic of China founded?",
+      "options": [
+        "October 1, 1949",
+        "May 7, 1945",
+        "April 3, 1947",
+        "December 6, 1950"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "October 1, 1949"
+    },
+    {
+      "id": "opentdb-2026-05-09-4",
+      "question": "In what year was the video game company Electronic Arts founded?",
+      "options": [
+        "1999",
+        "2005",
+        "1982",
+        "1981"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "1982"
+    },
+    {
+      "id": "opentdb-2026-05-09-5",
+      "question": "What Southeast Asian country was formerly known as 'Lan Xang'?",
+      "options": [
+        "Vietnam",
+        "Thailand",
+        "Laos",
+        "Cambodia"
+      ],
+      "difficulty": "hard",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Laos"
+    },
+    {
+      "id": "ai-2026-05-09-6",
+      "question": "Which Italian city is widely recognized as the birthplace of the Renaissance due to its significant cultural and artistic influence during the period?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Florence",
+      "explanation": "Florence is considered the cradle of the Renaissance, a period of great cultural change and achievement. It was home to influential figures such as Leonardo da Vinci, Michelangelo, and Dante Alighieri, and its patronage systems supported the flourishing of arts and sciences."
+    },
+    {
+      "id": "ai-2026-05-09-7",
+      "question": "Which Chinese dynasty was responsible for the design and expansion of the Silk Road, significantly enhancing trade and cultural exchange between the East and the West?",
+      "difficulty": "medium",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Han Dynasty",
+      "explanation": "The Han Dynasty, which lasted from 206 BCE to 220 CE, played a crucial role in establishing the Silk Road. The trade routes were expanded under their rule, promoting exchange of goods, ideas, and culture between China and other civilizations, such as those in the Middle East and Europe, profoundly impacting global history."
+    }
+  ]
+}

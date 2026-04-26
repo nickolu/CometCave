@@ -16,6 +16,8 @@ import {
   createStatusEffectFromAbility,
   getCurseHealingMultiplier,
 } from './statusEffects'
+import { checkSpellCombo, getSpellElement } from './spellCombos'
+import { getSpellLevelMultiplier } from './spellProgression'
 
 export interface CastSpellResult {
   playerState: CombatPlayerState
@@ -23,6 +25,7 @@ export interface CastSpellResult {
   logs: CombatLogEntry[]
   manaUsed: number
   spellCooldown: number
+  comboName: string | null
 }
 
 /**
@@ -110,7 +113,7 @@ export function castSpell(
       action: 'cast_spell',
       description: `Not enough mana to cast ${spell.name}! (Need ${spell.manaCost}, have ${playerState.mana ?? 0})`,
     })
-    return { playerState, enemy: updatedEnemy, logs, manaUsed: 0, spellCooldown: 0 }
+    return { playerState, enemy: updatedEnemy, logs, manaUsed: 0, spellCooldown: 0, comboName: null }
   }
 
   // 2. Check cooldown
@@ -122,7 +125,7 @@ export function castSpell(
       action: 'cast_spell',
       description: `${spell.name} is on cooldown! (${cooldowns[spell.id]} turns remaining)`,
     })
-    return { playerState, enemy: updatedEnemy, logs, manaUsed: 0, spellCooldown: 0 }
+    return { playerState, enemy: updatedEnemy, logs, manaUsed: 0, spellCooldown: 0, comboName: null }
   }
 
   // 3. Check conditions and determine bonuses
@@ -156,10 +159,12 @@ export function castSpell(
 
   // 5. Iterate effects
   const newActiveEffects: ActiveSpellEffect[] = [...(playerState.activeSpellEffects ?? [])]
+  let totalDamageDealt = 0
 
   for (const effect of spell.effects ?? []) {
-    const damageMultiplier = synergyMultiplier * schoolMultiplier * (doubleDamage ? 2 : 1)
-    const healMultiplier = synergyMultiplier * (doubleHeal ? 2 : 1)
+    const levelMultiplier = getSpellLevelMultiplier(spell.spellLevel ?? 1)
+    const damageMultiplier = synergyMultiplier * schoolMultiplier * (doubleDamage ? 2 : 1) * levelMultiplier
+    const healMultiplier = synergyMultiplier * (doubleHeal ? 2 : 1) * levelMultiplier
     const durationBonus = extendDuration ? 2 : 0
 
     switch (effect.type) {
@@ -167,6 +172,7 @@ export function castSpell(
         const elemMultiplier = getElementalMultiplier(effect.element, updatedEnemy.element)
         const baseDmg = effect.value * damageMultiplier * elemMultiplier
         const dmg = Math.max(1, Math.round(baseDmg - (trueDamageBonus ? 0 : updatedEnemy.defense * 0.3)))
+        totalDamageDealt += dmg
         updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - dmg) }
         const elemText = getEffectivenessText(elemMultiplier)
         logs.push({
@@ -180,6 +186,7 @@ export function castSpell(
       }
       case 'true_damage': {
         const dmg = Math.max(1, Math.round(effect.value * damageMultiplier))
+        totalDamageDealt += dmg
         updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - dmg) }
         logs.push({
           turn: turnNumber,
@@ -329,6 +336,7 @@ export function castSpell(
         const lstDmg = Math.max(1, Math.round(effect.value * damageMultiplier * lstElemMultiplier - updatedEnemy.defense * 0.3))
         const healPct = (effect.percentage ?? 50) / 100
         const lstHeal = Math.max(1, Math.round(lstDmg * healPct))
+        totalDamageDealt += lstDmg
         updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - lstDmg) }
         playerState = {
           ...playerState,
@@ -438,6 +446,88 @@ export function castSpell(
     }
   }
 
+  // 5b. Spell combo system — track element history and check for combos
+  const prevElements = casterState.lastCastSpellElements ?? []
+  const spellElement = getSpellElement(spell)
+  const updatedElements = [...prevElements, spellElement].slice(-3)
+
+  let comboName: string | null = null
+  const comboResult = checkSpellCombo(updatedElements)
+
+  if (comboResult !== null) {
+    comboName = comboResult.comboName
+
+    // Apply bonus damage (skip if multiplier is 1.0 — e.g., Nature's Wrath is heal-only)
+    if (comboResult.damageMultiplier > 1.0 && totalDamageDealt > 0) {
+      const bonusDmg = Math.round(totalDamageDealt * (comboResult.damageMultiplier - 1))
+      updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - bonusDmg) }
+
+      let bonusDesc = `+${bonusDmg} bonus damage`
+
+      // Frostfire: halve enemy defense (simplification — no activeBuffs on CombatEnemy)
+      if (comboResult.removeEnemyDefenseBuff) {
+        updatedEnemy = { ...updatedEnemy, defense: Math.max(0, Math.floor(updatedEnemy.defense / 2)) }
+        bonusDesc += ', enemy defense halved'
+      }
+
+      // Wild Lightning: chain hit at 50% damage
+      if (comboResult.chainHit) {
+        const chainDmg = Math.round(totalDamageDealt * 0.5)
+        updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - chainDmg) }
+        bonusDesc += `, chain hit for ${chainDmg}`
+        logs.push({
+          turn: turnNumber,
+          actor: 'player',
+          action: 'spell_combo',
+          damage: chainDmg,
+          description: `Chain hit! ${updatedEnemy.name} takes an additional ${chainDmg} damage!`,
+        })
+      }
+
+      logs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'spell_combo',
+        damage: bonusDmg,
+        description: `COMBO: ${comboResult.comboName}! ${bonusDesc}.`,
+      })
+    } else if (comboResult.damageMultiplier <= 1.0) {
+      // Non-damage combo (e.g., Nature's Wrath)
+      logs.push({
+        turn: turnNumber,
+        actor: 'player',
+        action: 'spell_combo',
+        description: `COMBO: ${comboResult.comboName}! `,
+      })
+    }
+
+    // Nature's Wrath: heal caster for 15% maxHp
+    if (comboResult.bonusHealPct > 0) {
+      const healAmount = Math.round(playerState.maxHp * comboResult.bonusHealPct)
+      playerState = {
+        ...playerState,
+        hp: Math.min(playerState.maxHp, playerState.hp + healAmount),
+      }
+      // Update the combo log to include the heal info
+      const lastLog = logs[logs.length - 1]
+      if (lastLog?.action === 'spell_combo') {
+        logs[logs.length - 1] = {
+          ...lastLog,
+          description: lastLog.description + `healed ${healAmount} HP.`,
+        }
+      }
+    }
+
+    // Void Freeze: apply slow to enemy
+    if (comboResult.slowEnemy) {
+      const slowEffect = createStatusEffectFromAbility('slow', 5, 2, 'player')
+      updatedEnemy = {
+        ...updatedEnemy,
+        statusEffects: applyStatusEffect(updatedEnemy.statusEffects ?? [], slowEffect),
+      }
+    }
+  }
+
   // 6. Deduct mana (unless free cast)
   const manaUsed = isFreeCast ? 0 : spell.manaCost
   playerState = {
@@ -449,6 +539,7 @@ export function castSpell(
       [spell.id]: spell.cooldown,
     },
     spellTagsUsed: [...spellTagsUsed, ...(spell.tags ?? [])],
+    lastCastSpellElements: updatedElements,
   }
 
   // Casting a spell resets combo unless the spell has combo_boost
@@ -463,6 +554,7 @@ export function castSpell(
     logs,
     manaUsed,
     spellCooldown: spell.cooldown,
+    comboName,
   }
 }
 

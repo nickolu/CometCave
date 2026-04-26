@@ -47,4 +47,5 @@ export const DEFAULT_CHARACTER = {
   spellbook: [],
   classData: undefined,
   currentRegion: 'green_meadows',
+  currentWeather: 'clear',
 }

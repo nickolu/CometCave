@@ -12,6 +12,9 @@ export const StatusEffectTypeSchema = z.enum([
   'berserk',
   'fear',
   'reflect',
+  'freeze',
+  'stun',
+  'bleed',
 ])
 export type StatusEffectType = z.infer<typeof StatusEffectTypeSchema>
 
@@ -90,6 +93,7 @@ export const CombatPlayerStateSchema = z.object({
   spellCooldowns: z.record(z.string(), z.number()).optional(),
   activeSpellEffects: z.array(ActiveSpellEffectSchema).optional(),
   spellTagsUsed: z.array(z.string()).optional(),
+  lastCastSpellElements: z.array(z.string()).optional(),
   shield: z.number().default(0),
   statusEffects: z.array(StatusEffectSchema).optional(),
   ap: z.number().default(3),
@@ -99,10 +103,16 @@ export const CombatPlayerStateSchema = z.object({
   mountMovesRemaining: z.number().optional(),
   mountHp: z.number().optional(),
   mountMaxHp: z.number().optional(),
+  mercenaryHp: z.number().optional(),
+  mercenaryMaxHp: z.number().optional(),
+  dodgeChance: z.number().optional(),
+  bonusCritChance: z.number().optional(),
+  stamina: z.number().default(6),
+  maxStamina: z.number().default(6),
 })
 export type CombatPlayerState = z.infer<typeof CombatPlayerStateSchema>
 
-export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn', 'move_closer', 'move_away'])
+export const CombatActionSchema = z.enum(['attack', 'defend', 'heavy_attack', 'use_item', 'flee', 'class_ability', 'cast_spell', 'end_turn', 'move_closer', 'move_away', 'switch_target'])
 export type CombatAction = z.infer<typeof CombatActionSchema>
 
 export const CombatActionRequestSchema = z.object({
@@ -114,13 +124,25 @@ export type CombatActionRequest = z.infer<typeof CombatActionRequestSchema>
 
 export const CombatLogEntrySchema = z.object({
   turn: z.number(),
-  actor: z.enum(['player', 'enemy']),
+  actor: z.enum(['player', 'enemy', 'party_member']),
   action: z.string(),
   damage: z.number().optional(),
   description: z.string(),
   isCritical: z.boolean().optional(),
 })
 export type CombatLogEntry = z.infer<typeof CombatLogEntrySchema>
+
+export const PartyMemberCombatStateSchema = z.object({
+  memberId: z.string(),
+  name: z.string(),
+  icon: z.string().default('⚔️'),
+  hp: z.number(),
+  maxHp: z.number(),
+  attack: z.number(),
+  defense: z.number(),
+  isKnockedOut: z.boolean().default(false),
+})
+export type PartyMemberCombatState = z.infer<typeof PartyMemberCombatStateSchema>
 
 export const CombatStatusSchema = z.enum(['active', 'victory', 'defeat', 'fled'])
 export type CombatStatus = z.infer<typeof CombatStatusSchema>
@@ -150,8 +172,11 @@ export const CombatStateSchema = z.object({
   isBoss: z.boolean().optional(),
   isMiniBoss: z.boolean().optional(),
   isFinalBoss: z.boolean().optional(),
+  isSecretBoss: z.boolean().optional(),
   combatDistance: CombatDistanceSchema.optional(),
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),
+  partyMemberStates: z.array(PartyMemberCombatStateSchema).optional(),
+  additionalEnemies: z.array(CombatEnemySchema).optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>

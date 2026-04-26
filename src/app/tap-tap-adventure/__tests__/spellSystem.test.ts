@@ -10,6 +10,7 @@ import {
   tickSpellCooldowns,
   tickSpellEffects,
 } from '@/app/tap-tap-adventure/lib/spellEngine'
+import { checkSpellCombo, getSpellElement } from '@/app/tap-tap-adventure/lib/spellCombos'
 import { generateSpellForLevel } from '@/app/tap-tap-adventure/lib/spellGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatPlayerState, CombatState } from '@/app/tap-tap-adventure/models/combat'
@@ -31,9 +32,14 @@ const baseMage: FantasyCharacter = {
   strength: 5,
   intelligence: 10,
   luck: 5,
+  charisma: 6,
   inventory: [],
   deathCount: 0,
   pendingStatPoints: 0,
+  difficultyMode: 'normal',
+  currentRegion: 'green_meadows',
+  currentWeather: 'clear',
+  factionReputations: {},
   mana: 30,
   maxMana: 30,
   spellbook: [STARTING_SPELLS.mage],
@@ -628,6 +634,314 @@ describe('Spell System', () => {
       const playerState = makePlayerState({ comboCount: 3 })
       const result = castSpell(spell, playerState, makeEnemy(), baseMage, makeCombatState())
       expect(result.playerState.comboCount).toBe(0)
+    })
+  })
+})
+
+// Helper spells for combo tests
+function makeFireSpell(idSuffix = ''): Spell {
+  return {
+    id: `fire-spell${idSuffix}`,
+    name: 'Fire Bolt',
+    description: 'A bolt of fire',
+    school: 'arcane',
+    manaCost: 5,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 15, element: 'fire' }],
+    tags: ['fire'],
+  }
+}
+
+function makeLightningSpell(idSuffix = ''): Spell {
+  return {
+    id: `lightning-spell${idSuffix}`,
+    name: 'Lightning Bolt',
+    description: 'A bolt of lightning',
+    school: 'arcane',
+    manaCost: 5,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 15, element: 'lightning' }],
+    tags: ['lightning'],
+  }
+}
+
+function makeIceSpell(idSuffix = ''): Spell {
+  return {
+    id: `ice-spell${idSuffix}`,
+    name: 'Ice Shard',
+    description: 'A shard of ice',
+    school: 'arcane',
+    manaCost: 5,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 15, element: 'ice' }],
+    tags: ['ice'],
+  }
+}
+
+function makeShadowSpell(idSuffix = ''): Spell {
+  return {
+    id: `shadow-spell${idSuffix}`,
+    name: 'Shadow Strike',
+    description: 'A shadow strike',
+    school: 'shadow',
+    manaCost: 5,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 15, element: 'shadow' }],
+    tags: ['shadow'],
+  }
+}
+
+function makeNatureSpell(idSuffix = ''): Spell {
+  return {
+    id: `nature-spell${idSuffix}`,
+    name: 'Nature Strike',
+    description: 'A nature strike',
+    school: 'nature',
+    manaCost: 5,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 10, element: 'nature' }],
+    tags: ['nature'],
+  }
+}
+
+function makeArcaneSpell(idSuffix = ''): Spell {
+  return {
+    id: `arcane-spell${idSuffix}`,
+    name: 'Arcane Bolt',
+    description: 'An arcane bolt',
+    school: 'arcane',
+    manaCost: 5,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 15, element: 'arcane' }],
+    tags: ['arcane'],
+  }
+}
+
+function makeNoElementSpell(): Spell {
+  return {
+    id: 'no-element-spell',
+    name: 'Shield Bash',
+    description: 'A bash',
+    school: 'war',
+    manaCost: 3,
+    cooldown: 0,
+    target: 'enemy',
+    effects: [{ type: 'damage', value: 5 }],
+    tags: ['war'],
+  }
+}
+
+describe('Spell Combo System', () => {
+  describe('checkSpellCombo', () => {
+    it('returns null for empty history', () => {
+      expect(checkSpellCombo([])).toBeNull()
+    })
+
+    it('returns null when last element is none', () => {
+      expect(checkSpellCombo(['fire', 'none'])).toBeNull()
+    })
+
+    it('detects Plasma Burst (fire, lightning)', () => {
+      const result = checkSpellCombo(['fire', 'lightning'])
+      expect(result).not.toBeNull()
+      expect(result!.comboName).toBe('Plasma Burst')
+    })
+
+    it('detects Arcane Cascade (arcane x3) before any 2-element combo', () => {
+      const result = checkSpellCombo(['arcane', 'arcane', 'arcane'])
+      expect(result).not.toBeNull()
+      expect(result!.comboName).toBe('Arcane Cascade')
+    })
+
+    it('does not fire Arcane Cascade on only 2 arcane casts', () => {
+      const result = checkSpellCombo(['arcane', 'arcane'])
+      // Should not match Arcane Cascade (needs 3), should not match any 2-element combo
+      expect(result?.comboName).not.toBe('Arcane Cascade')
+    })
+
+    it('detects Elemental Fury (fire, ice, lightning) as 3-element combo', () => {
+      const result = checkSpellCombo(['fire', 'ice', 'lightning'])
+      expect(result).not.toBeNull()
+      expect(result!.comboName).toBe('Elemental Fury')
+    })
+
+    it('detects Shadow Storm (shadow, lightning) and marks ignoreDefense', () => {
+      const result = checkSpellCombo(['shadow', 'lightning'])
+      expect(result).not.toBeNull()
+      expect(result!.comboName).toBe('Shadow Storm')
+      expect(result!.ignoreDefense).toBe(true)
+    })
+
+    it('detects Void Freeze (shadow, ice) and marks slowEnemy', () => {
+      const result = checkSpellCombo(['shadow', 'ice'])
+      expect(result).not.toBeNull()
+      expect(result!.comboName).toBe('Void Freeze')
+      expect(result!.slowEnemy).toBe(true)
+    })
+
+    it('detects Wild Lightning (nature, lightning) and marks chainHit', () => {
+      const result = checkSpellCombo(['nature', 'lightning'])
+      expect(result).not.toBeNull()
+      expect(result!.comboName).toBe('Wild Lightning')
+      expect(result!.chainHit).toBe(true)
+    })
+  })
+
+  describe('getSpellElement', () => {
+    it('extracts fire element from damage effect', () => {
+      expect(getSpellElement(makeFireSpell())).toBe('fire')
+    })
+
+    it('returns none for spells with no element on any effect', () => {
+      expect(getSpellElement(makeNoElementSpell())).toBe('none')
+    })
+
+    it('uses school fallback for nature school spell with no element effect', () => {
+      const healSpell: Spell = {
+        id: 'heal',
+        name: 'Heal',
+        description: 'Heals HP',
+        school: 'nature',
+        manaCost: 5,
+        cooldown: 0,
+        target: 'self',
+        effects: [{ type: 'heal', value: 20 }],
+        tags: ['heal'],
+      }
+      expect(getSpellElement(healSpell)).toBe('nature')
+    })
+  })
+
+  describe('castSpell combo integration', () => {
+    it('no combo on first spell cast — no spell_combo log entry', () => {
+      const spell = makeFireSpell()
+      const playerState = makePlayerState({ mana: 30 })
+      const result = castSpell(spell, playerState, makeEnemy(), baseMage, makeCombatState())
+      expect(result.comboName).toBeNull()
+      expect(result.logs.some(l => l.action === 'spell_combo')).toBe(false)
+      expect(result.playerState.lastCastSpellElements).toEqual(['fire'])
+    })
+
+    it('Plasma Burst fires after fire then lightning', () => {
+      const fireSpell = makeFireSpell()
+      const lightningSpell = makeLightningSpell()
+      const enemy = makeEnemy({ hp: 100, maxHp: 100 })
+
+      // Cast fire first
+      const state1 = makePlayerState({ mana: 30 })
+      const result1 = castSpell(fireSpell, state1, enemy, baseMage, makeCombatState())
+      expect(result1.comboName).toBeNull()
+
+      // Cast lightning with history from first cast
+      const state2 = { ...result1.playerState, mana: 30, spellCooldowns: {} }
+      const result2 = castSpell(lightningSpell, state2, result1.enemy, baseMage, makeCombatState())
+      expect(result2.comboName).toBe('Plasma Burst')
+      expect(result2.logs.some(l => l.action === 'spell_combo')).toBe(true)
+      // Enemy should take more damage than baseline (baseline is just the lightning spell damage)
+      const baselineResult = castSpell(lightningSpell, makePlayerState({ mana: 30 }), enemy, baseMage, makeCombatState())
+      expect(result2.enemy.hp).toBeLessThan(baselineResult.enemy.hp)
+    })
+
+    it("Nature's Wrath heals the caster", () => {
+      const nature1 = makeNatureSpell('a')
+      const nature2 = makeNatureSpell('b')
+      const playerHp = 30
+
+      // Cast first nature spell
+      const state1 = makePlayerState({ mana: 30, hp: playerHp })
+      const result1 = castSpell(nature1, state1, makeEnemy(), baseMage, makeCombatState())
+
+      // Cast second nature spell with history
+      const state2 = { ...result1.playerState, mana: 30, spellCooldowns: {}, hp: playerHp }
+      const result2 = castSpell(nature2, state2, result1.enemy, baseMage, makeCombatState())
+      expect(result2.comboName).toBe("Nature's Wrath")
+      // Player should be healed (15% of 50 = 7 HP)
+      expect(result2.playerState.hp).toBeGreaterThan(playerHp)
+    })
+
+    it('Arcane Cascade requires 3 arcane casts', () => {
+      const arcane1 = makeArcaneSpell('1')
+      const arcane2 = makeArcaneSpell('2')
+      const arcane3 = makeArcaneSpell('3')
+      const enemy = makeEnemy({ hp: 200, maxHp: 200 })
+
+      const state1 = makePlayerState({ mana: 50 })
+      const result1 = castSpell(arcane1, state1, enemy, baseMage, makeCombatState())
+      expect(result1.comboName).toBeNull()
+
+      const state2 = { ...result1.playerState, mana: 50, spellCooldowns: {} }
+      const result2 = castSpell(arcane2, state2, result1.enemy, baseMage, makeCombatState())
+      expect(result2.comboName).toBeNull()
+
+      const state3 = { ...result2.playerState, mana: 50, spellCooldowns: {} }
+      const result3 = castSpell(arcane3, state3, result2.enemy, baseMage, makeCombatState())
+      expect(result3.comboName).toBe('Arcane Cascade')
+      expect(result3.logs.some(l => l.action === 'spell_combo')).toBe(true)
+    })
+
+    it('Elemental Fury fires on fire, ice, lightning chain', () => {
+      const fire = makeFireSpell()
+      const ice = makeIceSpell()
+      const lightning = makeLightningSpell()
+      const enemy = makeEnemy({ hp: 200, maxHp: 200 })
+
+      const state1 = makePlayerState({ mana: 50 })
+      const result1 = castSpell(fire, state1, enemy, baseMage, makeCombatState())
+
+      const state2 = { ...result1.playerState, mana: 50, spellCooldowns: {} }
+      const result2 = castSpell(ice, state2, result1.enemy, baseMage, makeCombatState())
+
+      const state3 = { ...result2.playerState, mana: 50, spellCooldowns: {} }
+      const result3 = castSpell(lightning, state3, result2.enemy, baseMage, makeCombatState())
+      expect(result3.comboName).toBe('Elemental Fury')
+    })
+
+    it('Void Freeze applies slow status to enemy', () => {
+      const shadow = makeShadowSpell()
+      const ice = makeIceSpell()
+      const enemy = makeEnemy({ hp: 100, maxHp: 100 })
+
+      const state1 = makePlayerState({ mana: 30 })
+      const result1 = castSpell(shadow, state1, enemy, baseMage, makeCombatState())
+
+      const state2 = { ...result1.playerState, mana: 30, spellCooldowns: {} }
+      const result2 = castSpell(ice, state2, result1.enemy, baseMage, makeCombatState())
+      expect(result2.comboName).toBe('Void Freeze')
+      const slowEffect = (result2.enemy.statusEffects ?? []).find(e => e.type === 'slow')
+      expect(slowEffect).toBeDefined()
+    })
+
+    it('Wild Lightning produces a chain hit log entry', () => {
+      const nature = makeNatureSpell()
+      const lightning = makeLightningSpell()
+      const enemy = makeEnemy({ hp: 100, maxHp: 100 })
+
+      const state1 = makePlayerState({ mana: 30 })
+      const result1 = castSpell(nature, state1, enemy, baseMage, makeCombatState())
+
+      const state2 = { ...result1.playerState, mana: 30, spellCooldowns: {} }
+      const result2 = castSpell(lightning, state2, result1.enemy, baseMage, makeCombatState())
+      expect(result2.comboName).toBe('Wild Lightning')
+      // Should have at least 2 spell_combo entries: chain hit + combo bonus
+      const comboCounts = result2.logs.filter(l => l.action === 'spell_combo').length
+      expect(comboCounts).toBeGreaterThanOrEqual(2)
+    })
+
+    it('element none does not trigger combos and does not break history', () => {
+      const noElem = makeNoElementSpell()
+      // Give player fire history
+      const state1 = makePlayerState({ mana: 30, lastCastSpellElements: ['fire'] })
+      const result1 = castSpell(noElem, state1, makeEnemy(), baseMage, makeCombatState())
+      expect(result1.comboName).toBeNull()
+      expect(result1.logs.some(l => l.action === 'spell_combo')).toBe(false)
+      // History should include 'none' but not trigger a combo
+      expect(result1.playerState.lastCastSpellElements).toContain('none')
     })
   })
 })

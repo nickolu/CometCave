@@ -1,0 +1,109 @@
+{
+  "date": "2026-04-16",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-04-16-0",
+      "question": "Which of the following Pacific Islander countries is ruled by a constitutional monarchy?",
+      "options": [
+        "Tonga",
+        "Fiji",
+        "Palau",
+        "Kiribati"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Tonga"
+    },
+    {
+      "id": "opentdb-2026-04-16-1",
+      "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
+      "options": [
+        "Marco Rubio",
+        "Donald Trump",
+        "Ted Cruz",
+        "Bernie Sanders"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-04-16-2",
+      "question": "Who was South Africa's first Black President?",
+      "options": [
+        "Mangosuthu Buthelezi",
+        "Nelson Mandela",
+        "Bishop Tutu",
+        "Steve Biko "
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nelson Mandela"
+    },
+    {
+      "id": "opentdb-2026-04-16-3",
+      "question": "The 2014 movie \"The Raid 2: Berandal\" was mainly filmed in which Asian country?",
+      "options": [
+        "Thailand",
+        "Brunei",
+        "Indonesia",
+        "Malaysia"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Indonesia"
+    },
+    {
+      "id": "opentdb-2026-04-16-4",
+      "question": "What was the personal nickname of the 40th Governor of the US State Louisiana, Huey Long?",
+      "options": [
+        "The Champ",
+        "The Hoot Owl",
+        "The Kingfish",
+        "The Oracle"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "The Kingfish"
+    },
+    {
+      "id": "opentdb-2026-04-16-5",
+      "question": "In June 2017, Saudi Arabia and Egypt broke off ties with which country over its supposed support for terrorism?",
+      "options": [
+        "Qatar",
+        "Russia",
+        "Bahrain",
+        "United States of America"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Qatar"
+    },
+    {
+      "id": "ai-2026-04-16-6",
+      "question": "Which document serves as the supreme law of the United States, outlining the national framework of government?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "The Constitution",
+      "explanation": "The Constitution of the United States, adopted in 1787, establishes the federal government and its relationship with the states and citizens. It is the oldest written national constitution still in use and has inspired numerous other countries in forming their own governance structures."
+    },
+    {
+      "id": "ai-2026-04-16-7",
+      "question": "Which European monarchy was officially abolished in 1946 following a referendum, leading to the establishment of a republic?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Italy",
+      "explanation": "The Italian monarchy was abolished in 1946 after a referendum where the majority voted in favor of establishing a republic. This was a significant moment in Italian history as it marked the end of the Kingdom of Italy, which had been in place since the unification of Italy in the 19th century. The decision was influenced by the monarchy's association with the fascist regime during World War II."
+    }
+  ]
+}

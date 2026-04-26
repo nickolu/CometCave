@@ -20,6 +20,8 @@ export interface MoveForwardResponse {
   decisionPoint?: FantasyDecisionPoint | null
   shopEvent?: boolean | null
   genericMessage?: string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  socialEncounter?: { npc: any; scenario: string } | null
 }
 
 export function useMoveForwardMutation() {
@@ -39,6 +41,8 @@ export function useMoveForwardMutation() {
     mutationFn: async () => {
       const currentCharacter = getSelectedCharacter()
       if (!currentCharacter) throw new Error('No character found')
+      const prevGold = currentCharacter.gold
+      const prevReputation = currentCharacter.reputation
 
       const { gameState } = useGameStore.getState()
       const res = await fetch('/api/v1/tap-tap-adventure/move-forward', {
@@ -70,6 +74,13 @@ export function useMoveForwardMutation() {
           quantity: reward.quantity,
         })
         addItem(item)
+      }
+
+      if (data.socialEncounter) {
+        useGameStore.getState().setGameState({
+          ...useGameStore.getState().gameState,
+          socialEncounter: data.socialEncounter,
+        })
       }
 
       if (data.shopEvent) {
@@ -110,6 +121,16 @@ export function useMoveForwardMutation() {
       }
 
       commit()
+
+      // Track daily challenge progress for gold and reputation gains
+      const goldDelta = (data.character.gold ?? 0) - prevGold
+      const repDelta = (data.character.reputation ?? 0) - prevReputation
+      if (goldDelta > 0) {
+        useGameStore.getState().updateDailyChallengeProgress('earn_gold', goldDelta)
+      }
+      if (repDelta > 0) {
+        useGameStore.getState().updateDailyChallengeProgress('gain_reputation', repDelta)
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tap-tap-adventure', 'game-state'] })

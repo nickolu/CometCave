@@ -3,21 +3,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
-import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { useGameStore, useGameStateBuilder } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { useMoveForwardMutation } from '@/app/tap-tap-adventure/hooks/useMoveForwardMutation'
 import { useResolveDecisionMutation } from '@/app/tap-tap-adventure/hooks/useResolveDecisionMutation'
 import { getGenericTravelMessage } from '@/app/tap-tap-adventure/lib/getGenericTravelMessage'
 import { checkAchievements } from '@/app/tap-tap-adventure/lib/achievementTracker'
 import { canClaimDailyReward, getDailyReward } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { crossedMilestone, SHOP_MILESTONE_INTERVAL, STEPS_PER_DAY, calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
-import { CROSSROADS_INTERVAL, getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { getRegion, REGIONS, canEnterRegion } from '@/app/tap-tap-adventure/config/regions'
 import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
+import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { flipCoin } from '@/app/utils'
+import { hasArrived, moveToward } from '@/app/tap-tap-adventure/lib/movementUtils'
 
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 
+import { FloatingResources, ResourceEvent } from './FloatingResources'
+import { RareLootCelebration } from './RareLootCelebration'
 import { DailyRewardPopup } from './DailyRewardPopup'
 import { AchievementPanel } from './AchievementPanel'
 import { AchievementToastContainer } from './AchievementToast'
@@ -29,11 +33,39 @@ import { MainQuestPanel } from './MainQuestPanel'
 import { StatAllocationScreen } from './StatAllocationScreen'
 import { ShopUI } from './ShopUI'
 import { StoryFeed } from './StoryFeed'
-import { RegionMap } from './RegionMap'
+import { TravelConfirmDialog } from './TravelConfirmDialog'
+import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
+import { RunHistoryPanel } from './RunHistoryPanel'
 import { SettingsPanel } from './SettingsPanel'
 import { KeyboardHelp } from './KeyboardHelp'
 import { OnboardingHint } from './OnboardingHint'
+import { SkillPanel } from './SkillPanel'
+import { BasePanel } from './BasePanel'
+import { MercenaryPanel } from './MercenaryPanel'
+import { FactionPanel } from './FactionPanel'
+import AdventureLeaderboard from './AdventureLeaderboard'
+import { CraftingPanel } from './CraftingPanel'
+import { EnchantingPanel } from './EnchantingPanel'
+import { ExplorationSpellsPanel } from './ExplorationSpellsPanel'
+import { BestiaryPanel } from './BestiaryPanel'
+import { SpellComboPanel } from './SpellComboPanel'
+import { DailyChallengesPanel } from './DailyChallengesPanel'
+import { TargetList } from './TargetList'
+import { AreaMap } from './AreaMap'
+import { WorldMap } from './WorldMap'
 import { useOnboarding, HintKey } from '@/app/tap-tap-adventure/hooks/useOnboarding'
+import { StatsPanel } from '@/app/tap-tap-adventure/components/StatsPanel'
+import { NPCDialoguePanel } from './NPCDialoguePanel'
+import { createPartyMember } from '@/app/tap-tap-adventure/lib/partyRecruitment'
+import { getNPCById, type GameNPC } from '@/app/tap-tap-adventure/config/npcs'
+import { ContactsList } from './ContactsList'
+import { EventDialog, EventResult } from './EventDialog'
+import { StablePanel } from './StablePanel'
+import { MailboxPanel } from './MailboxPanel'
+import { NoticeBoard } from './NoticeBoard'
+import { TavernPanel } from './TavernPanel'
+import { TownHub } from './TownHub'
+import { WaypointPanel } from './WaypointPanel'
 
 const DIFFICULTY_STYLES: Record<RegionDifficulty, { label: string; color: string }> = {
   easy: { label: 'Easy', color: 'bg-green-900/50 text-green-300 border-green-600/40' },
@@ -85,13 +117,17 @@ function getTravelButtonMessage({ isLoading, distance }: { isLoading: boolean; d
     return (
       <div className="flex items-center justify-center gap-2 w-full">
         <LoaderCircle className="animate-spin h-5 w-5" />
-        <span>Searching for adventure...</span>
+        <span>Something happens on your travels...</span>
       </div>
     )
   if (distance === 0) return 'Start Your Adventure'
   return 'Continue Travelling'
 }
-type MobilePanel = 'equipment' | 'inventory' | 'quest' | 'map' | 'settings' | null
+type MobileCategory = 'gear' | 'quest' | 'social' | 'more' | null
+type GearSubTab = 'equipment' | 'inventory' | 'crafting' | 'enchant' | 'spells'
+type QuestSubTab = 'quests' | 'map' | 'bestiary'
+type SocialSubTab = 'party' | 'factions' | 'npc' | 'leaderboard'
+type MoreSubTab = 'status' | 'history' | 'base' | 'settings'
 
 interface GameUIProps {
   onOpenStatus?: () => void
@@ -107,13 +143,55 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     setCombatState,
     allocateStatPoints,
     updateAchievements,
+    applyAchievementRewards,
     claimDailyReward,
+    setActiveTarget,
+    dismissLootCelebration,
+    clearSocialEncounter,
+    recordNPCEncounter,
+    addPartyMember,
   } = useGameStore()
 
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null)
+  const [floatingResources, setFloatingResources] = useState<ResourceEvent[]>([])
+  const [mobileCategory, setMobileCategory] = useState<MobileCategory>(null)
+  const [travelTarget, setTravelTarget] = useState<string | null>(null)
+  const [gearSubTab, setGearSubTab] = useState<GearSubTab>('equipment')
+  const [questSubTab, setQuestSubTab] = useState<QuestSubTab>('quests')
+  const [socialSubTab, setSocialSubTab] = useState<SocialSubTab>('party')
+  const [moreSubTab, setMoreSubTab] = useState<MoreSubTab>('status')
+  const [mapView, setMapView] = useState<'area' | 'world'>('area')
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [decisionGracePeriod, setDecisionGracePeriod] = useState(false)
+  const [showNPCPanel, setShowNPCPanel] = useState(false)
+  const [showStablePanel, setShowStablePanel] = useState(false)
+  const [showMailbox, setShowMailbox] = useState(false)
+  const [showNoticeBoard, setShowNoticeBoard] = useState(false)
+  const [showTavern, setShowTavern] = useState(false)
+  const [showBlacksmith, setShowBlacksmith] = useState(false)
+  const [showWaypoints, setShowWaypoints] = useState(false)
+  const restFromTavern = useRef(false)
+  const [eventResult, setEventResult] = useState<EventResult | null>(null)
+  const [townNPC, setTownNPC] = useState<GameNPC | null>(null)
+
+  useEffect(() => {
+    if (gameState?.decisionPoint && !gameState.decisionPoint.resolved) {
+      setDecisionGracePeriod(true)
+      const timer = setTimeout(() => setDecisionGracePeriod(false), 500)
+      return () => clearTimeout(timer)
+    }
+    setDecisionGracePeriod(false)
+  }, [gameState?.decisionPoint?.id])
+
+  // Clear town NPC panel and notice board when decision point changes (e.g. player leaves town)
+  useEffect(() => {
+    setTownNPC(null)
+    setShowNoticeBoard(false)
+    setShowTavern(false)
+    setShowBlacksmith(false)
+    setShowWaypoints(false)
+  }, [gameState?.decisionPoint?.id])
 
   // Check for daily reward on mount
   useEffect(() => {
@@ -126,6 +204,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const { mutate: moveForwardMutation, isPending: moveForwardPending } = useMoveForwardMutation()
   const { mutate: resolveDecisionMutation, isPending: resolveDecisionPending } =
     useResolveDecisionMutation()
+
+  const { addStoryEvent, commit, updateSelectedCharacter } = useGameStateBuilder()
 
   const character = getSelectedCharacter()
 
@@ -141,12 +221,138 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     return null
   })()
 
+  const handleRegionClick = useCallback((regionId: string) => {
+    const region = REGIONS[regionId]
+    if (!region || !character) return
+    const currentRegion = getRegion(character.currentRegion ?? 'green_meadows')
+    const isConnected = currentRegion.connectedRegions.includes(regionId)
+    const isVisited = (character.visitedRegions ?? []).includes(regionId)
+    if (isConnected && isVisited && canEnterRegion(region, character.level)) {
+      setTravelTarget(regionId)
+    }
+  }, [character])
+
+  const handleTravelConfirm = useCallback(() => {
+    if (!travelTarget || !character) return
+    const destRegion = getRegion(travelTarget)
+    updateSelectedCharacter({
+      currentRegion: travelTarget,
+      currentWeather: rollWeather(travelTarget),
+    })
+    addStoryEvent({
+      id: `map-travel-${Date.now()}`,
+      type: 'region_travel',
+      characterId: character.id,
+      locationId: character.locationId,
+      timestamp: new Date().toISOString(),
+      selectedOptionId: travelTarget,
+      selectedOptionText: `Traveled to ${destRegion.name}`,
+      outcomeDescription: `You set out for ${destRegion.icon} ${destRegion.name} \u2014 ${destRegion.description}`,
+    })
+    commit()
+    setTravelTarget(null)
+    soundEngine.playCrossroads()
+  }, [travelTarget, character, updateSelectedCharacter, addStoryEvent, commit])
+
+  const socialEncounter = gameState.socialEncounter
+
   const handleResolveDecision = (optionId: string) => {
+    // Social encounter: "Talk to NPC" opens the dialogue panel client-side
+    if (optionId === 'engage-conversation' && socialEncounter) {
+      setShowNPCPanel(true)
+      return
+    }
+    // Social encounter: "Walk away" clears the encounter and dismisses the decision
+    if (optionId === 'walk-away' && socialEncounter) {
+      clearSocialEncounter()
+      setDecisionPoint(null)
+      return
+    }
+    // Stable: open the stable panel client-side
+    if (optionId === 'visit-stable') {
+      setShowStablePanel(true)
+      return
+    }
+    // Mailbox: open the mailbox panel client-side
+    if (optionId === 'check-mailbox') {
+      setShowMailbox(true)
+      return
+    }
+    // Notice Board: open the notice board panel client-side
+    if (optionId === 'visit-notice-board') {
+      setShowNoticeBoard(true)
+      return
+    }
+    // Blacksmith: open the crafting panel client-side
+    if (optionId === 'visit-blacksmith') {
+      setShowBlacksmith(true)
+      return
+    }
+    // Waypoints: open the waypoint panel client-side
+    if (optionId === 'visit-waypoints') {
+      setShowWaypoints(true)
+      return
+    }
+    // Tavern: open the tavern panel client-side (bypass if triggered from within the panel)
+    if (optionId === 'rest-at-inn' && !restFromTavern.current) {
+      setShowTavern(true)
+      return
+    }
+    restFromTavern.current = false
+    // Town NPC: open dialogue panel for the selected NPC (client-side only)
+    if (optionId.startsWith('talk-to-npc-')) {
+      const npcId = optionId.replace('talk-to-npc-', '')
+      const npc = getNPCById(npcId)
+      if (npc) {
+        setTownNPC(npc)
+      }
+      return
+    }
     resolveDecisionMutation({
       decisionPoint: gameState.decisionPoint!,
       optionId: optionId,
       onSuccess: () => {
-        setDecisionPoint(null)
+        // Only clear the decision point if the server didn't return a new one
+        // (e.g., explore-landmark returns a new decision point for the encounter)
+        const currentDP = useGameStore.getState().gameState.decisionPoint
+        if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
+          setDecisionPoint(null)
+        }
+      },
+      onResult: (result) => {
+        // Don't show results for options that navigate away (bypass, travel, explore-landmark, etc)
+        const skipResults = optionId.startsWith('bypass-') || optionId.startsWith('travel-') ||
+          optionId.startsWith('talk-to-npc-') ||
+          optionId === 'explore-landmark' || optionId === 'leave-landmark' ||
+          optionId === 'continue-exploring' || optionId === 'visit-shop' ||
+          optionId === 'back-to-town' || optionId === 'pay-bounty' ||
+          optionId === 'fight-secret-boss' || optionId === 'visit-stable' ||
+          optionId === 'check-mailbox' || optionId === 'visit-notice-board' || optionId === 'rest-at-inn' || optionId === 'visit-blacksmith' ||
+          optionId === 'hire-transport' || optionId === 'leave-town' ||
+          optionId === 'enter-town' || optionId === 'visit-waypoints'
+        if (!skipResults && result.outcomeDescription) {
+          setEventResult({
+            outcomeDescription: result.outcomeDescription,
+            resourceDelta: result.resourceDelta,
+            rewardItems: result.rewardItems?.map(item => ({ name: item.name, description: item.description })),
+            mountDamage: result.mountDamage,
+            mountDied: result.mountDied,
+          })
+        }
+      },
+      onResourceDelta: (delta) => {
+        if (!delta) return
+        const events: ResourceEvent[] = []
+        if (delta.gold && delta.gold !== 0) {
+          events.push({ id: `gold-${Date.now()}`, type: 'gold', value: delta.gold })
+        }
+        if (delta.reputation && delta.reputation !== 0) {
+          events.push({ id: `rep-${Date.now()}`, type: 'reputation', value: delta.reputation })
+        }
+        if (events.length > 0) {
+          setFloatingResources(events)
+          setTimeout(() => setFloatingResources([]), 2000)
+        }
       },
     })
   }
@@ -163,13 +369,38 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
     if (moveForwardPending) return
     soundEngine.playTap()
     const character = getSelectedCharacter()
+    const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
     const distance = character?.distance ?? 0
-    const nextDistance = distance + 1
+    const nextDistance = distance + mountSpeed
 
-    // Always call server for milestone events (crossroads, shop)
+    // Check if the next step would hit a target arrival (landmark or region exit)
+    const ls = character?.landmarkState
+    const nextPosInRegion = (ls?.positionInRegion ?? 0) + mountSpeed
+    const activeTargetIndex = ls?.activeTargetIndex ?? 0
+    const isExitTarget = ls ? activeTargetIndex >= ls.landmarks.length : false
+    const activeTargetPosition = ls
+      ? isExitTarget
+        ? (ls.regionLength ?? 200)
+        : ls.landmarks[activeTargetIndex]?.distanceFromEntry ?? Infinity
+      : Infinity
+    const charPos = ls?.position
+    let targetPos2d
+    if (isExitTarget && ls?.exitPositions) {
+      const exitIdx = activeTargetIndex - ls.landmarks.length
+      targetPos2d = ls.exitPositions[exitIdx]?.position ?? ls.exitPosition
+    } else if (isExitTarget) {
+      targetPos2d = ls?.exitPosition
+    } else {
+      targetPos2d = ls?.landmarks[activeTargetIndex]?.position
+    }
+    const hitsTarget = charPos && targetPos2d
+      ? hasArrived(moveToward(charPos, targetPos2d, mountSpeed), targetPos2d)
+      : (!charPos && ls != null && nextPosInRegion >= activeTargetPosition) // 1D ONLY when no 2D data
+
+    // Always call server for milestone events (shop, target arrival)
     const hitsMilestone =
-      crossedMilestone(distance, nextDistance, CROSSROADS_INTERVAL) ||
-      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL)
+      crossedMilestone(distance, nextDistance, SHOP_MILESTONE_INTERVAL) ||
+      hitsTarget
 
     if (hitsMilestone) {
       moveForwardMutation()
@@ -178,9 +409,14 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
 
     const shouldDoNothing = flipCoin(0.03, 0.97)
     if (shouldDoNothing) {
-      const genericMessage = getGenericTravelMessage()
+      const region = character ? getRegion(character.currentRegion ?? 'green_meadows') : null
+      const genericMessage = getGenericTravelMessage({
+        regionElement: region?.element,
+        timeOfDay: getTimeOfDay(character?.distance ?? 0),
+        weather: character?.currentWeather,
+      })
       setGenericMessage(genericMessage)
-      incrementDistance()
+      incrementDistance(mountSpeed)
     } else {
       moveForwardMutation()
     }
@@ -189,6 +425,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [isAutoWalking, setIsAutoWalking] = useState(false)
   const autoWalkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoWalkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastMoveTimeRef = useRef<number>(0)
 
   const clearAutoWalk = useCallback(() => {
     if (autoWalkTimeoutRef.current) {
@@ -252,12 +489,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       // Escape — close overlays
       if (e.key === 'Escape') {
         if (showKeyboardHelp) { setShowKeyboardHelp(false); return }
-        setMobilePanel(null)
+        setMobileCategory(null)
         return
       }
 
       // During decision point — 1-4 to pick options
-      if (gameState.decisionPoint && !gameState.decisionPoint.resolved && !resolveDecisionPending) {
+      if (gameState.decisionPoint && !gameState.decisionPoint.resolved && !resolveDecisionPending && !decisionGracePeriod) {
         const num = parseInt(e.key, 10)
         if (num >= 1 && num <= gameState.decisionPoint.options.length) {
           e.preventDefault()
@@ -269,10 +506,20 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       // During combat or shop — let those components handle their own shortcuts
       if (gameState.combatState?.status === 'active' || gameState.shopState?.isOpen) return
 
-      // Travel mode — Space or Enter to move forward
+      // Travel mode — Space or Enter to move forward, throttled to match walk speed
       if ((e.key === ' ' || e.key === 'Enter') && !moveForwardPending) {
         e.preventDefault()
-        handleMoveForward()
+        const now = Date.now()
+        const mountSpeed = character?.activeMount?.bonuses?.autoWalkSpeed ?? 1
+        const unlockedSkillIds = character?.unlockedSkills ?? []
+        const unlockedSkillObjects = SKILLS.filter(s => unlockedSkillIds.includes(s.id))
+        const walkSpeedBonus = getSkillBonus(unlockedSkillObjects, 'auto_walk_speed')
+        const skillSpeedMultiplier = 1 + walkSpeedBonus.percentage / 100
+        const walkInterval = Math.round(300 / (mountSpeed * skillSpeedMultiplier))
+        if (now - lastMoveTimeRef.current >= walkInterval) {
+          lastMoveTimeRef.current = now
+          handleMoveForward()
+        }
       }
     }
 
@@ -305,6 +552,12 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   return (
     <>
       <AchievementToastContainer achievementIds={newlyCompletedIds} />
+      {gameState.pendingLootCelebration && (
+        <RareLootCelebration
+          item={gameState.pendingLootCelebration}
+          onDismiss={dismissLootCelebration}
+        />
+      )}
       {showKeyboardHelp && <KeyboardHelp onClose={() => setShowKeyboardHelp(false)} />}
       {showDailyReward && character && (
         <DailyRewardPopup
@@ -324,7 +577,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       {character && (character.pendingStatPoints ?? 0) > 0 && (
         <StatAllocationScreen
           character={character}
-          onConfirm={(str, int, lck) => allocateStatPoints(str, int, lck)}
+          onConfirm={(str, int, lck, cha) => allocateStatPoints(str, int, lck, cha)}
         />
       )}
     <div className="flex flex-col select-none">
@@ -349,10 +602,16 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                         hpAfterCombat: combatState.playerState.hp,
                         maxHp: combatState.playerState.maxHp,
                         isBoss: combatState.isBoss ?? false,
+                        turnCount: combatState.turnNumber,
+                        partyAlive: (combatState.partyMemberStates ?? []).filter(m => !m.isKnockedOut).length,
+                        partyTotal: (combatState.partyMemberStates ?? []).length,
+                        enemyLevel: combatState.enemy.level,
+                        playerLevel: character.level,
                       }
                     )
                     updateAchievements(achievements)
                     if (newlyCompleted.length > 0) {
+                      applyAchievementRewards(newlyCompleted)
                       setNewlyCompletedIds(newlyCompleted)
                     }
                   } else if (combatState && combatState.status === 'defeat' && character) {
@@ -364,6 +623,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                     )
                     updateAchievements(achievements)
                     if (newlyCompleted.length > 0) {
+                      applyAchievementRewards(newlyCompleted)
                       setNewlyCompletedIds(newlyCompleted)
                     }
                   }
@@ -372,50 +632,153 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               />
             ) : gameState.shopState?.isOpen ? (
               <ShopUI />
-            ) : gameState.decisionPoint ? (
+            ) : (() => {
+              const isTownHub =
+                !!gameState.decisionPoint &&
+                !gameState.decisionPoint.resolved &&
+                gameState.decisionPoint.options.some(o => o.id === 'leave-town') &&
+                character?.landmarkState?.exploring === true
+              return isTownHub
+            })() ? (
               <>
-                <h4 className={`font-semibold w-full text-center uppercase border-b pb-2 mb-4 ${
-                  gameState.decisionPoint?.isLegendary
-                    ? 'text-amber-400 border-amber-500/50'
-                    : 'border-[#3a3c56]'
-                }`}>
-                  {gameState.decisionPoint?.isLegendary ? '✨ Legendary Encounter ✨' : 'Event'}
-                </h4>
-                {!gameState.decisionPoint.resolved && (
-                  <div>
-                    <div className="font-semibold mb-6 break-words">{gameState.decisionPoint.prompt}</div>
-                    {resolveDecisionPending ? (
-                      <div className="flex flex-col items-center gap-3 py-6 text-slate-400">
-                        <LoaderCircle className="animate-spin h-6 w-6" />
-                        <span className="text-sm">Resolving your choice...</span>
+                {/* Region info — shown above TownHub */}
+                {(() => {
+                  const dist = character?.distance ?? 0
+                  const region = getRegion(character?.currentRegion ?? 'green_meadows')
+                  const diff = DIFFICULTY_STYLES[region.difficulty]
+                  const elem = ELEMENT_STYLES[region.element] ?? ELEMENT_STYLES.none
+                  const day = calculateDay(dist)
+                  const timeOfDay = getTimeOfDay(dist)
+                  const ls = character?.landmarkState
+
+                  return (
+                    <div className="space-y-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold">{region.icon} {region.name}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 border rounded ${diff.color}`}>{diff.label}</span>
+                        {region.element !== 'none' && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${elem.color}`}>{region.element}</span>
+                        )}
                       </div>
-                    ) : (
-                      <div className="space-y-2 mt-2">
-                        {gameState.decisionPoint.options.map((option: { id: string; text: string; successEffects?: { reputation?: number }; failureEffects?: { reputation?: number }; effects?: { reputation?: number } }, index: number) => {
-                          if (!option) return null
-                          if (!gameState.decisionPoint) return null
-                          return (
-                            <Button
-                              key={option.id}
-                              className="block w-full text-left whitespace-normal h-auto border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white px-3 py-3 text-base mt-2 rounded disabled:opacity-60"
-                              disabled={resolveDecisionPending}
-                              onClick={() => {
-                                handleResolveDecision(option.id)
-                              }}
-                            >
-                              <span className="hidden sm:inline text-slate-400 mr-2 text-xs font-mono">[{index + 1}]</span>
-                              {option.text}
-                            </Button>
-                          )
-                        })}
-                      </div>
-                    )}
+                      <p className="text-xs text-slate-400 italic leading-snug">{region.description}</p>
+                      <p className="text-xs text-slate-500">Day {day} &mdash; {timeOfDay}</p>
+                      {ls && (
+                        <TargetList
+                          landmarks={ls.landmarks}
+                          positionInRegion={ls.positionInRegion ?? 0}
+                          activeTargetIndex={ls.activeTargetIndex ?? 0}
+                          regionLength={ls.regionLength ?? 200}
+                          regionName={region.name}
+                          onSelectTarget={(i) => setActiveTarget(i)}
+                          disabled={moveForwardPending || resolveDecisionPending}
+                          characterPosition={ls.position}
+                          exitTargets={ls.exitPositions}
+                        />
+                      )}
+                    </div>
+                  )
+                })()}
+                <TownHub
+                  townName={character?.landmarkState?.exploringLandmarkName ?? 'Town'}
+                  townIcon={character?.landmarkState?.landmarks[character?.landmarkState?.activeTargetIndex ?? 0]?.icon}
+                  decisionPoint={gameState.decisionPoint!}
+                  isResolving={resolveDecisionPending}
+                  character={character!}
+                  onSelectOption={handleResolveDecision}
+                  npcDispositions={Object.fromEntries(
+                    Object.entries(character?.npcEncounters ?? {}).map(([id, enc]) => [id, enc.disposition ?? 0])
+                  )}
+                />
+                {showNoticeBoard && character && (
+                  <NoticeBoard
+                    character={character}
+                    activeQuest={gameState.activeQuest ?? null}
+                    onAcceptQuest={(quest) => {
+                      useGameStore.getState().setActiveQuest(quest)
+                      setShowNoticeBoard(false)
+                    }}
+                    onClose={() => setShowNoticeBoard(false)}
+                  />
+                )}
+                {showTavern && character && (
+                  <TavernPanel
+                    character={character}
+                    townName={character.landmarkState?.exploringLandmarkName ?? 'the town'}
+                    onRest={() => {
+                      setShowTavern(false)
+                      restFromTavern.current = true
+                      handleResolveDecision('rest-at-inn')
+                    }}
+                    isResting={resolveDecisionPending}
+                    onClose={() => setShowTavern(false)}
+                  />
+                )}
+                {townNPC && character && (
+                  <NPCDialoguePanel
+                    npc={townNPC}
+                    characterName={character.name}
+                    characterClass={character.class}
+                    characterLevel={character.level}
+                    reputation={character.reputation}
+                    region={character.currentRegion ?? 'green_meadows'}
+                    characterCharisma={character.charisma ?? 5}
+                    activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
+                    disposition={character.npcEncounters?.[townNPC.id]?.disposition ?? 0}
+                    hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                    hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                    onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                      recordNPCEncounter(townNPC.id, dispositionDelta, reward, revealLandmark)
+                    }}
+                    onClose={() => setTownNPC(null)}
+                    onRecruit={() => {
+                      const member = createPartyMember({
+                        id: `npc-${townNPC.id}`,
+                        name: townNPC.name,
+                        description: townNPC.description,
+                        icon: townNPC.icon,
+                        level: character.level,
+                        dailyCost: Math.max(1, Math.floor(character.level / 2)),
+                        rarity: 'uncommon',
+                        personality: townNPC.personality,
+                        relationship: character.npcEncounters?.[townNPC.id]?.disposition ?? 0,
+                        role: 'combatant',
+                      })
+                      const added = addPartyMember(member)
+                      if (added) {
+                        setTownNPC(null)
+                      }
+                    }}
+                    isRecruited={(character.party ?? []).some(m => m.id === `npc-${townNPC.id}`)}
+                  />
+                )}
+                {showBlacksmith && (
+                  <div className="space-y-2">
+                    <button className="text-[10px] text-slate-400 hover:text-slate-200" onClick={() => setShowBlacksmith(false)}>← Back to Town</button>
+                    <CraftingPanel />
                   </div>
+                )}
+                {showWaypoints && character && (
+                  <WaypointPanel
+                    character={character}
+                    currentTownName={character.landmarkState?.exploringLandmarkName ?? 'the town'}
+                    onTravel={(regionId, _landmarkId, cost) => {
+                      setShowWaypoints(false)
+                      const newGold = Math.max(0, (character.gold ?? 0) - cost)
+                      updateSelectedCharacter({
+                        gold: newGold,
+                        currentRegion: regionId,
+                        currentWeather: rollWeather(regionId),
+                        landmarkState: undefined,
+                      })
+                      setDecisionPoint(null)
+                    }}
+                    onClose={() => setShowWaypoints(false)}
+                  />
                 )}
               </>
             ) : (
               <>
-                {/* Region info */}
+                {/* Region info — always visible behind the event dialog */}
                 {(() => {
                   const dist = character?.distance ?? 0
                   const region = getRegion(character?.currentRegion ?? 'green_meadows')
@@ -424,11 +787,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   const day = calculateDay(dist)
                   const timeOfDay = getTimeOfDay(dist)
 
-                  // Milestone calculations
-                  const milestones = [
-                    { label: 'Crossroads', icon: '🔀', steps: CROSSROADS_INTERVAL - (dist % CROSSROADS_INTERVAL) },
-                    { label: 'Shop', icon: '🛒', steps: SHOP_MILESTONE_INTERVAL - (dist % SHOP_MILESTONE_INTERVAL) },
-                  ].sort((a, b) => a.steps - b.steps)
+                  // Landmark state for TargetList
+                  const ls = character?.landmarkState
 
                   return (
                     <div className="space-y-2 mb-1">
@@ -444,45 +804,179 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                       <p className="text-xs text-slate-400 italic leading-snug">{region.description}</p>
                       {/* Day / time of day */}
                       <p className="text-xs text-slate-500">Day {day} &mdash; {timeOfDay}</p>
-                      {/* Milestone indicators */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {milestones.map(m => (
-                          <span key={m.label} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2b3f] border border-[#3a3c56] text-slate-300">
-                            {m.icon} {m.label}: {m.steps}
-                          </span>
-                        ))}
-                      </div>
+                      {/* Target list */}
+                      {ls && (
+                        <TargetList
+                          landmarks={ls.landmarks}
+                          positionInRegion={ls.positionInRegion ?? 0}
+                          activeTargetIndex={ls.activeTargetIndex ?? 0}
+                          regionLength={ls.regionLength ?? 200}
+                          regionName={region.name}
+                          onSelectTarget={(i) => setActiveTarget(i)}
+                          disabled={moveForwardPending || resolveDecisionPending}
+                          characterPosition={ls.position}
+                          exitTargets={ls.exitPositions}
+                        />
+                      )}
                     </div>
                   )
                 })()}
-                <Button
-                  className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
-                    isAutoWalking
-                      ? 'bg-gradient-to-r from-emerald-700 to-teal-700 border-emerald-400/30 shadow-lg shadow-emerald-500/20 animate-pulse'
-                      : moveForwardPending
-                      ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
-                  }`}
-                  onClick={handleMoveForward}
-                  onPointerDown={handlePointerDown}
-                  onPointerUp={handlePointerUpOrLeave}
-                  onPointerLeave={handlePointerUpOrLeave}
-                  onPointerCancel={handlePointerUpOrLeave}
-                  disabled={moveForwardPending || resolveDecisionPending}
-                >
-                  {isAutoWalking
-                    ? 'Walking...'
-                    : getTravelButtonMessage({
-                        isLoading: moveForwardPending,
-                        distance: getSelectedCharacter()?.distance ?? 0,
-                      })}
-                </Button>
+                <div className="relative">
+                  <FloatingResources events={floatingResources} />
+                  <Button
+                    className={`w-full border text-white font-bold text-xl sm:text-2xl py-8 sm:py-10 rounded-xl transition-all duration-300 select-none ${
+                      isAutoWalking
+                        ? 'bg-gradient-to-r from-emerald-700 to-teal-700 border-emerald-400/30 shadow-lg shadow-emerald-500/20 animate-pulse'
+                        : moveForwardPending
+                        ? 'bg-gradient-to-r from-indigo-800 to-purple-800 border-indigo-500/20 shadow-none animate-pulse cursor-wait'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border-indigo-400/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:translate-y-0.5 active:shadow-none'
+                    }`}
+                    onClick={handleMoveForward}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUpOrLeave}
+                    onPointerLeave={handlePointerUpOrLeave}
+                    onPointerCancel={handlePointerUpOrLeave}
+                    disabled={moveForwardPending || resolveDecisionPending}
+                  >
+                    {isAutoWalking
+                      ? 'Walking...'
+                      : getTravelButtonMessage({
+                          isLoading: moveForwardPending,
+                          distance: getSelectedCharacter()?.distance ?? 0,
+                        })}
+                  </Button>
+                </div>
                 {gameState.genericMessage && (
                   <div className="text-sm">{gameState.genericMessage}</div>
+                )}
+                {/* Inline area map — always visible while traveling */}
+                {character?.landmarkState && (
+                  <div className="mt-2">
+                    <AreaMap
+                      playerPosition={character.landmarkState.position ?? { x: 0, y: 0 }}
+                      landmarks={character.landmarkState.landmarks.map((lm, i) => ({
+                        index: i,
+                        name: lm.name,
+                        icon: lm.icon,
+                        position: lm.position ?? { x: 0, y: 0 },
+                        explored: lm.explored ?? false,
+                        hidden: lm.hidden ?? false,
+                        hasShop: lm.hasShop ?? false,
+                      }))}
+                      exits={(character.landmarkState.exitPositions ?? []).map((exit, i) => ({
+                        index: character.landmarkState!.landmarks.length + i,
+                        name: exit.name,
+                        icon: exit.icon,
+                        position: exit.position,
+                      }))}
+                      activeTargetIndex={character.landmarkState.activeTargetIndex ?? 0}
+                      regionBounds={character.landmarkState.regionBounds ?? { width: 500, height: 500 }}
+                      regionName={getRegion(character.currentRegion ?? 'green_meadows').name}
+                      regionIcon={getRegion(character.currentRegion ?? 'green_meadows').icon}
+                      onSelectTarget={(i) => setActiveTarget(i)}
+                      compact
+                    />
+                  </div>
                 )}
                 <div className="select-text">
                   <StoryFeed events={storyEvents} filterCharacterId={selectedCharacterId} />
                 </div>
+
+                {/* Stable panel — shown when the player visits the stable */}
+                {showStablePanel && character && (
+                  <StablePanel
+                    character={character}
+                    onClose={() => setShowStablePanel(false)}
+                    regionId={character.currentRegion ?? 'green_meadows'}
+                  />
+                )}
+                {/* Mailbox panel — shown when the player checks their mailbox */}
+                {showMailbox && character && (
+                  <MailboxPanel
+                    character={character}
+                    onClose={() => setShowMailbox(false)}
+                  />
+                )}
+                {/* Event dialog overlay — shown when there's an active decision point or pending result */}
+                {(gameState.decisionPoint || eventResult) && (() => {
+                  const isLandmarkArrival = gameState.decisionPoint?.options?.some(
+                    (o: { id: string }) => o.id === 'explore-landmark' || o.id === 'bypass-landmark'
+                  ) ?? false
+                  const arrivalLandmark = isLandmarkArrival && character?.landmarkState
+                    ? character.landmarkState.landmarks[character.landmarkState.nextLandmarkIndex]
+                    : null
+
+                  return (
+                    <EventDialog
+                      decisionPoint={gameState.decisionPoint ?? null}
+                      isLandmarkArrival={isLandmarkArrival}
+                      arrivalLandmark={arrivalLandmark ? {
+                        name: arrivalLandmark.name,
+                        icon: arrivalLandmark.icon,
+                        description: arrivalLandmark.description ?? '',
+                        hasShop: arrivalLandmark.hasShop ?? false,
+                      } : null}
+                      isLegendary={gameState.decisionPoint?.isLegendary ?? false}
+                      isResolving={resolveDecisionPending}
+                      decisionGracePeriod={decisionGracePeriod}
+                      onSelectOption={handleResolveDecision}
+                      eventResult={eventResult}
+                      onDismissResult={() => {
+                        setEventResult(null)
+                        // Only clear the decision point if it hasn't already been cleared by the server response
+                        const currentDP = useGameStore.getState().gameState.decisionPoint
+                        if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
+                          setDecisionPoint(null)
+                        }
+                      }}
+                      showNPCPanel={showNPCPanel}
+                      npcPanelContent={showNPCPanel && socialEncounter && character ? (
+                        <NPCDialoguePanel
+                          npc={socialEncounter.npc}
+                          characterName={character.name}
+                          characterClass={character.class}
+                          characterLevel={character.level}
+                          reputation={character.reputation}
+                          region={character.currentRegion ?? 'green_meadows'}
+                          characterCharisma={character.charisma ?? 5}
+                          activeCharismaBonus={character.activeExplorationSpells?.filter(s => s.effectType === 'cha_boost').reduce((sum, s) => sum + (s.value ?? 0), 0) ?? 0}
+                          disposition={character.npcEncounters?.[socialEncounter.npc.id]?.disposition ?? 0}
+                          hiddenLandmarkName={character.landmarkState?.landmarks.find(lm => lm.hidden)?.name}
+                          hiddenLandmarkType={character.landmarkState?.landmarks.find(lm => lm.hidden)?.type}
+                          onEncounterUpdate={(dispositionDelta, reward, revealLandmark) => {
+                            recordNPCEncounter(socialEncounter.npc.id, dispositionDelta, reward, revealLandmark)
+                          }}
+                          onClose={() => {
+                            setShowNPCPanel(false)
+                            clearSocialEncounter()
+                            setDecisionPoint(null)
+                          }}
+                          onRecruit={() => {
+                            const member = createPartyMember({
+                              id: `npc-${socialEncounter.npc.id}`,
+                              name: socialEncounter.npc.name,
+                              description: socialEncounter.npc.description,
+                              icon: socialEncounter.npc.icon,
+                              level: character.level,
+                              dailyCost: Math.max(1, Math.floor(character.level / 2)),
+                              rarity: 'uncommon',
+                              personality: socialEncounter.npc.personality,
+                              relationship: character.npcEncounters?.[socialEncounter.npc.id]?.disposition ?? 0,
+                              role: 'combatant',
+                            })
+                            const added = addPartyMember(member)
+                            if (added) {
+                              setShowNPCPanel(false)
+                              clearSocialEncounter()
+                              setDecisionPoint(null)
+                            }
+                          }}
+                          isRecruited={(character.party ?? []).some(m => m.id === `npc-${socialEncounter.npc.id}`)}
+                        />
+                      ) : null}
+                    />
+                  )
+                })()}
               </>
             )}
           </div>
@@ -490,7 +984,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
           <div className="hidden md:block p-4 bg-[#161723] border border-[#3a3c56] rounded-lg space-y-4 h-fit md:sticky md:top-8">
             {character && <MainQuestPanel character={character} />}
             <QuestPanel />
+            <DailyChallengesPanel />
             <AchievementPanel achievements={gameState.achievements ?? []} />
+            <BestiaryPanel bestiary={character?.bestiary ?? []} />
+            <SpellComboPanel discoveredCombos={character?.discoveredCombos ?? []} />
             <EquipmentPanel
               equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
             />
@@ -498,13 +995,72 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
               <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
-              <RegionMap
-                currentRegionId={character?.currentRegion ?? 'green_meadows'}
-                characterLevel={character?.level ?? 1}
+              <div className="flex gap-1 mb-3">
+                <button onClick={() => setMapView('area')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'area' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Area Map</button>
+                <button onClick={() => setMapView('world')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'world' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>World Map</button>
+              </div>
+              {mapView === 'area' && character?.landmarkState ? (
+                <AreaMap
+                  playerPosition={character.landmarkState.position ?? { x: 0, y: 0 }}
+                  landmarks={character.landmarkState.landmarks.map((lm, i) => ({
+                    index: i,
+                    name: lm.name,
+                    icon: lm.icon,
+                    position: lm.position ?? { x: 0, y: 0 },
+                    explored: lm.explored ?? false,
+                    hidden: lm.hidden ?? false,
+                    hasShop: lm.hasShop ?? false,
+                  }))}
+                  exits={(character.landmarkState.exitPositions ?? []).map((exit, i) => ({
+                    index: character.landmarkState!.landmarks.length + i,
+                    name: exit.name,
+                    icon: exit.icon,
+                    position: exit.position,
+                  }))}
+                  activeTargetIndex={character.landmarkState.activeTargetIndex ?? 0}
+                  regionBounds={character.landmarkState.regionBounds ?? { width: 500, height: 500 }}
+                  regionName={getRegion(character.currentRegion ?? 'green_meadows').name}
+                  regionIcon={getRegion(character.currentRegion ?? 'green_meadows').icon}
+                  onSelectTarget={(i) => setActiveTarget(i)}
+                />
+              ) : (
+                character && <WorldMap character={character} />
+              )}
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <SkillPanel
+                unlockedSkillIds={getSelectedCharacter()?.unlockedSkills ?? []}
+                classSkillTree={getSelectedCharacter()?.classSkillTree}
+                unlockedTreeSkillIds={getSelectedCharacter()?.unlockedTreeSkillIds ?? []}
+                characterLevel={getSelectedCharacter()?.level ?? 1}
               />
             </div>
             <div className="border-t border-[#3a3c56] pt-4">
+              <BasePanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              {character && <MercenaryPanel character={character} />}
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              {character && <FactionPanel character={character} />}
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <CraftingPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <EnchantingPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <ExplorationSpellsPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
               <SettingsPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <StatsPanel />
+            </div>
+            <div className="border-t border-[#3a3c56] pt-4">
+              <RunHistoryPanel />
             </div>
           </div>
         </div>
@@ -513,27 +1069,59 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       {/* Main content wrapper END */}
 
       {/* Mobile bottom drawer overlay */}
-      {mobilePanel && (
-        <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobilePanel(null)}>
+      {mobileCategory && (
+        <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobileCategory(null)}>
           <div className="absolute inset-0 bg-black/50" />
           <div
             className="absolute bottom-14 left-0 right-0 max-h-[70vh] overflow-y-auto bg-[#161723] border-t border-[#3a3c56] rounded-t-xl p-4 space-y-4"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-semibold text-slate-300 uppercase">
-                {mobilePanel === 'equipment' ? 'Equipment' : mobilePanel === 'inventory' ? 'Inventory' : mobilePanel === 'map' ? 'Map' : mobilePanel === 'settings' ? 'Settings' : 'Quest'}
-              </h3>
-              <button
-                className="text-slate-400 hover:text-white text-sm px-2 py-1"
-                onClick={() => setMobilePanel(null)}
-              >
-                Close
-              </button>
+            {/* Sub-tab bar inside the drawer */}
+            <div className="flex gap-1 bg-[#0e0f1a] rounded-lg p-1 overflow-x-auto">
+              {mobileCategory === 'gear' && ([
+                { id: 'equipment' as GearSubTab, label: 'Equip' },
+                { id: 'inventory' as GearSubTab, label: 'Items' },
+                { id: 'crafting' as GearSubTab, label: 'Craft' },
+                { id: 'enchant' as GearSubTab, label: 'Enchant' },
+                { id: 'spells' as GearSubTab, label: 'Spells' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setGearSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${gearSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
+              {mobileCategory === 'quest' && ([
+                { id: 'quests' as QuestSubTab, label: 'Quests' },
+                { id: 'map' as QuestSubTab, label: 'Map' },
+                { id: 'bestiary' as QuestSubTab, label: 'Bestiary' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setQuestSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${questSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
+              {mobileCategory === 'social' && ([
+                { id: 'party' as SocialSubTab, label: 'Party' },
+                { id: 'factions' as SocialSubTab, label: 'Factions' },
+                { id: 'npc' as SocialSubTab, label: 'NPCs' },
+                { id: 'leaderboard' as SocialSubTab, label: 'Ranks' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setSocialSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${socialSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
+              {mobileCategory === 'more' && ([
+                { id: 'status' as MoreSubTab, label: 'Status' },
+                { id: 'history' as MoreSubTab, label: 'History' },
+                { id: 'base' as MoreSubTab, label: 'Camp' },
+                { id: 'settings' as MoreSubTab, label: 'Settings' },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setMoreSubTab(t.id)}
+                  className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${moreSubTab === t.id ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                >{t.label}</button>
+              ))}
             </div>
-            {mobilePanel === 'quest' && character && <MainQuestPanel character={character} />}
-            {mobilePanel === 'quest' && <QuestPanel />}
-            {mobilePanel === 'equipment' && (
+
+            {/* Gear panels */}
+            {mobileCategory === 'gear' && gearSubTab === 'equipment' && (
               <>
                 <EquipmentPanel
                   equipment={getSelectedCharacter()?.equipment ?? { weapon: null, armor: null, accessory: null }}
@@ -541,52 +1129,122 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                 <AchievementPanel achievements={gameState.achievements ?? []} />
               </>
             )}
-            {mobilePanel === 'inventory' && (
+            {mobileCategory === 'gear' && gearSubTab === 'inventory' && (
               <InventoryPanel inventory={getSelectedCharacter()?.inventory ?? []} />
             )}
-            {mobilePanel === 'map' && (
-              <RegionMap
-                currentRegionId={character?.currentRegion ?? 'green_meadows'}
-                characterLevel={character?.level ?? 1}
-              />
+            {mobileCategory === 'gear' && gearSubTab === 'crafting' && <CraftingPanel />}
+            {mobileCategory === 'gear' && gearSubTab === 'enchant' && <EnchantingPanel />}
+            {mobileCategory === 'gear' && gearSubTab === 'spells' && <ExplorationSpellsPanel />}
+
+            {/* Quest panels */}
+            {mobileCategory === 'quest' && questSubTab === 'quests' && (
+              <>
+                {character && <MainQuestPanel character={character} />}
+                <QuestPanel />
+                <DailyChallengesPanel />
+              </>
             )}
-            {mobilePanel === 'settings' && <SettingsPanel />}
+            {mobileCategory === 'quest' && questSubTab === 'map' && (
+              <div>
+                <div className="flex gap-1 mb-3">
+                  <button onClick={() => setMapView('area')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'area' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Area</button>
+                  <button onClick={() => setMapView('world')} className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${mapView === 'world' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>World</button>
+                </div>
+                {mapView === 'area' && character?.landmarkState ? (
+                  <AreaMap
+                    playerPosition={character.landmarkState.position ?? { x: 0, y: 0 }}
+                    landmarks={character.landmarkState.landmarks.map((lm, i) => ({
+                      index: i,
+                      name: lm.name,
+                      icon: lm.icon,
+                      position: lm.position ?? { x: 0, y: 0 },
+                      explored: lm.explored ?? false,
+                      hidden: lm.hidden ?? false,
+                      hasShop: lm.hasShop ?? false,
+                    }))}
+                    exits={(character.landmarkState.exitPositions ?? []).map((exit, i) => ({
+                      index: character.landmarkState!.landmarks.length + i,
+                      name: exit.name,
+                      icon: exit.icon,
+                      position: exit.position,
+                    }))}
+                    activeTargetIndex={character.landmarkState.activeTargetIndex ?? 0}
+                    regionBounds={character.landmarkState.regionBounds ?? { width: 500, height: 500 }}
+                    regionName={getRegion(character.currentRegion ?? 'green_meadows').name}
+                    regionIcon={getRegion(character.currentRegion ?? 'green_meadows').icon}
+                    onSelectTarget={(i) => setActiveTarget(i)}
+                  />
+                ) : (
+                  character && <WorldMap character={character} />
+                )}
+              </div>
+            )}
+            {mobileCategory === 'quest' && questSubTab === 'bestiary' && character && (
+              <>
+                <BestiaryPanel bestiary={character.bestiary ?? []} />
+                <SpellComboPanel discoveredCombos={character.discoveredCombos ?? []} />
+              </>
+            )}
+
+            {/* Social panels */}
+            {mobileCategory === 'social' && socialSubTab === 'party' && character && (
+              <MercenaryPanel character={character} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'factions' && character && (
+              <FactionPanel character={character} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'npc' && character && (
+              <ContactsList character={character} />
+            )}
+            {mobileCategory === 'social' && socialSubTab === 'leaderboard' && (
+              <AdventureLeaderboard onBack={() => setMobileCategory(null)} />
+            )}
+            {/* More panels */}
+            {mobileCategory === 'more' && moreSubTab === 'status' && (
+              <StatsPanel />
+            )}
+            {mobileCategory === 'more' && moreSubTab === 'history' && (
+              <RunHistoryPanel />
+            )}
+            {mobileCategory === 'more' && moreSubTab === 'base' && <BasePanel />}
+            {mobileCategory === 'more' && moreSubTab === 'settings' && <SettingsPanel />}
           </div>
         </div>
       )}
 
-      {/* Mobile bottom tab bar */}
+      {/* Mobile bottom tab bar — 4 grouped tabs */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex bg-[#1a1b2e] border-t border-slate-700">
         {([
-          { id: 'equipment' as MobilePanel, label: 'Equip', icon: '\u2694' },
-          { id: 'inventory' as MobilePanel, label: 'Items', icon: '\uD83C\uDF92' },
-          { id: 'quest' as MobilePanel, label: 'Quest', icon: '\uD83D\uDCDC' },
-          { id: 'map' as MobilePanel, label: 'Map', icon: '\uD83D\uDDFA' },
-          { id: 'settings' as MobilePanel, label: 'Settings', icon: '\u2699' },
+          { id: 'gear' as MobileCategory, label: 'Gear', icon: '\u2694' },
+          { id: 'quest' as MobileCategory, label: 'Quest', icon: '\uD83D\uDCDC' },
+          { id: 'social' as MobileCategory, label: 'Social', icon: '\uD83C\uDFF0' },
+          { id: 'more' as MobileCategory, label: 'More', icon: '\u2630' },
         ]).map(tab => (
           <button
             key={tab.id}
-            className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
-              mobilePanel === tab.id
+            className={`flex-1 flex flex-col items-center py-2.5 text-xs transition-colors ${
+              mobileCategory === tab.id
                 ? 'text-indigo-400 bg-[#2a2b3f]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            onClick={() => setMobilePanel(mobilePanel === tab.id ? null : tab.id)}
+            onClick={() => setMobileCategory(mobileCategory === tab.id ? null : tab.id)}
           >
-            <span className="text-lg leading-none">{tab.icon}</span>
-            <span className="mt-0.5">{tab.label}</span>
+            <span className="text-xl leading-none">{tab.icon}</span>
+            <span className="mt-1 text-[11px]">{tab.label}</span>
           </button>
         ))}
-        <button
-          className="flex-1 flex flex-col items-center py-2 text-xs transition-colors text-slate-400 hover:text-slate-200"
-          onClick={() => onOpenStatus?.()}
-        >
-          <span className="text-lg leading-none">&#x1F4CA;</span>
-          <span className="mt-0.5">Status</span>
-        </button>
       </div>
       {/* Bottom padding spacer for mobile tab bar */}
       <div className="md:hidden h-14" />
+
+      {/* Travel confirm dialog */}
+      {travelTarget && (
+        <TravelConfirmDialog
+          region={getRegion(travelTarget)}
+          onConfirm={handleTravelConfirm}
+          onCancel={() => setTravelTarget(null)}
+        />
+      )}
     </div>
     </>
   )

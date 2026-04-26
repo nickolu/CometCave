@@ -25,6 +25,7 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     strength: 5,
     intelligence: 5,
     luck: 5,
+    charisma: 5,
     hp: 100,
     maxHp: 100,
     inventory: [],
@@ -113,6 +114,37 @@ describe('Stat Point Allocation Application', () => {
     expect(updated.strength).toBe(7)
     expect(updated.intelligence).toBe(6)
     expect(updated.luck).toBe(5)
+    expect(updated.pendingStatPoints).toBe(0)
+  })
+
+  it('should correctly increase charisma when allocating points', () => {
+    const character = makeCharacter({
+      pendingStatPoints: 3,
+      strength: 5,
+      intelligence: 5,
+      luck: 5,
+      charisma: 5,
+    })
+
+    const strAlloc = 1
+    const intAlloc = 1
+    const lckAlloc = 0
+    const chaAlloc = 1
+    const totalAllocated = strAlloc + intAlloc + lckAlloc + chaAlloc
+
+    const updated = {
+      ...character,
+      strength: character.strength + strAlloc,
+      intelligence: character.intelligence + intAlloc,
+      luck: character.luck + lckAlloc,
+      charisma: character.charisma + chaAlloc,
+      pendingStatPoints: character.pendingStatPoints - totalAllocated,
+    }
+
+    expect(updated.strength).toBe(6)
+    expect(updated.intelligence).toBe(6)
+    expect(updated.luck).toBe(5)
+    expect(updated.charisma).toBe(6)
     expect(updated.pendingStatPoints).toBe(0)
   })
 
