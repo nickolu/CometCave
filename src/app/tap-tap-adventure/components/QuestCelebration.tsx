@@ -55,6 +55,9 @@ export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
             {quest.rewards.items?.map(item => (
               <p key={item.id} className="text-sm text-purple-400">+ {item.name}</p>
             ))}
+            {quest.rewards.companion && (
+              <p className="text-sm text-green-400">+ {quest.rewards.companion.icon ?? '⚔️'} {quest.rewards.companion.name} joins your party!</p>
+            )}
           </div>
 
           <Button

@@ -4,6 +4,14 @@ import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import { calculateDay } from './leveling'
 import { inferItemTypeAndEffects } from './itemPostProcessor'
 
+const QUEST_COMPANION_NAMES = [
+  { name: 'Rescued Scout', description: 'A grateful scout who pledges loyalty after being saved.', icon: '🏹' },
+  { name: 'Freed Prisoner', description: 'A former captive, eager to repay their debt.', icon: '⛓️' },
+  { name: 'Grateful Pilgrim', description: 'A traveling pilgrim who offers their sword in thanks.', icon: '🙏' },
+  { name: 'Lost Squire', description: 'A young squire separated from their knight, seeking protection.', icon: '🛡️' },
+  { name: 'Wandering Monk', description: 'A monk whose monastery was destroyed, looking for purpose.', icon: '🧘' },
+]
+
 type QuestType = 'reach_distance' | 'collect_gold' | 'win_combat' | 'gain_reputation' | 'explore_landmarks' | 'survive_combats' | 'reach_level' | 'hoard_items' | 'visit_region'
 
 interface QuestTemplate {
@@ -100,6 +108,16 @@ export function generateTimedQuest(character: FantasyCharacter): TimedQuest {
   const goldReward = 15 + character.level * 10 + Math.floor(Math.random() * 10)
   const repReward = 3 + Math.floor(Math.random() * 5)
 
+  // ~10% chance of companion reward for level 3+ characters on harder quests
+  let companionReward: { name: string; description?: string; icon?: string; rarity?: 'common' | 'uncommon' | 'rare' | 'legendary' } | undefined
+  if (character.level >= 3 && Math.random() < 0.1) {
+    const companion = QUEST_COMPANION_NAMES[Math.floor(Math.random() * QUEST_COMPANION_NAMES.length)]
+    companionReward = {
+      ...companion,
+      rarity: character.level >= 8 ? 'uncommon' : 'common',
+    }
+  }
+
   return {
     id: `quest-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
     title: template.getTitle(target),
@@ -121,6 +139,7 @@ export function generateTimedQuest(character: FantasyCharacter): TimedQuest {
           quantity: 1,
         }),
       ],
+      companion: companionReward,
     },
   }
 }
