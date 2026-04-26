@@ -23,6 +23,8 @@ export const ItemEffectsSchema = z.object({
   damageBoost: z.number().optional(),
   /** Reveals a hidden landmark in the current region when used */
   revealLandmark: z.boolean().optional(),
+  /** Boosts a party member's relationship when gifted */
+  companionGift: z.number().optional(),
 })
 export type ItemEffects = z.infer<typeof ItemEffectsSchema>
 

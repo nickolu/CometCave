@@ -91,6 +91,14 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     }
   }
 
+  if (effects.companionGift) {
+    return {
+      character,
+      consumed: false,
+      message: `${item.name} is a companion gift. Use it from the Party panel to give it to a party member.`,
+    }
+  }
+
   // Update inventory: decrement quantity or remove
   const updatedInventory = character.inventory
     .map(i => {

@@ -65,6 +65,7 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [dismissConfirm, setDismissConfirm] = useState<string | null>(null)
   const [talkingTo, setTalkingTo] = useState<string | null>(null)
+  const [giftingTo, setGiftingTo] = useState<string | null>(null)
 
   // Stable tavern selection per character level — prevents re-randomization on each render
   const tavernMercs = useMemo(
@@ -249,36 +250,88 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
           <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Companions ({partyMembers.length}/{MAX_PARTY_SIZE})</h4>
           <div className="space-y-1.5">
             {partyMembers.map(member => (
-              <div key={member.id} className="bg-[#252638] border border-[#3a3c56] rounded p-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">{member.icon}</span>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-200">{member.customName ?? member.name}</div>
-                    <div className="text-[10px] text-slate-400">{member.className}</div>
-                    <div className="text-[10px] text-slate-500">Lv {member.level} · {member.dailyCost}g/day</div>
+              <div key={member.id}>
+                <div className="bg-[#252638] border border-[#3a3c56] rounded p-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg">{member.icon}</span>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-200">{member.customName ?? member.name}</div>
+                      <div className="text-[10px] text-slate-400">{member.className}</div>
+                      <div className="text-[10px] text-slate-500">Lv {member.level} · {member.dailyCost}g/day</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {dismissConfirm === `party-${member.id}` ? (
+                      <>
+                        <button className="text-[10px] px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded hover:bg-red-800/50"
+                          onClick={() => { removePartyMember(member.id); setDismissConfirm(null) }}>Yes</button>
+                        <button className="text-[10px] px-1.5 py-0.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50"
+                          onClick={() => setDismissConfirm(null)}>No</button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="text-[10px] px-1.5 py-0.5 bg-indigo-900/30 text-indigo-300 rounded hover:bg-indigo-800/40 transition-colors"
+                          onClick={() => setTalkingTo(member.id)}
+                        >
+                          Talk
+                        </button>
+                        <button
+                          className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-300 rounded hover:bg-amber-800/40 transition-colors"
+                          onClick={() => setGiftingTo(giftingTo === member.id ? null : member.id)}
+                        >
+                          Gift
+                        </button>
+                        <button className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
+                          onClick={() => setDismissConfirm(`party-${member.id}`)}>Dismiss</button>
+                      </>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  {dismissConfirm === `party-${member.id}` ? (
-                    <>
-                      <button className="text-[10px] px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded hover:bg-red-800/50"
-                        onClick={() => { removePartyMember(member.id); setDismissConfirm(null) }}>Yes</button>
-                      <button className="text-[10px] px-1.5 py-0.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50"
-                        onClick={() => setDismissConfirm(null)}>No</button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className="text-[10px] px-1.5 py-0.5 bg-indigo-900/30 text-indigo-300 rounded hover:bg-indigo-800/40 transition-colors"
-                        onClick={() => setTalkingTo(member.id)}
-                      >
-                        Talk
-                      </button>
-                      <button className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
-                        onClick={() => setDismissConfirm(`party-${member.id}`)}>Dismiss</button>
-                    </>
-                  )}
-                </div>
+                {giftingTo === member.id && (() => {
+                  const giftItems = character.inventory.filter(
+                    i => i.effects?.companionGift && i.quantity > 0 && i.status !== 'deleted'
+                  )
+                  if (giftItems.length === 0) {
+                    return (
+                      <div className="bg-[#161723] border border-amber-700/20 rounded p-2 mt-1 text-[10px] text-slate-400">
+                        No gift items in inventory. Craft a Friendship Token, Lucky Pendant, or Bond of Loyalty at a crafting station.
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="bg-[#161723] border border-amber-700/20 rounded p-2 mt-1 space-y-1">
+                      <p className="text-[10px] text-amber-300 font-semibold">Give a gift to {member.customName ?? member.name}:</p>
+                      {giftItems.map(item => (
+                        <button
+                          key={item.id}
+                          className="w-full flex justify-between items-center text-[10px] px-2 py-1 bg-amber-900/20 rounded hover:bg-amber-800/30 transition-colors"
+                          onClick={() => {
+                            const delta = item.effects?.companionGift ?? 0
+                            if (delta > 0) {
+                              updatePartyMemberRelationship(member.id, delta)
+                              const { gameState: gs, setGameState } = useGameStore.getState()
+                              const updatedChars = gs.characters.map(c => {
+                                if (c.id !== gs.selectedCharacterId) return c
+                                const updatedInv = c.inventory.map(i => {
+                                  if (i.id !== item.id) return i
+                                  const newQty = i.quantity - 1
+                                  return newQty <= 0 ? { ...i, quantity: 0, status: 'deleted' as const } : { ...i, quantity: newQty }
+                                }).filter(i => i.quantity > 0)
+                                return { ...c, inventory: updatedInv }
+                              })
+                              setGameState({ ...gs, characters: updatedChars })
+                              setGiftingTo(null)
+                            }
+                          }}
+                        >
+                          <span className="text-amber-200">{item.name} <span className="text-slate-500">×{item.quantity}</span></span>
+                          <span className="text-green-400">+{item.effects?.companionGift} rel</span>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             ))}
           </div>

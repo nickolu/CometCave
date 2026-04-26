@@ -346,4 +346,53 @@ export const CRAFTING_RECIPES: CraftingRecipe[] = [
       effects: { heal: 40, manaRestore: 20, shield: 10 },
     },
   },
+  // --- Companion Gifts ---
+  {
+    id: 'friendship_token',
+    name: 'Friendship Token',
+    description: 'A simple handmade charm that shows you care about your companions.',
+    ingredients: [
+      { type: 'consumable', quantity: 1 },
+      { type: 'misc', quantity: 1 },
+    ],
+    goldCost: 15,
+    result: {
+      name: 'Friendship Token',
+      description: 'A handcrafted charm. Gift it to a companion to strengthen your bond. (+5 relationship)',
+      type: 'consumable',
+      effects: { companionGift: 5 },
+    },
+  },
+  {
+    id: 'lucky_pendant',
+    name: 'Lucky Pendant',
+    description: 'Combine valuable materials into a pendant that any companion would treasure.',
+    ingredients: [
+      { type: 'misc', quantity: 2 },
+      { type: 'consumable', quantity: 1 },
+    ],
+    goldCost: 40,
+    result: {
+      name: 'Lucky Pendant',
+      description: 'A gleaming pendant imbued with good fortune. Gift it to greatly improve a companion\'s loyalty. (+15 relationship)',
+      type: 'consumable',
+      effects: { companionGift: 15 },
+    },
+  },
+  {
+    id: 'bond_of_loyalty',
+    name: 'Bond of Loyalty',
+    description: 'Forge a powerful token of loyalty from rare equipment and materials.',
+    ingredients: [
+      { type: 'equipment', quantity: 1 },
+      { type: 'misc', quantity: 2 },
+    ],
+    goldCost: 80,
+    result: {
+      name: 'Bond of Loyalty',
+      description: 'A masterwork token of devotion. Gift it to forge an unbreakable bond with a companion. (+25 relationship)',
+      type: 'consumable',
+      effects: { companionGift: 25 },
+    },
+  },
 ]
