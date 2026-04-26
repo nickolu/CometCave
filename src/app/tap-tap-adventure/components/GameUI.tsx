@@ -887,6 +887,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                   <StablePanel
                     character={character}
                     onClose={() => setShowStablePanel(false)}
+                    regionId={character.currentRegion ?? 'green_meadows'}
                   />
                 )}
                 {/* Mailbox panel — shown when the player checks their mailbox */}
