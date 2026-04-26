@@ -923,11 +923,10 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                       eventResult={eventResult}
                       onDismissResult={() => {
                         setEventResult(null)
-                        // Only clear the decision point if it hasn't already been cleared by the server response
-                        const currentDP = useGameStore.getState().gameState.decisionPoint
-                        if (currentDP && currentDP.id === gameState.decisionPoint?.id) {
-                          setDecisionPoint(null)
-                        }
+                        // Don't clear the decision point here — if the server returned
+                        // a continue-exploring/leave-landmark prompt, it should render
+                        // now that eventResult is cleared. The decision point will be
+                        // cleared naturally when the player picks an option.
                       }}
                       showNPCPanel={showNPCPanel}
                       npcPanelContent={showNPCPanel && socialEncounter && character ? (
