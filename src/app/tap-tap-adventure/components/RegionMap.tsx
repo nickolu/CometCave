@@ -186,6 +186,8 @@ function RegionNode({
       style={isClickable ? { cursor: 'pointer' } : undefined}
       onClick={isClickable ? () => onRegionClick!(region.id) : undefined}
     >
+      <title>{`${region.name} (${DIFFICULTY_LABELS[region.difficulty]})${region.enemyTypes.length > 0 ? `\nEnemies: ${region.enemyTypes.join(', ')}` : ''}${region.element !== 'none' ? `\nElement: ${region.element}` : ''}${region.minLevel > 0 ? `\nMin Level: ${region.minLevel}` : ''}`}</title>
+
       {/* Pulse ring for current region */}
       {isCurrent && (
         <circle
