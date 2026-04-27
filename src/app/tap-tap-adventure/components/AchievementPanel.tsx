@@ -16,6 +16,7 @@ const CATEGORY_ORDER: AchievementCategory[] = ['travel', 'combat', 'collection',
 
 export function AchievementPanel({ achievements }: { achievements: PlayerAchievement[] }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const achievementMap = new Map<string, PlayerAchievement>()
   for (const pa of achievements) {
     achievementMap.set(pa.achievementId, pa)
@@ -59,8 +60,16 @@ export function AchievementPanel({ achievements }: { achievements: PlayerAchieve
           {completedCount}/{totalCount}
         </span>
       </div>
+      <input
+        type="text"
+        placeholder="Search achievements..."
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        className="w-full bg-[#161723] border border-[#2a2b3f] rounded px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"
+      />
       {CATEGORY_ORDER.map(category => {
         const categoryAchievements = ACHIEVEMENTS.filter(a => a.category === category)
+          .filter(a => !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()) || a.description.toLowerCase().includes(searchQuery.toLowerCase()))
         if (categoryAchievements.length === 0) return null
 
         return (
