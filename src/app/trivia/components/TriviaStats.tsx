@@ -1,9 +1,11 @@
 'use client'
 
+import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
+import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
+import { formatDisplayDate } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { useTriviaStore } from '../hooks/useTriviaStore'
-import { formatDisplayDate } from '../lib/triviaUtils'
 
 const MAX_SCORE_PER_GAME = 3150
 
@@ -14,8 +16,11 @@ function getAccuracyColor(accuracy: number): string {
 }
 
 export function TriviaStats({ onBack }: { onBack: () => void }) {
-  const { userData } = useTriviaStore()
-  const { stats, history } = userData
+  const { user } = useAuth()
+  const { userData: localUser } = useTriviaStore()
+  const { userData: firestoreUser } = useTriviaUser()
+  const stats = user ? firestoreUser.stats : localUser.stats
+  const history = user ? firestoreUser.history : localUser.history
 
   const accuracy =
     stats.totalQuestions > 0

@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
+import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
+import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
+import { formatDisplayDate, getDailyCategory } from '@/app/trivia/lib/triviaUtils'
+import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { useTriviaStore } from '../hooks/useTriviaStore'
-import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
-import { NamePrompt } from './NamePrompt'
-import type { TriviaGameResult } from '../models/trivia'
 
 const MAX_SCORE = 3150
 
@@ -90,33 +92,46 @@ interface TriviaResultsProps {
 
 export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
-  const [namePromptDismissed, setNamePromptDismissed] = useState(false)
-  const { userData, setDisplayName } = useTriviaStore()
-  const [scoreSubmitted, setScoreSubmitted] = useState(!!userData.displayName)
+  const { user } = useAuth()
+  const { userData: firestoreUser } = useTriviaUser()
+  const { userData: localUser } = useTriviaStore()
+  const currentStreak = user ? firestoreUser.stats.currentStreak : localUser.stats.currentStreak
+  const [scoreSubmitted, setScoreSubmitted] = useState(false)
   const countdown = useCountdown()
 
   useEffect(() => {
-    if (userData.displayName && !scoreSubmitted) {
-      fetch('/api/v1/trivia/submit-score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          displayName: userData.displayName,
-          date: result.date,
-          score: result.score,
-          correct: result.correct,
-          total: result.total,
-        }),
-      })
-        .then(() => setScoreSubmitted(true))
-        .catch((err) => console.error('Failed to submit score:', err))
+    if (!user || scoreSubmitted) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const token = await user.getIdToken()
+        const res = await fetch('/api/v1/trivia/submit-score', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            date: result.date,
+            score: result.score,
+            correct: result.correct,
+            total: result.total,
+          }),
+        })
+        if (!cancelled && res.ok) setScoreSubmitted(true)
+      } catch (err) {
+        console.error('Failed to submit score:', err)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-  }, [userData.displayName, scoreSubmitted, result])
+  }, [user, scoreSubmitted, result])
   const scorePercent = Math.round((result.score / MAX_SCORE) * 100)
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
   const handleShare = async () => {
-    const text = getShareText(result, userData.stats.currentStreak)
+    const text = getShareText(result, currentStreak)
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -169,9 +184,7 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
               <div className="text-cream-white/50 text-xs">Accuracy</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-bold text-space-gold">
-                {userData.stats.currentStreak}
-              </div>
+              <div className="text-xl font-bold text-space-gold">{currentStreak}</div>
               <div className="text-cream-white/50 text-xs">Streak</div>
             </div>
           </div>
@@ -242,19 +255,7 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
         {copied ? 'Copied!' : 'Share Score'}
       </Button>
 
-      {!userData.displayName && !namePromptDismissed && (
-        <NamePrompt
-          title="Join the leaderboard?"
-          description="Set a display name to save your score"
-          onSave={(name) => {
-            setDisplayName(name)
-            setNamePromptDismissed(true)
-          }}
-          onSkip={() => setNamePromptDismissed(true)}
-        />
-      )}
-
-      {scoreSubmitted && userData.displayName && (
+      {scoreSubmitted && (
         <div className="text-center text-green-400/70 text-sm">
           Score submitted to leaderboard
         </div>

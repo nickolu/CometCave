@@ -26,15 +26,12 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
   const configured = isFirebaseAuthConfigured()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(configured)
 
   useEffect(() => {
-    if (!configured) {
-      setLoading(false)
-      return
-    }
+    if (!configured) return
     const auth = getFirebaseAuth()
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u)
