@@ -96,6 +96,7 @@ type RunSummaryData = {
   reason: 'death' | 'permadeath' | 'retirement' | 'victory'
   essenceEarned: number
   heirloom: Item | null
+  killedBy?: string
 }
 
 type GameState = {
