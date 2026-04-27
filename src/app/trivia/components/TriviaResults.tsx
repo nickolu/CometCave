@@ -9,6 +9,8 @@ import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
+import { SignInCard } from './SignInCTA'
+
 const MAX_SCORE = 3150
 
 function getScoreRating(percentage: number) {
@@ -24,7 +26,10 @@ function formatTime(ms: number): string {
   return `${seconds}s`
 }
 
-function getShareText(result: TriviaGameResult, streak?: number): string {
+function getShareText(
+  result: TriviaGameResult,
+  options: { streak?: number; playerName?: string | null } = {}
+): string {
   const date = new Date(result.date + 'T12:00:00')
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   const category = getDailyCategory(result.date)
@@ -34,9 +39,20 @@ function getShareText(result: TriviaGameResult, streak?: number): string {
     .join('')
 
   const pct = Math.round((result.score / MAX_SCORE) * 100)
-  const streakLine = streak && streak >= 2 ? `\n🔥 ${streak}-day streak` : ''
-
-  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)${streakLine}\nhttps://cometcave.com/trivia`
+  const lines = [
+    `🧠 CometCave Daily Trivia — ${dateStr}`,
+    `Theme: ${category.icon} ${category.name}`,
+    squares,
+    `Score: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)`,
+  ]
+  if (options.streak && options.streak >= 2) {
+    lines.push(`🔥 ${options.streak}-day streak`)
+  }
+  if (options.playerName) {
+    lines.push(`— played by ${options.playerName}`)
+  }
+  lines.push('https://cometcave.com/trivia')
+  return lines.join('\n')
 }
 
 function useCountdown() {
@@ -115,7 +131,11 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
   const handleShare = async () => {
-    const text = getShareText(result, currentStreak)
+    const playerName = user ? user.displayName ?? user.email ?? null : null
+    const text = getShareText(result, {
+      streak: user ? currentStreak : undefined,
+      playerName,
+    })
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -243,6 +263,13 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
         <div className="text-center text-green-400/70 text-sm">
           Score submitted to leaderboard
         </div>
+      )}
+
+      {!user && (
+        <SignInCard
+          title="🔒 Your score wasn't saved"
+          description="Sign in to track your streak, save your stats, and compete on the leaderboard."
+        />
       )}
 
       {/* Countdown to next reset */}

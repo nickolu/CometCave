@@ -2,12 +2,15 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { formatDisplayDate, getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
+import { SignInBanner } from './SignInCTA'
 
 export function TriviaLanding({
   onStartGame,
@@ -18,7 +21,7 @@ export function TriviaLanding({
   onViewStats?: () => void
   onViewLeaderboard?: () => void
 }) {
-  const { user, loading: authLoading, configured: authConfigured } = useAuth()
+  const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
   const {
     userData: firestoreUser,
     canPlayToday: canPlayFirestore,
@@ -33,26 +36,17 @@ export function TriviaLanding({
   const alreadyPlayed = user ? !canPlayFirestore() : false
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
+  const showSignInPromos = authConfigured && !authLoading && !user
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
-      <div className="w-full flex justify-end min-h-[1.25rem] text-sm">
+      <div className="w-full flex justify-end min-h-[1.75rem] text-sm">
         {!authConfigured ? null : authLoading ? null : user ? (
-          <div className="flex items-center gap-2 text-cream-white/70">
-            {user.photoURL && (
-              <Image
-                src={user.photoURL}
-                alt=""
-                width={24}
-                height={24}
-                className="rounded-full"
-                unoptimized
-              />
-            )}
-            <span className="text-cream-white/80 truncate max-w-[10rem]">
-              {user.displayName ?? user.email}
-            </span>
-          </div>
+          <UserMenu
+            displayName={user.displayName ?? user.email ?? 'Account'}
+            photoURL={user.photoURL}
+            onSignOut={signOut}
+          />
         ) : (
           <Link
             href="/auth?redirect=/trivia"
@@ -76,6 +70,23 @@ export function TriviaLanding({
           <span>{category.name}</span>
         </div>
       </div>
+
+      {/* Streak hero (logged-in users with an active streak) */}
+      {user && stats.currentStreak > 0 && (
+        <div className="w-full flex items-center justify-center gap-2 text-cream-white/80">
+          <span className="text-2xl">🔥</span>
+          <span className="text-lg">
+            <span className="text-space-gold font-bold text-2xl">{stats.currentStreak}</span>
+            <span className="ml-2">
+              day{stats.currentStreak === 1 ? '' : 's'} in a row
+            </span>
+          </span>
+        </div>
+      )}
+
+      {showSignInPromos && (
+        <SignInBanner message="Sign in to save your progress" />
+      )}
 
       <Card className="w-full bg-space-dark/80 border-space-grey">
         <CardHeader>
@@ -160,6 +171,80 @@ export function TriviaLanding({
           Leaderboard
         </button>
       </div>
+    </div>
+  )
+}
+
+function UserMenu({
+  displayName,
+  photoURL,
+  onSignOut,
+}: {
+  displayName: string
+  photoURL: string | null
+  onSignOut: () => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 text-cream-white/70 hover:text-cream-white transition-colors px-2 py-1 rounded-md hover:bg-space-dark/40"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        {photoURL && (
+          <Image
+            src={photoURL}
+            alt=""
+            width={24}
+            height={24}
+            className="rounded-full"
+            unoptimized
+          />
+        )}
+        <span className="text-cream-white/80 truncate max-w-[10rem]">{displayName}</span>
+        <span className="text-cream-white/40 text-xs">▾</span>
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 mt-1 min-w-[10rem] rounded-md border border-space-grey bg-space-dark shadow-lg z-20 overflow-hidden"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onSignOut().catch((err) => console.error('Sign out failed:', err))
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-cream-white/80 hover:bg-space-purple/20 hover:text-cream-white transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
+      )}
     </div>
   )
 }
