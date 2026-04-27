@@ -18,66 +18,22 @@ export interface LandmarkTemplate {
 }
 
 export const LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
-  hearthwood: [
+  green_meadows: [
     {
-      id: 'sv_notice_board',
-      name: 'Notice Board',
-      type: 'waypoint',
-      description: 'A weathered board covered in job postings and missing-person notices.',
-      icon: '📋',
-      hasShop: false,
-      encounterPrompt: 'A crowded notice board in the village square. Adventurers and locals gather to read postings about work, missing persons, and local news.',
-    },
-    {
-      id: 'sv_tavern',
-      name: 'The Rusty Flagon',
+      id: 'gm_hearthwood',
+      name: 'Hearthwood',
       type: 'town',
-      description: 'A lively tavern where weary travelers gather to trade tales and resupply.',
-      icon: '🍺',
+      description: 'A warm and welcoming hamlet nestled in a sunlit valley. Adventurers rest, resupply, and share tales by the hearth.',
+      icon: '🏘️',
       hasShop: true,
-      encounterPrompt: 'A warm, bustling tavern filled with the smell of roasted meat and spilled ale. The barkeep is friendly and the locals are chatty.',
+      encounterPrompt: 'A cozy hamlet with a central hearth, welcoming taverns, artisan shops, and friendly townsfolk. The smell of roasted meat and fresh bread fills the air.',
       hasInn: true,
       hasStable: false,
       hasMailbox: true,
       hasNoticeBoard: true,
       hasTransport: false,
-    },
-    {
-      id: 'sv_temple',
-      name: 'Village Temple',
-      type: 'shrine',
-      description: 'A modest stone temple offering blessings to departing adventurers.',
-      icon: '⛪',
-      hasShop: false,
-      encounterPrompt: 'A small but well-kept stone temple. A robed priest offers blessings and the scent of incense fills the air.',
-    },
-    {
-      id: 'sv_blacksmith',
-      name: "Garron's Forge",
-      type: 'town',
-      description: 'A busy smithy where the clanging of hammers rings from dawn to dusk.',
-      icon: '⚒️',
-      hasShop: true,
-      encounterPrompt: "A hot smithy where sparks fly and the smell of molten iron fills the air. The blacksmith Garron is gruff but fair, selling quality wares.",
-      hasInn: false,
-      hasStable: false,
-      hasMailbox: false,
-      hasNoticeBoard: false,
-      hasTransport: false,
       hasCrafting: true,
     },
-    {
-      id: 'sv_well',
-      name: 'The Old Well',
-      type: 'ruins',
-      description: 'An ancient well said to grant visions to those who drink from it.',
-      icon: '🪣',
-      hasShop: false,
-      encounterPrompt: 'An ancient moss-covered well at the edge of the village. Locals whisper that it sometimes shows visions of the future in its depths.',
-    },
-  ],
-
-  green_meadows: [
     {
       id: 'gm_mill',
       name: 'The Old Mill',
@@ -744,11 +700,9 @@ export function getTemplatesForRegion(regionId: string): LandmarkTemplate[] {
 }
 
 export const SECRET_LANDMARK_TEMPLATES: Record<string, LandmarkTemplate[]> = {
-  hearthwood: [
-    { id: 'sv_hidden_cellar', name: 'Hidden Cellar', type: 'dungeon', description: 'A concealed entrance beneath the cobblestones leads to a forgotten cellar.', icon: '🕳️', hasShop: false, encounterPrompt: 'A damp cellar filled with old crates and cobwebs. Something glints in the darkness.', isSecret: true },
-  ],
   green_meadows: [
     { id: 'gm_fairy_ring', name: 'Fairy Ring', type: 'shrine', description: 'A circle of glowing mushrooms hidden in a meadow hollow.', icon: '🍄', hasShop: false, encounterPrompt: 'A ring of luminescent mushrooms pulses with fey energy. Tiny lights dance above the circle.', isSecret: true },
+    { id: 'sv_hidden_cellar', name: 'Hidden Cellar', type: 'dungeon', description: 'A concealed entrance beneath the cobblestones leads to a forgotten cellar.', icon: '🕳️', hasShop: false, encounterPrompt: 'A damp cellar filled with old crates and cobwebs. Something glints in the darkness.', isSecret: true },
   ],
   dark_forest: [
     { id: 'df_shadow_grotto', name: 'Shadow Grotto', type: 'dungeon', description: 'A cave entrance concealed by twisted roots and perpetual shadow.', icon: '🕸️', hasShop: false, encounterPrompt: 'A grotto shrouded in unnatural darkness. Strange whispers echo from within.', isSecret: true },

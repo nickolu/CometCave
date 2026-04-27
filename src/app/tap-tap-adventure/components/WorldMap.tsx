@@ -15,7 +15,7 @@ export function WorldMap({ character }: WorldMapProps) {
   const regionIds = Object.keys(REGIONS)
 
   // Find root
-  const root = 'hearthwood'
+  const root = 'green_meadows'
 
   // BFS to build ordered list with depth
   type TreeNode = { id: string; depth: number; parentId?: string }

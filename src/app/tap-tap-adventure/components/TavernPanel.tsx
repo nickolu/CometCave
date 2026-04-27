@@ -11,7 +11,6 @@ interface TavernPanelProps {
 }
 
 const TAVERN_FLAVORS: Record<string, string> = {
-  hearthwood: 'The hearth crackles warmly as the barkeep polishes a well-worn mug. The smell of roasted meat and fresh bread fills the cozy room.',
   green_meadows: 'Farmers and merchants share tables over simple fare. A bard in the corner plays a gentle melody on a worn lute.',
   dark_forest: 'Lantern light flickers across rough-hewn walls. The patrons speak in hushed tones, glancing toward the dark windows.',
   sunken_ruins: 'Water drips from the ceiling into carefully placed buckets. The air tastes of salt and the drinks are suspiciously warm.',
