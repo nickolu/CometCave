@@ -23,7 +23,7 @@ function formatTime(ms: number): string {
   return `${seconds}s`
 }
 
-function getShareText(result: TriviaGameResult): string {
+function getShareText(result: TriviaGameResult, streak?: number): string {
   const date = new Date(result.date + 'T12:00:00')
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   const category = getDailyCategory(result.date)
@@ -33,8 +33,9 @@ function getShareText(result: TriviaGameResult): string {
     .join('')
 
   const pct = Math.round((result.score / MAX_SCORE) * 100)
+  const streakLine = streak && streak >= 2 ? `\n🔥 ${streak}-day streak` : ''
 
-  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)\nhttps://cometcave.com/trivia`
+  return `🧠 CometCave Daily Trivia — ${dateStr}\nTheme: ${category.icon} ${category.name}\n${squares}\nScore: ${result.score.toLocaleString()} / ${MAX_SCORE.toLocaleString()} (${pct}%)${streakLine}\nhttps://cometcave.com/trivia`
 }
 
 function useCountdown() {
@@ -115,7 +116,7 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
   const handleShare = async () => {
-    const text = getShareText(result)
+    const text = getShareText(result, userData.stats.currentStreak)
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
