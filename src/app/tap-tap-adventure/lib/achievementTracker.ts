@@ -4,7 +4,7 @@ import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { GameState } from '@/app/tap-tap-adventure/models/types'
 
 export type AchievementEvent =
-  | { type: 'combat_win'; hpAfterCombat: number; maxHp: number; isBoss: boolean; turnCount?: number; partyAlive?: number; partyTotal?: number; enemyLevel?: number; playerLevel?: number }
+  | { type: 'combat_win'; hpAfterCombat: number; maxHp: number; isBoss: boolean; turnCount?: number; partyAlive?: number; partyTotal?: number; enemyLevel?: number; playerLevel?: number; currentWeather?: string }
   | { type: 'shop_purchase' }
   | { type: 'death' }
 
@@ -221,6 +221,26 @@ function getProgress(
     if (event?.type === 'death') {
       return 1
     }
+    return existing?.progress ?? 0
+  }
+
+  // Weather combat achievements — cumulative wins during adverse weather
+  if (achievementId === 'special_storm_warrior') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    const current = existing?.progress ?? 0
+    if (event?.type === 'combat_win' && event.currentWeather && event.currentWeather !== 'clear') return current + 1
+    return current
+  }
+  if (achievementId === 'special_tempest_champion') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    const current = existing?.progress ?? 0
+    if (event?.type === 'combat_win' && event.currentWeather && event.currentWeather !== 'clear') return current + 1
+    return current
+  }
+  if (achievementId === 'special_storm_boss') {
+    const existing = currentAchievements.find(a => a.achievementId === achievementId)
+    if (existing?.completed) return existing.progress
+    if (event?.type === 'combat_win' && event.isBoss && event.currentWeather && event.currentWeather !== 'clear') return 1
     return existing?.progress ?? 0
   }
 
