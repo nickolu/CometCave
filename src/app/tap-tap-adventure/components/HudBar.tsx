@@ -223,6 +223,17 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   }
   const reputationTierColor = reputationTierColorMap[reputationTier]
 
+  const REPUTATION_TIERS: { tier: ReputationTier; min: number }[] = [
+    { tier: 'Wanted Criminal', min: -100 },
+    { tier: 'Infamous', min: -50 },
+    { tier: 'Disreputable', min: -20 },
+    { tier: 'Unknown', min: 0 },
+    { tier: 'Respected', min: 20 },
+    { tier: 'Renowned', min: 50 },
+    { tier: 'Legendary', min: 100 },
+    { tier: 'Living Legend', min: 150 },
+  ]
+
   const MOBILE_HIDDEN_STATS: IconType[] = ['waterDropIcon', 'leafIcon', 'dayIcon']
 
   const renderStat = (key: IconType) => (
@@ -260,11 +271,28 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
         </div>
         <span className="text-[8px] sm:text-[9px] text-slate-500 leading-none">{STAT_LABELS[key]}</span>
       </button>
-      {activeTooltip === key && (
+      {activeTooltip === key && key === 'waterDropIcon' ? (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2.5 py-2 bg-slate-800 border border-slate-600 rounded text-[10px] text-slate-200 z-50 shadow-lg min-w-[140px]">
+          <div className="text-[9px] text-slate-400 uppercase tracking-wide mb-1">Reputation: {character?.reputation ?? 0}</div>
+          {REPUTATION_TIERS.map(({ tier, min }) => (
+            <div
+              key={tier}
+              className={`flex justify-between gap-3 py-0.5 ${
+                tier === reputationTier
+                  ? `font-bold ${reputationTierColorMap[tier]}`
+                  : 'text-slate-500'
+              }`}
+            >
+              <span>{tier === reputationTier ? '\u25B6 ' : ''}{tier}</span>
+              <span className="tabular-nums">{min}</span>
+            </div>
+          ))}
+        </div>
+      ) : activeTooltip === key ? (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-[10px] text-slate-200 whitespace-nowrap z-50 shadow-lg">
           {getTooltipText(key)}
         </div>
-      )}
+      ) : null}
       {statDeltas.filter(d => d.key === key).map(d => (
         <span
           key={d.id}
