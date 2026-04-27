@@ -1,10 +1,16 @@
 'use client'
 
+import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
+
+import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
 import { useTriviaStore } from '../hooks/useTriviaStore'
 import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
+
 import { NamePrompt } from './NamePrompt'
 
 export function TriviaLanding({
@@ -17,6 +23,7 @@ export function TriviaLanding({
   onViewLeaderboard?: () => void
 }) {
   const { userData, canPlayToday, setDisplayName, skipName } = useTriviaStore()
+  const { user, loading: authLoading, configured: authConfigured } = useAuth()
   const [showChangeName, setShowChangeName] = useState(false)
   const needsNamePrompt = !userData.displayName && !userData.nameSkipped
   const todayStr = getTodayPST()
@@ -25,6 +32,33 @@ export function TriviaLanding({
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
+      <div className="w-full flex justify-end min-h-[1.25rem] text-sm">
+        {!authConfigured ? null : authLoading ? null : user ? (
+          <div className="flex items-center gap-2 text-cream-white/70">
+            {user.photoURL && (
+              <Image
+                src={user.photoURL}
+                alt=""
+                width={24}
+                height={24}
+                className="rounded-full"
+                unoptimized
+              />
+            )}
+            <span className="text-cream-white/80 truncate max-w-[10rem]">
+              {user.displayName ?? user.email}
+            </span>
+          </div>
+        ) : (
+          <Link
+            href="/auth?redirect=/trivia"
+            className="text-space-gold/80 hover:text-space-gold underline-offset-4 hover:underline transition-colors"
+          >
+            Sign in
+          </Link>
+        )}
+      </div>
+
       <div className="text-center">
         <h1 className="text-4xl font-bold text-space-gold mb-2">Daily Trivia</h1>
         <p className="text-cream-white/70 text-lg">{formatDisplayDate(todayStr)}</p>
