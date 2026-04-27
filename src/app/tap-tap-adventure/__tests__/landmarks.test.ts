@@ -4,7 +4,6 @@ import { getTemplatesForRegion, LANDMARK_TEMPLATES } from '../config/landmarks'
 import { getRegion } from '../config/regions'
 
 const ALL_REGION_IDS = [
-  'hearthwood',
   'green_meadows',
   'dark_forest',
   'sunken_ruins',
@@ -272,26 +271,16 @@ describe('LandmarkTemplate feature flags', () => {
     expect(willowbrook?.hasTransport).toBe(true)
   })
 
-  it("Garron's Forge (sv_blacksmith) has no extra features", () => {
-    const templates = getTemplatesForRegion('hearthwood')
-    const forge = templates.find(t => t.id === 'sv_blacksmith')
-    expect(forge).toBeDefined()
-    expect(forge?.hasInn).toBe(false)
-    expect(forge?.hasStable).toBe(false)
-    expect(forge?.hasMailbox).toBe(false)
-    expect(forge?.hasNoticeBoard).toBe(false)
-    expect(forge?.hasTransport).toBe(false)
-  })
-
-  it('The Rusty Flagon (sv_tavern) has inn, mailbox, notice board but no stable or transport', () => {
-    const templates = getTemplatesForRegion('hearthwood')
-    const tavern = templates.find(t => t.id === 'sv_tavern')
-    expect(tavern).toBeDefined()
-    expect(tavern?.hasInn).toBe(true)
-    expect(tavern?.hasStable).toBe(false)
-    expect(tavern?.hasMailbox).toBe(true)
-    expect(tavern?.hasNoticeBoard).toBe(true)
-    expect(tavern?.hasTransport).toBe(false)
+  it('Hearthwood town (gm_hearthwood) has inn, mailbox, notice board, crafting but no stable or transport', () => {
+    const templates = getTemplatesForRegion('green_meadows')
+    const hearthwood = templates.find(t => t.id === 'gm_hearthwood')
+    expect(hearthwood).toBeDefined()
+    expect(hearthwood?.hasInn).toBe(true)
+    expect(hearthwood?.hasStable).toBe(false)
+    expect(hearthwood?.hasMailbox).toBe(true)
+    expect(hearthwood?.hasNoticeBoard).toBe(true)
+    expect(hearthwood?.hasTransport).toBe(false)
+    expect(hearthwood?.hasCrafting).toBe(true)
   })
 
   it("Puck's Bazaar (fg_market) only has transport", () => {
@@ -306,26 +295,24 @@ describe('LandmarkTemplate feature flags', () => {
   })
 
   it('Non-town landmarks do not have feature flags', () => {
-    const templates = getTemplatesForRegion('hearthwood')
-    const noticeBoard = templates.find(t => t.id === 'sv_notice_board')
-    expect(noticeBoard).toBeDefined()
-    expect(noticeBoard?.hasInn).toBeUndefined()
-    expect(noticeBoard?.hasStable).toBeUndefined()
-    expect(noticeBoard?.hasMailbox).toBeUndefined()
-    expect(noticeBoard?.hasNoticeBoard).toBeUndefined()
-    expect(noticeBoard?.hasTransport).toBeUndefined()
+    const templates = getTemplatesForRegion('green_meadows')
+    const ford = templates.find(t => t.id === 'gm_ford')
+    expect(ford).toBeDefined()
+    expect(ford?.hasInn).toBeUndefined()
+    expect(ford?.hasStable).toBeUndefined()
+    expect(ford?.hasMailbox).toBeUndefined()
+    expect(ford?.hasNoticeBoard).toBeUndefined()
+    expect(ford?.hasTransport).toBeUndefined()
   })
 
   it('feature flags are preserved through generateLandmarks for town landmarks', () => {
     const landmarks = generateLandmarks('green_meadows', 'test-char', 0, 1, 100)
     const townLandmark = landmarks.find(lm => lm.type === 'town')
     expect(townLandmark).toBeDefined()
-    // green_meadows only has gm_hamlet as town, which has all features
+    // green_meadows has gm_hearthwood and gm_hamlet as towns, both have an inn
     expect(townLandmark?.hasInn).toBe(true)
-    expect(townLandmark?.hasStable).toBe(true)
     expect(townLandmark?.hasMailbox).toBe(true)
     expect(townLandmark?.hasNoticeBoard).toBe(true)
-    expect(townLandmark?.hasTransport).toBe(true)
   })
 
   it('non-town generated landmarks have undefined feature flags', () => {

@@ -46,7 +46,7 @@ export const NPCS: GameNPC[] = [
     name: 'Elder Maren',
     role: 'Village Elder',
     description: 'The wise elder of Hearthwood, keeper of ancient lore and guide to new adventurers.',
-    regionId: 'hearthwood',
+    regionId: 'green_meadows',
     personality: 'Wise, welcoming, and patient. Speaks with warmth and authority. Offers practical advice and tips to adventurers. Uses gentle humor. Values courage and kindness.',
     icon: '\u{1F9D9}',
     combatRole: 'non-combatant',

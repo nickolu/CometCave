@@ -1,6 +1,6 @@
 import { MainQuest } from '@/app/tap-tap-adventure/models/quest'
 
-// All conquerable regions (excludes hearthwood which is a non-combat hub)
+// All conquerable regions
 export const CONQUERABLE_REGIONS = [
   'green_meadows', 'dark_forest', 'crystal_caves', 'scorched_wastes',
   'frozen_peaks', 'shadow_realm', 'sky_citadel', 'sunken_ruins',

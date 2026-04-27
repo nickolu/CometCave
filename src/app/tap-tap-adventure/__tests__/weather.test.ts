@@ -57,12 +57,6 @@ describe('Weather Config', () => {
 })
 
 describe('rollWeather', () => {
-  it('hearthwood always returns clear', () => {
-    for (let i = 0; i < 100; i++) {
-      expect(rollWeather('hearthwood')).toBe('clear')
-    }
-  })
-
   it('frozen_peaks only returns weather from its pool', () => {
     const validIds = new Set(Object.keys(REGION_WEATHER_POOLS.frozen_peaks))
     for (let i = 0; i < 100; i++) {
