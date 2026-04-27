@@ -315,6 +315,7 @@ export function useResolveDecisionMutation() {
           ? `You chose to fight: ${data.selectedOptionText}`
           : (data.outcomeDescription ?? ''),
         resourceDelta: data.resourceDelta,
+        rewardItems: rewardItems.map(item => ({ id: item.id, name: item.name, description: item.description })),
       }
 
       // Append mount damage/death messages to outcome description
@@ -406,7 +407,7 @@ export function useResolveDecisionMutation() {
       }
 
       onResult?.({
-        outcomeDescription: newStoryEvent.outcomeDescription,
+        outcomeDescription: data.outcomeDescription ?? '',
         resourceDelta: data.resourceDelta,
         rewardItems: rewardItems,
         mountDamage: data.mountDamage,
