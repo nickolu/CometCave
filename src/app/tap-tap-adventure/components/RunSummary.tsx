@@ -98,7 +98,7 @@ export default function RunSummary({
   onNewCharacter,
   onBackToCharacters,
 }: RunSummaryProps) {
-  const { character, reason, essenceEarned, heirloom } = data
+  const { character, reason, essenceEarned, heirloom, killedBy } = data
 
   const [playerName, setPlayerName] = useState<string>('')
   const [nameInput, setNameInput] = useState<string>('')
@@ -193,6 +193,9 @@ export default function RunSummary({
         </p>
         {reason === 'victory' && (
           <p className="text-yellow-400 mt-2 font-semibold">You have united all lands under your banner.</p>
+        )}
+        {killedBy && (reason === 'death' || reason === 'permadeath') && (
+          <p className="text-slate-300 mt-2">Slain by <span className="font-semibold text-red-300">{killedBy}</span></p>
         )}
         {reason === 'permadeath' && (
           <p className="text-red-500 text-sm mt-1 italic">This character is gone forever.</p>

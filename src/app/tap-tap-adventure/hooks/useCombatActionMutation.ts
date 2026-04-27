@@ -336,6 +336,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               reason: 'permadeath',
               essenceEarned,
               heirloom,
+              killedBy: enemy.name,
             })
 
             recordRun({
@@ -395,6 +396,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
               reason: 'death',
               essenceEarned,
               heirloom,
+              killedBy: enemy.name,
             })
 
             recordRun({
