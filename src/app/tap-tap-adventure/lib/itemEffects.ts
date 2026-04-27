@@ -1,6 +1,7 @@
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { clampGold } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { generateMapLandmark, GeneratedLandmark } from '@/app/tap-tap-adventure/lib/landmarkGenerator'
 
 export interface UseItemResult {
   character: FantasyCharacter
@@ -75,6 +76,7 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     if (ls) {
       const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
       if (hiddenIdx !== -1) {
+        // Reveal existing hidden landmark
         const updatedLandmarks = ls.landmarks.map((lm, i) =>
           i === hiddenIdx ? { ...lm, hidden: false } : lm
         )
@@ -84,7 +86,21 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
         }
         effectMessages.push(`Revealed a hidden landmark: ${ls.landmarks[hiddenIdx].name}`)
       } else {
-        effectMessages.push('No hidden landmarks to reveal')
+        // No hidden landmarks — generate a new one
+        const bounds = ls.regionBounds ?? { width: 500, height: 500 }
+        const newLandmark = generateMapLandmark(ls.regionId, ls.landmarks as GeneratedLandmark[], bounds)
+        if (newLandmark) {
+          const updatedLandmarks = [...ls.landmarks, newLandmark].sort(
+            (a, b) => a.distanceFromEntry - b.distanceFromEntry
+          )
+          updatedCharacter = {
+            ...updatedCharacter,
+            landmarkState: { ...ls, landmarks: updatedLandmarks },
+          }
+          effectMessages.push(`Your map reveals a new location: ${newLandmark.name}`)
+        } else {
+          effectMessages.push('Your map shows nothing new in this area')
+        }
       }
     } else {
       effectMessages.push('No landmarks in this area')

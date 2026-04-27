@@ -156,3 +156,61 @@ export function generateLandmarks(
 
   return landmarks
 }
+
+/**
+ * Generate a single new landmark for the current region when a map item is used.
+ * Avoids duplicating templates already present in the landmark list.
+ */
+export function generateMapLandmark(
+  regionId: string,
+  existingLandmarks: GeneratedLandmark[],
+  regionBounds: { width: number; height: number },
+): GeneratedLandmark | null {
+  const templates = getTemplatesForRegion(regionId)
+  const secretTemplates = getSecretTemplatesForRegion(regionId)
+  const allTemplates = [...templates, ...secretTemplates]
+
+  // Filter out templates already used
+  const existingIds = new Set(existingLandmarks.map(lm => lm.templateId))
+  const available = allTemplates.filter(t => !existingIds.has(t.id))
+
+  if (available.length === 0) return null
+
+  // Use timestamp-based seed for non-deterministic generation (each map use is unique)
+  const rng = seededRandom(`map-${regionId}-${Date.now()}`)
+  const template = available[Math.floor(rng() * available.length)]
+
+  const margin = regionBounds.width * 0.1
+  const rangeX = regionBounds.width - 2 * margin
+  const rangeY = regionBounds.height - 2 * margin
+
+  // Place landmark at a distance between existing ones
+  const maxDist = existingLandmarks.length > 0
+    ? Math.max(...existingLandmarks.map(lm => lm.distanceFromEntry))
+    : 50
+  const distanceFromEntry = Math.floor(maxDist * 0.3 + rng() * maxDist * 0.6)
+
+  return {
+    templateId: template.id,
+    name: template.name,
+    type: template.type,
+    description: template.description,
+    icon: template.icon,
+    hasShop: template.hasShop,
+    encounterPrompt: template.encounterPrompt,
+    distanceFromEntry,
+    hidden: false,
+    isSecret: template.isSecret ?? false,
+    explored: false,
+    position: {
+      x: Math.round(margin + rng() * rangeX),
+      y: Math.round(margin + rng() * rangeY),
+    },
+    hasInn: template.hasInn,
+    hasStable: template.hasStable,
+    hasMailbox: template.hasMailbox,
+    hasNoticeBoard: template.hasNoticeBoard,
+    hasTransport: template.hasTransport,
+    hasCrafting: template.hasCrafting,
+  }
+}
