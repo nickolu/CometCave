@@ -607,6 +607,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                         partyTotal: (combatState.partyMemberStates ?? []).length,
                         enemyLevel: combatState.enemy.level,
                         playerLevel: character.level,
+                        currentWeather: character.currentWeather,
                       }
                     )
                     updateAchievements(achievements)

@@ -290,6 +290,35 @@ export const ACHIEVEMENTS: Achievement[] = [
     reward: { gold: 500, reputation: 100 },
   },
 
+  // Weather combat achievements
+  {
+    id: 'special_storm_warrior',
+    name: 'Storm Warrior',
+    description: 'Win 5 combats during adverse weather',
+    category: 'special',
+    requirement: 5,
+    icon: '🌧️',
+    reward: { gold: 30, reputation: 5 },
+  },
+  {
+    id: 'special_tempest_champion',
+    name: 'Tempest Champion',
+    description: 'Win 25 combats during adverse weather',
+    category: 'special',
+    requirement: 25,
+    icon: '⛈️',
+    reward: { gold: 100, reputation: 15 },
+  },
+  {
+    id: 'special_storm_boss',
+    name: 'Eye of the Storm',
+    description: 'Defeat a boss during adverse weather',
+    category: 'special',
+    requirement: 1,
+    icon: '🌪️',
+    reward: { gold: 75, reputation: 10 },
+  },
+
   // Spell Combo achievements
   {
     id: 'combo_first_combo',
