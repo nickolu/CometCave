@@ -290,9 +290,7 @@ export function useResolveDecisionMutation() {
         updateSelectedCharacter(data.updatedCharacter)
       }
 
-      const rewardItems = data.rewardItems ?? []
-
-      for (const reward of rewardItems) {
+      const rewardItems = (data.rewardItems ?? []).map(reward => {
         const item = inferItemTypeAndEffects({
           id: reward.id,
           name: reward.name,
@@ -300,7 +298,8 @@ export function useResolveDecisionMutation() {
           quantity: 1,
         })
         addItem(item)
-      }
+        return item
+      })
 
       const newStoryEvent = {
         decisionPoint,
@@ -315,6 +314,7 @@ export function useResolveDecisionMutation() {
           ? `You chose to fight: ${data.selectedOptionText}`
           : (data.outcomeDescription ?? ''),
         resourceDelta: data.resourceDelta,
+        rewardItems: rewardItems,
       }
 
       // Append mount damage/death messages to outcome description
@@ -406,7 +406,7 @@ export function useResolveDecisionMutation() {
       }
 
       onResult?.({
-        outcomeDescription: newStoryEvent.outcomeDescription,
+        outcomeDescription: data.outcomeDescription ?? '',
         resourceDelta: data.resourceDelta,
         rewardItems: rewardItems,
         mountDamage: data.mountDamage,
