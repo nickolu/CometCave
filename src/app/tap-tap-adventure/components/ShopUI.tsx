@@ -77,6 +77,7 @@ export function ShopUI() {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState<ShopTab>('buy')
+  const [sortBy, setSortBy] = useState<'default' | 'price-low' | 'price-high' | 'rarity' | 'type'>('default')
   const [pendingMount, setPendingMount] = useState<{ mount: Mount; oldMountName?: string } | null>(null)
 
   const shopState = gameState.shopState
@@ -258,6 +259,16 @@ export function ShopUI() {
 
   const sellableItems = character.inventory.filter(i => i.status !== 'deleted' && i.quantity > 0)
 
+  const RARITY_ORDER: Record<string, number> = { legendary: 4, epic: 3, rare: 2, uncommon: 1, common: 0 }
+
+  const sortedShopItems = [...shopState.items].sort((a, b) => {
+    if (sortBy === 'price-low') return (a.price ?? 0) - (b.price ?? 0)
+    if (sortBy === 'price-high') return (b.price ?? 0) - (a.price ?? 0)
+    if (sortBy === 'rarity') return (RARITY_ORDER[b.rarity ?? 'common'] ?? 0) - (RARITY_ORDER[a.rarity ?? 'common'] ?? 0)
+    if (sortBy === 'type') return (a.type ?? 'misc').localeCompare(b.type ?? 'misc')
+    return 0
+  })
+
   return (
     <div className="space-y-4">
       <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
@@ -306,6 +317,26 @@ export function ShopUI() {
       {/* Buy tab */}
       {activeTab === 'buy' && (
         <div className="space-y-3">
+          <div className="flex gap-1 items-center flex-wrap text-[10px]">
+            <span className="text-slate-500">Sort:</span>
+            {([
+              ['default', 'Default'],
+              ['price-low', 'Price \u2191'],
+              ['price-high', 'Price \u2193'],
+              ['rarity', 'Rarity'],
+              ['type', 'Type'],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                className={`px-1.5 py-0.5 rounded transition-colors ${
+                  sortBy === key ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+                }`}
+                onClick={() => setSortBy(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {/* Mount for sale */}
           {shopState.shopMount && (() => {
             const { mount, price } = shopState.shopMount
@@ -354,7 +385,7 @@ export function ShopUI() {
             )
           })()}
 
-          {shopState.items.map(item => {
+          {sortedShopItems.map(item => {
             const canAfford = character.gold >= (item.price ?? 0)
             return (
               <div
