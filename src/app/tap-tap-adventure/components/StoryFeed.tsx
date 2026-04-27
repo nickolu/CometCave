@@ -161,10 +161,16 @@ export function StoryFeed({
 }) {
   const feedRef = useRef<HTMLDivElement>(null)
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null)
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const filteredEvents = events.filter(
-    e => !filterCharacterId || e.characterId === filterCharacterId
-  )
+  const filteredEvents = events.filter(e => {
+    if (filterCharacterId && e.characterId !== filterCharacterId) return false
+    if (eventTypeFilter === 'combat' && !e.type.startsWith('combat') && e.type !== 'boss_guardian_victory') return false
+    if (eventTypeFilter === 'decision' && e.type !== 'decision_result') return false
+    if (searchQuery && !e.outcomeDescription?.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    return true
+  })
 
   const newestEvent = filteredEvents.length > 0 ? filteredEvents[filteredEvents.length - 1] : null
   const newestEventId = newestEvent ? newestEvent.id : null
@@ -198,6 +204,35 @@ export function StoryFeed({
       ref={feedRef}
       className="border border-slate-700 rounded-lg max-h-64 sm:max-h-80 md:max-h-[calc(100vh-479px)] overflow-y-auto flex p-2 space-y-2 flex-col bg-slate-900"
     >
+      <div className="flex flex-wrap gap-1 items-center sticky top-0 bg-slate-900 z-10 pb-1">
+        {[
+          { value: 'all', label: 'All' },
+          { value: 'combat', label: 'Combat' },
+          { value: 'decision', label: 'Decisions' },
+        ].map(f => (
+          <button
+            key={f.value}
+            onClick={() => setEventTypeFilter(f.value)}
+            className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+              eventTypeFilter === f.value
+                ? 'bg-indigo-700/50 text-indigo-200'
+                : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="flex-1 min-w-[80px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"
+        />
+      </div>
+      {filteredEvents.length === 0 && events.length > 0 && (
+        <div className="text-xs text-slate-500 italic text-center py-2">No matching events.</div>
+      )}
       {filteredEvents.reverse().map(storyEvent => {
         const isHighlighted = highlightedEventId === storyEvent.id
         const allRewardItems = [
