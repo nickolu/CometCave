@@ -81,10 +81,17 @@ function RunCard({ character }: { character: FantasyCharacter }) {
 export function RunHistoryPanel() {
   const { gameState } = useGameStore()
   const [isExpanded, setIsExpanded] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'dead' | 'retired'>('all')
+  const [sortBy, setSortBy] = useState<'level' | 'distance' | 'gold'>('level')
 
   const pastRuns = (gameState.characters ?? [])
     .filter(c => c.status === 'dead' || c.status === 'retired')
-    .sort((a, b) => (b.level ?? 0) - (a.level ?? 0))
+    .filter(c => statusFilter === 'all' || c.status === statusFilter)
+    .sort((a, b) => {
+      if (sortBy === 'distance') return (b.distance ?? 0) - (a.distance ?? 0)
+      if (sortBy === 'gold') return (b.gold ?? 0) - (a.gold ?? 0)
+      return (b.level ?? 0) - (a.level ?? 0)
+    })
 
   return (
     <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg overflow-hidden">
@@ -103,6 +110,27 @@ export function RunHistoryPanel() {
 
       {isExpanded && (
         <div className="p-3 space-y-2">
+          <div className="flex flex-wrap gap-1 items-center text-[10px]">
+            {([['all', 'All'], ['dead', '💀 Slain'], ['retired', '🏆 Retired']] as const).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setStatusFilter(val)}
+                className={`px-1.5 py-0.5 rounded transition-colors ${statusFilter === val ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'}`}
+              >
+                {label}
+              </button>
+            ))}
+            <span className="text-slate-600 mx-1">|</span>
+            {([['level', 'Level'], ['distance', 'Distance'], ['gold', 'Gold']] as const).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setSortBy(val)}
+                className={`px-1.5 py-0.5 rounded transition-colors ${sortBy === val ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {pastRuns.length === 0 ? (
             <p className="text-xs text-slate-500 text-center py-4">
               No completed runs yet. Your fallen and retired characters will appear here.
