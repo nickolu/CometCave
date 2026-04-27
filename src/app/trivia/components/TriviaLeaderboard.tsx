@@ -7,6 +7,8 @@ import { getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
+import { SignInBanner } from './SignInCTA'
+
 type Period = 'daily' | 'weekly' | 'alltime'
 
 interface DailyEntry {
@@ -170,6 +172,10 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
           </p>
         ) : null}
       </div>
+
+      {!authName && (
+        <SignInBanner message="Log in to see your rank and compete" cta="Sign in" />
+      )}
 
       {/* Tabs */}
       <div className="grid grid-cols-3 gap-2">

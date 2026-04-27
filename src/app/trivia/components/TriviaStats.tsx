@@ -1,9 +1,12 @@
 'use client'
 
+import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { formatDisplayDate } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+
+import { SignInCard } from './SignInCTA'
 
 const MAX_SCORE_PER_GAME = 3150
 
@@ -14,6 +17,7 @@ function getAccuracyColor(accuracy: number): string {
 }
 
 export function TriviaStats({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth()
   const { userData: firestoreUser } = useTriviaUser()
   const stats = firestoreUser.stats
   const history = firestoreUser.history
@@ -37,14 +41,21 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
     return (
       <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
         <h2 className="text-3xl font-bold text-space-gold">My Stats</h2>
-        <Card className="w-full bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-6 text-center">
-            <p className="text-cream-white/70 text-lg mb-2">No games played yet</p>
-            <p className="text-cream-white/50 text-sm">
-              Play your first daily trivia to start building your stats!
-            </p>
-          </CardContent>
-        </Card>
+        {user ? (
+          <Card className="w-full bg-space-dark/80 border-space-grey">
+            <CardContent className="pt-6 text-center">
+              <p className="text-cream-white/70 text-lg mb-2">No games played yet</p>
+              <p className="text-cream-white/50 text-sm">
+                Play your first daily trivia to start building your stats!
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <SignInCard
+            title="📊 Your stats will appear here"
+            description="Sign in to start tracking your scores, streaks, and history."
+          />
+        )}
         <Button variant="outline" onClick={onBack} className="w-full">
           Back to Trivia
         </Button>
