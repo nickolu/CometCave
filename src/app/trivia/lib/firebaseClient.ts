@@ -1,5 +1,6 @@
 import { type FirebaseApp, getApps, initializeApp } from 'firebase/app'
 import { type Auth, getAuth } from 'firebase/auth'
+import { type Firestore, getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -9,6 +10,7 @@ const firebaseConfig = {
 
 let _app: FirebaseApp | null = null
 let _auth: Auth | null = null
+let _firestore: Firestore | null = null
 
 export function isFirebaseAuthConfigured(): boolean {
   return Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId)
@@ -29,4 +31,15 @@ export function getFirebaseAuth(): Auth {
   }
   _auth = getAuth(getApp())
   return _auth
+}
+
+export function getFirebaseFirestore(): Firestore {
+  if (_firestore) return _firestore
+  if (!isFirebaseAuthConfigured()) {
+    throw new Error(
+      'Firebase client config missing. Set NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, and NEXT_PUBLIC_FIREBASE_PROJECT_ID.'
+    )
+  }
+  _firestore = getFirestore(getApp())
+  return _firestore
 }

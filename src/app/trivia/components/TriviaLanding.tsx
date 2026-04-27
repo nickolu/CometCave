@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
+import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
+import { formatDisplayDate, getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-import { useTriviaStore } from '../hooks/useTriviaStore'
-import { formatDisplayDate, getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 
 import { NamePrompt } from './NamePrompt'
 
@@ -22,12 +22,25 @@ export function TriviaLanding({
   onViewStats?: () => void
   onViewLeaderboard?: () => void
 }) {
-  const { userData, canPlayToday, setDisplayName, skipName } = useTriviaStore()
+  const { userData: localUser, canPlayToday: canPlayLocal, setDisplayName, skipName } =
+    useTriviaStore()
+  const {
+    userData: firestoreUser,
+    canPlayToday: canPlayFirestore,
+    loading: firestoreLoading,
+  } = useTriviaUser()
   const { user, loading: authLoading, configured: authConfigured } = useAuth()
   const [showChangeName, setShowChangeName] = useState(false)
-  const needsNamePrompt = !userData.displayName && !userData.nameSkipped
+
+  const stats = user ? firestoreUser.stats : localUser.stats
   const todayStr = getTodayPST()
-  const alreadyPlayed = !canPlayToday()
+  const todayHistoryEntry = user
+    ? firestoreUser.history.find((h) => h.date === todayStr) ?? null
+    : localUser.history.find((h) => h.date === todayStr) ?? null
+  const alreadyPlayed = user ? !canPlayFirestore() : !canPlayLocal()
+  const showNamePrompt = !user && !localUser.displayName && !localUser.nameSkipped
+  const showPlayingAs = !user && !!localUser.displayName
+  const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
 
   return (
@@ -73,12 +86,12 @@ export function TriviaLanding({
         </div>
       </div>
 
-      {needsNamePrompt ? (
+      {showNamePrompt ? (
         <NamePrompt onSave={setDisplayName} onSkip={skipName} />
-      ) : userData.displayName && !showChangeName ? (
+      ) : showPlayingAs && !showChangeName ? (
         <div className="w-full text-center text-cream-white/60 text-sm">
           Playing as{' '}
-          <span className="text-space-gold font-semibold">{userData.displayName}</span>
+          <span className="text-space-gold font-semibold">{localUser.displayName}</span>
           {' · '}
           <button
             onClick={() => setShowChangeName(true)}
@@ -90,7 +103,7 @@ export function TriviaLanding({
       ) : showChangeName ? (
         <NamePrompt
           showSkip={false}
-          initialName={userData.displayName ?? ''}
+          initialName={localUser.displayName ?? ''}
           title="Change display name"
           onSave={(name) => { setDisplayName(name); setShowChangeName(false) }}
           onSkip={() => setShowChangeName(false)}
@@ -100,7 +113,11 @@ export function TriviaLanding({
       <Card className="w-full bg-space-dark/80 border-space-grey">
         <CardHeader>
           <CardTitle className="text-cream-white text-center">
-            {alreadyPlayed ? "You've already played today!" : 'Ready to test your knowledge?'}
+            {showFirestoreLoadingHint
+              ? 'Loading your progress…'
+              : alreadyPlayed
+                ? "You've already played today!"
+                : 'Ready to test your knowledge?'}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
@@ -108,21 +125,20 @@ export function TriviaLanding({
             variant="space"
             size="lg"
             className="w-full text-lg py-6"
-            disabled={alreadyPlayed}
+            disabled={alreadyPlayed || showFirestoreLoadingHint}
             onClick={onStartGame}
           >
             {alreadyPlayed ? 'Come Back Tomorrow' : "Start Today's Trivia"}
           </Button>
 
-          {alreadyPlayed && userData.history.length > 0 && (
+          {alreadyPlayed && todayHistoryEntry && (
             <div className="text-center text-cream-white/60 text-sm">
               Today&apos;s score:{' '}
               <span className="text-space-gold font-semibold">
-                {userData.history[userData.history.length - 1].score} pts
+                {todayHistoryEntry.score} pts
               </span>
               {' · '}
-              {userData.history[userData.history.length - 1].correct}/
-              {userData.history[userData.history.length - 1].total} correct
+              {todayHistoryEntry.correct}/{todayHistoryEntry.total} correct
             </div>
           )}
         </CardContent>
@@ -132,33 +148,27 @@ export function TriviaLanding({
       <div className="grid grid-cols-2 gap-4 w-full">
         <Card className="bg-space-dark/80 border-space-grey">
           <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-space-gold">
-              {userData.stats.currentStreak}
-            </div>
+            <div className="text-3xl font-bold text-space-gold">{stats.currentStreak}</div>
             <div className="text-cream-white/60 text-sm">Current Streak</div>
           </CardContent>
         </Card>
         <Card className="bg-space-dark/80 border-space-grey">
           <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-space-purple-light">
-              {userData.stats.bestStreak}
-            </div>
+            <div className="text-3xl font-bold text-space-purple-light">{stats.bestStreak}</div>
             <div className="text-cream-white/60 text-sm">Best Streak</div>
           </CardContent>
         </Card>
         <Card className="bg-space-dark/80 border-space-grey">
           <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-cream-white">
-              {userData.stats.gamesPlayed}
-            </div>
+            <div className="text-3xl font-bold text-cream-white">{stats.gamesPlayed}</div>
             <div className="text-cream-white/60 text-sm">Games Played</div>
           </CardContent>
         </Card>
         <Card className="bg-space-dark/80 border-space-grey">
           <CardContent className="pt-6 text-center">
             <div className="text-3xl font-bold text-cream-white">
-              {userData.stats.totalQuestions > 0
-                ? Math.round((userData.stats.totalCorrect / userData.stats.totalQuestions) * 100)
+              {stats.totalQuestions > 0
+                ? Math.round((stats.totalCorrect / stats.totalQuestions) * 100)
                 : 0}
               %
             </div>

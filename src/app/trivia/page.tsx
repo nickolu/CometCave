@@ -1,36 +1,46 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { TriviaLanding } from './components/TriviaLanding'
+import { useEffect, useState } from 'react'
+
+import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
+import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
+import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+
 import { TriviaGame } from './components/TriviaGame'
+import { TriviaLanding } from './components/TriviaLanding'
+import { TriviaLeaderboard } from './components/TriviaLeaderboard'
 import { TriviaResults } from './components/TriviaResults'
 import { TriviaStats } from './components/TriviaStats'
-import { TriviaLeaderboard } from './components/TriviaLeaderboard'
-import { useTriviaStore } from './hooks/useTriviaStore'
-import { getTodayPST } from './lib/triviaUtils'
+
 import type { TriviaGameResult } from './models/trivia'
 
 type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard'
 
 export default function TriviaPage() {
-  const { recordGame, userData } = useTriviaStore()
+  const { user } = useAuth()
+  const { recordGame, userData: localUser } = useTriviaStore()
+  const {
+    userData: firestoreUser,
+    saveGameResult: saveToFirestore,
+    loading: firestoreLoading,
+  } = useTriviaUser()
 
-  const getTodayResult = (): TriviaGameResult | null => {
-    const today = getTodayPST()
-    return userData.history.find((h) => h.date === today) ?? null
-  }
+  const today = getTodayPST()
+  const todayLocal = localUser.history.find((h) => h.date === today) ?? null
+  const todayFirestore = firestoreUser.history.find((h) => h.date === today) ?? null
+  const todayResult = user ? todayFirestore : todayLocal
 
-  const todayResult = getTodayResult()
-  const [view, setView] = useState<View>(todayResult ? 'results' : 'landing')
-  const [lastResult, setLastResult] = useState<TriviaGameResult | null>(todayResult)
+  const [view, setView] = useState<View>('landing')
+  const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
 
   useEffect(() => {
-    const result = getTodayResult()
-    if (result && view === 'landing') {
-      setLastResult(result)
+    if (user && firestoreLoading) return
+    if (todayResult && view === 'landing') {
+      setLastResult(todayResult)
       setView('results')
     }
-  }, [userData.history])
+  }, [user, firestoreLoading, todayResult, view])
 
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => setView('stats')
@@ -38,23 +48,13 @@ export default function TriviaPage() {
 
   const handleFinish = (result: TriviaGameResult) => {
     recordGame(result)
+    if (user) {
+      saveToFirestore(result).catch((err) =>
+        console.error('Failed to save trivia result to Firestore:', err)
+      )
+    }
     setLastResult(result)
     setView('results')
-
-    // Submit score to leaderboard if user has a display name (fire and forget)
-    if (userData.displayName) {
-      fetch('/api/v1/trivia/submit-score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          displayName: userData.displayName,
-          date: result.date,
-          score: result.score,
-          correct: result.correct,
-          total: result.total,
-        }),
-      }).catch((err) => console.error('Failed to submit score:', err))
-    }
   }
 
   const handleBackToLanding = () => setView('landing')
