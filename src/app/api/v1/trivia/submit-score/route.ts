@@ -1,26 +1,44 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+
+import { getFirebaseAuthAdmin } from '@/app/trivia/lib/firebase'
 import { submitScore } from '@/app/trivia/lib/leaderboardStore'
+import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 
 const MAX_SCORE = 3150
 const MAX_NAME_LENGTH = 20
 
+function deriveDisplayName(token: { name?: string; email?: string }): string | null {
+  const candidate = (token.name ?? token.email ?? '').trim()
+  if (!candidate) return null
+  return candidate.slice(0, MAX_NAME_LENGTH)
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { displayName, date, score, correct, total } = body
-
-    // Validation
-    if (!displayName || typeof displayName !== 'string') {
-      return NextResponse.json({ error: 'displayName is required.' }, { status: 400 })
+    const authHeader = request.headers.get('authorization') ?? request.headers.get('Authorization')
+    const match = authHeader?.match(/^Bearer\s+(.+)$/i)
+    if (!match) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
     }
-    const trimmedName = displayName.trim()
-    if (trimmedName.length === 0 || trimmedName.length > MAX_NAME_LENGTH) {
+    const idToken = match[1]
+
+    let decoded: { uid: string; name?: string; email?: string }
+    try {
+      decoded = await getFirebaseAuthAdmin().verifyIdToken(idToken)
+    } catch {
+      return NextResponse.json({ error: 'Invalid auth token.' }, { status: 401 })
+    }
+
+    const displayName = deriveDisplayName(decoded)
+    if (!displayName) {
       return NextResponse.json(
-        { error: `displayName must be 1-${MAX_NAME_LENGTH} characters.` },
+        { error: 'Account is missing a display name. Update your profile and try again.' },
         { status: 400 }
       )
     }
+
+    const body = await request.json()
+    const { date, score, correct, total } = body
 
     if (typeof score !== 'number' || score < 0 || score > MAX_SCORE) {
       return NextResponse.json(
@@ -34,14 +52,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (date !== getTodayPST()) {
-      return NextResponse.json(
-        { error: 'Can only submit scores for today.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Can only submit scores for today.' }, { status: 400 })
     }
 
     const result = await submitScore({
-      displayName: trimmedName,
+      displayName,
       date,
       score,
       correct,
@@ -52,13 +67,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       stored: result.stored,
       previousScore: result.previous?.score ?? null,
+      displayName,
     })
   } catch (error: unknown) {
     console.error('Error submitting score:', error)
-    // Don't block the user if Firestore is temporarily unavailable
     const errMsg = error instanceof Error ? error.message : String(error)
     if (errMsg.includes('FAILED_PRECONDITION') || errMsg.includes('index')) {
-      return NextResponse.json({ stored: false, previousScore: null, notice: 'Leaderboard is initializing.' })
+      return NextResponse.json({
+        stored: false,
+        previousScore: null,
+        notice: 'Leaderboard is initializing.',
+      })
     }
     return NextResponse.json({ error: 'Failed to submit score.' }, { status: 500 })
   }
