@@ -2,7 +2,7 @@
 
 import { FirebaseError } from 'firebase/app'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, Suspense, useEffect, useState } from 'react'
 
 import { AuthProvider, useAuth } from '@/app/trivia/hooks/useAuth'
 import { Button } from '@/components/ui/button'

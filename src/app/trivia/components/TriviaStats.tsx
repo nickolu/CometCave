@@ -1,7 +1,5 @@
 'use client'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
-import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { formatDisplayDate } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
@@ -16,11 +14,9 @@ function getAccuracyColor(accuracy: number): string {
 }
 
 export function TriviaStats({ onBack }: { onBack: () => void }) {
-  const { user } = useAuth()
-  const { userData: localUser } = useTriviaStore()
   const { userData: firestoreUser } = useTriviaUser()
-  const stats = user ? firestoreUser.stats : localUser.stats
-  const history = user ? firestoreUser.history : localUser.history
+  const stats = firestoreUser.stats
+  const history = firestoreUser.history
 
   const accuracy =
     stats.totalQuestions > 0

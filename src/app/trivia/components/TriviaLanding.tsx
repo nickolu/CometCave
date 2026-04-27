@@ -2,16 +2,12 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
-import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { formatDisplayDate, getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-import { NamePrompt } from './NamePrompt'
 
 export function TriviaLanding({
   onStartGame,
@@ -22,24 +18,19 @@ export function TriviaLanding({
   onViewStats?: () => void
   onViewLeaderboard?: () => void
 }) {
-  const { userData: localUser, canPlayToday: canPlayLocal, setDisplayName, skipName } =
-    useTriviaStore()
+  const { user, loading: authLoading, configured: authConfigured } = useAuth()
   const {
     userData: firestoreUser,
     canPlayToday: canPlayFirestore,
     loading: firestoreLoading,
   } = useTriviaUser()
-  const { user, loading: authLoading, configured: authConfigured } = useAuth()
-  const [showChangeName, setShowChangeName] = useState(false)
 
-  const stats = user ? firestoreUser.stats : localUser.stats
+  const stats = firestoreUser.stats
   const todayStr = getTodayPST()
   const todayHistoryEntry = user
     ? firestoreUser.history.find((h) => h.date === todayStr) ?? null
-    : localUser.history.find((h) => h.date === todayStr) ?? null
-  const alreadyPlayed = user ? !canPlayFirestore() : !canPlayLocal()
-  const showNamePrompt = !user && !localUser.displayName && !localUser.nameSkipped
-  const showPlayingAs = !user && !!localUser.displayName
+    : null
+  const alreadyPlayed = user ? !canPlayFirestore() : false
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
 
@@ -85,30 +76,6 @@ export function TriviaLanding({
           <span>{category.name}</span>
         </div>
       </div>
-
-      {showNamePrompt ? (
-        <NamePrompt onSave={setDisplayName} onSkip={skipName} />
-      ) : showPlayingAs && !showChangeName ? (
-        <div className="w-full text-center text-cream-white/60 text-sm">
-          Playing as{' '}
-          <span className="text-space-gold font-semibold">{localUser.displayName}</span>
-          {' · '}
-          <button
-            onClick={() => setShowChangeName(true)}
-            className="text-space-gold/70 hover:text-space-gold hover:underline underline-offset-4 transition-colors"
-          >
-            change
-          </button>
-        </div>
-      ) : showChangeName ? (
-        <NamePrompt
-          showSkip={false}
-          initialName={localUser.displayName ?? ''}
-          title="Change display name"
-          onSave={(name) => { setDisplayName(name); setShowChangeName(false) }}
-          onSkip={() => setShowChangeName(false)}
-        />
-      ) : null}
 
       <Card className="w-full bg-space-dark/80 border-space-grey">
         <CardHeader>

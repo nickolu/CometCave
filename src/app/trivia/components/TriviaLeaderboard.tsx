@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+
+import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { useTriviaStore } from '../hooks/useTriviaStore'
-import { getDailyCategory, getTodayPST } from '../lib/triviaUtils'
 
 type Period = 'daily' | 'weekly' | 'alltime'
 
@@ -32,17 +32,16 @@ interface AllTimeEntry {
 }
 
 export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
-  const { userData, setDisplayName } = useTriviaStore()
+  const { user } = useAuth()
   const [period, setPeriod] = useState<Period>('daily')
   const [loading, setLoading] = useState(true)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showNameDialog, setShowNameDialog] = useState(!userData.displayName && !userData.nameSkipped)
-  const [nameInput, setNameInput] = useState(userData.displayName ?? '')
   const [copied, setCopied] = useState(false)
 
-  const currentName = userData.displayName?.toLowerCase().trim() ?? ''
+  const authName = user?.displayName ?? user?.email ?? null
+  const currentName = authName?.toLowerCase().trim() ?? ''
 
   useEffect(() => {
     async function load() {
@@ -61,14 +60,6 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     }
     load()
   }, [period])
-
-  const handleSaveName = () => {
-    const trimmed = nameInput.trim()
-    if (trimmed.length > 0 && trimmed.length <= 20) {
-      setDisplayName(trimmed)
-      setShowNameDialog(false)
-    }
-  }
 
   const handleShareLeaderboard = async () => {
     if (!data?.entries || data.entries.length === 0) return
@@ -173,27 +164,11 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col gap-4 max-w-lg mx-auto py-6">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-space-gold mb-1">Leaderboard</h2>
-        {userData.displayName ? (
+        {authName ? (
           <p className="text-cream-white/50 text-sm">
-            Playing as{' '}
-            <button
-              onClick={() => setShowNameDialog(true)}
-              className="text-space-gold hover:underline"
-            >
-              {userData.displayName}
-            </button>
+            Playing as <span className="text-space-gold">{authName}</span>
           </p>
-        ) : (
-          <p className="text-cream-white/50 text-sm">
-            <button
-              onClick={() => setShowNameDialog(true)}
-              className="text-space-gold hover:underline"
-            >
-              Set your display name
-            </button>{' '}
-            to appear on the leaderboard
-          </p>
-        )}
+        ) : null}
       </div>
 
       {/* Tabs */}
@@ -237,51 +212,6 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
       <Button variant="outline" onClick={onBack} className="w-full">
         Back to Trivia
       </Button>
-
-      {/* Name dialog */}
-      {showNameDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <Card className="w-full max-w-md bg-space-dark border-space-grey">
-            <CardContent className="pt-6 flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-space-gold text-center">
-                {userData.displayName ? 'Change Display Name' : 'Set Display Name'}
-              </h3>
-              <p className="text-cream-white/60 text-sm text-center">
-                This name will appear on the leaderboard (1-20 characters).
-              </p>
-              <Input
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value.slice(0, 20))}
-                placeholder="Your display name"
-                className="bg-space-black/50 border-space-grey text-cream-white"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveName()
-                }}
-                autoFocus
-              />
-              <div className="flex gap-2">
-                {userData.displayName && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowNameDialog(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                )}
-                <Button
-                  variant="space"
-                  onClick={handleSaveName}
-                  disabled={nameInput.trim().length === 0}
-                  className="flex-1"
-                >
-                  Save
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }

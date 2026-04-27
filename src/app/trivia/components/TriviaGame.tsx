@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import type { CheckAnswerResponse, TriviaQuestion } from '@/app/trivia/models/questions'
+import type { TriviaAnswer, TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { useTriviaStore } from '../hooks/useTriviaStore'
-import { getTodayPST } from '../lib/triviaUtils'
-import type { TriviaQuestion, CheckAnswerResponse } from '../models/questions'
-import type { TriviaAnswer, TriviaGameResult } from '../models/trivia'
 
 // Scoring config per difficulty
 const SCORING = {
