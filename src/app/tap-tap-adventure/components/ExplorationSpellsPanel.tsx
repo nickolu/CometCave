@@ -29,9 +29,14 @@ export function ExplorationSpellsPanel() {
   const { castExplorationSpell } = useGameStore()
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [feedbackSuccess, setFeedbackSuccess] = useState(true)
+  const [schoolFilter, setSchoolFilter] = useState<string>('all')
+  const [sortByMana, setSortByMana] = useState(false)
 
   const spellbook = character?.spellbook ?? []
-  const explorationSpells = spellbook.filter(s => s.explorationEffect)
+  const explorationSpells = spellbook
+    .filter(s => s.explorationEffect)
+    .filter(s => schoolFilter === 'all' || s.school === schoolFilter)
+    .sort((a, b) => sortByMana ? (a.explorationManaCost ?? a.manaCost) - (b.explorationManaCost ?? b.manaCost) : 0)
   const currentMana = character?.mana ?? 0
   const activeSpells = character?.activeExplorationSpells ?? []
 
@@ -62,6 +67,31 @@ export function ExplorationSpellsPanel() {
           )}
           <span className="text-xs text-blue-300">{currentMana} MP available</span>
         </div>
+      </div>
+      <div className="flex flex-wrap gap-1 items-center">
+        {['all', 'arcane', 'nature', 'shadow', 'war'].map(school => (
+          <button
+            key={school}
+            onClick={() => setSchoolFilter(school)}
+            className={`text-[10px] px-1.5 py-0.5 rounded capitalize transition-colors ${
+              schoolFilter === school
+                ? 'bg-indigo-700/50 text-indigo-200'
+                : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+            }`}
+          >
+            {school}
+          </button>
+        ))}
+        <button
+          onClick={() => setSortByMana(!sortByMana)}
+          className={`text-[10px] px-1.5 py-0.5 rounded ml-auto transition-colors ${
+            sortByMana
+              ? 'bg-blue-700/50 text-blue-200'
+              : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
+          }`}
+        >
+          {sortByMana ? 'MP ↑' : 'Sort: MP'}
+        </button>
       </div>
       {activeSpells.length > 0 && (
         <div className="bg-[#14152a] border border-violet-700/40 rounded-lg p-2 space-y-1">
