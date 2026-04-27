@@ -2,7 +2,7 @@
 
 import { FirebaseError } from 'firebase/app'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { type FormEvent, useEffect, useState } from 'react'
+import { Suspense, type FormEvent, useEffect, useState } from 'react'
 
 import { AuthProvider, useAuth } from '@/app/trivia/hooks/useAuth'
 import { Button } from '@/components/ui/button'
@@ -183,7 +183,9 @@ function formatAuthError(err: unknown): string {
 export default function AuthPage() {
   return (
     <AuthProvider>
-      <AuthPageInner />
+      <Suspense fallback={null}>
+        <AuthPageInner />
+      </Suspense>
     </AuthProvider>
   )
 }
