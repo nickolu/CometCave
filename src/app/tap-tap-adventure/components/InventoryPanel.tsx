@@ -33,6 +33,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [rarityFilter, setRarityFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'default' | 'name' | 'type' | 'value' | 'rarity'>('default')
   const [detailItem, setDetailItem] = useState<Item | null>(null)
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -109,6 +110,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       if (item.status !== 'deleted') return false
     }
     if (typeFilter !== 'all' && item.type !== typeFilter) return false
+    if (rarityFilter !== 'all' && (item.rarity ?? 'common') !== rarityFilter) return false
     return true
   })
 
@@ -164,6 +166,34 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
                 typeFilter === f.value
                   ? 'bg-indigo-600 text-white'
                   : 'bg-[#2a2b3f] text-gray-400 hover:text-white'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {activeTab === 'active' && (
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+          {[
+            { value: 'all', label: 'All Rarity' },
+            { value: 'common', label: 'Common' },
+            { value: 'uncommon', label: 'Uncommon' },
+            { value: 'rare', label: 'Rare' },
+            { value: 'epic', label: 'Epic' },
+            { value: 'legendary', label: 'Legendary' },
+          ].map(f => (
+            <button
+              key={f.value}
+              onClick={() => setRarityFilter(f.value)}
+              className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                rarityFilter === f.value
+                  ? 'bg-indigo-600 text-white'
+                  : `bg-[#2a2b3f] hover:text-white ${
+                      f.value !== 'all' && f.value !== 'common'
+                        ? RARITY_COLORS[f.value]?.text ?? 'text-gray-400'
+                        : 'text-gray-400'
+                    }`
               }`}
             >
               {f.label}
