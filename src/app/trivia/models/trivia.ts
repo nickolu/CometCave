@@ -20,13 +20,4 @@ export interface TriviaStats {
   totalQuestions: number
   currentStreak: number
   bestStreak: number
-  weeklyWins: number
-}
-
-export interface TriviaUserData {
-  displayName: string | null
-  nameSkipped: boolean
-  stats: TriviaStats
-  history: TriviaGameResult[]
-  lastPlayedDate: string | null
 }

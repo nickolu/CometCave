@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
-import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { formatDisplayDate, getDailyCategory } from '@/app/trivia/lib/triviaUtils'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
@@ -67,20 +66,6 @@ function useCountdown() {
   return timeLeft
 }
 
-// Difficulty badge styling
-const diffBadge: Record<string, string> = {
-  easy: 'bg-green-600/30 text-green-400 border border-green-600/50',
-  medium: 'bg-yellow-600/30 text-yellow-400 border border-yellow-600/50',
-  hard: 'bg-red-600/30 text-red-400 border border-red-600/50',
-}
-
-// Scoring config to show difficulty in breakdown
-const SCORING_CONFIG: Record<string, { maxPoints: number }> = {
-  easy: { maxPoints: 300 },
-  medium: { maxPoints: 450 },
-  hard: { maxPoints: 600 },
-}
-
 interface TriviaResultsProps {
   result: TriviaGameResult
   onBack: () => void
@@ -94,8 +79,7 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
   const [copied, setCopied] = useState(false)
   const { user } = useAuth()
   const { userData: firestoreUser } = useTriviaUser()
-  const { userData: localUser } = useTriviaStore()
-  const currentStreak = user ? firestoreUser.stats.currentStreak : localUser.stats.currentStreak
+  const currentStreak = firestoreUser.stats.currentStreak
   const [scoreSubmitted, setScoreSubmitted] = useState(false)
   const countdown = useCountdown()
 

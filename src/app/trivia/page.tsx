@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
-import { useTriviaStore } from '@/app/trivia/hooks/useTriviaStore'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 
@@ -19,7 +18,6 @@ type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard'
 
 export default function TriviaPage() {
   const { user } = useAuth()
-  const { recordGame, userData: localUser } = useTriviaStore()
   const {
     userData: firestoreUser,
     saveGameResult: saveToFirestore,
@@ -27,9 +25,9 @@ export default function TriviaPage() {
   } = useTriviaUser()
 
   const today = getTodayPST()
-  const todayLocal = localUser.history.find((h) => h.date === today) ?? null
-  const todayFirestore = firestoreUser.history.find((h) => h.date === today) ?? null
-  const todayResult = user ? todayFirestore : todayLocal
+  const todayResult = user
+    ? firestoreUser.history.find((h) => h.date === today) ?? null
+    : null
 
   const [view, setView] = useState<View>('landing')
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
@@ -47,7 +45,6 @@ export default function TriviaPage() {
   const handleViewLeaderboard = () => setView('leaderboard')
 
   const handleFinish = (result: TriviaGameResult) => {
-    recordGame(result)
     if (user) {
       saveToFirestore(result).catch((err) =>
         console.error('Failed to save trivia result to Firestore:', err)
