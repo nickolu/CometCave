@@ -828,6 +828,25 @@ export function CombatUI({ combatState }: CombatUIProps) {
                       </span>
                     </div>
                   </div>
+                  {spell.effects && spell.effects.length > 0 && (() => {
+                    const dmg = spell.effects.filter(e => ['damage', 'true_damage', 'lifesteal'].includes(e.type)).reduce((s, e) => s + e.value, 0)
+                    const heal = spell.effects.filter(e => e.type === 'heal').reduce((s, e) => s + e.value, 0)
+                    const dot = spell.effects.find(e => ['damage_over_time', 'apply_poison', 'apply_burn', 'bleed'].includes(e.type))
+                    const shield = spell.effects.filter(e => e.type === 'shield').reduce((s, e) => s + e.value, 0)
+                    const parts: string[] = []
+                    if (dmg > 0) parts.push(`${dmg} dmg`)
+                    if (heal > 0) parts.push(`${heal} heal`)
+                    if (shield > 0) parts.push(`${shield} shield`)
+                    if (dot) parts.push(`${dot.value}/${dot.duration ?? 1}t ${dot.type.replace('apply_', '').replace('damage_over_time', 'DoT')}`)
+                    if (parts.length === 0) return null
+                    return (
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px]">
+                        <span className="text-slate-500 capitalize">{spell.school}</span>
+                        <span className="text-amber-300">{parts.join(' + ')}</span>
+                        {!onCooldown && spell.cooldown > 0 && <span className="text-slate-600">{spell.cooldown}t cd</span>}
+                      </div>
+                    )
+                  })()}
                   <div className="text-[10px] text-slate-400 mt-0.5">
                     {spell.description}
                   </div>
