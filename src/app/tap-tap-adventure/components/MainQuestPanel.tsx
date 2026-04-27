@@ -4,6 +4,14 @@ import { getConqueredCount, CONQUERABLE_REGIONS, TOTAL_CONQUERABLE } from '@/app
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
+const DIFF_COLORS: Record<string, string> = {
+  easy: 'bg-green-500',
+  medium: 'bg-yellow-500',
+  hard: 'bg-orange-500',
+  very_hard: 'bg-red-500',
+  extreme: 'bg-purple-500',
+}
+
 export function MainQuestPanel({ character }: { character: FantasyCharacter }) {
   const mainQuest = character.mainQuest
   if (!mainQuest) return null
@@ -46,7 +54,8 @@ export function MainQuestPanel({ character }: { character: FantasyCharacter }) {
           const region = getRegion(regionId)
           const isVisited = visited.includes(regionId)
           return (
-            <div key={regionId} className={`text-[10px] px-1.5 py-0.5 rounded ${isVisited ? 'text-emerald-400 bg-emerald-950/30' : 'text-slate-500 bg-slate-800/50'}`}>
+            <div key={regionId} className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${isVisited ? 'text-emerald-400 bg-emerald-950/30' : 'text-slate-500 bg-slate-800/50'}`}>
+              <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${DIFF_COLORS[region.difficulty] ?? 'bg-slate-500'}`} />
               {region.icon} {region.name} {isVisited ? '✓' : ''}
             </div>
           )
