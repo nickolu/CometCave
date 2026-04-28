@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { LIVES_START, applyAnswer } from '@/app/trivia/lib/infiniteScoring'
 import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 import { getFirestoreDb } from '@/lib/firebase/server'
+import { applyRunToAggregate } from '@/lib/trivia/triviaStats'
 
 export interface RunDoc {
   runId: string
@@ -62,7 +63,7 @@ export async function submitAnswer(params: {
   const seenRef = db.doc(`users/${uid}/seenQuestions/${questionId}`)
   const answeredByRef = db.doc(`aiQuestions/${questionId}/answeredBy/${uid}_${runId}`)
 
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const runSnap = await tx.get(runRef)
     if (!runSnap.exists) throw new Error('Run not found')
     const run = runSnap.data() as RunDoc
@@ -77,7 +78,7 @@ export async function submitAnswer(params: {
     const isTrailblazer = correct && (qData.timesShown ?? 0) === 0
 
     // Compute result using pure function
-    const result = applyAnswer({
+    const txResult = applyAnswer({
       correct,
       trailblazer: isTrailblazer,
       elapsedMs,
@@ -115,7 +116,7 @@ export async function submitAnswer(params: {
     const answerEntry = {
       questionId,
       correct,
-      points: result.points,
+      points: txResult.points,
       timeMs: elapsedMs,
       trailblazer: isTrailblazer,
       answeredAt: now,
@@ -123,22 +124,31 @@ export async function submitAnswer(params: {
 
     // Update run doc
     const runUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
-      score: result.score,
-      livesRemaining: result.livesRemaining,
-      currentStreak: result.currentStreak,
-      longestStreak: result.longestStreak,
+      score: txResult.score,
+      livesRemaining: txResult.livesRemaining,
+      currentStreak: txResult.currentStreak,
+      longestStreak: txResult.longestStreak,
       answers: FieldValue.arrayUnion(answerEntry),
     }
     if (isTrailblazer) {
       runUpdates.trailblazes = FieldValue.increment(1)
     }
-    if (result.runOver) {
+    if (txResult.runOver) {
       runUpdates.endedAt = now
     }
     tx.update(runRef, runUpdates)
 
-    return result
+    return { ...txResult, trailblazer: isTrailblazer }
   })
+
+  // Auto-finalize: apply aggregate stats outside the transaction (no nesting)
+  if (result.runOver) {
+    applyRunToAggregate(uid, runId).catch((err) =>
+      console.error('[submitAnswer] Failed to apply run to aggregate:', err)
+    )
+  }
+
+  return result
 }
 
 export async function endRun(uid: string, runId: string): Promise<void> {
@@ -147,6 +157,17 @@ export async function endRun(uid: string, runId: string): Promise<void> {
   const snap = await runRef.get()
   if (!snap.exists) throw new Error('Run not found')
   const data = snap.data()!
-  if (data.endedAt !== null) return // idempotent
+  if (data.endedAt !== null) {
+    // Run was already ended (e.g. auto-finalized when lives hit 0).
+    // Still attempt to apply stats in case they weren't applied yet
+    // (applyRunToAggregate is idempotent via statsApplied flag).
+    applyRunToAggregate(uid, runId).catch((err) =>
+      console.error('[endRun] Failed to apply run to aggregate:', err)
+    )
+    return
+  }
   await runRef.update({ endedAt: FieldValue.serverTimestamp() })
+  applyRunToAggregate(uid, runId).catch((err) =>
+    console.error('[endRun] Failed to apply run to aggregate:', err)
+  )
 }

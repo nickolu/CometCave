@@ -21,12 +21,14 @@ export function TriviaLanding({
   onViewStats,
   onViewLeaderboard,
   onStartInfinite,
+  onViewInfiniteStats,
   todayResult,
 }: {
   onStartGame?: () => void
   onViewStats?: () => void
   onViewLeaderboard?: () => void
   onStartInfinite?: () => void
+  onViewInfiniteStats?: () => void
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -202,7 +204,7 @@ export function TriviaLanding({
       </div>
 
       {/* Links */}
-      <div className="flex gap-3 text-sm">
+      <div className="flex gap-3 text-sm flex-wrap justify-center">
         <button
           onClick={onViewStats}
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
@@ -215,6 +217,13 @@ export function TriviaLanding({
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           Leaderboard
+        </button>
+        <span className="text-on-surface/20">·</span>
+        <button
+          onClick={onViewInfiniteStats}
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
+        >
+          Infinite Stats
         </button>
       </div>
 
