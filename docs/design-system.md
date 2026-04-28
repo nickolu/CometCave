@@ -186,6 +186,43 @@ Apply one class for the full drop-shadow + press-down effect:
 
 Each recipe applies `transition: transform 0.1s ease, box-shadow 0.1s ease` and on `:active` sets `box-shadow: none` + `translateY(offset)`.
 
+## Rules
+
+These rules are enforced by ESLint (see `eslint.config.mjs`). Violations produce warnings during migration; they will be promoted to errors after Phase 7 cleanup.
+
+### 1. No hex literals in component code
+
+String literals matching `#RGB`, `#RRGGBB`, or `#RRGGBBAA` patterns are blocked outside of token-definition files.
+
+**Instead of:** `style={{ color: '#00ffc2' }}`
+**Use:** `className="text-ds-primary"` or `style={{ color: 'var(--ds-primary)' }}`
+
+### 2. No legacy primitive tokens in new code
+
+The following class names are blocked: `space-black`, `space-dark`, `space-grey`, `space-purple`, `space-purple-light`, `space-blue`, `cream-white`, `space-gold`, `grey-500`.
+
+**Instead of:** `className="bg-space-black text-cream-white"`
+**Use:** `className="bg-surface-dim text-on-surface"`
+
+### 3. No ad-hoc shadow strings
+
+Use the named shadow tokens (`shadow-card`, `shadow-hero`, `shadow-button`, etc.) or the chunky-press recipes (`.chunky-card`, `.chunky-button`).
+
+**Instead of:** `style={{ boxShadow: '0 8px 0 0 #080916' }}`
+**Use:** `className="shadow-card"` or `className="chunky-card"`
+
+### 4. Primitives live in `src/components/ui/` only
+
+New primitive components that define visual building blocks go in `src/components/ui/`. They consume design tokens — they do not define new ones.
+
+### Allowed exceptions
+
+- `src/app/globals.css` — token definitions (hex values live here)
+- `tailwind.config.js` — token-to-utility mapping
+- `redesign/**` — HTML prototypes
+- `**/*.test.*`, `**/*.spec.*`, `**/*.stories.*` — test/story files
+- SVG/image asset files
+
 ## Legacy tokens (to be removed)
 
 The following primitive tokens in `tailwind.config.js` are legacy and will be replaced by semantic tokens during the redesign:
