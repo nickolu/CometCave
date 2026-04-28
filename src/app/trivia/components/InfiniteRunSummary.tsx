@@ -5,6 +5,8 @@ import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
 import { SignInCard } from './SignInCTA'
+import { QuestionRating } from './QuestionRating'
+import { FlagQuestion } from './FlagQuestion'
 import type { InfiniteRunState } from '@/app/trivia/hooks/useInfiniteRun'
 
 interface Props {
@@ -113,6 +115,8 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack }: Props) {
                     <span className={`font-bold text-sm min-w-[4rem] text-right ${a.correct ? 'text-ds-tertiary' : 'text-on-surface/30'}`}>
                       +{a.points}
                     </span>
+                    <QuestionRating questionId={a.questionId} />
+                    <FlagQuestion questionId={a.questionId} />
                   </div>
                 </div>
               ))}
