@@ -7,8 +7,28 @@ export interface SamplerOptions {
   type?: 'free-text' // v1 only free-text
 }
 
-// Difficulty weights by streak band
-// [easy%, medium%, hard%]
+/**
+ * Difficulty-bias curve for the sampler.
+ *
+ * Designed to feel progressively harder without sudden cliff-edges.
+ * The bands are:
+ *
+ *   Streak 0-4   → 60% easy, 30% medium, 10% hard   (onboarding)
+ *   Streak 5-9   → 30% easy, 40% medium, 30% hard   (warming up)
+ *   Streak 10-19 → 10% easy, 30% medium, 60% hard   (challenge zone)
+ *   Streak 20+   → 5% easy, 25% medium, 70% hard    (expert territory)
+ *
+ * Tuning notes (v1 — 2026-04-28):
+ * - No telemetry data yet; these are design estimates.
+ * - The 20+ band caps hard at 70% rather than 100% to prevent
+ *   frustration spirals where a single hard miss ends a long run.
+ * - Freshness bias (1/(1+timesShown)) ensures under-seen questions
+ *   surface first, preventing "greatest hits" stagnation.
+ * - Revisit after ~1 week of real run data using:
+ *     SELECT difficulty, AVG(correct::int), COUNT(*)
+ *     FROM answers JOIN questions ON ...
+ *     GROUP BY difficulty, streak_band
+ */
 function getDifficultyWeights(streak: number): [number, number, number] {
   if (streak >= 20) return [0.05, 0.25, 0.70]
   if (streak >= 10) return [0.10, 0.30, 0.60]

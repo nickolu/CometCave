@@ -29,9 +29,12 @@ function getRunRating(longestStreak: number): string {
   return 'Keep Exploring!'
 }
 
+const ANSWERS_PAGE_SIZE = 20
+
 export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored' }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
+  const [showAllAnswers, setShowAllAnswers] = useState(false)
 
   const handleShare = async () => {
     const lines = [
@@ -108,8 +111,8 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
             <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
               Answer History
             </h3>
-            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-              {state.answers.map((a, i) => (
+            <div className="flex flex-col gap-2">
+              {(showAllAnswers ? state.answers : state.answers.slice(0, ANSWERS_PAGE_SIZE)).map((a, i) => (
                 <div key={i} className="flex items-center justify-between py-2 px-3 rounded bg-surface-dim/40">
                   <div className="flex items-center gap-3">
                     <span className="text-on-surface/50 text-sm font-mono w-4">{i + 1}</span>
@@ -129,6 +132,14 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                 </div>
               ))}
             </div>
+            {state.answers.length > ANSWERS_PAGE_SIZE && !showAllAnswers && (
+              <button
+                className="mt-3 w-full text-on-surface/50 text-sm hover:text-on-surface/80 transition-colors py-1"
+                onClick={() => setShowAllAnswers(true)}
+              >
+                Show all {state.answers.length} answers
+              </button>
+            )}
           </ChunkyCardContent>
         </ChunkyCard>
       )}

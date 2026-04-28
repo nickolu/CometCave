@@ -22,6 +22,7 @@ export interface AggregateStats {
     medium: { answered: number; correct: number }
     hard: { answered: number; correct: number }
   }
+  exhaustionCount: number
   lastUpdatedAt: FirebaseFirestore.Timestamp | null
 }
 
@@ -39,6 +40,7 @@ const EMPTY_STATS: AggregateStats = {
     medium: { answered: 0, correct: 0 },
     hard: { answered: 0, correct: 0 },
   },
+  exhaustionCount: 0,
   lastUpdatedAt: null,
 }
 
@@ -156,6 +158,7 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
           correct: agg.byDifficulty.hard.correct + byDifficulty.hard.correct,
         },
       },
+      exhaustionCount: agg.exhaustionCount ?? 0,
       lastUpdatedAt: null, // overwritten by server timestamp below
     }
 
@@ -175,4 +178,15 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
     // Mark the run as having its stats applied (idempotency guard)
     tx.update(runRef, { statsApplied: true })
   })
+}
+
+export async function trackExhaustion(uid: string): Promise<void> {
+  const db = getFirestoreDb()
+  const aggRef = db.doc(`users/${uid}/triviaStats/aggregate`)
+  const snap = await aggRef.get()
+  if (snap.exists) {
+    await aggRef.update({ exhaustionCount: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() })
+  } else {
+    await aggRef.set({ ...EMPTY_STATS, exhaustionCount: 1, lastUpdatedAt: FieldValue.serverTimestamp() })
+  }
 }

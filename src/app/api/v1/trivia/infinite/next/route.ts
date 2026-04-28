@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { verifyRequestAuth } from '@/lib/api/auth'
 import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
+import { trackExhaustion } from '@/lib/trivia/triviaStats'
 
 // GET /api/v1/trivia/infinite/next?streak=N
 export async function GET(request: NextRequest) {
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (question === null) {
       // Library exhausted — no unseen questions remain
+      await trackExhaustion(auth.claims.uid)
       return new NextResponse(null, { status: 204 })
     }
 
