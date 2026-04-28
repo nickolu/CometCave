@@ -231,21 +231,39 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
     <div className="flex flex-col gap-3 sm:gap-4 max-w-lg mx-auto py-2 sm:py-4">
       {/* Top bar: progress + score */}
       <div className="flex justify-between items-center">
-        <div className="flex gap-1.5">
-          {questions.map((_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full ${
-                i < currentIndex
-                  ? answers[i]?.correct
-                    ? 'bg-green-500'
-                    : 'bg-red-500'
-                  : i === currentIndex
-                  ? 'bg-space-gold'
-                  : 'bg-space-grey'
-              }`}
-            />
-          ))}
+        <div className="flex gap-1.5" role="list" aria-label="Question progress">
+          {questions.map((_, i) => {
+            const answered = answers[i]
+            const isCurrent = !answered && i === currentIndex
+            const status = answered ? (answered.correct ? 'correct' : 'incorrect') : isCurrent ? 'current' : 'upcoming'
+            const colorClass =
+              status === 'correct'
+                ? 'bg-green-500 text-white'
+                : status === 'incorrect'
+                  ? 'bg-red-500 text-white'
+                  : status === 'current'
+                    ? 'bg-space-gold text-space-black'
+                    : 'bg-space-grey text-transparent'
+            const symbol = status === 'correct' ? '✓' : status === 'incorrect' ? '✗' : ''
+            const ariaLabel =
+              status === 'correct'
+                ? `Question ${i + 1}: correct`
+                : status === 'incorrect'
+                  ? `Question ${i + 1}: incorrect`
+                  : status === 'current'
+                    ? `Question ${i + 1}: current`
+                    : `Question ${i + 1}: upcoming`
+            return (
+              <div
+                key={i}
+                role="listitem"
+                aria-label={ariaLabel}
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold leading-none ${colorClass}`}
+              >
+                {symbol}
+              </div>
+            )
+          })}
         </div>
         <div className="text-space-gold font-bold text-lg">{totalScore} pts</div>
       </div>
@@ -314,7 +332,7 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
                 value={textAnswer}
                 onChange={(e) => setTextAnswer(e.target.value)}
                 placeholder="Type your answer..."
-                className="bg-space-black/50 border-space-grey text-cream-white"
+                className="bg-space-black/80 border-space-grey text-cream-white text-base md:text-base placeholder:text-cream-white/40 caret-cream-white"
                 disabled={phase !== 'playing' || isChecking}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && textAnswer.trim()) {
