@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+
 import { submitAdventureScore } from '@/app/tap-tap-adventure/lib/adventureLeaderboardStore'
+import { getTodayPST } from '@/lib/dates'
 
 const MAX_NAME_LENGTH = 20
 const MAX_CHAR_NAME_LENGTH = 50

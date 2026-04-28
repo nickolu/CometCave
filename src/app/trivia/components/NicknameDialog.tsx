@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import { NICKNAME_MAX_LENGTH, sanitizeNickname } from '@/app/trivia/hooks/useTriviaUser'
+import {
+  NICKNAME_MAX_LENGTH,
+  NicknameInUseError,
+  sanitizeNickname,
+} from '@/app/trivia/hooks/useTriviaUser'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -45,8 +49,12 @@ export function NicknameDialog({ initialValue, onClose, onSave }: NicknameDialog
       await onSave(clean)
       onClose()
     } catch (err) {
-      console.error('Failed to save nickname:', err)
-      setError('Could not save nickname. Try again.')
+      if (err instanceof NicknameInUseError) {
+        setError('That nickname is already taken.')
+      } else {
+        console.error('Failed to save nickname:', err)
+        setError('Could not save nickname. Try again.')
+      }
       setSaving(false)
     }
   }

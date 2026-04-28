@@ -1,12 +1,14 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
-import { dailyCache } from '@/app/trivia/lib/questionCache'
+
 import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
+import { dailyCache } from '@/app/trivia/lib/questionCache'
 import type { TriviaQuestion, TriviaQuestionWithAnswer } from '@/app/trivia/models/questions'
+import { getTodayPST } from '@/lib/dates'
+
+import type { NextRequest } from 'next/server'
 
 // Re-export dailyCache so check-answer route can import it
 export { dailyCache }

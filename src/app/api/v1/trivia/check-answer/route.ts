@@ -2,9 +2,10 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
-import { dailyCache } from '@/app/trivia/lib/questionCache'
+
 import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
+import { dailyCache } from '@/app/trivia/lib/questionCache'
+import { getTodayPST } from '@/lib/dates'
 
 export async function POST(request: NextRequest) {
   try {

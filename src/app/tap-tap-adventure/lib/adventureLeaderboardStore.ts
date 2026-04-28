@@ -1,4 +1,4 @@
-import { getFirestoreDb } from '@/app/trivia/lib/firebase'
+import { getFirestoreDb } from '@/lib/firebase/server'
 
 const COLLECTION = 'adventure-scores'
 

@@ -1,30 +1,26 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
-import {
-  getDailyLeaderboard,
-  getWeeklyLeaderboard,
-  getAllTimeLeaderboard,
-  getCurrentWeekRange,
-} from '@/app/trivia/lib/leaderboardStore'
+
+import { getTodayPST, getWeekKey } from '@/lib/dates'
+import { getAllTimeTop, getDailyTop, getWeeklyTop } from '@/lib/trivia/queries'
 
 export async function GET(request: NextRequest) {
-  try {
-    const period = request.nextUrl.searchParams.get('period') || 'daily'
+  const period = request.nextUrl.searchParams.get('period') || 'daily'
 
+  try {
     if (period === 'daily') {
       const today = getTodayPST()
-      const entries = await getDailyLeaderboard(today, 20)
+      const entries = await getDailyTop(today, 20)
       return NextResponse.json({ period: 'daily', date: today, entries })
     }
 
     if (period === 'weekly') {
-      const { start, end } = getCurrentWeekRange()
-      const entries = await getWeeklyLeaderboard(start, end, 20)
-      return NextResponse.json({ period: 'weekly', weekStart: start, weekEnd: end, entries })
+      const weekKey = getWeekKey(getTodayPST())
+      const entries = await getWeeklyTop(weekKey, 20)
+      return NextResponse.json({ period: 'weekly', weekKey, entries })
     }
 
     if (period === 'alltime') {
-      const entries = await getAllTimeLeaderboard(20)
+      const entries = await getAllTimeTop(20)
       return NextResponse.json({ period: 'alltime', entries })
     }
 
@@ -34,23 +30,20 @@ export async function GET(request: NextRequest) {
     )
   } catch (error: unknown) {
     console.error('Error fetching leaderboard:', error)
-
-    // Firestore index errors — return empty results with a helpful message
     const errMsg = error instanceof Error ? error.message : String(error)
-    if (errMsg.includes('index') || errMsg.includes('FAILED_PRECONDITION') || errMsg.includes('requires an index')) {
-      console.error('Firestore index missing. Create composite index: collection=trivia-scores, fields: date ASC + score DESC')
-      // Log the index creation URL if present
+    if (
+      errMsg.includes('index') ||
+      errMsg.includes('FAILED_PRECONDITION') ||
+      errMsg.includes('requires an index')
+    ) {
       const urlMatch = errMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/)
-      if (urlMatch) {
-        console.error('Create index here:', urlMatch[1])
-      }
+      if (urlMatch) console.error('Create index here:', urlMatch[1])
       return NextResponse.json({
-        period: 'daily',
+        period,
         entries: [],
         notice: 'Leaderboard is initializing. Please try again in a few minutes.',
       })
     }
-
     return NextResponse.json({ error: 'Failed to fetch leaderboard.' }, { status: 500 })
   }
 }

@@ -4,10 +4,10 @@ import { FirebaseError } from 'firebase/app'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, Suspense, useEffect, useState } from 'react'
 
-import { AuthProvider, useAuth } from '@/app/trivia/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { AuthProvider, useAuth } from '@/hooks/useAuth'
 
 function AuthPageInner() {
   const router = useRouter()

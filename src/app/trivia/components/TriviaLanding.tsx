@@ -4,12 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { formatDisplayDate, getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/hooks/useAuth'
+import { formatDisplayDate, getTodayPST } from '@/lib/dates'
+import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { NicknameDialog } from './NicknameDialog'
 import { SignInBanner } from './SignInCTA'
@@ -27,21 +28,21 @@ export function TriviaLanding({
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
   const {
-    userData: firestoreUser,
     loading: firestoreLoading,
     displayName,
+    nickname,
     needsNickname,
+    stats,
     setNickname,
   } = useTriviaUser()
   const [nicknameDialogOpen, setNicknameDialogOpen] = useState(false)
 
-  const stats = firestoreUser.stats
   const todayStr = getTodayPST()
   const alreadyPlayed = !!todayResult
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
   const showSignInPromos = authConfigured && !authLoading && !user
-  const nicknameSeed = firestoreUser.nickname || user?.displayName || ''
+  const nicknameSeed = nickname || user?.displayName || ''
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">

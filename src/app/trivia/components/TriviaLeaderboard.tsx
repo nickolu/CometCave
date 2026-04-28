@@ -2,36 +2,33 @@
 
 import { useEffect, useState } from 'react'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAuth } from '@/hooks/useAuth'
+import { getTodayPST } from '@/lib/dates'
+import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { SignInBanner } from './SignInCTA'
 
 type Period = 'daily' | 'weekly' | 'alltime'
 
-interface DailyEntry {
+interface LeaderboardEntry {
+  uid: string
   displayName: string
-  date: string
   score: number
-  correct: number
-  total: number
+  correct?: number
+  total?: number
+  totalScore?: number
+  gamesPlayed?: number
+  totalCorrect?: number
+  totalQuestions?: number
 }
 
-interface WeeklyEntry {
-  displayName: string
-  totalScore: number
-  gamesPlayed: number
-  totalCorrect: number
-  totalQuestions: number
-}
-
-interface AllTimeEntry {
-  displayName: string
-  weeklyWins: number
-  totalScore: number
+interface LeaderboardResponse {
+  period: Period
+  entries: LeaderboardEntry[]
+  notice?: string
 }
 
 export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
@@ -39,13 +36,12 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [period, setPeriod] = useState<Period>('daily')
   const [loading, setLoading] = useState(true)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  const currentUid = user?.uid ?? null
   const authName = user ? triviaDisplayName || user.email || null : null
-  const currentName = authName?.toLowerCase().trim() ?? ''
 
   useEffect(() => {
     async function load() {
@@ -74,9 +70,9 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const medals = ['🥇', '🥈', '🥉']
 
-    const lines = (data.entries as DailyEntry[]).slice(0, 5).map((entry: DailyEntry, i: number) => {
+    const lines = data.entries.slice(0, 5).map((entry, i) => {
       const prefix = i < 3 ? medals[i] : `${i + 1}.`
-      return `${prefix} ${entry.displayName ?? 'Unknown'} — ${(entry.score ?? 0).toLocaleString()} pts`
+      return `${prefix} ${entry.displayName || 'Unknown'} — ${(entry.score ?? 0).toLocaleString()} pts`
     })
 
     const shareText = [
@@ -109,56 +105,47 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     }
 
     if (period === 'daily') {
-      return data.entries.map((entry: DailyEntry, i: number) => {
-        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
-        return (
-          <LeaderboardRow
-            key={`${entry.displayName}-${i}`}
-            rank={i + 1}
-            name={entry.displayName ?? 'Unknown'}
-            primary={(entry.score ?? 0).toLocaleString()}
-            secondary={`${entry.correct ?? 0}/${entry.total ?? 0} correct`}
-            isCurrentUser={isCurrentUser}
-          />
-        )
-      })
+      return data.entries.map((entry, i) => (
+        <LeaderboardRow
+          key={entry.uid || `${entry.displayName}-${i}`}
+          rank={i + 1}
+          name={entry.displayName || 'Unknown'}
+          primary={(entry.score ?? 0).toLocaleString()}
+          secondary={`${entry.correct ?? 0}/${entry.total ?? 0} correct`}
+          isCurrentUser={!!currentUid && entry.uid === currentUid}
+        />
+      ))
     }
 
     if (period === 'weekly') {
-      return data.entries.map((entry: WeeklyEntry, i: number) => {
-        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
+      return data.entries.map((entry, i) => {
         const totalQ = entry.totalQuestions ?? 0
-        const accuracy = totalQ > 0
-          ? Math.round(((entry.totalCorrect ?? 0) / totalQ) * 100)
-          : 0
+        const accuracy =
+          totalQ > 0 ? Math.round(((entry.totalCorrect ?? 0) / totalQ) * 100) : 0
         return (
           <LeaderboardRow
-            key={`${entry.displayName}-${i}`}
+            key={entry.uid || `${entry.displayName}-${i}`}
             rank={i + 1}
-            name={entry.displayName ?? 'Unknown'}
+            name={entry.displayName || 'Unknown'}
             primary={(entry.totalScore ?? 0).toLocaleString()}
             secondary={`${entry.gamesPlayed ?? 0} games · ${accuracy}%`}
-            isCurrentUser={isCurrentUser}
+            isCurrentUser={!!currentUid && entry.uid === currentUid}
           />
         )
       })
     }
 
     if (period === 'alltime') {
-      return data.entries.map((entry: AllTimeEntry, i: number) => {
-        const isCurrentUser = entry.displayName?.toLowerCase().trim() === currentName
-        const wins = entry.weeklyWins ?? 0
-        return (
-          <LeaderboardRow
-            key={`${entry.displayName}-${i}`}
-            rank={i + 1}
-            name={entry.displayName ?? 'Unknown'}
-            primary={`${wins} ${wins === 1 ? 'win' : 'wins'}`}
-            secondary={`${(entry.totalScore ?? 0).toLocaleString()} pts`}
-            isCurrentUser={isCurrentUser}
-          />
-        )
-      })
+      return data.entries.map((entry, i) => (
+        <LeaderboardRow
+          key={entry.uid || `${entry.displayName}-${i}`}
+          rank={i + 1}
+          name={entry.displayName || 'Unknown'}
+          primary={(entry.totalScore ?? 0).toLocaleString()}
+          secondary={`${entry.gamesPlayed ?? 0} ${(entry.gamesPlayed ?? 0) === 1 ? 'game' : 'games'}`}
+          isCurrentUser={!!currentUid && entry.uid === currentUid}
+        />
+      ))
     }
 
     return null
@@ -207,7 +194,7 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
       </Card>
 
       {/* Share leaderboard button — daily tab only */}
-      {period === 'daily' && data?.entries?.length > 0 && (
+      {period === 'daily' && (data?.entries?.length ?? 0) > 0 && (
         <Button
           variant="outline"
           onClick={handleShareLeaderboard}

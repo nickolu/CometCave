@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth'
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
-import { getFirebaseAuth, isFirebaseAuthConfigured } from '@/app/trivia/lib/firebaseClient'
+import { getFirebaseAuth, isFirebaseAuthConfigured } from '@/lib/firebase/client'
 
 interface AuthContextValue {
   user: User | null
