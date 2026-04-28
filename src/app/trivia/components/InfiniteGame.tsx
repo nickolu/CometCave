@@ -1,0 +1,128 @@
+'use client'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useInfiniteRun } from '@/app/trivia/hooks/useInfiniteRun'
+import { InfiniteHUD } from './InfiniteHUD'
+import { InfiniteQuestionCard } from './InfiniteQuestionCard'
+import { InfiniteRunSummary } from './InfiniteRunSummary'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+
+const TIME_LIMIT = 60 // 60 seconds for AI free-text
+
+interface Props {
+  onBack: () => void
+}
+
+export function InfiniteGame({ onBack }: Props) {
+  const { state, startRun, submitAnswer, nextQuestion, endRun } = useInfiniteRun()
+  const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timerStartRef = useRef<number>(0)
+
+  // Start run on mount
+  useEffect(() => {
+    startRun()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Timer logic
+  useEffect(() => {
+    if (state.phase !== 'playing') {
+      if (timerRef.current) clearInterval(timerRef.current)
+      return
+    }
+    timerStartRef.current = Date.now()
+    setTimeRemaining(TIME_LIMIT)
+    timerRef.current = setInterval(() => {
+      const elapsed = (Date.now() - timerStartRef.current) / 1000
+      const remaining = Math.max(0, TIME_LIMIT - elapsed)
+      setTimeRemaining(remaining)
+      if (remaining <= 0) {
+        if (timerRef.current) clearInterval(timerRef.current)
+        // Auto-submit empty on timeout
+        submitAnswer('')
+      }
+    }, 100)
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.question?.id])
+
+  const handleFlee = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    endRun()
+  }, [endRun])
+
+  const handlePlayAgain = useCallback(() => {
+    startRun()
+  }, [startRun])
+
+  // Loading state
+  if (state.phase === 'loading' || state.phase === 'idle') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
+        <div className="text-on-surface/60 text-lg">Entering the infinite cavern...</div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (state.phase === 'error') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
+        <p className="text-ds-error">{state.error}</p>
+        <ChunkyButton variant="secondary" onClick={() => startRun()}>Try Again</ChunkyButton>
+        <ChunkyButton variant="ghost" size="sm" onClick={onBack}>Back to Trivia</ChunkyButton>
+      </div>
+    )
+  }
+
+  // Exhausted state
+  if (state.phase === 'exhausted') {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
+        <h2 className="font-headline text-headline-lg text-ds-tertiary">The Cave Rests</h2>
+        <p className="text-on-surface/60 text-center">
+          You have explored every question in the cavern. New discoveries await — return soon.
+        </p>
+        <ChunkyButton variant="secondary" onClick={onBack}>Back to Trivia</ChunkyButton>
+      </div>
+    )
+  }
+
+  // End of run
+  if (state.phase === 'ended') {
+    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} />
+  }
+
+  // Playing or answered
+  if (!state.question) return null
+
+  return (
+    <div className="flex flex-col gap-3 sm:gap-4 max-w-lg mx-auto py-2 sm:py-4">
+      <InfiniteHUD
+        livesRemaining={state.livesRemaining}
+        currentStreak={state.currentStreak}
+        score={state.score}
+        timeRemaining={timeRemaining}
+        timeLimit={TIME_LIMIT}
+        onFlee={handleFlee}
+        isPlaying={state.phase === 'playing'}
+      />
+
+      <InfiniteQuestionCard
+        question={state.question}
+        onSubmit={submitAnswer}
+        isSubmitting={state.phase === 'answering'}
+        answerResult={state.lastAnswer}
+        questionsAnswered={state.questionsAnswered}
+      />
+
+      {state.phase === 'answered' && (
+        <ChunkyButton variant="primary" size="lg" className="w-full" onClick={nextQuestion}>
+          Next Question
+        </ChunkyButton>
+      )}
+    </div>
+  )
+}

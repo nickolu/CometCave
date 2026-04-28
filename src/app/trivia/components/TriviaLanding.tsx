@@ -20,11 +20,13 @@ export function TriviaLanding({
   onStartGame,
   onViewStats,
   onViewLeaderboard,
+  onStartInfinite,
   todayResult,
 }: {
   onStartGame?: () => void
   onViewStats?: () => void
   onViewLeaderboard?: () => void
+  onStartInfinite?: () => void
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -145,6 +147,24 @@ export function TriviaLanding({
               {todayResult.correct}/{todayResult.total} correct
             </div>
           )}
+        </ChunkyCardContent>
+      </ChunkyCard>
+
+      {/* Endless Run entry */}
+      <ChunkyCard variant="surface-container-high" className="w-full">
+        <ChunkyCardContent className="flex flex-col items-center gap-3 pt-6">
+          <div className="text-center">
+            <h3 className="text-on-surface font-bold text-lg">Endless Run</h3>
+            <p className="text-on-surface/50 text-sm">The cave doesn&apos;t sleep. How far can you go?</p>
+          </div>
+          <ChunkyButton
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            onClick={onStartInfinite}
+          >
+            Enter the Infinite Cavern
+          </ChunkyButton>
         </ChunkyCardContent>
       </ChunkyCard>
 
