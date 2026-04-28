@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
+import { ResetNoticeButton } from './ResetNoticeButton'
 import { SignInBanner } from './SignInCTA'
 
 type Period = 'daily' | 'weekly' | 'alltime'
@@ -98,8 +99,8 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (data.entries.length === 0) {
       return (
-        <div className="text-center text-cream-white/50 py-8">
-          No scores yet. Be the first!
+        <div className="text-center text-cream-white/50 py-8 px-4">
+          {data.notice ?? 'No scores yet. Be the first!'}
         </div>
       )
     }
@@ -154,7 +155,10 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex flex-col gap-4 max-w-lg mx-auto py-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-space-gold mb-1">Leaderboard</h2>
+        <h2 className="text-3xl font-bold text-space-gold mb-1 inline-flex items-center gap-2">
+          Leaderboard
+          <ResetNoticeButton />
+        </h2>
         {authName ? (
           <p className="text-cream-white/50 text-sm">
             Playing as <span className="text-space-gold">{authName}</span>

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDisplayDate } from '@/lib/dates'
 
+import { ResetNoticeButton } from './ResetNoticeButton'
 import { SignInCard } from './SignInCTA'
 
 const MAX_SCORE_PER_GAME = 3150
@@ -38,7 +39,10 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
   if (stats.gamesPlayed === 0) {
     return (
       <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
-        <h2 className="text-3xl font-bold text-space-gold">My Stats</h2>
+        <h2 className="text-3xl font-bold text-space-gold inline-flex items-center gap-2">
+          My Stats
+          <ResetNoticeButton />
+        </h2>
         {user ? (
           <Card className="w-full bg-space-dark/80 border-space-grey">
             <CardContent className="pt-6 text-center">
@@ -65,7 +69,10 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col gap-5 max-w-lg mx-auto py-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-space-gold mb-1">My Stats</h2>
+        <h2 className="text-3xl font-bold text-space-gold mb-1 inline-flex items-center gap-2">
+          My Stats
+          <ResetNoticeButton />
+        </h2>
         <p className="text-cream-white/50 text-sm">Your trivia journey so far</p>
       </div>
 
