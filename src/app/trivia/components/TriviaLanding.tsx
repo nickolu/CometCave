@@ -11,6 +11,7 @@ import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { NicknameDialog } from './NicknameDialog'
 import { SignInBanner } from './SignInCTA'
 
 export function TriviaLanding({
@@ -25,7 +26,14 @@ export function TriviaLanding({
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
-  const { userData: firestoreUser, loading: firestoreLoading } = useTriviaUser()
+  const {
+    userData: firestoreUser,
+    loading: firestoreLoading,
+    displayName,
+    needsNickname,
+    setNickname,
+  } = useTriviaUser()
+  const [nicknameDialogOpen, setNicknameDialogOpen] = useState(false)
 
   const stats = firestoreUser.stats
   const todayStr = getTodayPST()
@@ -33,15 +41,17 @@ export function TriviaLanding({
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
   const showSignInPromos = authConfigured && !authLoading && !user
+  const nicknameSeed = firestoreUser.nickname || user?.displayName || ''
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
       <div className="w-full flex justify-end min-h-[1.75rem] text-sm">
         {!authConfigured ? null : authLoading ? null : user ? (
           <UserMenu
-            displayName={user.displayName ?? user.email ?? 'Account'}
+            displayName={displayName || user.email || 'Account'}
             photoURL={user.photoURL}
             onSignOut={signOut}
+            onEditNickname={() => setNicknameDialogOpen(true)}
           />
         ) : (
           <Link
@@ -82,6 +92,21 @@ export function TriviaLanding({
 
       {showSignInPromos && (
         <SignInBanner message="Sign in to save your progress" />
+      )}
+
+      {needsNickname && (
+        <button
+          type="button"
+          onClick={() => setNicknameDialogOpen(true)}
+          className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-space-purple/15 border border-space-purple/30 text-sm text-left hover:bg-space-purple/20 transition-colors"
+        >
+          <span className="text-cream-white/80">
+            Pick a nickname for the leaderboard
+          </span>
+          <span className="text-space-gold whitespace-nowrap font-semibold">
+            Set nickname →
+          </span>
+        </button>
       )}
 
       <Card className="w-full bg-space-dark/80 border-space-grey">
@@ -167,6 +192,14 @@ export function TriviaLanding({
           Leaderboard
         </button>
       </div>
+
+      {nicknameDialogOpen && (
+        <NicknameDialog
+          initialValue={nicknameSeed}
+          onClose={() => setNicknameDialogOpen(false)}
+          onSave={setNickname}
+        />
+      )}
     </div>
   )
 }
@@ -175,10 +208,12 @@ function UserMenu({
   displayName,
   photoURL,
   onSignOut,
+  onEditNickname,
 }: {
   displayName: string
   photoURL: string | null
   onSignOut: () => Promise<void>
+  onEditNickname: () => void
 }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -228,6 +263,17 @@ function UserMenu({
           role="menu"
           className="absolute right-0 mt-1 min-w-[10rem] rounded-md border border-space-grey bg-space-dark shadow-lg z-20 overflow-hidden"
         >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onEditNickname()
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-cream-white/80 hover:bg-space-purple/20 hover:text-cream-white transition-colors"
+          >
+            Edit nickname
+          </button>
           <button
             type="button"
             role="menuitem"

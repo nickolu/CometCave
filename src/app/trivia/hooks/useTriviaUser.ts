@@ -19,6 +19,7 @@ interface FirestoreStats {
 
 export interface TriviaUserDocument {
   displayName: string
+  nickname: string
   stats: FirestoreStats
   history: TriviaGameResult[]
   lastPlayedDate: string | null
@@ -35,9 +36,16 @@ const EMPTY_STATS: FirestoreStats = {
 
 const EMPTY_USER: TriviaUserDocument = {
   displayName: '',
+  nickname: '',
   stats: EMPTY_STATS,
   history: [],
   lastPlayedDate: null,
+}
+
+export const NICKNAME_MAX_LENGTH = 20
+
+export function sanitizeNickname(raw: string): string {
+  return raw.trim().slice(0, NICKNAME_MAX_LENGTH)
 }
 
 function getYesterdayPST(): string {
@@ -63,6 +71,7 @@ function computeNextState(
 
   return {
     displayName,
+    nickname: existing.nickname,
     lastPlayedDate: today,
     stats: {
       gamesPlayed: existing.stats.gamesPlayed + 1,
@@ -80,6 +89,7 @@ function normalizeDoc(data: DocumentData | undefined): TriviaUserDocument {
   if (!data) return EMPTY_USER
   return {
     displayName: typeof data.displayName === 'string' ? data.displayName : '',
+    nickname: typeof data.nickname === 'string' ? data.nickname : '',
     stats: { ...EMPTY_STATS, ...(data.stats ?? {}) },
     history: Array.isArray(data.history) ? (data.history as TriviaGameResult[]) : [],
     lastPlayedDate:
@@ -93,8 +103,11 @@ export interface UseTriviaUserResult {
   userData: TriviaUserDocument
   loading: boolean
   isLoggedIn: boolean
+  displayName: string
+  needsNickname: boolean
   canPlayToday: () => boolean
   saveGameResult: (result: TriviaGameResult) => Promise<void>
+  setNickname: (raw: string) => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -133,10 +146,27 @@ export function useTriviaUser(): UseTriviaUserResult {
       const ref = doc(getFirebaseFirestore(), 'trivia-users', user.uid)
       const snap = await getDoc(ref)
       const existing = normalizeDoc(snap.data())
-      const displayName = user.displayName ?? user.email ?? existing.displayName
-      const next = computeNextState(existing, result, displayName)
+      const resolvedName =
+        existing.nickname ||
+        user.displayName ||
+        user.email ||
+        existing.displayName ||
+        ''
+      const next = computeNextState(existing, result, resolvedName)
       await setDoc(ref, next)
       setUserData(next)
+    },
+    [user]
+  )
+
+  const setNickname = useCallback(
+    async (raw: string) => {
+      if (!user) return
+      const clean = sanitizeNickname(raw)
+      if (!clean) return
+      const ref = doc(getFirebaseFirestore(), 'trivia-users', user.uid)
+      await setDoc(ref, { nickname: clean, displayName: clean }, { merge: true })
+      setUserData((prev) => ({ ...prev, nickname: clean, displayName: clean }))
     },
     [user]
   )
@@ -146,12 +176,19 @@ export function useTriviaUser(): UseTriviaUserResult {
     return !hasPlayedToday(userData.lastPlayedDate)
   }, [user, userData.lastPlayedDate])
 
+  const fallbackName = user?.displayName ?? user?.email ?? ''
+  const displayName = userData.nickname || fallbackName
+  const needsNickname = !!user && !loading && !userData.nickname
+
   return {
     userData,
     loading,
     isLoggedIn: !!user,
+    displayName,
+    needsNickname,
     canPlayToday,
     saveGameResult,
+    setNickname,
     refresh,
   }
 }
