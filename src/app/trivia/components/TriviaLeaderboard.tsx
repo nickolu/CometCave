@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
+import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
 import { getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
@@ -99,7 +100,7 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     if (data.entries.length === 0) {
       return (
-        <div className="text-center text-cream-white/50 py-8 px-4">
+        <div className="text-center text-on-surface/50 py-8 px-4">
           {data.notice ?? 'No scores yet. Be the first!'}
         </div>
       )
@@ -155,13 +156,13 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex flex-col gap-4 max-w-lg mx-auto py-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-space-gold mb-1 inline-flex items-center gap-2">
+        <h2 className="text-3xl font-bold text-ds-tertiary mb-1 inline-flex items-center gap-2">
           Leaderboard
           <ResetNoticeButton />
         </h2>
         {authName ? (
-          <p className="text-cream-white/50 text-sm">
-            Playing as <span className="text-space-gold">{authName}</span>
+          <p className="text-on-surface/50 text-sm">
+            Playing as <span className="text-ds-tertiary">{authName}</span>
           </p>
         ) : null}
       </div>
@@ -173,44 +174,44 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
       {/* Tabs */}
       <div className="grid grid-cols-3 gap-2">
         {(['daily', 'weekly', 'alltime'] as Period[]).map((p) => (
-          <Button
+          <ChunkyButton
             key={p}
-            variant={period === p ? 'space' : 'outline'}
+            variant={period === p ? 'space' : 'secondary'}
             onClick={() => setPeriod(p)}
             className="capitalize"
           >
             {p === 'alltime' ? 'All-Time' : p}
-          </Button>
+          </ChunkyButton>
         ))}
       </div>
 
       {/* Content */}
-      <Card className="bg-space-dark/80 border-space-grey">
-        <CardContent className="pt-4 pb-4">
+      <ChunkyCard variant="surface-container-high" className="bg-surface-container/80 border-outline-variant">
+        <ChunkyCardContent className="pt-4 pb-4">
           {loading ? (
-            <div className="text-center text-cream-white/50 py-8">Loading...</div>
+            <div className="text-center text-on-surface/50 py-8">Loading...</div>
           ) : error ? (
-            <div className="text-center text-red-400 py-8">{error}</div>
+            <div className="text-center text-ds-error py-8">{error}</div>
           ) : (
             <div className="flex flex-col gap-1.5">{renderEntries()}</div>
           )}
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Share leaderboard button — daily tab only */}
       {period === 'daily' && (data?.entries?.length ?? 0) > 0 && (
-        <Button
-          variant="outline"
+        <ChunkyButton
+          variant="secondary"
           onClick={handleShareLeaderboard}
           className="w-full"
         >
           {copied ? '✅ Copied!' : '📋 Share Leaderboard'}
-        </Button>
+        </ChunkyButton>
       )}
 
-      <Button variant="outline" onClick={onBack} className="w-full">
+      <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
         Back to Trivia
-      </Button>
+      </ChunkyButton>
     </div>
   )
 }
@@ -234,27 +235,27 @@ function LeaderboardRow({
     <div
       className={`flex items-center justify-between py-2.5 px-3 rounded ${
         isCurrentUser
-          ? 'bg-space-gold/20 border border-space-gold/40'
-          : 'bg-space-black/40'
+          ? 'bg-ds-tertiary/20 border border-ds-tertiary/40'
+          : 'bg-surface-dim/40'
       }`}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="flex items-center justify-center w-8">
           {rankEmoji ? (
-            <span className="text-xl">{rankEmoji}</span>
+            <Pill tone="success">{rankEmoji}</Pill>
           ) : (
-            <span className="text-cream-white/50 text-sm font-mono">#{rank}</span>
+            <Pill tone="neutral">#{rank}</Pill>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className={`font-medium truncate ${isCurrentUser ? 'text-space-gold' : 'text-cream-white'}`}>
+          <div className={`font-medium truncate ${isCurrentUser ? 'text-ds-tertiary' : 'text-on-surface'}`}>
             {name}
-            {isCurrentUser && <span className="text-xs ml-2 text-space-gold/70">(you)</span>}
+            {isCurrentUser && <span className="text-xs ml-2 text-ds-tertiary/70">(you)</span>}
           </div>
-          <div className="text-cream-white/40 text-xs">{secondary}</div>
+          <div className="text-on-surface/40 text-xs">{secondary}</div>
         </div>
       </div>
-      <div className={`font-bold text-right ${isCurrentUser ? 'text-space-gold' : 'text-cream-white'}`}>
+      <div className={`font-bold text-right ${isCurrentUser ? 'text-ds-tertiary' : 'text-on-surface'}`}>
         {primary}
       </div>
     </div>
