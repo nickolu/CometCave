@@ -1,127 +1,70 @@
-import { HelpCircle, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 
-import { BallotIcon } from '@/components/ballot-icon'
-import { HexagramIcon } from '@/components/hexagram-icon'
-import { MoonIcon } from '@/components/moon-icon'
-import { PlanetIcon } from '@/components/planet-icon'
-import { SecretWordIcon } from '@/components/secret-word-icon'
-import { StarIcon } from '@/components/star-icon'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
+import { Pill } from '@/components/ui/pill'
 
 import { ROUTE_CONSTANTS } from './route-constants'
 
-import type React from 'react'
+const games = [
+  { title: 'Daily Trivia', icon: 'quiz', href: ROUTE_CONSTANTS.TRIVIA, description: 'Test your knowledge with daily AI-curated questions', hot: true },
+  { title: 'I-Ching Oracle', icon: 'auto_awesome', href: ROUTE_CONSTANTS.ORACLE, description: 'Seek wisdom and guidance from the ancient I-Ching' },
+  { title: 'Tap Tap Adventure', icon: 'swords', href: ROUTE_CONSTANTS.TAP_TAP_ADVENTURE, description: 'Tap to travel, fight monsters, and collect loot' },
+  { title: 'Secret Word', icon: 'lock', href: ROUTE_CONSTANTS.SECRET_WORD, description: 'Guess the secret word!' },
+  { title: 'Voters', icon: 'how_to_vote', href: ROUTE_CONSTANTS.VOTERS, description: 'Create AI voters and see how they vote on topics' },
+  { title: 'Whowouldwininator', icon: 'sports_mma', href: ROUTE_CONSTANTS.WHOWOULDWININATOR, description: 'Create two characters and see who would win' },
+  { title: 'Chat Room of Infinity', icon: 'chat', href: ROUTE_CONSTANTS.CHAT_ROOM, description: 'Chat with fictional characters in a chat room' },
+  { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Create unique AI-powered avatars from your photos' },
+] as const
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-12 py-12">
-      <div className="text-center max-w-3xl mx-auto">
-        <h1 className="text-7xl font-bold text-cream-white mb-6">Comet Cave</h1>
-        <p className="text-slate-400 text-xl">AI Dream Arcade</p>
-      </div>
+    <div className="flex flex-col gap-12 py-12 max-w-5xl mx-auto">
+      {/* Hero */}
+      <ChunkyCard variant="surface-container" shadow="hero" className="border-[6px]">
+        <ChunkyCardContent className="py-12 px-8 text-center flex flex-col items-center gap-6">
+          <Pill tone="info" icon="rocket_launch">NEW RELEASE</Pill>
+          <h1 className="font-headline text-headline-lg text-on-surface drop-shadow-[0_4px_0_var(--surface-container-lowest)]">
+            Comet Cave
+          </h1>
+          <p className="text-body-lg text-on-surface-variant max-w-xl">
+            AI Dream Arcade — explore an infinite galaxy of games, challenges, and cosmic adventures.
+          </p>
+          <Link href={ROUTE_CONSTANTS.TRIVIA}>
+            <ChunkyButton variant="primary" size="hero" iconEnd={<span className="material-symbols-outlined">play_circle</span>}>
+              START QUESTING
+            </ChunkyButton>
+          </Link>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
-      <div
-        id="games"
-        className="max-w-4xl mx-auto w-full mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        <GameCard
-          title="I-Ching Oracle"
-          icon={<HexagramIcon />}
-          href={ROUTE_CONSTANTS.ORACLE}
-          description="Seek wisdom and guidance from the ancient I-Ching"
-          featured
-        />
-
-        <GameCard
-          title="Secret Word"
-          icon={<SecretWordIcon />}
-          href={ROUTE_CONSTANTS.SECRET_WORD}
-          description="Guess the secret word!"
-        />
-
-        <GameCard
-          title="Voters"
-          icon={<BallotIcon />}
-          href={ROUTE_CONSTANTS.VOTERS}
-          description="Create AI voters and see how they vote on different topics!"
-        />
-
-        <GameCard
-          title="Whowouldwininator"
-          icon={<HelpCircle className="w-full h-full text-space-purple" />}
-          href={ROUTE_CONSTANTS.WHOWOULDWININATOR}
-          description="Create two characters and see who would win in a battle!"
-        />
-
-        <GameCard
-          title="Tap Tap Adventure"
-          icon={<StarIcon />}
-          href={ROUTE_CONSTANTS.TAP_TAP_ADVENTURE}
-          description="Tap to travel, fight monsters, and collect loot in this AI-powered adventure!"
-        />
-
-        <GameCard
-          title="Ring Toss"
-          icon={<MoonIcon />}
-          href={ROUTE_CONSTANTS.RING_TOSS}
-          description="Test your aim in this classic carnival game!"
-        />
-
-        <GameCard
-          title="AI Character Chat Room"
-          icon={<PlanetIcon />}
-          href={ROUTE_CONSTANTS.CHAT_ROOM}
-          description="Chat with fictional characters in a chat room!"
-        />
-
-        {/* Avatar Generator */}
-        <GameCard
-          title="Avatar Generator"
-          icon={<UserIcon className="w-full h-full text-space-purple" />}
-          href={ROUTE_CONSTANTS.AVATAR_MAKER}
-          description="Create unique AI-powered avatars from your photos!"
-        />
-      </div>
-    </div>
-  )
-}
-
-function GameCard({
-  title,
-  icon,
-  href,
-  description,
-  featured = false,
-}: {
-  title: string
-  icon: React.ReactNode
-  href: string
-  description: string
-  featured?: boolean
-}) {
-  return (
-    <Link
-      href={href}
-      className={`bg-space-dark rounded-2xl p-6 flex flex-col items-center hover:bg-space-dark/80 transition-colors border group ${
-        featured
-          ? 'border-space-purple/50 hover:border-space-purple shadow-lg shadow-space-purple/20'
-          : 'border-space-dark hover:border-space-purple/30'
-      }`}
-    >
-      <div className="w-24 h-24 mb-4 transform group-hover:scale-105 transition-transform">
-        {icon}
-      </div>
-      <h3
-        className={`text-xl font-bold text-center ${featured ? 'text-space-purple' : 'text-cream-white'}`}
-      >
-        {title}
-      </h3>
-      <p className="text-slate-400 text-sm text-center mt-2">{description}</p>
-      {featured && (
-        <div className="mt-3 text-xs text-space-purple/80 font-semibold uppercase tracking-wider">
-          New ✦
+      {/* Arcade Floor */}
+      <section>
+        <h2 className="font-headline text-headline-md text-on-surface mb-6 flex items-center gap-3">
+          <span className="material-symbols-outlined text-ds-tertiary text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+            sports_esports
+          </span>
+          Arcade Floor
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+          {games.map((game) => (
+            <Link key={game.href} href={game.href}>
+              <ChunkyCard variant="surface-variant" interactive cornerGlow="primary" className="h-full">
+                <ChunkyCardContent className="pt-6 pb-6 flex flex-col items-center text-center gap-3">
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ds-surface border-2 border-outline-variant">
+                    <span className="material-symbols-outlined text-[32px] text-ds-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {game.icon}
+                    </span>
+                  </div>
+                  {game.hot && <Pill tone="hot" pulse icon="local_fire_department">HOT!</Pill>}
+                  <h3 className="font-headline text-lg font-bold text-on-surface">{game.title}</h3>
+                  <p className="text-body-md text-on-surface-variant text-sm">{game.description}</p>
+                </ChunkyCardContent>
+              </ChunkyCard>
+            </Link>
+          ))}
         </div>
-      )}
-    </Link>
+      </section>
+    </div>
   )
 }
