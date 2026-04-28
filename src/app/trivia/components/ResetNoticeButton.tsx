@@ -4,8 +4,40 @@ import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 
+const SEEN_KEY = 'trivia:resetNoticeSeen'
+
+function hasSeenNotice(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    return window.localStorage.getItem(SEEN_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+function markSeen(): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(SEEN_KEY, '1')
+  } catch {
+    // ignore
+  }
+}
+
 export function ResetNoticeButton() {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!hasSeenNotice()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOpen(true)
+    }
+  }, [])
+
+  const handleClose = () => {
+    markSeen()
+    setOpen(false)
+  }
 
   return (
     <>
@@ -18,7 +50,7 @@ export function ResetNoticeButton() {
       >
         i
       </button>
-      {open && <ResetDialog onClose={() => setOpen(false)} />}
+      {open && <ResetDialog onClose={handleClose} />}
     </>
   )
 }

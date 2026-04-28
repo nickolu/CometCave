@@ -13,6 +13,7 @@ import { formatDisplayDate, getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { NicknameDialog } from './NicknameDialog'
+import { ResetNoticeButton } from './ResetNoticeButton'
 import { SignInBanner } from './SignInCTA'
 
 export function TriviaLanding({
@@ -65,7 +66,10 @@ export function TriviaLanding({
       </div>
 
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-space-gold mb-2">Daily Trivia</h1>
+        <h1 className="text-4xl font-bold text-space-gold mb-2 inline-flex items-center gap-2">
+          Daily Trivia
+          <ResetNoticeButton />
+        </h1>
         <p className="text-cream-white/70 text-lg">{formatDisplayDate(todayStr)}</p>
       </div>
 
