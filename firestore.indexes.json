@@ -15,14 +15,16 @@
         { "fieldPath": "weekKey", "order": "ASCENDING" },
         { "fieldPath": "totalScore", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "triviaProfile",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "totalScore", "order": "DESCENDING" }
-      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "triviaProfile",
+      "fieldPath": "totalScore",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    }
+  ]
 }
