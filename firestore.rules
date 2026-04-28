@@ -40,5 +40,7 @@ service cloud.firestore {
     // AI questions — server-only
     match /aiQuestions/{docId} { allow read, write: if false; }
     match /aiQuestions/{docId}/answeredBy/{entryId} { allow read, write: if false; }
+    match /aiQuestions/{docId}/flags/{uid}    { allow read, write: if false; }
+    match /aiQuestions/{docId}/ratings/{uid}  { allow read, write: if false; }
   }
 }

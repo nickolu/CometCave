@@ -24,7 +24,7 @@ export interface InfiniteRunState {
   questionsAnswered: number
   trailblazes: number
   lastAnswer: (AnswerResult & { trailblazer: boolean }) | null
-  answers: Array<{ correct: boolean; points: number; timeMs: number; trailblazer: boolean }>
+  answers: Array<{ questionId: string; correct: boolean; points: number; timeMs: number; trailblazer: boolean }>
   error: string | null
 }
 
@@ -99,6 +99,7 @@ export function useInfiniteRun() {
   const submitAnswer = useCallback(async (answer: string) => {
     if (state.phase !== 'playing' || !state.runId || !state.question) return
 
+    const currentQuestionId = state.question.id
     setState(s => ({ ...s, phase: 'answering' }))
     const elapsedMs = Date.now() - startTimeRef.current
 
@@ -108,7 +109,7 @@ export function useInfiniteRun() {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          questionId: state.question.id,
+          questionId: currentQuestionId,
           answer,
           elapsedMs,
         }),
@@ -130,7 +131,7 @@ export function useInfiniteRun() {
         score: result.score,
         questionsAnswered: s.questionsAnswered + 1,
         trailblazes: result.trailblazer ? s.trailblazes + 1 : s.trailblazes,
-        answers: [...s.answers, { correct: result.correct, points: result.points, timeMs: elapsedMs, trailblazer: result.trailblazer }],
+        answers: [...s.answers, { questionId: currentQuestionId, correct: result.correct, points: result.points, timeMs: elapsedMs, trailblazer: result.trailblazer }],
       }))
     } catch {
       setState(s => ({ ...s, phase: 'error', error: 'Failed to submit answer.' }))
