@@ -4,7 +4,7 @@ import { Loader2, Target, Trophy, Zap } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Progress } from '@/components/ui/progress'
 import { getImageGenerationDisableReasonClient, isImageGenerationAllowedClient } from '@/lib/utils'
 
@@ -201,9 +201,9 @@ export function Step04ViewResults({
 
       {/* Loading State */}
       {isGeneratingResults && (
-        <div className="bg-space-dark rounded-lg p-8 text-center">
-          <Loader2 className="w-12 h-12 text-space-purple animate-spin mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-cream-white mb-2">Analyzing Battle...</h3>
+        <div className="bg-surface-container rounded-lg p-8 text-center">
+          <Loader2 className="w-12 h-12 text-on-surface-variant animate-spin mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-on-surface mb-2">Analyzing Battle...</h3>
           <p className="text-gray-300">
             Evaluating character abilities, stats, and scenario conditions...
           </p>
@@ -214,19 +214,19 @@ export function Step04ViewResults({
       {contestResults && !isGeneratingResults && (
         <div className="space-y-6">
           {/* Winner Announcement */}
-          <div className="bg-space-dark rounded-lg p-6 border-2 border-space-purple">
+          <div className="bg-surface-container rounded-lg p-6 border-2 border-surface-variant">
             <div className="text-center">
               <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
 
               {contestResults.winner === 'tie' ? (
                 <div>
-                  <h3 className="text-2xl font-bold text-cream-white mb-2">It&apos;s a Tie!</h3>
+                  <h3 className="text-2xl font-bold text-on-surface mb-2">It&apos;s a Tie!</h3>
                   <p className="text-gray-300">Both characters are evenly matched</p>
                 </div>
               ) : (
                 <div>
-                  <h3 className="text-2xl font-bold text-cream-white mb-2">Winner</h3>
-                  <p className="text-3xl font-bold text-space-purple mb-2">{winnerDisplay?.name}</p>
+                  <h3 className="text-2xl font-bold text-on-surface mb-2">Winner</h3>
+                  <p className="text-3xl font-bold text-on-surface-variant mb-2">{winnerDisplay?.name}</p>
                   <p className="text-gray-300">{winnerDisplay?.description}</p>
                 </div>
               )}
@@ -234,16 +234,16 @@ export function Step04ViewResults({
           </div>
 
           {/* Confidence Score */}
-          <div className="bg-space-dark rounded-lg p-6">
+          <div className="bg-surface-container rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Target className="w-6 h-6 text-space-purple" />
-              <h3 className="text-xl font-semibold text-cream-white">Confidence Score</h3>
+              <Target className="w-6 h-6 text-on-surface-variant" />
+              <h3 className="text-xl font-semibold text-on-surface">Confidence Score</h3>
             </div>
 
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-300">Certainty Level</span>
-                <span className="text-2xl font-bold text-space-purple">
+                <span className="text-2xl font-bold text-on-surface-variant">
                   {contestResults.confidence}/10
                 </span>
               </div>
@@ -264,10 +264,10 @@ export function Step04ViewResults({
           </div>
 
           {/* Reasoning */}
-          <div className="bg-space-dark rounded-lg p-6">
+          <div className="bg-surface-container rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Zap className="w-6 h-6 text-space-purple" />
-              <h3 className="text-xl font-semibold text-cream-white">Analysis</h3>
+              <Zap className="w-6 h-6 text-on-surface-variant" />
+              <h3 className="text-xl font-semibold text-on-surface">Analysis</h3>
             </div>
 
             <div className="prose prose-invert max-w-none">
@@ -279,8 +279,8 @@ export function Step04ViewResults({
 
           {/* Character Comparison */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-space-dark rounded-lg p-6">
-              <h4 className="text-lg font-semibold text-cream-white mb-4">
+            <div className="bg-surface-container rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-on-surface mb-4">
                 {candidate1Name}
                 {contestResults.winner === 'candidate1' && (
                   <Trophy className="w-5 h-5 text-yellow-500 inline ml-2" />
@@ -295,7 +295,7 @@ export function Step04ViewResults({
                       <span className="text-gray-300 capitalize">{stat}</span>
                       <div className="flex items-center gap-2">
                         <Progress value={value} className="w-20 h-2" />
-                        <span className="text-sm text-cream-white w-6">{value}</span>
+                        <span className="text-sm text-on-surface w-6">{value}</span>
                       </div>
                     </div>
                   ))}
@@ -303,8 +303,8 @@ export function Step04ViewResults({
               )}
             </div>
 
-            <div className="bg-space-dark rounded-lg p-6">
-              <h4 className="text-lg font-semibold text-cream-white mb-4">
+            <div className="bg-surface-container rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-on-surface mb-4">
                 {candidate2Name}
                 {contestResults.winner === 'candidate2' && (
                   <Trophy className="w-5 h-5 text-yellow-500 inline ml-2" />
@@ -319,7 +319,7 @@ export function Step04ViewResults({
                       <span className="text-gray-300 capitalize">{stat}</span>
                       <div className="flex items-center gap-2">
                         <Progress value={value} className="w-20 h-2" />
-                        <span className="text-sm text-cream-white w-6">{value}</span>
+                        <span className="text-sm text-on-surface w-6">{value}</span>
                       </div>
                     </div>
                   ))}
@@ -334,8 +334,8 @@ export function Step04ViewResults({
             battleScenario.obstacles ||
             battleScenario.limitations ||
             battleScenario.additionalContext) && (
-            <div className="bg-space-dark rounded-lg p-6">
-              <h4 className="text-lg font-semibold text-cream-white mb-4">Battle Scenario</h4>
+            <div className="bg-surface-container rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-on-surface mb-4">Battle Scenario</h4>
               <div className="space-y-2 text-sm">
                 {battleScenario.setting && (
                   <div>
@@ -399,22 +399,22 @@ export function Step04ViewResults({
           )}
 
           {/* Contest Story Sections */}
-          <div className="bg-space-dark rounded-lg p-6">
+          <div className="bg-surface-container rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <Zap className="w-6 h-6 text-space-purple" />
-                <h3 className="text-xl font-semibold text-cream-white">Battle Story</h3>
+                <Zap className="w-6 h-6 text-on-surface-variant" />
+                <h3 className="text-xl font-semibold text-on-surface">Battle Story</h3>
               </div>
               {!contestStory && !isGeneratingStory && (
-                <Button
-                  variant="outline"
+                <ChunkyButton
+                  variant="secondary"
                   onClick={
                     imageGenerationAllowed ? handleGenerateStoryAndImages : generateContestStory
                   }
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
                 >
                   {imageGenerationAllowed ? 'Generate Story & Images' : 'Generate Story'}
-                </Button>
+                </ChunkyButton>
               )}
             </div>
 
@@ -428,9 +428,9 @@ export function Step04ViewResults({
             {contestStory && !isGeneratingStory && (
               <div className="space-y-6">
                 {/* Intro Section */}
-                <div className="border-l-4 border-space-purple pl-4">
+                <div className="border-l-4 border-surface-variant pl-4">
                   <div className="mb-3">
-                    <h4 className="text-lg font-semibold text-cream-white">Introduction</h4>
+                    <h4 className="text-lg font-semibold text-on-surface">Introduction</h4>
                   </div>
                   <div className="prose prose-invert max-w-none mb-4">
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -469,7 +469,7 @@ export function Step04ViewResults({
                 {/* Climax Section */}
                 <div className="border-l-4 border-red-500 pl-4">
                   <div className="mb-3">
-                    <h4 className="text-lg font-semibold text-cream-white">Climax</h4>
+                    <h4 className="text-lg font-semibold text-on-surface">Climax</h4>
                   </div>
                   <div className="prose prose-invert max-w-none mb-4">
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -508,7 +508,7 @@ export function Step04ViewResults({
                 {/* Ending Section */}
                 <div className="border-l-4 border-yellow-500 pl-4">
                   <div className="mb-3">
-                    <h4 className="text-lg font-semibold text-cream-white">Ending</h4>
+                    <h4 className="text-lg font-semibold text-on-surface">Ending</h4>
                   </div>
                   <div className="prose prose-invert max-w-none mb-4">
                     <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -553,15 +553,15 @@ export function Step04ViewResults({
                     ? 'Ready to generate the complete battle story with images for each section'
                     : 'Ready to generate the complete battle story'}
                 </div>
-                <Button
-                  variant="outline"
+                <ChunkyButton
+                  variant="secondary"
                   onClick={
                     imageGenerationAllowed ? handleGenerateStoryAndImages : generateContestStory
                   }
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
                 >
                   {imageGenerationAllowed ? 'Generate Story & Images' : 'Generate Story'}
-                </Button>
+                </ChunkyButton>
               </div>
             )}
           </div>
@@ -570,22 +570,22 @@ export function Step04ViewResults({
 
       {/* Navigation */}
       <div className="flex justify-between items-center">
-        <Button
-          variant="outline"
+        <ChunkyButton
+          variant="secondary"
           onClick={onPrevious}
-          className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+          className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
         >
           Previous
-        </Button>
+        </ChunkyButton>
 
         <div className="flex gap-3">
-          <Button
+          <ChunkyButton
             onClick={() => window.location.reload()}
-            variant="outline"
-            className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+            variant="secondary"
+            className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
           >
             Start Over
-          </Button>
+          </ChunkyButton>
         </div>
       </div>
     </div>
