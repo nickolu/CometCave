@@ -1,7 +1,7 @@
 import { Plus_Jakarta_Sans, Be_Vietnam_Pro, Lexend } from 'next/font/google'
 
+import { AmbientOrbs } from '@/components/ambient-orbs'
 import { Footer } from '@/components/footer'
-import { StarField } from '@/components/star-field'
 import { TopNavBar } from '@/components/top-nav-bar'
 
 import './globals.css'
@@ -52,7 +52,7 @@ export default function RootLayout({
         </head>
         <body className={`${plusJakartaSans.variable} ${beVietnamPro.variable} ${lexend.variable} ${beVietnamPro.className}`}>
           <div id="site-wrapper" className="min-h-screen flex flex-col bg-surface-dim text-on-surface relative overflow-hidden">
-            <StarField />
+            <AmbientOrbs palette={['primary', 'secondary', 'tertiary']} intensity="medium" />
             <TopNavBar />
             <main className="flex-1 container mx-auto p-4 z-10 relative">{children}</main>
             <Footer />
