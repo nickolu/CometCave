@@ -1,8 +1,8 @@
 'use client'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDisplayDate } from '@/lib/dates'
 
@@ -12,9 +12,9 @@ import { SignInCard } from './SignInCTA'
 const MAX_SCORE_PER_GAME = 3150
 
 function getAccuracyColor(accuracy: number): string {
-  if (accuracy >= 80) return 'text-green-400'
+  if (accuracy >= 80) return 'text-ds-primary'
   if (accuracy >= 60) return 'text-yellow-400'
-  return 'text-red-400'
+  return 'text-ds-error'
 }
 
 export function TriviaStats({ onBack }: { onBack: () => void }) {
@@ -39,28 +39,28 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
   if (stats.gamesPlayed === 0) {
     return (
       <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
-        <h2 className="text-3xl font-bold text-space-gold inline-flex items-center gap-2">
+        <h2 className="text-3xl font-bold text-ds-tertiary inline-flex items-center gap-2">
           My Stats
           <ResetNoticeButton />
         </h2>
         {user ? (
-          <Card className="w-full bg-space-dark/80 border-space-grey">
-            <CardContent className="pt-6 text-center">
-              <p className="text-cream-white/70 text-lg mb-2">No games played yet</p>
-              <p className="text-cream-white/50 text-sm">
+          <ChunkyCard variant="surface-variant" className="w-full bg-surface-container/80 border-outline-variant">
+            <ChunkyCardContent className="pt-6 text-center">
+              <p className="text-on-surface/70 text-lg mb-2">No games played yet</p>
+              <p className="text-on-surface/50 text-sm">
                 Play your first daily trivia to start building your stats!
               </p>
-            </CardContent>
-          </Card>
+            </ChunkyCardContent>
+          </ChunkyCard>
         ) : (
           <SignInCard
             title="📊 Your stats will appear here"
             description="Sign in to start tracking your scores, streaks, and history."
           />
         )}
-        <Button variant="outline" onClick={onBack} className="w-full">
+        <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
           Back to Trivia
-        </Button>
+        </ChunkyButton>
       </div>
     )
   }
@@ -69,108 +69,108 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col gap-5 max-w-lg mx-auto py-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-space-gold mb-1 inline-flex items-center gap-2">
+        <h2 className="text-3xl font-bold text-ds-tertiary mb-1 inline-flex items-center gap-2">
           My Stats
           <ResetNoticeButton />
         </h2>
-        <p className="text-cream-white/50 text-sm">Your trivia journey so far</p>
+        <p className="text-on-surface/50 text-sm">Your trivia journey so far</p>
       </div>
 
       {/* Top-level stats grid */}
       <div className="grid grid-cols-2 gap-3">
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-5 pb-5 text-center">
-            <div className="text-3xl font-bold text-space-gold">
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5 text-center">
+            <div className="text-3xl font-bold text-ds-tertiary">
               {stats.gamesPlayed}
             </div>
-            <div className="text-cream-white/50 text-xs mt-1">Games Played</div>
-          </CardContent>
-        </Card>
+            <div className="text-on-surface/50 text-xs mt-1">Games Played</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
 
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-5 pb-5 text-center">
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5 text-center">
             <div className={`text-3xl font-bold ${getAccuracyColor(accuracy)}`}>
               {accuracy}%
             </div>
-            <div className="text-cream-white/50 text-xs mt-1">Accuracy</div>
-          </CardContent>
-        </Card>
+            <div className="text-on-surface/50 text-xs mt-1">Accuracy</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
 
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-5 pb-5 text-center">
-            <div className="text-3xl font-bold text-cream-white">
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5 text-center">
+            <div className="text-3xl font-bold text-on-surface">
               {stats.totalScore.toLocaleString()}
             </div>
-            <div className="text-cream-white/50 text-xs mt-1">Total Score</div>
-          </CardContent>
-        </Card>
+            <div className="text-on-surface/50 text-xs mt-1">Total Score</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
 
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-5 pb-5 text-center">
-            <div className="text-3xl font-bold text-cream-white">
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5 text-center">
+            <div className="text-3xl font-bold text-on-surface">
               {avgScore.toLocaleString()}
             </div>
-            <div className="text-cream-white/50 text-xs mt-1">Avg / Game</div>
-          </CardContent>
-        </Card>
+            <div className="text-on-surface/50 text-xs mt-1">Avg / Game</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
       </div>
 
       {/* Streaks */}
-      <Card className="bg-space-dark/80 border-space-grey">
-        <CardContent className="pt-5 pb-5">
+      <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+        <ChunkyCardContent className="pt-5 pb-5">
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <span className="text-2xl">🔥</span>
-                <span className="text-3xl font-bold text-space-gold">
+                <span className="text-3xl font-bold text-ds-tertiary">
                   {stats.currentStreak}
                 </span>
               </div>
-              <div className="text-cream-white/50 text-xs mt-1">Current Streak</div>
+              <div className="text-on-surface/50 text-xs mt-1">Current Streak</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-space-purple-light">
+              <div className="text-3xl font-bold text-on-surface-variant">
                 {stats.bestStreak}
               </div>
-              <div className="text-cream-white/50 text-xs mt-1">Best Streak</div>
+              <div className="text-on-surface/50 text-xs mt-1">Best Streak</div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Additional totals */}
-      <Card className="bg-space-dark/80 border-space-grey">
-        <CardContent className="pt-5 pb-5">
-          <h3 className="text-cream-white/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+      <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+        <ChunkyCardContent className="pt-5 pb-5">
+          <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
             Totals
           </h3>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-cream-white/60 text-sm">Best single game</span>
-              <span className="text-space-gold font-bold">
+              <span className="text-on-surface/60 text-sm">Best single game</span>
+              <span className="text-ds-tertiary font-bold">
                 {bestScore.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-cream-white/60 text-sm">Questions answered</span>
-              <span className="text-cream-white font-bold">
+              <span className="text-on-surface/60 text-sm">Questions answered</span>
+              <span className="text-on-surface font-bold">
                 {stats.totalQuestions.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-cream-white/60 text-sm">Correct answers</span>
-              <span className="text-green-400 font-bold">
+              <span className="text-on-surface/60 text-sm">Correct answers</span>
+              <span className="text-ds-primary font-bold">
                 {stats.totalCorrect.toLocaleString()}
               </span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Recent history */}
-      <Card className="bg-space-dark/80 border-space-grey">
-        <CardContent className="pt-5 pb-5">
-          <h3 className="text-cream-white/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+      <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+        <ChunkyCardContent className="pt-5 pb-5">
+          <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
             Recent Games
           </h3>
           <div className="flex flex-col gap-2">
@@ -182,21 +182,21 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
               return (
                 <div
                   key={game.date}
-                  className="flex items-center justify-between py-2 px-3 rounded bg-space-black/40"
+                  className="flex items-center justify-between py-2 px-3 rounded bg-surface-dim/40"
                 >
                   <div className="flex flex-col">
-                    <span className="text-cream-white text-sm font-medium">
+                    <span className="text-on-surface text-sm font-medium">
                       {formatDisplayDate(game.date)}
                     </span>
-                    <span className="text-cream-white/40 text-xs">
+                    <span className="text-on-surface/40 text-xs">
                       {game.correct}/{game.total} correct
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
                     {/* Visual bar */}
-                    <div className="w-16 h-2 bg-space-grey rounded-full overflow-hidden">
+                    <div className="w-16 h-2 bg-outline-variant rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-space-gold transition-all"
+                        className="h-full bg-ds-tertiary transition-all"
                         style={{ width: `${scorePercent}%` }}
                       />
                     </div>
@@ -210,13 +210,13 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
               )
             })}
           </div>
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Navigation */}
-      <Button variant="outline" onClick={onBack} className="w-full">
+      <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
         Back to Trivia
-      </Button>
+      </ChunkyButton>
     </div>
   )
 }
