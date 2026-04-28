@@ -7,12 +7,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { SignInCard } from './SignInCTA'
 import { QuestionRating } from './QuestionRating'
 import { FlagQuestion } from './FlagQuestion'
-import type { InfiniteRunState } from '@/app/trivia/hooks/useInfiniteRun'
+import type { InfiniteRunState, InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 
 interface Props {
   state: InfiniteRunState
   onPlayAgain: () => void
   onBack: () => void
+  mode?: InfiniteMode
 }
 
 function formatTime(ms: number): string {
@@ -28,7 +29,7 @@ function getRunRating(longestStreak: number): string {
   return 'Keep Exploring!'
 }
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored' }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
 
@@ -57,7 +58,14 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack }: Props) {
         <h2 className="font-headline text-headline-lg text-ds-tertiary drop-shadow-[0_4px_0_var(--surface-container-lowest)] mb-1">
           {getRunRating(state.longestStreak)}
         </h2>
-        <p className="text-on-surface/50 text-sm">Run Complete</p>
+        {mode === 'practice' ? (
+          <div className="flex flex-col items-center gap-1">
+            <Pill tone="info" size="sm">Practice Run</Pill>
+            <p className="text-on-surface/50 text-xs mt-1">Practice runs don&apos;t count toward stats.</p>
+          </div>
+        ) : (
+          <p className="text-on-surface/50 text-sm">Run Complete</p>
+        )}
       </div>
 
       {/* Hero: Longest Streak */}

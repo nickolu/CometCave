@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Pill, ScoreChip } from '@/components/ui/pill'
 import { computeStreakMultiplier } from '@/app/trivia/lib/infiniteScoring'
+import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 
 interface InfiniteHUDProps {
   livesRemaining: number
@@ -12,6 +13,7 @@ interface InfiniteHUDProps {
   timeLimit: number
   onFlee: () => void
   isPlaying: boolean
+  mode?: InfiniteMode
 }
 
 export function InfiniteHUD({
@@ -22,6 +24,7 @@ export function InfiniteHUD({
   timeLimit,
   onFlee,
   isPlaying,
+  mode = 'scored',
 }: InfiniteHUDProps) {
   const [showFleeConfirm, setShowFleeConfirm] = useState(false)
   const mult = computeStreakMultiplier(currentStreak)
@@ -54,17 +57,21 @@ export function InfiniteHUD({
           <span className="hidden sm:inline">Flee</span>
         </ChunkyButton>
 
-        {/* Lives */}
-        <div className="flex items-center gap-1" aria-label={`${livesRemaining} lives remaining`}>
-          {[0, 1, 2].map(i => (
-            <span
-              key={i}
-              className={`text-lg transition-opacity ${i < livesRemaining ? 'opacity-100' : 'opacity-20'}`}
-            >
-              {i < livesRemaining ? '❤️' : '🖤'}
-            </span>
-          ))}
-        </div>
+        {/* Lives or Practice indicator */}
+        {mode === 'practice' ? (
+          <Pill tone="info" size="sm">Practice</Pill>
+        ) : (
+          <div className="flex items-center gap-1" aria-label={`${livesRemaining} lives remaining`}>
+            {[0, 1, 2].map(i => (
+              <span
+                key={i}
+                className={`text-lg transition-opacity ${i < livesRemaining ? 'opacity-100' : 'opacity-20'}`}
+              >
+                {i < livesRemaining ? '❤️' : '🖤'}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Streak + multiplier */}
         <div className="flex items-center gap-1.5">

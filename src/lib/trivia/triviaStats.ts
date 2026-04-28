@@ -61,6 +61,9 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
     if (!runSnap.exists) throw new Error('Run not found')
     const run = runSnap.data() as RunDoc & { statsApplied?: boolean }
 
+    // Practice runs don't count toward stats
+    if (run.mode === 'practice') return
+
     // Idempotency: skip if already applied
     if (run.statsApplied === true) return
 

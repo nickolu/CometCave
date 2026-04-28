@@ -22,6 +22,7 @@ export function TriviaLanding({
   onViewLeaderboard,
   onStartInfinite,
   onViewInfiniteStats,
+  onStartPractice,
   todayResult,
 }: {
   onStartGame?: () => void
@@ -29,6 +30,7 @@ export function TriviaLanding({
   onViewLeaderboard?: () => void
   onStartInfinite?: () => void
   onViewInfiniteStats?: () => void
+  onStartPractice?: () => void
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -166,6 +168,14 @@ export function TriviaLanding({
             onClick={onStartInfinite}
           >
             Enter the Infinite Cavern
+          </ChunkyButton>
+          <ChunkyButton
+            variant="ghost"
+            size="sm"
+            className="w-full"
+            onClick={onStartPractice}
+          >
+            Practice Mode
           </ChunkyButton>
         </ChunkyCardContent>
       </ChunkyCard>

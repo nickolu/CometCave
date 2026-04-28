@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { LIVES_START, type AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 
 export type InfinitePhase = 'idle' | 'loading' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
+export type InfiniteMode = 'scored' | 'practice'
 
 export interface InfiniteQuestion {
   id: string
@@ -15,6 +16,7 @@ export interface InfiniteQuestion {
 
 export interface InfiniteRunState {
   phase: InfinitePhase
+  mode: InfiniteMode
   runId: string | null
   question: InfiniteQuestion | null
   livesRemaining: number
@@ -31,6 +33,7 @@ export interface InfiniteRunState {
 export function useInfiniteRun() {
   const [state, setState] = useState<InfiniteRunState>({
     phase: 'idle',
+    mode: 'scored',
     runId: null,
     question: null,
     livesRemaining: LIVES_START,
@@ -55,14 +58,14 @@ export function useInfiniteRun() {
     }
   }, [user])
 
-  const startRun = useCallback(async () => {
-    setState(s => ({ ...s, phase: 'loading', error: null }))
+  const startRun = useCallback(async (mode: InfiniteMode = 'scored') => {
+    setState(s => ({ ...s, phase: 'loading', mode, error: null }))
     try {
       const headers = await getAuthHeaders()
       const res = await fetch('/api/v1/trivia/infinite/runs', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ mode: 'scored' }),
+        body: JSON.stringify({ mode }),
       })
       if (!res.ok) throw new Error('Failed to start run')
       const data = await res.json()
@@ -80,6 +83,7 @@ export function useInfiniteRun() {
       setState(s => ({
         ...s,
         phase: 'playing',
+        mode,
         runId: data.runId,
         question,
         livesRemaining: data.livesRemaining,
