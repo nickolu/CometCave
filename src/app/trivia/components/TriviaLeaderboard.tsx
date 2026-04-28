@@ -176,7 +176,7 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
         {(['daily', 'weekly', 'alltime'] as Period[]).map((p) => (
           <ChunkyButton
             key={p}
-            variant={period === p ? 'space' : 'secondary'}
+            variant={period === p ? 'primary' : 'secondary'}
             onClick={() => setPeriod(p)}
             className="capitalize"
           >
