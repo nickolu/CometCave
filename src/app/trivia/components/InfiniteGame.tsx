@@ -5,6 +5,7 @@ import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 import { InfiniteHUD } from './InfiniteHUD'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
+import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
@@ -82,13 +83,11 @@ export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
   // Exhausted state
   if (state.phase === 'exhausted') {
     return (
-      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
-        <h2 className="font-headline text-headline-lg text-ds-tertiary">The Cave Rests</h2>
-        <p className="text-on-surface/60 text-center">
-          You have explored every question in the cavern. New discoveries await — return soon.
-        </p>
-        <ChunkyButton variant="secondary" onClick={onBack}>Back to Trivia</ChunkyButton>
-      </div>
+      <InfiniteExhaustedScreen
+        onBack={onBack}
+        score={state.score}
+        questionsAnswered={state.questionsAnswered}
+      />
     )
   }
 
