@@ -24,7 +24,7 @@ const enchantmentStyles: Record<PlayingCardFlags['enchantment'], string> = {
   glass: 'bg-gradient-to-br from-on-surface to-transparent',
   lucky: 'bg-green-500',
   steel: 'bg-surface-container-highest',
-  stone: 'bg-grey-500',
+  stone: 'bg-ds-outline',
   wild: 'bg-white',
   none: 'bg-white',
 }

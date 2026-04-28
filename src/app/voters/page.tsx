@@ -85,7 +85,7 @@ export default function VotingSimulation() {
                             (step.key === 'criteria' ||
                               (criteria.question && step.key === 'voting') ||
                               (votes.length > 0 && step.key === 'results'))
-                          ? 'bg-space-blue text-on-surface'
+                          ? 'bg-ds-secondary text-on-surface'
                           : 'bg-surface-container text-on-surface-variant'
                     }`}
                   >

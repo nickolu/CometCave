@@ -8,28 +8,28 @@ export const HexagramIcon = () => {
     >
       {/* Hexagram lines - from top to bottom */}
       {/* Line 6 - solid */}
-      <rect x="20" y="10" width="60" height="6" rx="3" fill="currentColor" className="text-space-purple" />
+      <rect x="20" y="10" width="60" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
 
       {/* Line 5 - broken */}
-      <rect x="20" y="24" width="26" height="6" rx="3" fill="currentColor" className="text-space-purple" />
-      <rect x="54" y="24" width="26" height="6" rx="3" fill="currentColor" className="text-space-purple" />
+      <rect x="20" y="24" width="26" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
+      <rect x="54" y="24" width="26" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
 
       {/* Line 4 - solid */}
-      <rect x="20" y="38" width="60" height="6" rx="3" fill="currentColor" className="text-space-purple" />
+      <rect x="20" y="38" width="60" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
 
       {/* Line 3 - broken */}
-      <rect x="20" y="52" width="26" height="6" rx="3" fill="currentColor" className="text-space-purple" />
-      <rect x="54" y="52" width="26" height="6" rx="3" fill="currentColor" className="text-space-purple" />
+      <rect x="20" y="52" width="26" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
+      <rect x="54" y="52" width="26" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
 
       {/* Line 2 - solid */}
-      <rect x="20" y="66" width="60" height="6" rx="3" fill="currentColor" className="text-space-purple" />
+      <rect x="20" y="66" width="60" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
 
       {/* Line 1 - solid */}
-      <rect x="20" y="80" width="60" height="6" rx="3" fill="currentColor" className="text-space-purple" />
+      <rect x="20" y="80" width="60" height="6" rx="3" fill="currentColor" className="text-surface-variant" />
 
       {/* Decorative circles on the sides */}
-      <circle cx="10" cy="45" r="3" fill="currentColor" className="text-space-purple opacity-50" />
-      <circle cx="90" cy="45" r="3" fill="currentColor" className="text-space-purple opacity-50" />
+      <circle cx="10" cy="45" r="3" fill="currentColor" className="text-surface-variant opacity-50" />
+      <circle cx="90" cy="45" r="3" fill="currentColor" className="text-surface-variant opacity-50" />
     </svg>
   )
 }

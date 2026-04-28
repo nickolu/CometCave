@@ -15,7 +15,7 @@ const FaceUpJoker = ({ joker }: { joker: JokerDefinition }) => {
 
 // const FaceDownJoker = () => {
 //   return (
-//     <div className="flex flex-col px-1 h-full bg-space-grey">
+//     <div className="flex flex-col px-1 h-full bg-surface-container-highest">
 //       <div data-name="top-row" className="flex justify-between">
 //         <div>?</div>
 //       </div>
