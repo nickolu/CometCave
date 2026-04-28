@@ -20,10 +20,10 @@ const cardColors = {
 const enchantmentStyles: Record<PlayingCardFlags['enchantment'], string> = {
   bonus: 'bg-blue-500',
   mult: 'bg-red-500',
-  gold: 'bg-space-gold',
-  glass: 'bg-gradient-to-br from-cream-white to-transparent',
+  gold: 'bg-ds-tertiary',
+  glass: 'bg-gradient-to-br from-on-surface to-transparent',
   lucky: 'bg-green-500',
-  steel: 'bg-space-grey',
+  steel: 'bg-surface-container-highest',
   stone: 'bg-grey-500',
   wild: 'bg-white',
   none: 'bg-white',
@@ -32,7 +32,7 @@ const enchantmentStyles: Record<PlayingCardFlags['enchantment'], string> = {
 const sealStyles: Record<PlayingCardFlags['seal'], string> = {
   blue: 'bg-blue-500',
   purple: 'bg-purple-500',
-  gold: 'bg-space-gold',
+  gold: 'bg-ds-tertiary',
   red: 'bg-red-500',
   none: 'bg-white',
 }
@@ -74,7 +74,7 @@ const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
         {playingCard.flags.edition !== 'normal' && (
           <div
             data-name="edition-row"
-            className="flex justify-center bg-cream-white -mx-1 rounded-b-xl"
+            className="flex justify-center bg-on-surface -mx-1 rounded-b-xl"
           >
             <div className="text-xs">{playingCard.flags.edition}</div>
           </div>
@@ -86,7 +86,7 @@ const FaceUpCard = ({ playingCard }: { playingCard: PlayingCardState }) => {
 
 const FaceDownCard = () => {
   return (
-    <div className="flex flex-col px-1 h-full bg-space-grey">
+    <div className="flex flex-col px-1 h-full bg-surface-container-highest">
       <div data-name="top-row" className="flex justify-between">
         <div>?</div>
       </div>

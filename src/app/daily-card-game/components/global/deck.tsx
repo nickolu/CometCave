@@ -7,7 +7,7 @@ import { getDrawPile, getOwnedCards } from '@/app/daily-card-game/domain/game/ca
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { cn } from '@/lib/utils'
 
 const CardRow = ({ cards }: { cards: PlayingCardState[] }) => {
@@ -36,18 +36,18 @@ export const Deck = () => {
     <div>
       <div className="mb-2">
         {' '}
-        <Button
-          className={cn(deckType === 'remaining' ? 'bg-space-blue' : 'bg-space-grey')}
+        <ChunkyButton
+          className={cn(deckType === 'remaining' ? 'bg-space-blue' : 'bg-surface-container-highest')}
           onClick={() => setDeckType('remaining')}
         >
           Remaining Deck
-        </Button>
-        <Button
-          className={cn(deckType === 'full' ? 'bg-space-blue' : 'bg-space-grey')}
+        </ChunkyButton>
+        <ChunkyButton
+          className={cn(deckType === 'full' ? 'bg-space-blue' : 'bg-surface-container-highest')}
           onClick={() => setDeckType('full')}
         >
           Full Deck
-        </Button>
+        </ChunkyButton>
       </div>
 
       <CardRow cards={spades} />

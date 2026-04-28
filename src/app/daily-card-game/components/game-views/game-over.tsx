@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Card } from '@/components/ui/card'
 
 import { ViewTemplate } from './view-template'
@@ -66,7 +66,7 @@ export function GameOverView() {
 
   return (
     <ViewTemplate>
-      <Card className="bg-space-grey border-space-purple p-4 text-cream-white h-63 w-1/3 flex flex-col justify-between text-center mx-auto">
+      <Card className="bg-surface-container-highest border-surface-variant p-4 text-on-surface h-63 w-1/3 flex flex-col justify-between text-center mx-auto">
         <div className="flex flex-col items-center justify-center">
           <h2>{didWin ? 'You Win!' : 'Game Over: You Lose'}</h2>
           <div>Total Score: {game.totalScore.toString()}</div>
@@ -95,10 +95,10 @@ export function GameOverView() {
             </div>
           </div>
           <div className="mt-4">
-            <Button onClick={onShare}>{hasCopied ? 'Copied!' : 'Share Score'}</Button>
+            <ChunkyButton onClick={onShare}>{hasCopied ? 'Copied!' : 'Share Score'}</ChunkyButton>
           </div>
           <div className="mt-4">
-            <p className="text-lg font-bold text-space-gold">Try again tomorrow for a new game!</p>
+            <p className="text-lg font-bold text-ds-tertiary">Try again tomorrow for a new game!</p>
           </div>
         </div>
       </Card>

@@ -2,7 +2,7 @@ import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-sign
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import type { TagType } from '@/app/daily-card-game/domain/tag/types'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Card } from '@/components/ui/card'
 
 export function BlindCard({
@@ -23,10 +23,10 @@ export function BlindCard({
   tag?: TagType
 }) {
   return (
-    <Card className="bg-space-grey border-space-purple p-4 text-cream-white h-63 w-1/3 flex flex-col justify-between text-center">
+    <Card className="bg-surface-container-highest border-surface-variant p-4 text-on-surface h-63 w-1/3 flex flex-col justify-between text-center">
       <div className="flex flex-col gap-2 h-full">
         <h3 className="text-xl font-bold">{name}</h3>
-        {description && <p className="text-sm text-cream-white/50">{description}</p>}
+        {description && <p className="text-sm text-on-surface/50">{description}</p>}
         <p>
           Reward: <DollarSigns count={reward} />
         </p>
@@ -35,7 +35,7 @@ export function BlindCard({
       <div className="flex flex-col gap-2 justify-start h-full mt-7">
         {minimumScore !== undefined && <p>Score at Least: {minimumScore.toString()}</p>}
         <div>
-          <Button
+          <ChunkyButton
             className="w-full"
             disabled={disabled}
             onClick={() => {
@@ -43,10 +43,10 @@ export function BlindCard({
             }}
           >
             Select
-          </Button>
+          </ChunkyButton>
           {tag && (
             <div className="flex flex-col gap-2">
-              <Button
+              <ChunkyButton
                 variant="outline"
                 className="w-full mt-2 h-auto whitespace-break-spaces"
                 disabled={disabled}
@@ -55,8 +55,8 @@ export function BlindCard({
                 }}
               >
                 Skip and get the {tags[tag]?.name} tag
-              </Button>{' '}
-              <div className="text-sm text-cream-white/50">
+              </ChunkyButton>{' '}
+              <div className="text-sm text-on-surface/50">
                 {tags[tag]?.name} Tag: {tags[tag]?.benefit}
               </div>
             </div>
