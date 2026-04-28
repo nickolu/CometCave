@@ -47,7 +47,7 @@ export function BlindCard({
           {tag && (
             <div className="flex flex-col gap-2">
               <ChunkyButton
-                variant="outline"
+                variant="secondary"
                 className="w-full mt-2 h-auto whitespace-break-spaces"
                 disabled={disabled}
                 onClick={() => {
