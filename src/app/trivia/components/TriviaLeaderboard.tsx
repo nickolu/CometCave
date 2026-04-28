@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -35,6 +36,7 @@ interface AllTimeEntry {
 
 export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
+  const { displayName: triviaDisplayName } = useTriviaUser()
   const [period, setPeriod] = useState<Period>('daily')
   const [loading, setLoading] = useState(true)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,7 +44,7 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const authName = user?.displayName ?? user?.email ?? null
+  const authName = user ? triviaDisplayName || user.email || null : null
   const currentName = authName?.toLowerCase().trim() ?? ''
 
   useEffect(() => {

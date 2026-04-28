@@ -94,7 +94,7 @@ interface TriviaResultsProps {
 export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { user } = useAuth()
-  const { userData: firestoreUser } = useTriviaUser()
+  const { userData: firestoreUser, displayName } = useTriviaUser()
   const currentStreak = firestoreUser.stats.currentStreak
   const [scoreSubmitted, setScoreSubmitted] = useState(false)
   const countdown = useCountdown()
@@ -131,7 +131,7 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
   const handleShare = async () => {
-    const playerName = user ? user.displayName ?? user.email ?? null : null
+    const playerName = user ? displayName || user.email || null : null
     const text = getShareText(result, {
       streak: user ? currentStreak : undefined,
       playerName,

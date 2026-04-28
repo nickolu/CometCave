@@ -1,14 +1,28 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { getFirebaseAuthAdmin } from '@/app/trivia/lib/firebase'
+import { getFirebaseAuthAdmin, getFirestoreDb } from '@/app/trivia/lib/firebase'
 import { submitScore } from '@/app/trivia/lib/leaderboardStore'
 import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 
 const MAX_SCORE = 3150
 const MAX_NAME_LENGTH = 20
 
-function deriveDisplayName(token: { name?: string; email?: string }): string | null {
-  const candidate = (token.name ?? token.email ?? '').trim()
+async function resolveDisplayName(decoded: {
+  uid: string
+  name?: string
+  email?: string
+}): Promise<string | null> {
+  try {
+    const snap = await getFirestoreDb()
+      .collection('trivia-users')
+      .doc(decoded.uid)
+      .get()
+    const nickname = (snap.data()?.nickname as string | undefined)?.trim()
+    if (nickname) return nickname.slice(0, MAX_NAME_LENGTH)
+  } catch (err) {
+    console.warn('Failed to read nickname for score submission:', err)
+  }
+  const candidate = (decoded.name ?? decoded.email ?? '').trim()
   if (!candidate) return null
   return candidate.slice(0, MAX_NAME_LENGTH)
 }
@@ -29,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid auth token.' }, { status: 401 })
     }
 
-    const displayName = deriveDisplayName(decoded)
+    const displayName = await resolveDisplayName(decoded)
     if (!displayName) {
       return NextResponse.json(
         { error: 'Account is missing a display name. Update your profile and try again.' },
