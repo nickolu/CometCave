@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
+import { InfiniteGame } from './components/InfiniteGame'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaLeaderboard } from './components/TriviaLeaderboard'
@@ -22,7 +23,7 @@ import { TriviaStats } from './components/TriviaStats'
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
-type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard'
+type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite'
 
 async function submitGameToServer(user: User, result: TriviaGameResult): Promise<void> {
   const token = await user.getIdToken()
@@ -109,6 +110,7 @@ export default function TriviaPage() {
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => setView('stats')
   const handleViewLeaderboard = () => setView('leaderboard')
+  const handleStartInfinite = () => setView('infinite')
 
   const handleFinish = useCallback(
     (result: TriviaGameResult) => {
@@ -128,6 +130,10 @@ export default function TriviaPage() {
   )
 
   const handleBackToLanding = () => setView('landing')
+
+  if (view === 'infinite') {
+    return <InfiniteGame onBack={handleBackToLanding} />
+  }
 
   if (view === 'playing') {
     return <TriviaGame onFinish={handleFinish} />
@@ -157,6 +163,7 @@ export default function TriviaPage() {
       onStartGame={handleStartGame}
       onViewStats={handleViewStats}
       onViewLeaderboard={handleViewLeaderboard}
+      onStartInfinite={handleStartInfinite}
       todayResult={todayResult}
     />
   )
