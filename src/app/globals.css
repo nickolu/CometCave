@@ -110,6 +110,49 @@ body {
   /* --- On-surface ------------------------------------------------- */
   --on-surface: #e4e1d6;             /* high-emphasis text */
   --on-surface-variant: #c4c5d0;     /* medium-emphasis text */
+
+  /* --- Spacing ---------------------------------------------------- */
+  --space-unit: 8px;
+  --space-stack-gap: 16px;
+  --space-gutter: 24px;
+  --space-margin: 32px;
+  --space-component-padding-x: 24px;
+  --space-component-padding-y: 16px;
+
+  /* --- Radius ----------------------------------------------------- */
+  --radius-sm: 1rem;
+  --radius-lg: 2rem;
+  --radius-xl: 3rem;
+  --radius-full: 9999px;
+
+  /* --- Typography ------------------------------------------------- */
+  --text-headline-lg-size: 2.5rem;        /* 40px */
+  --text-headline-lg-line-height: 1.2;
+  --text-headline-lg-weight: 800;
+  --text-headline-lg-tracking: -0.02em;
+  --text-headline-lg-family: var(--font-headline);
+
+  --text-headline-md-size: 2rem;           /* 32px */
+  --text-headline-md-line-height: 1.2;
+  --text-headline-md-weight: 800;
+  --text-headline-md-family: var(--font-headline);
+
+  --text-body-lg-size: 1.125rem;           /* 18px */
+  --text-body-lg-line-height: 1.6;
+  --text-body-lg-weight: 500;
+  --text-body-lg-family: var(--font-body);
+
+  --text-body-md-size: 1rem;               /* 16px */
+  --text-body-md-line-height: 1.6;
+  --text-body-md-weight: 400;
+  --text-body-md-family: var(--font-body);
+
+  --text-label-caps-size: 0.875rem;        /* 14px */
+  --text-label-caps-line-height: 1.0;
+  --text-label-caps-weight: 700;
+  --text-label-caps-tracking: 0.05em;
+  --text-label-caps-family: var(--font-label);
+  --text-label-caps-transform: uppercase;
 }
 
 /* When game is active on mobile, hide site chrome and fix scrolling */
