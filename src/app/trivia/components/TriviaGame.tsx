@@ -220,6 +220,9 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
 
   const question = questions[currentIndex]
   const config = getQuestionConfig(question)
+  const segmentResults: Array<'correct' | 'incorrect'> = answers.map((a) =>
+    a.correct ? 'correct' : 'incorrect'
+  )
 
   // Difficulty badge colors
   const diffBadgeColor = {
@@ -239,6 +242,7 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
         timeLimit={config.timeLimit}
         onFlee={onFlee ?? (() => window.location.reload())}
         isPlaying={phase === 'playing'}
+        segmentResults={segmentResults}
       />
 
       {/* Question card */}
@@ -292,7 +296,7 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
                 value={textAnswer}
                 onChange={(e) => setTextAnswer(e.target.value)}
                 placeholder="Type your answer..."
-                className="bg-surface-dim/50 border-outline-variant text-on-surface"
+                className="bg-surface-container-low border-outline-variant text-on-surface text-base"
                 disabled={phase !== 'playing' || isChecking}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && textAnswer.trim()) {

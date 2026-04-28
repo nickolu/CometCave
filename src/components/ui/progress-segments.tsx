@@ -2,15 +2,18 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
+export type ProgressSegmentResult = 'correct' | 'incorrect'
+
 export interface ProgressSegmentsProps extends React.HTMLAttributes<HTMLDivElement> {
   total: number
   current: number
   label?: string
   accent?: 'primary' | 'secondary'
+  segmentResults?: Array<ProgressSegmentResult | undefined>
 }
 
 const ProgressSegments = React.forwardRef<HTMLDivElement, ProgressSegmentsProps>(
-  ({ total, current, label, accent = 'primary', className, ...props }, ref) => {
+  ({ total, current, label, accent = 'primary', segmentResults, className, ...props }, ref) => {
     const clampedCurrent = Math.max(0, Math.min(current, total))
 
     return (
@@ -37,15 +40,32 @@ const ProgressSegments = React.forwardRef<HTMLDivElement, ProgressSegmentsProps>
         )}
         {Array.from({ length: total }, (_, i) => {
           const index = i + 1
-          const isFilled = index < clampedCurrent
-          const isActive = index === clampedCurrent
-          const isEmpty = index > clampedCurrent
+          const result = segmentResults?.[i]
+          const isCorrect = result === 'correct'
+          const isIncorrect = result === 'incorrect'
+          const hasResult = isCorrect || isIncorrect
+          const isActive = !hasResult && index === clampedCurrent
+          const isFilled = !hasResult && index < clampedCurrent
+          const isEmpty = !hasResult && !isActive && !isFilled
+
+          const segmentLabel = isCorrect
+            ? `Question ${index}: correct`
+            : isIncorrect
+              ? `Question ${index}: incorrect`
+              : isActive
+                ? `Question ${index}: current`
+                : undefined
 
           return (
             <div
               key={i}
+              aria-label={segmentLabel}
               className={cn(
                 'h-3 flex-1 rounded-full transition-all duration-300 relative overflow-hidden',
+                isCorrect &&
+                  'bg-gradient-to-r from-green-500/80 to-green-400 shadow-[0_0_12px_rgba(74,222,128,0.45)]',
+                isIncorrect &&
+                  'bg-gradient-to-r from-red-500/80 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.45)]',
                 isFilled && [
                   accent === 'primary'
                     ? 'bg-gradient-to-r from-primary-container to-secondary-container shadow-glow-primary'
@@ -61,7 +81,7 @@ const ProgressSegments = React.forwardRef<HTMLDivElement, ProgressSegmentsProps>
                 isEmpty && 'bg-surface-container shadow-rim-inset-deep'
               )}
             >
-              {isFilled && (
+              {(isFilled || isCorrect) && (
                 <div
                   className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent motion-reduce:hidden"
                   aria-hidden

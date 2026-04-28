@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Pill, ScoreChip } from '@/components/ui/pill'
-import { ProgressSegments } from '@/components/ui/progress-segments'
+import { type ProgressSegmentResult, ProgressSegments } from '@/components/ui/progress-segments'
 
 export interface TriviaHUDProps {
   currentQuestion: number
@@ -14,6 +14,7 @@ export interface TriviaHUDProps {
   timeLimit: number
   onFlee: () => void
   isPlaying: boolean
+  segmentResults?: Array<ProgressSegmentResult | undefined>
 }
 
 export function TriviaHUD({
@@ -24,6 +25,7 @@ export function TriviaHUD({
   timeLimit,
   onFlee,
   isPlaying,
+  segmentResults,
 }: TriviaHUDProps) {
   const [showFleeConfirm, setShowFleeConfirm] = useState(false)
 
@@ -78,6 +80,7 @@ export function TriviaHUD({
         total={totalQuestions}
         current={currentQuestion + 1}
         label="Chamber Depth"
+        segmentResults={segmentResults}
       />
 
       {/* Flee confirmation dialog */}
