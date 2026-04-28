@@ -31,14 +31,17 @@ export default function TriviaPage() {
 
   const [view, setView] = useState<View>('landing')
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
+  const [autoResultsShown, setAutoResultsShown] = useState(false)
 
   useEffect(() => {
+    if (autoResultsShown) return
     if (user && firestoreLoading) return
     if (todayResult && view === 'landing') {
       setLastResult(todayResult)
       setView('results')
     }
-  }, [user, firestoreLoading, todayResult, view])
+    setAutoResultsShown(true)
+  }, [autoResultsShown, user, firestoreLoading, todayResult, view])
 
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => setView('stats')
