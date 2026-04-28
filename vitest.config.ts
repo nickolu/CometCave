@@ -16,6 +16,8 @@ export default defineConfig({
       'src/app/tap-tap-adventure/**/*.test.ts',
       'src/app/daily-card-game/**/*.test.ts',
       'src/app/daily-card-game/**/*.test.tsx',
+      'src/lib/trivia/**/*.test.ts',
+      'src/app/trivia/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],
