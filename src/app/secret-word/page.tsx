@@ -302,27 +302,27 @@ function SecretWordGameContent() {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     gameState.gamePhase === step.key
-                      ? 'bg-space-purple text-cream-white'
+                      ? 'bg-surface-variant text-on-surface'
                       : (gameState.gamePhase === 'playing' && step.key === 'setup') ||
                           (gameState.gamePhase === 'ended' &&
                             (step.key === 'setup' || step.key === 'playing'))
-                        ? 'bg-space-blue text-cream-white'
-                        : 'bg-space-dark text-slate-400'
+                        ? 'bg-space-blue text-on-surface'
+                        : 'bg-surface-container text-on-surface-variant'
                   }`}
                 >
                   {index + 1}
                 </div>
-                <span className="ml-2 text-sm font-medium hidden sm:block text-cream-white">
+                <span className="ml-2 text-sm font-medium hidden sm:block text-on-surface">
                   {step.label}
                 </span>
-                {index < 2 && <div className="flex-1 h-0.5 bg-space-dark mx-4 hidden sm:block" />}
+                {index < 2 && <div className="flex-1 h-0.5 bg-surface-container mx-4 hidden sm:block" />}
               </div>
             ))}
           </div>
         </div>
 
         {/* Game content */}
-        <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12">
+        <div className="bg-surface-container border border-surface-variant/30 rounded-2xl p-8 md:p-12">
           {gameState.gamePhase === 'setup' && (
             <SecretWordSetup
               onSetupComplete={handleSetupComplete}
