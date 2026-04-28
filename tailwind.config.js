@@ -17,15 +17,67 @@ const config = {
     },
     extend: {
       colors: {
-        'space-black': '#0A0B14',
-        'space-dark': '#141A2A',
-        'space-grey': '#2A2F3F',
-        'space-purple': '#4A3D66',
-        'space-purple-light': '#665A8A',
-        'space-blue': '#3D4A66',
-        'cream-white': '#F5F2E3',
-        'space-gold': '#F5D700',
-        'grey-500': '#999999',
+        /* ── Design-system semantic colors (from globals.css :root) ── */
+        'ds-surface': 'var(--surface)',
+        'surface-dim': 'var(--surface-dim)',
+        'surface-bright': 'var(--surface-bright)',
+        'surface-variant': 'var(--surface-variant)',
+        'surface-container': 'var(--surface-container)',
+        'surface-container-lowest': 'var(--surface-container-lowest)',
+        'surface-container-low': 'var(--surface-container-low)',
+        'surface-container-high': 'var(--surface-container-high)',
+        'surface-container-highest': 'var(--surface-container-highest)',
+        'surface-tint': 'var(--surface-tint)',
+        'ds-background': 'var(--ds-background)',
+        'on-background': 'var(--on-background)',
+        'ds-primary': 'var(--ds-primary)',
+        'on-primary': 'var(--on-primary)',
+        'primary-container': 'var(--primary-container)',
+        'on-primary-container': 'var(--on-primary-container)',
+        'primary-fixed': 'var(--primary-fixed)',
+        'primary-fixed-dim': 'var(--primary-fixed-dim)',
+        'on-primary-fixed': 'var(--on-primary-fixed)',
+        'on-primary-fixed-variant': 'var(--on-primary-fixed-variant)',
+        'inverse-primary': 'var(--inverse-primary)',
+        'ds-secondary': 'var(--ds-secondary)',
+        'on-secondary': 'var(--on-secondary)',
+        'secondary-container': 'var(--secondary-container)',
+        'on-secondary-container': 'var(--on-secondary-container)',
+        'secondary-fixed': 'var(--secondary-fixed)',
+        'secondary-fixed-dim': 'var(--secondary-fixed-dim)',
+        'on-secondary-fixed': 'var(--on-secondary-fixed)',
+        'on-secondary-fixed-variant': 'var(--on-secondary-fixed-variant)',
+        'ds-tertiary': 'var(--ds-tertiary)',
+        'on-tertiary': 'var(--on-tertiary)',
+        'tertiary-container': 'var(--tertiary-container)',
+        'on-tertiary-container': 'var(--on-tertiary-container)',
+        'tertiary-fixed': 'var(--tertiary-fixed)',
+        'tertiary-fixed-dim': 'var(--tertiary-fixed-dim)',
+        'on-tertiary-fixed': 'var(--on-tertiary-fixed)',
+        'on-tertiary-fixed-variant': 'var(--on-tertiary-fixed-variant)',
+        'ds-error': 'var(--ds-error)',
+        'on-error': 'var(--on-error)',
+        'error-container': 'var(--error-container)',
+        'on-error-container': 'var(--on-error-container)',
+        'ds-outline': 'var(--outline)',
+        'outline-variant': 'var(--outline-variant)',
+        'inverse-surface': 'var(--inverse-surface)',
+        'inverse-on-surface': 'var(--inverse-on-surface)',
+        'on-surface': 'var(--on-surface)',
+        'on-surface-variant': 'var(--on-surface-variant)',
+
+        /* ── Legacy aliases — temporary, removed in issue #566 ────── */
+        'space-black': 'var(--surface-dim)',
+        'space-dark': 'var(--surface-container)',
+        'space-grey': 'var(--surface-container-highest)',
+        'space-purple': 'var(--surface-variant)',
+        'space-purple-light': 'var(--on-surface-variant)',
+        'space-blue': 'var(--surface-container-high)',
+        'cream-white': 'var(--on-surface)',
+        'space-gold': 'var(--ds-tertiary)',
+        'grey-500': 'var(--outline)',
+
+        /* ── shadcn/ui HSL-based colors (existing) ──────────────── */
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -67,11 +119,78 @@ const config = {
           5: 'hsl(var(--chart-5))',
         },
       },
+
+      /* ── Spacing (from --space-* tokens) ─────────────────────── */
+      spacing: {
+        'unit': 'var(--space-unit)',
+        'stack-gap': 'var(--space-stack-gap)',
+        'gutter': 'var(--space-gutter)',
+        'margin': 'var(--space-margin)',
+        'component-px': 'var(--space-component-padding-x)',
+        'component-py': 'var(--space-component-padding-y)',
+      },
+
+      /* ── Border radius ───────────────────────────────────────── */
       borderRadius: {
+        // shadcn
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        // Design-system semantic
+        'ds-sm': 'var(--radius-sm)',
+        'ds-lg': 'var(--radius-lg)',
+        'ds-xl': 'var(--radius-xl)',
+        'ds-full': 'var(--radius-full)',
       },
+
+      /* ── Font family ─────────────────────────────────────────── */
+      fontFamily: {
+        headline: 'var(--font-headline)',
+        body: 'var(--font-body)',
+        label: 'var(--font-label)',
+      },
+
+      /* ── Font size (semantic text styles) ─────────────────────── */
+      fontSize: {
+        'headline-lg': ['var(--text-headline-lg-size)', {
+          lineHeight: 'var(--text-headline-lg-line-height)',
+          letterSpacing: 'var(--text-headline-lg-tracking)',
+          fontWeight: 'var(--text-headline-lg-weight)',
+        }],
+        'headline-md': ['var(--text-headline-md-size)', {
+          lineHeight: 'var(--text-headline-md-line-height)',
+          fontWeight: 'var(--text-headline-md-weight)',
+        }],
+        'body-lg': ['var(--text-body-lg-size)', {
+          lineHeight: 'var(--text-body-lg-line-height)',
+          fontWeight: 'var(--text-body-lg-weight)',
+        }],
+        'body-md': ['var(--text-body-md-size)', {
+          lineHeight: 'var(--text-body-md-line-height)',
+          fontWeight: 'var(--text-body-md-weight)',
+        }],
+        'label-caps': ['var(--text-label-caps-size)', {
+          lineHeight: 'var(--text-label-caps-line-height)',
+          letterSpacing: 'var(--text-label-caps-tracking)',
+          fontWeight: 'var(--text-label-caps-weight)',
+        }],
+      },
+
+      /* ── Box shadow ──────────────────────────────────────────── */
+      boxShadow: {
+        'card': 'var(--shadow-card)',
+        'hero': 'var(--shadow-hero)',
+        'button': 'var(--shadow-button)',
+        'button-sm': 'var(--shadow-button-sm)',
+        'pressed': 'var(--shadow-pressed)',
+        'glow-primary': 'var(--shadow-glow-primary)',
+        'glow-secondary': 'var(--shadow-glow-secondary)',
+        'glow-tertiary': 'var(--shadow-glow-tertiary)',
+        'glow-error': 'var(--shadow-glow-error)',
+        'rim-top': 'var(--shadow-rim-top)',
+        'rim-inset-deep': 'var(--shadow-rim-inset-deep)',
+      },
+
       keyframes: {
         'accordion-down': {
           from: {
