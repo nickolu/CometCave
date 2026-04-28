@@ -77,6 +77,7 @@ const eslintConfig = [
     files: ['src/**/*.{js,jsx,ts,tsx}'],
     ignores: [
       'src/app/globals.css',
+      'src/app/ring-toss/**',
       'src/**/*.test.*',
       'src/**/*.spec.*',
       'src/**/*.stories.*',
