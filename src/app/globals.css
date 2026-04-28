@@ -153,6 +153,73 @@ body {
   --text-label-caps-tracking: 0.05em;
   --text-label-caps-family: var(--font-label);
   --text-label-caps-transform: uppercase;
+
+  /* --- Shadows (chunky drop, glow, rim) ----------------------------- */
+  /* Chunky solid drop-shadows — the "squishy" signature */
+  --shadow-card: 0 8px 0 0 var(--surface-container-lowest);
+  --shadow-hero: 0 12px 0 0 var(--surface-container-lowest);
+  --shadow-button: 0 6px 0 0 var(--surface-container-lowest);
+  --shadow-button-sm: 0 4px 0 0 var(--surface-container-lowest);
+  --shadow-pressed: none;                /* active state — remove shadow */
+
+  /* Neon glow halos */
+  --shadow-glow-primary: 0 0 20px rgba(0, 255, 194, 0.4);
+  --shadow-glow-secondary: 0 0 15px rgba(20, 209, 255, 0.2);
+  --shadow-glow-tertiary: 0 0 15px rgba(255, 186, 32, 0.25);
+  --shadow-glow-error: 0 0 15px rgba(255, 84, 73, 0.3);
+
+  /* Inset rim lights */
+  --shadow-rim-top: inset 0 2px 4px rgba(255, 255, 255, 0.05);
+  --shadow-rim-inset-deep: inset 0 4px 10px rgba(0, 0, 0, 0.5);
+
+  /* Paired press offsets (translateY values matching drop-shadow heights) */
+  --press-offset-card: 8px;
+  --press-offset-hero: 12px;
+  --press-offset-button: 6px;
+  --press-offset-button-sm: 4px;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Chunky-press recipes — apply one class for the full drop+press effect.
+   Each pairs a solid drop-shadow with a matching translateY on :active.
+   ─────────────────────────────────────────────────────────────────── */
+
+@layer components {
+  .chunky-card {
+    box-shadow: var(--shadow-card);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .chunky-card:active {
+    box-shadow: var(--shadow-pressed);
+    transform: translateY(var(--press-offset-card));
+  }
+
+  .chunky-hero {
+    box-shadow: var(--shadow-hero);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .chunky-hero:active {
+    box-shadow: var(--shadow-pressed);
+    transform: translateY(var(--press-offset-hero));
+  }
+
+  .chunky-button {
+    box-shadow: var(--shadow-button);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .chunky-button:active {
+    box-shadow: var(--shadow-pressed);
+    transform: translateY(var(--press-offset-button));
+  }
+
+  .chunky-button-sm {
+    box-shadow: var(--shadow-button-sm);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+  .chunky-button-sm:active {
+    box-shadow: var(--shadow-pressed);
+    transform: translateY(var(--press-offset-button-sm));
+  }
 }
 
 /* When game is active on mobile, hide site chrome and fix scrolling */

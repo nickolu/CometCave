@@ -143,6 +143,49 @@ Font family tokens are set in `app/layout.tsx` (see Fonts above). The typography
 | `body-md` | 16px (1rem) | 1.6 | 400 | — | `--font-body` |
 | `label-caps` | 14px (0.875rem) | 1.0 | 700 | 0.05em | `--font-label` |
 
+## Shadows
+
+Shadow tokens define the "chunky" visual signature. Every solid drop-shadow pairs with a press offset for interactive elements.
+
+### Chunky drop-shadows
+
+| Token | Value | Paired press offset | Intent |
+|---|---|---|---|
+| `--shadow-card` | `0 8px 0 0 surface-container-lowest` | `--press-offset-card` (8px) | Game cards, content cards |
+| `--shadow-hero` | `0 12px 0 0 surface-container-lowest` | `--press-offset-hero` (12px) | Hero sections, question cards |
+| `--shadow-button` | `0 6px 0 0 surface-container-lowest` | `--press-offset-button` (6px) | Primary/secondary buttons |
+| `--shadow-button-sm` | `0 4px 0 0 surface-container-lowest` | `--press-offset-button-sm` (4px) | Pill nav, score chips, small buttons |
+| `--shadow-pressed` | `none` | — | Active/pressed state (remove shadow) |
+
+### Neon glows
+
+| Token | Value | Intent |
+|---|---|---|
+| `--shadow-glow-primary` | `0 0 20px primary/40%` | Primary accent hover/focus glow |
+| `--shadow-glow-secondary` | `0 0 15px secondary/20%` | Secondary accent glow |
+| `--shadow-glow-tertiary` | `0 0 15px tertiary/25%` | Tertiary/gold glow |
+| `--shadow-glow-error` | `0 0 15px error/30%` | Error state glow |
+
+### Inset rim lights
+
+| Token | Value | Intent |
+|---|---|---|
+| `--shadow-rim-top` | `inset 0 2px 4px white/5%` | Subtle top highlight on cards |
+| `--shadow-rim-inset-deep` | `inset 0 4px 10px black/50%` | Sunken input / recessed areas |
+
+### Chunky-press recipes
+
+Apply one class for the full drop-shadow + press-down effect:
+
+| Class | Shadow token | Press offset | Use for |
+|---|---|---|---|
+| `.chunky-card` | `--shadow-card` | 8px | Clickable cards |
+| `.chunky-hero` | `--shadow-hero` | 12px | Hero elements |
+| `.chunky-button` | `--shadow-button` | 6px | Buttons |
+| `.chunky-button-sm` | `--shadow-button-sm` | 4px | Small interactive elements |
+
+Each recipe applies `transition: transform 0.1s ease, box-shadow 0.1s ease` and on `:active` sets `box-shadow: none` + `translateY(offset)`.
+
 ## Legacy tokens (to be removed)
 
 The following primitive tokens in `tailwind.config.js` are legacy and will be replaced by semantic tokens during the redesign:
