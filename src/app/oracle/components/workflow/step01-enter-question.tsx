@@ -1,7 +1,7 @@
 import { TextField } from '@mui/material'
 
 import { DivinationQuestion } from '@/app/oracle/types'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Typography } from '@/components/ui/typography'
 
 export const Step01EnterQuestion = ({
@@ -34,7 +34,7 @@ export const Step01EnterQuestion = ({
               setDivinationQuestion({ ...divinationQuestion, question: e.target.value })
             }
             placeholder="What guidance do you seek?"
-            className="w-full bg-slate-800 border-slate-700 text-cream-white"
+            className="w-full bg-slate-800 border-slate-700 text-on-surface"
           />
         </div>
         <div>
@@ -53,13 +53,13 @@ export const Step01EnterQuestion = ({
               setDivinationQuestion({ ...divinationQuestion, context: e.target.value })
             }
             placeholder="Share any relevant context about your situation..."
-            className="w-full bg-slate-800 border-slate-700 text-cream-white"
+            className="w-full bg-slate-800 border-slate-700 text-on-surface"
           />
         </div>
       </div>
-      <Button type="button" disabled={!divinationQuestion.question.trim()} onClick={onNext}>
+      <ChunkyButton type="button" variant="primary" disabled={!divinationQuestion.question.trim()} onClick={onNext}>
         Next
-      </Button>
+      </ChunkyButton>
     </div>
   )
 }
