@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { CheckAnswerResponse, TriviaQuestion } from '@/app/trivia/models/questions'
 import type { TriviaAnswer, TriviaGameResult } from '@/app/trivia/models/trivia'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { AnswerOption } from '@/components/ui/answer-option'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader } from '@/components/ui/chunky-card'
 import { Input } from '@/components/ui/input'
 import { getTodayPST } from '@/lib/dates'
 
@@ -195,10 +196,10 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
   if (error) {
     return (
       <div className="flex flex-col items-center gap-4 py-8">
-        <p className="text-red-400">{error}</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
+        <p className="text-ds-error">{error}</p>
+        <ChunkyButton variant="secondary" onClick={() => window.location.reload()}>
           Try Again
-        </Button>
+        </ChunkyButton>
       </div>
     )
   }
@@ -206,7 +207,7 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
   if (phase === 'loading') {
     return (
       <div className="flex flex-col items-center gap-4 py-8">
-        <div className="text-cream-white/60 text-lg">Loading questions...</div>
+        <div className="text-on-surface/60 text-lg">Loading questions...</div>
       </div>
     )
   }
@@ -241,69 +242,67 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
                     ? 'bg-green-500'
                     : 'bg-red-500'
                   : i === currentIndex
-                  ? 'bg-space-gold'
-                  : 'bg-space-grey'
+                  ? 'bg-ds-tertiary'
+                  : 'bg-surface-container-highest'
               }`}
             />
           ))}
         </div>
-        <div className="text-space-gold font-bold text-lg">{totalScore} pts</div>
+        <div className="text-ds-tertiary font-bold text-lg">{totalScore} pts</div>
       </div>
 
       {/* Timer bar */}
-      <div className="w-full bg-space-grey rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
         <div
           className={`h-full ${timerColor} transition-all duration-100 ease-linear`}
           style={{ width: `${timerPercent}%` }}
         />
       </div>
-      <div className="text-center text-sm text-cream-white/60">
+      <div className="text-center text-sm text-on-surface/60">
         {Math.ceil(timeRemaining)}s
       </div>
 
       {/* Question card */}
-      <Card className="bg-space-dark/80 border-space-grey">
-        <CardHeader className="pb-2 pt-3 sm:pt-6 px-4 sm:px-6">
+      <ChunkyCard variant="surface-variant" shadow="hero">
+        <ChunkyCardHeader className="pb-2 pt-3 sm:pt-6 px-4 sm:px-6">
           <div className="flex justify-between items-center">
-            <span className="text-cream-white/50 text-xs sm:text-sm">
+            <span className="text-on-surface/50 text-xs sm:text-sm">
               Question {currentIndex + 1}/{questions.length}
             </span>
             <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full border ${diffBadgeColor}`}>
               {question.difficulty.toUpperCase()}
             </span>
           </div>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-          <p className="text-cream-white text-base sm:text-lg mb-3 sm:mb-4 leading-snug">{question.question}</p>
+        </ChunkyCardHeader>
+        <ChunkyCardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+          <p aria-live="polite" className="text-on-surface text-base sm:text-lg mb-3 sm:mb-4 leading-snug">{question.question}</p>
 
           {/* Multiple choice options */}
           {question.options ? (
-            <div className="flex flex-col gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {question.options.map((option, i) => {
-                const letter = String.fromCharCode(65 + i)
-                let btnClass = 'w-full justify-start text-left py-2.5 sm:py-3 px-3 sm:px-4 text-sm sm:text-base whitespace-normal h-auto min-h-[2.75rem]'
+                const letter = (['A', 'B', 'C', 'D'] as const)[i]
+                let state: 'idle' | 'correct' | 'wrong' | 'disabled' = 'idle'
 
                 if (phase === 'answered' && answerResult) {
                   if (option === answerResult.correctAnswer) {
-                    btnClass += ' bg-green-600/30 border-green-500 text-green-300'
+                    state = 'correct'
                   } else if (option === selectedAnswer && !answerResult.correct) {
-                    btnClass += ' bg-red-600/30 border-red-500 text-red-300'
+                    state = 'wrong'
                   } else {
-                    btnClass += ' opacity-50'
+                    state = 'disabled'
                   }
                 }
 
                 return (
-                  <Button
+                  <AnswerOption
                     key={i}
-                    variant="outline"
-                    className={btnClass}
-                    disabled={phase !== 'playing' || isChecking}
-                    onClick={() => submitAnswer(option)}
-                  >
-                    <span className="font-bold mr-2 text-space-gold">{letter}.</span>
-                    {option}
-                  </Button>
+                    letter={letter}
+                    label={option}
+                    state={phase !== 'playing' || isChecking ? 'disabled' : state}
+                    selected={selectedAnswer === option}
+                    onSelect={() => submitAnswer(option)}
+                  />
                 )
               })}
             </div>
@@ -314,7 +313,7 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
                 value={textAnswer}
                 onChange={(e) => setTextAnswer(e.target.value)}
                 placeholder="Type your answer..."
-                className="bg-space-black/50 border-space-grey text-cream-white"
+                className="bg-surface-dim/50 border-outline-variant text-on-surface"
                 disabled={phase !== 'playing' || isChecking}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && textAnswer.trim()) {
@@ -322,13 +321,13 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
                   }
                 }}
               />
-              <Button
-                variant="space"
+              <ChunkyButton
+                variant="primary"
                 disabled={phase !== 'playing' || isChecking || !textAnswer.trim()}
                 onClick={() => submitAnswer(textAnswer.trim())}
               >
                 {isChecking ? 'Checking...' : 'Submit Answer'}
-              </Button>
+              </ChunkyButton>
             </div>
           )}
 
@@ -336,40 +335,40 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
           {phase === 'answered' && answerResult && (
             <div className={`mt-4 p-3 rounded-lg ${
               answerResult.correct
-                ? 'bg-green-600/20 border border-green-600/40'
-                : 'bg-red-600/20 border border-red-600/40'
+                ? 'bg-primary-container/20 border border-primary-container/40'
+                : 'bg-ds-error/20 border border-ds-error/40'
             }`}>
               <div className="font-bold mb-1">
                 {answerResult.correct ? (
-                  <span className="text-green-400">
+                  <span className="text-ds-primary">
                     Correct! +{answers[answers.length - 1]?.points || 0} pts
                   </span>
                 ) : (
-                  <span className="text-red-400">
+                  <span className="text-ds-error">
                     {timeRemaining <= 0 ? "Time's up!" : 'Incorrect'} — 0 pts
                   </span>
                 )}
               </div>
               {!answerResult.correct && (
-                <div className="text-cream-white/70 text-sm">
-                  Answer: <span className="text-cream-white font-medium">{answerResult.correctAnswer}</span>
+                <div className="text-on-surface/70 text-sm">
+                  Answer: <span className="text-on-surface font-medium">{answerResult.correctAnswer}</span>
                 </div>
               )}
               {answerResult.explanation && (
-                <div className="text-cream-white/50 text-sm mt-1">
+                <div className="text-on-surface/50 text-sm mt-1">
                   {answerResult.explanation}
                 </div>
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Next button */}
       {phase === 'answered' && (
-        <Button variant="space" size="lg" className="w-full py-4" onClick={nextQuestion}>
+        <ChunkyButton variant="primary" size="lg" className="w-full" onClick={nextQuestion}>
           {currentIndex + 1 >= questions.length ? 'See Results' : 'Next Question'}
-        </Button>
+        </ChunkyButton>
       )}
     </div>
   )
