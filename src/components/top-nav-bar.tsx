@@ -7,7 +7,7 @@ import { NavPill } from '@/components/ui/nav-pill'
 
 import { ROUTE_CONSTANTS } from '@/app/route-constants'
 
-const navItems = [
+const navItems: readonly { href: string; label: string; exact?: boolean }[] = [
   { href: ROUTE_CONSTANTS.HOME, label: 'HOME', exact: true },
   { href: ROUTE_CONSTANTS.TRIVIA, label: 'TRIVIA' },
   { href: ROUTE_CONSTANTS.ORACLE, label: 'ORACLE' },
@@ -15,7 +15,7 @@ const navItems = [
   { href: ROUTE_CONSTANTS.CHAT_ROOM, label: 'CHAT' },
   { href: ROUTE_CONSTANTS.SECRET_WORD, label: 'SECRET WORD' },
   { href: ROUTE_CONSTANTS.VOTERS, label: 'VOTERS' },
-] as const
+]
 
 export function TopNavBar() {
   return (
