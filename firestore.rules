@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Canonical user profile (read by owner; writes via admin SDK only)
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // Per-user trivia data — readable by the owning user
+      match /triviaProfile/{docId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+      match /triviaGames/{docId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Server-only — admin SDK reads via collection-group queries.
+      // Client must not query these directly.
+      match /triviaDaily/{docId}  { allow read, write: if false; }
+      match /triviaWeekly/{docId} { allow read, write: if false; }
+    }
+
+    // Nicknames uniqueness index — server only
+    match /nicknames/{name} { allow read, write: if false; }
+
+    // Legacy trivia collections (pre-#523) — no longer used
+    match /trivia-users/{uid}    { allow read, write: if false; }
+    match /trivia-scores/{docId} { allow read, write: if false; }
+
+    // Tap-tap-adventure leaderboard — server-side writes via admin SDK,
+    // server-side reads via /api/v1/tap-tap-adventure/leaderboard route.
+    // Client does not read directly.
+    match /adventure-scores/{docId} { allow read, write: if false; }
+  }
+}
