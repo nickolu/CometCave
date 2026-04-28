@@ -129,7 +129,7 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
         {/* Right column: setup + controls */}
         <div className="space-y-6">
           {/* Player Setup */}
-          <div className="bg-space-blue/20 border border-space-blue/30 rounded-lg p-6">
+          <div className="bg-ds-secondary/20 border border-ds-secondary/30 rounded-lg p-6">
             <h3 className="text-xl font-semibold text-on-surface mb-4 text-center">Your Setup</h3>
 
             <div className="space-y-4">

@@ -37,13 +37,13 @@ export const Deck = () => {
       <div className="mb-2">
         {' '}
         <ChunkyButton
-          className={cn(deckType === 'remaining' ? 'bg-space-blue' : 'bg-surface-container-highest')}
+          className={cn(deckType === 'remaining' ? 'bg-ds-secondary' : 'bg-surface-container-highest')}
           onClick={() => setDeckType('remaining')}
         >
           Remaining Deck
         </ChunkyButton>
         <ChunkyButton
-          className={cn(deckType === 'full' ? 'bg-space-blue' : 'bg-surface-container-highest')}
+          className={cn(deckType === 'full' ? 'bg-ds-secondary' : 'bg-surface-container-highest')}
           onClick={() => setDeckType('full')}
         >
           Full Deck

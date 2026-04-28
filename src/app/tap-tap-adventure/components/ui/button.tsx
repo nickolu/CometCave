@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default: 'bg-surface-variant text-on-surface hover:bg-surface-variant/80/90',
         destructive: 'bg-red-600 text-on-surface hover:bg-red-700',
         outline:
-          'border border-space-purple/30 bg-transparent hover:bg-surface-variant/80/20 hover:text-on-surface text-on-surface',
+          'border border-surface-variant/30 bg-transparent hover:bg-surface-variant/20 hover:text-on-surface text-on-surface',
         secondary: 'bg-surface-container text-on-surface hover:bg-surface-container/80',
         ghost: 'hover:bg-surface-container/50 hover:text-on-surface text-on-surface',
         link: 'text-on-surface-variant underline-offset-4 hover:underline',

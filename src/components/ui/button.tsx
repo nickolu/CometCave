@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-space-purple text-cream-white hover:bg-space-purple/90',
-        destructive: 'bg-red-600 text-cream-white hover:bg-red-700',
+        default: 'bg-surface-variant text-on-surface hover:bg-surface-variant/90',
+        destructive: 'bg-red-600 text-on-surface hover:bg-red-700',
         outline:
-          'border border-white bg-transparent hover:bg-space-purple/20 hover:text-cream-white text-cream-white',
-        secondary: 'bg-space-dark text-cream-white hover:bg-space-dark/80',
-        ghost: 'hover:bg-space-dark/50 hover:text-cream-white text-cream-white',
-        link: 'text-space-purple underline-offset-4 hover:underline',
-        space: 'bg-space-blue text-cream-white hover:bg-space-blue/90',
-        grey: 'bg-space-grey text-cream-white hover:bg-space-grey/80',
+          'border border-white bg-transparent hover:bg-surface-variant/20 hover:text-on-surface text-on-surface',
+        secondary: 'bg-surface-container text-on-surface hover:bg-surface-container/80',
+        ghost: 'hover:bg-surface-container/50 hover:text-on-surface text-on-surface',
+        link: 'text-surface-variant underline-offset-4 hover:underline',
+        space: 'bg-ds-secondary text-on-surface hover:bg-ds-secondary/90',
+        grey: 'bg-surface-container-highest text-on-surface hover:bg-surface-container-highest/80',
       },
       size: {
         default: 'h-10 px-4 py-2',

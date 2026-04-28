@@ -84,7 +84,7 @@ const eslintConfig = [
     ],
     rules: {
       'no-restricted-syntax': [
-        'warn',
+        'error',
         {
           selector: 'Literal[value=/^#[0-9a-fA-F]{3,8}$/]',
           message:

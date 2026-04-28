@@ -306,7 +306,7 @@ function SecretWordGameContent() {
                       : (gameState.gamePhase === 'playing' && step.key === 'setup') ||
                           (gameState.gamePhase === 'ended' &&
                             (step.key === 'setup' || step.key === 'playing'))
-                        ? 'bg-space-blue text-on-surface'
+                        ? 'bg-ds-secondary text-on-surface'
                         : 'bg-surface-container text-on-surface-variant'
                   }`}
                 >

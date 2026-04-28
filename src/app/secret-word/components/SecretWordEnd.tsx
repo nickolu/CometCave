@@ -126,7 +126,7 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
         <h3 className="text-xl font-semibold text-on-surface mb-4">Game Summary</h3>
 
         <div className="grid md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
+          <div className="bg-ds-secondary/20 border border-ds-secondary/30 rounded-lg p-4">
             <h4 className="font-semibold text-on-surface mb-2">{gameState.players.player.name}</h4>
             <p className="text-on-surface-variant text-sm">
               Secret word:{' '}
@@ -190,7 +190,7 @@ export function SecretWordEnd({ gameState, onRestart }: SecretWordEndProps) {
                   key={message.id}
                   className={`text-sm p-2 rounded ${
                     isPlayer
-                      ? 'bg-space-blue/20 border-l-2 border-space-blue'
+                      ? 'bg-ds-secondary/20 border-l-2 border-ds-secondary'
                       : 'bg-surface-variant/20 border-l-2 border-surface-variant'
                   }`}
                 >

@@ -66,17 +66,6 @@ const config = {
         'on-surface': 'var(--on-surface)',
         'on-surface-variant': 'var(--on-surface-variant)',
 
-        /* ── Legacy aliases — temporary, removed in issue #566 ────── */
-        'space-black': 'var(--surface-dim)',
-        'space-dark': 'var(--surface-container)',
-        'space-grey': 'var(--surface-container-highest)',
-        'space-purple': 'var(--surface-variant)',
-        'space-purple-light': 'var(--on-surface-variant)',
-        'space-blue': 'var(--surface-container-high)',
-        'cream-white': 'var(--on-surface)',
-        'space-gold': 'var(--ds-tertiary)',
-        'grey-500': 'var(--outline)',
-
         /* ── shadcn/ui HSL-based colors (existing) ──────────────── */
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

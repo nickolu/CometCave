@@ -50,7 +50,7 @@ export function SecretWordChat({
         <div className="flex justify-center items-center gap-8 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-on-surface-variant">Playing:</span>
-            <span className="text-space-blue font-medium">{gameState.players.player.name}</span>
+            <span className="text-ds-secondary font-medium">{gameState.players.player.name}</span>
             <span className="text-on-surface-variant">vs</span>
             <span className="text-on-surface font-medium">{gameState.players.ai.name}</span>
           </div>
@@ -117,7 +117,7 @@ export function SecretWordChat({
 
       {/* Game Info */}
       <div className="grid md:grid-cols-2 gap-4 text-sm align-start">
-        <div className="h-full bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
+        <div className="h-full bg-ds-secondary/20 border border-ds-secondary/30 rounded-lg p-4">
           <h4 className="font-semibold text-on-surface mb-2">{gameState.players.player.name}</h4>
           <p className="text-on-surface-variant">
             Your secret word:{' '}
@@ -127,7 +127,7 @@ export function SecretWordChat({
           </p>
         </div>
         {/* Reveal AI Word / Forfeit Button */}
-        <div className="h-full text-center bg-space-blue/20 border border-space-blue/30 rounded-lg p-4">
+        <div className="h-full text-center bg-ds-secondary/20 border border-ds-secondary/30 rounded-lg p-4">
           <ChunkyButton
             variant="ghost"
             onClick={onRevealAIWord}
@@ -150,7 +150,7 @@ function MessageBubble({ message, gameState }: { message: Message; gameState: Ga
       <div
         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
           isPlayer
-            ? 'bg-space-blue/30 border border-space-blue/50'
+            ? 'bg-ds-secondary/30 border border-ds-secondary/50'
             : 'bg-surface-variant/30 border border-surface-variant/50'
         }`}
       >
