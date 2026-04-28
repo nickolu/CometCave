@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { formatDisplayDate, getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -16,24 +17,19 @@ export function TriviaLanding({
   onStartGame,
   onViewStats,
   onViewLeaderboard,
+  todayResult,
 }: {
   onStartGame?: () => void
   onViewStats?: () => void
   onViewLeaderboard?: () => void
+  todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
-  const {
-    userData: firestoreUser,
-    canPlayToday: canPlayFirestore,
-    loading: firestoreLoading,
-  } = useTriviaUser()
+  const { userData: firestoreUser, loading: firestoreLoading } = useTriviaUser()
 
   const stats = firestoreUser.stats
   const todayStr = getTodayPST()
-  const todayHistoryEntry = user
-    ? firestoreUser.history.find((h) => h.date === todayStr) ?? null
-    : null
-  const alreadyPlayed = user ? !canPlayFirestore() : false
+  const alreadyPlayed = !!todayResult
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
   const showSignInPromos = authConfigured && !authLoading && !user
@@ -109,14 +105,14 @@ export function TriviaLanding({
             {alreadyPlayed ? 'Come Back Tomorrow' : "Start Today's Trivia"}
           </Button>
 
-          {alreadyPlayed && todayHistoryEntry && (
+          {alreadyPlayed && todayResult && (
             <div className="text-center text-cream-white/60 text-sm">
               Today&apos;s score:{' '}
               <span className="text-space-gold font-semibold">
-                {todayHistoryEntry.score} pts
+                {todayResult.score} pts
               </span>
               {' · '}
-              {todayHistoryEntry.correct}/{todayHistoryEntry.total} correct
+              {todayResult.correct}/{todayResult.total} correct
             </div>
           )}
         </CardContent>

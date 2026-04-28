@@ -1,9 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/app/trivia/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
+import {
+  cleanupOldDays,
+  clearTodayResult,
+  loadTodayResult,
+  saveTodayResult,
+} from '@/app/trivia/lib/todayLocalStorage'
 import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
 
 import { TriviaGame } from './components/TriviaGame'
@@ -25,13 +31,22 @@ export default function TriviaPage() {
   } = useTriviaUser()
 
   const today = getTodayPST()
-  const todayResult = user
+  const firestoreToday = user
     ? firestoreUser.history.find((h) => h.date === today) ?? null
     : null
 
   const [view, setView] = useState<View>('landing')
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
+  const [localToday, setLocalToday] = useState<TriviaGameResult | null>(null)
   const [autoResultsShown, setAutoResultsShown] = useState(false)
+  const prevUserUid = useRef<string | null>(null)
+
+  useEffect(() => {
+    cleanupOldDays(today)
+    setLocalToday(loadTodayResult(today))
+  }, [today])
+
+  const todayResult = firestoreToday ?? localToday
 
   useEffect(() => {
     if (autoResultsShown) return
@@ -43,15 +58,46 @@ export default function TriviaPage() {
     setAutoResultsShown(true)
   }, [autoResultsShown, user, firestoreLoading, todayResult, view])
 
+  useEffect(() => {
+    const uid = user?.uid ?? null
+    const prevUid = prevUserUid.current
+    prevUserUid.current = uid
+
+    if (!uid) return
+    if (firestoreLoading) return
+
+    const local = loadTodayResult(today)
+    if (!local) return
+
+    if (firestoreToday) {
+      clearTodayResult(today)
+      setLocalToday(null)
+      return
+    }
+
+    if (prevUid === uid) return
+
+    saveToFirestore(local)
+      .then(() => {
+        clearTodayResult(today)
+        setLocalToday(null)
+      })
+      .catch((err) => console.error('Failed to reconcile local trivia result:', err))
+  }, [user, firestoreLoading, firestoreToday, today, saveToFirestore])
+
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => setView('stats')
   const handleViewLeaderboard = () => setView('leaderboard')
 
   const handleFinish = (result: TriviaGameResult) => {
+    saveTodayResult(result)
+    setLocalToday(result)
     if (user) {
-      saveToFirestore(result).catch((err) =>
-        console.error('Failed to save trivia result to Firestore:', err)
-      )
+      saveToFirestore(result)
+        .then(() => clearTodayResult(today))
+        .catch((err) =>
+          console.error('Failed to save trivia result to Firestore:', err)
+        )
     }
     setLastResult(result)
     setView('results')
@@ -87,6 +133,7 @@ export default function TriviaPage() {
       onStartGame={handleStartGame}
       onViewStats={handleViewStats}
       onViewLeaderboard={handleViewLeaderboard}
+      todayResult={todayResult}
     />
   )
 }
