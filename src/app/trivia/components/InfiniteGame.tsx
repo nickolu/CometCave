@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useInfiniteRun } from '@/app/trivia/hooks/useInfiniteRun'
+import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 import { InfiniteHUD } from './InfiniteHUD'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
@@ -10,9 +11,10 @@ const TIME_LIMIT = 60 // 60 seconds for AI free-text
 
 interface Props {
   onBack: () => void
+  mode?: InfiniteMode
 }
 
-export function InfiniteGame({ onBack }: Props) {
+export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
   const { state, startRun, submitAnswer, nextQuestion, endRun } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -20,7 +22,7 @@ export function InfiniteGame({ onBack }: Props) {
 
   // Start run on mount
   useEffect(() => {
-    startRun()
+    startRun(mode)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -54,8 +56,8 @@ export function InfiniteGame({ onBack }: Props) {
   }, [endRun])
 
   const handlePlayAgain = useCallback(() => {
-    startRun()
-  }, [startRun])
+    startRun(mode)
+  }, [startRun, mode])
 
   // Loading state
   if (state.phase === 'loading' || state.phase === 'idle') {
@@ -92,7 +94,7 @@ export function InfiniteGame({ onBack }: Props) {
 
   // End of run
   if (state.phase === 'ended') {
-    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} />
+    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} mode={state.mode} />
   }
 
   // Playing or answered
@@ -108,6 +110,7 @@ export function InfiniteGame({ onBack }: Props) {
         timeLimit={TIME_LIMIT}
         onFlee={handleFlee}
         isPlaying={state.phase === 'playing'}
+        mode={state.mode}
       />
 
       <InfiniteQuestionCard
