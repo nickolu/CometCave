@@ -10,6 +10,8 @@ import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { getTodayPST } from '@/lib/dates'
 
+import { TriviaHUD } from './TriviaHUD'
+
 // Scoring config per difficulty
 const SCORING = {
   easy: { maxPoints: 300, timeLimit: 30 },
@@ -28,7 +30,7 @@ function getQuestionConfig(q: TriviaQuestion) {
 
 type GamePhase = 'loading' | 'playing' | 'answered' | 'finished'
 
-export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) => void }) {
+export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGameResult) => void; onFlee?: () => void }) {
   const [questions, setQuestions] = useState<TriviaQuestion[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [phase, setPhase] = useState<GamePhase>('loading')
@@ -218,8 +220,6 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
 
   const question = questions[currentIndex]
   const config = getQuestionConfig(question)
-  const timerPercent = (timeRemaining / config.timeLimit) * 100
-  const timerColor = timerPercent > 60 ? 'bg-green-500' : timerPercent > 30 ? 'bg-yellow-500' : 'bg-red-500'
 
   // Difficulty badge colors
   const diffBadgeColor = {
@@ -230,37 +230,16 @@ export function TriviaGame({ onFinish }: { onFinish: (result: TriviaGameResult) 
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4 max-w-lg mx-auto py-2 sm:py-4">
-      {/* Top bar: progress + score */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-1.5">
-          {questions.map((_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full ${
-                i < currentIndex
-                  ? answers[i]?.correct
-                    ? 'bg-green-500'
-                    : 'bg-red-500'
-                  : i === currentIndex
-                  ? 'bg-ds-tertiary'
-                  : 'bg-surface-container-highest'
-              }`}
-            />
-          ))}
-        </div>
-        <div className="text-ds-tertiary font-bold text-lg">{totalScore} pts</div>
-      </div>
-
-      {/* Timer bar */}
-      <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
-        <div
-          className={`h-full ${timerColor} transition-all duration-100 ease-linear`}
-          style={{ width: `${timerPercent}%` }}
-        />
-      </div>
-      <div className="text-center text-sm text-on-surface/60">
-        {Math.ceil(timeRemaining)}s
-      </div>
+      {/* HUD: Flee + score + timer + progress */}
+      <TriviaHUD
+        currentQuestion={currentIndex}
+        totalQuestions={questions.length}
+        score={totalScore}
+        timeRemaining={timeRemaining}
+        timeLimit={config.timeLimit}
+        onFlee={onFlee ?? (() => window.location.reload())}
+        isPlaying={phase === 'playing'}
+      />
 
       {/* Question card */}
       <ChunkyCard variant="surface-variant" shadow="hero">
