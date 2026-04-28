@@ -111,6 +111,38 @@ CSS custom properties set via `next/font/google` in `app/layout.tsx`:
 
 Icon font: **Material Symbols Outlined** (loaded via CDN `<link>`).
 
+## Spacing
+
+| Token | Value | Intent |
+|---|---|---|
+| `--space-unit` | `8px` | Base unit — smallest spacing increment |
+| `--space-stack-gap` | `16px` | Vertical gap between stacked elements |
+| `--space-gutter` | `24px` | Horizontal gap between columns/cards |
+| `--space-margin` | `32px` | Outer margin for sections |
+| `--space-component-padding-x` | `24px` | Horizontal padding inside components |
+| `--space-component-padding-y` | `16px` | Vertical padding inside components |
+
+## Radius
+
+| Token | Value | Intent |
+|---|---|---|
+| `--radius-sm` | `1rem` | Default card/container radius |
+| `--radius-lg` | `2rem` | Large cards, hero sections |
+| `--radius-xl` | `3rem` | Nav pill, side-nav |
+| `--radius-full` | `9999px` | Circular badges, pills |
+
+## Typography
+
+Font family tokens are set in `app/layout.tsx` (see Fonts above). The typography tokens below combine family, size, weight, and line-height for each semantic text style.
+
+| Style | Size | Line-height | Weight | Tracking | Family |
+|---|---|---|---|---|---|
+| `headline-lg` | 40px (2.5rem) | 1.2 | 800 | -0.02em | `--font-headline` |
+| `headline-md` | 32px (2rem) | 1.2 | 800 | — | `--font-headline` |
+| `body-lg` | 18px (1.125rem) | 1.6 | 500 | — | `--font-body` |
+| `body-md` | 16px (1rem) | 1.6 | 400 | — | `--font-body` |
+| `label-caps` | 14px (0.875rem) | 1.0 | 700 | 0.05em | `--font-label` |
+
 ## Legacy tokens (to be removed)
 
 The following primitive tokens in `tailwind.config.js` are legacy and will be replaced by semantic tokens during the redesign:
