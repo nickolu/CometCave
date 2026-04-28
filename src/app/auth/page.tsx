@@ -4,8 +4,8 @@ import { FirebaseError } from 'firebase/app'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, Suspense, useEffect, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
 import { Input } from '@/components/ui/input'
 import { AuthProvider, useAuth } from '@/hooks/useAuth'
 
@@ -62,45 +62,55 @@ function AuthPageInner() {
   if (!configured) {
     return (
       <div className="flex flex-col items-center gap-6 max-w-md mx-auto py-8">
-        <Card className="w-full bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-6 text-center text-cream-white/80">
+        <ChunkyCard variant="surface-container" className="w-full">
+          <ChunkyCardContent className="pt-6 text-center text-on-surface/80">
             Sign-in isn&apos;t configured yet. Please try again later.
-          </CardContent>
-        </Card>
+          </ChunkyCardContent>
+        </ChunkyCard>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-md mx-auto py-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-space-gold mb-2">
-          {mode === 'signin' ? 'Sign in' : 'Create an account'}
-        </h1>
-        <p className="text-cream-white/70 text-sm">
-          Save your trivia stats and compete on the leaderboard
-        </p>
+      {/* Header badge */}
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary-container/20 shadow-glow-primary">
+          <span className="material-symbols-outlined text-[40px] text-ds-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+            fingerprint
+          </span>
+        </div>
+        <div className="text-center">
+          <h1 className="font-headline text-headline-md text-on-surface">
+            {mode === 'signin' ? 'Trainer ID' : 'New Recruit'}
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">
+            Save your trivia stats and compete on the leaderboard
+          </p>
+        </div>
       </div>
 
-      <Card className="w-full bg-space-dark/80 border-space-grey">
-        <CardHeader>
-          <CardTitle className="text-cream-white text-center">Welcome</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Button
-            variant="space"
+      {/* Terminal canvas */}
+      <ChunkyCard variant="surface-container" shadow="hero" className="w-full border-[6px] border-surface-container-high bg-ds-surface/80 backdrop-blur-2xl">
+        <ChunkyCardHeader>
+          <ChunkyCardTitle className="text-center text-on-surface">Welcome</ChunkyCardTitle>
+        </ChunkyCardHeader>
+        <ChunkyCardContent className="flex flex-col gap-4">
+          <ChunkyButton
+            variant="primary"
             size="lg"
             className="w-full"
             onClick={handleGoogle}
             disabled={submitting}
+            iconStart={<span className="material-symbols-outlined text-[20px]">login</span>}
           >
             Sign in with Google
-          </Button>
+          </ChunkyButton>
 
-          <div className="flex items-center gap-3 text-cream-white/40 text-xs">
-            <div className="flex-1 h-px bg-space-grey" />
+          <div className="flex items-center gap-3 text-on-surface/40 text-xs">
+            <div className="flex-1 h-px bg-outline-variant" />
             OR
-            <div className="flex-1 h-px bg-space-grey" />
+            <div className="flex-1 h-px bg-outline-variant" />
           </div>
 
           <form className="flex flex-col gap-3" onSubmit={handleEmail}>
@@ -110,7 +120,7 @@ function AuthPageInner() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-space-black/50 border-space-grey text-cream-white placeholder:text-cream-white/30"
+              className="bg-surface-dim/50 border-outline-variant text-on-surface placeholder:text-on-surface/30"
               autoComplete="email"
             />
             <Input
@@ -119,22 +129,22 @@ function AuthPageInner() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-space-black/50 border-space-grey text-cream-white placeholder:text-cream-white/30"
+              className="bg-surface-dim/50 border-outline-variant text-on-surface placeholder:text-on-surface/30"
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               minLength={6}
             />
-            <Button
+            <ChunkyButton
               type="submit"
-              variant="outline"
+              variant="secondary"
               className="w-full"
               disabled={submitting || email.length === 0 || password.length === 0}
             >
               {mode === 'signin' ? 'Sign in with email' : 'Create account'}
-            </Button>
+            </ChunkyButton>
           </form>
 
           {error && (
-            <div className="text-red-400 text-sm text-center" role="alert">
+            <div className="text-ds-error text-sm text-center" role="alert">
               {error}
             </div>
           )}
@@ -145,14 +155,14 @@ function AuthPageInner() {
               setError(null)
               setMode(mode === 'signin' ? 'signup' : 'signin')
             }}
-            className="text-cream-white/50 text-sm text-center hover:text-cream-white/80 transition-colors"
+            className="text-on-surface/50 text-sm text-center hover:text-on-surface/80 transition-colors"
           >
             {mode === 'signin'
               ? "Don't have an account? Sign up"
               : 'Already have an account? Sign in'}
           </button>
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
     </div>
   )
 }
