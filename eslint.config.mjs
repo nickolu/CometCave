@@ -70,6 +70,38 @@ const eslintConfig = [
       ],
     },
   },
+  // ── Design-system token guardrails ───────────────────────────────
+  // Block hex color literals and legacy primitive tokens in component code.
+  // Allowed in: token definitions, config, tests, stories, prototypes, assets.
+  {
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
+    ignores: [
+      'src/app/globals.css',
+      'src/**/*.test.*',
+      'src/**/*.spec.*',
+      'src/**/*.stories.*',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'Literal[value=/^#[0-9a-fA-F]{3,8}$/]',
+          message:
+            'No hex color literals in component code. Use a design-system token (e.g. var(--ds-primary) or the Tailwind class bg-ds-primary). See docs/design-system.md.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/(^|\\s|"|\'|`)(space-black|space-dark|space-grey|space-purple|space-purple-light|space-blue|cream-white|space-gold|grey-500)(\\s|"|\'|`|$)/]',
+          message:
+            'Legacy primitive token detected. Use semantic tokens instead (e.g. bg-ds-surface, text-on-surface). See docs/design-system.md.',
+        },
+        {
+          selector: 'Literal[value=/(?:^|\\s|"|\'|`)(space-black|space-dark|space-grey|space-purple|space-purple-light|space-blue|cream-white|space-gold|grey-500)(?:\\s|"|\'|`|$)/]',
+          message:
+            'Legacy primitive token detected. Use semantic tokens instead (e.g. bg-ds-surface, text-on-surface). See docs/design-system.md.',
+        },
+      ],
+    },
+  },
 ]
 
 export default eslintConfig
