@@ -6,7 +6,7 @@ import { Pill } from '@/components/ui/pill'
 
 import { ROUTE_CONSTANTS } from './route-constants'
 
-const games = [
+const games: readonly { title: string; icon: string; href: string; description: string; hot?: boolean }[] = [
   { title: 'Daily Trivia', icon: 'quiz', href: ROUTE_CONSTANTS.TRIVIA, description: 'Test your knowledge with daily AI-curated questions', hot: true },
   { title: 'I-Ching Oracle', icon: 'auto_awesome', href: ROUTE_CONSTANTS.ORACLE, description: 'Seek wisdom and guidance from the ancient I-Ching' },
   { title: 'Tap Tap Adventure', icon: 'swords', href: ROUTE_CONSTANTS.TAP_TAP_ADVENTURE, description: 'Tap to travel, fight monsters, and collect loot' },
@@ -15,7 +15,7 @@ const games = [
   { title: 'Whowouldwininator', icon: 'sports_mma', href: ROUTE_CONSTANTS.WHOWOULDWININATOR, description: 'Create two characters and see who would win' },
   { title: 'Chat Room of Infinity', icon: 'chat', href: ROUTE_CONSTANTS.CHAT_ROOM, description: 'Chat with fictional characters in a chat room' },
   { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Create unique AI-powered avatars from your photos' },
-] as const
+]
 
 export default function Home() {
   return (
