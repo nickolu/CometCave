@@ -3,9 +3,9 @@
 import { type DocumentData, doc, getDoc, setDoc } from 'firebase/firestore'
 import { useCallback, useEffect, useState } from 'react'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
-import { getFirebaseFirestore } from '@/app/trivia/lib/firebaseClient'
-import { getTodayPST, hasPlayedToday } from '@/app/trivia/lib/triviaUtils'
+import { useAuth } from '@/hooks/useAuth'
+import { getFirebaseFirestore } from '@/lib/firebase/client'
+import { getTodayPST, hasPlayedToday } from '@/lib/dates'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 
 interface FirestoreStats {

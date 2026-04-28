@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getTodayPST } from '@/lib/dates'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
 import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
 

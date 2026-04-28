@@ -1,8 +1,8 @@
 'use client'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { formatDisplayDate } from '@/app/trivia/lib/triviaUtils'
+import { formatDisplayDate } from '@/lib/dates'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 

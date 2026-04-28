@@ -5,7 +5,7 @@ import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
 import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import type { RunSummaryData } from '@/app/tap-tap-adventure/models/types'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getTodayPST } from '@/lib/dates'
 import AdventureLeaderboard from './AdventureLeaderboard'
 
 function getStoredPlayerName(): string {

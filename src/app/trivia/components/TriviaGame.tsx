@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getTodayPST } from '@/lib/dates'
 import type { CheckAnswerResponse, TriviaQuestion } from '@/app/trivia/models/questions'
 import type { TriviaAnswer, TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'

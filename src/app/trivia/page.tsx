@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import {
   cleanupOldDays,
@@ -10,7 +10,7 @@ import {
   loadTodayResult,
   saveTodayResult,
 } from '@/app/trivia/lib/todayLocalStorage'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getTodayPST } from '@/lib/dates'
 
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'

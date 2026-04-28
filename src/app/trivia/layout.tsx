@@ -1,4 +1,4 @@
-import { AuthProvider } from '@/app/trivia/hooks/useAuth'
+import { AuthProvider } from '@/hooks/useAuth'
 
 import type { ReactNode } from 'react'
 

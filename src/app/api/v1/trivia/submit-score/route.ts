@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { getFirebaseAuthAdmin, getFirestoreDb } from '@/app/trivia/lib/firebase'
+import { getFirebaseAuthAdmin, getFirestoreDb } from '@/lib/firebase/server'
 import { submitScore } from '@/app/trivia/lib/leaderboardStore'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getTodayPST } from '@/lib/dates'
 
 const MAX_SCORE = 3150
 const MAX_NAME_LENGTH = 20

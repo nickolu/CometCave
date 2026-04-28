@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 
-import { useAuth } from '@/app/trivia/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { getDailyCategory, getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getTodayPST } from '@/lib/dates'
+import { getDailyCategory } from '@/lib/trivia/categories'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 

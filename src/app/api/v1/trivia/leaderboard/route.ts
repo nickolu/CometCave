@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getTodayPST } from '@/app/trivia/lib/triviaUtils'
+import { getCurrentWeekRange, getTodayPST } from '@/lib/dates'
 import {
   getDailyLeaderboard,
   getWeeklyLeaderboard,
   getAllTimeLeaderboard,
-  getCurrentWeekRange,
 } from '@/app/trivia/lib/leaderboardStore'
 
 export async function GET(request: NextRequest) {
