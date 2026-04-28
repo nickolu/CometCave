@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 
 const REDIRECT = '/auth?redirect=/trivia'
 
@@ -15,11 +15,11 @@ export function SignInBanner({
   cta?: string
 }) {
   return (
-    <div className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-space-purple/15 border border-space-purple/30 text-sm">
-      <span className="text-cream-white/80">{message}</span>
+    <div className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-ds-sm bg-surface-variant/15 border border-surface-variant/30 text-sm">
+      <span className="text-on-surface/80">{message}</span>
       <Link
         href={REDIRECT}
-        className="text-space-gold hover:text-space-gold/80 underline-offset-4 hover:underline whitespace-nowrap font-semibold"
+        className="text-ds-tertiary hover:text-ds-tertiary/80 underline-offset-4 hover:underline whitespace-nowrap font-semibold"
       >
         {cta} →
       </Link>
@@ -35,16 +35,16 @@ export function SignInCard({
   description: string
 }) {
   return (
-    <Card className="w-full bg-space-purple/15 border-space-purple/40">
-      <CardContent className="pt-5 pb-5 flex flex-col items-center gap-3 text-center">
-        <h3 className="text-lg font-bold text-cream-white">{title}</h3>
-        <p className="text-cream-white/70 text-sm">{description}</p>
+    <ChunkyCard variant="surface-container-high" className="w-full">
+      <ChunkyCardContent className="pt-5 pb-5 flex flex-col items-center gap-3 text-center">
+        <h3 className="text-lg font-bold text-on-surface">{title}</h3>
+        <p className="text-on-surface/70 text-sm">{description}</p>
         <Link href={REDIRECT} className="w-full">
-          <Button variant="space" size="lg" className="w-full">
+          <ChunkyButton variant="primary" size="lg" className="w-full">
             Sign in
-          </Button>
+          </ChunkyButton>
         </Link>
-      </CardContent>
-    </Card>
+      </ChunkyCardContent>
+    </ChunkyCard>
   )
 }

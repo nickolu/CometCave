@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { Pill } from '@/components/ui/pill'
 
 const SEEN_KEY = 'trivia:resetNoticeSeen'
 
@@ -46,9 +47,11 @@ export function ResetNoticeButton() {
         onClick={() => setOpen(true)}
         aria-label="Why is this reset?"
         title="Why is this reset?"
-        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-cream-white/40 hover:text-cream-white/80 hover:bg-space-purple/20 transition-colors text-xs font-semibold"
+        className="inline-flex items-center"
       >
-        i
+        <Pill tone="neutral" size="xs" icon="info">
+          info
+        </Pill>
       </button>
       {open && <ResetDialog onClose={handleClose} />}
     </>
@@ -69,17 +72,17 @@ function ResetDialog({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="reset-dialog-title"
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4"
+      className="fixed inset-0 bg-surface-dim/80 backdrop-blur-sm flex items-center justify-center z-50 px-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-lg border border-space-grey bg-space-dark p-6 shadow-xl"
+        className="w-full max-w-sm rounded-ds-lg border border-outline-variant bg-surface-container p-6 shadow-hero"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="reset-dialog-title" className="text-lg font-bold text-space-gold mb-3">
+        <h2 id="reset-dialog-title" className="text-lg font-bold text-ds-tertiary mb-3">
           About this reset
         </h2>
-        <div className="text-cream-white/80 text-sm space-y-2 mb-4">
+        <div className="text-on-surface/80 text-sm space-y-2 mb-4">
           <p>
             We just rebuilt the trivia database to fix nickname collisions and make
             leaderboards scale properly.
@@ -89,9 +92,9 @@ function ResetDialog({ onClose }: { onClose: () => void }) {
             yours. Future games will count toward fresh totals.
           </p>
         </div>
-        <Button variant="space" onClick={onClose} className="w-full">
+        <ChunkyButton variant="primary" onClick={onClose} className="w-full">
           Got it
-        </Button>
+        </ChunkyButton>
       </div>
     </div>
   )
