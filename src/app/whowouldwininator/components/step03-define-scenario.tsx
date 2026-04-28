@@ -11,7 +11,7 @@ import {
   Swords,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Textarea } from '@/components/ui/textarea'
 
 interface BattleScenario {
@@ -89,8 +89,8 @@ export function Step03DefineScenario({
         <h2 className="text-2xl font-bold text-gray-400 mb-2 mt-6">Define the Battle Scenario</h2>
         <p className="text-gray-300 mb-4">
           Customize the battle conditions for{' '}
-          <span className="text-space-purple font-semibold">{candidate1Name}</span> vs{' '}
-          <span className="text-space-purple font-semibold">{candidate2Name}</span>
+          <span className="text-on-surface-variant font-semibold">{candidate1Name}</span> vs{' '}
+          <span className="text-on-surface-variant font-semibold">{candidate2Name}</span>
         </p>
         <p className="text-sm text-gray-400">
           Leave fields empty to use default settings: Standard TKO battle in an open field with peak
@@ -100,12 +100,12 @@ export function Step03DefineScenario({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Setting */}
-        <SimpleCard className="bg-space-dark border-space-purple/30">
+        <SimpleCard className="bg-surface-container border-surface-variant/30">
           <SimpleCardHeader>
             <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-space-purple" />
+              <MapPin className="w-5 h-5 text-on-surface-variant" />
               <SimpleCardTitle>
-                <span className="text-cream-white">Battle Setting</span>
+                <span className="text-on-surface">Battle Setting</span>
               </SimpleCardTitle>
             </div>
           </SimpleCardHeader>
@@ -114,19 +114,19 @@ export function Step03DefineScenario({
               value={battleScenario.setting}
               onChange={e => updateBattleScenario('setting', e.target.value)}
               placeholder="Describe the location and environment where the battle takes place..."
-              className="bg-space-dark border-space-purple/30 text-cream-white min-h-[100px]"
+              className="bg-surface-container border-surface-variant/30 text-on-surface min-h-[100px]"
             />
             <p className="text-xs text-gray-400 mt-2">Default: Open field with no obstacles</p>
           </SimpleCardContent>
         </SimpleCard>
 
         {/* Rules */}
-        <SimpleCard className="bg-space-dark border-space-purple/30">
+        <SimpleCard className="bg-surface-container border-surface-variant/30">
           <SimpleCardHeader>
             <div className="flex items-center gap-2">
-              <Swords className="w-5 h-5 text-space-purple" />
+              <Swords className="w-5 h-5 text-on-surface-variant" />
               <SimpleCardTitle>
-                <span className="text-cream-white">Battle Rules</span>
+                <span className="text-on-surface">Battle Rules</span>
               </SimpleCardTitle>
             </div>
           </SimpleCardHeader>
@@ -135,7 +135,7 @@ export function Step03DefineScenario({
               value={battleScenario.rules}
               onChange={e => updateBattleScenario('rules', e.target.value)}
               placeholder="Define the victory conditions and combat rules..."
-              className="bg-space-dark border-space-purple/30 text-cream-white min-h-[100px]"
+              className="bg-surface-container border-surface-variant/30 text-on-surface min-h-[100px]"
             />
             <p className="text-xs text-gray-400 mt-2">
               Default: Fight until one character is knocked out or unable to continue
@@ -144,12 +144,12 @@ export function Step03DefineScenario({
         </SimpleCard>
 
         {/* Obstacles */}
-        <SimpleCard className="bg-space-dark border-space-purple/30">
+        <SimpleCard className="bg-surface-container border-surface-variant/30">
           <SimpleCardHeader>
             <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-space-purple" />
+              <Shield className="w-5 h-5 text-on-surface-variant" />
               <SimpleCardTitle>
-                <span className="text-cream-white">Obstacles & Hazards</span>
+                <span className="text-on-surface">Obstacles & Hazards</span>
               </SimpleCardTitle>
             </div>
           </SimpleCardHeader>
@@ -158,19 +158,19 @@ export function Step03DefineScenario({
               value={battleScenario.obstacles}
               onChange={e => updateBattleScenario('obstacles', e.target.value)}
               placeholder="Describe any environmental hazards, traps, or obstacles..."
-              className="bg-space-dark border-space-purple/30 text-cream-white min-h-[100px]"
+              className="bg-surface-container border-surface-variant/30 text-on-surface min-h-[100px]"
             />
             <p className="text-xs text-gray-400 mt-2">Default: No obstacles or hazards</p>
           </SimpleCardContent>
         </SimpleCard>
 
         {/* Limitations */}
-        <SimpleCard className="bg-space-dark border-space-purple/30">
+        <SimpleCard className="bg-surface-container border-surface-variant/30">
           <SimpleCardHeader>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-space-purple" />
+              <AlertTriangle className="w-5 h-5 text-on-surface-variant" />
               <SimpleCardTitle>
-                <span className="text-cream-white">Limitations & Restrictions</span>
+                <span className="text-on-surface">Limitations & Restrictions</span>
               </SimpleCardTitle>
             </div>
           </SimpleCardHeader>
@@ -179,7 +179,7 @@ export function Step03DefineScenario({
               value={battleScenario.limitations}
               onChange={e => updateBattleScenario('limitations', e.target.value)}
               placeholder="Any power restrictions, equipment limitations, or special conditions..."
-              className="bg-space-dark border-space-purple/30 text-cream-white min-h-[100px]"
+              className="bg-surface-container border-surface-variant/30 text-on-surface min-h-[100px]"
             />
             <p className="text-xs text-gray-400 mt-2">
               Default: No limitations, characters at peak abilities
@@ -189,12 +189,12 @@ export function Step03DefineScenario({
       </div>
 
       {/* Additional Context */}
-      <SimpleCard className="bg-space-dark border-space-purple/30">
+      <SimpleCard className="bg-surface-container border-surface-variant/30">
         <SimpleCardHeader>
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-space-purple" />
+            <FileText className="w-5 h-5 text-on-surface-variant" />
             <SimpleCardTitle>
-              <span className="text-cream-white">Additional Context</span>
+              <span className="text-on-surface">Additional Context</span>
             </SimpleCardTitle>
           </div>
         </SimpleCardHeader>
@@ -203,7 +203,7 @@ export function Step03DefineScenario({
             value={battleScenario.additionalContext}
             onChange={e => updateBattleScenario('additionalContext', e.target.value)}
             placeholder="Any other important details, motivations, or special circumstances..."
-            className="bg-space-dark border-space-purple/30 text-cream-white min-h-[120px]"
+            className="bg-surface-container border-surface-variant/30 text-on-surface min-h-[120px]"
           />
           <p className="text-xs text-gray-400 mt-2">
             Default: Both characters are at peak abilities from their respective canon
@@ -213,15 +213,15 @@ export function Step03DefineScenario({
 
       {/* Preview */}
       {hasCustomScenario && (
-        <SimpleCard className="bg-space-grey/20 border-space-purple/20">
+        <SimpleCard className="bg-surface-container-highest/20 border-surface-variant/20">
           <SimpleCardHeader>
             <SimpleCardTitle>
-              <span className="text-cream-white">Scenario Preview</span>
+              <span className="text-on-surface">Scenario Preview</span>
             </SimpleCardTitle>
           </SimpleCardHeader>
           <SimpleCardContent>
             <div className="text-sm text-gray-300 whitespace-pre-line">
-              <strong className="text-space-purple">
+              <strong className="text-on-surface-variant">
                 {candidate1Name} vs {candidate2Name}
               </strong>
               {battleScenario.setting && (
@@ -266,29 +266,29 @@ export function Step03DefineScenario({
 
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
-        <Button
-          variant="outline"
+        <ChunkyButton
+          variant="secondary"
           onClick={onPrevious}
-          className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+          className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
         >
           Previous
-        </Button>
+        </ChunkyButton>
 
         <div className="flex gap-2 justify-end flex-wrap">
-          <Button
+          <ChunkyButton
             variant="ghost"
             onClick={resetToDefaults}
-            className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
+            className="text-gray-400 hover:text-on-surface hover:bg-surface-variant/20"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset to Defaults
-          </Button>
+          </ChunkyButton>
 
-          <Button
+          <ChunkyButton
             variant="ghost"
             onClick={generateRandomScenario}
             disabled={isGeneratingScenario}
-            className="text-gray-400 hover:text-cream-white hover:bg-space-purple/20"
+            className="text-gray-400 hover:text-on-surface hover:bg-surface-variant/20"
           >
             {isGeneratingScenario ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -296,14 +296,14 @@ export function Step03DefineScenario({
               <RefreshCcw className="w-4 h-4 mr-2" />
             )}
             {isGeneratingScenario ? 'Generating...' : 'Random Scenario'}
-          </Button>
+          </ChunkyButton>
 
-          <Button
+          <ChunkyButton
+            variant="primary"
             onClick={onNext}
-            className="bg-space-purple text-cream-white hover:bg-space-purple/90"
           >
             Generate Battle Results
-          </Button>
+          </ChunkyButton>
         </div>
       </div>
     </div>

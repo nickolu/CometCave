@@ -11,7 +11,7 @@ import Image from 'next/image'
 import React, { useEffect, useRef, useState } from 'react'
 
 import { Autocomplete } from '@/components/ui/autocomplete'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -311,8 +311,8 @@ export default function AvatarMakerPage() {
     <div className="py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-cream-white">Avatar Maker</h1>
-          <p className="text-slate-400 mt-2">
+          <h1 className="text-3xl font-bold text-on-surface">Avatar Maker</h1>
+          <p className="text-on-surface-variant mt-2">
             {imageGenerationAllowed
               ? 'Upload an image and let the AI turn it into unique avatars'
               : 'Avatar generation is currently disabled'}
@@ -347,18 +347,18 @@ export default function AvatarMakerPage() {
         )}
 
         {imageGenerationAllowed ? (
-          <div className="relative flex flex-col gap-1 bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12 space-y-8 overflow-hidden">
+          <div className="relative flex flex-col gap-1 bg-surface-container border border-surface-variant/30 rounded-2xl p-8 md:p-12 space-y-8 overflow-hidden">
             {/* loading overlay */}
             {loading && (
               <div className="absolute inset-0 bg-black/70 flex flex-col gap-4 items-center justify-center z-10 animate-fade-in">
-                <span className="h-10 w-10 border-4 border-t-transparent border-space-purple rounded-full animate-spin" />
-                <p className="text-cream-white">Generating avatar...</p>
+                <span className="h-10 w-10 border-4 border-t-transparent border-surface-variant rounded-full animate-spin" />
+                <p className="text-on-surface">Generating avatar...</p>
               </div>
             )}
 
             {/* Upload */}
             <div className="space-y-4">
-              <Label className="text-slate-400">1. Upload a base image</Label>
+              <Label className="text-on-surface-variant">1. Upload a base image</Label>
               {/* Hidden real input */}
               <input
                 ref={fileInputRef}
@@ -385,7 +385,7 @@ export default function AvatarMakerPage() {
                 }}
                 className={cn(
                   'flex flex-col items-center justify-center gap-2 px-6 py-10 rounded-lg border-2 border-dashed transition-colors cursor-pointer',
-                  imageFile ? 'border-space-purple' : 'border-slate-700 hover:border-space-purple'
+                  imageFile ? 'border-surface-variant' : 'border-outline-variant hover:border-ds-primary'
                 )}
               >
                 {imageFile ? (
@@ -398,17 +398,17 @@ export default function AvatarMakerPage() {
                   />
                 ) : (
                   <>
-                    <UploadCloud className="w-10 h-10 text-slate-400" />
-                    <p className="text-slate-400 text-sm">Click or drag & drop to upload</p>
+                    <UploadCloud className="w-10 h-10 text-on-surface-variant" />
+                    <p className="text-on-surface-variant text-sm">Click or drag & drop to upload</p>
                   </>
                 )}
               </div>
             </div>
-            <hr className="border-space-purple" />
+            <hr className="border-surface-variant" />
 
             {/* Prompt */}
             <div className="space-y-2">
-              <Label htmlFor="prompt" className="text-slate-400">
+              <Label htmlFor="prompt" className="text-on-surface-variant">
                 2. Enter a prompt to edit the image
               </Label>
               <Textarea
@@ -417,17 +417,17 @@ export default function AvatarMakerPage() {
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 rows={3}
-                className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
               />
             </div>
 
-            <hr className="border-space-purple" />
+            <hr className="border-surface-variant" />
 
             {/* Optional parameters */}
-            <Label className="text-slate-400">3. Optional parameters</Label>
+            <Label className="text-on-surface-variant">3. Optional parameters</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-slate-400">Medium</Label>
+                <Label className="text-on-surface-variant">Medium</Label>
                 <Autocomplete
                   value={medium}
                   onChange={setMedium}
@@ -436,7 +436,7 @@ export default function AvatarMakerPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-slate-400">Style</Label>
+                <Label className="text-on-surface-variant">Style</Label>
                 <Autocomplete
                   value={style}
                   onChange={setStyle}
@@ -445,7 +445,7 @@ export default function AvatarMakerPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-slate-400">Filter</Label>
+                <Label className="text-on-surface-variant">Filter</Label>
                 <Autocomplete
                   value={filter}
                   onChange={setFilter}
@@ -454,7 +454,7 @@ export default function AvatarMakerPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-slate-400">Mood</Label>
+                <Label className="text-on-surface-variant">Mood</Label>
                 <Autocomplete
                   value={mood}
                   onChange={setMood}
@@ -463,7 +463,7 @@ export default function AvatarMakerPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-slate-400">Theme</Label>
+                <Label className="text-on-surface-variant">Theme</Label>
                 <Autocomplete
                   value={theme}
                   onChange={setTheme}
@@ -473,11 +473,11 @@ export default function AvatarMakerPage() {
               </div>
             </div>
 
-            <hr className="border-space-purple" />
+            <hr className="border-surface-variant" />
 
             {/* Orientation */}
             <div className="space-y-2">
-              <Label className="text-slate-400">Orientation</Label>
+              <Label className="text-on-surface-variant">Orientation</Label>
               <div className="flex gap-2">
                 {(
                   [
@@ -493,8 +493,8 @@ export default function AvatarMakerPage() {
                     className={cn(
                       'flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm border transition-colors',
                       size === o.val
-                        ? 'bg-space-purple text-cream-white border-space-purple'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        ? 'bg-surface-variant text-on-surface border-surface-variant'
+                        : 'bg-surface-container-highest text-on-surface-variant border-outline-variant hover:bg-surface-container-high'
                     )}
                   >
                     {o.icon}
@@ -504,21 +504,21 @@ export default function AvatarMakerPage() {
             </div>
 
             {generatedImages.length === 0 && (
-              <Button
+              <ChunkyButton
                 onClick={handleGenerate}
                 disabled={!imageFile || loading}
-                className={cn('w-full bg-space-purple hover:bg-space-purple/80 text-cream-white', {
+                className={cn('w-full bg-surface-variant hover:bg-surface-variant/80/80 text-on-surface', {
                   'opacity-75': loading,
                 })}
               >
                 {loading ? 'Generating...' : 'Generate Avatar'}
-              </Button>
+              </ChunkyButton>
             )}
 
             {generatedImages.length > 0 && (
               <div className="space-y-6 animate-in fade-in">
                 <div>
-                  <h2 className="text-2xl font-semibold text-center text-cream-white mb-4 text-center">
+                  <h2 className="text-2xl font-semibold text-center text-on-surface mb-4 text-center">
                     Generated Avatar{generatedImages.length > 1 ? 's' : ''}
                   </h2>
                   <div className="gap-4 justify-center items-center w-full">
@@ -527,7 +527,7 @@ export default function AvatarMakerPage() {
                         <Image
                           src={src}
                           alt="Generated avatar"
-                          className="rounded border border-slate-700 object-contain w-full"
+                          className="rounded border border-outline-variant object-contain w-full"
                           width={320}
                           height={320}
                         />
@@ -537,21 +537,21 @@ export default function AvatarMakerPage() {
                 </div>
 
                 <div className="flex justify-center">
-                  <Button
+                  <ChunkyButton
                     onClick={handleGenerate}
                     disabled={loading}
-                    className="bg-space-blue hover:bg-space-blue/80 text-cream-white w-full"
+                    className="bg-ds-secondary hover:bg-ds-secondary/70 text-on-surface w-full"
                   >
                     <RefreshCcw className="w-4 h-4 mr-2" />
                     {loading ? 'Generating...' : 'Generate More'}
-                  </Button>
+                  </ChunkyButton>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="bg-space-dark border border-space-purple/30 rounded-2xl p-8 md:p-12 text-center">
-            <p className="text-slate-400 text-lg">{disableReason}</p>
+          <div className="bg-surface-container border border-surface-variant/30 rounded-2xl p-8 md:p-12 text-center">
+            <p className="text-on-surface-variant text-lg">{disableReason}</p>
           </div>
         )}
       </div>

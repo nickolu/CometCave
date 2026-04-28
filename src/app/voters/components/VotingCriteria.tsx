@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { useGenerateCriteria, useGenerateRandomQuestion } from '@/app/voters/api/hooks'
 import { VotingCriteria } from '@/app/voters/types/voting'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -106,7 +106,7 @@ export default function VotingCriteriaComponent({
 
       <div>
         <div>
-          <h2 className="flex items-center gap-2 text-xl font-bold text-cream-white mb-4">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-on-surface mb-4">
             <Vote className="w-5 h-5" />
             Voting Question
           </h2>
@@ -115,12 +115,12 @@ export default function VotingCriteriaComponent({
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label htmlFor="question">Question</Label>
-              <Button
-                variant="outline"
+              <ChunkyButton
+                variant="secondary"
                 size="sm"
                 onClick={handleGenerateRandomQuestion}
                 disabled={generateRandomQuestionMutation.isPending}
-                className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+                className="bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container hover:text-on-surface"
               >
                 {generateRandomQuestionMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -128,7 +128,7 @@ export default function VotingCriteriaComponent({
                   <Wand2 className="w-4 h-4 mr-2" />
                 )}
                 Generate Random Question
-              </Button>
+              </ChunkyButton>
             </div>
             <Textarea
               id="question"
@@ -136,19 +136,19 @@ export default function VotingCriteriaComponent({
               onChange={e => onCriteriaChange({ ...criteria, question: e.target.value })}
               placeholder="e.g., Which makes a better pet: cats or dogs?"
               rows={3}
-              className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+              className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Answer Options</Label>
-              <Button
-                variant="outline"
+              <ChunkyButton
+                variant="secondary"
                 size="sm"
                 onClick={handleGenerateCriteria}
                 disabled={generateCriteriaMutation.isPending || !criteria.question.trim()}
-                className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+                className="bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container hover:text-on-surface"
               >
                 {generateCriteriaMutation.isPending ? (
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
@@ -156,7 +156,7 @@ export default function VotingCriteriaComponent({
                   <Lightbulb className="w-4 h-4 mr-2" />
                 )}
                 Auto-Generate Options
-              </Button>
+              </ChunkyButton>
             </div>
             <div className="space-y-2 mt-2">
               {criteria.options.map((option, index) => (
@@ -165,16 +165,16 @@ export default function VotingCriteriaComponent({
                     value={option}
                     onChange={e => updateOption(index, e.target.value)}
                     placeholder={`Option ${index + 1}`}
-                    className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                    className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
                   />
-                  <Button
-                    variant="outline"
+                  <ChunkyButton
+                    variant="secondary"
                     size="sm"
                     onClick={() => removeOption(index)}
-                    className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+                    className="bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container hover:text-on-surface"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </ChunkyButton>
                 </div>
               ))}
 
@@ -184,16 +184,16 @@ export default function VotingCriteriaComponent({
                   onChange={e => setNewOption(e.target.value)}
                   placeholder="Add new option..."
                   onKeyPress={e => e.key === 'Enter' && addOption()}
-                  className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                  className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
                 />
-                <Button
-                  onClick={addOption}
-                  variant="outline"
+                <ChunkyButton
+                  variant="secondary"
                   size="sm"
-                  className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+                  onClick={addOption}
+                  className="bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container hover:text-on-surface"
                 >
                   <Plus className="w-4 h-4" />
-                </Button>
+                </ChunkyButton>
               </div>
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function VotingCriteriaComponent({
           )}
 
           {criteria.options.length > 0 && (
-            <div className="p-4 bg-slate-900/50 rounded-lg">
+            <div className="p-4 bg-surface-container-highest rounded-lg">
               <h4 className="font-medium mb-2">Preview:</h4>
               <p className="font-medium">{criteria.question}</p>
               <ul className="mt-2 space-y-1">
@@ -226,20 +226,19 @@ export default function VotingCriteriaComponent({
       </div>
 
       <div className="flex justify-between">
-        <Button
-          variant="outline"
+        <ChunkyButton
+          variant="secondary"
           onClick={onBack}
-          className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
         >
           Back: Manage Voters
-        </Button>
-        <Button
+        </ChunkyButton>
+        <ChunkyButton
+          variant="primary"
           onClick={onNext}
           disabled={!canProceed}
-          className="bg-space-purple text-cream-white hover:bg-space-purple/90"
         >
           Next: Start Voting
-        </Button>
+        </ChunkyButton>
       </div>
     </div>
   )

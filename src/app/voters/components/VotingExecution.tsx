@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { useCastVote } from '@/app/voters/api/hooks'
 import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Progress } from '@/components/ui/progress'
 
 interface VotingExecutionProps {
@@ -115,7 +115,7 @@ export default function VotingExecution({
 
       <div>
         <div>
-          <h2 className="flex items-center gap-2 text-xl font-bold text-cream-white mb-4">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-on-surface mb-4">
             Voting Summary
           </h2>
         </div>
@@ -168,7 +168,7 @@ export default function VotingExecution({
       {isVoting && (
         <div>
           <div>
-            <h2 className="flex items-center gap-2 text-xl font-bold text-cream-white mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-on-surface mb-4">
               Voting in Progress...
             </h2>
           </div>
@@ -185,7 +185,7 @@ export default function VotingExecution({
       {votes.length > 0 && !isVoting && (
         <div>
           <div>
-            <h2 className="flex items-center gap-2 text-xl font-bold text-cream-white mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-on-surface mb-4">
               Voting Complete!
             </h2>
           </div>
@@ -198,27 +198,26 @@ export default function VotingExecution({
       )}
 
       <div className="flex justify-between">
-        <Button
-          variant="outline"
+        <ChunkyButton
+          variant="secondary"
           onClick={onBack}
           disabled={isVoting}
-          className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
         >
           Back: Voting Criteria
-        </Button>
+        </ChunkyButton>
 
         <div className="flex gap-2">
           {!isVoting && votes.length === 0 && (
-            <Button onClick={executeVoting} size="lg">
+            <ChunkyButton variant="primary" size="lg" onClick={executeVoting}>
               <Play className="w-4 h-4 mr-2" />
               Start Voting
-            </Button>
+            </ChunkyButton>
           )}
 
           {votes.length > 0 && !isVoting && (
-            <Button onClick={() => onVotingComplete(votes)} size="lg">
+            <ChunkyButton variant="primary" size="lg" onClick={() => onVotingComplete(votes)}>
               View Results
-            </Button>
+            </ChunkyButton>
           )}
         </div>
       </div>

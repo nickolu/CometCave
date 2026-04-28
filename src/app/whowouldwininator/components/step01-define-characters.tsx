@@ -1,6 +1,6 @@
 import { Loader2, RefreshCcw, Sparkles } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -38,29 +38,29 @@ export function Step01DefineCharacters({
       {/* Mobile and Desktop Layout */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-4 w-full">
         {/* Character 1 */}
-        <div className="flex flex-col gap-4 flex-grow bg-space-dark rounded-lg p-4 lg:p-6 lg:w-[35%]">
+        <div className="flex flex-col gap-4 flex-grow bg-surface-container rounded-lg p-4 lg:p-6 lg:w-[35%]">
           <div className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
-            <h2 className="text-xl sm:text-2xl font-bold text-cream-white">
+            <h2 className="text-xl sm:text-2xl font-bold text-on-surface">
               {candidate1Name ? candidate1Name : `Character 1`}
             </h2>
-            <Button
-              variant="outline"
+            <ChunkyButton
+              variant="secondary"
               size="sm"
               onClick={() => generateRandomCharacter(1)}
               disabled={isGeneratingCandidate1}
               className="self-start sm:self-auto"
             >
               {isGeneratingCandidate1 ? (
-                <Loader2 className="w-4 h-4 text-space-purple animate-spin" />
+                <Loader2 className="w-4 h-4 text-on-surface-variant animate-spin" />
               ) : (
-                <RefreshCcw className="w-4 h-4 text-space-purple" />
+                <RefreshCcw className="w-4 h-4 text-on-surface-variant" />
               )}
               <span className="ml-2">Random</span>
-            </Button>
+            </ChunkyButton>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="candidate1" className="text-sm font-medium text-cream-white">
+            <label htmlFor="candidate1" className="text-sm font-medium text-on-surface">
               Name:
             </label>
             <Input
@@ -69,7 +69,7 @@ export function Step01DefineCharacters({
               value={candidate1Name ?? ''}
               onChange={e => updateCandidate1(e.target.value, null)}
               disabled={isGeneratingCandidate1}
-              className="bg-space-dark border-space-purple/30"
+              className="bg-surface-container border-surface-variant/30"
             />
           </div>
 
@@ -77,12 +77,12 @@ export function Step01DefineCharacters({
             <div className="flex items-center justify-between">
               <label
                 htmlFor="candidate1-description"
-                className="text-sm font-medium text-cream-white"
+                className="text-sm font-medium text-on-surface"
               >
                 Description:
               </label>
-              <Button
-                variant="outline"
+              <ChunkyButton
+                variant="secondary"
                 size="sm"
                 onClick={() => generateCharacterDescription(1)}
                 disabled={
@@ -94,19 +94,19 @@ export function Step01DefineCharacters({
                 className="self-start sm:self-auto"
               >
                 {isGeneratingCandidate1Description ? (
-                  <Loader2 className="w-4 h-4 text-space-purple animate-spin" />
+                  <Loader2 className="w-4 h-4 text-on-surface-variant animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4 text-space-purple" />
+                  <Sparkles className="w-4 h-4 text-on-surface-variant" />
                 )}
                 <span className="ml-2">Generate</span>
-              </Button>
+              </ChunkyButton>
             </div>
             <Textarea
               id="candidate1-description"
               value={candidate1Description ?? ''}
               onChange={e => updateCandidate1(null, e.target.value)}
               placeholder="(Optional) Describe your character's appearance, abilities, and personality..."
-              className="min-h-[100px] sm:min-h-[120px] resize-none bg-space-dark border-space-purple/30"
+              className="min-h-[100px] sm:min-h-[120px] resize-none bg-surface-container border-surface-variant/30"
               disabled={isGeneratingCandidate1 || isGeneratingCandidate1Description}
             />
           </div>
@@ -114,35 +114,35 @@ export function Step01DefineCharacters({
 
         {/* VS Divider */}
         <div className="flex items-center justify-center lg:flex-col lg:justify-center lg:px-2">
-          <div className="text-xl sm:text-2xl font-bold text-cream-white bg-space-purple/20 px-4 py-2 rounded-full">
+          <div className="text-xl sm:text-2xl font-bold text-on-surface bg-surface-variant/20 px-4 py-2 rounded-full">
             VS
           </div>
         </div>
 
         {/* Character 2 */}
-        <div className="flex flex-col gap-4 flex-grow bg-space-dark rounded-lg p-4 lg:p-6 lg:w-[35%]">
+        <div className="flex flex-col gap-4 flex-grow bg-surface-container rounded-lg p-4 lg:p-6 lg:w-[35%]">
           <div className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
-            <h2 className="text-xl sm:text-2xl font-bold text-cream-white">
+            <h2 className="text-xl sm:text-2xl font-bold text-on-surface">
               {candidate2Name ? candidate2Name : `Character 2`}
             </h2>
-            <Button
-              variant="outline"
+            <ChunkyButton
+              variant="secondary"
               size="sm"
               onClick={() => generateRandomCharacter(2)}
               disabled={isGeneratingCandidate2}
               className="self-start sm:self-auto"
             >
               {isGeneratingCandidate2 ? (
-                <Loader2 className="w-4 h-4 text-space-purple animate-spin" />
+                <Loader2 className="w-4 h-4 text-on-surface-variant animate-spin" />
               ) : (
-                <RefreshCcw className="w-4 h-4 text-space-purple" />
+                <RefreshCcw className="w-4 h-4 text-on-surface-variant" />
               )}
               <span className="ml-2">Random</span>
-            </Button>
+            </ChunkyButton>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="candidate2" className="text-sm font-medium text-cream-white">
+            <label htmlFor="candidate2" className="text-sm font-medium text-on-surface">
               Name:
             </label>
             <Input
@@ -151,7 +151,7 @@ export function Step01DefineCharacters({
               value={candidate2Name ?? ''}
               onChange={e => updateCandidate2(e.target.value, null)}
               disabled={isGeneratingCandidate2}
-              className="bg-space-dark border-space-purple/30"
+              className="bg-surface-container border-surface-variant/30"
             />
           </div>
 
@@ -159,12 +159,12 @@ export function Step01DefineCharacters({
             <div className="flex items-center justify-between">
               <label
                 htmlFor="candidate2-description"
-                className="text-sm font-medium text-cream-white"
+                className="text-sm font-medium text-on-surface"
               >
                 Description:
               </label>
-              <Button
-                variant="outline"
+              <ChunkyButton
+                variant="secondary"
                 size="sm"
                 onClick={() => generateCharacterDescription(2)}
                 disabled={
@@ -176,19 +176,19 @@ export function Step01DefineCharacters({
                 className="self-start sm:self-auto"
               >
                 {isGeneratingCandidate2Description ? (
-                  <Loader2 className="w-4 h-4 text-space-purple animate-spin" />
+                  <Loader2 className="w-4 h-4 text-on-surface-variant animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4 text-space-purple" />
+                  <Sparkles className="w-4 h-4 text-on-surface-variant" />
                 )}
                 <span className="ml-2">Generate</span>
-              </Button>
+              </ChunkyButton>
             </div>
             <Textarea
               id="candidate2-description"
               value={candidate2Description ?? ''}
               onChange={e => updateCandidate2(null, e.target.value)}
               placeholder="(Optional) Describe your character's appearance, abilities, and personality..."
-              className="min-h-[100px] sm:min-h-[120px] resize-none bg-space-dark border-space-purple/30"
+              className="min-h-[100px] sm:min-h-[120px] resize-none bg-surface-container border-surface-variant/30"
               disabled={isGeneratingCandidate2 || isGeneratingCandidate2Description}
             />
           </div>
@@ -196,15 +196,16 @@ export function Step01DefineCharacters({
       </div>
 
       {/* Next Button */}
-      <Button
+      <ChunkyButton
+        variant="primary"
         onClick={onNext}
         disabled={
           !candidate1Name || !candidate2Name || isGeneratingCandidate1 || isGeneratingCandidate2
         }
-        className="w-full bg-space-purple text-cream-white hover:bg-space-purple/90 py-3"
+        className="w-full py-3"
       >
         Next: Review Characters
-      </Button>
+      </ChunkyButton>
     </div>
   )
 }

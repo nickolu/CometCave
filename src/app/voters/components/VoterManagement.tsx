@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 
 import { useGenerateRandomVoter } from '@/app/voters/api/hooks'
 import { Voter } from '@/app/voters/types/voting'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -115,18 +115,18 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2 text-cream-white">Manage Voters</h2>
-        <p className="text-slate-400">
+        <h2 className="text-2xl font-bold mb-2 text-on-surface">Manage Voters</h2>
+        <p className="text-on-surface-variant">
           Add different types of voters with their characteristics and AI model settings
         </p>
       </div>
 
       {/* Add New Voter */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold text-cream-white">Add New Voter Type</h3>
+        <h3 className="text-xl font-bold text-on-surface">Add New Voter Type</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <Label htmlFor="name" className="text-slate-400">
+            <Label htmlFor="name" className="text-on-surface-variant">
               Voter Name
             </Label>
             <Input
@@ -134,11 +134,11 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
               value={newVoter.name}
               onChange={e => setNewVoter({ ...newVoter, name: e.target.value })}
               placeholder="e.g., Dog Lover, Cat Enthusiast"
-              className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+              className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
             />
           </div>
           <div>
-            <Label htmlFor="count" className="text-slate-400">
+            <Label htmlFor="count" className="text-on-surface-variant">
               Number of Voters
             </Label>
             <Input
@@ -149,13 +149,13 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
               onChange={e =>
                 setNewVoter({ ...newVoter, count: Number.parseInt(e.target.value) || 10 })
               }
-              className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+              className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
             />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="description" className="text-slate-400">
+          <Label htmlFor="description" className="text-on-surface-variant">
             Description
           </Label>
           <Textarea
@@ -164,26 +164,26 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
             onChange={e => setNewVoter({ ...newVoter, description: e.target.value })}
             placeholder="Describe this voter's characteristics, preferences, and background..."
             rows={3}
-            className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+            className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
+          <ChunkyButton
+            variant="secondary"
             size="sm"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+            className="bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container hover:text-on-surface"
           >
             <Settings className="w-4 h-4 mr-2" />
             Advanced Settings
-          </Button>
+          </ChunkyButton>
         </div>
 
         {showAdvanced && (
-          <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-slate-900/50">
+          <div className="space-y-4 p-4 border border-outline-variant rounded-lg bg-surface-dim/50">
             <div>
-              <Label className="text-slate-400">Model</Label>
+              <Label className="text-on-surface-variant">Model</Label>
               <Select
                 value={newVoter.modelConfig.model}
                 onValueChange={value =>
@@ -193,10 +193,10 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                   })
                 }
               >
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-cream-white mt-1">
+                <SelectTrigger className="bg-surface-container-highest border-outline-variant text-on-surface mt-1">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-space-dark border-slate-700 text-cream-white">
+                <SelectContent className="bg-surface-container border-outline-variant text-on-surface">
                   {models.map(model => (
                     <SelectItem key={model.value} value={model.value}>
                       {model.label}
@@ -207,7 +207,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
             </div>
 
             <div>
-              <Label className="text-slate-400">
+              <Label className="text-on-surface-variant">
                 Temperature: {newVoter.modelConfig.temperature}
               </Label>
               <Slider
@@ -226,7 +226,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
             </div>
 
             <div>
-              <Label className="text-slate-400">Max Tokens</Label>
+              <Label className="text-on-surface-variant">Max Tokens</Label>
               <Input
                 type="number"
                 value={newVoter.modelConfig.maxTokens}
@@ -241,36 +241,36 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                 }
                 min={50}
                 max={500}
-                className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
               />
             </div>
           </div>
         )}
 
         <div className="flex gap-2">
-          <Button
+          <ChunkyButton
+            variant="primary"
             onClick={addVoter}
-            className="flex-1 bg-space-purple text-cream-white hover:bg-space-purple/90"
+            className="flex-1"
           >
             Add Voter Type
-          </Button>
-          <Button
+          </ChunkyButton>
+          <ChunkyButton
+            variant="secondary"
             onClick={handleGenerateRandomVoter}
             disabled={generateRandomVoterMutation.isPending}
-            variant="outline"
-            className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
             title="Generate a random voter with AI-created characteristics"
           >
             <Sparkles className="w-4 h-4 mr-2" />
             {generateRandomVoterMutation.isPending ? 'Generating...' : 'Random'}
-          </Button>
+          </ChunkyButton>
         </div>
       </div>
 
       {/* Voter Pool Visualization */}
       {voters.length > 0 && (
         <div className="space-y-6 pt-8">
-          <h3 className="flex items-center gap-2 text-xl font-bold text-cream-white">
+          <h3 className="flex items-center gap-2 text-xl font-bold text-on-surface">
             <Users className="w-5 h-5" />
             Voter Pool ({totalVoters} total voters)
           </h3>
@@ -278,47 +278,47 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
             {voters.map(voter => (
               <div
                 key={voter.id}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 space-y-4 flex flex-col"
+                className="bg-surface-container-highest border border-outline-variant rounded-lg p-6 space-y-4 flex flex-col"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col gap-1">
-                    <h4 className="font-semibold text-cream-white">{voter.name}</h4>
-                    <span className="text-xs px-2 py-1 bg-slate-700/50 text-slate-300 rounded-full w-fit">
+                    <h4 className="font-semibold text-on-surface">{voter.name}</h4>
+                    <span className="text-xs px-2 py-1 bg-surface-variant/50 text-on-surface-variant rounded-full w-fit">
                       {voter.modelConfig.model}
                     </span>
                   </div>
                   <div className="flex gap-1">
-                    <Button
+                    <ChunkyButton
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditingVoterId(voter.id)}
-                      className="text-slate-400 hover:text-cream-white hover:bg-slate-700"
+                      className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
                     >
                       <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
+                    </ChunkyButton>
+                    <ChunkyButton
                       variant="ghost"
                       size="sm"
                       onClick={() => duplicateVoter(voter)}
-                      className="text-slate-400 hover:text-cream-white hover:bg-slate-700"
+                      className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
                     >
                       <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button
+                    </ChunkyButton>
+                    <ChunkyButton
                       variant="ghost"
                       size="sm"
                       onClick={() => removeVoter(voter.id)}
-                      className="text-slate-400 hover:text-cream-white hover:bg-slate-700"
+                      className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </Button>
+                    </ChunkyButton>
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-400 flex-grow">{voter.description}</p>
+                <p className="text-sm text-on-surface-variant flex-grow">{voter.description}</p>
 
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-700">
-                  <Label className="text-xs text-slate-400">Count:</Label>
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-outline-variant">
+                  <Label className="text-xs text-on-surface-variant">Count:</Label>
                   <Input
                     type="number"
                     min="1"
@@ -326,7 +326,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                     onChange={e =>
                       updateVoterCount(voter.id, Number.parseInt(e.target.value) || 10)
                     }
-                    className="bg-slate-900 border-slate-600 text-cream-white w-20 h-8 text-center"
+                    className="bg-surface-container-highest border-outline-variant text-on-surface w-20 h-8 text-center"
                   />
                 </div>
               </div>
@@ -336,14 +336,14 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
       )}
 
       <div className="flex justify-between items-center mt-8">
-        <span className="text-lg font-semibold text-cream-white">Total Voters: {totalVoters}</span>
-        <Button
+        <span className="text-lg font-semibold text-on-surface">Total Voters: {totalVoters}</span>
+        <ChunkyButton
+          variant="primary"
           onClick={onNext}
           disabled={voters.length === 0}
-          className="bg-space-purple text-cream-white hover:bg-space-purple/90"
         >
           Next: Set Criteria
-        </Button>
+        </ChunkyButton>
       </div>
 
       {editingVoterId && editedVoter && (
@@ -371,24 +371,24 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-space-dark rounded-2xl p-8 md:p-12 w-full max-w-2xl border border-space-purple/30 m-4">
-        <h3 className="text-xl font-bold mb-4 text-cream-white">Edit Voter Type</h3>
+      <div className="bg-surface-container rounded-2xl p-8 md:p-12 w-full max-w-2xl border border-surface-variant/30 m-4">
+        <h3 className="text-xl font-bold mb-4 text-on-surface">Edit Voter Type</h3>
 
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-name" className="text-slate-400">
+              <Label htmlFor="edit-name" className="text-on-surface-variant">
                 Voter Name
               </Label>
               <Input
                 id="edit-name"
                 value={editedVoter.name}
                 onChange={e => setEditedVoter({ ...editedVoter, name: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
               />
             </div>
             <div>
-              <Label htmlFor="edit-count" className="text-slate-400">
+              <Label htmlFor="edit-count" className="text-on-surface-variant">
                 Number of Voters
               </Label>
               <Input
@@ -399,13 +399,13 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
                 onChange={e =>
                   setEditedVoter({ ...editedVoter, count: Number.parseInt(e.target.value) || 10 })
                 }
-                className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="edit-description" className="text-slate-400">
+            <Label htmlFor="edit-description" className="text-on-surface-variant">
               Description
             </Label>
             <Textarea
@@ -413,26 +413,26 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
               value={editedVoter.description}
               onChange={e => setEditedVoter({ ...editedVoter, description: e.target.value })}
               rows={3}
-              className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+              className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
             />
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
+            <ChunkyButton
+              variant="secondary"
               size="sm"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
+              className="bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container hover:text-on-surface"
             >
               <Settings className="w-4 h-4 mr-2" />
               Advanced Settings
-            </Button>
+            </ChunkyButton>
           </div>
 
           {showAdvanced && (
-            <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-slate-900/50">
+            <div className="space-y-4 p-4 border border-outline-variant rounded-lg bg-surface-dim/50">
               <div>
-                <Label className="text-slate-400">Model</Label>
+                <Label className="text-on-surface-variant">Model</Label>
                 <Select
                   value={editedVoter.modelConfig.model}
                   onValueChange={value =>
@@ -442,10 +442,10 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
                     })
                   }
                 >
-                  <SelectTrigger className="bg-slate-800 border-slate-700 text-cream-white mt-1">
+                  <SelectTrigger className="bg-surface-container-highest border-outline-variant text-on-surface mt-1">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-space-dark border-slate-700 text-cream-white">
+                  <SelectContent className="bg-surface-container border-outline-variant text-on-surface">
                     {models.map(model => (
                       <SelectItem key={model.value} value={model.value}>
                         {model.label}
@@ -456,7 +456,7 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
               </div>
 
               <div>
-                <Label className="text-slate-400">
+                <Label className="text-on-surface-variant">
                   Temperature: {editedVoter.modelConfig.temperature}
                 </Label>
                 <Slider
@@ -475,7 +475,7 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
               </div>
 
               <div>
-                <Label className="text-slate-400">Max Tokens</Label>
+                <Label className="text-on-surface-variant">Max Tokens</Label>
                 <Input
                   type="number"
                   value={editedVoter.modelConfig.maxTokens}
@@ -490,7 +490,7 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
                   }
                   min={50}
                   max={500}
-                  className="bg-slate-800 border-slate-700 text-cream-white mt-1"
+                  className="bg-surface-container-highest border-outline-variant text-on-surface mt-1"
                 />
               </div>
             </div>
@@ -498,24 +498,23 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
         </div>
 
         <div className="flex justify-between mt-8">
-          <Button onClick={() => onRemove(voter.id)} variant="destructive">
+          <ChunkyButton variant="exit" onClick={() => onRemove(voter.id)}>
             <Trash2 className="w-4 h-4 mr-2" />
             Delete
-          </Button>
+          </ChunkyButton>
           <div className="flex gap-2">
-            <Button
+            <ChunkyButton
+              variant="secondary"
               onClick={onCancel}
-              variant="outline"
-              className="bg-transparent text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-cream-white"
             >
               Cancel
-            </Button>
-            <Button
+            </ChunkyButton>
+            <ChunkyButton
+              variant="primary"
               onClick={() => onUpdate(editedVoter)}
-              className="bg-space-purple text-cream-white hover:bg-space-purple/90"
             >
               Save Changes
-            </Button>
+            </ChunkyButton>
           </div>
         </div>
       </div>

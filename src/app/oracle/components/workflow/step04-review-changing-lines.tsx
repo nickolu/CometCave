@@ -138,7 +138,7 @@ const ChangingLines = ({ divinationResult }: { divinationResult: DivinationResul
 
           return (
             <div key={lineIndex} className="space-y-2">
-              <Typography variant="h5" className="text-space-purple">
+              <Typography variant="h5" className="text-on-surface-variant">
                 Line {lineNumber} ({direction})
               </Typography>
               <Typography variant="body1" className="whitespace-pre-line text-left">
@@ -213,31 +213,31 @@ const DivinationResult = ({ divinationResult }: { divinationResult: DivinationRe
             <TabsList className="grid w-full grid-cols-5 mb-16 bg-transparent">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-space-purple data-[state=active]:text-cream-white"
+                className="data-[state=active]:bg-surface-variant data-[state=active]:text-on-surface"
               >
                 Overview
               </TabsTrigger>
               <TabsTrigger
                 value="present"
-                className="data-[state=active]:bg-space-purple data-[state=active]:text-cream-white"
+                className="data-[state=active]:bg-surface-variant data-[state=active]:text-on-surface"
               >
                 Present
               </TabsTrigger>
               <TabsTrigger
                 value="changing-lines"
-                className="data-[state=active]:bg-space-purple data-[state=active]:text-cream-white"
+                className="data-[state=active]:bg-surface-variant data-[state=active]:text-on-surface"
               >
                 Changing Lines
               </TabsTrigger>
               <TabsTrigger
                 value="future"
-                className="data-[state=active]:bg-space-purple data-[state=active]:text-cream-white"
+                className="data-[state=active]:bg-surface-variant data-[state=active]:text-on-surface"
               >
                 Future
               </TabsTrigger>
               <TabsTrigger
                 value="interpretation"
-                className="data-[state=active]:bg-space-purple data-[state=active]:text-cream-white"
+                className="data-[state=active]:bg-surface-variant data-[state=active]:text-on-surface"
               >
                 Interpretation
               </TabsTrigger>

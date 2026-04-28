@@ -15,7 +15,7 @@ export const GameCard = ({
   return (
     <Card
       className={cn(
-        isSelected ? 'ring-2 ring-space-purple transform -translate-y-2' : '',
+        isSelected ? 'ring-2 ring-surface-variant transform -translate-y-2' : '',
         'h-36 w-24 transform transition-all duration-300 cursor-pointer',
         className
       )}

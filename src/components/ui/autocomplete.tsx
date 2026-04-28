@@ -45,12 +45,12 @@ export function Autocomplete({
           label={label}
           variant="outlined"
           className={cn(
-            'bg-slate-800 rounded-md [&_.MuiOutlinedInput-notchedOutline]:border-slate-700 [&_input]:text-cream-white',
+            'bg-surface-container-highest rounded-md [&_.MuiOutlinedInput-notchedOutline]:border-outline-variant [&_input]:text-on-surface',
             className
           )}
           InputProps={{
             ...params.InputProps,
-            className: 'text-cream-white',
+            className: 'text-on-surface',
           }}
           InputLabelProps={{
             ...params.InputLabelProps,

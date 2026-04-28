@@ -18,13 +18,13 @@ export default function ChatRoomOfInfinity() {
   return (
     <QueryProvider>
       <div className="max-w-3xl mx-auto py-12">
-        <Link href="/" className="text-cream-white/80 hover:text-cream-white mb-6 inline-block">
+        <Link href="/" className="text-on-surface/80 hover:text-on-surface mb-6 inline-block">
           &larr; Back to games
         </Link>
 
-        <div className="bg-space-dark rounded-2xl p-8 shadow-lg border border-space-purple/20">
-          <h1 className="text-3xl font-bold text-center mb-4 text-cream-white">CHAT ROOM</h1>
-          <p className="text-center text-slate-400 mb-8">
+        <div className="bg-surface-container rounded-2xl p-8 shadow-lg border border-surface-variant/20">
+          <h1 className="text-3xl font-bold text-center mb-4 text-on-surface">CHAT ROOM</h1>
+          <p className="text-center text-on-surface-variant mb-8">
             Chat with fictional characters in a chat room!
           </p>
 

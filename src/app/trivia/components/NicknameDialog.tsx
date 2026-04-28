@@ -7,7 +7,7 @@ import {
   NicknameInUseError,
   sanitizeNickname,
 } from '@/app/trivia/hooks/useTriviaUser'
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Input } from '@/components/ui/input'
 
 interface NicknameDialogProps {
@@ -64,20 +64,20 @@ export function NicknameDialog({ initialValue, onClose, onSave }: NicknameDialog
       role="dialog"
       aria-modal="true"
       aria-labelledby="nickname-dialog-title"
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4"
+      className="fixed inset-0 bg-surface-dim/80 backdrop-blur-sm flex items-center justify-center z-50 px-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-lg border border-space-grey bg-space-dark p-6 shadow-xl"
+        className="w-full max-w-sm rounded-ds-lg border border-outline-variant bg-surface-container p-6 shadow-hero"
         onClick={(e) => e.stopPropagation()}
       >
         <h2
           id="nickname-dialog-title"
-          className="text-lg font-bold text-space-gold mb-1"
+          className="text-lg font-bold text-ds-tertiary mb-1"
         >
           Choose your nickname
         </h2>
-        <p className="text-cream-white/60 text-sm mb-4">
+        <p className="text-on-surface/60 text-sm mb-4">
           Shown on the leaderboard and wherever your name appears.
         </p>
         <Input
@@ -92,21 +92,21 @@ export function NicknameDialog({ initialValue, onClose, onSave }: NicknameDialog
           }}
           maxLength={NICKNAME_MAX_LENGTH}
           placeholder="e.g. Stargazer"
-          className="text-cream-white"
+          className="text-on-surface"
         />
         <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-cream-white/40">
+          <span className="text-xs text-on-surface/40">
             {trimmedLength}/{NICKNAME_MAX_LENGTH}
           </span>
-          {error && <span className="text-xs text-red-400">{error}</span>}
+          {error && <span className="text-xs text-ds-error">{error}</span>}
         </div>
         <div className="grid grid-cols-2 gap-2 mt-4">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
+          <ChunkyButton variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
-          </Button>
-          <Button variant="space" onClick={handleSave} disabled={!canSave}>
+          </ChunkyButton>
+          <ChunkyButton variant="primary" onClick={handleSave} disabled={!canSave}>
             {saving ? 'Saving…' : 'Save'}
-          </Button>
+          </ChunkyButton>
         </div>
       </div>
     </div>

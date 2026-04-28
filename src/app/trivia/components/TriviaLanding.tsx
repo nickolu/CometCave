@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDisplayDate, getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
@@ -58,7 +58,7 @@ export function TriviaLanding({
         ) : (
           <Link
             href="/auth?redirect=/trivia"
-            className="text-space-gold/80 hover:text-space-gold underline-offset-4 hover:underline transition-colors"
+            className="text-ds-tertiary/80 hover:text-ds-tertiary underline-offset-4 hover:underline transition-colors"
           >
             Sign in
           </Link>
@@ -66,17 +66,17 @@ export function TriviaLanding({
       </div>
 
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-space-gold mb-2 inline-flex items-center gap-2">
+        <h1 className="font-headline text-headline-lg text-ds-tertiary drop-shadow-[0_4px_0_var(--surface-container-lowest)] mb-2 inline-flex items-center gap-2">
           Daily Trivia
           <ResetNoticeButton />
         </h1>
-        <p className="text-cream-white/70 text-lg">{formatDisplayDate(todayStr)}</p>
+        <p className="text-on-surface/70 text-lg">{formatDisplayDate(todayStr)}</p>
       </div>
 
       {/* Today's Theme banner */}
-      <div className="w-full flex flex-col items-center gap-1 px-4 py-3 rounded-lg bg-gradient-to-r from-space-purple/30 to-space-gold/20 border border-space-gold/30">
-        <div className="text-cream-white/60 text-xs uppercase tracking-widest">Today&apos;s Theme</div>
-        <div className="flex items-center gap-2 text-xl font-bold text-space-gold">
+      <div className="w-full flex flex-col items-center gap-1 px-4 py-3 rounded-lg bg-gradient-to-r from-surface-variant/30 to-ds-tertiary/20 border border-ds-tertiary/30">
+        <div className="text-on-surface/60 text-xs uppercase tracking-widest">Today&apos;s Theme</div>
+        <div className="flex items-center gap-2 text-xl font-bold text-ds-tertiary">
           <span className="text-2xl">{category.icon}</span>
           <span>{category.name}</span>
         </div>
@@ -84,10 +84,10 @@ export function TriviaLanding({
 
       {/* Streak hero (logged-in users with an active streak) */}
       {user && stats.currentStreak > 0 && (
-        <div className="w-full flex items-center justify-center gap-2 text-cream-white/80">
+        <div className="w-full flex items-center justify-center gap-2 text-on-surface/80">
           <span className="text-2xl">🔥</span>
           <span className="text-lg">
-            <span className="text-space-gold font-bold text-2xl">{stats.currentStreak}</span>
+            <span className="text-ds-tertiary font-bold text-2xl">{stats.currentStreak}</span>
             <span className="ml-2">
               day{stats.currentStreak === 1 ? '' : 's'} in a row
             </span>
@@ -103,96 +103,96 @@ export function TriviaLanding({
         <button
           type="button"
           onClick={() => setNicknameDialogOpen(true)}
-          className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-space-purple/15 border border-space-purple/30 text-sm text-left hover:bg-space-purple/20 transition-colors"
+          className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-surface-variant/15 border border-surface-variant/30 text-sm text-left hover:bg-surface-variant/20 transition-colors"
         >
-          <span className="text-cream-white/80">
+          <span className="text-on-surface/80">
             Pick a nickname for the leaderboard
           </span>
-          <span className="text-space-gold whitespace-nowrap font-semibold">
+          <span className="text-ds-tertiary whitespace-nowrap font-semibold">
             Set nickname →
           </span>
         </button>
       )}
 
-      <Card className="w-full bg-space-dark/80 border-space-grey">
-        <CardHeader>
-          <CardTitle className="text-cream-white text-center">
+      <ChunkyCard variant="surface-container-high" className="w-full">
+        <ChunkyCardHeader>
+          <ChunkyCardTitle className="text-on-surface text-center">
             {showFirestoreLoadingHint
               ? 'Loading your progress…'
               : alreadyPlayed
                 ? "You've already played today!"
                 : 'Ready to test your knowledge?'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
-          <Button
-            variant="space"
-            size="lg"
-            className="w-full text-lg py-6"
+          </ChunkyCardTitle>
+        </ChunkyCardHeader>
+        <ChunkyCardContent className="flex flex-col items-center gap-4">
+          <ChunkyButton
+            variant="primary"
+            size="hero"
+            className="w-full"
             disabled={alreadyPlayed || showFirestoreLoadingHint}
             onClick={onStartGame}
           >
             {alreadyPlayed ? 'Come Back Tomorrow' : "Start Today's Trivia"}
-          </Button>
+          </ChunkyButton>
 
           {alreadyPlayed && todayResult && (
-            <div className="text-center text-cream-white/60 text-sm">
+            <div className="text-center text-on-surface/60 text-sm">
               Today&apos;s score:{' '}
-              <span className="text-space-gold font-semibold">
+              <span className="text-ds-tertiary font-semibold">
                 {todayResult.score} pts
               </span>
               {' · '}
               {todayResult.correct}/{todayResult.total} correct
             </div>
           )}
-        </CardContent>
-      </Card>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Streak & Stats */}
       <div className="grid grid-cols-2 gap-4 w-full">
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-space-gold">{stats.currentStreak}</div>
-            <div className="text-cream-white/60 text-sm">Current Streak</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-space-purple-light">{stats.bestStreak}</div>
-            <div className="text-cream-white/60 text-sm">Best Streak</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-cream-white">{stats.gamesPlayed}</div>
-            <div className="text-cream-white/60 text-sm">Games Played</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-space-dark/80 border-space-grey">
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-cream-white">
+        <ChunkyCard variant="surface-variant">
+          <ChunkyCardContent className="pt-6 text-center">
+            <div className="text-3xl font-bold text-ds-tertiary">{stats.currentStreak}</div>
+            <div className="text-on-surface/60 text-sm">Current Streak</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+        <ChunkyCard variant="surface-variant">
+          <ChunkyCardContent className="pt-6 text-center">
+            <div className="text-3xl font-bold text-on-surface-variant">{stats.bestStreak}</div>
+            <div className="text-on-surface/60 text-sm">Best Streak</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+        <ChunkyCard variant="surface-variant">
+          <ChunkyCardContent className="pt-6 text-center">
+            <div className="text-3xl font-bold text-on-surface">{stats.gamesPlayed}</div>
+            <div className="text-on-surface/60 text-sm">Games Played</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+        <ChunkyCard variant="surface-variant">
+          <ChunkyCardContent className="pt-6 text-center">
+            <div className="text-3xl font-bold text-on-surface">
               {stats.totalQuestions > 0
                 ? Math.round((stats.totalCorrect / stats.totalQuestions) * 100)
                 : 0}
               %
             </div>
-            <div className="text-cream-white/60 text-sm">Accuracy</div>
-          </CardContent>
-        </Card>
+            <div className="text-on-surface/60 text-sm">Accuracy</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
       </div>
 
       {/* Links */}
       <div className="flex gap-3 text-sm">
         <button
           onClick={onViewStats}
-          className="text-space-gold hover:text-space-gold/80 transition-colors underline-offset-4 hover:underline"
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           My Stats
         </button>
-        <span className="text-cream-white/20">·</span>
+        <span className="text-on-surface/20">·</span>
         <button
           onClick={onViewLeaderboard}
-          className="text-space-gold hover:text-space-gold/80 transition-colors underline-offset-4 hover:underline"
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           Leaderboard
         </button>
@@ -246,7 +246,7 @@ function UserMenu({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-cream-white/70 hover:text-cream-white transition-colors px-2 py-1 rounded-md hover:bg-space-dark/40"
+        className="flex items-center gap-2 text-on-surface/70 hover:text-on-surface transition-colors px-2 py-1 rounded-md hover:bg-surface-container/40"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -260,13 +260,13 @@ function UserMenu({
             unoptimized
           />
         )}
-        <span className="text-cream-white/80 truncate max-w-[10rem]">{displayName}</span>
-        <span className="text-cream-white/40 text-xs">▾</span>
+        <span className="text-on-surface/80 truncate max-w-[10rem]">{displayName}</span>
+        <span className="text-on-surface/40 text-xs">▾</span>
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 min-w-[10rem] rounded-md border border-space-grey bg-space-dark shadow-lg z-20 overflow-hidden"
+          className="absolute right-0 mt-1 min-w-[10rem] rounded-md border border-outline-variant bg-surface-container shadow-lg z-20 overflow-hidden"
         >
           <button
             type="button"
@@ -275,7 +275,7 @@ function UserMenu({
               setOpen(false)
               onEditNickname()
             }}
-            className="w-full text-left px-3 py-2 text-sm text-cream-white/80 hover:bg-space-purple/20 hover:text-cream-white transition-colors"
+            className="w-full text-left px-3 py-2 text-sm text-on-surface/80 hover:bg-surface-variant/20 hover:text-on-surface transition-colors"
           >
             Edit nickname
           </button>
@@ -286,7 +286,7 @@ function UserMenu({
               setOpen(false)
               onSignOut().catch((err) => console.error('Sign out failed:', err))
             }}
-            className="w-full text-left px-3 py-2 text-sm text-cream-white/80 hover:bg-space-purple/20 hover:text-cream-white transition-colors"
+            className="w-full text-left px-3 py-2 text-sm text-on-surface/80 hover:bg-surface-variant/20 hover:text-on-surface transition-colors"
           >
             Sign out
           </button>

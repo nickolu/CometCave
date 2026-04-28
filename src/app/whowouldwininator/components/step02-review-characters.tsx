@@ -4,7 +4,7 @@ import { Edit2, Loader2, Save } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Progress } from '@/components/ui/progress'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
@@ -75,7 +75,7 @@ const CardContent = ({
 const StatBar = ({ label, value, max = 100 }: { label: string; value: number; max?: number }) => (
   <div className="flex items-center gap-2">
     <span className="text-sm font-medium w-20">{label}:</span>
-    <Progress value={(value / max) * 100} className="flex-1 text-space-purple" />
+    <Progress value={(value / max) * 100} className="flex-1 text-on-surface-variant" />
     <span className="text-sm w-8">{value}</span>
   </div>
 )
@@ -123,9 +123,9 @@ const CharacterCard = ({
   const isEditing = (field: keyof CharacterDetails) => editingFields[candidateKey].has(field)
 
   return (
-    <Card className="bg-space-dark border-space-purple/30">
+    <Card className="bg-surface-container border-surface-variant/30">
       <CardHeader>
-        <CardTitle className="text-2xl text-cream-white">{name}</CardTitle>
+        <CardTitle className="text-2xl text-on-surface">{name}</CardTitle>
         <p className="text-sm text-gray-300">{description}</p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -133,21 +133,21 @@ const CharacterCard = ({
         {imageGenerationAllowed && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-cream-white">Portrait</h3>
+              <h3 className="text-lg font-semibold text-on-surface">Portrait</h3>
               {!details.portrait && !loading.portrait && (
-                <Button
-                  variant="outline"
+                <ChunkyButton
+                  variant="secondary"
                   size="sm"
                   onClick={() => handleGeneratePortrait(candidateNumber)}
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
                 >
                   Generate Portrait
-                </Button>
+                </ChunkyButton>
               )}
             </div>
             {loading.portrait ? (
-              <div className="flex items-center justify-center h-48 bg-space-grey/20 rounded-lg">
-                <Loader2 className="w-8 h-8 animate-spin text-space-purple" />
+              <div className="flex items-center justify-center h-48 bg-surface-container-highest/20 rounded-lg">
+                <Loader2 className="w-8 h-8 animate-spin text-on-surface-variant" />
               </div>
             ) : details.portrait ? (
               <Image
@@ -158,14 +158,14 @@ const CharacterCard = ({
                 height={1024}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-48 bg-space-grey/20 rounded-lg gap-3">
-                <Button
-                  variant="outline"
+              <div className="flex flex-col items-center justify-center h-48 bg-surface-container-highest/20 rounded-lg gap-3">
+                <ChunkyButton
+                  variant="secondary"
                   onClick={() => handleGeneratePortrait(candidateNumber)}
-                  className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+                  className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
                 >
                   Generate Portrait
-                </Button>
+                </ChunkyButton>
               </div>
             )}
           </div>
@@ -174,8 +174,8 @@ const CharacterCard = ({
         {/* Backstory */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-cream-white">Backstory</h3>
-            <Button
+            <h3 className="text-lg font-semibold text-on-surface">Backstory</h3>
+            <ChunkyButton
               variant="ghost"
               size="sm"
               onClick={() => toggleEdit(candidateNumber, 'backstory')}
@@ -185,18 +185,18 @@ const CharacterCard = ({
               ) : (
                 <Edit2 className="w-4 h-4" />
               )}
-            </Button>
+            </ChunkyButton>
           </div>
           {loading.backstory ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <Loader2 className="w-4 h-4 animate-spin text-on-surface-variant" />
               <span className="text-sm text-gray-400">Generating backstory...</span>
             </div>
           ) : isEditing('backstory') ? (
             <Textarea
               value={details.backstory || ''}
               onChange={e => updateCharacterDetail(candidateNumber, 'backstory', e.target.value)}
-              className="bg-space-dark border-space-purple/30"
+              className="bg-surface-container border-surface-variant/30"
               rows={4}
             />
           ) : (
@@ -209,14 +209,14 @@ const CharacterCard = ({
                   : 'No backstory available'}
               </p>
               {details.backstory && details.backstory.length > 150 && (
-                <Button
+                <ChunkyButton
                   variant="ghost"
                   size="sm"
                   onClick={() => toggleBackstoryExpansion(candidateNumber)}
-                  className="mt-2 text-space-purple hover:text-space-purple/80 p-0 h-auto"
+                  className="mt-2 text-on-surface-variant hover:text-on-surface-variant/80 p-0 h-auto"
                 >
                   {expandedBackstories[candidateKey] ? 'Show less' : 'Show more'}
-                </Button>
+                </ChunkyButton>
               )}
             </div>
           )}
@@ -225,14 +225,14 @@ const CharacterCard = ({
         {/* Powers */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-cream-white">Powers</h3>
-            <Button variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'powers')}>
+            <h3 className="text-lg font-semibold text-on-surface">Powers</h3>
+            <ChunkyButton variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'powers')}>
               {isEditing('powers') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-            </Button>
+            </ChunkyButton>
           </div>
           {loading.powers ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <Loader2 className="w-4 h-4 animate-spin text-on-surface-variant" />
               <span className="text-sm text-gray-400">Generating powers...</span>
             </div>
           ) : isEditing('powers') ? (
@@ -245,7 +245,7 @@ const CharacterCard = ({
                   e.target.value.split('\n').filter(p => p.trim())
                 )
               }
-              className="bg-space-dark border-space-purple/30"
+              className="bg-surface-container border-surface-variant/30"
               rows={3}
               placeholder="Enter powers, one per line"
             />
@@ -254,7 +254,7 @@ const CharacterCard = ({
               {details.powers?.map((power, index) => (
                 <span
                   key={index}
-                  className="px-2 py-1 bg-space-purple/20 text-purple-200 rounded-md text-sm"
+                  className="px-2 py-1 bg-surface-variant/20 text-on-surface-variant rounded-md text-sm"
                 >
                   {power}
                 </span>
@@ -266,14 +266,14 @@ const CharacterCard = ({
         {/* Stats */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-cream-white">Combat Stats</h3>
-            <Button variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'stats')}>
+            <h3 className="text-lg font-semibold text-on-surface">Combat Stats</h3>
+            <ChunkyButton variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'stats')}>
               {isEditing('stats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-            </Button>
+            </ChunkyButton>
           </div>
           {loading.stats ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <Loader2 className="w-4 h-4 animate-spin text-on-surface-variant" />
               <span className="text-sm text-gray-400">Generating stats...</span>
             </div>
           ) : isEditing('stats') ? (
@@ -282,7 +282,7 @@ const CharacterCard = ({
                 Object.entries(details.stats).map(([statName, statValue]) => (
                   <div key={statName} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-medium text-cream-white capitalize">
+                      <label className="text-sm font-medium text-on-surface capitalize">
                         {statName}
                       </label>
                       <span className="text-sm text-gray-300">{statValue}</span>
@@ -324,14 +324,14 @@ const CharacterCard = ({
         {/* Feats */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-cream-white">Notable Feats</h3>
-            <Button variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'feats')}>
+            <h3 className="text-lg font-semibold text-on-surface">Notable Feats</h3>
+            <ChunkyButton variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'feats')}>
               {isEditing('feats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-            </Button>
+            </ChunkyButton>
           </div>
           {loading.feats ? (
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-space-purple" />
+              <Loader2 className="w-4 h-4 animate-spin text-on-surface-variant" />
               <span className="text-sm text-gray-400">Generating feats...</span>
             </div>
           ) : isEditing('feats') ? (
@@ -344,7 +344,7 @@ const CharacterCard = ({
                   e.target.value.split('\n').filter(f => f.trim())
                 )
               }
-              className="bg-space-dark border-space-purple/30"
+              className="bg-surface-container border-surface-variant/30"
               rows={4}
               placeholder="Enter feats, one per line"
             />
@@ -567,19 +567,19 @@ export function Step02ReviewCharacters({
       </div>
 
       <div className="flex justify-between">
-        <Button
-          variant="outline"
+        <ChunkyButton
+          variant="secondary"
           onClick={onPrevious}
-          className="border-space-purple/30 text-cream-white hover:bg-space-purple/20"
+          className="border-surface-variant/30 text-on-surface hover:bg-surface-variant/20"
         >
           Previous
-        </Button>
-        <Button
+        </ChunkyButton>
+        <ChunkyButton
+          variant="primary"
           onClick={onNext}
-          className="bg-space-purple text-cream-white hover:bg-space-purple/90"
         >
           Next: Define Scenario
-        </Button>
+        </ChunkyButton>
       </div>
     </div>
   )
