@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getTodayPST } from '@/lib/dates'
 import type { CheckAnswerResponse, TriviaQuestion } from '@/app/trivia/models/questions'
 import type { TriviaAnswer, TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { getTodayPST } from '@/lib/dates'
 
 // Scoring config per difficulty
 const SCORING = {

@@ -1,10 +1,10 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { formatDisplayDate } from '@/lib/dates'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAuth } from '@/hooks/useAuth'
+import { formatDisplayDate } from '@/lib/dates'
 
 import { SignInCard } from './SignInCTA'
 
@@ -18,9 +18,7 @@ function getAccuracyColor(accuracy: number): string {
 
 export function TriviaStats({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
-  const { userData: firestoreUser } = useTriviaUser()
-  const stats = firestoreUser.stats
-  const history = firestoreUser.history
+  const { stats, history } = useTriviaUser()
 
   const accuracy =
     stats.totalQuestions > 0
@@ -31,8 +29,8 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
     ? Math.round(stats.totalScore / stats.gamesPlayed)
     : 0
 
-  // Last 14 days, most recent first
-  const recentHistory = [...history].reverse().slice(0, 14)
+  // history already comes back sorted date desc (most recent first)
+  const recentHistory = history.slice(0, 14)
 
   // Highest single-game score
   const bestScore = history.reduce((max, h) => Math.max(max, h.score), 0)

@@ -1,44 +1,38 @@
 'use client'
 
-import { type DocumentData, doc, getDoc, setDoc } from 'firebase/firestore'
-import { useCallback, useEffect, useState } from 'react'
+import {
+  type DocumentData,
+  collection,
+  doc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+} from 'firebase/firestore'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { useAuth } from '@/hooks/useAuth'
-import { getFirebaseFirestore } from '@/lib/firebase/client'
-import { getTodayPST, hasPlayedToday } from '@/lib/dates'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
+import { useAuth } from '@/hooks/useAuth'
+import { hasPlayedToday } from '@/lib/dates'
+import { getFirebaseFirestore } from '@/lib/firebase/client'
 
-interface FirestoreStats {
+export interface TriviaStats {
   gamesPlayed: number
   totalScore: number
   totalCorrect: number
   totalQuestions: number
   currentStreak: number
   bestStreak: number
-}
-
-export interface TriviaUserDocument {
-  displayName: string
-  nickname: string
-  stats: FirestoreStats
-  history: TriviaGameResult[]
   lastPlayedDate: string | null
 }
 
-const EMPTY_STATS: FirestoreStats = {
+const EMPTY_STATS: TriviaStats = {
   gamesPlayed: 0,
   totalScore: 0,
   totalCorrect: 0,
   totalQuestions: 0,
   currentStreak: 0,
   bestStreak: 0,
-}
-
-const EMPTY_USER: TriviaUserDocument = {
-  displayName: '',
-  nickname: '',
-  stats: EMPTY_STATS,
-  history: [],
   lastPlayedDate: null,
 }
 
@@ -48,147 +42,162 @@ export function sanitizeNickname(raw: string): string {
   return raw.trim().slice(0, NICKNAME_MAX_LENGTH)
 }
 
-function getYesterdayPST(): string {
-  const d = new Date()
-  d.setDate(d.getDate() - 1)
-  const pst = new Date(d.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }))
-  const yyyy = pst.getFullYear()
-  const mm = String(pst.getMonth() + 1).padStart(2, '0')
-  const dd = String(pst.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
-
-function computeNextState(
-  existing: TriviaUserDocument,
-  result: TriviaGameResult,
-  displayName: string
-): TriviaUserDocument {
-  const today = getTodayPST()
-  const yesterday = getYesterdayPST()
-  const wasYesterday = existing.lastPlayedDate === yesterday
-  const newStreak = wasYesterday ? existing.stats.currentStreak + 1 : 1
-  const bestStreak = Math.max(newStreak, existing.stats.bestStreak)
-
-  return {
-    displayName,
-    nickname: existing.nickname,
-    lastPlayedDate: today,
-    stats: {
-      gamesPlayed: existing.stats.gamesPlayed + 1,
-      totalScore: existing.stats.totalScore + result.score,
-      totalCorrect: existing.stats.totalCorrect + result.correct,
-      totalQuestions: existing.stats.totalQuestions + result.total,
-      currentStreak: newStreak,
-      bestStreak,
-    },
-    history: [...existing.history, result],
+export class NicknameInUseError extends Error {
+  constructor() {
+    super('Nickname is already taken')
+    this.name = 'NicknameInUseError'
   }
 }
 
-function normalizeDoc(data: DocumentData | undefined): TriviaUserDocument {
-  if (!data) return EMPTY_USER
+function normalizeStats(data: DocumentData | undefined): TriviaStats {
+  if (!data) return EMPTY_STATS
   return {
-    displayName: typeof data.displayName === 'string' ? data.displayName : '',
-    nickname: typeof data.nickname === 'string' ? data.nickname : '',
-    stats: { ...EMPTY_STATS, ...(data.stats ?? {}) },
-    history: Array.isArray(data.history) ? (data.history as TriviaGameResult[]) : [],
+    gamesPlayed: typeof data.gamesPlayed === 'number' ? data.gamesPlayed : 0,
+    totalScore: typeof data.totalScore === 'number' ? data.totalScore : 0,
+    totalCorrect: typeof data.totalCorrect === 'number' ? data.totalCorrect : 0,
+    totalQuestions: typeof data.totalQuestions === 'number' ? data.totalQuestions : 0,
+    currentStreak: typeof data.currentStreak === 'number' ? data.currentStreak : 0,
+    bestStreak: typeof data.bestStreak === 'number' ? data.bestStreak : 0,
     lastPlayedDate:
-      typeof data.lastPlayedDate === 'string' || data.lastPlayedDate === null
-        ? data.lastPlayedDate
-        : null,
+      typeof data.lastPlayedDate === 'string' ? data.lastPlayedDate : null,
+  }
+}
+
+function normalizeGame(data: DocumentData): TriviaGameResult {
+  return {
+    date: typeof data.date === 'string' ? data.date : '',
+    score: typeof data.score === 'number' ? data.score : 0,
+    correct: typeof data.correct === 'number' ? data.correct : 0,
+    total: typeof data.total === 'number' ? data.total : 0,
+    answers: Array.isArray(data.answers) ? data.answers : [],
   }
 }
 
 export interface UseTriviaUserResult {
-  userData: TriviaUserDocument
   loading: boolean
   isLoggedIn: boolean
   displayName: string
+  nickname: string
   needsNickname: boolean
+  stats: TriviaStats
+  history: TriviaGameResult[]
   canPlayToday: () => boolean
-  saveGameResult: (result: TriviaGameResult) => Promise<void>
   setNickname: (raw: string) => Promise<void>
-  refresh: () => Promise<void>
 }
 
 export function useTriviaUser(): UseTriviaUserResult {
   const { user, loading: authLoading } = useAuth()
-  const [userData, setUserData] = useState<TriviaUserDocument>(EMPTY_USER)
+  const [nickname, setNicknameState] = useState('')
+  const [stats, setStats] = useState<TriviaStats>(EMPTY_STATS)
+  const [history, setHistory] = useState<TriviaGameResult[]>([])
   const [loading, setLoading] = useState(true)
-
-  const refresh = useCallback(async () => {
-    if (!user) {
-      setUserData(EMPTY_USER)
-      setLoading(false)
-      return
-    }
-    try {
-      const ref = doc(getFirebaseFirestore(), 'trivia-users', user.uid)
-      const snap = await getDoc(ref)
-      setUserData(normalizeDoc(snap.data()))
-    } catch (err) {
-      console.error('Failed to load trivia user data:', err)
-      setUserData(EMPTY_USER)
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
 
   useEffect(() => {
     if (authLoading) return
-    setLoading(true)
-    refresh()
-  }, [authLoading, refresh])
+    if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNicknameState('')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStats(EMPTY_STATS)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHistory([])
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false)
+      return
+    }
 
-  const saveGameResult = useCallback(
-    async (result: TriviaGameResult) => {
-      if (!user) return
-      const ref = doc(getFirebaseFirestore(), 'trivia-users', user.uid)
-      const snap = await getDoc(ref)
-      const existing = normalizeDoc(snap.data())
-      const resolvedName =
-        existing.nickname ||
-        user.displayName ||
-        user.email ||
-        existing.displayName ||
-        ''
-      const next = computeNextState(existing, result, resolvedName)
-      await setDoc(ref, next)
-      setUserData(next)
-    },
-    [user]
-  )
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    const db = getFirebaseFirestore()
+    const userRef = doc(db, 'users', user.uid)
+    const profileRef = doc(db, 'users', user.uid, 'triviaProfile', 'current')
+    const gamesQuery = query(
+      collection(db, 'users', user.uid, 'triviaGames'),
+      orderBy('date', 'desc'),
+      limit(30)
+    )
+
+    const unsubUser = onSnapshot(
+      userRef,
+      (snap) => {
+        const data = snap.data() as { nickname?: string } | undefined
+        setNicknameState(data?.nickname ?? '')
+        setLoading(false)
+      },
+      (err) => {
+        console.error('user doc subscription error:', err)
+        setLoading(false)
+      }
+    )
+    const unsubProfile = onSnapshot(
+      profileRef,
+      (snap) => setStats(normalizeStats(snap.data())),
+      (err) => console.error('triviaProfile subscription error:', err)
+    )
+    const unsubGames = onSnapshot(
+      gamesQuery,
+      (snap) => setHistory(snap.docs.map((d) => normalizeGame(d.data()))),
+      (err) => console.error('triviaGames subscription error:', err)
+    )
+
+    return () => {
+      unsubUser()
+      unsubProfile()
+      unsubGames()
+    }
+  }, [authLoading, user])
 
   const setNickname = useCallback(
     async (raw: string) => {
       if (!user) return
       const clean = sanitizeNickname(raw)
       if (!clean) return
-      const ref = doc(getFirebaseFirestore(), 'trivia-users', user.uid)
-      await setDoc(ref, { nickname: clean, displayName: clean }, { merge: true })
-      setUserData((prev) => ({ ...prev, nickname: clean, displayName: clean }))
+      const token = await user.getIdToken()
+      const res = await fetch('/api/v1/users/me/nickname', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nickname: clean }),
+      })
+      if (res.status === 409) throw new NicknameInUseError()
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(body.error || 'Failed to set nickname.')
+      }
     },
     [user]
   )
 
   const canPlayToday = useCallback((): boolean => {
     if (!user) return true
-    return !hasPlayedToday(userData.lastPlayedDate)
-  }, [user, userData.lastPlayedDate])
+    return !hasPlayedToday(stats.lastPlayedDate)
+  }, [user, stats.lastPlayedDate])
 
   const fallbackName = user?.displayName ?? user?.email ?? ''
-  const displayName = userData.nickname || fallbackName
-  const needsNickname = !!user && !loading && !userData.nickname
+  const displayName = nickname || fallbackName
+  const needsNickname = !!user && !loading && !nickname
 
-  return {
-    userData,
-    loading,
-    isLoggedIn: !!user,
-    displayName,
-    needsNickname,
-    canPlayToday,
-    saveGameResult,
-    setNickname,
-    refresh,
-  }
+  return useMemo(
+    () => ({
+      loading,
+      isLoggedIn: !!user,
+      displayName,
+      nickname,
+      needsNickname,
+      stats,
+      history,
+      canPlayToday,
+      setNickname,
+    }),
+    [
+      loading,
+      user,
+      displayName,
+      nickname,
+      needsNickname,
+      stats,
+      history,
+      canPlayToday,
+      setNickname,
+    ]
+  )
 }

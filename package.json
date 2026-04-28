@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "generate-trivia": "esbuild scripts/generate-trivia.ts --bundle --platform=node --format=esm --outfile=/tmp/generate-trivia-bundle.mjs && node /tmp/generate-trivia-bundle.mjs",
-    "backfill-ai-trivia": "esbuild scripts/backfill-ai-trivia.ts --bundle --platform=node --format=esm --outfile=/tmp/backfill-ai-trivia-bundle.mjs && node /tmp/backfill-ai-trivia-bundle.mjs"
+    "backfill-ai-trivia": "esbuild scripts/backfill-ai-trivia.ts --bundle --platform=node --format=esm --outfile=/tmp/backfill-ai-trivia-bundle.mjs && node /tmp/backfill-ai-trivia-bundle.mjs",
+    "reset-trivia-firestore": "esbuild scripts/reset-trivia-firestore.ts --bundle --platform=node --format=esm --packages=external --outfile=/tmp/reset-trivia-firestore-bundle.mjs && node /tmp/reset-trivia-firestore-bundle.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "latest",

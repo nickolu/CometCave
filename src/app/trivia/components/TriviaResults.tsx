@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from 'react'
 
-import { useAuth } from '@/hooks/useAuth'
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
-import { formatDisplayDate } from '@/lib/dates'
-import { getDailyCategory } from '@/lib/trivia/categories'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAuth } from '@/hooks/useAuth'
+import { formatDisplayDate } from '@/lib/dates'
+import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { SignInCard } from './SignInCTA'
+
+
 
 const MAX_SCORE = 3150
 
@@ -95,39 +97,10 @@ interface TriviaResultsProps {
 export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { user } = useAuth()
-  const { userData: firestoreUser, displayName } = useTriviaUser()
-  const currentStreak = firestoreUser.stats.currentStreak
-  const [scoreSubmitted, setScoreSubmitted] = useState(false)
+  const { stats, displayName } = useTriviaUser()
+  const currentStreak = stats.currentStreak
   const countdown = useCountdown()
 
-  useEffect(() => {
-    if (!user || scoreSubmitted) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const token = await user.getIdToken()
-        const res = await fetch('/api/v1/trivia/submit-score', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            date: result.date,
-            score: result.score,
-            correct: result.correct,
-            total: result.total,
-          }),
-        })
-        if (!cancelled && res.ok) setScoreSubmitted(true)
-      } catch (err) {
-        console.error('Failed to submit score:', err)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [user, scoreSubmitted, result])
   const scorePercent = Math.round((result.score / MAX_SCORE) * 100)
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
@@ -259,12 +232,6 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
       >
         {copied ? 'Copied!' : 'Share Score'}
       </Button>
-
-      {scoreSubmitted && (
-        <div className="text-center text-green-400/70 text-sm">
-          Score submitted to leaderboard
-        </div>
-      )}
 
       {!user && (
         <SignInCard
