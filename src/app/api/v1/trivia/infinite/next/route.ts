@@ -29,8 +29,14 @@ export async function GET(request: NextRequest) {
       // Pool exhausted for this player — generate a fresh question on demand,
       // gated by a per-uid rate limit so a single client can't burn the
       // OpenAI budget by hammering /next.
-      const { limited } = await checkAndIncrementGenerationLimit(auth.claims.uid)
+      const { limited, remaining } = await checkAndIncrementGenerationLimit(auth.claims.uid)
       if (limited) {
+        console.warn('[trivia/infinite/next] 429 rate limit hit', {
+          uid: auth.claims.uid,
+          remaining,
+          limitWindowMs: 60 * 60 * 1000,
+          maxPerWindow: 30,
+        })
         return NextResponse.json(
           { error: 'Generation rate limit exceeded. Please try again later.' },
           { status: 429 }
