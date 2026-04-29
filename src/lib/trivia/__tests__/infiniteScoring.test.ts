@@ -6,7 +6,6 @@ import {
   LIVES_START,
   TRAILBLAZER_BONUS,
   applyAnswer,
-  computeSpeedBonus,
   computeStreakMultiplier,
   shouldRefundLife,
 } from '@/app/trivia/lib/infiniteScoring'
@@ -42,29 +41,6 @@ describe('computeStreakMultiplier', () => {
 
   it('returns 3 at streak 50 (well above last tier)', () => {
     expect(computeStreakMultiplier(50)).toBe(3)
-  })
-})
-
-describe('computeSpeedBonus', () => {
-  it('returns BASE_MAX_POINTS at 0ms elapsed', () => {
-    expect(computeSpeedBonus(0)).toBe(BASE_MAX_POINTS)
-  })
-
-  it('returns 0 at exactly timeLimitMs elapsed', () => {
-    expect(computeSpeedBonus(30000)).toBe(0)
-  })
-
-  it('returns 0 for elapsed > timeLimitMs', () => {
-    expect(computeSpeedBonus(35000)).toBe(0)
-  })
-
-  it('returns ~50 at halfway through time', () => {
-    expect(computeSpeedBonus(15000)).toBe(50)
-  })
-
-  it('respects custom timeLimitMs', () => {
-    // 5000ms elapsed out of 10000ms limit → 50% remaining → 50 points
-    expect(computeSpeedBonus(5000, 10000)).toBe(50)
   })
 })
 
@@ -150,7 +126,7 @@ describe('applyAnswer', () => {
     // 5th correct answer should trigger 1.5x multiplier
     const result = applyAnswer({ ...state, correct: true, elapsedMs: 0 })
     expect(result.currentStreak).toBe(5)
-    // At streak 5 with 0ms elapsed: BASE_MAX_POINTS * 1.5 = 150
+    // At streak 5: BASE_MAX_POINTS * 1.5 = 150
     expect(result.points).toBe(Math.round(BASE_MAX_POINTS * 1.5))
   })
 
@@ -195,6 +171,13 @@ describe('applyAnswer', () => {
     const first = applyAnswer({ ...baseParams, correct: true, elapsedMs: 0, prevScore: 0 })
     const second = applyAnswer({ ...baseParams, correct: true, elapsedMs: 0, prevScore: first.score, prevStreak: 1, prevLongestStreak: 1 })
     expect(second.score).toBeGreaterThan(first.score)
+  })
+
+  it('scores the same regardless of elapsed time', () => {
+    const fast = applyAnswer({ ...baseParams, correct: true, elapsedMs: 0 })
+    const slow = applyAnswer({ ...baseParams, correct: true, elapsedMs: 25000 })
+    expect(fast.points).toBe(slow.points)
+    expect(fast.points).toBe(BASE_MAX_POINTS)
   })
 
   it('longestStreak does not decrease on wrong answer', () => {
