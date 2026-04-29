@@ -64,13 +64,17 @@ function normalizeStats(data: DocumentData | undefined): TriviaStats {
 }
 
 function normalizeGame(data: DocumentData): TriviaGameResult {
-  return {
+  const result: TriviaGameResult = {
     date: typeof data.date === 'string' ? data.date : '',
     score: typeof data.score === 'number' ? data.score : 0,
     correct: typeof data.correct === 'number' ? data.correct : 0,
     total: typeof data.total === 'number' ? data.total : 0,
     answers: Array.isArray(data.answers) ? data.answers : [],
   }
+  if (data.category && typeof data.category === 'object' && typeof data.category.name === 'string') {
+    result.category = data.category
+  }
+  return result
 }
 
 export interface UseTriviaUserResult {
