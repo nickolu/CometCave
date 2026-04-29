@@ -55,7 +55,7 @@ export function TriviaHUD({
             <span className="material-symbols-outlined text-[18px]">close</span>
           }
         >
-          <span className="hidden sm:inline">Flee</span>
+          <span className="hidden sm:inline">Exit Game</span>
         </ChunkyButton>
 
         <Pill tone="neutral" size="sm">
@@ -85,7 +85,7 @@ export function TriviaHUD({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm">
           <div className="bg-surface-container-high rounded-ds-lg p-8 max-w-sm mx-4 shadow-hero text-center flex flex-col gap-4">
             <p className="text-on-surface text-body-lg">
-              Leave the cavern? Your unfinished round will fade.
+              End this round? Your unfinished progress will be lost.
             </p>
             <div className="flex gap-3 justify-center">
               <ChunkyButton
@@ -103,7 +103,7 @@ export function TriviaHUD({
                   onFlee()
                 }}
               >
-                Flee
+                Exit Game
               </ChunkyButton>
             </div>
           </div>

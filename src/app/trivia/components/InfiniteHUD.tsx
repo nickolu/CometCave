@@ -54,7 +54,7 @@ export function InfiniteHUD({
             <span className="material-symbols-outlined text-[18px]">close</span>
           }
         >
-          <span className="hidden sm:inline">Flee</span>
+          <span className="hidden sm:inline">Exit Game</span>
         </ChunkyButton>
 
         {/* Lives or Practice indicator */}

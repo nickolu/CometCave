@@ -144,7 +144,7 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
           onClick={() => (window.location.href = '/trivia/infinite')}
           className="w-full"
         >
-          Enter the Infinite Cavern
+          Start Infinite Trivia
         </ChunkyButton>
         <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
           Back

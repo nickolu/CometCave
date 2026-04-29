@@ -18,10 +18,10 @@ export function InfiniteExhaustedScreen({ onBack, score, questionsAnswered }: Pr
       <div className="text-center">
         <div className="text-6xl mb-4">✨</div>
         <h2 className="font-headline text-headline-lg text-ds-tertiary drop-shadow-[0_4px_0_var(--surface-container-lowest)] mb-2">
-          The Cave Rests
+          You&apos;re all caught up
         </h2>
         <p className="text-on-surface/60 text-lg leading-relaxed max-w-sm mx-auto">
-          You have explored every question the cavern holds. The stars are still writing new ones — return soon, traveler.
+          You&apos;ve answered every question we have right now. New ones are on the way — check back soon.
         </p>
       </div>
 
@@ -47,10 +47,10 @@ export function InfiniteExhaustedScreen({ onBack, score, questionsAnswered }: Pr
         </ChunkyCard>
       )}
 
-      {!user && (
+      {(!user || user.isAnonymous) && (
         <SignInCard
           title="🔔 Want to know when new questions arrive?"
-          description="Sign in and we'll let you know when the cave has more to discover."
+          description="Sign in and we'll let you know when more questions are ready."
         />
       )}
 

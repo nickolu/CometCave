@@ -5,7 +5,7 @@ import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 
 const FLAG_THRESHOLD = 3;
-const VALID_REASONS = ['wrong_answer', 'ambiguous', 'inappropriate', 'other'] as const;
+const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'other'] as const;
 type FlagReason = (typeof VALID_REASONS)[number];
 
 export async function POST(
@@ -29,7 +29,7 @@ export async function POST(
 
   if (!VALID_REASONS.includes(reason as FlagReason)) {
     return NextResponse.json(
-      { error: 'Invalid reason. Must be one of: wrong_answer, ambiguous, inappropriate, other.' },
+      { error: `Invalid reason. Must be one of: ${VALID_REASONS.join(', ')}.` },
       { status: 400 }
     );
   }

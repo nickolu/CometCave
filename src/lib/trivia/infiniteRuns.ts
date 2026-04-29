@@ -1,4 +1,4 @@
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 
 import { LIVES_START, applyAnswer } from '@/app/trivia/lib/infiniteScoring'
 import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
@@ -112,14 +112,15 @@ export async function submitAnswer(params: {
     // Write answeredBy reverse index
     tx.set(answeredByRef, { uid, runId, correct, at: now })
 
-    // Build answer entry
+    // Build answer entry. Note: serverTimestamp() can't appear inside an
+    // arrayUnion element, so we use a client-computed Timestamp here.
     const answerEntry = {
       questionId,
       correct,
       points: txResult.points,
       timeMs: elapsedMs,
       trailblazer: isTrailblazer,
-      answeredAt: now,
+      answeredAt: Timestamp.now(),
     }
 
     // Update run doc

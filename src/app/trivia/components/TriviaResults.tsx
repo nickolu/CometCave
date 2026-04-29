@@ -91,11 +91,12 @@ interface TriviaResultsProps {
   onBack: () => void
   onViewStats?: () => void
   onViewLeaderboard?: () => void
+  onStartInfinite?: () => void
   // Optional: pass questions data for difficulty display
   questionDifficulties?: Array<{ difficulty: string; source: string }>
 }
 
-export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }: TriviaResultsProps) {
+export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, onStartInfinite }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { user } = useAuth()
   const { stats, displayName } = useTriviaUser()
@@ -239,6 +240,22 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard }
       >
         {copied ? 'Copied!' : 'Share Score'}
       </ChunkyButton>
+
+      {onStartInfinite && (
+        <ChunkyCard variant="surface-variant" className="w-full bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-4 pb-4 flex flex-col gap-3 items-center text-center">
+            <div>
+              <h3 className="text-on-surface font-semibold text-base mb-0.5">Want more?</h3>
+              <p className="text-on-surface/60 text-sm">
+                Keep going with Infinite Trivia — endless AI-generated questions.
+              </p>
+            </div>
+            <ChunkyButton variant="secondary" className="w-full" onClick={onStartInfinite}>
+              Start Infinite Trivia
+            </ChunkyButton>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
 
       {!user && (
         <SignInCard

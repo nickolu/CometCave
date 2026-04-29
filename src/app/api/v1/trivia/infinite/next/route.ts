@@ -1,8 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { verifyRequestAuth } from '@/lib/api/auth'
-import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
+import { saveAIQuestion } from '@/lib/trivia/aiQuestions'
+import { generateInfiniteQuestion } from '@/lib/trivia/generateQuestion'
+import { checkAndIncrementGenerationLimit } from '@/lib/trivia/generationLimit'
+import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
 
 // GET /api/v1/trivia/infinite/next?streak=N
@@ -16,16 +19,40 @@ export async function GET(request: NextRequest) {
   const parsedStreak = isNaN(streak) || streak < 0 ? 0 : streak
 
   try {
-    const question = await sampleNextQuestion({
+    let question = await sampleNextQuestion({
       uid: auth.claims.uid,
       streak: parsedStreak,
       type: 'free-text',
     })
 
     if (question === null) {
-      // Library exhausted — no unseen questions remain
-      await trackExhaustion(auth.claims.uid)
-      return new NextResponse(null, { status: 204 })
+      // Pool exhausted for this player — generate a fresh question on demand,
+      // gated by a per-uid rate limit so a single client can't burn the
+      // OpenAI budget by hammering /next.
+      const { limited } = await checkAndIncrementGenerationLimit(auth.claims.uid)
+      if (limited) {
+        return NextResponse.json(
+          { error: 'Generation rate limit exceeded. Please try again later.' },
+          { status: 429 }
+        )
+      }
+
+      try {
+        const generated = await generateInfiniteQuestion({ streak: parsedStreak })
+        await saveAIQuestion(generated)
+        question = {
+          ...generated,
+          status: 'active',
+          timesShown: 0,
+          timesCorrect: 0,
+          flaggedCount: 0,
+          avgTimeMs: null,
+        }
+      } catch (genErr) {
+        console.error('On-demand question generation failed:', genErr)
+        await trackExhaustion(auth.claims.uid)
+        return new NextResponse(null, { status: 204 })
+      }
     }
 
     // Strip correctAnswer before sending to client

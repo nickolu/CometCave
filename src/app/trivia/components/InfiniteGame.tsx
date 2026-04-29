@@ -1,14 +1,17 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 import { useInfiniteRun } from '@/app/trivia/hooks/useInfiniteRun'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 import { InfiniteHUD } from './InfiniteHUD'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
 import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
+import { InfiniteRulesModal } from './InfiniteRulesModal'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
+const RULES_DISMISSED_KEY = 'cometcave-infinite-rules-dismissed-v1'
 
 interface Props {
   onBack: () => void
@@ -16,16 +19,44 @@ interface Props {
 }
 
 export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
+  const { user, loading: authLoading } = useAuth()
   const { state, startRun, submitAnswer, nextQuestion, endRun } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
+  const hasStartedRef = useRef(false)
+  const [showRules, setShowRules] = useState<boolean | null>(null)
 
-  // Start run on mount
+  // Determine whether to show the rules modal once on mount.
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const dismissed = window.localStorage.getItem(RULES_DISMISSED_KEY) === '1'
+    setShowRules(!dismissed)
+  }, [])
+
+  // Start run once auth has settled, user is present, and rules have been
+  // either dismissed previously or acknowledged this session.
+  useEffect(() => {
+    if (authLoading || !user || hasStartedRef.current) return
+    if (showRules !== false) return
+    hasStartedRef.current = true
     startRun(mode)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [authLoading, user, showRules])
+
+  const handleRulesContinue = useCallback((chosenMode: InfiniteMode, dismissForever: boolean) => {
+    if (dismissForever && typeof window !== 'undefined') {
+      window.localStorage.setItem(RULES_DISMISSED_KEY, '1')
+    }
+    if (chosenMode !== mode && typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('mode', chosenMode)
+      window.history.replaceState({}, '', url.toString())
+    }
+    hasStartedRef.current = true
+    setShowRules(false)
+    startRun(chosenMode)
+  }, [mode, startRun])
 
   // Timer logic
   useEffect(() => {
@@ -60,11 +91,20 @@ export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
     startRun(mode)
   }, [startRun, mode])
 
+  // Rules gate (before first run). Shown over the loading screen.
+  if (showRules) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
+        <InfiniteRulesModal defaultMode={mode} onContinue={handleRulesContinue} onCancel={onBack} />
+      </div>
+    )
+  }
+
   // Loading state
   if (state.phase === 'loading' || state.phase === 'idle') {
     return (
       <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
-        <div className="text-on-surface/60 text-lg">Entering the infinite cavern...</div>
+        <div className="text-on-surface/60 text-lg">Loading Infinite Trivia...</div>
       </div>
     )
   }
@@ -113,6 +153,7 @@ export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
       />
 
       <InfiniteQuestionCard
+        key={state.question.id}
         question={state.question}
         onSubmit={submitAnswer}
         isSubmitting={state.phase === 'answering'}
@@ -121,9 +162,15 @@ export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
       />
 
       {state.phase === 'answered' && (
-        <ChunkyButton variant="primary" size="lg" className="w-full" onClick={nextQuestion}>
-          Next Question
-        </ChunkyButton>
+        state.lastAnswer?.runOver ? (
+          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={endRun}>
+            View Run Summary
+          </ChunkyButton>
+        ) : (
+          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={nextQuestion}>
+            Next Question
+          </ChunkyButton>
+        )
       )}
     </div>
   )

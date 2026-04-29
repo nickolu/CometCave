@@ -31,10 +31,13 @@ function getRunRating(longestStreak: number): string {
 
 const ANSWERS_PAGE_SIZE = 20
 
+type AnswerEntry = InfiniteRunState['answers'][number]
+
 export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored' }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
+  const [detailFor, setDetailFor] = useState<AnswerEntry | null>(null)
 
   const handleShare = async () => {
     const lines = [
@@ -120,6 +123,17 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                       {a.correct ? '✓' : '✗'}
                     </span>
                     {a.trailblazer && <span className="text-xs">⭐</span>}
+                    {a.questionText && (
+                      <button
+                        type="button"
+                        onClick={() => setDetailFor(a)}
+                        className="text-on-surface/30 hover:text-on-surface/60 text-xs transition-colors"
+                        aria-label="View question details"
+                        title="View question"
+                      >
+                        ℹ️
+                      </button>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-on-surface/40 text-xs">{formatTime(a.timeMs)}</span>
@@ -154,16 +168,69 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
         </ChunkyButton>
       </div>
 
-      {!user && (
+      {(!user || user.isAnonymous) && (
         <SignInCard
-          title="🔒 Your run wasn't saved"
-          description="Sign in to save your runs, build your constellation, and compete on the leaderboard."
+          title={user?.isAnonymous ? '✨ Lock in your progress' : "🔒 Your run wasn't saved"}
+          description={
+            user?.isAnonymous
+              ? 'Create an account to keep your runs across devices, build your constellation, and compete on the leaderboard.'
+              : 'Sign in to save your runs, build your constellation, and compete on the leaderboard.'
+          }
         />
       )}
 
       <ChunkyButton variant="ghost" size="sm" onClick={onBack}>
         Back to Trivia
       </ChunkyButton>
+
+      {detailFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm p-4"
+          onClick={() => setDetailFor(null)}
+        >
+          <div
+            className="bg-surface-container-high rounded-ds-lg p-5 max-w-md w-full shadow-hero flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone={detailFor.correct ? 'success' : 'hot'} size="sm">
+                  {detailFor.correct ? 'Correct' : 'Wrong'}
+                </Pill>
+                <Pill tone="neutral" size="sm">{detailFor.difficulty.toUpperCase()}</Pill>
+                {detailFor.trailblazer && <Pill tone="warning" size="sm">⭐ Trailblazer</Pill>}
+              </div>
+              <button
+                onClick={() => setDetailFor(null)}
+                className="text-on-surface/40 hover:text-on-surface text-xl leading-none px-1"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-on-surface/60 text-xs uppercase tracking-wide">{detailFor.category}</p>
+            <p className="text-on-surface text-base leading-snug">{detailFor.questionText}</p>
+            <div className="text-sm flex flex-col gap-1">
+              <div className="text-on-surface/70">
+                Your answer:{' '}
+                <span className={`font-medium ${detailFor.correct ? 'text-ds-primary' : 'text-ds-error'}`}>
+                  {detailFor.userAnswer || '—'}
+                </span>
+              </div>
+              {!detailFor.correct && (
+                <div className="text-on-surface/70">
+                  Correct answer: <span className="text-on-surface font-medium">{detailFor.correctAnswer}</span>
+                </div>
+              )}
+            </div>
+            {detailFor.explanation && (
+              <div className="text-on-surface/60 text-sm border-t border-outline-variant pt-3">
+                {detailFor.explanation}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

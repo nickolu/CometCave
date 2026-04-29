@@ -4,9 +4,11 @@ import { useAuth } from '@/hooks/useAuth'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 
 const FLAG_REASONS = [
-  { value: 'wrong_answer', label: 'Wrong answer marked correct' },
-  { value: 'ambiguous', label: "Question doesn't have one right answer" },
-  { value: 'inappropriate', label: 'Inappropriate / off-brand' },
+  { value: 'obvious', label: 'Answer is included in the question / too obvious' },
+  { value: 'unanswerable', label: "Question doesn't have one right answer or is impossible to answer" },
+  { value: 'nonsense', label: "Question doesn't make sense" },
+  { value: 'inaccurate', label: 'Inaccurate or incorrect' },
+  { value: 'difficulty_mismatch', label: "Difficulty doesn't match the challenge" },
   { value: 'other', label: 'Other' },
 ] as const
 
@@ -24,15 +26,19 @@ export function FlagQuestion({ questionId }: Props) {
 
   if (!user) return null
 
+  const noteRequired = reason === 'other'
+  const trimmedNote = note.trim()
+  const canSubmit = !!reason && (!noteRequired || trimmedNote.length > 0) && !submitting
+
   const handleSubmit = async () => {
-    if (!reason || submitting) return
+    if (!canSubmit) return
     setSubmitting(true)
     try {
       const token = await user.getIdToken()
       await fetch(`/api/v1/trivia/questions/${questionId}/flag`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ reason, note: note.trim() || undefined }),
+        body: JSON.stringify({ reason, note: trimmedNote || undefined }),
       })
       setSubmitted(true)
       setShowModal(false)
@@ -47,7 +53,7 @@ export function FlagQuestion({ questionId }: Props) {
 
   return (
     <>
-      <button onClick={() => setShowModal(true)} className="text-on-surface/20 hover:text-ds-error/60 text-xs transition-colors" aria-label="Report question" title="Report this question">
+      <button onClick={() => setShowModal(true)} className="text-on-surface/20 hover:text-ds-error/60 text-xs transition-colors" aria-label="Flag for Removal/Deletion" title="Flag for Removal/Deletion">
         🚩
       </button>
       {showModal && (
@@ -62,12 +68,16 @@ export function FlagQuestion({ questionId }: Props) {
                 </label>
               ))}
             </div>
-            {reason === 'other' && (
-              <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 500))} placeholder="Tell us more..." maxLength={500} className="bg-surface-dim/50 border border-outline-variant rounded-lg p-2 text-on-surface text-sm resize-none h-20" />
-            )}
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value.slice(0, 500))}
+              placeholder={noteRequired ? 'Tell us more (required)...' : 'Add context (optional)...'}
+              maxLength={500}
+              className="bg-surface-container-highest border border-outline-variant rounded-lg p-2 text-on-surface text-sm resize-none h-20 placeholder:text-on-surface/40"
+            />
             <div className="flex gap-3 justify-end">
               <ChunkyButton variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</ChunkyButton>
-              <ChunkyButton variant="exit" size="sm" disabled={!reason || submitting} onClick={handleSubmit}>
+              <ChunkyButton variant="exit" size="sm" disabled={!canSubmit} onClick={handleSubmit}>
                 {submitting ? 'Sending...' : 'Report'}
               </ChunkyButton>
             </div>

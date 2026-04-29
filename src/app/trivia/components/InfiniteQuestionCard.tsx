@@ -5,19 +5,21 @@ import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Input } from '@/components/ui/input'
 import type { InfiniteQuestion } from '@/app/trivia/hooks/useInfiniteRun'
 import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
+import { FlagQuestion } from './FlagQuestion'
+import { QuestionRating } from './QuestionRating'
 
 interface Props {
   question: InfiniteQuestion
   onSubmit: (answer: string) => void
   isSubmitting: boolean
-  answerResult: (AnswerResult & { trailblazer: boolean }) | null
+  answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
   questionsAnswered: number
 }
 
 function getSocialSignal(timesShown: number): string {
-  if (timesShown === 0) return 'You are the first traveler to find this question.'
-  if (timesShown === 1) return '1 other traveler has answered this.'
-  return `${timesShown} other travelers have answered this.`
+  if (timesShown === 0) return 'You are the first to find this question.'
+  if (timesShown === 1) return '1 other person has answered this.'
+  return `${timesShown} other people have answered this.`
 }
 
 export function InfiniteQuestionCard({
@@ -70,10 +72,13 @@ export function InfiniteQuestionCard({
             value={textAnswer}
             onChange={(e) => setTextAnswer(e.target.value)}
             placeholder="Type your answer..."
-            className="bg-surface-dim/50 border-outline-variant text-on-surface"
+            className="!bg-surface-container-high border-outline-variant text-on-surface placeholder:text-on-surface/40"
             disabled={isAnswered || isSubmitting}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
             autoFocus
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
           />
           {!isAnswered && (
             <ChunkyButton
@@ -95,7 +100,7 @@ export function InfiniteQuestionCard({
                 : 'bg-ds-error/20 border border-ds-error/40'
             }`}
           >
-            <div className="font-bold mb-1">
+            <div className="font-bold mb-1 flex items-start justify-between gap-2">
               {answerResult.correct ? (
                 <span className="text-ds-primary">
                   Correct! +{answerResult.points} pts
@@ -106,7 +111,21 @@ export function InfiniteQuestionCard({
               ) : (
                 <span className="text-ds-error">Incorrect — 0 pts</span>
               )}
+              <div className="flex items-center gap-2 shrink-0">
+                <QuestionRating questionId={question.id} />
+                <FlagQuestion questionId={question.id} />
+              </div>
             </div>
+            {!answerResult.correct && (
+              <div className="text-on-surface/70 text-sm">
+                Answer: <span className="text-on-surface font-medium">{answerResult.correctAnswer}</span>
+              </div>
+            )}
+            {answerResult.explanation && (
+              <div className="text-on-surface/50 text-sm mt-1">
+                {answerResult.explanation}
+              </div>
+            )}
           </div>
         )}
       </ChunkyCardContent>

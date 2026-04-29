@@ -157,6 +157,7 @@ export default function TriviaPage() {
         onBack={handleBackToLanding}
         onViewStats={handleViewStats}
         onViewLeaderboard={handleViewLeaderboard}
+        onStartInfinite={handleStartInfinite}
       />
     )
   }

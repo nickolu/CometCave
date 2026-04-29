@@ -167,7 +167,7 @@ export function TriviaLanding({
             className="w-full"
             onClick={onStartInfinite}
           >
-            Enter the Infinite Cavern
+            Start Infinite Trivia
           </ChunkyButton>
           <ChunkyButton
             variant="ghost"

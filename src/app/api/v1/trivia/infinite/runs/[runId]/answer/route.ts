@@ -42,7 +42,11 @@ export async function POST(
       elapsedMs: typeof elapsedMs === 'number' ? elapsedMs : 0,
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...result,
+      correctAnswer: qData.correctAnswer,
+      explanation: qData.explanation ?? null,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     if (message === 'Run already ended') {
