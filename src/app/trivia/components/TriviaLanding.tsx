@@ -48,13 +48,17 @@ export function TriviaLanding({
   const alreadyPlayed = !!todayResult
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
-  const showSignInPromos = authConfigured && !authLoading && !user
+  // Anonymous Firebase users are signed in technically (so games can persist
+  // per-device state) but should be treated as "not signed in" for the UI's
+  // purposes — sign-in CTAs, account menu, profile display.
+  const isNamedUser = !!user && !user.isAnonymous
+  const showSignInPromos = authConfigured && !authLoading && !isNamedUser
   const nicknameSeed = nickname || user?.displayName || ''
 
   return (
     <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
       <div className="w-full flex justify-end min-h-[1.75rem] text-sm">
-        {!authConfigured ? null : authLoading ? null : user ? (
+        {!authConfigured ? null : authLoading ? null : isNamedUser && user ? (
           <UserMenu
             displayName={displayName || user.email || 'Account'}
             photoURL={user.photoURL}

@@ -20,6 +20,8 @@ function getAccuracyColor(accuracy: number): string {
 export function TriviaStats({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const { stats, history } = useTriviaUser()
+  // Treat anonymous Firebase users as "not signed in" for the empty-state CTA.
+  const isNamedUser = !!user && !user.isAnonymous
 
   const accuracy =
     stats.totalQuestions > 0
@@ -43,7 +45,7 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
           My Stats
           <ResetNoticeButton />
         </h2>
-        {user ? (
+        {isNamedUser ? (
           <ChunkyCard variant="surface-variant" className="w-full bg-surface-container/80 border-outline-variant">
             <ChunkyCardContent className="pt-6 text-center">
               <p className="text-on-surface/70 text-lg mb-2">No games played yet</p>
