@@ -1,10 +1,12 @@
 import { getFirestoreDb } from '@/lib/firebase/server'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
+import { CATEGORY_META } from '@/lib/trivia/categories'
 
 export interface SamplerOptions {
   uid: string
   streak: number
   type?: 'free-text' // v1 only free-text
+  categoryId?: number
 }
 
 /**
@@ -54,15 +56,24 @@ function freshnessWeight(timesShown: number): number {
 }
 
 export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQuestion | null> {
-  const { uid, streak, type = 'free-text' } = options
+  const { uid, streak, type = 'free-text', categoryId } = options
   const db = getFirestoreDb()
 
   // 1. Query active questions of the requested type
-  const questionsSnap = await db
+  let query = db
     .collection('aiQuestions')
     .where('status', '==', 'active')
     .where('type', '==', type)
-    .get()
+
+  // If a category filter is provided, restrict to that category by name
+  if (categoryId !== undefined) {
+    const categoryMeta = CATEGORY_META[categoryId]
+    if (categoryMeta) {
+      query = query.where('category', '==', categoryMeta.name)
+    }
+  }
+
+  const questionsSnap = await query.get()
 
   if (questionsSnap.empty) return null
 

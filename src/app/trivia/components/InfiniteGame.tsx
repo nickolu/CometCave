@@ -9,6 +9,7 @@ import { InfiniteRunSummary } from './InfiniteRunSummary'
 import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
 import { InfiniteRulesModal } from './InfiniteRulesModal'
 import { ChunkyButton } from '@/components/ui/chunky-button'
+import { CATEGORY_META } from '@/lib/trivia/categories'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
 const RULES_DISMISSED_KEY = 'cometcave-infinite-rules-dismissed-v1'
@@ -45,7 +46,7 @@ export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, showRules])
 
-  const handleRulesContinue = useCallback((chosenMode: InfiniteMode, dismissForever: boolean) => {
+  const handleRulesContinue = useCallback((chosenMode: InfiniteMode, dismissForever: boolean, categoryId?: number) => {
     if (dismissForever && typeof window !== 'undefined') {
       window.localStorage.setItem(RULES_DISMISSED_KEY, '1')
     }
@@ -56,7 +57,7 @@ export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
     }
     hasStartedRef.current = true
     setShowRules(false)
-    startRun(chosenMode)
+    startRun(chosenMode, categoryId)
   }, [mode, startRun])
 
   // Timer logic
@@ -151,6 +152,7 @@ export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
         onFlee={handleFlee}
         isPlaying={state.phase === 'playing'}
         mode={state.mode}
+        categoryName={state.categoryId != null ? CATEGORY_META[state.categoryId]?.name : undefined}
       />
 
       <InfiniteQuestionCard
