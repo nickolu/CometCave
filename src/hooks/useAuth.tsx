@@ -1,18 +1,39 @@
 'use client'
 
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   type User,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  linkWithCredential,
+  linkWithPopup,
   onAuthStateChanged,
   signInAnonymously,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth'
 import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
 
 import { getFirebaseAuth, isFirebaseAuthConfigured } from '@/lib/firebase/client'
+
+/**
+ * Thrown by signInWithGoogle / signInWithEmail / signUpWithEmail when the
+ * caller was anonymous and the credential they provided already belongs to
+ * another Firebase user. The auth flow falls back to signing into the
+ * existing account, which means the *anonymous* user's uid (and any data
+ * keyed by it — daily history, infinite stats, etc.) is now orphaned.
+ *
+ * Surfaces in the UI should catch this and warn the player that
+ * pre-sign-in progress was tied to a different account on this device.
+ */
+export class AnonymousProgressOrphanedError extends Error {
+  constructor(message = 'Signed into an existing account; anonymous progress on this device was not migrated.') {
+    super(message)
+    this.name = 'AnonymousProgressOrphanedError'
+  }
+}
 
 interface AuthContextValue {
   user: User | null
@@ -22,6 +43,14 @@ interface AuthContextValue {
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+}
+
+function getErrorCode(err: unknown): string | undefined {
+  if (typeof err === 'object' && err !== null && 'code' in err) {
+    const code = (err as { code: unknown }).code
+    return typeof code === 'string' ? code : undefined
+  }
+  return undefined
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -61,16 +90,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     const auth = getFirebaseAuth()
     const provider = new GoogleAuthProvider()
+    const current = auth.currentUser
+
+    // If the caller is currently anonymous, link the Google credential to the
+    // existing anonymous user so their uid (and all uid-keyed Firestore data)
+    // carries over. Falls back to a normal sign-in if the credential is
+    // already tied to another account.
+    if (current?.isAnonymous) {
+      try {
+        await linkWithPopup(current, provider)
+        return
+      } catch (err) {
+        const code = getErrorCode(err)
+        if (code === 'auth/credential-already-in-use') {
+          const credential = GoogleAuthProvider.credentialFromError(
+            err as Parameters<typeof GoogleAuthProvider.credentialFromError>[0]
+          )
+          if (credential) {
+            await signInWithCredential(auth, credential)
+            throw new AnonymousProgressOrphanedError()
+          }
+        }
+        throw err
+      }
+    }
+
     await signInWithPopup(auth, provider)
   }
 
   const signInWithEmail = async (email: string, password: string) => {
     const auth = getFirebaseAuth()
+    const current = auth.currentUser
+
+    if (current?.isAnonymous) {
+      const credential = EmailAuthProvider.credential(email, password)
+      try {
+        await linkWithCredential(current, credential)
+        return
+      } catch (err) {
+        const code = getErrorCode(err)
+        if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
+          // Email already belongs to a Firebase user — sign into that one.
+          await signInWithCredential(auth, credential)
+          throw new AnonymousProgressOrphanedError()
+        }
+        throw err
+      }
+    }
+
     await signInWithEmailAndPassword(auth, email, password)
   }
 
   const signUpWithEmail = async (email: string, password: string) => {
     const auth = getFirebaseAuth()
+    const current = auth.currentUser
+
+    if (current?.isAnonymous) {
+      const credential = EmailAuthProvider.credential(email, password)
+      try {
+        await linkWithCredential(current, credential)
+        return
+      } catch (err) {
+        const code = getErrorCode(err)
+        if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
+          // Email already taken by another Firebase user — fall back to
+          // signing into that account. Anonymous progress is orphaned.
+          await signInWithCredential(auth, credential)
+          throw new AnonymousProgressOrphanedError()
+        }
+        throw err
+      }
+    }
+
     await createUserWithEmailAndPassword(auth, email, password)
   }
 

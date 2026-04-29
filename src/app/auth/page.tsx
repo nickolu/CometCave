@@ -7,7 +7,7 @@ import { type FormEvent, Suspense, useEffect, useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
 import { Input } from '@/components/ui/input'
-import { AuthProvider, useAuth } from '@/hooks/useAuth'
+import { AnonymousProgressOrphanedError, AuthProvider, useAuth } from '@/hooks/useAuth'
 
 function AuthPageInner() {
   const router = useRouter()
@@ -21,21 +21,28 @@ function AuthPageInner() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [orphanNotice, setOrphanNotice] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!loading && user) {
+    if (orphanNotice) return // user must acknowledge before redirect
+    if (!loading && user && !user.isAnonymous) {
       router.replace(redirectTo)
     }
-  }, [loading, user, redirectTo, router])
+  }, [loading, user, redirectTo, router, orphanNotice])
 
   const handleGoogle = async () => {
     setError(null)
+    setOrphanNotice(null)
     setSubmitting(true)
     try {
       await signInWithGoogle()
       router.replace(redirectTo)
     } catch (err) {
-      setError(formatAuthError(err))
+      if (err instanceof AnonymousProgressOrphanedError) {
+        setOrphanNotice(err.message)
+      } else {
+        setError(formatAuthError(err))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -44,6 +51,7 @@ function AuthPageInner() {
   const handleEmail = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    setOrphanNotice(null)
     setSubmitting(true)
     try {
       if (mode === 'signin') {
@@ -53,7 +61,11 @@ function AuthPageInner() {
       }
       router.replace(redirectTo)
     } catch (err) {
-      setError(formatAuthError(err))
+      if (err instanceof AnonymousProgressOrphanedError) {
+        setOrphanNotice(err.message)
+      } else {
+        setError(formatAuthError(err))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -149,10 +161,27 @@ function AuthPageInner() {
             </div>
           )}
 
+          {orphanNotice && (
+            <div
+              className="flex flex-col gap-3 rounded-lg border border-tertiary-fixed-dim/40 bg-tertiary-fixed-dim/15 p-3 text-on-surface/80 text-sm"
+              role="status"
+            >
+              <p>{orphanNotice}</p>
+              <ChunkyButton
+                variant="primary"
+                size="sm"
+                onClick={() => router.replace(redirectTo)}
+              >
+                Continue
+              </ChunkyButton>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => {
               setError(null)
+              setOrphanNotice(null)
               setMode(mode === 'signin' ? 'signup' : 'signin')
             }}
             className="text-on-surface/50 text-sm text-center hover:text-on-surface/80 transition-colors"
