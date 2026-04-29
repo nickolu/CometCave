@@ -15,6 +15,8 @@ export interface RunDoc {
   longestStreak: number
   trailblazes: number
   answers: RunAnswer[]
+  bonusLivesEarned: number
+  flaggedQuestionIds: string[]
   startedAt: FirebaseFirestore.Timestamp
   endedAt: FirebaseFirestore.Timestamp | null
 }
@@ -42,6 +44,8 @@ export async function startRun(uid: string, mode: 'scored' | 'practice' = 'score
     longestStreak: 0,
     trailblazes: 0,
     answers: [],
+    bonusLivesEarned: 0,
+    flaggedQuestionIds: [],
     startedAt: now,
     endedAt: null,
   })

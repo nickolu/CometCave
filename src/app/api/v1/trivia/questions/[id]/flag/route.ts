@@ -5,6 +5,7 @@ import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 
 const FLAG_THRESHOLD = 3;
+const BONUS_LIVES_MAX = 3;
 const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'other'] as const;
 type FlagReason = (typeof VALID_REASONS)[number];
 
@@ -18,14 +19,14 @@ export async function POST(
   const { id: questionId } = await params;
   const uid = auth.claims.uid;
 
-  let body: { reason?: unknown; note?: unknown };
+  let body: { reason?: unknown; note?: unknown; runId?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 });
   }
 
-  const { reason, note } = body;
+  const { reason, note, runId } = body;
 
   if (!VALID_REASONS.includes(reason as FlagReason)) {
     return NextResponse.json(
@@ -38,17 +39,21 @@ export async function POST(
     return NextResponse.json({ error: 'Note must be a string of max 500 characters.' }, { status: 400 });
   }
 
+  const validRunId = typeof runId === 'string' && runId.length > 0 ? runId : null;
+
   const db = getFirestoreDb();
   const qRef = db.doc(`aiQuestions/${questionId}`);
   const flagRef = db.doc(`aiQuestions/${questionId}/flags/${uid}`);
 
   try {
-    await db.runTransaction(async (tx) => {
+    const result = await db.runTransaction(async (tx) => {
       const qSnap = await tx.get(qRef);
       if (!qSnap.exists) throw new Error('Question not found');
 
       const qData = qSnap.data()!;
-      const newFlaggedCount = (qData.flaggedCount ?? 0) + 1;
+      const currentFlaggedCount = qData.flaggedCount ?? 0;
+      const newFlaggedCount = currentFlaggedCount + 1;
+      const wasFirstFlag = currentFlaggedCount === 0;
 
       const qUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
         flaggedCount: FieldValue.increment(1),
@@ -68,9 +73,34 @@ export async function POST(
         flagDoc.note = note;
       }
       tx.set(flagRef, flagDoc);
+
+      // Handle run updates if a runId is provided
+      let bonusLifeGranted = false;
+      if (validRunId) {
+        const runRef = db.doc(`users/${uid}/triviaInfinite/${validRunId}`);
+        const runSnap = await tx.get(runRef);
+        if (runSnap.exists) {
+          const runData = runSnap.data()!;
+          const bonusLivesEarned = runData.bonusLivesEarned ?? 0;
+
+          const runUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
+            flaggedQuestionIds: FieldValue.arrayUnion(questionId),
+          };
+
+          if (wasFirstFlag && bonusLivesEarned < BONUS_LIVES_MAX) {
+            runUpdates.livesRemaining = FieldValue.increment(1);
+            runUpdates.bonusLivesEarned = FieldValue.increment(1);
+            bonusLifeGranted = true;
+          }
+
+          tx.update(runRef, runUpdates);
+        }
+      }
+
+      return { wasFirstFlag, bonusLifeGranted };
     });
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ ok: true, wasFirstFlag: result.wasFirstFlag, bonusLifeGranted: result.bonusLifeGranted }, { status: 200 });
   } catch (err) {
     if (err instanceof Error && err.message === 'Question not found') {
       return NextResponse.json({ error: 'Question not found.' }, { status: 404 });

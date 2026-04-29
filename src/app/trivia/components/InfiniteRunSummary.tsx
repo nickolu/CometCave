@@ -9,11 +9,18 @@ import { QuestionRating } from './QuestionRating'
 import { FlagQuestion } from './FlagQuestion'
 import type { InfiniteRunState, InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 
+interface FlagResult {
+  wasFirstFlag: boolean
+  bonusLifeGranted: boolean
+}
+
 interface Props {
   state: InfiniteRunState
   onPlayAgain: () => void
   onBack: () => void
   mode?: InfiniteMode
+  runId?: string | null
+  onFlagged?: (questionId: string, result: FlagResult) => void
 }
 
 function formatTime(ms: number): string {
@@ -33,7 +40,7 @@ const ANSWERS_PAGE_SIZE = 20
 
 type AnswerEntry = InfiniteRunState['answers'][number]
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored' }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored', runId, onFlagged }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -141,7 +148,11 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                       +{a.points}
                     </span>
                     <QuestionRating questionId={a.questionId} />
-                    <FlagQuestion questionId={a.questionId} />
+                    <FlagQuestion
+                      questionId={a.questionId}
+                      runId={runId}
+                      onFlagged={onFlagged ? (result) => onFlagged(a.questionId, result) : undefined}
+                    />
                   </div>
                 </div>
               ))}
