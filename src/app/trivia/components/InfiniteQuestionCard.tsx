@@ -21,6 +21,8 @@ interface Props {
   questionsAnswered: number
   runId?: string | null
   onFlagged?: (questionId: string, result: FlagResult) => void
+  skipsRemaining?: number
+  onSkip?: () => void
 }
 
 function getSocialSignal(timesShown: number): string {
@@ -37,6 +39,8 @@ export function InfiniteQuestionCard({
   questionsAnswered,
   runId,
   onFlagged,
+  skipsRemaining,
+  onSkip,
 }: Props) {
   const [textAnswer, setTextAnswer] = useState('')
   const isAnswered = answerResult !== null
@@ -90,13 +94,25 @@ export function InfiniteQuestionCard({
             spellCheck={false}
           />
           {!isAnswered && (
-            <ChunkyButton
-              variant="primary"
-              disabled={isSubmitting || !textAnswer.trim()}
-              onClick={handleSubmit}
-            >
-              {isSubmitting ? 'Checking...' : 'Submit Answer'}
-            </ChunkyButton>
+            <div className="flex gap-2">
+              <ChunkyButton
+                variant="primary"
+                className="flex-1"
+                disabled={isSubmitting || !textAnswer.trim()}
+                onClick={handleSubmit}
+              >
+                {isSubmitting ? 'Checking...' : 'Submit Answer'}
+              </ChunkyButton>
+              {onSkip && skipsRemaining != null && skipsRemaining > 0 && !isSubmitting && (
+                <ChunkyButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={onSkip}
+                >
+                  Skip
+                </ChunkyButton>
+              )}
+            </div>
           )}
         </div>
 

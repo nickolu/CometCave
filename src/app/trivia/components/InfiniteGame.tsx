@@ -22,7 +22,7 @@ interface Props {
 
 export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
   const { user, loading: authLoading } = useAuth()
-  const { state, startRun, submitAnswer, nextQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
+  const { state, startRun, submitAnswer, nextQuestion, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
@@ -153,6 +153,7 @@ export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
         isPlaying={state.phase === 'playing'}
         mode={state.mode}
         categoryName={state.categoryId != null ? CATEGORY_META[state.categoryId]?.name : undefined}
+        skipsRemaining={state.skipsRemaining}
       />
 
       <InfiniteQuestionCard
@@ -164,6 +165,8 @@ export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
         questionsAnswered={state.questionsAnswered}
         runId={state.runId}
         onFlagged={handleQuestionFlagged}
+        skipsRemaining={state.skipsRemaining}
+        onSkip={skipQuestion}
       />
 
       {state.phase === 'answered' && (
