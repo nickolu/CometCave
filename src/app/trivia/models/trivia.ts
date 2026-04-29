@@ -11,6 +11,7 @@ export interface TriviaGameResult {
   correct: number
   total: number
   answers: TriviaAnswer[]
+  category?: { id: number; name: string; icon: string }
 }
 
 export interface TriviaStats {
