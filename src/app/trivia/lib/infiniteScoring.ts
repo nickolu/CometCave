@@ -1,7 +1,6 @@
 export const LIVES_START = 3
 export const LIVES_MAX = 3
 export const LIFE_REFUND_EVERY = 10
-export const TRAILBLAZER_BONUS = 50
 
 export const STREAK_TIERS = [
   { at: 0, mult: 1 },
@@ -58,7 +57,6 @@ export function applyAnswer(params: {
     longestStreak = Math.max(longestStreak, streak)
     const mult = computeStreakMultiplier(streak)
     points = Math.round(BASE_MAX_POINTS * mult)
-    if (trailblazer) points += TRAILBLAZER_BONUS
     // Life refund
     if (shouldRefundLife(streak, lives)) {
       lives = Math.min(lives + 1, LIVES_MAX)

@@ -250,10 +250,10 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
               <div className="text-on-surface/50 text-xs mt-1">Best Streak</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-ds-tertiary">
-                &#x2B50; {stats.trailblazerCount}
+              <div className="text-2xl font-bold text-on-surface">
+                {stats.trailblazerCount}
               </div>
-              <div className="text-on-surface/50 text-xs mt-1">Trailblazers</div>
+              <div className="text-on-surface/50 text-xs mt-1">First answers</div>
             </div>
           </div>
         </ChunkyCardContent>

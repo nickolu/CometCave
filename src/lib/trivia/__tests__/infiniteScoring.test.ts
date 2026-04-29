@@ -4,7 +4,6 @@ import {
   BASE_MAX_POINTS,
   LIVES_MAX,
   LIVES_START,
-  TRAILBLAZER_BONUS,
   applyAnswer,
   computeStreakMultiplier,
   shouldRefundLife,
@@ -130,10 +129,10 @@ describe('applyAnswer', () => {
     expect(result.points).toBe(Math.round(BASE_MAX_POINTS * 1.5))
   })
 
-  it('adds TRAILBLAZER_BONUS when trailblazer is true', () => {
+  it('trailblazer flag does not affect points', () => {
     const regular = applyAnswer({ ...baseParams, correct: true, trailblazer: false, elapsedMs: 0 })
     const trailblazer = applyAnswer({ ...baseParams, correct: true, trailblazer: true, elapsedMs: 0 })
-    expect(trailblazer.points - regular.points).toBe(TRAILBLAZER_BONUS)
+    expect(trailblazer.points).toBe(regular.points)
     expect(trailblazer.trailblazer).toBe(true)
   })
 

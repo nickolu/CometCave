@@ -105,7 +105,7 @@ export function InfiniteQuestionCard({
                 <span className="text-ds-primary">
                   Correct! +{answerResult.points} pts
                   {answerResult.trailblazer && (
-                    <span className="ml-2 text-ds-tertiary">⭐ Trailblazer!</span>
+                    <span className="ml-2 text-on-surface/70">First to answer this question</span>
                   )}
                 </span>
               ) : (

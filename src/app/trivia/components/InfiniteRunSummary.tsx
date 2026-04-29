@@ -45,7 +45,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
       `🔥 Longest Streak: ${state.longestStreak}`,
       `💎 Score: ${state.score.toLocaleString()}`,
       `📊 ${state.questionsAnswered} questions answered`,
-      state.trailblazes > 0 ? `⭐ ${state.trailblazes} trailblazer${state.trailblazes === 1 ? '' : 's'}` : null,
+      state.trailblazes > 0 ? `${state.trailblazes} first answer${state.trailblazes === 1 ? '' : 's'}` : null,
       'https://cometcave.com/trivia',
     ].filter(Boolean).join('\n')
 
@@ -95,7 +95,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
             </div>
             <div className="text-center">
               <div className="text-xl font-bold text-ds-tertiary">{state.trailblazes}</div>
-              <div className="text-on-surface/50 text-xs">Trailblazers</div>
+              <div className="text-on-surface/50 text-xs">First answers</div>
             </div>
           </div>
         </ChunkyCardContent>
@@ -122,7 +122,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                     <span className={`text-lg ${a.correct ? 'text-ds-primary' : 'text-ds-error'}`}>
                       {a.correct ? '✓' : '✗'}
                     </span>
-                    {a.trailblazer && <span className="text-xs">⭐</span>}
+                    {a.trailblazer && <span className="text-xs text-on-surface/50">1st</span>}
                     {a.questionText && (
                       <button
                         type="button"
@@ -198,7 +198,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                   {detailFor.correct ? 'Correct' : 'Wrong'}
                 </Pill>
                 <Pill tone="neutral" size="sm">{detailFor.difficulty.toUpperCase()}</Pill>
-                {detailFor.trailblazer && <Pill tone="warning" size="sm">⭐ Trailblazer</Pill>}
+                {detailFor.trailblazer && <Pill tone="neutral" size="sm">First to answer</Pill>}
               </div>
               <button
                 onClick={() => setDetailFor(null)}
