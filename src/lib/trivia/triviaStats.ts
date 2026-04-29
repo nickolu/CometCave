@@ -24,6 +24,9 @@ export interface AggregateStats {
     hard: { answered: number; correct: number }
   }
   exhaustionCount: number
+  likesGiven: number
+  dislikesGiven: number
+  reportsFiled: number
   lastUpdatedAt: FirebaseFirestore.Timestamp | null
 }
 
@@ -43,6 +46,9 @@ const EMPTY_STATS: AggregateStats = {
     hard: { answered: 0, correct: 0 },
   },
   exhaustionCount: 0,
+  likesGiven: 0,
+  dislikesGiven: 0,
+  reportsFiled: 0,
   lastUpdatedAt: null,
 }
 
@@ -167,6 +173,9 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
         },
       },
       exhaustionCount: agg.exhaustionCount ?? 0,
+      likesGiven: agg.likesGiven ?? 0,
+      dislikesGiven: agg.dislikesGiven ?? 0,
+      reportsFiled: agg.reportsFiled ?? 0,
       lastUpdatedAt: null, // overwritten by server timestamp below
     }
 
@@ -186,6 +195,20 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
     // Mark the run as having its stats applied (idempotency guard)
     tx.update(runRef, { statsApplied: true })
   })
+}
+
+export async function incrementVoiceStat(
+  uid: string,
+  field: 'likesGiven' | 'dislikesGiven' | 'reportsFiled'
+): Promise<void> {
+  const db = getFirestoreDb()
+  const aggRef = db.doc(`users/${uid}/triviaStats/aggregate`)
+  const snap = await aggRef.get()
+  if (snap.exists) {
+    await aggRef.update({ [field]: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() })
+  } else {
+    await aggRef.set({ ...EMPTY_STATS, [field]: 1, lastUpdatedAt: FieldValue.serverTimestamp() })
+  }
 }
 
 export async function trackExhaustion(uid: string): Promise<void> {
