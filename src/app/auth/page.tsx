@@ -105,63 +105,10 @@ function AuthPageInner() {
       {/* Terminal canvas */}
       <ChunkyCard variant="surface-container" shadow="hero" className="w-full border-[6px] border-surface-container-high bg-ds-surface/80 backdrop-blur-2xl">
         <ChunkyCardHeader>
-          <ChunkyCardTitle className="text-center text-on-surface">Welcome</ChunkyCardTitle>
+          <ChunkyCardTitle className="text-center text-on-surface">{orphanNotice ? 'Almost there' : 'Welcome'}</ChunkyCardTitle>
         </ChunkyCardHeader>
         <ChunkyCardContent className="flex flex-col gap-4">
-          <ChunkyButton
-            variant="primary"
-            size="lg"
-            className="w-full"
-            onClick={handleGoogle}
-            disabled={submitting}
-            iconStart={<span className="material-symbols-outlined text-[20px]">login</span>}
-          >
-            Sign in with Google
-          </ChunkyButton>
-
-          <div className="flex items-center gap-3 text-on-surface/40 text-xs">
-            <div className="flex-1 h-px bg-outline-variant" />
-            OR
-            <div className="flex-1 h-px bg-outline-variant" />
-          </div>
-
-          <form className="flex flex-col gap-3" onSubmit={handleEmail}>
-            <Input
-              type="email"
-              required
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-surface-dim/50 border-outline-variant text-on-surface placeholder:text-on-surface/30"
-              autoComplete="email"
-            />
-            <Input
-              type="password"
-              required
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-surface-dim/50 border-outline-variant text-on-surface placeholder:text-on-surface/30"
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              minLength={6}
-            />
-            <ChunkyButton
-              type="submit"
-              variant="secondary"
-              className="w-full"
-              disabled={submitting || email.length === 0 || password.length === 0}
-            >
-              {mode === 'signin' ? 'Sign in with email' : 'Create account'}
-            </ChunkyButton>
-          </form>
-
-          {error && (
-            <div className="text-ds-error text-sm text-center" role="alert">
-              {error}
-            </div>
-          )}
-
-          {orphanNotice && (
+          {orphanNotice ? (
             <div
               className="flex flex-col gap-3 rounded-lg border border-tertiary-fixed-dim/40 bg-tertiary-fixed-dim/15 p-3 text-on-surface/80 text-sm"
               role="status"
@@ -175,21 +122,75 @@ function AuthPageInner() {
                 Continue
               </ChunkyButton>
             </div>
-          )}
+          ) : (
+            <>
+              <ChunkyButton
+                variant="primary"
+                size="lg"
+                className="w-full"
+                onClick={handleGoogle}
+                disabled={submitting}
+                iconStart={<span className="material-symbols-outlined text-[20px]">login</span>}
+              >
+                Sign in with Google
+              </ChunkyButton>
 
-          <button
-            type="button"
-            onClick={() => {
-              setError(null)
-              setOrphanNotice(null)
-              setMode(mode === 'signin' ? 'signup' : 'signin')
-            }}
-            className="text-on-surface/50 text-sm text-center hover:text-on-surface/80 transition-colors"
-          >
-            {mode === 'signin'
-              ? "Don't have an account? Sign up"
-              : 'Already have an account? Sign in'}
-          </button>
+              <div className="flex items-center gap-3 text-on-surface/40 text-xs">
+                <div className="flex-1 h-px bg-outline-variant" />
+                OR
+                <div className="flex-1 h-px bg-outline-variant" />
+              </div>
+
+              <form className="flex flex-col gap-3" onSubmit={handleEmail}>
+                <Input
+                  type="email"
+                  required
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-surface-dim/50 border-outline-variant text-on-surface placeholder:text-on-surface/30"
+                  autoComplete="email"
+                />
+                <Input
+                  type="password"
+                  required
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-surface-dim/50 border-outline-variant text-on-surface placeholder:text-on-surface/30"
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  minLength={6}
+                />
+                <ChunkyButton
+                  type="submit"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={submitting || email.length === 0 || password.length === 0}
+                >
+                  {mode === 'signin' ? 'Sign in with email' : 'Create account'}
+                </ChunkyButton>
+              </form>
+
+              {error && (
+                <div className="text-ds-error text-sm text-center" role="alert">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null)
+                  setMode(mode === 'signin' ? 'signup' : 'signin')
+                }}
+                className="text-on-surface/50 text-sm text-center hover:text-on-surface/80 transition-colors"
+              >
+                {mode === 'signin'
+                  ? "Don't have an account? Sign up"
+                  : 'Already have an account? Sign in'}
+              </button>
+            </>
+          )}
         </ChunkyCardContent>
       </ChunkyCard>
     </div>
