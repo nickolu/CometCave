@@ -4,7 +4,7 @@ import { verifyRequestAuth } from '@/lib/api/auth'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
 import { saveAIQuestion } from '@/lib/trivia/aiQuestions'
 import { generateInfiniteQuestion } from '@/lib/trivia/generateQuestion'
-import { checkAndIncrementGenerationLimit } from '@/lib/trivia/generationLimit'
+import { checkAndIncrementGenerationLimit, MAX_GENERATIONS_PER_WINDOW, WINDOW_MS } from '@/lib/trivia/generationLimit'
 import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
 import { CATEGORY_META } from '@/lib/trivia/categories'
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
         console.warn('[trivia/infinite/next] 429 rate limit hit', {
           uid: auth.claims.uid,
           remaining,
-          limitWindowMs: 60 * 60 * 1000,
-          maxPerWindow: 30,
+          limitWindowMs: WINDOW_MS,
+          maxPerWindow: MAX_GENERATIONS_PER_WINDOW,
         })
         return NextResponse.json(
           { error: 'Generation rate limit exceeded. Please try again later.' },
