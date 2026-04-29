@@ -53,7 +53,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
       `💎 Score: ${state.score.toLocaleString()}`,
       `📊 ${state.questionsAnswered} questions answered`,
       state.trailblazes > 0 ? `${state.trailblazes} first answer${state.trailblazes === 1 ? '' : 's'}` : null,
-      'https://cometcave.com/trivia',
+      runId ? `https://cometcave.com/trivia/runs/${runId}` : 'https://cometcave.com/trivia',
     ].filter(Boolean).join('\n')
 
     try {
