@@ -29,11 +29,11 @@ function formatTime(ms: number): string {
   return `${seconds}s`
 }
 
-function getRunRating(longestStreak: number): string {
-  if (longestStreak >= 20) return 'Legendary!'
-  if (longestStreak >= 10) return 'Amazing!'
-  if (longestStreak >= 5) return 'Great Run!'
-  if (longestStreak >= 2) return 'Good Try!'
+function getRunRating(questionsCorrect: number): string {
+  if (questionsCorrect >= 20) return 'Legendary!'
+  if (questionsCorrect >= 10) return 'Amazing!'
+  if (questionsCorrect >= 5) return 'Great Run!'
+  if (questionsCorrect >= 2) return 'Good Try!'
   return 'Try Again!'
 }
 
@@ -47,13 +47,14 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mo
   const [showAllAnswers, setShowAllAnswers] = useState(false)
   const [detailFor, setDetailFor] = useState<AnswerEntry | null>(null)
 
+  const questionsCorrect = state.answers.filter(a => a.correct).length
+
   const handleShare = async () => {
     const lines = [
       '🧠 CometCave Infinite Trivia',
-      `🔥 Longest Streak: ${state.longestStreak}`,
+      `✓ Correct: ${questionsCorrect} / ${state.questionsAnswered}`,
       `💎 Score: ${state.score.toLocaleString()}`,
-      `📊 ${state.questionsAnswered} questions answered`,
-      state.trailblazes > 0 ? `${state.trailblazes} first answer${state.trailblazes === 1 ? '' : 's'}` : null,
+      `🔥 Longest Streak: ${state.longestStreak}`,
       runId ? `https://cometcave.com/trivia/runs/${runId}` : 'https://cometcave.com/trivia',
     ].filter(Boolean).join('\n')
 
@@ -70,7 +71,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mo
     <div className="flex flex-col items-center gap-5 max-w-lg mx-auto py-6">
       <div className="text-center">
         <h2 className="font-headline text-headline-lg text-ds-tertiary drop-shadow-[0_4px_0_var(--surface-container-lowest)] mb-1">
-          {getRunRating(state.longestStreak)}
+          {getRunRating(questionsCorrect)}
         </h2>
         {mode === 'practice' ? (
           <div className="flex flex-col items-center gap-1">
@@ -82,28 +83,28 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mo
         )}
       </div>
 
-      {/* Hero: Longest Streak */}
+      {/* Hero: Questions Correct */}
       <ChunkyCard variant="surface-variant" className="w-full bg-surface-container/80 border-outline-variant">
         <ChunkyCardContent className="pt-6">
           <div className="text-center mb-4">
             <div className="text-6xl font-bold text-ds-tertiary">
-              🔥 {state.longestStreak}
+              {questionsCorrect}
             </div>
-            <div className="text-on-surface/40 text-sm mt-1">Longest Streak</div>
+            <div className="text-on-surface/40 text-sm mt-1">Questions Correct</div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="text-center">
               <div className="text-xl font-bold text-on-surface">{state.score.toLocaleString()}</div>
-              <div className="text-on-surface/50 text-xs">Total Score</div>
+              <div className="text-on-surface/50 text-xs">Score</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-on-surface">{state.longestStreak}</div>
+              <div className="text-on-surface/50 text-xs">Longest Streak</div>
             </div>
             <div className="text-center">
               <div className="text-xl font-bold text-on-surface">{state.questionsAnswered}</div>
-              <div className="text-on-surface/50 text-xs">Questions</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-ds-tertiary">{state.trailblazes}</div>
-              <div className="text-on-surface/50 text-xs">First answers</div>
+              <div className="text-on-surface/50 text-xs">Attempted</div>
             </div>
           </div>
         </ChunkyCardContent>
