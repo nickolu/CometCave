@@ -304,7 +304,7 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
         </ChunkyCard>
       )}
 
-      {/* Streaks + trailblazer */}
+      {/* Streaks + first answers */}
       <ChunkyCard
         variant="surface-variant"
         className="bg-surface-container/80 border-outline-variant"
