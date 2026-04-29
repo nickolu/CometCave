@@ -17,10 +17,11 @@ const RULES_DISMISSED_KEY = 'cometcave-infinite-rules-dismissed-v1'
 interface Props {
   onBack: () => void
   onViewStats?: () => void
+  onViewLeaderboard?: () => void
   mode?: InfiniteMode
 }
 
-export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
+export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored' }: Props) {
   const { user, loading: authLoading } = useAuth()
   const { state, startRun, submitAnswer, nextQuestion, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
@@ -135,7 +136,7 @@ export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
 
   // End of run
   if (state.phase === 'ended') {
-    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} />
+    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} onViewLeaderboard={onViewLeaderboard} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} />
   }
 
   // Playing or answered

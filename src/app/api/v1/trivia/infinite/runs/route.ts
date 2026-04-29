@@ -1,8 +1,46 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { verifyRequestAuth } from '@/lib/api/auth';
+import { getFirestoreDb } from '@/lib/firebase/server';
 import { startRun } from '@/lib/trivia/infiniteRuns';
 import { CATEGORY_META } from '@/lib/trivia/categories';
+
+export async function GET(request: NextRequest) {
+  const auth = await verifyRequestAuth(request)
+  if ('error' in auth) return auth.error
+
+  const uid = auth.claims.uid
+  const limitParam = request.nextUrl.searchParams.get('limit')
+  const limit = Math.min(Math.max(parseInt(limitParam || '20', 10) || 20, 1), 50)
+
+  try {
+    const db = getFirestoreDb()
+    const snap = await db
+      .collection(`users/${uid}/triviaInfinite`)
+      .where('endedAt', '!=', null)
+      .orderBy('endedAt', 'desc')
+      .limit(limit)
+      .get()
+
+    const runs = snap.docs.map((d) => {
+      const data = d.data()
+      return {
+        runId: data.runId,
+        mode: data.mode,
+        score: data.score,
+        longestStreak: data.longestStreak,
+        questionsAnswered: data.answers?.length ?? 0,
+        skipsUsed: data.skipsUsed ?? 0,
+        endedAt: data.endedAt?.toMillis() ?? null,
+      }
+    })
+
+    return NextResponse.json({ runs })
+  } catch (error) {
+    console.error('Error fetching run history:', error)
+    return NextResponse.json({ error: 'Failed to fetch runs.' }, { status: 500 })
+  }
+}
 
 export async function POST(request: NextRequest) {
   const auth = await verifyRequestAuth(request);
