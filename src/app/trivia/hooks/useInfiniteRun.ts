@@ -282,45 +282,59 @@ export function useInfiniteRun() {
 
     setState(s => ({
       ...s,
-      phase: 'loading',
+      phase: 'answering',
       skipsRemaining: s.skipsRemaining - 1,
       skipsUsed: s.skipsUsed + 1,
     }))
 
-    // Fire-and-forget: record skip on the server
-    getAuthHeaders().then(headers =>
-      fetch(`/api/v1/trivia/infinite/runs/${state.runId}/skip`, {
+    try {
+      // Record skip on server and get the correct answer
+      const headers = await getAuthHeaders()
+      const skipRes = await fetch(`/api/v1/trivia/infinite/runs/${state.runId}/skip`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ questionId }),
       })
-    ).catch(() => {
-      // Best effort
-    })
+      const skipData: { correctAnswer: string | null; explanation: string | null } = skipRes.ok
+        ? await skipRes.json()
+        : { correctAnswer: null, explanation: null }
 
-    try {
-      const headers = await getAuthHeaders()
-      const nextParams = new URLSearchParams({ streak: String(state.currentStreak) })
-      if (state.categoryId != null) nextParams.set('categoryId', String(state.categoryId))
-      const qRes = await fetch(`/api/v1/trivia/infinite/next?${nextParams.toString()}`, { headers })
-      if (qRes.status === 204) {
-        setState(s => ({ ...s, phase: 'exhausted' }))
-        return
-      }
-      if (qRes.status === 429) {
-        setState(s => ({ ...s, phase: 'error', error: 'Too many fresh questions generated for now. Try again in a bit.' }))
-        return
-      }
-      if (!qRes.ok) throw new Error('Failed to fetch question')
-      const question = await qRes.json()
+      const correctAnswer: string = skipData.correctAnswer ?? 'Unknown'
+      const explanation: string | null = skipData.explanation ?? null
 
-      startTimeRef.current = Date.now()
-      setState(s => ({ ...s, phase: 'playing', question, lastAnswer: null }))
+      // Show the result as incorrect (skipped) but don't deduct a life
+      setState(s => {
+        const lastAnswer: InfiniteRunState['lastAnswer'] = {
+          correct: false,
+          points: 0,
+          trailblazer: false,
+          livesRemaining: s.livesRemaining, // No life deducted for skip
+          currentStreak: 0,
+          longestStreak: s.longestStreak,
+          score: s.score,
+          runOver: false,
+          correctAnswer,
+          explanation,
+        }
+        return {
+          ...s,
+          phase: 'answered' as const,
+          questionsAnswered: s.questionsAnswered + 1,
+          lastAnswer,
+          currentStreak: 0,
+          answers: [
+            ...s.answers,
+            { questionId, correct: false, points: 0, timeMs: 0, trailblazer: false, userAnswer: '(skipped)', questionText: s.question?.question ?? '', category: s.question?.category ?? '', difficulty: s.question?.difficulty ?? 'medium', correctAnswer, explanation },
+          ],
+        }
+      })
+
+      // Next question will be fetched when the user clicks "Next Question"
     } catch (err) {
       console.error('[infinite] skipQuestion failed:', err)
-      setState(s => ({ ...s, phase: 'error', error: 'Failed to fetch next question.' }))
+      setState(s => ({ ...s, phase: 'error', error: 'Failed to skip question.' }))
     }
-  }, [state.phase, state.skipsRemaining, state.question, state.runId, state.currentStreak, state.categoryId, getAuthHeaders, cancelPrefetch])
+  }, [state.phase, state.skipsRemaining, state.question, state.runId, getAuthHeaders, cancelPrefetch])
 
   const endRun = useCallback(async () => {
     cancelPrefetch()
