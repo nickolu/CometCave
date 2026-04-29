@@ -111,10 +111,17 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
 
   const handleShare = async () => {
     const playerName = isNamedUser && user ? displayName || user.email || null : null
-    const text = getShareText(result, {
+    let text = getShareText(result, {
       streak: isNamedUser ? currentStreak : undefined,
       playerName,
     })
+    // Replace generic trivia link with personalized share page if signed in
+    if (user && !user.isAnonymous) {
+      text = text.replace(
+        'https://cometcave.com/trivia',
+        `https://cometcave.com/trivia/daily/${result.date}/${user.uid}`
+      )
+    }
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
