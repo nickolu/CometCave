@@ -156,6 +156,20 @@ export async function submitAnswer(params: {
   return result
 }
 
+export async function getRunByIdPublic(runId: string): Promise<{ run: RunDoc; uid: string } | null> {
+  const db = getFirestoreDb()
+  const snaps = await db.collectionGroup('triviaInfinite')
+    .where('runId', '==', runId)
+    .limit(1)
+    .get()
+  if (snaps.empty) return null
+  const doc = snaps.docs[0]
+  const run = doc.data() as RunDoc
+  // Extract uid from the document path: users/{uid}/triviaInfinite/{runId}
+  const uid = doc.ref.parent.parent?.id ?? ''
+  return { run, uid }
+}
+
 export async function endRun(uid: string, runId: string): Promise<void> {
   const db = getFirestoreDb()
   const runRef = db.doc(`users/${uid}/triviaInfinite/${runId}`)
