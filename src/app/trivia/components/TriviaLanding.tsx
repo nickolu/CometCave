@@ -23,6 +23,7 @@ export function TriviaLanding({
   onStartInfinite,
   onViewInfiniteStats,
   onStartPractice,
+  onViewInfiniteLeaderboard,
   todayResult,
 }: {
   onStartGame?: () => void
@@ -31,6 +32,7 @@ export function TriviaLanding({
   onStartInfinite?: () => void
   onViewInfiniteStats?: () => void
   onStartPractice?: () => void
+  onViewInfiniteLeaderboard?: () => void
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -238,6 +240,13 @@ export function TriviaLanding({
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           Infinite Stats
+        </button>
+        <span className="text-on-surface/20">·</span>
+        <button
+          onClick={onViewInfiniteLeaderboard}
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
+        >
+          Infinite Ranks
         </button>
       </div>
 

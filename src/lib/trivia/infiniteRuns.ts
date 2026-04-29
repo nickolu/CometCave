@@ -202,3 +202,72 @@ export async function endRun(uid: string, runId: string): Promise<void> {
     console.error('[endRun] Failed to apply run to aggregate:', err)
   )
 }
+
+export interface InfiniteLeaderboardEntry {
+  uid: string
+  displayName: string
+  score: number
+  longestStreak: number
+  questionsAnswered: number
+  date: FirebaseFirestore.Timestamp | null
+}
+
+async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
+  if (uids.length === 0) return new Map()
+  const db = getFirestoreDb()
+  const refs = uids.map((uid) => db.doc(`users/${uid}`))
+  const snaps = await db.getAll(...refs)
+  const map = new Map<string, string>()
+  for (const snap of snaps) {
+    if (!snap.exists) continue
+    const data = snap.data() as { uid?: string; nickname?: string }
+    if (data?.uid) {
+      map.set(data.uid, data.nickname ?? '')
+    }
+  }
+  return map
+}
+
+export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaInfinite')
+    .where('mode', '==', 'scored')
+    .where('endedAt', '!=', null)
+    .orderBy('score', 'desc')
+    .limit(limit)
+    .get()
+
+  const entries = snap.docs.map((d) => {
+    const run = d.data() as RunDoc
+    const uid = d.ref.parent.parent?.id ?? ''
+    return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
+  })
+  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  return entries.map((e) => ({
+    ...e,
+    displayName: nicknames.get(e.uid) || 'Player',
+  }))
+}
+
+export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaInfinite')
+    .where('mode', '==', 'scored')
+    .where('endedAt', '!=', null)
+    .orderBy('longestStreak', 'desc')
+    .limit(limit)
+    .get()
+
+  const entries = snap.docs.map((d) => {
+    const run = d.data() as RunDoc
+    const uid = d.ref.parent.parent?.id ?? ''
+    return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
+  })
+  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  return entries.map((e) => ({
+    ...e,
+    displayName: nicknames.get(e.uid) || 'Player',
+  }))
+}

@@ -2,8 +2,8 @@ import { Timestamp } from 'firebase-admin/firestore'
 
 import { getFirestoreDb } from '@/lib/firebase/server'
 
-const WINDOW_MS = 60 * 60 * 1000 // 1 hour
-const MAX_GENERATIONS_PER_WINDOW = 100
+export const WINDOW_MS = 60 * 60 * 1000 // 1 hour
+export const MAX_GENERATIONS_PER_WINDOW = 100
 
 /**
  * Atomically check whether the given uid has exceeded the on-demand generation
