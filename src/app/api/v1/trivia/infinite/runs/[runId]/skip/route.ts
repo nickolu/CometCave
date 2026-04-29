@@ -18,9 +18,11 @@ export async function POST(
     const { questionId } = body;
     await recordSkip(auth.claims.uid, runId, questionId ?? '');
 
-    // Return the correct answer so the client can show it
+    // Return the correct answer and community stats so the client can show them
     let correctAnswer: string | null = null;
     let explanation: string | null = null;
+    let timesShown = 0;
+    let timesCorrect = 0;
     if (questionId) {
       const db = getFirestoreDb();
       const qSnap = await db.doc(`aiQuestions/${questionId}`).get();
@@ -28,10 +30,12 @@ export async function POST(
         const qData = qSnap.data()!;
         correctAnswer = qData.correctAnswer ?? null;
         explanation = qData.explanation ?? null;
+        timesShown = qData.timesShown ?? 0;
+        timesCorrect = qData.timesCorrect ?? 0;
       }
     }
 
-    return NextResponse.json({ ok: true, correctAnswer, explanation });
+    return NextResponse.json({ ok: true, correctAnswer, explanation, timesShown, timesCorrect });
   } catch (err: unknown) {
     console.error('Failed to record skip:', err);
     return NextResponse.json({ error: 'Failed to record skip.' }, { status: 500 });

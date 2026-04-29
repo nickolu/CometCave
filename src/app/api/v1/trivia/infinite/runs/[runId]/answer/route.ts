@@ -42,10 +42,18 @@ export async function POST(
       elapsedMs: typeof elapsedMs === 'number' ? elapsedMs : 0,
     });
 
+    // Read updated question stats for community accuracy
+    const updatedQSnap = await db.doc(`aiQuestions/${questionId}`).get();
+    const updatedQ = updatedQSnap.data();
+    const timesShown = updatedQ?.timesShown ?? 1;
+    const timesCorrect = updatedQ?.timesCorrect ?? 0;
+
     return NextResponse.json({
       ...result,
       correctAnswer: qData.correctAnswer,
       explanation: qData.explanation ?? null,
+      timesShown,
+      timesCorrect,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

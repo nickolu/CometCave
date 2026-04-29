@@ -30,7 +30,7 @@ export interface InfiniteRunState {
   skipsRemaining: number
   skipsUsed: number
   flaggedQuestionIds: string[]
-  lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
+  lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number }) | null
   answers: Array<{
     questionId: string
     correct: boolean
@@ -295,7 +295,7 @@ export function useInfiniteRun() {
         headers,
         body: JSON.stringify({ questionId }),
       })
-      const skipData: { correctAnswer: string | null; explanation: string | null } = skipRes.ok
+      const skipData: { correctAnswer: string | null; explanation: string | null; timesShown?: number; timesCorrect?: number } = skipRes.ok
         ? await skipRes.json()
         : { correctAnswer: null, explanation: null }
 
@@ -315,6 +315,8 @@ export function useInfiniteRun() {
           runOver: false,
           correctAnswer,
           explanation,
+          timesShown: skipData.timesShown,
+          timesCorrect: skipData.timesCorrect,
         }
         return {
           ...s,
