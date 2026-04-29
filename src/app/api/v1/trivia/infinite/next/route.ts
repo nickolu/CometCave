@@ -7,8 +7,9 @@ import { generateInfiniteQuestion } from '@/lib/trivia/generateQuestion'
 import { checkAndIncrementGenerationLimit } from '@/lib/trivia/generationLimit'
 import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
+import { CATEGORY_META } from '@/lib/trivia/categories'
 
-// GET /api/v1/trivia/infinite/next?streak=N
+// GET /api/v1/trivia/infinite/next?streak=N&categoryId=N
 export async function GET(request: NextRequest) {
   const auth = await verifyRequestAuth(request)
   if ('error' in auth) return auth.error
@@ -18,11 +19,22 @@ export async function GET(request: NextRequest) {
   const streak = streakParam !== null ? parseInt(streakParam, 10) : 0
   const parsedStreak = isNaN(streak) || streak < 0 ? 0 : streak
 
+  // Parse optional categoryId
+  let categoryId: number | undefined
+  const categoryIdParam = searchParams.get('categoryId')
+  if (categoryIdParam !== null) {
+    const parsed = parseInt(categoryIdParam, 10)
+    if (!isNaN(parsed) && parsed in CATEGORY_META) {
+      categoryId = parsed
+    }
+  }
+
   try {
     let question = await sampleNextQuestion({
       uid: auth.claims.uid,
       streak: parsedStreak,
       type: 'free-text',
+      categoryId,
     })
 
     if (question === null) {
@@ -44,7 +56,7 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        const generated = await generateInfiniteQuestion({ streak: parsedStreak })
+        const generated = await generateInfiniteQuestion({ streak: parsedStreak, categoryId })
         await saveAIQuestion(generated)
         question = {
           ...generated,
