@@ -103,13 +103,16 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
   const currentStreak = stats.currentStreak
   const countdown = useCountdown()
 
+  // Treat anonymous Firebase users as "not signed in" for share-text and CTAs.
+  const isNamedUser = !!user && !user.isAnonymous
+
   const scorePercent = Math.round((result.score / MAX_SCORE) * 100)
   const correctPercent = result.total > 0 ? Math.round((result.correct / result.total) * 100) : 0
 
   const handleShare = async () => {
-    const playerName = user ? displayName || user.email || null : null
+    const playerName = isNamedUser && user ? displayName || user.email || null : null
     const text = getShareText(result, {
-      streak: user ? currentStreak : undefined,
+      streak: isNamedUser ? currentStreak : undefined,
       playerName,
     })
     try {
@@ -257,7 +260,7 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
         </ChunkyCard>
       )}
 
-      {!user && (
+      {!isNamedUser && (
         <SignInCard
           title="🔒 Your score wasn't saved"
           description="Sign in to track your streak, save your stats, and compete on the leaderboard."
