@@ -21,6 +21,7 @@ interface DifficultyStats {
 interface AggregateStats {
   totalAnswered: number
   totalCorrect: number
+  totalScore: number
   runsPlayed: number
   bestRun: { score: number; longestStreak: number } | null
   bestStreak: number
@@ -161,6 +162,35 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
     stats.totalAnswered > 0 ? Math.round(stats.totalTimeMs / stats.totalAnswered) : 0
   const categories = Object.entries(stats.byCategory).sort((a, b) => b[1].answered - a[1].answered)
 
+  const avgScorePerRun = stats.runsPlayed > 0
+    ? Math.round((stats.totalScore ?? 0) / stats.runsPlayed)
+    : 0
+
+  const MIN_CATEGORY_VOLUME = 5
+  const qualifiedCategories = categories.filter(([, data]) => data.answered >= MIN_CATEGORY_VOLUME)
+  const bestCategory = qualifiedCategories.length > 0
+    ? qualifiedCategories.reduce((best, curr) =>
+        (curr[1].correct / curr[1].answered) > (best[1].correct / best[1].answered) ? curr : best
+      )
+    : null
+  const worstCategory = qualifiedCategories.length > 0
+    ? qualifiedCategories.reduce((worst, curr) =>
+        (curr[1].correct / curr[1].answered) < (worst[1].correct / worst[1].answered) ? curr : worst
+      )
+    : null
+  const categoriesExplored = categories.length
+  const categoriesWithTime = categories.filter(([, data]) => data.answered >= MIN_CATEGORY_VOLUME && data.totalTimeMs > 0)
+  const fastestCategory = categoriesWithTime.length > 0
+    ? categoriesWithTime.reduce((fast, curr) =>
+        (curr[1].totalTimeMs / curr[1].answered) < (fast[1].totalTimeMs / fast[1].answered) ? curr : fast
+      )
+    : null
+  const slowestCategory = categoriesWithTime.length > 0
+    ? categoriesWithTime.reduce((slow, curr) =>
+        (curr[1].totalTimeMs / curr[1].answered) > (slow[1].totalTimeMs / slow[1].answered) ? curr : slow
+      )
+    : null
+
   return (
     <div className="flex flex-col gap-5 max-w-lg mx-auto py-6">
       <div className="text-center">
@@ -209,6 +239,42 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
           </ChunkyCardContent>
         </ChunkyCard>
       </div>
+
+      {/* Journey */}
+      <ChunkyCard
+        variant="surface-variant"
+        className="bg-surface-container/80 border-outline-variant"
+      >
+        <ChunkyCardContent className="pt-5 pb-5">
+          <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+            Journey
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-tertiary">
+                {stats.runsPlayed > 0 ? Math.round(stats.totalAnswered / stats.runsPlayed) : 0}
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Avg Q/Run</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-tertiary">
+                {stats.runsPlayed > 0 ? Math.round(stats.totalCorrect / stats.runsPlayed) : 0}
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Avg Correct/Run</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-tertiary">
+                {Math.round(stats.totalTimeMs / 1000 / 60)}m
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Time Played</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-tertiary">{avgScorePerRun.toLocaleString()}</div>
+              <div className="text-on-surface/50 text-xs mt-1">Avg Score/Run</div>
+            </div>
+          </div>
+        </ChunkyCardContent>
+      </ChunkyCard>
 
       {/* Best run */}
       {stats.bestRun && (
@@ -284,10 +350,86 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
                     <span className="text-on-surface/60 text-xs text-center leading-tight">
                       {cat}
                     </span>
+                    <span className="text-on-surface/30 text-[10px]">
+                      {(data.totalTimeMs / data.answered / 1000).toFixed(1)}s avg
+                    </span>
                     <span className="text-on-surface/30 text-[10px]">{data.answered} Q</span>
                   </div>
                 )
               })}
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {/* Category Insights */}
+      {(bestCategory || categoriesExplored > 0) && (
+        <ChunkyCard
+          variant="surface-variant"
+          className="bg-surface-container/80 border-outline-variant"
+        >
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Category Insights
+            </h3>
+            <div className="flex flex-col gap-3">
+              {bestCategory && (
+                <div className="flex items-center justify-between">
+                  <div className="text-on-surface/60 text-sm">Strongest</div>
+                  <div className="text-right">
+                    <span className="text-ds-primary font-semibold text-sm">{bestCategory[0]}</span>
+                    <span className="text-on-surface/40 text-xs ml-2">
+                      {Math.round((bestCategory[1].correct / bestCategory[1].answered) * 100)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+              {worstCategory && bestCategory && worstCategory[0] !== bestCategory[0] && (
+                <div className="flex items-center justify-between">
+                  <div className="text-on-surface/60 text-sm">Weakest</div>
+                  <div className="text-right">
+                    <span className="text-ds-error font-semibold text-sm">{worstCategory[0]}</span>
+                    <span className="text-on-surface/40 text-xs ml-2">
+                      {Math.round((worstCategory[1].correct / worstCategory[1].answered) * 100)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <div className="text-on-surface/60 text-sm">Categories Explored</div>
+                <div className="text-on-surface font-semibold text-sm">{categoriesExplored}</div>
+              </div>
+              {categories.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="text-on-surface/60 text-sm">Favorite</div>
+                  <div className="text-right">
+                    <span className="text-ds-tertiary font-semibold text-sm">{categories[0][0]}</span>
+                    <span className="text-on-surface/40 text-xs ml-2">{categories[0][1].answered} Q</span>
+                  </div>
+                </div>
+              )}
+              {fastestCategory && (
+                <div className="flex items-center justify-between">
+                  <div className="text-on-surface/60 text-sm">Fastest</div>
+                  <div className="text-right">
+                    <span className="text-on-surface font-semibold text-sm">{fastestCategory[0]}</span>
+                    <span className="text-on-surface/40 text-xs ml-2">
+                      {(fastestCategory[1].totalTimeMs / fastestCategory[1].answered / 1000).toFixed(1)}s avg
+                    </span>
+                  </div>
+                </div>
+              )}
+              {slowestCategory && fastestCategory && slowestCategory[0] !== fastestCategory[0] && (
+                <div className="flex items-center justify-between">
+                  <div className="text-on-surface/60 text-sm">Slowest</div>
+                  <div className="text-right">
+                    <span className="text-on-surface font-semibold text-sm">{slowestCategory[0]}</span>
+                    <span className="text-on-surface/40 text-xs ml-2">
+                      {(slowestCategory[1].totalTimeMs / slowestCategory[1].answered / 1000).toFixed(1)}s avg
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </ChunkyCardContent>
         </ChunkyCard>
