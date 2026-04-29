@@ -15,6 +15,7 @@ interface InfiniteHUDProps {
   isPlaying: boolean
   mode?: InfiniteMode
   categoryName?: string
+  skipsRemaining?: number
 }
 
 export function InfiniteHUD({
@@ -27,6 +28,7 @@ export function InfiniteHUD({
   isPlaying,
   mode = 'scored',
   categoryName,
+  skipsRemaining,
 }: InfiniteHUDProps) {
   const [showFleeConfirm, setShowFleeConfirm] = useState(false)
   const mult = computeStreakMultiplier(currentStreak)
@@ -73,6 +75,11 @@ export function InfiniteHUD({
               </span>
             ))}
           </div>
+        )}
+
+        {/* Skips remaining */}
+        {skipsRemaining != null && skipsRemaining > 0 && (
+          <Pill tone="neutral" size="sm">⏭️ {skipsRemaining}</Pill>
         )}
 
         {/* Streak + multiplier */}

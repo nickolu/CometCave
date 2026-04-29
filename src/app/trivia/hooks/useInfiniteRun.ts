@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { LIVES_START, type AnswerResult } from '@/app/trivia/lib/infiniteScoring'
+import { LIVES_START, SKIPS_PER_RUN, type AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 
 export type InfinitePhase = 'idle' | 'loading' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
 export type InfiniteMode = 'scored' | 'practice'
@@ -27,6 +27,8 @@ export interface InfiniteRunState {
   questionsAnswered: number
   trailblazes: number
   bonusLivesEarned: number
+  skipsRemaining: number
+  skipsUsed: number
   flaggedQuestionIds: string[]
   lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
   answers: Array<{
@@ -59,6 +61,8 @@ export function useInfiniteRun() {
     questionsAnswered: 0,
     trailblazes: 0,
     bonusLivesEarned: 0,
+    skipsRemaining: SKIPS_PER_RUN,
+    skipsUsed: 0,
     flaggedQuestionIds: [],
     lastAnswer: null,
     answers: [],
@@ -150,6 +154,8 @@ export function useInfiniteRun() {
         questionsAnswered: 0,
         trailblazes: 0,
         bonusLivesEarned: 0,
+        skipsRemaining: SKIPS_PER_RUN,
+        skipsUsed: 0,
         flaggedQuestionIds: [],
         lastAnswer: null,
         answers: [],
@@ -268,6 +274,54 @@ export function useInfiniteRun() {
     }
   }, [state.phase, state.runId, state.currentStreak, state.categoryId, getAuthHeaders])
 
+  const skipQuestion = useCallback(async () => {
+    if (state.phase !== 'playing' || state.skipsRemaining <= 0 || !state.question || !state.runId) return
+
+    const questionId = state.question.id
+    cancelPrefetch()
+
+    setState(s => ({
+      ...s,
+      phase: 'loading',
+      skipsRemaining: s.skipsRemaining - 1,
+      skipsUsed: s.skipsUsed + 1,
+    }))
+
+    // Fire-and-forget: record skip on the server
+    getAuthHeaders().then(headers =>
+      fetch(`/api/v1/trivia/infinite/runs/${state.runId}/skip`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ questionId }),
+      })
+    ).catch(() => {
+      // Best effort
+    })
+
+    try {
+      const headers = await getAuthHeaders()
+      const nextParams = new URLSearchParams({ streak: String(state.currentStreak) })
+      if (state.categoryId != null) nextParams.set('categoryId', String(state.categoryId))
+      const qRes = await fetch(`/api/v1/trivia/infinite/next?${nextParams.toString()}`, { headers })
+      if (qRes.status === 204) {
+        setState(s => ({ ...s, phase: 'exhausted' }))
+        return
+      }
+      if (qRes.status === 429) {
+        setState(s => ({ ...s, phase: 'error', error: 'Too many fresh questions generated for now. Try again in a bit.' }))
+        return
+      }
+      if (!qRes.ok) throw new Error('Failed to fetch question')
+      const question = await qRes.json()
+
+      startTimeRef.current = Date.now()
+      setState(s => ({ ...s, phase: 'playing', question, lastAnswer: null }))
+    } catch (err) {
+      console.error('[infinite] skipQuestion failed:', err)
+      setState(s => ({ ...s, phase: 'error', error: 'Failed to fetch next question.' }))
+    }
+  }, [state.phase, state.skipsRemaining, state.question, state.runId, state.currentStreak, state.categoryId, getAuthHeaders, cancelPrefetch])
+
   const endRun = useCallback(async () => {
     cancelPrefetch()
     // If the server already auto-finalized this run (lives reached 0), skip
@@ -310,5 +364,5 @@ export function useInfiniteRun() {
     })
   }, [])
 
-  return { state, startRun, submitAnswer, nextQuestion, endRun, handleQuestionFlagged }
+  return { state, startRun, submitAnswer, nextQuestion, skipQuestion, endRun, handleQuestionFlagged }
 }

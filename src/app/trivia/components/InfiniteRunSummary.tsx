@@ -107,6 +107,13 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mo
               <div className="text-on-surface/50 text-xs">Attempted</div>
             </div>
           </div>
+
+          {state.skipsUsed > 0 && (
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold text-on-surface">{state.skipsUsed}</div>
+              <div className="text-on-surface/50 text-xs mt-1">Skips Used</div>
+            </div>
+          )}
         </ChunkyCardContent>
       </ChunkyCard>
 

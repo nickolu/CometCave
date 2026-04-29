@@ -17,6 +17,7 @@ export interface RunDoc {
   trailblazes: number
   answers: RunAnswer[]
   bonusLivesEarned: number
+  skipsUsed: number
   flaggedQuestionIds: string[]
   startedAt: FirebaseFirestore.Timestamp
   endedAt: FirebaseFirestore.Timestamp | null
@@ -47,6 +48,7 @@ export async function startRun(uid: string, mode: 'scored' | 'practice' = 'score
     trailblazes: 0,
     answers: [],
     bonusLivesEarned: 0,
+    skipsUsed: 0,
     flaggedQuestionIds: [],
     startedAt: now,
     endedAt: null,
@@ -170,6 +172,14 @@ export async function getRunByIdPublic(runId: string): Promise<{ run: RunDoc; ui
   // Extract uid from the document path: users/{uid}/triviaInfinite/{runId}
   const uid = doc.ref.parent.parent?.id ?? ''
   return { run, uid }
+}
+
+export async function recordSkip(uid: string, runId: string, questionId: string): Promise<void> {
+  const db = getFirestoreDb()
+  const runRef = db.doc(`users/${uid}/triviaInfinite/${runId}`)
+  await runRef.update({
+    skipsUsed: FieldValue.increment(1),
+  })
 }
 
 export async function endRun(uid: string, runId: string): Promise<void> {
