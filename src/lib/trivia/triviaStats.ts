@@ -98,7 +98,12 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
       hard: { answered: 0, correct: 0 },
     }
 
+    const flaggedSet = new Set<string>(run.flaggedQuestionIds ?? [])
+
     for (const answer of run.answers) {
+      // Skip flagged questions — they don't count toward stats
+      if (flaggedSet.has(answer.questionId)) continue
+
       totalAnswered += 1
       if (answer.correct) totalCorrect += 1
       totalTimeMs += answer.timeMs

@@ -25,6 +25,8 @@ export interface InfiniteRunState {
   score: number
   questionsAnswered: number
   trailblazes: number
+  bonusLivesEarned: number
+  flaggedQuestionIds: string[]
   lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
   answers: Array<{
     questionId: string
@@ -54,6 +56,8 @@ export function useInfiniteRun() {
     score: 0,
     questionsAnswered: 0,
     trailblazes: 0,
+    bonusLivesEarned: 0,
+    flaggedQuestionIds: [],
     lastAnswer: null,
     answers: [],
     error: null,
@@ -138,6 +142,8 @@ export function useInfiniteRun() {
         score: 0,
         questionsAnswered: 0,
         trailblazes: 0,
+        bonusLivesEarned: 0,
+        flaggedQuestionIds: [],
         lastAnswer: null,
         answers: [],
       }))
@@ -274,5 +280,26 @@ export function useInfiniteRun() {
     setState(s => ({ ...s, phase: 'ended' }))
   }, [state.runId, state.lastAnswer, getAuthHeaders, cancelPrefetch])
 
-  return { state, startRun, submitAnswer, nextQuestion, endRun }
+  const handleQuestionFlagged = useCallback((questionId: string, result: { wasFirstFlag: boolean; bonusLifeGranted: boolean }) => {
+    setState(s => {
+      const newFlaggedQuestionIds = s.flaggedQuestionIds.includes(questionId)
+        ? s.flaggedQuestionIds
+        : [...s.flaggedQuestionIds, questionId]
+
+      // Remove flagged answer from answers array (stats scrub)
+      const newAnswers = s.answers.filter(a => a.questionId !== questionId)
+      const answersRemoved = s.answers.length - newAnswers.length
+
+      return {
+        ...s,
+        livesRemaining: result.bonusLifeGranted ? s.livesRemaining + 1 : s.livesRemaining,
+        bonusLivesEarned: result.bonusLifeGranted ? s.bonusLivesEarned + 1 : s.bonusLivesEarned,
+        flaggedQuestionIds: newFlaggedQuestionIds,
+        answers: newAnswers,
+        questionsAnswered: Math.max(0, s.questionsAnswered - answersRemoved),
+      }
+    })
+  }, [])
+
+  return { state, startRun, submitAnswer, nextQuestion, endRun, handleQuestionFlagged }
 }
