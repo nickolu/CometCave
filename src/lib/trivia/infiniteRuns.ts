@@ -17,6 +17,7 @@ export interface RunDoc {
   trailblazes: number
   answers: RunAnswer[]
   bonusLivesEarned: number
+  skipsUsed: number
   flaggedQuestionIds: string[]
   startedAt: FirebaseFirestore.Timestamp
   endedAt: FirebaseFirestore.Timestamp | null
@@ -47,6 +48,7 @@ export async function startRun(uid: string, mode: 'scored' | 'practice' = 'score
     trailblazes: 0,
     answers: [],
     bonusLivesEarned: 0,
+    skipsUsed: 0,
     flaggedQuestionIds: [],
     startedAt: now,
     endedAt: null,
@@ -172,6 +174,14 @@ export async function getRunByIdPublic(runId: string): Promise<{ run: RunDoc; ui
   return { run, uid }
 }
 
+export async function recordSkip(uid: string, runId: string, questionId: string): Promise<void> {
+  const db = getFirestoreDb()
+  const runRef = db.doc(`users/${uid}/triviaInfinite/${runId}`)
+  await runRef.update({
+    skipsUsed: FieldValue.increment(1),
+  })
+}
+
 export async function endRun(uid: string, runId: string): Promise<void> {
   const db = getFirestoreDb()
   const runRef = db.doc(`users/${uid}/triviaInfinite/${runId}`)
@@ -191,4 +201,73 @@ export async function endRun(uid: string, runId: string): Promise<void> {
   applyRunToAggregate(uid, runId).catch((err) =>
     console.error('[endRun] Failed to apply run to aggregate:', err)
   )
+}
+
+export interface InfiniteLeaderboardEntry {
+  uid: string
+  displayName: string
+  score: number
+  longestStreak: number
+  questionsAnswered: number
+  date: FirebaseFirestore.Timestamp | null
+}
+
+async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
+  if (uids.length === 0) return new Map()
+  const db = getFirestoreDb()
+  const refs = uids.map((uid) => db.doc(`users/${uid}`))
+  const snaps = await db.getAll(...refs)
+  const map = new Map<string, string>()
+  for (const snap of snaps) {
+    if (!snap.exists) continue
+    const data = snap.data() as { uid?: string; nickname?: string }
+    if (data?.uid) {
+      map.set(data.uid, data.nickname ?? '')
+    }
+  }
+  return map
+}
+
+export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaInfinite')
+    .where('mode', '==', 'scored')
+    .where('endedAt', '!=', null)
+    .orderBy('score', 'desc')
+    .limit(limit)
+    .get()
+
+  const entries = snap.docs.map((d) => {
+    const run = d.data() as RunDoc
+    const uid = d.ref.parent.parent?.id ?? ''
+    return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
+  })
+  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  return entries.map((e) => ({
+    ...e,
+    displayName: nicknames.get(e.uid) || 'Player',
+  }))
+}
+
+export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaInfinite')
+    .where('mode', '==', 'scored')
+    .where('endedAt', '!=', null)
+    .orderBy('longestStreak', 'desc')
+    .limit(limit)
+    .get()
+
+  const entries = snap.docs.map((d) => {
+    const run = d.data() as RunDoc
+    const uid = d.ref.parent.parent?.id ?? ''
+    return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
+  })
+  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  return entries.map((e) => ({
+    ...e,
+    displayName: nicknames.get(e.uid) || 'Player',
+  }))
 }

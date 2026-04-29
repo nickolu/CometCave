@@ -7,6 +7,16 @@ import { useAuth } from '@/hooks/useAuth'
 
 import { SignInCard } from './SignInCTA'
 
+interface RunHistoryEntry {
+  runId: string
+  mode: 'scored' | 'practice'
+  score: number
+  longestStreak: number
+  questionsAnswered: number
+  skipsUsed: number
+  endedAt: number | null
+}
+
 interface CategoryStats {
   answered: number
   correct: number
@@ -80,6 +90,8 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const [stats, setStats] = useState<AggregateStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [runs, setRuns] = useState<RunHistoryEntry[]>([])
+  const [runsLoading, setRunsLoading] = useState(true)
 
   const fetchStats = useCallback(async () => {
     if (!user) {
@@ -104,6 +116,30 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     fetchStats()
   }, [fetchStats])
+
+  useEffect(() => {
+    async function loadRuns() {
+      if (!user) {
+        setRunsLoading(false)
+        return
+      }
+      try {
+        const token = await user.getIdToken()
+        const res = await fetch('/api/v1/trivia/infinite/runs?limit=20', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setRuns(data.runs ?? [])
+        }
+      } catch {
+        // silent
+      } finally {
+        setRunsLoading(false)
+      }
+    }
+    loadRuns()
+  }, [user])
 
   if (loading) {
     return (
@@ -497,6 +533,53 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
                 <div className="text-on-surface/50 text-xs mt-1">Reports</div>
               </div>
             </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {/* Recent Runs */}
+      {runs.length > 0 && (
+        <ChunkyCard
+          variant="surface-variant"
+          className="bg-surface-container/80 border-outline-variant"
+        >
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Recent Runs
+            </h3>
+            <div className="flex flex-col gap-2">
+              {runs.map((run) => {
+                const dateStr = run.endedAt
+                  ? new Date(run.endedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : ''
+                return (
+                  <div
+                    key={run.runId}
+                    className="flex items-center justify-between py-2 px-3 rounded bg-surface-dim/40"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="text-on-surface/40 text-xs w-12">{dateStr}</div>
+                      <div className="text-on-surface font-medium text-sm">
+                        {run.score.toLocaleString()} pts
+                      </div>
+                      {run.mode === 'practice' && (
+                        <span className="text-on-surface/30 text-xs">(practice)</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-on-surface/50">
+                      <span>{run.longestStreak} streak</span>
+                      <span>{run.questionsAnswered} Qs</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {runsLoading && (
+              <div className="text-center text-on-surface/50 py-4 text-sm">Loading...</div>
+            )}
           </ChunkyCardContent>
         </ChunkyCard>
       )}

@@ -186,13 +186,21 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
                   key={game.date}
                   className="flex items-center justify-between py-2 px-3 rounded bg-surface-dim/40"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-on-surface text-sm font-medium">
-                      {formatDisplayDate(game.date)}
-                    </span>
-                    <span className="text-on-surface/40 text-xs">
-                      {game.correct}/{game.total} correct
-                    </span>
+                  <div className="flex items-center gap-2">
+                    {game.category && (
+                      <span className="text-lg" title={game.category.name}>
+                        {game.category.icon}
+                      </span>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="text-on-surface text-sm font-medium">
+                        {formatDisplayDate(game.date)}
+                      </span>
+                      <span className="text-on-surface/40 text-xs">
+                        {game.correct}/{game.total} correct
+                        {game.category && ` · ${game.category.name}`}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {/* Visual bar */}

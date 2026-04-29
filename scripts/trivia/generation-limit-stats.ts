@@ -20,7 +20,8 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 
-const MAX_GENERATIONS_PER_WINDOW = 30
+// NOTE: keep this in sync with src/lib/trivia/generationLimit.ts
+const MAX_GENERATIONS_PER_WINDOW = 100
 
 function ensureApp() {
   if (getApps().length > 0) return

@@ -19,6 +19,7 @@ interface Props {
   onPlayAgain: () => void
   onBack: () => void
   onViewStats?: () => void
+  onViewLeaderboard?: () => void
   mode?: InfiniteMode
   runId?: string | null
   onFlagged?: (questionId: string, result: FlagResult) => void
@@ -41,7 +42,7 @@ const ANSWERS_PAGE_SIZE = 20
 
 type AnswerEntry = InfiniteRunState['answers'][number]
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mode = 'scored', runId, onFlagged }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, onViewLeaderboard, mode = 'scored', runId, onFlagged }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -107,6 +108,13 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mo
               <div className="text-on-surface/50 text-xs">Attempted</div>
             </div>
           </div>
+
+          {state.skipsUsed > 0 && (
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold text-on-surface">{state.skipsUsed}</div>
+              <div className="text-on-surface/50 text-xs mt-1">Skips Used</div>
+            </div>
+          )}
         </ChunkyCardContent>
       </ChunkyCard>
 
@@ -184,6 +192,12 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mo
       {onViewStats && user && !user.isAnonymous && (
         <ChunkyButton variant="ghost" size="sm" className="w-full" onClick={onViewStats}>
           View Lifetime Stats
+        </ChunkyButton>
+      )}
+
+      {onViewLeaderboard && (
+        <ChunkyButton variant="ghost" size="sm" className="w-full" onClick={onViewLeaderboard}>
+          View Leaderboard
         </ChunkyButton>
       )}
 

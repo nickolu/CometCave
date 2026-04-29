@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { LIVES_START, type AnswerResult } from '@/app/trivia/lib/infiniteScoring'
+import { LIVES_START, SKIPS_PER_RUN, type AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 
 export type InfinitePhase = 'idle' | 'loading' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
 export type InfiniteMode = 'scored' | 'practice'
@@ -27,6 +27,8 @@ export interface InfiniteRunState {
   questionsAnswered: number
   trailblazes: number
   bonusLivesEarned: number
+  skipsRemaining: number
+  skipsUsed: number
   flaggedQuestionIds: string[]
   lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
   answers: Array<{
@@ -59,6 +61,8 @@ export function useInfiniteRun() {
     questionsAnswered: 0,
     trailblazes: 0,
     bonusLivesEarned: 0,
+    skipsRemaining: SKIPS_PER_RUN,
+    skipsUsed: 0,
     flaggedQuestionIds: [],
     lastAnswer: null,
     answers: [],
@@ -150,6 +154,8 @@ export function useInfiniteRun() {
         questionsAnswered: 0,
         trailblazes: 0,
         bonusLivesEarned: 0,
+        skipsRemaining: SKIPS_PER_RUN,
+        skipsUsed: 0,
         flaggedQuestionIds: [],
         lastAnswer: null,
         answers: [],
@@ -268,6 +274,68 @@ export function useInfiniteRun() {
     }
   }, [state.phase, state.runId, state.currentStreak, state.categoryId, getAuthHeaders])
 
+  const skipQuestion = useCallback(async () => {
+    if (state.phase !== 'playing' || state.skipsRemaining <= 0 || !state.question || !state.runId) return
+
+    const questionId = state.question.id
+    cancelPrefetch()
+
+    setState(s => ({
+      ...s,
+      phase: 'answering',
+      skipsRemaining: s.skipsRemaining - 1,
+      skipsUsed: s.skipsUsed + 1,
+    }))
+
+    try {
+      // Record skip on server and get the correct answer
+      const headers = await getAuthHeaders()
+      const skipRes = await fetch(`/api/v1/trivia/infinite/runs/${state.runId}/skip`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ questionId }),
+      })
+      const skipData: { correctAnswer: string | null; explanation: string | null } = skipRes.ok
+        ? await skipRes.json()
+        : { correctAnswer: null, explanation: null }
+
+      const correctAnswer: string = skipData.correctAnswer ?? 'Unknown'
+      const explanation: string | null = skipData.explanation ?? null
+
+      // Show the result as incorrect (skipped) but don't deduct a life
+      setState(s => {
+        const lastAnswer: InfiniteRunState['lastAnswer'] = {
+          correct: false,
+          points: 0,
+          trailblazer: false,
+          livesRemaining: s.livesRemaining, // No life deducted for skip
+          currentStreak: 0,
+          longestStreak: s.longestStreak,
+          score: s.score,
+          runOver: false,
+          correctAnswer,
+          explanation,
+        }
+        return {
+          ...s,
+          phase: 'answered' as const,
+          questionsAnswered: s.questionsAnswered + 1,
+          lastAnswer,
+          currentStreak: 0,
+          answers: [
+            ...s.answers,
+            { questionId, correct: false, points: 0, timeMs: 0, trailblazer: false, userAnswer: '(skipped)', questionText: s.question?.question ?? '', category: s.question?.category ?? '', difficulty: s.question?.difficulty ?? 'medium', correctAnswer, explanation },
+          ],
+        }
+      })
+
+      // Next question will be fetched when the user clicks "Next Question"
+    } catch (err) {
+      console.error('[infinite] skipQuestion failed:', err)
+      setState(s => ({ ...s, phase: 'error', error: 'Failed to skip question.' }))
+    }
+  }, [state.phase, state.skipsRemaining, state.question, state.runId, getAuthHeaders, cancelPrefetch])
+
   const endRun = useCallback(async () => {
     cancelPrefetch()
     // If the server already auto-finalized this run (lives reached 0), skip
@@ -310,5 +378,5 @@ export function useInfiniteRun() {
     })
   }, [])
 
-  return { state, startRun, submitAnswer, nextQuestion, endRun, handleQuestionFlagged }
+  return { state, startRun, submitAnswer, nextQuestion, skipQuestion, endRun, handleQuestionFlagged }
 }
