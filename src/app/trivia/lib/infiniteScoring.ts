@@ -21,12 +21,6 @@ export function computeStreakMultiplier(streak: number): number {
   return 1
 }
 
-export function computeSpeedBonus(elapsedMs: number, timeLimitMs: number = 30000): number {
-  // max * (timeRemaining / timeLimit), clamped to [0, BASE_MAX_POINTS]
-  const remaining = Math.max(0, timeLimitMs - elapsedMs)
-  return Math.round(BASE_MAX_POINTS * (remaining / timeLimitMs))
-}
-
 export function shouldRefundLife(newStreak: number, livesRemaining: number): boolean {
   return newStreak > 0 && newStreak % LIFE_REFUND_EVERY === 0 && livesRemaining < LIVES_MAX
 }
@@ -52,7 +46,7 @@ export function applyAnswer(params: {
   prevLongestStreak: number
   prevScore: number
 }): AnswerResult {
-  const { correct, trailblazer, elapsedMs, mode, prevLives, prevStreak, prevLongestStreak, prevScore } = params
+  const { correct, trailblazer, mode, prevLives, prevStreak, prevLongestStreak, prevScore } = params
 
   let lives = prevLives
   let streak = prevStreak
@@ -62,9 +56,8 @@ export function applyAnswer(params: {
   if (correct) {
     streak += 1
     longestStreak = Math.max(longestStreak, streak)
-    const speedBonus = computeSpeedBonus(elapsedMs)
     const mult = computeStreakMultiplier(streak)
-    points = Math.round(speedBonus * mult)
+    points = Math.round(BASE_MAX_POINTS * mult)
     if (trailblazer) points += TRAILBLAZER_BONUS
     // Life refund
     if (shouldRefundLife(streak, lives)) {
