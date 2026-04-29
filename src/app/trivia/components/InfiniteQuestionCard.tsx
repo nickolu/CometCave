@@ -166,7 +166,7 @@ export function InfiniteQuestionCard({
               )
             })() : answerResult.timesShown != null && answerResult.timesShown > 0 ? (
               <div className="text-on-surface/40 text-sm mt-2">
-                You&apos;re one of the first to answer this!
+                {answerResult.timesCorrect ?? 0} of {answerResult.timesShown} other {answerResult.timesShown === 1 ? 'person' : 'people'} answered this correctly
               </div>
             ) : null}
           </div>
