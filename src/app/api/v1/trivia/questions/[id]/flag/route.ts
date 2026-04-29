@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
+import { incrementVoiceStat } from '@/lib/trivia/triviaStats';
 
 const FLAG_THRESHOLD = 3;
 const BONUS_LIVES_MAX = 3;
@@ -99,6 +100,11 @@ export async function POST(
 
       return { wasFirstFlag, bonusLifeGranted };
     });
+
+    // Increment lifetime reports counter (fire-and-forget)
+    incrementVoiceStat(uid, 'reportsFiled').catch((err) =>
+      console.error('[flag] Failed to increment voice stat:', err)
+    );
 
     return NextResponse.json({ ok: true, wasFirstFlag: result.wasFirstFlag, bonusLifeGranted: result.bonusLifeGranted }, { status: 200 });
   } catch (err) {

@@ -33,6 +33,9 @@ interface AggregateStats {
     medium: DifficultyStats
     hard: DifficultyStats
   }
+  likesGiven?: number
+  dislikesGiven?: number
+  reportsFiled?: number
 }
 
 function getAccuracyColor(accuracy: number): string {
@@ -469,6 +472,34 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
           })}
         </ChunkyCardContent>
       </ChunkyCard>
+
+      {/* Your Voice */}
+      {((stats.likesGiven ?? 0) > 0 || (stats.dislikesGiven ?? 0) > 0 || (stats.reportsFiled ?? 0) > 0) && (
+        <ChunkyCard
+          variant="surface-variant"
+          className="bg-surface-container/80 border-outline-variant"
+        >
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Your Voice
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-ds-primary">{stats.likesGiven ?? 0}</div>
+                <div className="text-on-surface/50 text-xs mt-1">Likes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-on-surface">{stats.dislikesGiven ?? 0}</div>
+                <div className="text-on-surface/50 text-xs mt-1">Dislikes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-on-surface">{stats.reportsFiled ?? 0}</div>
+                <div className="text-on-surface/50 text-xs mt-1">Reports</div>
+              </div>
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
 
       <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
         Back

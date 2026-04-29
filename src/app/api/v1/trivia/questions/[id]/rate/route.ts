@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
+import { incrementVoiceStat } from '@/lib/trivia/triviaStats';
 
 const VALID_VOTES = ['up', 'down'] as const;
 type Vote = (typeof VALID_VOTES)[number];
@@ -37,6 +38,9 @@ export async function POST(
   const ratingRef = db.doc(`aiQuestions/${questionId}/ratings/${uid}`);
 
   try {
+    const existingSnap = await ratingRef.get();
+    const hadPriorVote = existingSnap.exists;
+
     if (vote === null) {
       await ratingRef.delete();
     } else {
@@ -44,6 +48,14 @@ export async function POST(
         vote,
         ratedAt: FieldValue.serverTimestamp(),
       });
+
+      // Only increment lifetime counter for new votes (not updates)
+      if (!hadPriorVote) {
+        const field = vote === 'up' ? 'likesGiven' : 'dislikesGiven';
+        incrementVoiceStat(uid, field).catch((err) =>
+          console.error('[rate] Failed to increment voice stat:', err)
+        );
+      }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
