@@ -54,7 +54,7 @@ export default function RootLayout({
           <div id="site-wrapper" className="min-h-screen flex flex-col bg-surface-dim text-on-surface relative overflow-hidden">
             <AmbientOrbs palette={['primary', 'secondary', 'tertiary']} intensity="medium" />
             <TopNavBar />
-            <main className="flex-1 container mx-auto p-4 z-10 relative">{children}</main>
+            <main className="flex-1 container mx-auto p-4 z-20 relative">{children}</main>
             <Footer />
           </div>
         </body>
