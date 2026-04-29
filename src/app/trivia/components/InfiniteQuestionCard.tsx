@@ -17,7 +17,7 @@ interface Props {
   question: InfiniteQuestion
   onSubmit: (answer: string) => void
   isSubmitting: boolean
-  answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
+  answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number }) | null
   questionsAnswered: number
   runId?: string | null
   onFlagged?: (questionId: string, result: FlagResult) => void
@@ -155,6 +155,20 @@ export function InfiniteQuestionCard({
                 {answerResult.explanation}
               </div>
             )}
+            {/* Community accuracy */}
+            {answerResult.timesShown != null && answerResult.timesShown >= 5 ? (() => {
+              const pct = Math.round(((answerResult.timesCorrect ?? 0) / answerResult.timesShown) * 100)
+              const color = pct > 70 ? 'text-ds-primary' : pct > 40 ? 'text-yellow-400' : 'text-ds-error'
+              return (
+                <div className={`text-sm mt-2 ${color}`}>
+                  {pct}% of players got this right
+                </div>
+              )
+            })() : answerResult.timesShown != null && answerResult.timesShown > 0 ? (
+              <div className="text-on-surface/40 text-sm mt-2">
+                {answerResult.timesCorrect ?? 0} of {answerResult.timesShown} other {answerResult.timesShown === 1 ? 'person' : 'people'} answered this correctly
+              </div>
+            ) : null}
           </div>
         )}
       </ChunkyCardContent>
