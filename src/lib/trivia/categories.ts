@@ -1,6 +1,6 @@
 import { getTodayPST } from '@/lib/dates'
 
-const CATEGORY_META: Record<number, { name: string; icon: string }> = {
+export const CATEGORY_META: Record<number, { name: string; icon: string }> = {
   9: { name: 'General Knowledge', icon: '🧠' },
   10: { name: 'Books', icon: '📚' },
   11: { name: 'Film', icon: '🎬' },

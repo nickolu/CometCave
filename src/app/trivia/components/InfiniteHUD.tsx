@@ -14,6 +14,7 @@ interface InfiniteHUDProps {
   onFlee: () => void
   isPlaying: boolean
   mode?: InfiniteMode
+  categoryName?: string
 }
 
 export function InfiniteHUD({
@@ -25,6 +26,7 @@ export function InfiniteHUD({
   onFlee,
   isPlaying,
   mode = 'scored',
+  categoryName,
 }: InfiniteHUDProps) {
   const [showFleeConfirm, setShowFleeConfirm] = useState(false)
   const mult = computeStreakMultiplier(currentStreak)
@@ -98,9 +100,12 @@ export function InfiniteHUD({
         />
       </div>
 
-      {/* Timer pill */}
-      <div className="flex justify-center">
+      {/* Timer pill + category label */}
+      <div className="flex justify-center items-center gap-2">
         <Pill tone="neutral" size="sm">{Math.ceil(timeRemaining)}s</Pill>
+        {categoryName && (
+          <Pill tone="neutral" size="sm">{categoryName}</Pill>
+        )}
       </div>
 
       {/* Flee confirmation */}
