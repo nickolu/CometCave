@@ -13,6 +13,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
+import { InfiniteGame } from './components/InfiniteGame'
+import { InfiniteStats } from './components/InfiniteStats'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaLeaderboard } from './components/TriviaLeaderboard'
@@ -22,7 +24,7 @@ import { TriviaStats } from './components/TriviaStats'
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
-type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard'
+type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice'
 
 async function submitGameToServer(user: User, result: TriviaGameResult): Promise<void> {
   const token = await user.getIdToken()
@@ -109,6 +111,9 @@ export default function TriviaPage() {
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => setView('stats')
   const handleViewLeaderboard = () => setView('leaderboard')
+  const handleStartInfinite = () => setView('infinite')
+  const handleViewInfiniteStats = () => setView('infinite-stats')
+  const handleStartPractice = () => setView('practice')
 
   const handleFinish = useCallback(
     (result: TriviaGameResult) => {
@@ -129,6 +134,18 @@ export default function TriviaPage() {
 
   const handleBackToLanding = () => setView('landing')
 
+  if (view === 'infinite') {
+    return <InfiniteGame onBack={handleBackToLanding} />
+  }
+
+  if (view === 'practice') {
+    return <InfiniteGame onBack={handleBackToLanding} mode="practice" />
+  }
+
+  if (view === 'infinite-stats') {
+    return <InfiniteStats onBack={handleBackToLanding} />
+  }
+
   if (view === 'playing') {
     return <TriviaGame onFinish={handleFinish} />
   }
@@ -140,6 +157,7 @@ export default function TriviaPage() {
         onBack={handleBackToLanding}
         onViewStats={handleViewStats}
         onViewLeaderboard={handleViewLeaderboard}
+        onStartInfinite={handleStartInfinite}
       />
     )
   }
@@ -157,6 +175,9 @@ export default function TriviaPage() {
       onStartGame={handleStartGame}
       onViewStats={handleViewStats}
       onViewLeaderboard={handleViewLeaderboard}
+      onStartInfinite={handleStartInfinite}
+      onViewInfiniteStats={handleViewInfiniteStats}
+      onStartPractice={handleStartPractice}
       todayResult={todayResult}
     />
   )

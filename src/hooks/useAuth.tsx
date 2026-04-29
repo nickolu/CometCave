@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth'
@@ -33,9 +34,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!configured) return
     const auth = getFirebaseAuth()
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u)
-      setLoading(false)
+    let signingInAnonymously = false
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u)
+        setLoading(false)
+        return
+      }
+      // Anonymous-first (CLAUDE.md #1): mint an anonymous uid so games can
+      // persist per-device state. The listener re-fires with the new user.
+      if (signingInAnonymously) return
+      signingInAnonymously = true
+      try {
+        await signInAnonymously(auth)
+      } catch (err) {
+        console.error('Anonymous sign-in failed:', err)
+        setUser(null)
+        setLoading(false)
+      } finally {
+        signingInAnonymously = false
+      }
     })
     return () => unsub()
   }, [configured])

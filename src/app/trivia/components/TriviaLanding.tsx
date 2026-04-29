@@ -20,11 +20,17 @@ export function TriviaLanding({
   onStartGame,
   onViewStats,
   onViewLeaderboard,
+  onStartInfinite,
+  onViewInfiniteStats,
+  onStartPractice,
   todayResult,
 }: {
   onStartGame?: () => void
   onViewStats?: () => void
   onViewLeaderboard?: () => void
+  onStartInfinite?: () => void
+  onViewInfiniteStats?: () => void
+  onStartPractice?: () => void
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -148,6 +154,32 @@ export function TriviaLanding({
         </ChunkyCardContent>
       </ChunkyCard>
 
+      {/* Endless Run entry */}
+      <ChunkyCard variant="surface-container-high" className="w-full">
+        <ChunkyCardContent className="flex flex-col items-center gap-3 pt-6">
+          <div className="text-center">
+            <h3 className="text-on-surface font-bold text-lg">Endless Run</h3>
+            <p className="text-on-surface/50 text-sm">The cave doesn&apos;t sleep. How far can you go?</p>
+          </div>
+          <ChunkyButton
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            onClick={onStartInfinite}
+          >
+            Start Infinite Trivia
+          </ChunkyButton>
+          <ChunkyButton
+            variant="ghost"
+            size="sm"
+            className="w-full"
+            onClick={onStartPractice}
+          >
+            Practice Mode
+          </ChunkyButton>
+        </ChunkyCardContent>
+      </ChunkyCard>
+
       {/* Streak & Stats */}
       <div className="grid grid-cols-2 gap-4 w-full">
         <ChunkyCard variant="surface-variant">
@@ -182,7 +214,7 @@ export function TriviaLanding({
       </div>
 
       {/* Links */}
-      <div className="flex gap-3 text-sm">
+      <div className="flex gap-3 text-sm flex-wrap justify-center">
         <button
           onClick={onViewStats}
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
@@ -195,6 +227,13 @@ export function TriviaLanding({
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           Leaderboard
+        </button>
+        <span className="text-on-surface/20">·</span>
+        <button
+          onClick={onViewInfiniteStats}
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
+        >
+          Infinite Stats
         </button>
       </div>
 

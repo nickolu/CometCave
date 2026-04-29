@@ -18,6 +18,11 @@ service cloud.firestore {
       // Client must not query these directly.
       match /triviaDaily/{docId}  { allow read, write: if false; }
       match /triviaWeekly/{docId} { allow read, write: if false; }
+
+      // Infinite Trivia — server-only subcollections
+      match /seenQuestions/{qid}     { allow read, write: if false; }
+      match /triviaInfinite/{runId}  { allow read, write: if false; }
+      match /triviaStats/{docId}     { allow read, write: if false; }
     }
 
     // Nicknames uniqueness index — server only
@@ -31,5 +36,11 @@ service cloud.firestore {
     // server-side reads via /api/v1/tap-tap-adventure/leaderboard route.
     // Client does not read directly.
     match /adventure-scores/{docId} { allow read, write: if false; }
+
+    // AI questions — server-only
+    match /aiQuestions/{docId} { allow read, write: if false; }
+    match /aiQuestions/{docId}/answeredBy/{entryId} { allow read, write: if false; }
+    match /aiQuestions/{docId}/flags/{uid}    { allow read, write: if false; }
+    match /aiQuestions/{docId}/ratings/{uid}  { allow read, write: if false; }
   }
 }
