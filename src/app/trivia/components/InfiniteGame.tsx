@@ -15,12 +15,13 @@ const RULES_DISMISSED_KEY = 'cometcave-infinite-rules-dismissed-v1'
 
 interface Props {
   onBack: () => void
+  onViewStats?: () => void
   mode?: InfiniteMode
 }
 
-export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
+export function InfiniteGame({ onBack, onViewStats, mode = 'scored' }: Props) {
   const { user, loading: authLoading } = useAuth()
-  const { state, startRun, submitAnswer, nextQuestion, endRun } = useInfiniteRun()
+  const { state, startRun, submitAnswer, nextQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
@@ -133,7 +134,7 @@ export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
 
   // End of run
   if (state.phase === 'ended') {
-    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} mode={state.mode} />
+    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} />
   }
 
   // Playing or answered
@@ -159,6 +160,8 @@ export function InfiniteGame({ onBack, mode = 'scored' }: Props) {
         isSubmitting={state.phase === 'answering'}
         answerResult={state.lastAnswer}
         questionsAnswered={state.questionsAnswered}
+        runId={state.runId}
+        onFlagged={handleQuestionFlagged}
       />
 
       {state.phase === 'answered' && (

@@ -6,6 +6,7 @@ import type { RunDoc } from '@/lib/trivia/infiniteRuns'
 export interface AggregateStats {
   totalAnswered: number
   totalCorrect: number
+  totalScore: number
   runsPlayed: number
   bestRun: {
     score: number
@@ -29,6 +30,7 @@ export interface AggregateStats {
 const EMPTY_STATS: AggregateStats = {
   totalAnswered: 0,
   totalCorrect: 0,
+  totalScore: 0,
   runsPlayed: 0,
   bestRun: null,
   bestStreak: 0,
@@ -98,7 +100,12 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
       hard: { answered: 0, correct: 0 },
     }
 
+    const flaggedSet = new Set<string>(run.flaggedQuestionIds ?? [])
+
     for (const answer of run.answers) {
+      // Skip flagged questions — they don't count toward stats
+      if (flaggedSet.has(answer.questionId)) continue
+
       totalAnswered += 1
       if (answer.correct) totalCorrect += 1
       totalTimeMs += answer.timeMs
@@ -138,6 +145,7 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
     const newAgg: AggregateStats = {
       totalAnswered: agg.totalAnswered + totalAnswered,
       totalCorrect: agg.totalCorrect + totalCorrect,
+      totalScore: (agg.totalScore ?? 0) + run.score,
       runsPlayed: agg.runsPlayed + 1,
       bestRun: agg.bestRun,
       bestStreak: Math.max(agg.bestStreak, run.longestStreak),

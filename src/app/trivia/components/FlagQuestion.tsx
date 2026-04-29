@@ -12,11 +12,18 @@ const FLAG_REASONS = [
   { value: 'other', label: 'Other' },
 ] as const
 
-interface Props {
-  questionId: string
+interface FlagResult {
+  wasFirstFlag: boolean
+  bonusLifeGranted: boolean
 }
 
-export function FlagQuestion({ questionId }: Props) {
+interface Props {
+  questionId: string
+  runId?: string | null
+  onFlagged?: (result: FlagResult) => void
+}
+
+export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
   const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [reason, setReason] = useState<string>('')
@@ -35,13 +42,23 @@ export function FlagQuestion({ questionId }: Props) {
     setSubmitting(true)
     try {
       const token = await user.getIdToken()
-      await fetch(`/api/v1/trivia/questions/${questionId}/flag`, {
+      const res = await fetch(`/api/v1/trivia/questions/${questionId}/flag`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ reason, note: trimmedNote || undefined }),
+        body: JSON.stringify({ reason, note: trimmedNote || undefined, runId: runId ?? undefined }),
       })
       setSubmitted(true)
       setShowModal(false)
+      if (onFlagged) {
+        let result: FlagResult = { wasFirstFlag: false, bonusLifeGranted: false }
+        try {
+          const data = await res.json()
+          result = { wasFirstFlag: data.wasFirstFlag ?? false, bonusLifeGranted: data.bonusLifeGranted ?? false }
+        } catch {
+          // use defaults
+        }
+        onFlagged(result)
+      }
     } catch {
       // silent
     } finally {

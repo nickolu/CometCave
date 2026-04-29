@@ -8,12 +8,19 @@ import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 import { FlagQuestion } from './FlagQuestion'
 import { QuestionRating } from './QuestionRating'
 
+interface FlagResult {
+  wasFirstFlag: boolean
+  bonusLifeGranted: boolean
+}
+
 interface Props {
   question: InfiniteQuestion
   onSubmit: (answer: string) => void
   isSubmitting: boolean
   answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null }) | null
   questionsAnswered: number
+  runId?: string | null
+  onFlagged?: (questionId: string, result: FlagResult) => void
 }
 
 function getSocialSignal(timesShown: number): string {
@@ -28,6 +35,8 @@ export function InfiniteQuestionCard({
   isSubmitting,
   answerResult,
   questionsAnswered,
+  runId,
+  onFlagged,
 }: Props) {
   const [textAnswer, setTextAnswer] = useState('')
   const isAnswered = answerResult !== null
@@ -105,7 +114,7 @@ export function InfiniteQuestionCard({
                 <span className="text-ds-primary">
                   Correct! +{answerResult.points} pts
                   {answerResult.trailblazer && (
-                    <span className="ml-2 text-ds-tertiary">⭐ Trailblazer!</span>
+                    <span className="ml-2 text-on-surface/70">First to answer this question</span>
                   )}
                 </span>
               ) : (
@@ -113,7 +122,11 @@ export function InfiniteQuestionCard({
               )}
               <div className="flex items-center gap-2 shrink-0">
                 <QuestionRating questionId={question.id} />
-                <FlagQuestion questionId={question.id} />
+                <FlagQuestion
+                  questionId={question.id}
+                  runId={runId}
+                  onFlagged={onFlagged ? (result) => onFlagged(question.id, result) : undefined}
+                />
               </div>
             </div>
             {!answerResult.correct && (

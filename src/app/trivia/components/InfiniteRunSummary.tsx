@@ -9,11 +9,19 @@ import { QuestionRating } from './QuestionRating'
 import { FlagQuestion } from './FlagQuestion'
 import type { InfiniteRunState, InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 
+interface FlagResult {
+  wasFirstFlag: boolean
+  bonusLifeGranted: boolean
+}
+
 interface Props {
   state: InfiniteRunState
   onPlayAgain: () => void
   onBack: () => void
+  onViewStats?: () => void
   mode?: InfiniteMode
+  runId?: string | null
+  onFlagged?: (questionId: string, result: FlagResult) => void
 }
 
 function formatTime(ms: number): string {
@@ -26,14 +34,14 @@ function getRunRating(longestStreak: number): string {
   if (longestStreak >= 10) return 'Amazing!'
   if (longestStreak >= 5) return 'Great Run!'
   if (longestStreak >= 2) return 'Good Try!'
-  return 'Keep Exploring!'
+  return 'Try Again!'
 }
 
 const ANSWERS_PAGE_SIZE = 20
 
 type AnswerEntry = InfiniteRunState['answers'][number]
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored' }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mode = 'scored', runId, onFlagged }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -45,8 +53,8 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
       `🔥 Longest Streak: ${state.longestStreak}`,
       `💎 Score: ${state.score.toLocaleString()}`,
       `📊 ${state.questionsAnswered} questions answered`,
-      state.trailblazes > 0 ? `⭐ ${state.trailblazes} trailblazer${state.trailblazes === 1 ? '' : 's'}` : null,
-      'https://cometcave.com/trivia',
+      state.trailblazes > 0 ? `${state.trailblazes} first answer${state.trailblazes === 1 ? '' : 's'}` : null,
+      runId ? `https://cometcave.com/trivia/runs/${runId}` : 'https://cometcave.com/trivia',
     ].filter(Boolean).join('\n')
 
     try {
@@ -95,7 +103,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
             </div>
             <div className="text-center">
               <div className="text-xl font-bold text-ds-tertiary">{state.trailblazes}</div>
-              <div className="text-on-surface/50 text-xs">Trailblazers</div>
+              <div className="text-on-surface/50 text-xs">First answers</div>
             </div>
           </div>
         </ChunkyCardContent>
@@ -122,7 +130,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                     <span className={`text-lg ${a.correct ? 'text-ds-primary' : 'text-ds-error'}`}>
                       {a.correct ? '✓' : '✗'}
                     </span>
-                    {a.trailblazer && <span className="text-xs">⭐</span>}
+                    {a.trailblazer && <span className="text-xs text-on-surface/50">1st</span>}
                     {a.questionText && (
                       <button
                         type="button"
@@ -141,7 +149,11 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                       +{a.points}
                     </span>
                     <QuestionRating questionId={a.questionId} />
-                    <FlagQuestion questionId={a.questionId} />
+                    <FlagQuestion
+                      questionId={a.questionId}
+                      runId={runId}
+                      onFlagged={onFlagged ? (result) => onFlagged(a.questionId, result) : undefined}
+                    />
                   </div>
                 </div>
               ))}
@@ -167,6 +179,12 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
           {copied ? 'Copied!' : 'Share Run'}
         </ChunkyButton>
       </div>
+
+      {onViewStats && user && !user.isAnonymous && (
+        <ChunkyButton variant="ghost" size="sm" className="w-full" onClick={onViewStats}>
+          View Lifetime Stats
+        </ChunkyButton>
+      )}
 
       {(!user || user.isAnonymous) && (
         <SignInCard
@@ -198,7 +216,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
                   {detailFor.correct ? 'Correct' : 'Wrong'}
                 </Pill>
                 <Pill tone="neutral" size="sm">{detailFor.difficulty.toUpperCase()}</Pill>
-                {detailFor.trailblazer && <Pill tone="warning" size="sm">⭐ Trailblazer</Pill>}
+                {detailFor.trailblazer && <Pill tone="neutral" size="sm">First to answer</Pill>}
               </div>
               <button
                 onClick={() => setDetailFor(null)}

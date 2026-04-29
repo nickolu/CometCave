@@ -35,10 +35,6 @@ export function InfiniteRulesModal({ defaultMode, onContinue, onCancel }: Props)
             <span aria-hidden="true">🩹</span>
             <span><strong className="text-on-surface">Bonus life.</strong> Every 10-streak refunds a life (cap of 3).</span>
           </li>
-          <li className="flex gap-2">
-            <span aria-hidden="true">⭐</span>
-            <span><strong className="text-on-surface">Trailblazer.</strong> First to answer a fresh question? +50 bonus.</span>
-          </li>
         </ul>
 
         <p className="text-on-surface/50 text-xs">

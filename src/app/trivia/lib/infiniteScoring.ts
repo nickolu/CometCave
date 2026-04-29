@@ -1,7 +1,6 @@
 export const LIVES_START = 3
 export const LIVES_MAX = 3
 export const LIFE_REFUND_EVERY = 10
-export const TRAILBLAZER_BONUS = 50
 
 export const STREAK_TIERS = [
   { at: 0, mult: 1 },
@@ -19,12 +18,6 @@ export function computeStreakMultiplier(streak: number): number {
     if (streak >= STREAK_TIERS[i].at) return STREAK_TIERS[i].mult
   }
   return 1
-}
-
-export function computeSpeedBonus(elapsedMs: number, timeLimitMs: number = 30000): number {
-  // max * (timeRemaining / timeLimit), clamped to [0, BASE_MAX_POINTS]
-  const remaining = Math.max(0, timeLimitMs - elapsedMs)
-  return Math.round(BASE_MAX_POINTS * (remaining / timeLimitMs))
 }
 
 export function shouldRefundLife(newStreak: number, livesRemaining: number): boolean {
@@ -52,7 +45,7 @@ export function applyAnswer(params: {
   prevLongestStreak: number
   prevScore: number
 }): AnswerResult {
-  const { correct, trailblazer, elapsedMs, mode, prevLives, prevStreak, prevLongestStreak, prevScore } = params
+  const { correct, trailblazer, mode, prevLives, prevStreak, prevLongestStreak, prevScore } = params
 
   let lives = prevLives
   let streak = prevStreak
@@ -62,10 +55,8 @@ export function applyAnswer(params: {
   if (correct) {
     streak += 1
     longestStreak = Math.max(longestStreak, streak)
-    const speedBonus = computeSpeedBonus(elapsedMs)
     const mult = computeStreakMultiplier(streak)
-    points = Math.round(speedBonus * mult)
-    if (trailblazer) points += TRAILBLAZER_BONUS
+    points = Math.round(BASE_MAX_POINTS * mult)
     // Life refund
     if (shouldRefundLife(streak, lives)) {
       lives = Math.min(lives + 1, LIVES_MAX)

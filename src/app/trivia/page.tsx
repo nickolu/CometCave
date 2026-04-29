@@ -135,11 +135,11 @@ export default function TriviaPage() {
   const handleBackToLanding = () => setView('landing')
 
   if (view === 'infinite') {
-    return <InfiniteGame onBack={handleBackToLanding} />
+    return <InfiniteGame onBack={handleBackToLanding} onViewStats={handleViewInfiniteStats} />
   }
 
   if (view === 'practice') {
-    return <InfiniteGame onBack={handleBackToLanding} mode="practice" />
+    return <InfiniteGame onBack={handleBackToLanding} onViewStats={handleViewInfiniteStats} mode="practice" />
   }
 
   if (view === 'infinite-stats') {
