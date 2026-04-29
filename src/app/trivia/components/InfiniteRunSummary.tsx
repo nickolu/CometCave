@@ -18,6 +18,7 @@ interface Props {
   state: InfiniteRunState
   onPlayAgain: () => void
   onBack: () => void
+  onViewStats?: () => void
   mode?: InfiniteMode
   runId?: string | null
   onFlagged?: (questionId: string, result: FlagResult) => void
@@ -33,14 +34,14 @@ function getRunRating(longestStreak: number): string {
   if (longestStreak >= 10) return 'Amazing!'
   if (longestStreak >= 5) return 'Great Run!'
   if (longestStreak >= 2) return 'Good Try!'
-  return 'Keep Exploring!'
+  return 'Try Again!'
 }
 
 const ANSWERS_PAGE_SIZE = 20
 
 type AnswerEntry = InfiniteRunState['answers'][number]
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored', runId, onFlagged }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, mode = 'scored', runId, onFlagged }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -178,6 +179,12 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, mode = 'scored'
           {copied ? 'Copied!' : 'Share Run'}
         </ChunkyButton>
       </div>
+
+      {onViewStats && user && !user.isAnonymous && (
+        <ChunkyButton variant="ghost" size="sm" className="w-full" onClick={onViewStats}>
+          View Lifetime Stats
+        </ChunkyButton>
+      )}
 
       {(!user || user.isAnonymous) && (
         <SignInCard
