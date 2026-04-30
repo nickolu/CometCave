@@ -155,20 +155,32 @@ export function InfiniteQuestionCard({
                 {answerResult.explanation}
               </div>
             )}
-            {/* Community accuracy */}
-            {answerResult.timesShown != null && answerResult.timesShown >= 5 ? (() => {
-              const pct = Math.round(((answerResult.timesCorrect ?? 0) / answerResult.timesShown) * 100)
-              const color = pct > 70 ? 'text-ds-primary' : pct > 40 ? 'text-yellow-400' : 'text-ds-error'
+            {/* Community accuracy — exclude the current player from the count */}
+            {(() => {
+              const rawShown = answerResult.timesShown ?? 0
+              const rawCorrect = answerResult.timesCorrect ?? 0
+              // Subtract current player from the totals
+              const othersShown = Math.max(0, rawShown - 1)
+              const othersCorrect = Math.max(0, rawCorrect - (answerResult.correct ? 1 : 0))
+
+              if (othersShown === 0) return null // No other players — don't show anything
+
+              if (othersShown >= 5) {
+                const pct = Math.round((othersCorrect / othersShown) * 100)
+                const color = pct > 70 ? 'text-ds-primary' : pct > 40 ? 'text-yellow-400' : 'text-ds-error'
+                return (
+                  <div className={`text-sm mt-2 ${color}`}>
+                    {pct}% of other players got this right
+                  </div>
+                )
+              }
+
               return (
-                <div className={`text-sm mt-2 ${color}`}>
-                  {pct}% of players got this right
+                <div className="text-on-surface/40 text-sm mt-2">
+                  {othersCorrect} of {othersShown} other {othersShown === 1 ? 'person' : 'people'} answered this correctly
                 </div>
               )
-            })() : answerResult.timesShown != null && answerResult.timesShown > 0 ? (
-              <div className="text-on-surface/40 text-sm mt-2">
-                {answerResult.timesCorrect ?? 0} of {answerResult.timesShown} other {answerResult.timesShown === 1 ? 'person' : 'people'} answered this correctly
-              </div>
-            ) : null}
+            })()}
           </div>
         )}
       </ChunkyCardContent>
