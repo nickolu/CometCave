@@ -12,7 +12,6 @@ import { ChunkyButton } from '@/components/ui/chunky-button'
 import { CATEGORY_META } from '@/lib/trivia/categories'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
-const RULES_DISMISSED_KEY = 'cometcave-infinite-rules-dismissed-v1'
 
 interface Props {
   onBack: () => void
@@ -28,36 +27,17 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
   const hasStartedRef = useRef(false)
-  const [showRules, setShowRules] = useState<boolean | null>(null)
+  // Always show the pre-game screen until the player clicks Start
+  const [showPreGame, setShowPreGame] = useState(true)
 
-  // Determine whether to show the rules modal once on mount.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const dismissed = window.localStorage.getItem(RULES_DISMISSED_KEY) === '1'
-    setShowRules(!dismissed)
-  }, [])
-
-  // Start run once auth has settled, user is present, and rules have been
-  // either dismissed previously or acknowledged this session.
-  useEffect(() => {
-    if (authLoading || !user || hasStartedRef.current) return
-    if (showRules !== false) return
-    hasStartedRef.current = true
-    startRun(mode)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, showRules])
-
-  const handleRulesContinue = useCallback((chosenMode: InfiniteMode, dismissForever: boolean, categoryId?: number) => {
-    if (dismissForever && typeof window !== 'undefined') {
-      window.localStorage.setItem(RULES_DISMISSED_KEY, '1')
-    }
+  const handlePreGameContinue = useCallback((chosenMode: InfiniteMode, categoryId?: number) => {
     if (chosenMode !== mode && typeof window !== 'undefined') {
       const url = new URL(window.location.href)
       url.searchParams.set('mode', chosenMode)
       window.history.replaceState({}, '', url.toString())
     }
     hasStartedRef.current = true
-    setShowRules(false)
+    setShowPreGame(false)
     startRun(chosenMode, categoryId)
   }, [mode, startRun])
 
@@ -91,14 +71,14 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   }, [endRun])
 
   const handlePlayAgain = useCallback(() => {
-    startRun(mode)
-  }, [startRun, mode])
+    setShowPreGame(true)
+  }, [])
 
-  // Rules gate (before first run). Shown over the loading screen.
-  if (showRules) {
+  // Pre-game screen — always shown until the player clicks Start
+  if (showPreGame) {
     return (
       <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
-        <InfiniteRulesModal defaultMode={mode} onContinue={handleRulesContinue} onCancel={onBack} />
+        <InfiniteRulesModal defaultMode={mode} onContinue={handlePreGameContinue} onCancel={onBack} />
       </div>
     )
   }
