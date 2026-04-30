@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Pill, ScoreChip } from '@/components/ui/pill'
-import { computeStreakMultiplier } from '@/app/trivia/lib/infiniteScoring'
+import { computeStreakMultiplier, LIVES_MAX } from '@/app/trivia/lib/infiniteScoring'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 
 interface InfiniteHUDProps {
@@ -65,11 +65,11 @@ export function InfiniteHUD({
         {mode === 'practice' ? (
           <Pill tone="info" size="sm">Practice</Pill>
         ) : (
-          <div className="flex items-center gap-1" aria-label={`${livesRemaining} lives remaining`}>
-            {[0, 1, 2].map(i => (
+          <div className="flex items-center gap-0.5" aria-label={`${livesRemaining} lives remaining`}>
+            {Array.from({ length: LIVES_MAX }, (_, i) => (
               <span
                 key={i}
-                className={`text-lg transition-opacity ${i < livesRemaining ? 'opacity-100' : 'opacity-20'}`}
+                className={`text-sm transition-opacity ${i < livesRemaining ? 'opacity-100' : 'opacity-20'}`}
               >
                 {i < livesRemaining ? '❤️' : '🖤'}
               </span>
