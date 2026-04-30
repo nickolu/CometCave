@@ -52,7 +52,7 @@ export async function POST(
       // Only increment lifetime counter for new votes (not updates)
       if (!hadPriorVote) {
         const field = vote === 'up' ? 'likesGiven' : 'dislikesGiven';
-        incrementVoiceStat(uid, field).catch((err) =>
+        await incrementVoiceStat(uid, field).catch((err) =>
           console.error('[rate] Failed to increment voice stat:', err)
         );
       }
