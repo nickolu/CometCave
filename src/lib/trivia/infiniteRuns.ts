@@ -228,9 +228,10 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>()
   for (const snap of snaps) {
     if (!snap.exists) continue
-    const data = snap.data() as { uid?: string; nickname?: string }
-    if (data?.uid) {
-      map.set(data.uid, data.nickname ?? '')
+    const data = snap.data() as { nickname?: string }
+    const nickname = data?.nickname ?? ''
+    if (nickname) {
+      map.set(snap.ref.id, nickname)
     }
   }
   return map
