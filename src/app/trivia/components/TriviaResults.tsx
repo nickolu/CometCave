@@ -15,7 +15,8 @@ import { SignInCard } from './SignInCTA'
 
 
 
-const MAX_SCORE = 3150
+// 4 easy×160 + 3 medium×210 + 1 hard×260 = 640 + 630 + 260 = 1530
+const MAX_SCORE = 1530
 
 function getScoreRating(percentage: number) {
   if (percentage === 100) return 'Perfect!'

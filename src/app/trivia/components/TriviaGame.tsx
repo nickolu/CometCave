@@ -12,18 +12,18 @@ import { getTodayPST } from '@/lib/dates'
 
 import { TriviaHUD } from './TriviaHUD'
 
-// Scoring config per difficulty
+// Scoring: base points for correct answer + time bonus up to 60
 const SCORING = {
-  easy: { maxPoints: 300, timeLimit: 30 },
-  medium: { maxPoints: 450, timeLimit: 30 },
-  hard: { maxPoints: 600, timeLimit: 30 },
+  easy: { basePoints: 100, timeBonus: 60, timeLimit: 30 },
+  medium: { basePoints: 150, timeBonus: 60, timeLimit: 30 },
+  hard: { basePoints: 200, timeBonus: 60, timeLimit: 30 },
 } as const
 
 // AI questions get more time
 function getQuestionConfig(q: TriviaQuestion) {
   const base = SCORING[q.difficulty]
   if (q.source === 'ai') {
-    return { maxPoints: 600, timeLimit: 60 }
+    return { basePoints: base.basePoints, timeBonus: 60, timeLimit: 60 }
   }
   return base
 }
@@ -143,12 +143,11 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
       const result: CheckAnswerResponse = await res.json()
       setAnswerResult(result)
 
-      // Calculate points
+      // Calculate points: base score + time bonus (scales linearly with remaining time)
       const config = getQuestionConfig(question)
       const timeRemainingAtAnswer = Math.max(0, config.timeLimit - elapsedMs / 1000)
-      const points = result.correct
-        ? Math.max(0, Math.round(config.maxPoints * (timeRemainingAtAnswer / config.timeLimit)))
-        : 0
+      const timeBonus = Math.round(config.timeBonus * (timeRemainingAtAnswer / config.timeLimit))
+      const points = result.correct ? config.basePoints + timeBonus : 0
 
       const triviaAnswer: TriviaAnswer = {
         questionIndex: currentIndex,
