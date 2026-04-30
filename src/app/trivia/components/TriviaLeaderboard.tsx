@@ -25,6 +25,7 @@ interface LeaderboardEntry {
   gamesPlayed?: number
   totalCorrect?: number
   totalQuestions?: number
+  crowns?: number
 }
 
 interface LeaderboardResponse {
@@ -138,16 +139,19 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
     }
 
     if (period === 'alltime') {
-      return data.entries.map((entry, i) => (
-        <LeaderboardRow
-          key={entry.uid || `${entry.displayName}-${i}`}
-          rank={i + 1}
-          name={entry.displayName || 'Unknown'}
-          primary={(entry.totalScore ?? 0).toLocaleString()}
-          secondary={`${entry.gamesPlayed ?? 0} ${(entry.gamesPlayed ?? 0) === 1 ? 'game' : 'games'}`}
-          isCurrentUser={!!currentUid && entry.uid === currentUid}
-        />
-      ))
+      return data.entries.map((entry, i) => {
+        const crownCount = entry.crowns ?? entry.score ?? 0
+        return (
+          <LeaderboardRow
+            key={entry.uid || `${entry.displayName}-${i}`}
+            rank={i + 1}
+            name={entry.displayName || 'Unknown'}
+            primary={`\uD83D\uDC51 ${crownCount}`}
+            secondary={crownCount === 1 ? 'crown' : 'crowns'}
+            isCurrentUser={!!currentUid && entry.uid === currentUid}
+          />
+        )
+      })
     }
 
     return null
