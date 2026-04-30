@@ -6,7 +6,7 @@ import { getFirestoreDb } from '@/lib/firebase/server';
 import { incrementVoiceStat } from '@/lib/trivia/triviaStats';
 
 const FLAG_THRESHOLD = 3;
-const BONUS_LIVES_MAX = 3;
+const BONUS_LIVES_PER_RUN = 1;
 const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'other'] as const;
 type FlagReason = (typeof VALID_REASONS)[number];
 
@@ -88,7 +88,7 @@ export async function POST(
             flaggedQuestionIds: FieldValue.arrayUnion(questionId),
           };
 
-          if (wasFirstFlag && bonusLivesEarned < BONUS_LIVES_MAX) {
+          if (bonusLivesEarned < BONUS_LIVES_PER_RUN) {
             runUpdates.livesRemaining = FieldValue.increment(1);
             runUpdates.bonusLivesEarned = FieldValue.increment(1);
             bonusLifeGranted = true;

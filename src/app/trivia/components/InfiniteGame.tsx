@@ -31,6 +31,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const [showPreGame, setShowPreGame] = useState(true)
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined)
   const [showRulesOverlay, setShowRulesOverlay] = useState(false)
+  const [flagLifeToast, setFlagLifeToast] = useState(false)
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
     id: Number(id),
@@ -157,7 +158,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
               <ul className="text-on-surface/80 text-sm flex flex-col gap-2 mb-4">
                 <li className="flex gap-2">
                   <span>❤️</span>
-                  <span><strong>3 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
+                  <span><strong>5 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
                 </li>
                 <li className="flex gap-2">
                   <span>🔥</span>
@@ -165,7 +166,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 </li>
                 <li className="flex gap-2">
                   <span>🩹</span>
-                  <span><strong>Bonus life.</strong> Every 10-streak refunds a life (cap of 3).</span>
+                  <span><strong>Bonus life.</strong> Every 3-streak refunds a life (cap of 5).</span>
                 </li>
                 <li className="flex gap-2">
                   <span>⏭️</span>
@@ -244,10 +245,23 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         answerResult={state.lastAnswer}
         questionsAnswered={state.questionsAnswered}
         runId={state.runId}
-        onFlagged={handleQuestionFlagged}
+        onFlagged={(questionId, result) => {
+          handleQuestionFlagged(questionId, result)
+          if (result.bonusLifeGranted) {
+            setFlagLifeToast(true)
+            setTimeout(() => setFlagLifeToast(false), 3000)
+          }
+        }}
         skipsRemaining={state.skipsRemaining}
         onSkip={skipQuestion}
       />
+
+      {/* Bonus life toast */}
+      {flagLifeToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-ds-primary text-on-primary px-4 py-2 rounded-ds-md shadow-hero text-sm font-medium animate-bounce">
+          ❤️ +1 Bonus Life for reporting!
+        </div>
+      )}
 
       {state.phase === 'answered' && (
         state.lastAnswer?.runOver ? (

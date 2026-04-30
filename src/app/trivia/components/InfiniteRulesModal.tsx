@@ -59,7 +59,7 @@ export function InfiniteRulesModal({ defaultMode, onContinue, onCancel }: Props)
           <ul className="text-on-surface/80 text-sm flex flex-col gap-2">
             <li className="flex gap-2">
               <span aria-hidden="true">❤️</span>
-              <span><strong className="text-on-surface">3 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
+              <span><strong className="text-on-surface">5 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
             </li>
             <li className="flex gap-2">
               <span aria-hidden="true">🔥</span>
@@ -67,7 +67,7 @@ export function InfiniteRulesModal({ defaultMode, onContinue, onCancel }: Props)
             </li>
             <li className="flex gap-2">
               <span aria-hidden="true">🩹</span>
-              <span><strong className="text-on-surface">Bonus life.</strong> Every 10-streak refunds a life (cap of 3).</span>
+              <span><strong className="text-on-surface">Bonus life.</strong> Every 3-streak refunds a life (cap of 5).</span>
             </li>
             <li className="flex gap-2">
               <span aria-hidden="true">⏭️</span>
