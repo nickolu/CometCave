@@ -180,6 +180,14 @@ export async function recordSkip(uid: string, runId: string, questionId: string)
   await runRef.update({
     skipsUsed: FieldValue.increment(1),
   })
+  // Mark question as seen so the sampler won't return it again
+  if (questionId) {
+    await db.doc(`users/${uid}/seenQuestions/${questionId}`).set({
+      at: FieldValue.serverTimestamp(),
+      correct: false,
+      skipped: true,
+    })
+  }
 }
 
 export async function endRun(uid: string, runId: string): Promise<void> {
