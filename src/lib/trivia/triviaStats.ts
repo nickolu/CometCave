@@ -203,21 +203,17 @@ export async function incrementVoiceStat(
 ): Promise<void> {
   const db = getFirestoreDb()
   const aggRef = db.doc(`users/${uid}/triviaStats/aggregate`)
-  const snap = await aggRef.get()
-  if (snap.exists) {
-    await aggRef.update({ [field]: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() })
-  } else {
-    await aggRef.set({ ...EMPTY_STATS, [field]: 1, lastUpdatedAt: FieldValue.serverTimestamp() })
-  }
+  await aggRef.set(
+    { [field]: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  )
 }
 
 export async function trackExhaustion(uid: string): Promise<void> {
   const db = getFirestoreDb()
   const aggRef = db.doc(`users/${uid}/triviaStats/aggregate`)
-  const snap = await aggRef.get()
-  if (snap.exists) {
-    await aggRef.update({ exhaustionCount: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() })
-  } else {
-    await aggRef.set({ ...EMPTY_STATS, exhaustionCount: 1, lastUpdatedAt: FieldValue.serverTimestamp() })
-  }
+  await aggRef.set(
+    { exhaustionCount: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  )
 }

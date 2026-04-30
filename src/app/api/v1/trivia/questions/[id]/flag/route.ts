@@ -101,8 +101,8 @@ export async function POST(
       return { wasFirstFlag, bonusLifeGranted };
     });
 
-    // Increment lifetime reports counter (fire-and-forget)
-    incrementVoiceStat(uid, 'reportsFiled').catch((err) =>
+    // Increment lifetime reports counter
+    await incrementVoiceStat(uid, 'reportsFiled').catch((err) =>
       console.error('[flag] Failed to increment voice stat:', err)
     );
 
