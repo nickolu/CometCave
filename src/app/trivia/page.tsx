@@ -15,17 +15,18 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { InfiniteGame } from './components/InfiniteGame'
 import { InfiniteLeaderboard } from './components/InfiniteLeaderboard'
-import { InfiniteStats } from './components/InfiniteStats'
+import { UnifiedStats } from './components/UnifiedStats'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaLeaderboard } from './components/TriviaLeaderboard'
 import { TriviaResults } from './components/TriviaResults'
-import { TriviaStats } from './components/TriviaStats'
 
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
 type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard'
+
+type StatsDefaultTab = 'daily' | 'infinite'
 
 async function submitGameToServer(user: User, result: TriviaGameResult): Promise<void> {
   const token = await user.getIdToken()
@@ -58,6 +59,7 @@ export default function TriviaPage() {
   const firestoreToday = user ? history.find((h) => h.date === today) ?? null : null
 
   const [view, setView] = useState<View>('landing')
+  const [statsDefaultTab, setStatsDefaultTab] = useState<StatsDefaultTab>('daily')
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
   const [localToday, setLocalToday] = useState<TriviaGameResult | null>(null)
   const [autoResultsShown, setAutoResultsShown] = useState(false)
@@ -110,10 +112,10 @@ export default function TriviaPage() {
   }, [user, triviaLoading, firestoreToday, today])
 
   const handleStartGame = () => setView('playing')
-  const handleViewStats = () => setView('stats')
+  const handleViewStats = () => { setStatsDefaultTab('daily'); setView('stats') }
   const handleViewLeaderboard = () => setView('leaderboard')
   const handleStartInfinite = () => setView('infinite')
-  const handleViewInfiniteStats = () => setView('infinite-stats')
+  const handleViewInfiniteStats = () => { setStatsDefaultTab('infinite'); setView('stats') }
   const handleStartPractice = () => setView('practice')
   const handleViewInfiniteLeaderboard = () => setView('infinite-leaderboard')
 
@@ -145,7 +147,7 @@ export default function TriviaPage() {
   }
 
   if (view === 'infinite-stats') {
-    return <InfiniteStats onBack={handleBackToLanding} />
+    return <UnifiedStats onBack={handleBackToLanding} defaultTab="infinite" />
   }
 
   if (view === 'playing') {
@@ -165,7 +167,7 @@ export default function TriviaPage() {
   }
 
   if (view === 'stats') {
-    return <TriviaStats onBack={handleBackToLanding} />
+    return <UnifiedStats onBack={handleBackToLanding} defaultTab={statsDefaultTab} />
   }
 
   if (view === 'leaderboard') {
