@@ -6,6 +6,7 @@ import { BrandMark } from '@/components/brand-mark'
 import { NavPill } from '@/components/ui/nav-pill'
 
 import { ROUTE_CONSTANTS } from '@/app/route-constants'
+import { useAuth } from '@/hooks/useAuth'
 
 const navItems: readonly { href: string; label: string; exact?: boolean }[] = [
   { href: ROUTE_CONSTANTS.HOME, label: 'HOME', exact: true },
@@ -18,6 +19,7 @@ const navItems: readonly { href: string; label: string; exact?: boolean }[] = [
 ]
 
 export function TopNavBar() {
+  const { user, loading } = useAuth()
   return (
     <header className="sticky top-0 z-30 mt-4 mx-4">
       <div className="mx-auto max-w-7xl">
@@ -44,6 +46,20 @@ export function TopNavBar() {
                 {label}
               </NavPill>
             ))}
+          </div>
+
+          <div className="flex items-center gap-1 ml-auto shrink-0">
+            {!loading && (
+              user && !user.isAnonymous ? (
+                <NavPill href="/auth" layout="inline">
+                  {user.displayName || user.email?.split('@')[0] || 'Account'}
+                </NavPill>
+              ) : (
+                <NavPill href="/auth" layout="inline">
+                  Sign in
+                </NavPill>
+              )
+            )}
           </div>
         </nav>
       </div>
