@@ -48,6 +48,9 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
   const [answerResult, setAnswerResult] = useState<CheckAnswerResponse | null>(null)
   const [isChecking, setIsChecking] = useState(false)
 
+  // Rating state
+  const [questionRating, setQuestionRating] = useState<string | null>(null)
+
   // Game results
   const [answers, setAnswers] = useState<TriviaAnswer[]>([])
   const [totalScore, setTotalScore] = useState(0)
@@ -166,7 +169,36 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
     }
   }, [phase, isChecking, currentIndex, questions])
 
+  const handleRateQuestion = (rating: 'up' | 'down') => {
+    const q = questions[currentIndex]
+    if (!q || q.source !== 'ai') return
+
+    const storageKey = `trivia-rated-${q.id}`
+    if (localStorage.getItem(storageKey)) return
+
+    localStorage.setItem(storageKey, rating)
+    setQuestionRating(rating)
+
+    // Fire-and-forget — don't await
+    fetch('/api/v1/trivia/rate-question', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questionId: q.id,
+        rating,
+        date: getTodayPST(),
+        question: q.question,
+        correctAnswer: answerResult?.correctAnswer ?? '',
+        userAnswer: selectedAnswer,
+        wasCorrect: answerResult?.correct ?? false,
+        difficulty: q.difficulty,
+        category: q.category,
+      }),
+    }).catch(() => {}) // swallow errors — best effort
+  }
+
   const nextQuestion = useCallback(() => {
+    setQuestionRating(null)
     if (currentIndex + 1 >= questions.length) {
       // Game over
       const today = getTodayPST()
@@ -345,6 +377,33 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
           )}
         </ChunkyCardContent>
       </ChunkyCard>
+
+      {/* AI question rating */}
+      {phase === 'answered' && questions[currentIndex]?.source === 'ai' && (
+        <div className="flex items-center justify-center gap-3 text-sm">
+          {questionRating || localStorage.getItem(`trivia-rated-${questions[currentIndex]?.id}`) ? (
+            <span className="text-on-surface/50">Thanks for the feedback!</span>
+          ) : (
+            <>
+              <span className="text-on-surface/50">Good question?</span>
+              <button
+                onClick={() => handleRateQuestion('up')}
+                className="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors"
+                aria-label="Good question"
+              >
+                👍
+              </button>
+              <button
+                onClick={() => handleRateQuestion('down')}
+                className="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors"
+                aria-label="Bad question"
+              >
+                👎
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Next button */}
       {phase === 'answered' && (
