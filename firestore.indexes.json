@@ -33,6 +33,24 @@
         { "fieldPath": "type", "order": "ASCENDING" },
         { "fieldPath": "timesShown", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "triviaInfinite",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "mode", "order": "ASCENDING" },
+        { "fieldPath": "endedAt", "order": "ASCENDING" },
+        { "fieldPath": "score", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "triviaInfinite",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "mode", "order": "ASCENDING" },
+        { "fieldPath": "endedAt", "order": "ASCENDING" },
+        { "fieldPath": "longestStreak", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
