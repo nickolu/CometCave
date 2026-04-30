@@ -1,4 +1,5 @@
 import { getFirestoreDb } from '@/lib/firebase/server'
+import { ensureCrownsAwarded } from '@/lib/trivia/crowns'
 
 export interface TriviaLeaderboardEntry {
   uid: string
@@ -10,6 +11,7 @@ export interface TriviaLeaderboardEntry {
   gamesPlayed?: number
   totalCorrect?: number
   totalQuestions?: number
+  crowns?: number
 }
 
 interface DailyDoc {
@@ -101,25 +103,29 @@ export async function getWeeklyTop(
 }
 
 export async function getAllTimeTop(limit = 20): Promise<TriviaLeaderboardEntry[]> {
-  const db = getFirestoreDb()
-  const snap = await db
-    .collectionGroup('triviaProfile')
-    .orderBy('totalScore', 'desc')
-    .limit(limit)
-    .get()
+  const crowns = await ensureCrownsAwarded()
 
-  const entries = snap.docs.map((d) => {
-    const profile = d.data() as ProfileDoc
-    const uid = d.ref.parent.parent?.id ?? ''
-    return { uid, totalScore: profile.totalScore, gamesPlayed: profile.gamesPlayed }
-  })
-  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  // Count crowns per user
+  const crownCounts = new Map<string, number>()
+  for (const crown of crowns) {
+    crownCounts.set(crown.winnerUid, (crownCounts.get(crown.winnerUid) ?? 0) + 1)
+  }
 
-  return entries.map((e) => ({
-    uid: e.uid,
-    displayName: nicknames.get(e.uid) || 'Player',
-    score: e.totalScore,
-    totalScore: e.totalScore,
-    gamesPlayed: e.gamesPlayed,
+  // Sort by crown count desc, take top N
+  const sorted = Array.from(crownCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+
+  if (sorted.length === 0) {
+    return []
+  }
+
+  const nicknames = await hydrateNicknames(sorted.map(([uid]) => uid))
+
+  return sorted.map(([uid, count]) => ({
+    uid,
+    displayName: nicknames.get(uid) || 'Player',
+    score: count,
+    crowns: count,
   }))
 }
