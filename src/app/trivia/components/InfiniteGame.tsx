@@ -157,7 +157,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
               <ul className="text-on-surface/80 text-sm flex flex-col gap-2 mb-4">
                 <li className="flex gap-2">
                   <span>❤️</span>
-                  <span><strong>3 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
+                  <span><strong>5 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
                 </li>
                 <li className="flex gap-2">
                   <span>🔥</span>
@@ -165,7 +165,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 </li>
                 <li className="flex gap-2">
                   <span>🩹</span>
-                  <span><strong>Bonus life.</strong> Every 10-streak refunds a life (cap of 3).</span>
+                  <span><strong>Bonus life.</strong> Every 3-streak refunds a life (cap of 5).</span>
                 </li>
                 <li className="flex gap-2">
                   <span>⏭️</span>

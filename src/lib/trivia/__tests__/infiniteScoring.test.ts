@@ -44,23 +44,23 @@ describe('computeStreakMultiplier', () => {
 })
 
 describe('shouldRefundLife', () => {
-  it('returns true at streak 10 when lives < LIVES_MAX', () => {
-    expect(shouldRefundLife(10, 2)).toBe(true)
+  it('returns true at streak 3 when lives < LIVES_MAX', () => {
+    expect(shouldRefundLife(3, 2)).toBe(true)
   })
 
-  it('returns true at streak 20 when lives < LIVES_MAX', () => {
-    expect(shouldRefundLife(20, 1)).toBe(true)
+  it('returns true at streak 6 when lives < LIVES_MAX', () => {
+    expect(shouldRefundLife(6, 1)).toBe(true)
   })
 
-  it('returns true at streak 30 when lives < LIVES_MAX', () => {
-    expect(shouldRefundLife(30, 2)).toBe(true)
+  it('returns true at streak 9 when lives < LIVES_MAX', () => {
+    expect(shouldRefundLife(9, 2)).toBe(true)
   })
 
-  it('returns false at streak 10 when lives === LIVES_MAX', () => {
-    expect(shouldRefundLife(10, LIVES_MAX)).toBe(false)
+  it('returns false at streak 3 when lives === LIVES_MAX', () => {
+    expect(shouldRefundLife(3, LIVES_MAX)).toBe(false)
   })
 
-  it('returns false at streak 5 (non-multiple of 10)', () => {
+  it('returns false at streak 5 (non-multiple of 3)', () => {
     expect(shouldRefundLife(5, 2)).toBe(false)
   })
 
@@ -141,26 +141,26 @@ describe('applyAnswer', () => {
     expect(result.points).toBe(0)
   })
 
-  it('refunds a life at streak 10 when lives are below max', () => {
+  it('refunds a life at streak 3 when lives are below max', () => {
     const result = applyAnswer({
       ...baseParams,
       correct: true,
       elapsedMs: 0,
-      prevStreak: 9,
-      prevLongestStreak: 9,
-      prevLives: 2,
+      prevStreak: 2,
+      prevLongestStreak: 2,
+      prevLives: 3,
     })
-    expect(result.currentStreak).toBe(10)
-    expect(result.livesRemaining).toBe(3) // restored to LIVES_MAX
+    expect(result.currentStreak).toBe(3)
+    expect(result.livesRemaining).toBe(4) // refunded +1
   })
 
-  it('does not refund life at streak 10 when already at max lives', () => {
+  it('does not refund life at streak 3 when already at max lives', () => {
     const result = applyAnswer({
       ...baseParams,
       correct: true,
       elapsedMs: 0,
-      prevStreak: 9,
-      prevLongestStreak: 9,
+      prevStreak: 2,
+      prevLongestStreak: 2,
       prevLives: LIVES_MAX,
     })
     expect(result.livesRemaining).toBe(LIVES_MAX)

@@ -1,6 +1,6 @@
-export const LIVES_START = 3
-export const LIVES_MAX = 3
-export const LIFE_REFUND_EVERY = 10
+export const LIVES_START = 5
+export const LIVES_MAX = 5
+export const LIFE_REFUND_EVERY = 3
 export const SKIPS_PER_RUN = 2
 
 export const STREAK_TIERS = [
