@@ -6,7 +6,7 @@ import { getTodayPST } from '@/lib/dates'
 import { recordCompletedGame } from '@/lib/trivia/transactions'
 
 
-const MAX_SCORE = 3150
+const MAX_SCORE = 1530
 
 interface Body {
   date?: string

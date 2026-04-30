@@ -9,7 +9,7 @@ import { formatDisplayDate } from '@/lib/dates'
 import { ResetNoticeButton } from './ResetNoticeButton'
 import { SignInCard } from './SignInCTA'
 
-const MAX_SCORE_PER_GAME = 3150
+const MAX_SCORE_PER_GAME = 1530
 
 function getAccuracyColor(accuracy: number): string {
   if (accuracy >= 80) return 'text-ds-primary'
