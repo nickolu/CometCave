@@ -31,7 +31,8 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const [showPreGame, setShowPreGame] = useState(true)
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined)
   const [showRulesOverlay, setShowRulesOverlay] = useState(false)
-  const [flagLifeToast, setFlagLifeToast] = useState(false)
+  const [bonusLifeToast, setBonusLifeToast] = useState<string | null>(null)
+  const prevLivesRef = useRef<number | null>(null)
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
     id: Number(id),
@@ -80,6 +81,19 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     if (timerRef.current) clearInterval(timerRef.current)
     endRun()
   }, [endRun])
+
+  // Detect streak bonus life — compare lives before and after answering
+  useEffect(() => {
+    if (state.phase === 'answered' && state.lastAnswer?.correct && prevLivesRef.current !== null) {
+      if (state.livesRemaining > prevLivesRef.current) {
+        setBonusLifeToast(`🔥 ${state.lastAnswer.currentStreak}-streak! +1 Bonus Life`)
+        setTimeout(() => setBonusLifeToast(null), 3000)
+      }
+    }
+    if (state.phase === 'playing' || state.phase === 'answered') {
+      prevLivesRef.current = state.livesRemaining
+    }
+  }, [state.phase, state.livesRemaining, state.lastAnswer])
 
   const handlePlayAgain = useCallback(() => {
     setShowPreGame(true)
@@ -248,18 +262,18 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         onFlagged={(questionId, result) => {
           handleQuestionFlagged(questionId, result)
           if (result.bonusLifeGranted) {
-            setFlagLifeToast(true)
-            setTimeout(() => setFlagLifeToast(false), 3000)
+            setBonusLifeToast('❤️ +1 Bonus Life for reporting!')
+            setTimeout(() => setBonusLifeToast(null), 3000)
           }
         }}
         skipsRemaining={state.skipsRemaining}
         onSkip={skipQuestion}
       />
 
-      {/* Bonus life toast */}
-      {flagLifeToast && (
+      {/* Bonus life toast — shows for streak refund or flag reward */}
+      {bonusLifeToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-ds-primary text-on-primary px-4 py-2 rounded-ds-md shadow-hero text-sm font-medium animate-bounce">
-          ❤️ +1 Bonus Life for reporting!
+          {bonusLifeToast}
         </div>
       )}
 
