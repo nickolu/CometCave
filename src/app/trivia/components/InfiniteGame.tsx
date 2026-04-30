@@ -272,7 +272,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
 
       {/* Bonus life toast — shows for streak refund or flag reward */}
       {bonusLifeToast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-ds-primary text-on-primary px-4 py-2 rounded-ds-md shadow-hero text-sm font-medium animate-bounce">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-ds-primary text-on-primary px-5 py-3 rounded-ds-md shadow-hero text-base font-semibold animate-bounce">
           {bonusLifeToast}
         </div>
       )}
