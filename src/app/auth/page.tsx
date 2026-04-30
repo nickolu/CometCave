@@ -7,12 +7,12 @@ import { type FormEvent, Suspense, useEffect, useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
 import { Input } from '@/components/ui/input'
-import { AnonymousProgressOrphanedError, AuthProvider, useAuth } from '@/hooks/useAuth'
+import { AnonymousProgressOrphanedError, useAuth } from '@/hooks/useAuth'
 
 function AuthPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') ?? '/trivia'
+  const redirectTo = searchParams.get('redirect') ?? '/'
   const { user, loading, configured, signInWithGoogle, signInWithEmail, signUpWithEmail } =
     useAuth()
 
@@ -222,10 +222,8 @@ function formatAuthError(err: unknown): string {
 
 export default function AuthPage() {
   return (
-    <AuthProvider>
-      <Suspense fallback={null}>
-        <AuthPageInner />
-      </Suspense>
-    </AuthProvider>
+    <Suspense fallback={null}>
+      <AuthPageInner />
+    </Suspense>
   )
 }
