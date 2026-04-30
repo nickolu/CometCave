@@ -7,11 +7,12 @@ import { InfiniteHUD } from './InfiniteHUD'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
 import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
-import { InfiniteRulesModal } from './InfiniteRulesModal'
 import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { CATEGORY_META } from '@/lib/trivia/categories'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
+const RULES_SEEN_KEY = 'cometcave-infinite-rules-seen-v1'
 
 interface Props {
   onBack: () => void
@@ -27,19 +28,28 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
   const hasStartedRef = useRef(false)
-  // Always show the pre-game screen until the player clicks Start
   const [showPreGame, setShowPreGame] = useState(true)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined)
+  const [showRulesOverlay, setShowRulesOverlay] = useState(false)
 
-  const handlePreGameContinue = useCallback((chosenMode: InfiniteMode, categoryId?: number) => {
-    if (chosenMode !== mode && typeof window !== 'undefined') {
-      const url = new URL(window.location.href)
-      url.searchParams.set('mode', chosenMode)
-      window.history.replaceState({}, '', url.toString())
+  const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
+    id: Number(id),
+    ...meta,
+  }))
+
+  const handleStart = useCallback((chosenMode: InfiniteMode) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(RULES_SEEN_KEY, '1')
+      if (chosenMode !== mode) {
+        const url = new URL(window.location.href)
+        url.searchParams.set('mode', chosenMode)
+        window.history.replaceState({}, '', url.toString())
+      }
     }
     hasStartedRef.current = true
     setShowPreGame(false)
-    startRun(chosenMode, categoryId)
-  }, [mode, startRun])
+    startRun(chosenMode, selectedCategoryId)
+  }, [mode, startRun, selectedCategoryId])
 
   // Timer logic
   useEffect(() => {
@@ -74,11 +84,100 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     setShowPreGame(true)
   }, [])
 
-  // Pre-game screen — always shown until the player clicks Start
+  // Pre-game screen — inline, not a modal
   if (showPreGame) {
     return (
-      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
-        <InfiniteRulesModal defaultMode={mode} onContinue={handlePreGameContinue} onCancel={onBack} />
+      <div className="flex flex-col gap-4 max-w-lg mx-auto py-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-on-surface mb-1">Infinite Trivia</h2>
+          <button
+            type="button"
+            onClick={() => setShowRulesOverlay(true)}
+            className="text-ds-primary text-xs hover:underline"
+          >
+            How to play →
+          </button>
+        </div>
+
+        {/* Category selector — always visible, inline */}
+        <ChunkyCard variant="surface-variant">
+          <ChunkyCardContent className="pt-4 pb-4">
+            <p className="text-on-surface/70 text-sm font-medium mb-2">Category</p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryId(undefined)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategoryId === undefined
+                    ? 'bg-ds-primary text-on-primary'
+                    : 'bg-surface-container text-on-surface/70 hover:bg-surface-container-highest'
+                }`}
+              >
+                <span aria-hidden="true">🌐</span>
+                All
+              </button>
+              {categoryEntries.map(({ id, name, icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSelectedCategoryId(id)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    selectedCategoryId === id
+                      ? 'bg-ds-primary text-on-primary'
+                      : 'bg-surface-container text-on-surface/70 hover:bg-surface-container-highest'
+                  }`}
+                >
+                  <span aria-hidden="true">{icon}</span>
+                  {name}
+                </button>
+              ))}
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+
+        {/* Start buttons */}
+        <div className="flex flex-col gap-2">
+          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}>
+            Start
+          </ChunkyButton>
+          <ChunkyButton variant="secondary" size="sm" className="w-full" onClick={() => handleStart('practice')}>
+            Practice Mode
+          </ChunkyButton>
+        </div>
+
+        <ChunkyButton variant="ghost" size="sm" onClick={onBack}>
+          ← Back to Trivia
+        </ChunkyButton>
+
+        {/* Rules overlay — dismissible modal, separate from category selection */}
+        {showRulesOverlay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm p-4" onClick={() => setShowRulesOverlay(false)}>
+            <div className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero" onClick={e => e.stopPropagation()}>
+              <h3 className="text-on-surface text-lg font-bold mb-3">How to Play</h3>
+              <ul className="text-on-surface/80 text-sm flex flex-col gap-2 mb-4">
+                <li className="flex gap-2">
+                  <span>❤️</span>
+                  <span><strong>3 lives.</strong> A wrong answer costs one. Zero lives ends the run.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>🔥</span>
+                  <span><strong>Streak multiplier.</strong> ×1.5 at 5 correct → ×2 at 10 → ×3 at 20.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>🩹</span>
+                  <span><strong>Bonus life.</strong> Every 10-streak refunds a life (cap of 3).</span>
+                </li>
+                <li className="flex gap-2">
+                  <span>⏭️</span>
+                  <span><strong>Two skips.</strong> Skip a question — no life lost. Two per run.</span>
+                </li>
+              </ul>
+              <ChunkyButton variant="primary" size="sm" className="w-full" onClick={() => setShowRulesOverlay(false)}>
+                Got it
+              </ChunkyButton>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
