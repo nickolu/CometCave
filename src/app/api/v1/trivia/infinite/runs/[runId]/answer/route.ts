@@ -18,9 +18,12 @@ export async function POST(
     const body = await request.json();
     const { questionId, answer, elapsedMs } = body;
 
-    if (!questionId || !answer || elapsedMs === undefined) {
-      return NextResponse.json({ error: 'questionId, answer, and elapsedMs are required.' }, { status: 400 });
+    if (!questionId || elapsedMs === undefined) {
+      return NextResponse.json({ error: 'questionId and elapsedMs are required.' }, { status: 400 });
     }
+
+    // Empty answer (timeout) is treated as incorrect — skip the judge
+    const isTimeout = !answer || answer.trim() === ''
 
     // Load question
     const db = getFirestoreDb();
@@ -30,8 +33,8 @@ export async function POST(
     }
     const qData = qSnap.data()!;
 
-    // Grade the answer
-    const correct = await judgeAnswer(qData.question, qData.correctAnswer, answer);
+    // Grade the answer — timeout (empty) is automatically incorrect
+    const correct = isTimeout ? false : await judgeAnswer(qData.question, qData.correctAnswer, answer);
 
     // Submit to run
     const result = await submitAnswer({
