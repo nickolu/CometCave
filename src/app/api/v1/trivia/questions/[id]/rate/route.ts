@@ -25,44 +25,79 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 });
   }
 
-  const { vote } = body;
+  const { vote: rawVote } = body;
 
-  if (vote !== null && !VALID_VOTES.includes(vote as Vote)) {
+  if (rawVote !== null && !VALID_VOTES.includes(rawVote as Vote)) {
     return NextResponse.json(
       { error: 'Invalid vote. Must be "up", "down", or null.' },
       { status: 400 }
     );
   }
+  const newVote: Vote | null = rawVote === null ? null : (rawVote as Vote);
 
   const db = getFirestoreDb();
+  const qRef = db.doc(`aiQuestions/${questionId}`);
   const ratingRef = db.doc(`aiQuestions/${questionId}/ratings/${uid}`);
 
   try {
-    const existingSnap = await ratingRef.get();
-    const hadPriorVote = existingSnap.exists;
+    // Read prior vote, then update rating doc + question counters atomically.
+    // Voice stats are computed from the same delta and updated outside the
+    // transaction (they live on a different doc owned by another writer).
+    const { priorVote, likeDelta, dislikeDelta } = await db.runTransaction(async (tx) => {
+      const ratingSnap = await tx.get(ratingRef);
+      const prior: Vote | null = ratingSnap.exists
+        ? ((ratingSnap.data()?.vote as Vote | undefined) ?? null)
+        : null;
 
-    if (vote === null) {
-      await ratingRef.delete();
-    } else {
-      // Store uid + questionId as fields so admin tooling and
-      // collection-group queries can find ratings by user.
-      await ratingRef.set({
-        uid,
-        questionId,
-        vote,
-        ratedAt: FieldValue.serverTimestamp(),
-      });
+      const beforeUp = prior === 'up' ? 1 : 0;
+      const beforeDown = prior === 'down' ? 1 : 0;
+      const afterUp = newVote === 'up' ? 1 : 0;
+      const afterDown = newVote === 'down' ? 1 : 0;
+      const likeDeltaLocal = afterUp - beforeUp;
+      const dislikeDeltaLocal = afterDown - beforeDown;
 
-      // Only increment lifetime counter for new votes (not updates)
-      if (!hadPriorVote) {
-        const field = vote === 'up' ? 'likesGiven' : 'dislikesGiven';
-        await incrementVoiceStat(uid, field).catch((err) =>
-          console.error('[rate] Failed to increment voice stat:', err)
-        );
+      // Write rating doc
+      if (newVote === null) {
+        if (ratingSnap.exists) tx.delete(ratingRef);
+      } else {
+        // Store uid + questionId as fields too — the doc id is already the
+        // uid, but having them as fields lets us do collection-group queries
+        // and lets admin tooling display them.
+        tx.set(ratingRef, {
+          uid,
+          questionId,
+          vote: newVote,
+          ratedAt: FieldValue.serverTimestamp(),
+        });
       }
+
+      // Update denormalized counters on the question doc
+      const counterUpdates: Record<string, FirebaseFirestore.FieldValue> = {};
+      if (likeDeltaLocal !== 0) counterUpdates.likeCount = FieldValue.increment(likeDeltaLocal);
+      if (dislikeDeltaLocal !== 0) counterUpdates.dislikeCount = FieldValue.increment(dislikeDeltaLocal);
+      if (Object.keys(counterUpdates).length > 0) {
+        tx.update(qRef, counterUpdates);
+      }
+
+      return { priorVote: prior, likeDelta: likeDeltaLocal, dislikeDelta: dislikeDeltaLocal };
+    });
+
+    // Voice stats reflect the user's CURRENT rating choices. Apply the same
+    // delta logic so changing a vote (up→down) correctly moves the count
+    // from likesGiven to dislikesGiven instead of being stuck at the
+    // first vote.
+    if (likeDelta !== 0) {
+      await incrementVoiceStat(uid, 'likesGiven', likeDelta).catch((err) =>
+        console.error('[rate] Failed to update likesGiven:', err)
+      );
+    }
+    if (dislikeDelta !== 0) {
+      await incrementVoiceStat(uid, 'dislikesGiven', dislikeDelta).catch((err) =>
+        console.error('[rate] Failed to update dislikesGiven:', err)
+      );
     }
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ ok: true, priorVote, vote: newVote }, { status: 200 });
   } catch (err) {
     console.error('Failed to rate question:', err);
     return NextResponse.json({ error: 'Failed to rate question.' }, { status: 500 });

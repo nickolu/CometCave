@@ -16,7 +16,7 @@ import {
 
 export type GeneratedQuestion = Omit<
   AIQuestion,
-  'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs'
+  'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs' | 'likeCount' | 'dislikeCount'
 >
 
 export interface GenerateInfiniteQuestionOptions {
