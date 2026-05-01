@@ -929,6 +929,65 @@ export const theTribeJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const weeJokerJoker: JokerDefinition = {
+  id: 'weeJokerJoker',
+  name: 'Wee Joker',
+  description: 'This Joker gains +8 Chips when each played 2 is scored',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
+        if (wj) {
+          wj.metadata = { ...wj.metadata, chipsBonus: wj.metadata?.chipsBonus ?? 0 }
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
+        if (wj) {
+          wj.metadata = { ...wj.metadata, chipsBonus: 0 }
+        }
+      },
+    },
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
+        if (!wj || !wj.metadata) return
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (cardDef && cardDef.value === '2') {
+          wj.metadata.chipsBonus += 8
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
+        if (!wj || !wj.metadata || wj.metadata.chipsBonus <= 0) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: wj.metadata.chipsBonus,
+          source: 'Wee Joker',
+        })
+        ctx.game.gamePlayState.score.chips += wj.metadata.chipsBonus
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -958,6 +1017,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   theDuoJoker,
   theOrderJoker,
   theTribeJoker,
+  weeJokerJoker,
 }
 
 /***
