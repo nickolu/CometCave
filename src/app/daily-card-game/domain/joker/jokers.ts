@@ -2563,6 +2563,55 @@ export const superposition: JokerDefinition = {
   rarity: 'common',
 }
 
+export const toDoList: JokerDefinition = {
+  id: 'toDoList',
+  name: 'To Do List',
+  description: 'Earn $4 if poker hand is a target hand, changes each round',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tdl = ctx.game.jokers.find(j => j.jokerId === 'toDoList')
+        if (!tdl) return
+        const handIds = Object.keys(ctx.game.pokerHands)
+        const seed = buildSeedString([ctx.game.gameSeed, 'toDoList', 'init'])
+        const roll = getRandomNumbersWithSeed({ seed, min: 0, max: handIds.length - 1, numberOfNumbers: 1 })
+        tdl.counter = roll[0]
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tdl = ctx.game.jokers.find(j => j.jokerId === 'toDoList')
+        if (!tdl) return
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handIds = Object.keys(ctx.game.pokerHands)
+        const targetHandId = handIds[tdl.counter]
+        if (selectedHand[0] === targetHandId) {
+          ctx.game.money += 4
+        }
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tdl = ctx.game.jokers.find(j => j.jokerId === 'toDoList')
+        if (!tdl) return
+        const handIds = Object.keys(ctx.game.pokerHands)
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'toDoList', 'rotate'])
+        const roll = getRandomNumbersWithSeed({ seed, min: 0, max: handIds.length - 1, numberOfNumbers: 1 })
+        tdl.counter = roll[0]
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2639,6 +2688,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   splash,
   greenJoker,
   superposition,
+  toDoList,
 }
 
 /***
