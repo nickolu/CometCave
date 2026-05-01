@@ -1995,6 +1995,35 @@ export const oddToddJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const scaryFaceJoker: JokerDefinition = {
+  id: 'scaryFaceJoker',
+  name: 'Scary Face',
+  description: '+30 Chips if played card is a face card',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        if (['J', 'Q', 'K'].includes(cardDef.value)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: 30,
+            source: 'Scary Face',
+          })
+          ctx.game.gamePlayState.score.chips += 30
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2054,6 +2083,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   scholarJoker,
   evenStevenJoker,
   oddToddJoker,
+  scaryFaceJoker,
 }
 
 /***
