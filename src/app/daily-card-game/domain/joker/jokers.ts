@@ -2260,6 +2260,34 @@ export const chaosTheClown: JokerDefinition = {
   rarity: 'common',
 }
 
+export const creditCard: JokerDefinition = {
+  id: 'creditCard',
+  name: 'Credit Card',
+  description: 'Go up to -$20 in debt',
+  price: 1,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.minimumMoney = -20
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // Only reset if no other Credit Card joker exists
+        const hasCreditCard = ctx.game.jokers.some(j => j.jokerId === 'creditCard')
+        if (!hasCreditCard) {
+          ctx.game.minimumMoney = 0
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2327,6 +2355,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   raisedFist,
   chaosTheClown,
   businessCard,
+  creditCard,
 }
 
 /***
