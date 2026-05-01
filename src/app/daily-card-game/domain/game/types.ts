@@ -23,6 +23,7 @@ export interface GameState {
   gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
   gameSeed: string
   handsPlayed: number
+  selectedDeck: string
   jokers: JokerState[]
   maxConsumables: number
   maxDiscards: number

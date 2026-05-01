@@ -1,4 +1,5 @@
-import { initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
+import { decks, initialDeckStates } from '@/app/daily-card-game/domain/decks/decks'
+import { DeckDefinition } from '@/app/daily-card-game/domain/decks/types'
 import {
   fiveOfAKindHand,
   flushFiveHand,
@@ -46,6 +47,7 @@ const gameState: GameState = {
   },
   gameSeed: gameSeed,
   handsPlayed: 0,
+  selectedDeck: 'pokerDeck',
   jokers: [],
   maxConsumables: 2,
   maxJokers: 5,
@@ -129,6 +131,24 @@ const gameState: GameState = {
   vouchers: [],
 }
 
+export function applyDeckModifiers(state: GameState, deck: DeckDefinition): GameState {
+  const { modifiers } = deck
+  return {
+    ...state,
+    maxDiscards: state.maxDiscards + (modifiers.maxDiscards ?? 0),
+    maxHands: state.maxHands + (modifiers.maxHands ?? 0),
+    money: state.money + (modifiers.money ?? 0),
+    maxJokers: state.maxJokers + (modifiers.maxJokers ?? 0),
+    maxConsumables: state.maxConsumables + (modifiers.maxConsumables ?? 0),
+    gamePlayState: {
+      ...state.gamePlayState,
+      remainingDiscards:
+        state.gamePlayState.remainingDiscards + (modifiers.maxDiscards ?? 0),
+      remainingHands: state.gamePlayState.remainingHands + (modifiers.maxHands ?? 0),
+    },
+  }
+}
+
 // Initialize the card registry and owned cards from the initial deck
 const initialDeck = initialDeckStates(gameState).pokerDeck
 const cards: Record<string, (typeof initialDeck)[number]> = {}
@@ -143,4 +163,33 @@ export const defaultGameState: GameState = {
   ...gameState,
   cards,
   ownedCardIds,
+}
+
+export function createGameStateWithDeck(deckId: string): GameState {
+  const deck = decks[deckId]
+  if (!deck) {
+    throw new Error(`Unknown deck: ${deckId}`)
+  }
+
+  const baseState: GameState = {
+    ...gameState,
+    selectedDeck: deckId,
+  }
+
+  const stateWithModifiers = applyDeckModifiers(baseState, deck)
+
+  const deckCards = initialDeckStates(stateWithModifiers)[deckId]
+  const deckCardMap: Record<string, (typeof deckCards)[number]> = {}
+  const deckOwnedCardIds: string[] = []
+
+  for (const card of deckCards) {
+    deckCardMap[card.id] = card
+    deckOwnedCardIds.push(card.id)
+  }
+
+  return {
+    ...stateWithModifiers,
+    cards: deckCardMap,
+    ownedCardIds: deckOwnedCardIds,
+  }
 }

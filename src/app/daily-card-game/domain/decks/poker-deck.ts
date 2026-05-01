@@ -6,6 +6,8 @@ import {
 } from '@/app/daily-card-game/domain/playing-card/types'
 import { initializePlayingCard } from '@/app/daily-card-game/domain/playing-card/utils'
 
+import { DeckDefinition } from './types'
+
 export const pokerDeckDefinition: PlayingCardDefinition[] = [
   getDefaultCard('2', 'hearts'),
   getDefaultCard('2', 'diamonds'),
@@ -63,3 +65,11 @@ export const pokerDeckDefinition: PlayingCardDefinition[] = [
 
 export const initialPokerDeckState = (game: GameState): PlayingCardState[] =>
   pokerDeckDefinition.map(card => initializePlayingCard(card, game))
+
+export const pokerDeck: DeckDefinition = {
+  id: 'pokerDeck',
+  name: 'Poker Deck',
+  description: 'Standard 52-card deck',
+  cards: pokerDeckDefinition,
+  modifiers: {},
+}
