@@ -54,7 +54,19 @@ const theOx: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
+const violetVessel: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 6,
+  name: 'Violet Vessel',
+  description: 'Very large blind',
+  image: 'violet-vessel.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, violetVessel]
 
 /**
  
