@@ -2301,6 +2301,42 @@ export const raisedFist: JokerDefinition = {
   rarity: 'common',
 }
 
+export const blackboard: JokerDefinition = {
+  id: 'blackboard',
+  name: 'Blackboard',
+  description: 'X3 Mult if all cards held in hand are Spades or Clubs',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const heldCardIds = ctx.game.gamePlayState.handIds.filter(
+          id => !ctx.game.gamePlayState.playedCardIds.includes(id)
+        )
+        if (heldCardIds.length === 0) return
+        const allBlack = heldCardIds.every(cardId => {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) return false
+          const cardDef = playingCards[cardState.playingCardId]
+          return cardDef.suit === 'spades' || cardDef.suit === 'clubs'
+        })
+        if (allBlack) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 3,
+            source: 'Blackboard',
+          })
+          ctx.game.gamePlayState.score.mult *= 3
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const chaosTheClown: JokerDefinition = {
   id: 'chaosTheClown',
   name: 'Chaos the Clown',
@@ -3238,6 +3274,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   eightBall,
   misprint,
   raisedFist,
+  blackboard,
   chaosTheClown,
   businessCard,
   creditCard,
