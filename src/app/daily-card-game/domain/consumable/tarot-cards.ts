@@ -261,6 +261,31 @@ const theEmpress: TarotCardDefinition = {
   ],
 }
 
+const theHierophant: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theHierophant',
+  name: 'The Hierophant',
+  price: 2,
+  description: 'Enhances up to 2 selected cards to Bonus cards',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds.slice(0, 2)) {
+          const card = ctx.game.cards[cardId]
+          if (card) {
+            card.flags.enchantment = 'bonus'
+          }
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -278,7 +303,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theHighPriestess: notImplemented,
   theEmpress,
   theEmperor: notImplemented,
-  theHierophant: notImplemented,
+  theHierophant,
   theLovers,
   theChariot,
   strength: notImplemented,
