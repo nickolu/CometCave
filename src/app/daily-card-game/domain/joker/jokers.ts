@@ -3973,6 +3973,57 @@ export const campfire: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const obelisk: JokerDefinition = {
+  id: 'obelisk',
+  name: 'Obelisk',
+  description: 'Gains X0.2 Mult per consecutive hand without playing most played poker hand',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const ob = ctx.game.jokers.find(j => j.jokerId === 'obelisk')
+        if (!ob) return
+        if (ob.counter === 0) ob.counter = 5 // X1.0
+
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const playedHandId = selectedHand[0]
+
+        // Find most played hand
+        let maxPlayed = 0
+        let mostPlayedId = ''
+        for (const [handId, hand] of Object.entries(ctx.game.pokerHands)) {
+          if (hand.timesPlayed > maxPlayed) {
+            maxPlayed = hand.timesPlayed
+            mostPlayedId = handId
+          }
+        }
+
+        if (playedHandId === mostPlayedId) {
+          ob.counter = 5 // Reset to X1.0
+        } else {
+          ob.counter += 1 // +X0.2
+        }
+
+        if (ob.counter > 5) {
+          const xMult = ob.counter / 5
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: xMult,
+            source: 'Obelisk',
+          })
+          ctx.game.gamePlayState.score.mult *= xMult
+        }
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4087,6 +4138,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   ancientJoker,
   driversLicense,
   campfire,
+  obelisk,
 }
 
 /***
