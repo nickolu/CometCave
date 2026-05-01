@@ -2657,6 +2657,41 @@ export const toDoList: JokerDefinition = {
   rarity: 'common',
 }
 
+export const redCard: JokerDefinition = {
+  id: 'redCard',
+  name: 'Red Card',
+  description: 'This Joker gains +3 Mult when any Booster Pack is skipped',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'PACK_OPEN_SKIP' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rc = ctx.game.jokers.find(j => j.jokerId === 'redCard')
+        if (rc) {
+          rc.counter += 3
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rc = ctx.game.jokers.find(j => j.jokerId === 'redCard')
+        if (!rc || rc.counter <= 0) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          value: rc.counter,
+          source: 'Red Card',
+        })
+        ctx.game.gamePlayState.score.mult += rc.counter
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2729,6 +2764,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   grosMichel,
   cavendish,
   runner,
+  redCard,
   iceCream,
   egg,
   splash,
