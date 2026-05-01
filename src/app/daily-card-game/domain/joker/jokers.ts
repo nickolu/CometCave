@@ -1638,6 +1638,23 @@ export const jugglerJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const goldenJokerJoker: JokerDefinition = {
+  id: 'goldenJokerJoker',
+  name: 'Golden Joker',
+  description: 'Earn $4 at end of round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.money += 4
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1685,6 +1702,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   flowerPotJoker,
   drunkardJoker,
   jugglerJoker,
+  goldenJokerJoker,
 }
 
 /***
