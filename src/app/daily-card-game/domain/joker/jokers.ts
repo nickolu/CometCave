@@ -3510,6 +3510,42 @@ export const ramen: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const bloodstone: JokerDefinition = {
+  id: 'bloodstone',
+  name: 'Bloodstone',
+  description: '1 in 2 chance for played cards with Heart suit to give X1.5 Mult when scored',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (cardDef.suit !== 'hearts') return
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          scoredCard.id,
+          'bloodstone',
+        ])
+        const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 2, numberOfNumbers: 1 })
+        if (roll[0] !== 1) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: 1.5,
+          source: 'Bloodstone',
+        })
+        ctx.game.gamePlayState.score.mult *= 1.5
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3611,6 +3647,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   loyaltyCard,
   hiker,
   ramen,
+  bloodstone,
 }
 
 /***
