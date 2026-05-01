@@ -1899,6 +1899,42 @@ export const smileyFaceJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const scholarJoker: JokerDefinition = {
+  id: 'scholarJoker',
+  name: 'Scholar',
+  description: '+20 Chips and +4 Mult if played card is an Ace',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        if (cardDef.value === 'A') {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: 20,
+            source: 'Scholar',
+          })
+          ctx.game.gamePlayState.score.chips += 20
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: 4,
+            source: 'Scholar',
+          })
+          ctx.game.gamePlayState.score.mult += 4
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -1955,6 +1991,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   blueJokerJoker,
   abstractJokerJoker,
   smileyFaceJoker,
+  scholarJoker,
 }
 
 /***
