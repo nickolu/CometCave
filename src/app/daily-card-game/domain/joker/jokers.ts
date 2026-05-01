@@ -538,6 +538,66 @@ export const turtleBeanJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const toTheMoonJoker: JokerDefinition = {
+  id: 'toTheMoonJoker',
+  name: 'To the Moon',
+  description: 'Earn an extra $1 of interest for every $5 you have at end of round',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.some(j => j.jokerId === 'toTheMoonJoker')) {
+          ctx.game.maxInterest += 100
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.maxInterest += 100
+      },
+    },
+    {
+      event: { type: 'SHOP_BUY_CARD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedCard = ctx.game.shopState.cardsForSale.find(
+          card => card.card.id === ctx.game.shopState.selectedCardId
+        )
+        if (!selectedCard) return
+        if (
+          isJokerState(selectedCard.card) &&
+          selectedCard.card.jokerId === 'toTheMoonJoker'
+        ) {
+          ctx.game.maxInterest += 100
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'toTheMoonJoker')) {
+          ctx.game.maxInterest -= 100
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'toTheMoonJoker')) {
+          ctx.game.maxInterest -= 100
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -555,6 +615,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerStencil,
   fourFingersJoker,
   turtleBeanJoker,
+  toTheMoonJoker,
 }
 
 /***
