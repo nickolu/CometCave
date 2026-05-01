@@ -163,9 +163,10 @@ Difficulty: ${ctx.difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[ctx.difficult
 
 Rules:
 - The question MUST have ONE unambiguous correct answer. If a knowledgeable person could plausibly give a different answer than the keyDetail, you must add identifying details to the question that rule out the alternatives. Do not write a question whose answer is "any X that fits Y" when many X fit Y.
-- The question must ask specifically for the keyDetail.
-- The question must NOT contain the keyDetail or a synonym/translation of it.
-- The correct_answer must equal the keyDetail or a clear variant (e.g. "1986" if the keyDetail is "February 21, 1986" and the question asks for the year).
+- AVOID "what year did X happen?" framings. Year-guess questions are weak free-text trivia — players just guess a number. If the keyDetail you've been given is a year, look for a different angle from the SAME fact: what was the person, place, work, rule, or consequence? Ask about that instead, and adjust correct_answer accordingly. Only ask for a year if the year is genuinely the most distinctive thing about the fact AND a knowledgeable person would actually know it (e.g. "1066" for the Battle of Hastings is fair; "1982" for an arbitrary book release is not).
+- The question must ask specifically for the keyDetail (or your repointed answer).
+- The question must NOT contain the answer or a synonym/translation of it.
+- The correct_answer must equal the keyDetail or a clear variant.
 - The explanation may elaborate beyond the fact (2-3 sentences).
 - Stay in the "${ctx.categoryName}" category. Do not drift.
 - Free-text answer; this is NOT a multiple-choice question.
