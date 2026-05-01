@@ -215,6 +215,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'SHOP_REROLL': {
         handleShopReroll(draft)
+        const ctx = getEffectContext(draft, event)
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
       case 'SHOP_OPEN_PACK': {
