@@ -10,12 +10,13 @@ import { cardValuePriority, playingCards } from '@/app/daily-card-game/domain/pl
 import {
   buildSeedString,
   getRandomNumbersWithSeed,
+  getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
 import { initializeTarotCard } from '@/app/daily-card-game/domain/consumable/utils'
 import { getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
 
-import { JokerDefinition } from './types'
+import { JokerDefinition, JokerState } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
 
 export const jokerJoker: JokerDefinition = {
@@ -3041,6 +3042,80 @@ export const mailInRebate: JokerDefinition = {
   rarity: 'common',
 }
 
+function initializeJokerInline(jokerId: string, game: EffectContext['game']): JokerState {
+  const editionSeed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'edition',
+    jokerId,
+  ])
+  const edition = getRandomWeightedChoiceWithSeed({
+    seed: editionSeed,
+    weightedOptions: game.shopState.joker.editionWeights,
+  }) ?? 'normal'
+  return {
+    id: uuid(),
+    jokerId,
+    edition,
+    isFaceUp: true,
+    bonusSellValue: 0,
+    counter: 0,
+    flags: {
+      isRentable: false,
+      isPerishable: false,
+      isEternal: false,
+    },
+  }
+}
+
+function applyRiffRaff(ctx: EffectContext) {
+  const availableSlots = ctx.game.maxJokers - ctx.game.jokers.length
+  if (availableSlots <= 0) return
+  const slotsToFill = Math.min(2, availableSlots)
+  const commonJokers = Object.values(jokers).filter(j => j.rarity === 'common')
+  const seed = buildSeedString([
+    ctx.game.gameSeed,
+    ctx.game.roundIndex.toString(),
+    'riffRaff',
+  ])
+  const indices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: commonJokers.length - 1,
+    numberOfNumbers: slotsToFill,
+  })
+  for (let i = 0; i < slotsToFill; i++) {
+    const jokerDef = commonJokers[indices[i]]
+    ctx.game.jokers.push(initializeJokerInline(jokerDef.id, ctx.game))
+  }
+}
+
+export const riffRaff: JokerDefinition = {
+  id: 'riffRaff',
+  name: 'Riff-raff',
+  description: 'When Blind is selected, create 2 Common Jokers (Must have room)',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyRiffRaff,
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyRiffRaff,
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyRiffRaff,
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3130,6 +3205,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hallucination,
   mailInRebate,
   hangingChad,
+  riffRaff,
 }
 
 /***
