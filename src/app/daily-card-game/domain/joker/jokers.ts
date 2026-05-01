@@ -3714,6 +3714,25 @@ export const vampire: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const giftCard: JokerDefinition = {
+  id: 'giftCard',
+  name: 'Gift Card',
+  description: 'Add $1 of sell value to every Joker and Consumable card at end of round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const joker of ctx.game.jokers) {
+          joker.bonusSellValue += 1
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3821,6 +3840,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   constellation,
   satellite,
   vampire,
+  giftCard,
 }
 
 /***
