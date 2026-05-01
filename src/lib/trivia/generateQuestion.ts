@@ -31,7 +31,7 @@ export interface GenerateInfiniteQuestionOptions {
 const QUESTION_MODEL = 'gpt-4o-mini'
 const REVIEW_MODEL = 'gpt-4o-mini'
 const FACTS_PER_FETCH = 5
-const MAX_GENERATION_ATTEMPTS = 2
+const MAX_GENERATION_ATTEMPTS = 3
 
 const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
   easy: 'Should be approachable — a well-known fact that many people could answer correctly.',
@@ -218,8 +218,13 @@ If you reject, give a one-sentence rejection_reason. Otherwise rejection_reason 
     maxTokens: 150,
   })
 
+  // Trust the LLM's overall accept signal. We previously also required
+  // inferred_category === draft.categoryName exactly, but that produced
+  // false rejections for near-matches ("Pop Music" vs "Music") and the
+  // construction prompt already enforces category fidelity upstream.
+  // Keep inferred_category in the return for telemetry.
   return {
-    accept: result.object.accept && result.object.inferred_category === draft.categoryName,
+    accept: result.object.accept,
     reason: result.object.rejection_reason,
     inferred_category: result.object.inferred_category,
   }
@@ -297,6 +302,15 @@ export async function generateInfiniteQuestion(
 
     if (review.accept) {
       const id = `ai-infinite-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      console.info('[generateInfiniteQuestion] generated', {
+        id,
+        category: categoryName,
+        difficulty,
+        attempt,
+        factSource: factSource.id,
+        factSourceCitation: fact.source,
+        inferredCategory: review.inferred_category,
+      })
       return {
         id,
         question: draft.question,
