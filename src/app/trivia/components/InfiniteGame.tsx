@@ -1,15 +1,17 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+
 import { useInfiniteRun } from '@/app/trivia/hooks/useInfiniteRun'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
+import { useAuth } from '@/hooks/useAuth'
+import { CATEGORY_META } from '@/lib/trivia/categories'
+
+import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
 import { InfiniteHUD } from './InfiniteHUD'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
-import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
-import { ChunkyButton } from '@/components/ui/chunky-button'
-import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
-import { CATEGORY_META } from '@/lib/trivia/categories'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
 const RULES_SEEN_KEY = 'cometcave-infinite-rules-seen-v1'
@@ -32,7 +34,9 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined)
   const [showRulesOverlay, setShowRulesOverlay] = useState(false)
   const [bonusLifeToast, setBonusLifeToast] = useState<string | null>(null)
+  const [medalToast, setMedalToast] = useState<string | null>(null)
   const prevLivesRef = useRef<number | null>(null)
+  const lastMedalAnswerIdRef = useRef<string | null>(null)
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
     id: Number(id),
@@ -94,6 +98,25 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
       prevLivesRef.current = state.livesRemaining
     }
   }, [state.phase, state.livesRemaining, state.lastAnswer])
+
+  // Show medal toast when an answer crosses a tier line. Track the question
+  // id so the toast doesn't re-fire if the same answered state lingers.
+  useEffect(() => {
+    if (state.phase !== 'answered') return
+    const earned = state.lastAnswer?.medalEarned
+    if (!earned) return
+    const answerKey = state.answers[state.answers.length - 1]?.questionId ?? null
+    if (answerKey === lastMedalAnswerIdRef.current) return
+    lastMedalAnswerIdRef.current = answerKey
+    const tierEmoji =
+      earned.tier === 'bronze' ? '🥉'
+      : earned.tier === 'silver' ? '🥈'
+      : earned.tier === 'gold' ? '🥇'
+      : earned.tier === 'platinum' ? '🏅'
+      : '💎'
+    setMedalToast(`${tierEmoji} ${earned.label} — ${earned.categoryName}`)
+    setTimeout(() => setMedalToast(null), 4000)
+  }, [state.phase, state.lastAnswer, state.answers])
 
   const handlePlayAgain = useCallback(() => {
     setShowPreGame(true)
@@ -274,6 +297,17 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
       {bonusLifeToast && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-ds-primary text-on-primary px-5 py-3 rounded-ds-md shadow-hero text-base font-semibold animate-bounce">
           {bonusLifeToast}
+        </div>
+      )}
+
+      {/* Medal toast — shows when an answer crosses a tier line */}
+      {medalToast && (
+        <div
+          className={`fixed left-1/2 -translate-x-1/2 z-50 bg-ds-tertiary text-on-tertiary px-5 py-3 rounded-ds-md shadow-hero text-base font-semibold animate-bounce ${
+            bonusLifeToast ? 'top-40' : 'top-24'
+          }`}
+        >
+          {medalToast}
         </div>
       )}
 

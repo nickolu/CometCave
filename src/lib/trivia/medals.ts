@@ -80,3 +80,39 @@ export function getNextThreshold(tier: MedalTier): number | null {
   if (idx === -1 || idx === TIER_ORDER.length - 1) return null
   return MEDAL_THRESHOLDS[TIER_ORDER[idx + 1]]
 }
+
+// Pure tier-up detection. Returns the medal earned at this answer, or null
+// if no tier line was crossed. categoryId must be a known category;
+// otherwise null.
+export function detectMedalEarned(
+  prevCorrectCount: number,
+  newCorrectCount: number,
+  categoryId: number
+): { tier: MedalTier; label: string } | null {
+  const prevTier = getMedalTier(prevCorrectCount)
+  const newTier = getMedalTier(newCorrectCount)
+  if (newTier === prevTier) return null
+  if (newTier === 'none') return null
+  const label = getMedalLabel(categoryId, newTier)
+  if (!label) return null
+  return { tier: newTier, label }
+}
+
+// Stored shape at users/{uid}/triviaCategoryStats/{categoryId}.
+// medalTier and label are derived from correctCount on read — not stored —
+// so future threshold retuning takes effect retroactively without migrations.
+export interface CategoryMedalStats {
+  categoryId: number
+  correctCount: number
+  lastAnswerAt: FirebaseFirestore.Timestamp | null
+  lastTierEarnedAt: FirebaseFirestore.Timestamp | null
+}
+
+// Returned from submitAnswer when an answer crosses a tier line. Client-safe.
+export interface MedalEarned {
+  tier: MedalTier
+  label: string
+  categoryId: number
+  categoryName: string
+  correctCount: number
+}
