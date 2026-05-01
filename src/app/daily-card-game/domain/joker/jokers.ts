@@ -1972,6 +1972,35 @@ export const evenStevenJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const fibonacci: JokerDefinition = {
+  id: 'fibonacci',
+  name: 'Fibonacci',
+  description: 'Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        if (['A', '2', '3', '5', '8'].includes(cardDef.value)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: 8,
+            source: 'Fibonacci',
+          })
+          ctx.game.gamePlayState.score.mult += 8
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const oddToddJoker: JokerDefinition = {
   id: 'oddToddJoker',
   name: 'Odd Todd',
@@ -3174,6 +3203,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   smileyFaceJoker,
   scholarJoker,
   evenStevenJoker,
+  fibonacci,
   oddToddJoker,
   scaryFaceJoker,
   banner,
