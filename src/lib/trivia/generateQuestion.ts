@@ -306,6 +306,27 @@ export function detectAnswerLeak(question: string, keyDetail: string): boolean {
   return false
 }
 
+// Catch year-guess questions ("In what year did X happen?" with a
+// year-shaped answer) before they reach the player. The construction
+// prompt tells the LLM to avoid these, but the LLM sometimes ignores
+// the rule. This is the deterministic backstop — same pattern as
+// detectAnswerLeak.
+export function detectYearGuessQuestion(question: string, correctAnswer: string): boolean {
+  const q = question.toLowerCase()
+  const a = correctAnswer.trim()
+
+  const asksForYear =
+    /\b(in (what|which|the) year|what year|year (did|was|in which|that)|year of|when (was|did))\b/.test(q)
+  if (!asksForYear) return false
+
+  // Year-shaped: 1-4 digits, optionally with era suffix. Allows "49 BC"
+  // and "5 AD" as well as "1066", "1994". Won't false-positive on
+  // larger numbers like "12345" since the question-side filter only
+  // fires when the question asks "what year" / "when was".
+  const isYearLike = /^\s*\d{1,4}\s*(ad|bc|bce|ce)?\s*$/i.test(a)
+  return isYearLike
+}
+
 async function reviewQuestion(
   apiKey: string,
   draft: DraftQuestion
@@ -450,6 +471,32 @@ export async function generateInfiniteQuestion(
           repair,
           category: categoryName,
           keyDetail: fact.keyDetail,
+          question: draft.question,
+        })
+        if (repair < MAX_REPAIRS_PER_DRAFT) {
+          try {
+            draft = await repairDraft(apiKey, draft, reason)
+          } catch (err) {
+            lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
+            console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
+            break
+          }
+          continue
+        }
+        break
+      }
+
+      // Deterministic pre-check: catch year-guess questions before
+      // they reach the player. The construction prompt is supposed to
+      // avoid these but the LLM sometimes ignores the rule.
+      if (detectYearGuessQuestion(draft.question, draft.correct_answer)) {
+        const reason = `The question is a year-guess ("what year did X happen?") with a year-shaped answer "${draft.correct_answer}". Reframe to ask about a different aspect of the same fact — the person, place, work, rule, or consequence — and adjust correct_answer accordingly. Do NOT ask for a year.`
+        lastReason = `pre-check year-guess: ${reason}`
+        console.warn('[generateInfiniteQuestion] draft rejected (pre-check year-guess)', {
+          attempt,
+          repair,
+          category: categoryName,
+          correctAnswer: draft.correct_answer,
           question: draft.question,
         })
         if (repair < MAX_REPAIRS_PER_DRAFT) {
