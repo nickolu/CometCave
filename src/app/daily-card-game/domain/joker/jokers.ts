@@ -598,6 +598,58 @@ export const toTheMoonJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const rocketJoker: JokerDefinition = {
+  id: 'rocketJoker',
+  name: 'Rocket',
+  description: 'Earn $1 at end of round. Payout increases by $2 when Boss Blind is defeated',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rk = ctx.game.jokers.find(j => j.jokerId === 'rocketJoker')
+        if (rk) {
+          rk.metadata = { ...rk.metadata, payout: rk.metadata?.payout ?? 1, lastBossRound: -1 }
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rk = ctx.game.jokers.find(j => j.jokerId === 'rocketJoker')
+        if (rk) {
+          rk.metadata = { ...rk.metadata, payout: 1, lastBossRound: -1 }
+        }
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rk = ctx.game.jokers.find(j => j.jokerId === 'rocketJoker')
+        if (!rk || !rk.metadata) return
+
+        // Pay out current amount
+        ctx.game.money += rk.metadata.payout
+
+        // Check if boss blind was defeated this round
+        const round = ctx.game.rounds[ctx.game.roundIndex]
+        if (
+          round &&
+          round.bossBlind.status === 'completed' &&
+          rk.metadata.lastBossRound !== ctx.game.roundIndex
+        ) {
+          rk.metadata.payout += 2
+          rk.metadata.lastBossRound = ctx.game.roundIndex
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -616,6 +668,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   fourFingersJoker,
   turtleBeanJoker,
   toTheMoonJoker,
+  rocketJoker,
 }
 
 /***
