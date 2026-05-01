@@ -1466,6 +1466,49 @@ export const baronJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const seeingDoubleJoker: JokerDefinition = {
+  id: 'seeingDoubleJoker',
+  name: 'Seeing Double',
+  description: 'X2 Mult if played hand has a scoring Club card and a scoring card of any other suit',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handCards = selectedHand[1]
+        if (!handCards || handCards.length === 0) return
+
+        let hasClub = false
+        let hasOtherSuit = false
+        for (const card of handCards) {
+          const cardDef = playingCards[card.playingCardId]
+          if (!cardDef) continue
+          if (cardDef.suit === 'clubs') {
+            hasClub = true
+          } else {
+            hasOtherSuit = true
+          }
+        }
+
+        if (hasClub && hasOtherSuit) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 2,
+            source: 'Seeing Double',
+          })
+          ctx.game.gamePlayState.score.mult *= 2
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1509,6 +1552,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   merryAndyJoker,
   flashCardJoker,
   baronJoker,
+  seeingDoubleJoker,
 }
 
 /***
