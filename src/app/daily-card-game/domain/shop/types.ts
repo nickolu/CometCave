@@ -28,6 +28,7 @@ export interface ShopState {
       polychrome: number
     }
   }
+  freeRerolls: number
   priceMultiplier: number
   rerollsUsed: number
   selectedCardId: string | null

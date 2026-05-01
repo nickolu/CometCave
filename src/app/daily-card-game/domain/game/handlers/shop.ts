@@ -309,7 +309,11 @@ export function handleShopReroll(draft: GameState) {
     draft.shopState.maxCardsForSale,
     randomBuyableCardsSeed
   )
-  draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
+  if (draft.shopState.freeRerolls > 0) {
+    draft.shopState.freeRerolls -= 1
+  } else {
+    draft.money -= draft.shopState.baseRerollPrice + draft.shopState.rerollsUsed
+  }
 }
 
 export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {

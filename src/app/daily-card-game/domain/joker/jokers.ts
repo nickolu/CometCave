@@ -2207,6 +2207,23 @@ export const raisedFist: JokerDefinition = {
   rarity: 'common',
 }
 
+export const chaosTheClown: JokerDefinition = {
+  id: 'chaosTheClown',
+  name: 'Chaos the Clown',
+  description: '1 free Reroll per shop',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.shopState.freeRerolls += 1
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2272,6 +2289,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   eightBall,
   misprint,
   raisedFist,
+  chaosTheClown,
 }
 
 /***

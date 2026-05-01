@@ -95,6 +95,7 @@ const gameState: GameState = {
         polychrome: 0.15,
       },
     },
+    freeRerolls: 0,
     priceMultiplier: 1,
     rerollsUsed: 0,
     selectedCardId: null,

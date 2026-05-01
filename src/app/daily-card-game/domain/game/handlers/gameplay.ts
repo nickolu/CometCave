@@ -338,6 +338,7 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
 
   // Reset shop state for the new shop session
   draft.shopState.cardsForSale = []
+  draft.shopState.freeRerolls = 0
   draft.shopState.packsForSale = []
   draft.shopState.rerollsUsed = 0
   draft.shopState.selectedCardId = null
