@@ -988,6 +988,39 @@ export const weeJokerJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const baseballCardJoker: JokerDefinition = {
+  id: 'baseballCardJoker',
+  name: 'Baseball Card',
+  description: 'Uncommon Jokers each give X1.5 Mult',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let uncommonCount = 0
+        for (const jokerState of ctx.game.jokers) {
+          if (jokerState.jokerId === 'baseballCardJoker') continue
+          const jokerDef = jokers[jokerState.jokerId]
+          if (jokerDef?.rarity === 'uncommon') uncommonCount++
+        }
+        // Apply X1.5 for each uncommon joker
+        for (let i = 0; i < uncommonCount; i++) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 1.5,
+            source: 'Baseball Card',
+          })
+          ctx.game.gamePlayState.score.mult *= 1.5
+        }
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1018,6 +1051,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   theOrderJoker,
   theTribeJoker,
   weeJokerJoker,
+  baseballCardJoker,
 }
 
 /***
