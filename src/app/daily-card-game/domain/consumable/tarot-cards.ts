@@ -212,6 +212,30 @@ const theChariot: TarotCardDefinition = {
   ],
 }
 
+const theLovers: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theLovers',
+  name: 'The Lovers',
+  price: 2,
+  description: 'Enhances 1 selected card to a Wild card',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds[0]
+        const card = ctx.game.cards[cardId]
+        if (card) {
+          card.flags.enchantment = 'wild'
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -230,7 +254,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theEmpress: notImplemented,
   theEmperor: notImplemented,
   theHierophant: notImplemented,
-  theLovers: notImplemented,
+  theLovers,
   theChariot,
   strength: notImplemented,
   theHermit,
