@@ -142,29 +142,26 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
 
         {/* Category selector — always visible, inline */}
         <ChunkyCard variant="surface-variant">
-          <ChunkyCardContent className="pt-4 pb-4">
-            <p className="text-on-surface/70 text-sm font-medium mb-2">Category</p>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setSelectedCategoryId(undefined)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  selectedCategoryId === undefined
-                    ? 'bg-ds-primary text-on-primary'
-                    : 'bg-surface-container text-on-surface/70 hover:bg-surface-container-highest'
-                }`}
-              >
-                <span aria-hidden="true">🌐</span>
-                All
-              </button>
+          <ChunkyCardContent className="pt-4 pb-4 flex flex-col gap-3">
+            <p className="text-on-surface/70 text-sm font-medium">Category</p>
+            <button
+              type="button"
+              onClick={() => setSelectedCategoryId(undefined)}
+              className={`flex items-center justify-center gap-2 py-2 rounded-ds-md text-sm font-medium transition-colors ${
+                selectedCategoryId === undefined
+                  ? 'bg-ds-primary text-on-primary'
+                  : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
+              }`}
+            >
+              <span aria-hidden="true">🌐</span>
+              All Categories
+            </button>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {categoryEntries.map(({ id, name, icon }) => {
                 const medal = medalsByCategoryId.get(id)
                 const earnedTier = medal && medal.tier !== 'none' ? medal.tier : null
                 const tierEmoji = earnedTier ? TIER_EMOJI[earnedTier] : null
-                // For categories with no medal yet, show a ghosted bronze
-                // medal as an empty-slot indicator so every tile reads as
-                // "there is a medal here to earn."
-                const showEmptySlot = !earnedTier && !!medal
+                const isSelected = selectedCategoryId === id
                 const titleText = medal && medal.label
                   ? `${medal.label} — ${medal.correctCount} correct${medal.nextThreshold ? ` (next tier at ${medal.nextThreshold})` : ''}`
                   : medal
@@ -176,25 +173,35 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                     type="button"
                     onClick={() => setSelectedCategoryId(id)}
                     title={titleText}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      selectedCategoryId === id
-                        ? 'bg-ds-primary text-on-primary'
-                        : 'bg-surface-container text-on-surface/70 hover:bg-surface-container-highest'
+                    className={`flex flex-col items-center justify-between gap-2 p-3 rounded-ds-md text-xs font-medium transition-colors min-h-[120px] ${
+                      isSelected
+                        ? 'bg-ds-primary text-on-primary ring-2 ring-ds-primary'
+                        : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
                     }`}
                   >
-                    <span aria-hidden="true">{icon}</span>
-                    {name}
-                    {tierEmoji && (
-                      <span aria-label={`${medal?.label ?? earnedTier} medal`}>{tierEmoji}</span>
-                    )}
-                    {showEmptySlot && (
-                      <span
-                        aria-label="No medal yet"
-                        className="opacity-30 grayscale"
-                      >
-                        🥉
-                      </span>
-                    )}
+                    <div className="flex flex-col items-center gap-1">
+                      <span aria-hidden="true" className="text-2xl">{icon}</span>
+                      <span className="text-center leading-tight">{name}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      {earnedTier ? (
+                        <>
+                          <span aria-label={`${medal?.label ?? earnedTier} medal`} className="text-2xl">
+                            {tierEmoji}
+                          </span>
+                          <span className={`text-[10px] ${isSelected ? 'text-on-primary/80' : 'text-on-surface/60'}`}>
+                            {medal?.label ?? ''}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span aria-hidden="true" className="text-2xl opacity-25 grayscale">🥉</span>
+                          <span className={`text-[10px] ${isSelected ? 'text-on-primary/70' : 'text-on-surface/40'}`}>
+                            No medal
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </button>
                 )
               })}
