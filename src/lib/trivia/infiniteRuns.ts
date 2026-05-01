@@ -290,12 +290,14 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
 
 export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
   const db = getFirestoreDb()
+  // Overfetch so that the post-hydration filter that drops players without
+  // a nickname still returns up to `limit` entries.
   const snap = await db
     .collectionGroup('triviaInfinite')
     .where('mode', '==', 'scored')
     .where('endedAt', '!=', null)
     .orderBy('score', 'desc')
-    .limit(limit)
+    .limit(limit * 2)
     .get()
 
   const entries = snap.docs.map((d) => {
@@ -304,10 +306,13 @@ export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderb
     return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
   })
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
-  return entries.map((e) => ({
-    ...e,
-    displayName: nicknames.get(e.uid) || 'Player',
-  }))
+  return entries
+    .filter((e) => !!nicknames.get(e.uid))
+    .slice(0, limit)
+    .map((e) => ({
+      ...e,
+      displayName: nicknames.get(e.uid) as string,
+    }))
 }
 
 export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
@@ -317,7 +322,7 @@ export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeader
     .where('mode', '==', 'scored')
     .where('endedAt', '!=', null)
     .orderBy('longestStreak', 'desc')
-    .limit(limit)
+    .limit(limit * 2)
     .get()
 
   const entries = snap.docs.map((d) => {
@@ -326,8 +331,11 @@ export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeader
     return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
   })
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
-  return entries.map((e) => ({
-    ...e,
-    displayName: nicknames.get(e.uid) || 'Player',
-  }))
+  return entries
+    .filter((e) => !!nicknames.get(e.uid))
+    .slice(0, limit)
+    .map((e) => ({
+      ...e,
+      displayName: nicknames.get(e.uid) as string,
+    }))
 }
