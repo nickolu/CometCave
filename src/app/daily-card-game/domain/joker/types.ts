@@ -16,6 +16,7 @@ export interface JokerState {
   edition: 'holographic' | 'foil' | 'polychrome' | 'negative' | 'normal'
   isFaceUp: boolean
   bonusSellValue: number
+  counter: number
   metadata?: Record<string, number>
 }
 

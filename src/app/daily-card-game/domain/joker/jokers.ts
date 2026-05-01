@@ -2352,6 +2352,45 @@ export const grosMichel: JokerDefinition = {
   rarity: 'common',
 }
 
+export const runner: JokerDefinition = {
+  id: 'runner',
+  name: 'Runner',
+  description: 'Gains +15 Chips if played hand contains a Straight',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const runnerJoker = ctx.game.jokers.find(j => j.jokerId === 'runner')
+        if (!runnerJoker) return
+
+        // Check if hand contains a Straight and accumulate counter
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (selectedHand) {
+          const handId = selectedHand[0]
+          const straightHands = ['straight', 'straightFlush']
+          if (straightHands.includes(handId)) {
+            runnerJoker.counter += 15
+          }
+        }
+
+        // Apply accumulated bonus
+        if (runnerJoker.counter > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: runnerJoker.counter,
+            source: 'Runner',
+          })
+          ctx.game.gamePlayState.score.chips += runnerJoker.counter
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const egg: JokerDefinition = {
   id: 'egg',
   name: 'Egg',
@@ -2442,6 +2481,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   creditCard,
   delayedGratification,
   grosMichel,
+  runner,
   egg,
 }
 
