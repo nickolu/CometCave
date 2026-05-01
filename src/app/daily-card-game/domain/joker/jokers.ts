@@ -1869,6 +1869,36 @@ export const walkieTalkieJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const smileyFaceJoker: JokerDefinition = {
+  id: 'smileyFaceJoker',
+  name: 'Smiley Face',
+  description: '+5 Mult if played card is a face card',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        const faceValues = ['J', 'Q', 'K']
+        if (faceValues.includes(cardDef.value)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: 5,
+            source: 'Smiley Face',
+          })
+          ctx.game.gamePlayState.score.mult += 5
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -1924,6 +1954,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   supernovaJoker,
   blueJokerJoker,
   abstractJokerJoker,
+  smileyFaceJoker,
 }
 
 /***
