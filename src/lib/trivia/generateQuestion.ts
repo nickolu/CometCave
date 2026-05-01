@@ -165,13 +165,24 @@ Examples:
 
 GOOD: fact="Serena Williams won her 23rd and final Grand Slam singles title at the 2017 Australian Open." keyDetail="2017 Australian Open"
   Question: "At which Grand Slam tournament did Serena Williams win her 23rd and final singles title?"
-  → unambiguous because the question pins it to her specific 23rd title.
+  → unambiguous AND the question doesn't contain "2017" or "Australian Open."
 
-BAD: same fact, keyDetail="2017 Australian Open"
+AMBIGUITY BAD: same fact, keyDetail="2017 Australian Open"
   Question: "At which Grand Slam did Serena Williams win a major title?"
-  → ambiguous; she won several. The question must specify "her 23rd / final" to rule out alternatives.
+  → ambiguous; she won several. Specify "her 23rd / final" to rule out alternatives.
 
-If you cannot construct a question with one unambiguous answer from this fact, output the best-effort question you can — the reviewer will reject ambiguous questions and we will retry with a different fact.`,
+LEAK BAD: same fact, keyDetail="2017 Australian Open"
+  Question: "When did Serena Williams win at the 2017 Australian Open?"
+  → the keyDetail "2017 Australian Open" is right there in the question. Players answering this question would just type the words they already see.
+
+LEAK BAD: fact="The Pythagorean theorem states that a² + b² = c² for any right triangle." keyDetail="Pythagorean theorem"
+  Question: "What is the Pythagorean theorem?"
+  → keyDetail appears in the question. To fix, describe the theorem without naming it:
+  Better: "What theorem describes the relationship a² + b² = c² between the sides of a right triangle?"
+
+A useful test: if you removed the keyDetail (and obvious synonyms) from your question, would the question still make sense and ask for that specific answer? If not, you have leaked the answer. Reword so the question describes the answer rather than naming it.
+
+If you cannot construct a question that is both unambiguous AND leak-free from this fact, output the best-effort question you can — the reviewer will reject and we will retry with a different fact.`,
     temperature: 0.5,
     maxTokens: 400,
   })
@@ -195,6 +206,34 @@ interface ReviewResult {
   accept: boolean
   reason: string | null
   inferred_category: string
+}
+
+// Cheap, deterministic pre-check that catches the most common reviewer-
+// rejection reason: the keyDetail is echoed verbatim inside the question
+// text. Saves a reviewer call when we can already tell the draft will
+// fail. Doesn't catch synonym leaks (the reviewer still does that), but
+// catches the easy half of the failure mode.
+export function detectAnswerLeak(question: string, keyDetail: string): boolean {
+  const q = question.toLowerCase()
+  const k = keyDetail.toLowerCase().trim()
+  if (k.length < 3) return false
+
+  // Verbatim full-string match.
+  if (q.includes(k)) return true
+
+  // Adjacent significant-word pairs. A multi-word keyDetail like
+  // "2017 Australian Open" leaks if the question contains "Australian
+  // Open" even without the year. Checking every adjacent pair of
+  // longer-than-3-char words catches that case without false-positiving
+  // on common short words like "of" or "the".
+  const words = k.split(/\s+/).filter((w) => w.length > 0)
+  for (let i = 0; i < words.length - 1; i++) {
+    if (words[i].length > 3 && words[i + 1].length > 3) {
+      const pair = `${words[i]} ${words[i + 1]}`
+      if (q.includes(pair)) return true
+    }
+  }
+  return false
 }
 
 async function reviewQuestion(
@@ -311,6 +350,21 @@ export async function generateInfiniteQuestion(
       difficulty,
       seedSummary,
     })
+
+    // Cheap pre-check: if the question echoes the keyDetail verbatim,
+    // skip the reviewer (it would just reject anyway) and retry.
+    if (detectAnswerLeak(draft.question, fact.keyDetail)) {
+      lastReason = `pre-check: question contains keyDetail "${fact.keyDetail}" verbatim`
+      console.warn('[generateInfiniteQuestion] draft rejected (pre-check)', {
+        attempt,
+        category: categoryName,
+        seed: seedSummary,
+        keyDetail: fact.keyDetail,
+        question: draft.question,
+      })
+      continue
+    }
+
     const review = await reviewQuestion(apiKey, draft)
 
     if (review.accept) {
