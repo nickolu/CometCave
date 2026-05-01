@@ -76,7 +76,31 @@ const theNeedle: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle]
+const thePillar: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Pillar',
+  description: 'Cards played previously this Ante are debuffed',
+  image: 'the-pillar.png',
+  minimumAnte: 1,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        const playedThisAnte = new Set(ctx.game.gamePlayState.cardIdsPlayedThisAnte)
+        ctx.game.gamePlayState.cardsToScore = ctx.game.gamePlayState.cardsToScore.filter(
+          card => !playedThisAnte.has(card.id)
+        )
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar]
 
 /**
  

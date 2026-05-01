@@ -72,6 +72,9 @@ export type GamePhase =
 export interface GamePlayState {
   cardsToScore: PlayingCardState[]
 
+  // Track card IDs played across blinds in current ante (for The Pillar)
+  cardIdsPlayedThisAnte: string[]
+
   // Discard pile for current blind (card IDs)
   discardPileIds: string[]
 

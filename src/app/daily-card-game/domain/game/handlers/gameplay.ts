@@ -279,6 +279,12 @@ export function handleHandScoringStart(draft: GameState, event: GameEvent) {
   gamePlayState.cardsToScore = cardsToScore
   gamePlayState.playedCardIds = gamePlayState.selectedCardIds
 
+  // Accumulate cards played this ante only during small/big blinds (for The Pillar)
+  const currentBlindForTracking = getInProgressBlind(draft as unknown as GameState)
+  if (currentBlindForTracking && currentBlindForTracking.type !== 'bossBlind') {
+    gamePlayState.cardIdsPlayedThisAnte.push(...gamePlayState.selectedCardIds)
+  }
+
   gamePlayState.remainingHands -= 1
 
   const playedHandLevel = draft.pokerHands[playedHand].level - 1
@@ -350,6 +356,7 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   draft.gamePlayState.drawPileIds = draft.ownedCardIds
   draft.gamePlayState.remainingHands = draft.maxHands
   if (currentBlind.type === 'bossBlind') {
+    draft.gamePlayState.cardIdsPlayedThisAnte = []
     draft.roundIndex += 1
   }
   draft.gamePlayState.scoringEvents = []
