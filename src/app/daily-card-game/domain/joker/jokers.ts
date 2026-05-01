@@ -3183,6 +3183,49 @@ export const hack: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const seltzer: JokerDefinition = {
+  id: 'seltzer',
+  name: 'Seltzer',
+  description: 'Retrigger all cards played for the next 10 hands',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const s = ctx.game.jokers.find(j => j.jokerId === 'seltzer')
+        if (!s) return
+        if (s.counter === 0) s.counter = 10
+        if (s.counter <= 0) return
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: cardDef.baseChips,
+          source: 'Seltzer',
+        })
+        ctx.game.gamePlayState.score.chips += cardDef.baseChips
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const s = ctx.game.jokers.find(j => j.jokerId === 'seltzer')
+        if (!s) return
+        if (s.counter === 0) s.counter = 10
+        s.counter -= 1
+        if (s.counter <= 0) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== s.id)
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const riffRaff: JokerDefinition = {
   id: 'riffRaff',
   name: 'Riff-raff',
@@ -3559,6 +3602,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   mailInRebate,
   hangingChad,
   hack,
+  seltzer,
   riffRaff,
   ceremonialDagger,
   madness,
