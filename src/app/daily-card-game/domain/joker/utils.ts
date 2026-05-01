@@ -121,6 +121,7 @@ export const initializeJoker = (joker: JokerDefinition, game: GameState): JokerS
     jokerId: joker.id,
     edition,
     isFaceUp: true,
+    bonusSellValue: 0,
     flags: {
       isRentable: flag === 'isRentable',
       isPerishable: flag === 'isPerishable',
