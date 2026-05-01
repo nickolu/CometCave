@@ -3267,6 +3267,38 @@ export const cardSharp: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const loyaltyCard: JokerDefinition = {
+  id: 'loyaltyCard',
+  name: 'Loyalty Card',
+  description: 'X4 Mult every 6 hands played',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const lc = ctx.game.jokers.find(j => j.jokerId === 'loyaltyCard')
+        if (!lc) return
+        // Lazy init
+        if (lc.counter === 0) lc.counter = 6
+        lc.counter -= 1
+        if (lc.counter === 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 4,
+            source: 'Loyalty Card',
+          })
+          ctx.game.gamePlayState.score.mult *= 4
+          lc.counter = 6
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3362,6 +3394,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   riffRaff,
   spaceJoker,
   cardSharp,
+  loyaltyCard,
 }
 
 /***
