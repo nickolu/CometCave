@@ -289,6 +289,9 @@ export function handleHandScoringStart(draft: GameState, event: GameEvent) {
   // increment the times the hand has been played
   draft.pokerHands[playedHand].timesPlayed += 1
 
+  // track which hand types have been played this round
+  gamePlayState.handTypesPlayedThisRound.push(playedHand)
+
   const handMult =
     pokerHands[playedHand].baseMult + pokerHands[playedHand].multIncreasePerLevel * playedHandLevel
   const handChips =
@@ -351,6 +354,7 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   }
   draft.gamePlayState.scoringEvents = []
   draft.gamePlayState.remainingDiscards = draft.maxDiscards
+  draft.gamePlayState.handTypesPlayedThisRound = []
 
   // Reset shop state for the new shop session
   draft.shopState.cardsForSale = []
