@@ -701,6 +701,34 @@ export const dietColaJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const cloud9Joker: JokerDefinition = {
+  id: 'cloud9Joker',
+  name: 'Cloud 9',
+  description: 'Earn $1 for each 9 in your full deck at end of round',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let nineCount = 0
+        for (const cardId of ctx.game.ownedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (cardDef && cardDef.value === '9') {
+            nineCount++
+          }
+        }
+        if (nineCount > 0) {
+          ctx.game.money += nineCount
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -722,6 +750,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   rocketJoker,
   midasMaskJoker,
   dietColaJoker,
+  cloud9Joker,
 }
 
 /***
