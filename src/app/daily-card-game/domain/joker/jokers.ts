@@ -729,6 +729,33 @@ export const cloud9Joker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const bullJoker: JokerDefinition = {
+  id: 'bullJoker',
+  name: 'Bull',
+  description: '+2 Chips for each $1 you have',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const money = Math.max(0, ctx.game.money)
+        const chipsBonus = 2 * money
+        if (chipsBonus > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: chipsBonus,
+            source: 'Bull',
+          })
+          ctx.game.gamePlayState.score.chips += chipsBonus
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -751,6 +778,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   midasMaskJoker,
   dietColaJoker,
   cloud9Joker,
+  bullJoker,
 }
 
 /***
