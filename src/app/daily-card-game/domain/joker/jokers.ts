@@ -1306,6 +1306,23 @@ export const arrowheadJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const onyxAgateJoker: JokerDefinition = {
+  id: 'onyxAgateJoker',
+  name: 'Onyx Agate',
+  description: 'Played cards with Club suit give +7 Mult when scored',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        bonusOnCardScored({ ctx, suit: 'clubs', type: 'mult', value: 7, source: 'Onyx Agate' })
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1345,6 +1362,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   erosionJoker,
   roughGemJoker,
   arrowheadJoker,
+  onyxAgateJoker,
 }
 
 /***
