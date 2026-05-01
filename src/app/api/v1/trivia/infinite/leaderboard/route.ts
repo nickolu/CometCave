@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { CATEGORY_META } from '@/lib/trivia/categories'
+import { getInfiniteTopByCategory } from '@/lib/trivia/categoryMedals'
 import { getInfiniteTopByScore, getInfiniteTopByStreak } from '@/lib/trivia/infiniteRuns'
 
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get('sort') || 'score'
+  const categoryIdParam = request.nextUrl.searchParams.get('categoryId')
 
   try {
     if (sort === 'score') {
@@ -16,8 +19,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ sort: 'streak', entries })
     }
 
+    if (sort === 'category') {
+      const categoryId = categoryIdParam !== null ? parseInt(categoryIdParam, 10) : NaN
+      if (isNaN(categoryId) || !(categoryId in CATEGORY_META)) {
+        return NextResponse.json(
+          { error: 'sort=category requires a valid categoryId.' },
+          { status: 400 }
+        )
+      }
+      const entries = await getInfiniteTopByCategory(categoryId, 20)
+      return NextResponse.json({ sort: 'category', categoryId, entries })
+    }
+
     return NextResponse.json(
-      { error: 'Invalid sort. Use score or streak.' },
+      { error: 'Invalid sort. Use score, streak, or category.' },
       { status: 400 }
     )
   } catch (error: unknown) {

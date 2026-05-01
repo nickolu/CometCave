@@ -51,6 +51,14 @@
         { "fieldPath": "endedAt", "order": "ASCENDING" },
         { "fieldPath": "longestStreak", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "triviaCategoryStats",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "categoryId", "order": "ASCENDING" },
+        { "fieldPath": "correctCount", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

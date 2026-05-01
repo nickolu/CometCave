@@ -16,6 +16,14 @@ export interface CategoryMedalSummary {
   nextThreshold: number | null
 }
 
+export interface CategoryLeaderboardEntry {
+  uid: string
+  displayName: string
+  correctCount: number
+  tier: MedalTier
+  label: string | null
+}
+
 // Returns one summary entry per known category, including categories the
 // user has never answered in (correctCount: 0, tier: 'none'). The selector
 // uses this to paint either a colored badge or an empty silhouette on
@@ -47,4 +55,48 @@ export async function getCategoryMedalsForUser(uid: string): Promise<CategoryMed
     })
   }
   return result
+}
+
+// Top players for one category, sorted by lifetime correctCount in that
+// category. Hydrates nicknames from the parent users/{uid} doc so the
+// leaderboard shows display names instead of raw uids.
+export async function getInfiniteTopByCategory(
+  categoryId: number,
+  limit = 20
+): Promise<CategoryLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaCategoryStats')
+    .where('categoryId', '==', categoryId)
+    .orderBy('correctCount', 'desc')
+    .limit(limit)
+    .get()
+
+  const rows = snap.docs.map((d) => {
+    const data = d.data()
+    const uid = d.ref.parent.parent?.id ?? ''
+    return { uid, correctCount: (data.correctCount as number) ?? 0 }
+  })
+
+  if (rows.length === 0) return []
+
+  const userRefs = rows.map((r) => db.doc(`users/${r.uid}`))
+  const userSnaps = await db.getAll(...userRefs)
+  const nicknameByUid = new Map<string, string>()
+  for (const s of userSnaps) {
+    if (!s.exists) continue
+    const data = s.data() as { nickname?: string }
+    if (data?.nickname) nicknameByUid.set(s.ref.id, data.nickname)
+  }
+
+  return rows.map((r) => {
+    const tier = getMedalTier(r.correctCount)
+    return {
+      uid: r.uid,
+      displayName: nicknameByUid.get(r.uid) || 'Player',
+      correctCount: r.correctCount,
+      tier,
+      label: getMedalLabel(categoryId, tier),
+    }
+  })
 }
