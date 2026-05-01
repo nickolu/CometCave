@@ -2288,6 +2288,26 @@ export const creditCard: JokerDefinition = {
   rarity: 'common',
 }
 
+export const delayedGratification: JokerDefinition = {
+  id: 'delayedGratification',
+  name: 'Delayed Gratification',
+  description: 'Earn $2 per discard if no discards are used by end of the round',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.discardsPlayed === 0) {
+          const payout = 2 * ctx.game.maxDiscards
+          ctx.game.money += payout
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2356,6 +2376,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   chaosTheClown,
   businessCard,
   creditCard,
+  delayedGratification,
 }
 
 /***
