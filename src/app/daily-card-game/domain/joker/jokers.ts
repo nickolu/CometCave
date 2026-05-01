@@ -2519,6 +2519,50 @@ export const greenJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const superposition: JokerDefinition = {
+  id: 'superposition',
+  name: 'Superposition',
+  description: 'Create a Tarot card if poker hand contains an Ace and a Straight (Must have room)',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // Check if there's room for consumables
+        if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+
+        const handId = selectedHand[0]
+        const straightHands = ['straight', 'straightFlush']
+        if (!straightHands.includes(handId)) return
+
+        const handCards = selectedHand[1]
+        if (!handCards || handCards.length === 0) return
+
+        const hasAce = handCards.some(card => {
+          const cardDef = playingCards[card.playingCardId]
+          return cardDef?.value === 'A'
+        })
+        if (!hasAce) return
+
+        // Create a random tarot card
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          ctx.game.handsPlayed.toString(),
+          'superposition',
+        ])
+        const tarotCard = getRandomTarotCards(1, seed)[0]
+        ctx.game.consumables.push(initializeTarotCard(tarotCard))
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2594,6 +2638,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   egg,
   splash,
   greenJoker,
+  superposition,
 }
 
 /***
