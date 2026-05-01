@@ -1375,6 +1375,62 @@ export const merryAndyJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const flashCardJoker: JokerDefinition = {
+  id: 'flashCardJoker',
+  name: 'Flash Card',
+  description: 'This Joker gains +2 Mult per reroll in the shop',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
+        if (fc) {
+          fc.metadata = { ...fc.metadata, multBonus: fc.metadata?.multBonus ?? 0 }
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
+        if (fc) {
+          fc.metadata = { ...fc.metadata, multBonus: 0 }
+        }
+      },
+    },
+    {
+      event: { type: 'SHOP_REROLL' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
+        if (fc) {
+          if (!fc.metadata) fc.metadata = { multBonus: 0 }
+          fc.metadata.multBonus += 2
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
+        if (!fc || !fc.metadata || fc.metadata.multBonus <= 0) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          value: fc.metadata.multBonus,
+          source: 'Flash Card',
+        })
+        ctx.game.gamePlayState.score.mult += fc.metadata.multBonus
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1416,6 +1472,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   arrowheadJoker,
   onyxAgateJoker,
   merryAndyJoker,
+  flashCardJoker,
 }
 
 /***
