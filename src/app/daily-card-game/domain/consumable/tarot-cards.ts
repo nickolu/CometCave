@@ -164,6 +164,30 @@ const theDevil: TarotCardDefinition = {
   ],
 }
 
+const justice: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'justice',
+  name: 'Justice',
+  price: 2,
+  description: 'Enhances 1 selected card to a Glass card',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds[0]
+        const card = ctx.game.cards[cardId]
+        if (card) {
+          card.flags.enchantment = 'glass'
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -187,7 +211,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   strength: notImplemented,
   theHermit,
   wheelOfFortune: notImplemented,
-  justice: notImplemented,
+  justice,
   theHangedMan: notImplemented,
   death: notImplemented,
   temperance,
