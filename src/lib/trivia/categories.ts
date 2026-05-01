@@ -45,3 +45,14 @@ export function getDailyCategory(dateStr?: string): DailyCategory {
   const meta = CATEGORY_META[id] ?? CATEGORY_META[9]
   return { id, name: meta.name, icon: meta.icon }
 }
+
+const CATEGORY_NAME_TO_ID: ReadonlyMap<string, number> = new Map(
+  Object.entries(CATEGORY_META).map(([id, meta]) => [meta.name, Number(id)])
+)
+
+// Reverse lookup for the question.category string stored on aiQuestions docs.
+// Returns null when the name doesn't match a known category (e.g. legacy
+// questions tagged with a free-form topic).
+export function getCategoryIdByName(name: string): number | null {
+  return CATEGORY_NAME_TO_ID.get(name) ?? null
+}

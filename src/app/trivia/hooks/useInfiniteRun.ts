@@ -1,7 +1,9 @@
 'use client'
 import { useCallback, useRef, useState } from 'react'
+
+import { type AnswerResult, LIVES_START, SKIPS_PER_RUN } from '@/app/trivia/lib/infiniteScoring'
 import { useAuth } from '@/hooks/useAuth'
-import { LIVES_START, SKIPS_PER_RUN, type AnswerResult } from '@/app/trivia/lib/infiniteScoring'
+import type { MedalEarned } from '@/lib/trivia/medals'
 
 export type InfinitePhase = 'idle' | 'loading' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
 export type InfiniteMode = 'scored' | 'practice'
@@ -30,7 +32,7 @@ export interface InfiniteRunState {
   skipsRemaining: number
   skipsUsed: number
   flaggedQuestionIds: string[]
-  lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number }) | null
+  lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number; medalEarned?: MedalEarned | null }) | null
   answers: Array<{
     questionId: string
     correct: boolean

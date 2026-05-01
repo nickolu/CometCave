@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { CATEGORY_META } from '@/lib/trivia/categories'
+import { CATEGORY_META, getCategoryIdByName } from '@/lib/trivia/categories'
 import {
   CATEGORY_MEDAL_LADDERS,
   MEDAL_THRESHOLDS,
+  detectMedalEarned,
   getMedalLabel,
   getMedalTier,
   getNextThreshold,
@@ -98,5 +99,38 @@ describe('getNextThreshold', () => {
 
   it('returns null at the top tier', () => {
     expect(getNextThreshold('diamond')).toBeNull()
+  })
+})
+
+describe('detectMedalEarned', () => {
+  it('returns null when no tier line is crossed', () => {
+    expect(detectMedalEarned(0, 1, 31)).toBeNull()
+    expect(detectMedalEarned(64, 65, 31)).toBeNull()
+    expect(detectMedalEarned(255, 255, 31)).toBeNull()
+  })
+
+  it('returns the new tier and label on a tier crossing', () => {
+    expect(detectMedalEarned(15, 16, 31)).toEqual({ tier: 'bronze', label: 'Bug Trainer' })
+    expect(detectMedalEarned(63, 64, 31)).toEqual({ tier: 'silver', label: 'Krillin' })
+    expect(detectMedalEarned(1023, 1024, 31)).toEqual({ tier: 'platinum', label: 'Hokage' })
+    expect(detectMedalEarned(4095, 4096, 31)).toEqual({ tier: 'diamond', label: 'Truth' })
+  })
+
+  it('returns null for an unknown category', () => {
+    expect(detectMedalEarned(15, 16, 999)).toBeNull()
+  })
+})
+
+describe('getCategoryIdByName', () => {
+  it('round-trips every CATEGORY_META entry', () => {
+    for (const id of Object.keys(CATEGORY_META).map(Number)) {
+      const name = CATEGORY_META[id].name
+      expect(getCategoryIdByName(name)).toBe(id)
+    }
+  })
+
+  it('returns null for unknown names', () => {
+    expect(getCategoryIdByName('Underwater Basket Weaving')).toBeNull()
+    expect(getCategoryIdByName('')).toBeNull()
   })
 })

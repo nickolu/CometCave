@@ -3,6 +3,8 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { LIVES_START, applyAnswer } from '@/app/trivia/lib/infiniteScoring'
 import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 import { getFirestoreDb } from '@/lib/firebase/server'
+import { getCategoryIdByName } from '@/lib/trivia/categories'
+import { type MedalEarned, detectMedalEarned } from '@/lib/trivia/medals'
 import { applyRunToAggregate } from '@/lib/trivia/triviaStats'
 
 export interface RunDoc {
@@ -62,7 +64,7 @@ export async function submitAnswer(params: {
   questionId: string
   correct: boolean
   elapsedMs: number
-}): Promise<AnswerResult & { trailblazer: boolean }> {
+}): Promise<AnswerResult & { trailblazer: boolean; medalEarned: MedalEarned | null }> {
   const db = getFirestoreDb()
   const { uid, runId, questionId, correct, elapsedMs } = params
 
@@ -84,6 +86,17 @@ export async function submitAnswer(params: {
 
     // Trailblazer: if timesShown was 0 before this answer
     const isTrailblazer = correct && (qData.timesShown ?? 0) === 0
+
+    // Resolve categoryId for medal tracking. Only correct answers in scored
+    // mode count toward medals; questions tagged with an unknown category
+    // string are silently skipped.
+    const categoryId = typeof qData.category === 'string' ? getCategoryIdByName(qData.category) : null
+    const eligibleForMedal = correct && run.mode === 'scored' && categoryId !== null
+    const medalStatsRef = eligibleForMedal
+      ? db.doc(`users/${uid}/triviaCategoryStats/${categoryId}`)
+      : null
+    const medalStatsSnap = medalStatsRef ? await tx.get(medalStatsRef) : null
+    const prevCorrectCount = medalStatsSnap?.exists ? (medalStatsSnap.data()?.correctCount ?? 0) : 0
 
     // Compute result using pure function
     const txResult = applyAnswer({
@@ -120,6 +133,44 @@ export async function submitAnswer(params: {
     // Write answeredBy reverse index
     tx.set(answeredByRef, { uid, runId, correct, at: now })
 
+    // Update or create the per-category medal aggregate.
+    let medalEarned: MedalEarned | null = null
+    if (eligibleForMedal && medalStatsRef && categoryId !== null) {
+      const newCorrectCount = prevCorrectCount + 1
+      const earned = detectMedalEarned(prevCorrectCount, newCorrectCount, categoryId)
+
+      const baseUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
+        categoryId,
+        correctCount: FieldValue.increment(1),
+        lastAnswerAt: now,
+      }
+      if (earned) {
+        baseUpdates.lastTierEarnedAt = now
+      }
+
+      if (medalStatsSnap?.exists) {
+        tx.update(medalStatsRef, baseUpdates)
+      } else {
+        tx.set(medalStatsRef, {
+          categoryId,
+          correctCount: 1,
+          lastAnswerAt: now,
+          lastTierEarnedAt: earned ? now : null,
+        })
+      }
+
+      if (earned) {
+        const categoryName = typeof qData.category === 'string' ? qData.category : ''
+        medalEarned = {
+          tier: earned.tier,
+          label: earned.label,
+          categoryId,
+          categoryName,
+          correctCount: newCorrectCount,
+        }
+      }
+    }
+
     // Build answer entry. Note: serverTimestamp() can't appear inside an
     // arrayUnion element, so we use a client-computed Timestamp here.
     const answerEntry = {
@@ -147,7 +198,7 @@ export async function submitAnswer(params: {
     }
     tx.update(runRef, runUpdates)
 
-    return { ...txResult, trailblazer: isTrailblazer }
+    return { ...txResult, trailblazer: isTrailblazer, medalEarned }
   })
 
   // Auto-finalize: apply aggregate stats outside the transaction (no nesting)
