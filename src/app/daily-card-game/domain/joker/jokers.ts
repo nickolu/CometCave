@@ -3809,6 +3809,58 @@ export const vagabond: JokerDefinition = {
   rarity: 'rare',
 }
 
+function resetHitTheRoad(ctx: EffectContext) {
+  const htr = ctx.game.jokers.find(j => j.jokerId === 'hitTheRoad')
+  if (htr) htr.counter = 2
+}
+
+export const hitTheRoad: JokerDefinition = {
+  id: 'hitTheRoad',
+  name: 'Hit the Road',
+  description: 'Gains X0.5 Mult for every Jack discarded this round',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const htr = ctx.game.jokers.find(j => j.jokerId === 'hitTheRoad')
+        if (!htr) return
+        if (htr.counter === 0) htr.counter = 2
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (cardDef.value === 'J') htr.counter += 1
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const htr = ctx.game.jokers.find(j => j.jokerId === 'hitTheRoad')
+        if (!htr) return
+        if (htr.counter === 0) htr.counter = 2
+        if (htr.counter <= 2) return
+        const xMult = htr.counter / 2
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Hit the Road',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+    { event: { type: 'SMALL_BLIND_SELECTED' }, priority: 1, apply: resetHitTheRoad },
+    { event: { type: 'BIG_BLIND_SELECTED' }, priority: 1, apply: resetHitTheRoad },
+    { event: { type: 'BOSS_BLIND_SELECTED' }, priority: 1, apply: resetHitTheRoad },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3919,6 +3971,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   giftCard,
   castle,
   vagabond,
+  hitTheRoad,
 }
 
 /***
