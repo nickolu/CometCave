@@ -3208,6 +3208,59 @@ export const riffRaff: JokerDefinition = {
   rarity: 'common',
 }
 
+function applyCeremonialDagger(ctx: EffectContext) {
+  const daggerIndex = ctx.game.jokers.findIndex(j => j.jokerId === 'ceremonialDagger')
+  if (daggerIndex === -1) return
+  const rightJoker = ctx.game.jokers[daggerIndex + 1]
+  if (!rightJoker) return
+  const rightJokerDef = jokers[rightJoker.jokerId]
+  if (!rightJokerDef) return
+  const sellValue = rightJokerDef.price + rightJoker.bonusSellValue
+  ctx.game.jokers[daggerIndex].counter += sellValue * 2
+  ctx.game.jokers.splice(daggerIndex + 1, 1)
+}
+
+export const ceremonialDagger: JokerDefinition = {
+  id: 'ceremonialDagger',
+  name: 'Ceremonial Dagger',
+  description:
+    'When Blind is selected, destroy Joker to the right and permanently add double its sell value to this Joker\'s Mult',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyCeremonialDagger,
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyCeremonialDagger,
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyCeremonialDagger,
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const dagger = ctx.game.jokers.find(j => j.jokerId === 'ceremonialDagger')
+        if (!dagger || dagger.counter === 0) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          value: dagger.counter,
+          source: 'Ceremonial Dagger',
+        })
+        ctx.game.gamePlayState.score.mult += dagger.counter
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const spaceJoker: JokerDefinition = {
   id: 'spaceJoker',
   name: 'Space Joker',
@@ -3392,6 +3445,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hangingChad,
   hack,
   riffRaff,
+  ceremonialDagger,
   spaceJoker,
   cardSharp,
   loyaltyCard,
