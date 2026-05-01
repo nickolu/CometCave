@@ -81,7 +81,7 @@ export function InfiniteQuestionCard({
         </p>
 
         {/* Free-text input */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           <Input
             value={textAnswer}
             onChange={(e) => setTextAnswer(e.target.value)}
