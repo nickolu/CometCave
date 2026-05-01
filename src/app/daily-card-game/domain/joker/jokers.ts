@@ -3926,6 +3926,53 @@ export const driversLicense: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const campfire: JokerDefinition = {
+  id: 'campfire',
+  name: 'Campfire',
+  description: 'Gains X0.25 Mult for each card sold, resets when Boss Blind is defeated',
+  price: 9,
+  effects: [
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cf = ctx.game.jokers.find(j => j.jokerId === 'campfire')
+        if (!cf) return
+        if (cf.counter === 0) cf.counter = 4
+        cf.counter += 1
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cf = ctx.game.jokers.find(j => j.jokerId === 'campfire')
+        if (!cf) return
+        if (cf.counter === 0) cf.counter = 4
+        if (cf.counter <= 4) return
+        const xMult = cf.counter / 4
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Campfire',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cf = ctx.game.jokers.find(j => j.jokerId === 'campfire')
+        if (cf) cf.counter = 4
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4039,6 +4086,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hitTheRoad,
   ancientJoker,
   driversLicense,
+  campfire,
 }
 
 /***
