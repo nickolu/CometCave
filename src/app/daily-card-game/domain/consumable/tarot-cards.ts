@@ -1,7 +1,12 @@
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import {
+  buildSeedString,
+  getRandomNumbersWithSeed,
+} from '@/app/daily-card-game/domain/randomness'
 
 import { TarotCardDefinition } from './types'
 
@@ -433,6 +438,39 @@ const strength: TarotCardDefinition = {
   ],
 }
 
+const judgement: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'judgement',
+  name: 'Judgement',
+  price: 2,
+  description: 'Creates a random Joker card (must have room)',
+  isPlayable: (game: GameState) => game.jokers.length < game.maxJokers,
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length >= ctx.game.maxJokers) return
+        const allJokerDefs = Object.values(jokers)
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'judgement',
+        ])
+        const indices = getRandomNumbersWithSeed({
+          seed,
+          min: 0,
+          max: allJokerDefs.length - 1,
+          numberOfNumbers: 1,
+        })
+        const jokerDef = allJokerDefs[indices[0]]
+        const jokerState = initializeJoker(jokerDef, ctx.game)
+        ctx.game.jokers.push(jokerState)
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -465,7 +503,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theStar,
   theMoon,
   theSun,
-  judgement: notImplemented,
+  judgement,
   theWorld,
 }
 
