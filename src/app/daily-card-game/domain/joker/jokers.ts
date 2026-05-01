@@ -2877,6 +2877,26 @@ export const facelessJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const goldenTicket: JokerDefinition = {
+  id: 'goldenTicket',
+  name: 'Golden Ticket',
+  description: 'Played Gold cards earn $4 when scored',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        if (scoredCard.flags.enchantment !== 'gold') return
+        ctx.game.money += 4
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2961,6 +2981,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   toDoList,
   facelessJoker,
   rideTheBus,
+  goldenTicket,
 }
 
 /***
