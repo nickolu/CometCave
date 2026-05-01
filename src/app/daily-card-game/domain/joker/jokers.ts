@@ -4024,6 +4024,34 @@ export const obelisk: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const triboulet: JokerDefinition = {
+  id: 'triboulet',
+  name: 'Triboulet',
+  description: 'Played Kings and Queens each give X2 Mult when scored',
+  price: 20,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (cardDef.value !== 'K' && cardDef.value !== 'Q') return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: 2,
+          source: 'Triboulet',
+        })
+        ctx.game.gamePlayState.score.mult *= 2
+      },
+    },
+  ],
+  rarity: 'legendary',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4139,6 +4167,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   driversLicense,
   campfire,
   obelisk,
+  triboulet,
 }
 
 /***
