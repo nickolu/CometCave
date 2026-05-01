@@ -75,7 +75,14 @@ export async function GET(request: NextRequest) {
           avgTimeMs: null,
         }
       } catch (genErr) {
-        console.error('On-demand question generation failed:', genErr)
+        console.error('[trivia/infinite/next] generation failed', {
+          uid: auth.claims.uid,
+          streak: parsedStreak,
+          requestedCategoryIds: categoryIds,
+          rateRemaining: remaining,
+          error: genErr instanceof Error ? genErr.message : String(genErr),
+          stack: genErr instanceof Error ? genErr.stack : undefined,
+        })
         await trackExhaustion(auth.claims.uid)
         return new NextResponse(null, { status: 204 })
       }
