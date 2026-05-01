@@ -310,28 +310,41 @@ async function reviewQuestion(
     model: openaiClient(REVIEW_MODEL),
     schema: ReviewSchema,
     system:
-      'You are a strict quality reviewer for trivia questions. You reject anything that would frustrate a player.',
+      'You are a quality reviewer for trivia questions. Your job is to catch GENUINE problems, not to second-guess perfectly-good descriptive questions. A great trivia question describes its answer without naming it — that is the whole point of trivia.',
     prompt: `Review this trivia question for the category "${draft.categoryName}".
 
 Source fact: ${draft.fact.claim}
 Question: ${draft.question}
-Correct answer: ${draft.correct_answer}
+Expected answer: ${draft.correct_answer}
 Explanation: ${draft.explanation}
 
-Reject the question if ANY of these are true:
-- The answer is unambiguously stated (or trivially translated) inside the question text.
-- The question has multiple equally-valid answers — it must have ONE specific answer.
-- The question is too vague to answer without options.
-- The question is nonsensical, broken, or contradicts itself.
-- The "correct answer" doesn't actually answer the question.
-- The question's claim contradicts the source fact, or the answer doesn't match what the source fact supports.
-- The question doesn't belong to the category "${draft.categoryName}" — pick the best-fitting category from this list:
-  ${KNOWN_CATEGORIES.join(', ')}
+A question is a LEAK only if the expected answer string (or a clear synonym/translation of it) appears in the question text. Describing the answer is NOT a leak — it's good trivia.
 
-Set accept=true ONLY if every check passes AND inferred_category equals "${draft.categoryName}".
-If you reject, give a one-sentence rejection_reason. Otherwise rejection_reason is null.`,
+LEAK examples (REJECT):
+  Question: "What is the Pythagorean theorem?" Answer: "Pythagorean theorem"
+    → "Pythagorean theorem" appears verbatim. Leak.
+  Question: "When did the Lincoln Futura concept car appear in the 1966 Batman series?" Answer: "Lincoln Futura"
+    → "Lincoln Futura" appears verbatim. Leak.
+
+NOT-A-LEAK examples (ACCEPT, do not flag as leak):
+  Question: "Which early arcade video game, released by Atari in 1972, simulated table tennis?" Answer: "Pong"
+    → "Pong" does not appear. The question describes Pong via its features. ACCEPT.
+  Question: "How many novels are in Terry Pratchett's Discworld series?" Answer: "41"
+    → "41" does not appear. The word "novels" is in the question, but that's the unit, not the answer. ACCEPT.
+  Question: "What 2019 anthology explores the worldbuilding of Robert Jordan's Wheel of Time series?" Answer: "The World of the Wheel of Time"
+    → The phrase "Wheel of Time" appears in the question, but it refers to the SERIES being described, not the ANTHOLOGY. The answer (the anthology title) does not appear as the answer. ACCEPT.
+
+Then check the OTHER failure modes:
+- The question has multiple equally-valid answers (must have ONE specific answer).
+- The question is too vague to answer without options.
+- The question is nonsensical or contradicts itself.
+- The "expected answer" doesn't actually answer the question.
+- The question's claim contradicts the source fact, or the answer doesn't match what the fact supports.
+- The question doesn't belong to category "${draft.categoryName}" — pick the best fit from: ${KNOWN_CATEGORIES.join(', ')}
+
+Set accept=true if all checks pass. If you reject, give a one-sentence rejection_reason naming the specific failure. inferred_category is the category you think the question best belongs to.`,
     temperature: 0,
-    maxTokens: 150,
+    maxTokens: 200,
   })
 
   // Trust the LLM's overall accept signal. We previously also required
