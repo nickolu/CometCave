@@ -2966,6 +2966,42 @@ export const reservedParking: JokerDefinition = {
   rarity: 'common',
 }
 
+export const mailInRebate: JokerDefinition = {
+  id: 'mailInRebate',
+  name: 'Mail-In Rebate',
+  description: 'Earn $5 for each discarded card of the target rank, rank changes every round',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const allValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'mailInRebate',
+          'target',
+        ])
+        const roll = getRandomNumbersWithSeed({ seed, min: 0, max: allValues.length - 1, numberOfNumbers: 1 })
+        const targetValue = allValues[roll[0]]
+
+        let matchCount = 0
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (cardDef.value === targetValue) matchCount++
+        }
+        if (matchCount > 0) {
+          ctx.game.money += 5 * matchCount
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3053,6 +3089,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   goldenTicket,
   reservedParking,
   hallucination,
+  mailInRebate,
 }
 
 /***
