@@ -2308,6 +2308,50 @@ export const delayedGratification: JokerDefinition = {
   rarity: 'common',
 }
 
+export const grosMichel: JokerDefinition = {
+  id: 'grosMichel',
+  name: 'Gros Michel',
+  description: '+15 Mult. 1 in 6 chance this is destroyed at the end of round.',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          value: 15,
+          source: 'Gros Michel',
+        })
+        ctx.game.gamePlayState.score.mult += 15
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'grosMichel',
+          'destroy',
+        ])
+        const roll = getRandomNumbersWithSeed({
+          seed,
+          min: 1,
+          max: 6,
+          numberOfNumbers: 1,
+        })
+        if (roll[0] === 1) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.jokerId !== 'grosMichel')
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2377,6 +2421,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   businessCard,
   creditCard,
   delayedGratification,
+  grosMichel,
 }
 
 /***
