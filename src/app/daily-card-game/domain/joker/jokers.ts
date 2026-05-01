@@ -4149,6 +4149,34 @@ export const troubadour: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const showman: JokerDefinition = {
+  id: 'showman',
+  name: 'Showman',
+  description: 'Joker, Tarot, Planet, and Spectral cards may appear multiple times',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.allowDuplicateJokersInShop = true
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // Only reset if no other Showman joker exists
+        const hasShowman = ctx.game.jokers.some(j => j.jokerId === 'showman')
+        if (!hasShowman) {
+          ctx.game.staticRules.allowDuplicateJokersInShop = false
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4269,6 +4297,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   chicot,
   burglar,
   troubadour,
+  showman,
 }
 
 /***
