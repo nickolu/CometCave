@@ -1,4 +1,5 @@
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import { removeOwnedCard } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 import { initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
@@ -471,6 +472,29 @@ const judgement: TarotCardDefinition = {
   ],
 }
 
+const theHangedMan: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theHangedMan',
+  name: 'The Hanged Man',
+  price: 2,
+  description: 'Destroys up to 2 selected cards',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds.slice(0, 2)) {
+          removeOwnedCard(ctx.game, cardId)
+        }
+        ctx.game.gamePlayState.selectedCardIds = []
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -495,7 +519,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theHermit,
   wheelOfFortune: notImplemented,
   justice,
-  theHangedMan: notImplemented,
+  theHangedMan,
   death: notImplemented,
   temperance,
   theDevil,
