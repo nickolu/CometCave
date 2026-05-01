@@ -6,6 +6,7 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { JokerDefinition } from './types'
@@ -650,6 +651,34 @@ export const rocketJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const midasMaskJoker: JokerDefinition = {
+  id: 'midasMaskJoker',
+  name: 'Midas Mask',
+  description: 'All played face cards become Gold cards when scored',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        const faceValues = ['J', 'Q', 'K']
+        if (!faceValues.includes(cardDef.value)) return
+
+        // Convert to Gold enchantment permanently
+        const cardState = ctx.game.cards[scoredCard.id]
+        if (cardState) {
+          cardState.flags.enchantment = 'gold'
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const dietColaJoker: JokerDefinition = {
   id: 'dietColaJoker',
   name: 'Diet Cola',
@@ -660,9 +689,6 @@ export const dietColaJoker: JokerDefinition = {
       event: { type: 'JOKER_SOLD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // Effects are collected before the joker is removed, then dispatched after removal.
-        // So when this fires, Diet Cola is already gone from ctx.game.jokers.
-        // If no Diet Cola remains, it was just sold (handles single-instance case).
         if (!ctx.game.jokers.some(j => j.jokerId === 'dietColaJoker')) {
           ctx.game.tags.push({
             id: uuid(),
@@ -694,6 +720,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   turtleBeanJoker,
   toTheMoonJoker,
   rocketJoker,
+  midasMaskJoker,
   dietColaJoker,
 }
 
