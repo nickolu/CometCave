@@ -2529,6 +2529,45 @@ export const egg: JokerDefinition = {
   rarity: 'common',
 }
 
+export const photograph: JokerDefinition = {
+  id: 'photograph',
+  name: 'Photograph',
+  description: 'First played face card gives X2 Mult when scored',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const pj = ctx.game.jokers.find(j => j.jokerId === 'photograph')
+        if (pj) pj.counter = 0
+      },
+    },
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const pj = ctx.game.jokers.find(j => j.jokerId === 'photograph')
+        if (!pj || pj.counter !== 0) return
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        pj.counter = 1
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: 2,
+          source: 'Photograph',
+        })
+        ctx.game.gamePlayState.score.mult *= 2
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const splash: JokerDefinition = {
   id: 'splash',
   name: 'Splash',
@@ -2799,6 +2838,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   redCard,
   iceCream,
   egg,
+  photograph,
   splash,
   greenJoker,
   superposition,
