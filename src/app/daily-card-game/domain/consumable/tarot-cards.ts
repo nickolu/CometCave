@@ -399,6 +399,40 @@ const theWorld: TarotCardDefinition = {
   ],
 }
 
+const RANK_ORDER = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const
+
+const strength: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'strength',
+  name: 'Strength',
+  price: 2,
+  description: 'Increases rank of up to 2 selected cards by 1',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds.slice(0, 2)) {
+          const card = ctx.game.cards[cardId]
+          if (card) {
+            const cardDef = playingCards[card.playingCardId]
+            if (cardDef) {
+              const currentIndex = RANK_ORDER.indexOf(cardDef.value as (typeof RANK_ORDER)[number])
+              const nextIndex = (currentIndex + 1) % RANK_ORDER.length
+              const newValue = RANK_ORDER[nextIndex]
+              const suit = cardDef.suit
+              card.playingCardId = `${newValue}_${suit}`
+            }
+          }
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -419,7 +453,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theHierophant,
   theLovers,
   theChariot,
-  strength: notImplemented,
+  strength,
   theHermit,
   wheelOfFortune: notImplemented,
   justice,
