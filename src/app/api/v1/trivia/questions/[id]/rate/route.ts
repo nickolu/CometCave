@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
@@ -44,7 +44,11 @@ export async function POST(
     if (vote === null) {
       await ratingRef.delete();
     } else {
+      // Store uid + questionId as fields so admin tooling and
+      // collection-group queries can find ratings by user.
       await ratingRef.set({
+        uid,
+        questionId,
         vote,
         ratedAt: FieldValue.serverTimestamp(),
       });

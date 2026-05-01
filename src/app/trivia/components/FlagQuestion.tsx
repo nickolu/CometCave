@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+
 import { ChunkyButton } from '@/components/ui/chunky-button'
+import { useAuth } from '@/hooks/useAuth'
 
 const FLAG_REASONS = [
   { value: 'obvious', label: 'Answer is included in the question / too obvious' },
@@ -30,6 +31,7 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
   const [note, setNote] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   if (!user) return null
 
@@ -40,6 +42,7 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
   const handleSubmit = async () => {
     if (!canSubmit) return
     setSubmitting(true)
+    setSubmitError(null)
     try {
       const token = await user.getIdToken()
       const res = await fetch(`/api/v1/trivia/questions/${questionId}/flag`, {
@@ -47,6 +50,19 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reason, note: trimmedNote || undefined, runId: runId ?? undefined }),
       })
+      if (!res.ok) {
+        // Surface the failure instead of silently showing "Reported".
+        // The user keeps the modal open and can retry.
+        let detail = `${res.status}`
+        try {
+          const errBody = (await res.json()) as { error?: string }
+          if (errBody?.error) detail = errBody.error
+        } catch {
+          // fall through with the status code
+        }
+        setSubmitError(`Couldn't send report (${detail}). Try again.`)
+        return
+      }
       setSubmitted(true)
       setShowModal(false)
       if (onFlagged) {
@@ -59,8 +75,8 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
         }
         onFlagged(result)
       }
-    } catch {
-      // silent
+    } catch (err) {
+      setSubmitError(`Couldn't send report (${err instanceof Error ? err.message : 'network error'}). Try again.`)
     } finally {
       setSubmitting(false)
     }
@@ -92,6 +108,9 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
               maxLength={500}
               className="bg-surface-container-highest border border-outline-variant rounded-lg p-2 text-on-surface text-sm resize-none h-20 placeholder:text-on-surface/40"
             />
+            {submitError && (
+              <p className="text-ds-error text-xs">{submitError}</p>
+            )}
             <div className="flex gap-3 justify-end">
               <ChunkyButton variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</ChunkyButton>
               <ChunkyButton variant="exit" size="sm" disabled={!canSubmit} onClick={handleSubmit}>
