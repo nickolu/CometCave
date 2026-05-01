@@ -3783,6 +3783,32 @@ export const giftCard: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const vagabond: JokerDefinition = {
+  id: 'vagabond',
+  name: 'Vagabond',
+  description: 'Create a Tarot card if hand is played with $4 or less',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.money > 4) return
+        if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          ctx.game.handsPlayed.toString(),
+          'vagabond',
+        ])
+        const tarotCard = getRandomTarotCards(1, seed)[0]
+        ctx.game.consumables.push(initializeTarotCard(tarotCard))
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3892,6 +3918,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   vampire,
   giftCard,
   castle,
+  vagabond,
 }
 
 /***
