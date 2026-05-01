@@ -7,7 +7,13 @@ import {
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import { uuid } from '@/app/daily-card-game/domain/randomness'
+import {
+  buildSeedString,
+  getRandomNumbersWithSeed,
+  uuid,
+} from '@/app/daily-card-game/domain/randomness'
+import { initializeTarotCard } from '@/app/daily-card-game/domain/consumable/utils'
+import { getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
 
 import { JokerDefinition } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
@@ -2077,6 +2083,50 @@ export const mysticSummit: JokerDefinition = {
   rarity: 'common',
 }
 
+export const eightBall: JokerDefinition = {
+  id: 'eightBall',
+  name: '8 Ball',
+  description: '1 in 4 chance for each played 8 to create a Tarot card when scored (Must have room)',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (cardDef.value !== '8') return
+
+        // Check if there's room for consumables
+        if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+
+        // 1 in 4 chance
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          scoredCard.id,
+          'eightBall',
+        ])
+        const roll = getRandomNumbersWithSeed({
+          seed,
+          min: 1,
+          max: 4,
+          numberOfNumbers: 1,
+        })
+        if (roll[0] !== 1) return
+
+        // Create a random tarot card
+        const tarotSeed = buildSeedString([seed, 'tarot'])
+        const tarotCard = getRandomTarotCards(1, tarotSeed)[0]
+        ctx.game.consumables.push(initializeTarotCard(tarotCard))
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2139,6 +2189,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   scaryFaceJoker,
   banner,
   mysticSummit,
+  eightBall,
 }
 
 /***
