@@ -2352,6 +2352,51 @@ export const grosMichel: JokerDefinition = {
   rarity: 'common',
 }
 
+export const cavendish: JokerDefinition = {
+  id: 'cavendish',
+  name: 'Cavendish',
+  description: 'X3 Mult. 1 in 1000 chance this card is destroyed at the end of round',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: 3,
+          source: 'Cavendish',
+        })
+        ctx.game.gamePlayState.score.mult *= 3
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'cavendish',
+          'destroy',
+        ])
+        const roll = getRandomNumbersWithSeed({
+          seed,
+          min: 1,
+          max: 1000,
+          numberOfNumbers: 1,
+        })
+        if (roll[0] === 1) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.jokerId !== 'cavendish')
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const runner: JokerDefinition = {
   id: 'runner',
   name: 'Runner',
@@ -2682,6 +2727,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   creditCard,
   delayedGratification,
   grosMichel,
+  cavendish,
   runner,
   iceCream,
   egg,
