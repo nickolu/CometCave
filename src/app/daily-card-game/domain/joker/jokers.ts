@@ -2966,6 +2966,45 @@ export const reservedParking: JokerDefinition = {
   rarity: 'common',
 }
 
+export const hangingChad: JokerDefinition = {
+  id: 'hangingChad',
+  name: 'Hanging Chad',
+  description: 'Retrigger first played card used in scoring 2 additional times',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const hc = ctx.game.jokers.find(j => j.jokerId === 'hangingChad')
+        if (hc) hc.counter = 0
+      },
+    },
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const hc = ctx.game.jokers.find(j => j.jokerId === 'hangingChad')
+        if (!hc || hc.counter !== 0) return
+        hc.counter = 1
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        for (let i = 0; i < 2; i++) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: cardDef.baseChips,
+            source: 'Hanging Chad',
+          })
+          ctx.game.gamePlayState.score.chips += cardDef.baseChips
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const mailInRebate: JokerDefinition = {
   id: 'mailInRebate',
   name: 'Mail-In Rebate',
@@ -3090,6 +3129,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   reservedParking,
   hallucination,
   mailInRebate,
+  hangingChad,
 }
 
 /***
