@@ -650,6 +650,31 @@ export const rocketJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const dietColaJoker: JokerDefinition = {
+  id: 'dietColaJoker',
+  name: 'Diet Cola',
+  description: 'Sell this card to create a free Double Tag',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // Effects are collected before the joker is removed, then dispatched after removal.
+        // So when this fires, Diet Cola is already gone from ctx.game.jokers.
+        // If no Diet Cola remains, it was just sold (handles single-instance case).
+        if (!ctx.game.jokers.some(j => j.jokerId === 'dietColaJoker')) {
+          ctx.game.tags.push({
+            id: uuid(),
+            tagType: 'double',
+          })
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -669,6 +694,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   turtleBeanJoker,
   toTheMoonJoker,
   rocketJoker,
+  dietColaJoker,
 }
 
 /***
