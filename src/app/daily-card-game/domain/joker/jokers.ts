@@ -2352,6 +2352,26 @@ export const grosMichel: JokerDefinition = {
   rarity: 'common',
 }
 
+export const egg: JokerDefinition = {
+  id: 'egg',
+  name: 'Egg',
+  description: 'Gains $3 of sell value at end of round',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const eggJoker = ctx.game.jokers.find(j => j.jokerId === 'egg')
+        if (eggJoker) {
+          eggJoker.bonusSellValue += 3
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2422,6 +2442,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   creditCard,
   delayedGratification,
   grosMichel,
+  egg,
 }
 
 /***

@@ -294,7 +294,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           joker => joker.id === draft.gamePlayState.selectedJokerId
         )
         if (!selectedJoker) return
-        draft.money += jokers[selectedJoker.jokerId].price
+        draft.money += jokers[selectedJoker.jokerId].price + (selectedJoker.bonusSellValue ?? 0)
         removeJoker(draft, event, selectedJoker)
         return
       }
