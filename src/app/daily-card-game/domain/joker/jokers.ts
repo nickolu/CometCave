@@ -4061,6 +4061,26 @@ export const chicot: JokerDefinition = {
   rarity: 'legendary',
 }
 
+function applyBurglar(ctx: EffectContext) {
+  ctx.game.maxHands += 3
+  ctx.game.gamePlayState.remainingHands += 3
+  ctx.game.maxDiscards = 0
+  ctx.game.gamePlayState.remainingDiscards = 0
+}
+
+export const burglar: JokerDefinition = {
+  id: 'burglar',
+  name: 'Burglar',
+  description: 'When Blind is selected, gain +3 Hands and lose all discards',
+  price: 6,
+  effects: [
+    { event: { type: 'SMALL_BLIND_SELECTED' }, priority: 1, apply: applyBurglar },
+    { event: { type: 'BIG_BLIND_SELECTED' }, priority: 1, apply: applyBurglar },
+    { event: { type: 'BOSS_BLIND_SELECTED' }, priority: 1, apply: applyBurglar },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4178,6 +4198,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   obelisk,
   triboulet,
   chicot,
+  burglar,
 }
 
 /***
