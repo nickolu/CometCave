@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
@@ -66,7 +66,12 @@ export async function POST(
 
       tx.update(qRef, qUpdates);
 
+      // Store uid as a field too — the doc id is already the uid, but
+      // having it as a field lets us do collection-group queries like
+      // "all flags by user X" and lets admin tooling display it.
       const flagDoc: Record<string, unknown> = {
+        uid,
+        questionId,
         reason,
         flaggedAt: FieldValue.serverTimestamp(),
       };

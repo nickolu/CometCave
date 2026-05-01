@@ -56,11 +56,31 @@ export async function getAggregateStats(uid: string): Promise<AggregateStats> {
   const db = getFirestoreDb()
   const snap = await db.doc(`users/${uid}/triviaStats/aggregate`).get()
   if (!snap.exists) return { ...EMPTY_STATS }
-  return snap.data() as AggregateStats
+  // applyRunToAggregate now writes via merge-style field updates (instead
+  // of full-doc rewrites), so a stored doc may be missing some fields.
+  // Hydrate from EMPTY_STATS so the consumer always sees the full shape.
+  const stored = snap.data() as Partial<AggregateStats>
+  return {
+    ...EMPTY_STATS,
+    ...stored,
+    byCategory: stored.byCategory ?? {},
+    byDifficulty: {
+      easy: { ...EMPTY_STATS.byDifficulty.easy, ...stored.byDifficulty?.easy },
+      medium: { ...EMPTY_STATS.byDifficulty.medium, ...stored.byDifficulty?.medium },
+      hard: { ...EMPTY_STATS.byDifficulty.hard, ...stored.byDifficulty?.hard },
+    },
+  }
 }
 
 // Called at run finalization. Reads the run doc, walks its answers[],
 // and atomically updates the aggregate doc. Idempotent via statsApplied flag.
+//
+// Uses merge-style field updates (FieldValue.increment for counters,
+// dotted field paths for nested deltas) instead of a full-doc rewrite,
+// so concurrent writers like incrementVoiceStat / trackExhaustion never
+// have their writes clobbered. The only fields this function touches
+// are the run-derived ones; voice stats and exhaustion count belong
+// exclusively to their respective writers.
 export async function applyRunToAggregate(uid: string, runId: string): Promise<void> {
   const db = getFirestoreDb()
   const runRef = db.doc(`users/${uid}/triviaInfinite/${runId}`)
@@ -77,10 +97,12 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
     // Idempotency: skip if already applied
     if (run.statsApplied === true) return
 
+    // We only need the existing aggregate to compare against bestStreak /
+    // bestRun. Counters use FieldValue.increment so we don't read them.
     const aggSnap = await tx.get(aggRef)
-    const agg: AggregateStats = aggSnap.exists
-      ? (aggSnap.data() as AggregateStats)
-      : { ...EMPTY_STATS }
+    const existing: Partial<AggregateStats> = aggSnap.exists
+      ? (aggSnap.data() as Partial<AggregateStats>)
+      : {}
 
     // Batch-read all question docs referenced by answers
     const questionIds = run.answers.map((a) => a.questionId)
@@ -100,7 +122,7 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
     let totalTimeMs = 0
     let trailblazerCount = 0
     const byCategory: Record<string, { answered: number; correct: number; totalTimeMs: number }> = {}
-    const byDifficulty: Record<string, { answered: number; correct: number }> = {
+    const byDifficulty: Record<'easy' | 'medium' | 'hard', { answered: number; correct: number }> = {
       easy: { answered: 0, correct: 0 },
       medium: { answered: 0, correct: 0 },
       hard: { answered: 0, correct: 0 },
@@ -119,7 +141,6 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
 
       const qInfo = questionMap.get(answer.questionId)
       if (qInfo) {
-        // Category
         if (!byCategory[qInfo.category]) {
           byCategory[qInfo.category] = { answered: 0, correct: 0, totalTimeMs: 0 }
         }
@@ -127,61 +148,28 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
         if (answer.correct) byCategory[qInfo.category].correct += 1
         byCategory[qInfo.category].totalTimeMs += answer.timeMs
 
-        // Difficulty
         byDifficulty[qInfo.difficulty].answered += 1
         if (answer.correct) byDifficulty[qInfo.difficulty].correct += 1
       }
     }
 
-    // Merge byCategory: start from existing, add deltas
-    const mergedByCategory: Record<string, { answered: number; correct: number; totalTimeMs: number }> = {}
-    for (const [cat, val] of Object.entries(agg.byCategory)) {
-      mergedByCategory[cat] = { ...val }
-    }
-    for (const [cat, deltas] of Object.entries(byCategory)) {
-      if (!mergedByCategory[cat]) {
-        mergedByCategory[cat] = { answered: 0, correct: 0, totalTimeMs: 0 }
-      }
-      mergedByCategory[cat].answered += deltas.answered
-      mergedByCategory[cat].correct += deltas.correct
-      mergedByCategory[cat].totalTimeMs += deltas.totalTimeMs
+    // Build a sparse update — only fields this function owns.
+    const updates: Record<string, unknown> = {
+      totalAnswered: FieldValue.increment(totalAnswered),
+      totalCorrect: FieldValue.increment(totalCorrect),
+      totalScore: FieldValue.increment(run.score),
+      runsPlayed: FieldValue.increment(1),
+      trailblazerCount: FieldValue.increment(trailblazerCount),
+      totalTimeMs: FieldValue.increment(totalTimeMs),
+      lastUpdatedAt: FieldValue.serverTimestamp(),
     }
 
-    // Build merged aggregate
-    const newAgg: AggregateStats = {
-      totalAnswered: agg.totalAnswered + totalAnswered,
-      totalCorrect: agg.totalCorrect + totalCorrect,
-      totalScore: (agg.totalScore ?? 0) + run.score,
-      runsPlayed: agg.runsPlayed + 1,
-      bestRun: agg.bestRun,
-      bestStreak: Math.max(agg.bestStreak, run.longestStreak),
-      trailblazerCount: agg.trailblazerCount + trailblazerCount,
-      totalTimeMs: agg.totalTimeMs + totalTimeMs,
-      byCategory: mergedByCategory,
-      byDifficulty: {
-        easy: {
-          answered: agg.byDifficulty.easy.answered + byDifficulty.easy.answered,
-          correct: agg.byDifficulty.easy.correct + byDifficulty.easy.correct,
-        },
-        medium: {
-          answered: agg.byDifficulty.medium.answered + byDifficulty.medium.answered,
-          correct: agg.byDifficulty.medium.correct + byDifficulty.medium.correct,
-        },
-        hard: {
-          answered: agg.byDifficulty.hard.answered + byDifficulty.hard.answered,
-          correct: agg.byDifficulty.hard.correct + byDifficulty.hard.correct,
-        },
-      },
-      exhaustionCount: agg.exhaustionCount ?? 0,
-      likesGiven: agg.likesGiven ?? 0,
-      dislikesGiven: agg.dislikesGiven ?? 0,
-      reportsFiled: agg.reportsFiled ?? 0,
-      lastUpdatedAt: null, // overwritten by server timestamp below
+    // Max-style fields: read existing and only write if this run wins.
+    if ((existing.bestStreak ?? 0) < run.longestStreak) {
+      updates.bestStreak = run.longestStreak
     }
-
-    // Update bestRun if this run's score exceeds the current best
-    if (!newAgg.bestRun || run.score > newAgg.bestRun.score) {
-      newAgg.bestRun = {
+    if (!existing.bestRun || run.score > existing.bestRun.score) {
+      updates.bestRun = {
         score: run.score,
         longestStreak: run.longestStreak,
         runId: run.runId,
@@ -189,8 +177,21 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
       }
     }
 
-    // Write aggregate with server timestamp
-    tx.set(aggRef, { ...newAgg, lastUpdatedAt: FieldValue.serverTimestamp() })
+    // byDifficulty deltas via dotted field paths.
+    for (const diff of ['easy', 'medium', 'hard'] as const) {
+      const d = byDifficulty[diff]
+      if (d.answered > 0) updates[`byDifficulty.${diff}.answered`] = FieldValue.increment(d.answered)
+      if (d.correct > 0) updates[`byDifficulty.${diff}.correct`] = FieldValue.increment(d.correct)
+    }
+
+    // byCategory deltas.
+    for (const [cat, d] of Object.entries(byCategory)) {
+      if (d.answered > 0) updates[`byCategory.${cat}.answered`] = FieldValue.increment(d.answered)
+      if (d.correct > 0) updates[`byCategory.${cat}.correct`] = FieldValue.increment(d.correct)
+      if (d.totalTimeMs > 0) updates[`byCategory.${cat}.totalTimeMs`] = FieldValue.increment(d.totalTimeMs)
+    }
+
+    tx.set(aggRef, updates, { merge: true })
 
     // Mark the run as having its stats applied (idempotency guard)
     tx.update(runRef, { statsApplied: true })
