@@ -4052,6 +4052,15 @@ export const triboulet: JokerDefinition = {
   rarity: 'legendary',
 }
 
+export const chicot: JokerDefinition = {
+  id: 'chicot',
+  name: 'Chicot',
+  description: 'Disables effect of every Boss Blind',
+  price: 20,
+  effects: [],
+  rarity: 'legendary',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4168,6 +4177,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   campfire,
   obelisk,
   triboulet,
+  chicot,
 }
 
 /***
