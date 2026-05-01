@@ -6,7 +6,7 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
-import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { cardValuePriority, playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import {
   buildSeedString,
   getRandomNumbersWithSeed,
@@ -2165,6 +2165,48 @@ export const misprint: JokerDefinition = {
   rarity: 'common',
 }
 
+export const raisedFist: JokerDefinition = {
+  id: 'raisedFist',
+  name: 'Raised Fist',
+  description: 'Adds double the rank of lowest ranked card held in hand to Mult',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const heldCardIds = ctx.game.gamePlayState.handIds.filter(
+          id => !ctx.game.gamePlayState.playedCardIds.includes(id)
+        )
+        if (heldCardIds.length === 0) return
+
+        let lowestRank = Infinity
+        for (const cardId of heldCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          const rank = cardValuePriority[cardDef.value]
+          if (rank < lowestRank) {
+            lowestRank = rank
+          }
+        }
+
+        if (lowestRank === Infinity) return
+
+        const multBonus = lowestRank * 2
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          value: multBonus,
+          source: 'Raised Fist',
+        })
+        ctx.game.gamePlayState.score.mult += multBonus
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2229,6 +2271,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   mysticSummit,
   eightBall,
   misprint,
+  raisedFist,
 }
 
 /***
