@@ -157,31 +157,24 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
           </button>
         </div>
 
-        {/* All-categories quick-pick + Start buttons sit above the grid so
-            the most common action is always visible without scrolling. */}
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => setSelectedCategoryIds(new Set())}
-            className={`flex items-center justify-center gap-2 py-2 rounded-ds-md text-sm font-medium transition-colors ${
-              isAllMode
-                ? 'bg-ds-primary text-on-primary'
-                : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
-            }`}
-          >
-            <span aria-hidden="true">🌐</span>
-            All Categories
-          </button>
-          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}>
-            {startLabel}
-          </ChunkyButton>
-          <ChunkyButton variant="secondary" size="sm" className="w-full" onClick={() => handleStart('practice')}>
-            Practice Mode
-          </ChunkyButton>
-        </div>
+        {/* All Categories quick-pick stays above the scrollable grid so
+            it doesn't get hidden when the player scrolls through tiles. */}
+        <button
+          type="button"
+          onClick={() => setSelectedCategoryIds(new Set())}
+          className={`flex items-center justify-center gap-2 py-2 rounded-ds-md text-sm font-medium transition-colors ${
+            isAllMode
+              ? 'bg-ds-primary text-on-primary'
+              : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
+          }`}
+        >
+          <span aria-hidden="true">🌐</span>
+          All Categories
+        </button>
 
-        {/* Browse + multi-select categories. Tapping a tile toggles
-            membership; "All Categories" above clears the set. */}
+        {/* Browse + multi-select categories. Grid is constrained to
+            ~half the viewport and scrolls internally so the Start button
+            below stays in view on every device. */}
         <ChunkyCard variant="surface-variant">
           <ChunkyCardContent className="pt-4 pb-4 flex flex-col gap-3">
             <p className="text-on-surface/70 text-sm font-medium">
@@ -192,7 +185,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 </span>
               )}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto pr-1">
               {categoryEntries.map(({ id, name, icon }) => {
                 const medal = medalsByCategoryId.get(id)
                 const earnedTier = medal && medal.tier !== 'none' ? medal.tier : null
@@ -245,6 +238,18 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
             </div>
           </ChunkyCardContent>
         </ChunkyCard>
+
+        {/* Primary call-to-action sits below the scrollable grid; the
+            grid's max-height keeps these buttons visible without
+            requiring any page scroll. */}
+        <div className="flex flex-col gap-2">
+          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}>
+            {startLabel}
+          </ChunkyButton>
+          <ChunkyButton variant="secondary" size="sm" className="w-full" onClick={() => handleStart('practice')}>
+            Practice Mode
+          </ChunkyButton>
+        </div>
 
         <ChunkyButton variant="ghost" size="sm" onClick={onBack}>
           ← Back to Trivia
