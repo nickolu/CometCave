@@ -3208,6 +3208,57 @@ export const riffRaff: JokerDefinition = {
   rarity: 'common',
 }
 
+function applyMadnessBlindEffect(ctx: EffectContext) {
+  const m = ctx.game.jokers.find(j => j.jokerId === 'madness')
+  if (!m) return
+  if (m.counter === 0) m.counter = 2
+  m.counter += 1
+  const otherJokers = ctx.game.jokers.filter(j => j.jokerId !== 'madness')
+  if (otherJokers.length === 0) return
+  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'madness', 'destroy'])
+  const roll = getRandomNumbersWithSeed({ seed, min: 0, max: otherJokers.length - 1, numberOfNumbers: 1 })
+  const victim = otherJokers[roll[0]]
+  ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== victim.id)
+}
+
+export const madness: JokerDefinition = {
+  id: 'madness',
+  name: 'Madness',
+  description: 'When Small or Big Blind is selected, gain X0.5 Mult and destroy a random other Joker',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyMadnessBlindEffect,
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: applyMadnessBlindEffect,
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const m = ctx.game.jokers.find(j => j.jokerId === 'madness')
+        if (!m) return
+        if (m.counter === 0) m.counter = 2
+        const xMult = m.counter / 2
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Madness',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 function applyCeremonialDagger(ctx: EffectContext) {
   const daggerIndex = ctx.game.jokers.findIndex(j => j.jokerId === 'ceremonialDagger')
   if (daggerIndex === -1) return
@@ -3468,6 +3519,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hack,
   riffRaff,
   ceremonialDagger,
+  madness,
   spaceJoker,
   cardSharp,
   loyaltyCard,
