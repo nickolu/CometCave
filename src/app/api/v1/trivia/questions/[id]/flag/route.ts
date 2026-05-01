@@ -5,7 +5,7 @@ import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 import { incrementVoiceStat } from '@/lib/trivia/triviaStats';
 
-const FLAG_THRESHOLD = 3;
+const FLAG_THRESHOLD = 1;
 const BONUS_LIVES_PER_RUN = 1;
 const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'other'] as const;
 type FlagReason = (typeof VALID_REASONS)[number];
