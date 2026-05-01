@@ -1283,6 +1283,29 @@ export const roughGemJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const arrowheadJoker: JokerDefinition = {
+  id: 'arrowheadJoker',
+  name: 'Arrowhead',
+  description: 'Played cards with Spade suit give +50 Chips when scored',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        bonusOnCardScored({
+          ctx,
+          suit: 'spades',
+          type: 'chips',
+          value: 50,
+          source: 'Arrowhead',
+        })
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1321,6 +1344,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   steelJokerJoker,
   erosionJoker,
   roughGemJoker,
+  arrowheadJoker,
 }
 
 /***
