@@ -9,6 +9,8 @@ import {
   getRandomNumbersWithSeed,
 } from '@/app/daily-card-game/domain/randomness'
 
+import { celestialCards } from './celestial-cards'
+import { initializeCelestialCard } from './utils'
 import { TarotCardDefinition } from './types'
 
 const theFool: TarotCardDefinition = {
@@ -581,6 +583,41 @@ const wheelOfFortune: TarotCardDefinition = {
   ],
 }
 
+const theHighPriestess: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theHighPriestess',
+  name: 'The High Priestess',
+  price: 2,
+  description: 'Creates up to 2 random Planet cards (must have room)',
+  isPlayable: (game: GameState) => game.consumables.length < game.maxConsumables,
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const allCelestialDefs = Object.values(celestialCards)
+        const cardsToCreate = Math.min(2, ctx.game.maxConsumables - ctx.game.consumables.length)
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'theHighPriestess',
+        ])
+        const indices = getRandomNumbersWithSeed({
+          seed,
+          min: 0,
+          max: allCelestialDefs.length - 1,
+          numberOfNumbers: cardsToCreate,
+        })
+        for (const index of indices) {
+          const celestialDef = allCelestialDefs[index]
+          const celestialState = initializeCelestialCard(celestialDef)
+          ctx.game.consumables.push(celestialState)
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -595,7 +632,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   notImplemented,
   theFool,
   theMagician,
-  theHighPriestess: notImplemented,
+  theHighPriestess,
   theEmpress,
   theEmperor: notImplemented,
   theHierophant,
