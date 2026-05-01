@@ -3208,6 +3208,34 @@ export const riffRaff: JokerDefinition = {
   rarity: 'common',
 }
 
+export const spaceJoker: JokerDefinition = {
+  id: 'spaceJoker',
+  name: 'Space Joker',
+  description: '1 in 4 chance to upgrade level of played poker hand',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          ctx.game.handsPlayed.toString(),
+          'spaceJoker',
+        ])
+        const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 4, numberOfNumbers: 1 })
+        if (roll[0] !== 1) return
+        ctx.game.pokerHands[handId].level += 1
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3301,6 +3329,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hangingChad,
   hack,
   riffRaff,
+  spaceJoker,
 }
 
 /***
