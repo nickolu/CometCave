@@ -1,5 +1,6 @@
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
+import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 
 import { TarotCardDefinition } from './types'
 
@@ -91,6 +92,30 @@ const theHermit: TarotCardDefinition = {
   ],
 }
 
+const temperance: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'temperance',
+  name: 'Temperance',
+  price: 2,
+  description: 'Gives the total sell value of all current Jokers (max $50)',
+  isPlayable: () => true,
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const totalSellValue = ctx.game.jokers.reduce((sum, jokerState) => {
+          const jokerDef = jokers[jokerState.jokerId]
+          if (!jokerDef) return sum
+          return sum + jokerDef.price + jokerState.bonusSellValue
+        }, 0)
+        const gain = Math.min(totalSellValue, 50)
+        ctx.game.money += gain
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -117,7 +142,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   justice: notImplemented,
   theHangedMan: notImplemented,
   death: notImplemented,
-  temperance: notImplemented,
+  temperance,
   theDevil: notImplemented,
   theTower: notImplemented,
   theStar: notImplemented,
