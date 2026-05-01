@@ -1833,8 +1833,45 @@ export const swashbucklerJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const walkieTalkieJoker: JokerDefinition = {
+  id: 'walkieTalkieJoker',
+  name: 'Walkie Talkie',
+  description: '+10 Chips and +4 Mult if played card is a 10 or a 4',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        if (cardDef.value === '10' || cardDef.value === '4') {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: 10,
+            source: 'Walkie Talkie',
+          })
+          ctx.game.gamePlayState.score.chips += 10
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: 4,
+            source: 'Walkie Talkie',
+          })
+          ctx.game.gamePlayState.score.mult += 4
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
+  walkieTalkieJoker,
   jokerJoker,
   greedyJoker,
   jollyJoker,
