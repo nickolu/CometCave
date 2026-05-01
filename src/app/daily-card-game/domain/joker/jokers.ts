@@ -2509,6 +2509,52 @@ export const iceCream: JokerDefinition = {
   rarity: 'common',
 }
 
+export const popcorn: JokerDefinition = {
+  id: 'popcorn',
+  name: 'Popcorn',
+  description: '+20 Mult. -4 Mult per round played',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const pj = ctx.game.jokers.find(j => j.jokerId === 'popcorn')
+        if (!pj) return
+
+        // Initialize counter to 20 on first use
+        if (pj.counter === 0) {
+          pj.counter = 20
+        }
+
+        // Apply current mult bonus
+        if (pj.counter > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: pj.counter,
+            source: 'Popcorn',
+          })
+          ctx.game.gamePlayState.score.mult += pj.counter
+        }
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const pj = ctx.game.jokers.find(j => j.jokerId === 'popcorn')
+        if (!pj) return
+        pj.counter -= 4
+        if (pj.counter <= 0) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== pj.id)
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const egg: JokerDefinition = {
   id: 'egg',
   name: 'Egg',
@@ -2837,6 +2883,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   squareJoker,
   redCard,
   iceCream,
+  popcorn,
   egg,
   photograph,
   splash,
