@@ -3670,6 +3670,50 @@ export const satellite: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const vampire: JokerDefinition = {
+  id: 'vampire',
+  name: 'Vampire',
+  description: 'Gains X0.1 Mult per Enhanced card scored, removes Enhancement',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const v = ctx.game.jokers.find(j => j.jokerId === 'vampire')
+        if (!v) return
+        if (v.counter === 0) v.counter = 10
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardState = ctx.game.cards[scoredCard.id]
+        if (!cardState || cardState.flags.enchantment === 'none') return
+        v.counter += 1
+        cardState.flags.enchantment = 'none'
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const v = ctx.game.jokers.find(j => j.jokerId === 'vampire')
+        if (!v) return
+        if (v.counter === 0) v.counter = 10
+        if (v.counter <= 10) return
+        const xMult = v.counter / 10
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Vampire',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3776,6 +3820,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   throwback,
   constellation,
   satellite,
+  vampire,
 }
 
 /***
