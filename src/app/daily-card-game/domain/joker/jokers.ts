@@ -6,6 +6,7 @@ import {
   threeOfAKindHand,
   twoPairHand,
 } from '@/app/daily-card-game/domain/hand/hands'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { JokerDefinition } from './types'
@@ -598,6 +599,34 @@ export const toTheMoonJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const midasMaskJoker: JokerDefinition = {
+  id: 'midasMaskJoker',
+  name: 'Midas Mask',
+  description: 'All played face cards become Gold cards when scored',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        const faceValues = ['J', 'Q', 'K']
+        if (!faceValues.includes(cardDef.value)) return
+
+        // Convert to Gold enchantment permanently
+        const cardState = ctx.game.cards[scoredCard.id]
+        if (cardState) {
+          cardState.flags.enchantment = 'gold'
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -616,6 +645,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   fourFingersJoker,
   turtleBeanJoker,
   toTheMoonJoker,
+  midasMaskJoker,
 }
 
 /***
