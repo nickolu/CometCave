@@ -1165,6 +1165,39 @@ export const spareTrousersJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const stoneJokerJoker: JokerDefinition = {
+  id: 'stoneJokerJoker',
+  name: 'Stone Joker',
+  description: '+25 Chips for each Stone Card in your full deck',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let stoneCount = 0
+        for (const cardId of ctx.game.ownedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (cardState && cardState.flags.enchantment === 'stone') {
+            stoneCount++
+          }
+        }
+        if (stoneCount > 0) {
+          const chipsBonus = 25 * stoneCount
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: chipsBonus,
+            source: 'Stone Joker',
+          })
+          ctx.game.gamePlayState.score.chips += chipsBonus
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1199,6 +1232,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   stuntmanJoker,
   baseballCardJoker,
   spareTrousersJoker,
+  stoneJokerJoker,
 }
 
 /***
