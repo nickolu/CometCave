@@ -8,6 +8,11 @@ import {
   getOpenTDBCategoryName,
 } from '@/app/trivia/data/seeds'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
+import {
+  type Fact,
+  type FactSource,
+  getDefaultFactSource,
+} from '@/lib/trivia/factSources'
 
 export type GeneratedQuestion = Omit<
   AIQuestion,
@@ -18,7 +23,15 @@ export interface GenerateInfiniteQuestionOptions {
   difficulty?: 'easy' | 'medium' | 'hard'
   categoryId?: number
   streak?: number
+  // Override for tests / future per-category source routing. Falls
+  // back to getDefaultFactSource() when omitted.
+  factSource?: FactSource
 }
+
+const QUESTION_MODEL = 'gpt-4o-mini'
+const REVIEW_MODEL = 'gpt-4o-mini'
+const FACTS_PER_FETCH = 5
+const MAX_GENERATION_ATTEMPTS = 2
 
 const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
   easy: 'Should be approachable — a well-known fact that many people could answer correctly.',
@@ -50,13 +63,19 @@ function pickCategoryId(): number {
 }
 
 const QuestionSchema = z.object({
-  question: z.string().describe('The trivia question text, ending with a question mark.'),
+  question: z
+    .string()
+    .describe('The trivia question text, ending with a question mark.'),
   correct_answer: z
     .string()
-    .describe('The specific correct answer — typically 1-3 words (a name, date, number, place, or concept).'),
+    .describe(
+      'The exact correct answer. Must equal the fact\'s keyDetail (or a close, unambiguous variant — e.g. "1986" instead of "February 21, 1986" if the question asks for the year).'
+    ),
   explanation: z
     .string()
-    .describe('2-3 sentences explaining the answer and why it is interesting.'),
+    .describe(
+      '2-3 sentences explaining the answer and why it is interesting. May elaborate beyond the fact.'
+    ),
 })
 
 const ReviewSchema = z.object({
@@ -105,59 +124,57 @@ interface DraftQuestion {
   explanation: string
   difficulty: 'easy' | 'medium' | 'hard'
   categoryName: string
+  fact: Fact
   seedSummary: string
 }
 
-async function generateDraft(
+async function constructQuestionFromFact(
   apiKey: string,
-  opts: GenerateInfiniteQuestionOptions
+  fact: Fact,
+  ctx: {
+    categoryName: string
+    difficulty: 'easy' | 'medium' | 'hard'
+    seedSummary: string
+  }
 ): Promise<DraftQuestion> {
-  const difficulty = opts.difficulty ?? streakBiasedDifficulty(opts.streak ?? 0)
-  const categoryId = opts.categoryId ?? pickCategoryId()
-  const categoryName = getOpenTDBCategoryName(categoryId)
-  const seeds = CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]
-  const seedWord = pickRandom(seeds)
-  const modifier = pickRandom(MODIFIERS)
-  const seedStr = `${seedWord} :: ${modifier}`
-
   const openaiClient = createOpenAI({ apiKey })
 
   const result = await generateObject({
-    model: openaiClient('gpt-4o-mini'),
+    model: openaiClient(QUESTION_MODEL),
     schema: QuestionSchema,
     system:
-      'You are a trivia question creator for a cosmic-cave-themed game. Each question should feel hand-crafted and a little surprising — the kind of fact that makes someone say "huh, I didn\'t know that." Avoid the obvious; reach for the well-loved deep cut.',
-    prompt: `Generate a ${difficulty} trivia question.
+      'You are a trivia question writer for a cosmic-cave-themed game. You receive a verified fact and turn it into a single short trivia question that asks for the fact\'s keyDetail. You never invent details; you only ask about what the fact already states.',
+    prompt: `Build a ${ctx.difficulty} trivia question from this fact.
 
-Topical seed: "${seedStr}"
-Category: ${categoryName}
+Fact: ${fact.claim}
+Answer (keyDetail): ${fact.keyDetail}
+Category: ${ctx.categoryName}
 
-Difficulty: ${difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[difficulty]}
+Difficulty: ${ctx.difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[ctx.difficulty]}
 
-The question should:
-- Have ONE specific, unambiguous correct answer (a name, date, number, place, or concept — typically 1-3 words).
-- Be specific enough that a knowledgeable person could land the exact answer with confidence.
-- Be the kind of fact that's slightly surprising or rewarding to know — favor unusual angles over common-knowledge framings.
-- NOT mention the answer (or a synonym/translation of it) in the question text.
-- NOT be a multiple-choice question — answer is free-text.
-- Belong unambiguously to the category "${categoryName}". If the seed pulls you toward a different category, ignore it and stay in this one.
-
-Return the question, the exact correct answer, and a 2-3 sentence explanation that makes the fact interesting.`,
-    temperature: 0.7,
+Rules:
+- The question must ask specifically for the keyDetail.
+- The question must NOT contain the keyDetail or a synonym/translation of it.
+- The correct_answer should equal the keyDetail or an equivalent variant (e.g. "1986" if the keyDetail is "February 21, 1986" and the question asks for the year).
+- The explanation may elaborate beyond the fact (2-3 sentences).
+- Stay in the "${ctx.categoryName}" category. Do not drift.
+- Free-text answer; this is NOT a multiple-choice question.`,
+    temperature: 0.5,
     maxTokens: 400,
   })
 
   if (!result.object.question || !result.object.correct_answer) {
-    throw new Error('OpenAI response missing required fields')
+    throw new Error('Question construction returned empty fields')
   }
 
   return {
     question: result.object.question,
     correct_answer: result.object.correct_answer,
     explanation: result.object.explanation,
-    difficulty,
-    categoryName,
-    seedSummary: seedStr,
+    difficulty: ctx.difficulty,
+    categoryName: ctx.categoryName,
+    fact,
+    seedSummary: ctx.seedSummary,
   }
 }
 
@@ -167,16 +184,20 @@ interface ReviewResult {
   inferred_category: string
 }
 
-async function reviewQuestion(apiKey: string, draft: DraftQuestion): Promise<ReviewResult> {
+async function reviewQuestion(
+  apiKey: string,
+  draft: DraftQuestion
+): Promise<ReviewResult> {
   const openaiClient = createOpenAI({ apiKey })
 
   const result = await generateObject({
-    model: openaiClient('gpt-4o-mini'),
+    model: openaiClient(REVIEW_MODEL),
     schema: ReviewSchema,
     system:
       'You are a strict quality reviewer for trivia questions. You reject anything that would frustrate a player.',
     prompt: `Review this trivia question for the category "${draft.categoryName}".
 
+Source fact: ${draft.fact.claim}
 Question: ${draft.question}
 Correct answer: ${draft.correct_answer}
 Explanation: ${draft.explanation}
@@ -187,7 +208,7 @@ Reject the question if ANY of these are true:
 - The question is too vague to answer without options.
 - The question is nonsensical, broken, or contradicts itself.
 - The "correct answer" doesn't actually answer the question.
-- The factual claim in the question or explanation is wrong.
+- The question's claim contradicts the source fact, or the answer doesn't match what the source fact supports.
 - The question doesn't belong to the category "${draft.categoryName}" — pick the best-fitting category from this list:
   ${KNOWN_CATEGORIES.join(', ')}
 
@@ -204,21 +225,28 @@ If you reject, give a one-sentence rejection_reason. Otherwise rejection_reason 
   }
 }
 
-const MAX_GENERATION_ATTEMPTS = 2
-
 /**
  * Generate a single trivia question on the fly for Infinite Trivia.
  *
- * Two-stage pipeline:
- *   1. Draft generation (gpt-4o-mini, temp 0.7) using a random seed-word
- *      and modifier from the chosen category's bucket.
- *   2. Quality review (gpt-4o-mini, temp 0) that rejects questions
- *      that leak the answer, are vague, contradict themselves, are
- *      factually wrong, or fall outside the requested category.
+ * Three-stage pipeline:
  *
- * On rejection we retry once with a fresh seed/modifier before failing.
- * The /next route maps the throw to a 204 (pool exhausted), same as
- * any other generation failure.
+ *   1. Fact extraction — call the configured FactSource (LLM-only
+ *      today; Wikipedia / Perplexity planned) to surface candidate
+ *      facts about the chosen category + seed.
+ *   2. Question construction (gpt-4o-mini, temp 0.5) — pick a fact
+ *      and turn it into a question whose answer is the fact's
+ *      keyDetail.
+ *   3. Quality review (gpt-4o-mini, temp 0) — strict reviewer that
+ *      rejects answer-leaks, vague questions, factual contradictions,
+ *      and category drift.
+ *
+ * On rejection we retry once (fresh facts, fresh seed) before giving
+ * up. The /next route maps the throw to a 204 (pool exhausted), same
+ * as any other generation failure.
+ *
+ * The FactSource interface lets us migrate to grounded sources
+ * (Wikipedia, Wikidata, Perplexity) without touching the question
+ * construction or review stages.
  */
 export async function generateInfiniteQuestion(
   options: GenerateInfiniteQuestionOptions = {}
@@ -226,9 +254,45 @@ export async function generateInfiniteQuestion(
   const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('OpenAI API key not configured')
 
+  const factSource = options.factSource ?? getDefaultFactSource()
+
   let lastReason = 'unknown'
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
-    const draft = await generateDraft(apiKey, options)
+    const difficulty = options.difficulty ?? streakBiasedDifficulty(options.streak ?? 0)
+    const categoryId = options.categoryId ?? pickCategoryId()
+    const categoryName = getOpenTDBCategoryName(categoryId)
+    const seeds = CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]
+    const seedWord = pickRandom(seeds)
+    const modifier = pickRandom(MODIFIERS)
+    const seedSummary = `${seedWord} :: ${modifier}`
+
+    let facts: Fact[]
+    try {
+      facts = await factSource.fetchFacts({
+        categoryId,
+        category: categoryName,
+        seed: seedSummary,
+        difficulty,
+        count: FACTS_PER_FETCH,
+      })
+    } catch (err) {
+      lastReason = `factSource(${factSource.id}) failed: ${err instanceof Error ? err.message : String(err)}`
+      console.warn('[generateInfiniteQuestion] fact fetch failed', { attempt, reason: lastReason })
+      continue
+    }
+
+    if (facts.length === 0) {
+      lastReason = `factSource(${factSource.id}) returned 0 facts`
+      console.warn('[generateInfiniteQuestion] no facts', { attempt, category: categoryName })
+      continue
+    }
+
+    const fact = pickRandom(facts)
+    const draft = await constructQuestionFromFact(apiKey, fact, {
+      categoryName,
+      difficulty,
+      seedSummary,
+    })
     const review = await reviewQuestion(apiKey, draft)
 
     if (review.accept) {
@@ -238,8 +302,8 @@ export async function generateInfiniteQuestion(
         question: draft.question,
         correctAnswer: draft.correct_answer,
         explanation: draft.explanation,
-        category: draft.categoryName,
-        difficulty: draft.difficulty,
+        category: categoryName,
+        difficulty,
         type: 'free-text',
       }
     }
@@ -247,8 +311,10 @@ export async function generateInfiniteQuestion(
     lastReason = review.reason ?? `inferred=${review.inferred_category}`
     console.warn('[generateInfiniteQuestion] draft rejected', {
       attempt,
-      category: draft.categoryName,
-      seed: draft.seedSummary,
+      category: categoryName,
+      seed: seedSummary,
+      factSource: factSource.id,
+      factSourceCitation: fact.source,
       reason: lastReason,
     })
   }
