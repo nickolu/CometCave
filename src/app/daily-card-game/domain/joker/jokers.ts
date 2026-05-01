@@ -2897,6 +2897,47 @@ export const goldenTicket: JokerDefinition = {
   rarity: 'common',
 }
 
+export const reservedParking: JokerDefinition = {
+  id: 'reservedParking',
+  name: 'Reserved Parking',
+  description: 'Each face card held in hand has a 1 in 2 chance to give $1',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const heldCardIds = ctx.game.gamePlayState.handIds.filter(
+          id => !ctx.game.gamePlayState.playedCardIds.includes(id)
+        )
+        const faceValues = ['J', 'Q', 'K']
+        let moneyEarned = 0
+        for (const cardId of heldCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (!faceValues.includes(cardDef.value)) continue
+          const seed = buildSeedString([
+            ctx.game.gameSeed,
+            ctx.game.roundIndex.toString(),
+            ctx.game.handsPlayed.toString(),
+            cardId,
+            'reservedParking',
+          ])
+          const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 2, numberOfNumbers: 1 })
+          if (roll[0] === 1) {
+            moneyEarned += 1
+          }
+        }
+        if (moneyEarned > 0) {
+          ctx.game.money += moneyEarned
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2982,6 +3023,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   facelessJoker,
   rideTheBus,
   goldenTicket,
+  reservedParking,
 }
 
 /***
