@@ -2127,6 +2127,34 @@ export const eightBall: JokerDefinition = {
   rarity: 'common',
 }
 
+export const hallucination: JokerDefinition = {
+  id: 'hallucination',
+  name: 'Hallucination',
+  description: '1 in 2 chance to create a Tarot card when any Booster Pack is opened (Must have room)',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN_PACK' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'hallucination',
+          'chance',
+        ])
+        const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 2, numberOfNumbers: 1 })
+        if (roll[0] !== 1) return
+        const tarotSeed = buildSeedString([seed, 'tarot'])
+        const tarotCard = getRandomTarotCards(1, tarotSeed)[0]
+        ctx.game.consumables.push(initializeTarotCard(tarotCard))
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const businessCard: JokerDefinition = {
   id: 'businessCard',
   name: 'Business Card',
@@ -3024,6 +3052,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   rideTheBus,
   goldenTicket,
   reservedParking,
+  hallucination,
 }
 
 /***
