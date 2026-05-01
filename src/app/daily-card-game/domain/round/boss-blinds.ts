@@ -54,7 +54,19 @@ const theOx: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
+const theWall: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 4,
+  name: 'The Wall',
+  description: 'Extra large blind',
+  image: 'the-wall.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theWall]
 
 /**
  
