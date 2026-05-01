@@ -1655,6 +1655,41 @@ export const goldenJokerJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const shootTheMoonJoker: JokerDefinition = {
+  id: 'shootTheMoonJoker',
+  name: 'Shoot the Moon',
+  description: 'Each Queen held in hand gives +13 Mult',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let queenCount = 0
+        for (const cardId of ctx.game.gamePlayState.handIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (cardDef && cardDef.value === 'Q') {
+            queenCount++
+          }
+        }
+        if (queenCount > 0) {
+          const multBonus = 13 * queenCount
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: multBonus,
+            source: 'Shoot the Moon',
+          })
+          ctx.game.gamePlayState.score.mult += multBonus
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1703,6 +1738,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   drunkardJoker,
   jugglerJoker,
   goldenJokerJoker,
+  shootTheMoonJoker,
 }
 
 /***
