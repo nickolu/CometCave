@@ -2024,6 +2024,33 @@ export const scaryFaceJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const banner: JokerDefinition = {
+  id: 'banner',
+  name: 'Banner',
+  description: '+30 Chips for each remaining discard',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const remainingDiscards = ctx.game.maxDiscards - ctx.game.discardsPlayed
+        const chipsBonus = 30 * remainingDiscards
+        if (chipsBonus > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: chipsBonus,
+            source: 'Banner',
+          })
+          ctx.game.gamePlayState.score.chips += chipsBonus
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2084,6 +2111,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   evenStevenJoker,
   oddToddJoker,
   scaryFaceJoker,
+  banner,
 }
 
 /***
