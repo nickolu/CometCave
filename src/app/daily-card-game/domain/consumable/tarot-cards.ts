@@ -236,6 +236,31 @@ const theLovers: TarotCardDefinition = {
   ],
 }
 
+const theEmpress: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theEmpress',
+  name: 'The Empress',
+  price: 2,
+  description: 'Enhances up to 2 selected cards to Mult cards',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds.slice(0, 2)) {
+          const card = ctx.game.cards[cardId]
+          if (card) {
+            card.flags.enchantment = 'mult'
+          }
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -251,7 +276,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theFool,
   theMagician,
   theHighPriestess: notImplemented,
-  theEmpress: notImplemented,
+  theEmpress,
   theEmperor: notImplemented,
   theHierophant: notImplemented,
   theLovers,
