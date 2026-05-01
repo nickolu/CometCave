@@ -3893,6 +3893,39 @@ export const ancientJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const driversLicense: JokerDefinition = {
+  id: 'driversLicense',
+  name: "Driver's License",
+  description: 'X3 Mult if you have at least 16 Enhanced cards in your full deck',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let enhancedCount = 0
+        for (const cardId of ctx.game.ownedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (cardState && cardState.flags.enchantment !== 'none') {
+            enhancedCount++
+          }
+        }
+        if (enhancedCount >= 16) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 3,
+            source: "Driver's License",
+          })
+          ctx.game.gamePlayState.score.mult *= 3
+        }
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4005,6 +4038,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   vagabond,
   hitTheRoad,
   ancientJoker,
+  driversLicense,
 }
 
 /***
