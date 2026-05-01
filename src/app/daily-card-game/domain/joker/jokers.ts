@@ -2140,7 +2140,7 @@ export const misprint: JokerDefinition = {
         const seed = buildSeedString([
           ctx.game.gameSeed,
           ctx.game.roundIndex.toString(),
-          ctx.game.gamePlayState.handsPlayed.toString(),
+          ctx.game.handsPlayed.toString(),
           'misprint',
         ])
         const roll = getRandomNumbersWithSeed({
