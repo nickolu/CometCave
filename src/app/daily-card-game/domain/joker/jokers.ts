@@ -2051,6 +2051,32 @@ export const banner: JokerDefinition = {
   rarity: 'common',
 }
 
+export const mysticSummit: JokerDefinition = {
+  id: 'mysticSummit',
+  name: 'Mystic Summit',
+  description: '+15 Mult when 0 discards remaining',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const remainingDiscards = ctx.game.maxDiscards - ctx.game.discardsPlayed
+        if (remainingDiscards === 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: 15,
+            source: 'Mystic Summit',
+          })
+          ctx.game.gamePlayState.score.mult += 15
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2112,6 +2138,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   oddToddJoker,
   scaryFaceJoker,
   banner,
+  mysticSummit,
 }
 
 /***
