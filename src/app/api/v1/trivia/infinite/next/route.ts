@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
           timesShown: 0,
           timesCorrect: 0,
           avgTimeMs: null,
+          likeCount: 0,
+          dislikeCount: 0,
         }
       } catch (genErr) {
         console.error('[trivia/infinite/next] generation failed', {
