@@ -3585,6 +3585,45 @@ export const throwback: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const constellation: JokerDefinition = {
+  id: 'constellation',
+  name: 'Constellation',
+  description: 'This Joker gains X0.1 Mult every time a Planet card is used',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'CELESTIAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const c = ctx.game.jokers.find(j => j.jokerId === 'constellation')
+        if (!c) return
+        if (c.counter === 0) c.counter = 10
+        c.counter += 1
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const c = ctx.game.jokers.find(j => j.jokerId === 'constellation')
+        if (!c) return
+        if (c.counter === 0) c.counter = 10
+        if (c.counter <= 10) return
+        const xMult = c.counter / 10
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Constellation',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3688,6 +3727,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   ramen,
   bloodstone,
   throwback,
+  constellation,
 }
 
 /***

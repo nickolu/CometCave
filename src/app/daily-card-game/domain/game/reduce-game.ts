@@ -263,6 +263,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'CELESTIAL_CARD_USED': {
         handleUseConsumableCelestialCard(draft, event)
+        dispatchEffects(event, getEffectContext(draft as unknown as GameState, event), collectEffects(draft as unknown as GameState))
         return
       }
       case 'TAROT_CARD_USED': {
