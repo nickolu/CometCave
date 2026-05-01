@@ -11,6 +11,12 @@ export interface RunDoc {
   runId: string
   uid: string
   mode: 'scored' | 'practice'
+  // Empty array = all categories. Single-element = legacy single-category
+  // behavior. The old categoryFilter field is still written for back-compat
+  // with any reader that hasn't been updated.
+  categoryFilters: number[]
+  // Deprecated, kept for backward compatibility. Equals categoryFilters[0]
+  // when there's exactly one filter, null otherwise.
   categoryFilter: number | null
   score: number
   livesRemaining: number
@@ -34,7 +40,11 @@ export interface RunAnswer {
   answeredAt: FirebaseFirestore.Timestamp
 }
 
-export async function startRun(uid: string, mode: 'scored' | 'practice' = 'scored', categoryId?: number): Promise<{ runId: string; livesRemaining: number; currentStreak: number }> {
+export async function startRun(
+  uid: string,
+  mode: 'scored' | 'practice' = 'scored',
+  categoryIds: number[] = []
+): Promise<{ runId: string; livesRemaining: number; currentStreak: number }> {
   const db = getFirestoreDb()
   const runRef = db.collection(`users/${uid}/triviaInfinite`).doc()
   const now = FieldValue.serverTimestamp()
@@ -42,7 +52,8 @@ export async function startRun(uid: string, mode: 'scored' | 'practice' = 'score
     runId: runRef.id,
     uid,
     mode,
-    categoryFilter: categoryId ?? null,
+    categoryFilters: categoryIds,
+    categoryFilter: categoryIds.length === 1 ? categoryIds[0] : null,
     score: 0,
     livesRemaining: LIVES_START,
     currentStreak: 0,

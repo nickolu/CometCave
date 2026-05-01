@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
-import { startRun } from '@/lib/trivia/infiniteRuns';
 import { CATEGORY_META } from '@/lib/trivia/categories';
+import { startRun } from '@/lib/trivia/infiniteRuns';
 
 export async function GET(request: NextRequest) {
   const auth = await verifyRequestAuth(request)
@@ -50,16 +50,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const mode = body.mode === 'practice' ? 'practice' : 'scored';
 
-    // Parse and validate optional categoryId
-    let categoryId: number | undefined
-    if (body.categoryId !== undefined && body.categoryId !== null) {
+    // Parse and validate categoryIds (preferred) — falls back to the legacy
+    // single categoryId field for backward compatibility.
+    let categoryIds: number[] = []
+    if (Array.isArray(body.categoryIds)) {
+      categoryIds = body.categoryIds
+        .map((v: unknown) => Number(v))
+        .filter((n: number) => !isNaN(n) && n in CATEGORY_META)
+    } else if (body.categoryId !== undefined && body.categoryId !== null) {
       const parsed = Number(body.categoryId)
       if (!isNaN(parsed) && parsed in CATEGORY_META) {
-        categoryId = parsed
+        categoryIds = [parsed]
       }
     }
 
-    const result = await startRun(auth.claims.uid, mode, categoryId);
+    const result = await startRun(auth.claims.uid, mode, categoryIds);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error('Failed to start infinite run:', err);
