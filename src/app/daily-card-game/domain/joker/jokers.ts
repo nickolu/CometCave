@@ -1690,6 +1690,32 @@ export const shootTheMoonJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const fortuneTellerJoker: JokerDefinition = {
+  id: 'fortuneTellerJoker',
+  name: 'Fortune Teller',
+  description: '+1 Mult per Tarot card used this run',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tarotCount = ctx.game.consumablesUsed.filter(c => c.consumableType === 'tarotCard').length
+        if (tarotCount > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: tarotCount,
+            source: 'Fortune Teller',
+          })
+          ctx.game.gamePlayState.score.mult += tarotCount
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1739,6 +1765,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jugglerJoker,
   goldenJokerJoker,
   shootTheMoonJoker,
+  fortuneTellerJoker,
 }
 
 /***
