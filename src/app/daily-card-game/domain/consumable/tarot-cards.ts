@@ -522,6 +522,65 @@ const death: TarotCardDefinition = {
   ],
 }
 
+const wheelOfFortune: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'wheelOfFortune',
+  name: 'Wheel of Fortune',
+  price: 2,
+  description: '1 in 4 chance to add Foil, Holographic, or Polychrome edition to a random Joker',
+  isPlayable: (game: GameState) => {
+    return game.jokers.some(joker => joker.edition === 'normal')
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rollSeed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'wheelOfFortune',
+          'roll',
+        ])
+        const [roll] = getRandomNumbersWithSeed({ seed: rollSeed, min: 1, max: 4, numberOfNumbers: 1 })
+        if (roll !== 1) return
+
+        const normalJokers = ctx.game.jokers.filter(joker => joker.edition === 'normal')
+        if (normalJokers.length === 0) return
+
+        const jokerSeed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'wheelOfFortune',
+          'joker',
+        ])
+        const [jokerIdx] = getRandomNumbersWithSeed({
+          seed: jokerSeed,
+          min: 0,
+          max: normalJokers.length - 1,
+          numberOfNumbers: 1,
+        })
+        const targetJoker = normalJokers[jokerIdx]
+
+        const editions = ['foil', 'holographic', 'polychrome'] as const
+        const editionSeed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'wheelOfFortune',
+          'edition',
+        ])
+        const [editionIdx] = getRandomNumbersWithSeed({
+          seed: editionSeed,
+          min: 0,
+          max: editions.length - 1,
+          numberOfNumbers: 1,
+        })
+        targetJoker.edition = editions[editionIdx]
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -544,7 +603,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theChariot,
   strength,
   theHermit,
-  wheelOfFortune: notImplemented,
+  wheelOfFortune,
   justice,
   theHangedMan,
   death,
