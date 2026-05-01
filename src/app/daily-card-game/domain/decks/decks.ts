@@ -5,12 +5,14 @@ import { initializePlayingCard } from '@/app/daily-card-game/domain/playing-card
 import { blueDeck } from './blue-deck'
 import { pokerDeck } from './poker-deck'
 import { redDeck } from './red-deck'
+import { yellowDeck } from './yellow-deck'
 import { DeckDefinition } from './types'
 
 export const decks: Record<string, DeckDefinition> = {
   pokerDeck: pokerDeck,
   redDeck: redDeck,
   blueDeck: blueDeck,
+  yellowDeck: yellowDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {
