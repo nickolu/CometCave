@@ -3352,6 +3352,28 @@ export const loyaltyCard: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const hiker: JokerDefinition = {
+  id: 'hiker',
+  name: 'Hiker',
+  description: 'Every played card permanently gains +5 Chips when scored',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardState = ctx.game.cards[scoredCard.id]
+        if (cardState) {
+          cardState.bonusChips += 5
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3449,6 +3471,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   spaceJoker,
   cardSharp,
   loyaltyCard,
+  hiker,
 }
 
 /***
