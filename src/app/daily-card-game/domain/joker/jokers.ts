@@ -1594,6 +1594,50 @@ export const drunkardJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const jugglerJoker: JokerDefinition = {
+  id: 'jugglerJoker',
+  name: 'Juggler',
+  description: '+1 hand size',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.some(j => j.jokerId === 'jugglerJoker')) {
+          ctx.game.handSizeModifier += 1
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.handSizeModifier += 1
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'jugglerJoker')) {
+          ctx.game.handSizeModifier -= 1
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'jugglerJoker')) {
+          ctx.game.handSizeModifier -= 1
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1640,6 +1684,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   seeingDoubleJoker,
   flowerPotJoker,
   drunkardJoker,
+  jugglerJoker,
 }
 
 /***
