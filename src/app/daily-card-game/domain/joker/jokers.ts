@@ -3108,6 +3108,56 @@ export const mailInRebate: JokerDefinition = {
   rarity: 'common',
 }
 
+export const castle: JokerDefinition = {
+  id: 'castle',
+  name: 'Castle',
+  description: 'Gains +3 Chips per discarded card of current suit, suit changes every round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const c = ctx.game.jokers.find(j => j.jokerId === 'castle')
+        if (!c) return
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades']
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'castle',
+          'suit',
+        ])
+        const roll = getRandomNumbersWithSeed({ seed, min: 0, max: 3, numberOfNumbers: 1 })
+        const targetSuit = suits[roll[0]]
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (cardDef.suit === targetSuit) {
+            c.counter += 3
+          }
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const c = ctx.game.jokers.find(j => j.jokerId === 'castle')
+        if (!c || c.counter <= 0) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: c.counter,
+          source: 'Castle',
+        })
+        ctx.game.gamePlayState.score.chips += c.counter
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 function initializeJokerInline(jokerId: string, game: EffectContext['game']): JokerState {
   const editionSeed = buildSeedString([
     game.gameSeed,
@@ -3841,6 +3891,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   satellite,
   vampire,
   giftCard,
+  castle,
 }
 
 /***
