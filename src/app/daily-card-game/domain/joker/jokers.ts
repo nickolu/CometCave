@@ -2127,6 +2127,42 @@ export const eightBall: JokerDefinition = {
   rarity: 'common',
 }
 
+export const businessCard: JokerDefinition = {
+  id: 'businessCard',
+  name: 'Business Card',
+  description: 'Played face cards have a 1 in 2 chance to give $2 when scored',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          scoredCard.id,
+          'businessCard',
+        ])
+        const roll = getRandomNumbersWithSeed({
+          seed,
+          min: 1,
+          max: 2,
+          numberOfNumbers: 1,
+        })
+        if (roll[0] !== 1) return
+
+        ctx.game.money += 2
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const misprint: JokerDefinition = {
   id: 'misprint',
   name: 'Misprint',
@@ -2290,6 +2326,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   misprint,
   raisedFist,
   chaosTheClown,
+  businessCard,
 }
 
 /***
