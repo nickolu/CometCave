@@ -76,7 +76,19 @@ const theNeedle: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle]
+const theSerpent: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Serpent',
+  description: 'After Play or Discard, always draw 3 cards',
+  image: 'the-serpent.png',
+  minimumAnte: 5,
+  baseReward: 5,
+  effects: [],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, theSerpent]
 
 /**
  

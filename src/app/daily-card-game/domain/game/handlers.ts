@@ -155,7 +155,9 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   }
 
   // Continue gameplay: refill + reset score
-  const cardsNeeded = HAND_SIZE + draft.handSizeModifier - draft.gamePlayState.handIds.length
+  const currentRound = draft.rounds[draft.roundIndex]
+  const isSerpent = currentRound.bossBlindName === 'The Serpent' && currentRound.bossBlind.status === 'inProgress'
+  const cardsNeeded = isSerpent ? 3 : HAND_SIZE + draft.handSizeModifier - draft.gamePlayState.handIds.length
   dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
   draft.gamePhase = 'gameplay'
   resetScoreForNextHand(draft.gamePlayState)
