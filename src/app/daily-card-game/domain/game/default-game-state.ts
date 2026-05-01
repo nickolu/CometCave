@@ -52,6 +52,7 @@ const gameState: GameState = {
   maxConsumables: 2,
   maxJokers: 5,
   maxHands: 4,
+  handSizeModifier: 0,
   maxDiscards: 3,
   maxInterest: 5,
   money: 0,

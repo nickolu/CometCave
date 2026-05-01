@@ -155,7 +155,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   }
 
   // Continue gameplay: refill + reset score
-  const cardsNeeded = HAND_SIZE - draft.gamePlayState.handIds.length
+  const cardsNeeded = HAND_SIZE + draft.handSizeModifier - draft.gamePlayState.handIds.length
   dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
   draft.gamePhase = 'gameplay'
   resetScoreForNextHand(draft.gamePlayState)

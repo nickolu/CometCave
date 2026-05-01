@@ -337,7 +337,7 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
       seed: seed,
       iteration: draft.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
     })
-    dealCardsFromDrawPile(draft, HAND_SIZE)
+    dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
   }
   if (packDefinition.cardType === 'spectralCard') {
     draft.gamePlayState.drawPileIds = shuffleCardIds({
@@ -351,7 +351,7 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
       ]),
       iteration: draft.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
     })
-    dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE)
+    dealCardsFromDrawPile(draft as unknown as GameState, HAND_SIZE + draft.handSizeModifier)
   }
 }
 

@@ -28,6 +28,7 @@ export interface GameState {
   maxConsumables: number
   maxDiscards: number
   maxHands: number
+  handSizeModifier: number
   maxJokers: number
   maxInterest: number
   money: number

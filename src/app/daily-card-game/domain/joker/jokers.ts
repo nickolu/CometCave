@@ -467,6 +467,77 @@ export const fourFingersJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const turtleBeanJoker: JokerDefinition = {
+  id: 'turtleBeanJoker',
+  name: 'Turtle Bean',
+  description: '+5 hand size, reduces by 1 each round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
+        if (tb) {
+          if (!tb.metadata?.handSizeBonus) {
+            tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
+          }
+          const bonus = tb.metadata?.handSizeBonus ?? 5
+          ctx.game.handSizeModifier += bonus
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
+        if (tb) {
+          tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
+          ctx.game.handSizeModifier += 5
+        }
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
+        if (!tb || !tb.metadata) return
+
+        ctx.game.handSizeModifier -= 1
+        tb.metadata.handSizeBonus -= 1
+
+        if (tb.metadata.handSizeBonus <= 0) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== tb.id)
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // Joker already removed from array. Recalculate from remaining instances.
+        const remainingBonus = ctx.game.jokers
+          .filter(j => j.jokerId === 'turtleBeanJoker')
+          .reduce((sum, j) => sum + (j.metadata?.handSizeBonus ?? 0), 0)
+        ctx.game.handSizeModifier = remainingBonus
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const remainingBonus = ctx.game.jokers
+          .filter(j => j.jokerId === 'turtleBeanJoker')
+          .reduce((sum, j) => sum + (j.metadata?.handSizeBonus ?? 0), 0)
+        ctx.game.handSizeModifier = remainingBonus
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -483,6 +554,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   halfJoker,
   jokerStencil,
   fourFingersJoker,
+  turtleBeanJoker,
 }
 
 /***
