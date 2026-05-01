@@ -2808,6 +2808,35 @@ export const redCard: JokerDefinition = {
   rarity: 'common',
 }
 
+export const facelessJoker: JokerDefinition = {
+  id: 'facelessJoker',
+  name: 'Faceless Joker',
+  description: 'Earn $5 if 3 or more face cards are discarded at the same time',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const faceValues = ['J', 'Q', 'K']
+        let faceCardCount = 0
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (faceValues.includes(cardDef.value)) {
+            faceCardCount++
+          }
+        }
+        if (faceCardCount >= 3) {
+          ctx.game.money += 5
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2890,6 +2919,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   greenJoker,
   superposition,
   toDoList,
+  facelessJoker,
 }
 
 /***
