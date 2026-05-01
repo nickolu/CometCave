@@ -2808,6 +2808,46 @@ export const redCard: JokerDefinition = {
   rarity: 'common',
 }
 
+export const rideTheBus: JokerDefinition = {
+  id: 'rideTheBus',
+  name: 'Ride the Bus',
+  description: '+1 Mult per consecutive hand without scoring face cards',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const rtb = ctx.game.jokers.find(j => j.jokerId === 'rideTheBus')
+        if (!rtb) return
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const scoringCards = selectedHand[1]
+        const faceValues = ['J', 'Q', 'K']
+        const hasFaceCard = scoringCards.some(card => {
+          const cardDef = playingCards[card.playingCardId]
+          return faceValues.includes(cardDef.value)
+        })
+        if (hasFaceCard) {
+          rtb.counter = 0
+        } else {
+          rtb.counter += 1
+        }
+        if (rtb.counter > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: rtb.counter,
+            source: 'Ride the Bus',
+          })
+          ctx.game.gamePlayState.score.mult += rtb.counter
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const facelessJoker: JokerDefinition = {
   id: 'facelessJoker',
   name: 'Faceless Joker',
@@ -2920,6 +2960,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   superposition,
   toDoList,
   facelessJoker,
+  rideTheBus,
 }
 
 /***
