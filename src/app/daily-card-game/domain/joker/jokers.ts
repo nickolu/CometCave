@@ -1323,6 +1323,58 @@ export const onyxAgateJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const merryAndyJoker: JokerDefinition = {
+  id: 'merryAndyJoker',
+  name: 'Merry Andy',
+  description: '+3 discards each round, -1 hand size',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.some(j => j.jokerId === 'merryAndyJoker')) {
+          ctx.game.maxDiscards += 3
+          ctx.game.gamePlayState.remainingDiscards += 3
+          ctx.game.handSizeModifier -= 1
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.maxDiscards += 3
+        ctx.game.gamePlayState.remainingDiscards += 3
+        ctx.game.handSizeModifier -= 1
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'merryAndyJoker')) {
+          ctx.game.maxDiscards -= 3
+          ctx.game.gamePlayState.remainingDiscards = Math.max(0, ctx.game.gamePlayState.remainingDiscards - 3)
+          ctx.game.handSizeModifier += 1
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'merryAndyJoker')) {
+          ctx.game.maxDiscards -= 3
+          ctx.game.gamePlayState.remainingDiscards = Math.max(0, ctx.game.gamePlayState.remainingDiscards - 3)
+          ctx.game.handSizeModifier += 1
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1363,6 +1415,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   roughGemJoker,
   arrowheadJoker,
   onyxAgateJoker,
+  merryAndyJoker,
 }
 
 /***
