@@ -95,14 +95,17 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
       case 'SMALL_BLIND_SELECTED': {
         handleSmallBlindSelected(draft)
+        dispatchEffects(event, getEffectContext(draft as unknown as GameState, event), collectEffects(draft as unknown as GameState))
         return
       }
       case 'BIG_BLIND_SELECTED': {
         handleBigBlindSelected(draft)
+        dispatchEffects(event, getEffectContext(draft as unknown as GameState, event), collectEffects(draft as unknown as GameState))
         return
       }
       case 'BOSS_BLIND_SELECTED': {
         handleBossBlindSelected(draft)
+        dispatchEffects(event, getEffectContext(draft as unknown as GameState, event), collectEffects(draft as unknown as GameState))
         return
       }
       case 'BLIND_SKIPPED': {
