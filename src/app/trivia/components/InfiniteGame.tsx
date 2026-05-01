@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { TIER_EMOJI, useCategoryMedals } from '@/app/trivia/hooks/useCategoryMedals'
 import { useInfiniteRun } from '@/app/trivia/hooks/useInfiniteRun'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 import { ChunkyButton } from '@/components/ui/chunky-button'
@@ -42,6 +43,8 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     id: Number(id),
     ...meta,
   }))
+
+  const { byCategoryId: medalsByCategoryId } = useCategoryMedals()
 
   const handleStart = useCallback((chosenMode: InfiniteMode) => {
     if (typeof window !== 'undefined') {
@@ -154,21 +157,35 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 <span aria-hidden="true">🌐</span>
                 All
               </button>
-              {categoryEntries.map(({ id, name, icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setSelectedCategoryId(id)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    selectedCategoryId === id
-                      ? 'bg-ds-primary text-on-primary'
-                      : 'bg-surface-container text-on-surface/70 hover:bg-surface-container-highest'
-                  }`}
-                >
-                  <span aria-hidden="true">{icon}</span>
-                  {name}
-                </button>
-              ))}
+              {categoryEntries.map(({ id, name, icon }) => {
+                const medal = medalsByCategoryId.get(id)
+                const earnedTier = medal && medal.tier !== 'none' ? medal.tier : null
+                const tierEmoji = earnedTier ? TIER_EMOJI[earnedTier] : null
+                const titleText = medal && medal.label
+                  ? `${medal.label} — ${medal.correctCount} correct${medal.nextThreshold ? ` (next tier at ${medal.nextThreshold})` : ''}`
+                  : medal
+                    ? `${medal.correctCount} correct${medal.nextThreshold ? ` (first tier at ${medal.nextThreshold})` : ''}`
+                    : undefined
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedCategoryId(id)}
+                    title={titleText}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      selectedCategoryId === id
+                        ? 'bg-ds-primary text-on-primary'
+                        : 'bg-surface-container text-on-surface/70 hover:bg-surface-container-highest'
+                    }`}
+                  >
+                    <span aria-hidden="true">{icon}</span>
+                    {name}
+                    {tierEmoji && (
+                      <span aria-label={`${medal?.label ?? earnedTier} medal`}>{tierEmoji}</span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </ChunkyCardContent>
         </ChunkyCard>
