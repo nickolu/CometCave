@@ -31,6 +31,7 @@ const gameState: GameState = {
   gamePhase: 'mainMenu',
   gamePlayState: {
     cardsToScore: [],
+    cardIdsPlayedThisAnte: [],
     discardPileIds: [],
     drawPileIds: [],
     handIds: [],
