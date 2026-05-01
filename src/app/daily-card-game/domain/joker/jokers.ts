@@ -1774,6 +1774,33 @@ export const blueJokerJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const abstractJokerJoker: JokerDefinition = {
+  id: 'abstractJokerJoker',
+  name: 'Abstract Joker',
+  description: '+3 Mult per Joker owned',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const jokerCount = ctx.game.jokers.length
+        if (jokerCount > 0) {
+          const multBonus = 3 * jokerCount
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: multBonus,
+            source: 'Abstract Joker',
+          })
+          ctx.game.gamePlayState.score.mult += multBonus
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1826,6 +1853,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   fortuneTellerJoker,
   supernovaJoker,
   blueJokerJoker,
+  abstractJokerJoker,
 }
 
 /***
