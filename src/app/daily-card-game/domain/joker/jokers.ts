@@ -1801,7 +1801,40 @@ export const abstractJokerJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const swashbucklerJoker: JokerDefinition = {
+  id: 'swashbucklerJoker',
+  name: 'Swashbuckler',
+  description: 'Adds the sell value of all other owned Jokers to Mult',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let totalSellValue = 0
+        for (const jokerState of ctx.game.jokers) {
+          if (jokerState.jokerId === 'swashbucklerJoker') continue
+          const jokerDef = jokers[jokerState.jokerId]
+          if (jokerDef) {
+            totalSellValue += Math.floor(jokerDef.price / 2)
+          }
+        }
+        const multBonus = Math.max(1, totalSellValue)
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          value: multBonus,
+          source: 'Swashbuckler',
+        })
+        ctx.game.gamePlayState.score.mult += multBonus
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
+  swashbucklerJoker,
   jokerJoker,
   greedyJoker,
   jollyJoker,
