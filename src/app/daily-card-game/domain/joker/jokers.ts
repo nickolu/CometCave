@@ -1747,6 +1747,33 @@ export const supernovaJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const blueJokerJoker: JokerDefinition = {
+  id: 'blueJokerJoker',
+  name: 'Blue Joker',
+  description: '+2 Chips for each remaining card in deck',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const remainingCards = ctx.game.gamePlayState.drawPileIds.length
+        if (remainingCards > 0) {
+          const chipsBonus = 2 * remainingCards
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: chipsBonus,
+            source: 'Blue Joker',
+          })
+          ctx.game.gamePlayState.score.chips += chipsBonus
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1798,6 +1825,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   shootTheMoonJoker,
   fortuneTellerJoker,
   supernovaJoker,
+  blueJokerJoker,
 }
 
 /***
