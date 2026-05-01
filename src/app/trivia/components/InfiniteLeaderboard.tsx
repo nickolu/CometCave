@@ -7,12 +7,11 @@ import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
-import { CATEGORY_META } from '@/lib/trivia/categories'
 import type { MedalTier } from '@/lib/trivia/medals'
 
 import { SignInBanner } from './SignInCTA'
 
-type Sort = 'score' | 'streak' | 'category'
+type Sort = 'score' | 'streak' | 'allCategories'
 
 interface OverallEntry {
   uid: string
@@ -30,20 +29,26 @@ interface CategoryEntry {
   label: string | null
 }
 
+interface CategorySection {
+  categoryId: number
+  categoryName: string
+  icon: string
+  entries: CategoryEntry[]
+}
+
 interface OverallResponse {
   sort: 'score' | 'streak'
   entries: OverallEntry[]
   notice?: string
 }
 
-interface CategoryResponse {
-  sort: 'category'
-  categoryId: number
-  entries: CategoryEntry[]
+interface AllCategoriesResponse {
+  sort: 'allCategories'
+  sections: CategorySection[]
   notice?: string
 }
 
-type LeaderboardResponse = OverallResponse | CategoryResponse
+type LeaderboardResponse = OverallResponse | AllCategoriesResponse
 
 const TIER_EMOJI: Record<MedalTier, string> = {
   none: '',
@@ -54,13 +59,10 @@ const TIER_EMOJI: Record<MedalTier, string> = {
   diamond: '💎',
 }
 
-const FIRST_CATEGORY_ID = Number(Object.keys(CATEGORY_META)[0])
-
 export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [sort, setSort] = useState<Sort>('score')
-  const [categoryId, setCategoryId] = useState<number>(FIRST_CATEGORY_ID)
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -73,10 +75,7 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       setLoading(true)
       setError(null)
       try {
-        const url = sort === 'category'
-          ? `/api/v1/trivia/infinite/leaderboard?sort=category&categoryId=${categoryId}`
-          : `/api/v1/trivia/infinite/leaderboard?sort=${sort}`
-        const res = await fetch(url)
+        const res = await fetch(`/api/v1/trivia/infinite/leaderboard?sort=${sort}`)
         if (!res.ok) throw new Error('Failed to load leaderboard')
         const json = (await res.json()) as LeaderboardResponse
         setData(json)
@@ -87,10 +86,47 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       }
     }
     load()
-  }, [sort, categoryId])
+  }, [sort])
 
-  const renderEntries = () => {
+  const renderContent = () => {
     if (!data) return null
+
+    if (data.sort === 'allCategories') {
+      if (data.sections.length === 0) {
+        return (
+          <div className="text-center text-on-surface/50 py-8 px-4">
+            {data.notice ?? 'No medals earned yet. Be the first!'}
+          </div>
+        )
+      }
+      return (
+        <div className="flex flex-col gap-4">
+          {data.sections.map((section) => (
+            <div key={section.categoryId} className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2 px-1">
+                <span aria-hidden="true">{section.icon}</span>
+                <span className="text-on-surface text-sm font-semibold">{section.categoryName}</span>
+              </div>
+              {section.entries.map((entry, i) => {
+                const tierEmoji = entry.tier !== 'none' ? TIER_EMOJI[entry.tier] : ''
+                const primary = `${entry.correctCount.toLocaleString()} correct`
+                const secondary = entry.label ? `${tierEmoji} ${entry.label}`.trim() : 'No medal yet'
+                return (
+                  <LeaderboardRow
+                    key={`${entry.uid}-${i}`}
+                    rank={i + 1}
+                    name={entry.displayName || 'Unknown'}
+                    primary={primary}
+                    secondary={secondary}
+                    isCurrentUser={!!currentUid && entry.uid === currentUid}
+                  />
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )
+    }
 
     if (data.entries.length === 0) {
       return (
@@ -100,43 +136,29 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       )
     }
 
-    if (data.sort === 'category') {
-      return data.entries.map((entry, i) => {
-        const tierEmoji = entry.tier !== 'none' ? TIER_EMOJI[entry.tier] : ''
-        const primary = `${entry.correctCount.toLocaleString()} correct`
-        const secondary = entry.label ? `${tierEmoji} ${entry.label}`.trim() : 'No medal yet'
-        return (
-          <LeaderboardRow
-            key={`${entry.uid}-${i}`}
-            rank={i + 1}
-            name={entry.displayName || 'Unknown'}
-            primary={primary}
-            secondary={secondary}
-            isCurrentUser={!!currentUid && entry.uid === currentUid}
-          />
-        )
-      })
-    }
+    return (
+      <div className="flex flex-col gap-1.5">
+        {data.entries.map((entry, i) => {
+          const primary = data.sort === 'score'
+            ? `${entry.score.toLocaleString()} pts`
+            : `${entry.longestStreak} streak`
+          const secondary = data.sort === 'score'
+            ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs`
+            : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs`
 
-    return data.entries.map((entry, i) => {
-      const primary = data.sort === 'score'
-        ? `${entry.score.toLocaleString()} pts`
-        : `${entry.longestStreak} streak`
-      const secondary = data.sort === 'score'
-        ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs`
-        : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs`
-
-      return (
-        <LeaderboardRow
-          key={`${entry.uid}-${i}`}
-          rank={i + 1}
-          name={entry.displayName || 'Unknown'}
-          primary={primary}
-          secondary={secondary}
-          isCurrentUser={!!currentUid && entry.uid === currentUid}
-        />
-      )
-    })
+          return (
+            <LeaderboardRow
+              key={`${entry.uid}-${i}`}
+              rank={i + 1}
+              name={entry.displayName || 'Unknown'}
+              primary={primary}
+              secondary={secondary}
+              isCurrentUser={!!currentUid && entry.uid === currentUid}
+            />
+          )
+        })}
+      </div>
+    )
   }
 
   return (
@@ -158,7 +180,7 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
 
       {/* Sort tabs */}
       <div className="grid grid-cols-3 gap-2">
-        {(['score', 'streak', 'category'] as Sort[]).map((s) => (
+        {(['score', 'streak', 'allCategories'] as Sort[]).map((s) => (
           <ChunkyButton
             key={s}
             variant={sort === s ? 'primary' : 'secondary'}
@@ -169,22 +191,6 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
         ))}
       </div>
 
-      {/* Category picker — only visible when "By Category" is selected */}
-      {sort === 'category' && (
-        <select
-          aria-label="Pick a category"
-          className="bg-surface-container-high text-on-surface border border-outline-variant rounded-ds-md py-2 px-3 text-sm"
-          value={categoryId}
-          onChange={(e) => setCategoryId(Number(e.target.value))}
-        >
-          {Object.entries(CATEGORY_META).map(([id, meta]) => (
-            <option key={id} value={id}>
-              {meta.icon} {meta.name}
-            </option>
-          ))}
-        </select>
-      )}
-
       {/* Content */}
       <ChunkyCard variant="surface-container-high" className="bg-surface-container/80 border-outline-variant">
         <ChunkyCardContent className="pt-4 pb-4">
@@ -193,7 +199,7 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
           ) : error ? (
             <div className="text-center text-ds-error py-8">{error}</div>
           ) : (
-            <div className="flex flex-col gap-1.5">{renderEntries()}</div>
+            renderContent()
           )}
         </ChunkyCardContent>
       </ChunkyCard>
