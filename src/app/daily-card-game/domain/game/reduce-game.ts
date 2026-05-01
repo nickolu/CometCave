@@ -231,6 +231,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         if (!draft.shopState.openPackState) return
         draft.gamePhase = 'shop'
         draft.shopState.openPackState = null
+        const packSkipCtx = getEffectContext(draft, event)
+        dispatchEffects(event, packSkipCtx, collectEffects(packSkipCtx.game))
         return
       }
 
