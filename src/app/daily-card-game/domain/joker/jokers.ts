@@ -3425,6 +3425,48 @@ export const hiker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const ramen: JokerDefinition = {
+  id: 'ramen',
+  name: 'Ramen',
+  description: 'X2 Mult, loses X0.01 Mult per card discarded',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const r = ctx.game.jokers.find(j => j.jokerId === 'ramen')
+        if (!r) return
+        if (r.counter === 0) r.counter = 200
+        const cardsDiscarded = ctx.game.gamePlayState.selectedCardIds.length
+        r.counter -= cardsDiscarded
+        if (r.counter <= 100) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== r.id)
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const r = ctx.game.jokers.find(j => j.jokerId === 'ramen')
+        if (!r) return
+        if (r.counter === 0) r.counter = 200
+        const xMult = r.counter / 100
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Ramen',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3524,6 +3566,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   cardSharp,
   loyaltyCard,
   hiker,
+  ramen,
 }
 
 /***
