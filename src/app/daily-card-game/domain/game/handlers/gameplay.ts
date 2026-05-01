@@ -93,7 +93,9 @@ export function handleDiscardSelectedCards(draft: GameState, event: GameEvent) {
   gamePlayState.remainingDiscards -= 1
 
   // refill immediately (this was previously orchestrated in useGameEvents)
-  const cardsNeeded = HAND_SIZE + draft.handSizeModifier - gamePlayState.handIds.length
+  const currentRound = draft.rounds[draft.roundIndex]
+  const isSerpent = currentRound.bossBlindName === 'The Serpent' && currentRound.bossBlind.status === 'inProgress'
+  const cardsNeeded = isSerpent ? 3 : HAND_SIZE + draft.handSizeModifier - gamePlayState.handIds.length
   dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
 
   // Purple seal: add a tarot card for each discarded card with purple seal
