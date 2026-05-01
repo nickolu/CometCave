@@ -57,6 +57,13 @@ export async function getCategoryMedalsForUser(uid: string): Promise<CategoryMed
   return result
 }
 
+export interface CategoryLeaderboardSection {
+  categoryId: number
+  categoryName: string
+  icon: string
+  entries: CategoryLeaderboardEntry[]
+}
+
 // Top players for one category, sorted by lifetime correctCount in that
 // category. Hydrates nicknames from the parent users/{uid} doc so the
 // leaderboard shows display names instead of raw uids.
@@ -99,4 +106,27 @@ export async function getInfiniteTopByCategory(
       label: getMedalLabel(categoryId, tier),
     }
   })
+}
+
+// Returns one section per category that has at least one player, each
+// with the top N players in that category. Categories with no players
+// are omitted. Runs the per-category query in parallel; reuses the
+// existing (categoryId asc, correctCount desc) collection-group index.
+export async function getInfiniteLeaderboardAllCategories(
+  limit = 5
+): Promise<CategoryLeaderboardSection[]> {
+  const categoryIds = Object.keys(CATEGORY_META).map(Number)
+  const sections = await Promise.all(
+    categoryIds.map(async (categoryId) => {
+      const entries = await getInfiniteTopByCategory(categoryId, limit)
+      const meta = CATEGORY_META[categoryId]
+      return {
+        categoryId,
+        categoryName: meta.name,
+        icon: meta.icon,
+        entries,
+      }
+    })
+  )
+  return sections.filter((s) => s.entries.length > 0)
 }

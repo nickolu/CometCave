@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { CATEGORY_META } from '@/lib/trivia/categories'
-import { getInfiniteTopByCategory } from '@/lib/trivia/categoryMedals'
+import {
+  getInfiniteLeaderboardAllCategories,
+  getInfiniteTopByCategory,
+} from '@/lib/trivia/categoryMedals'
 import { getInfiniteTopByScore, getInfiniteTopByStreak } from '@/lib/trivia/infiniteRuns'
 
 export async function GET(request: NextRequest) {
@@ -20,6 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (sort === 'category') {
+      // Single-category mode (kept for backward compat / direct linking).
       const categoryId = categoryIdParam !== null ? parseInt(categoryIdParam, 10) : NaN
       if (isNaN(categoryId) || !(categoryId in CATEGORY_META)) {
         return NextResponse.json(
@@ -31,8 +35,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ sort: 'category', categoryId, entries })
     }
 
+    if (sort === 'allCategories') {
+      const sections = await getInfiniteLeaderboardAllCategories(5)
+      return NextResponse.json({ sort: 'allCategories', sections })
+    }
+
     return NextResponse.json(
-      { error: 'Invalid sort. Use score, streak, or category.' },
+      { error: 'Invalid sort. Use score, streak, category, or allCategories.' },
       { status: 400 }
     )
   } catch (error: unknown) {
@@ -45,11 +54,11 @@ export async function GET(request: NextRequest) {
     ) {
       const urlMatch = errMsg.match(/(https:\/\/console\.firebase\.google\.com\S+)/)
       if (urlMatch) console.error('Create index here:', urlMatch[1])
-      return NextResponse.json({
-        sort,
-        entries: [],
-        notice: 'Leaderboard is initializing. Please try again in a few minutes.',
-      })
+      const initializingNotice = 'Leaderboard is initializing. Please try again in a few minutes.'
+      if (sort === 'allCategories') {
+        return NextResponse.json({ sort, sections: [], notice: initializingNotice })
+      }
+      return NextResponse.json({ sort, entries: [], notice: initializingNotice })
     }
     return NextResponse.json({ error: 'Failed to fetch leaderboard.' }, { status: 500 })
   }
