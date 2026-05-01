@@ -33,7 +33,9 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const timerStartRef = useRef<number>(0)
   const hasStartedRef = useRef(false)
   const [showPreGame, setShowPreGame] = useState(true)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined)
+  // Empty set = "All Categories" (no filter). Players toggle individual
+  // tiles to build up a multi-category selection.
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set())
   const [showRulesOverlay, setShowRulesOverlay] = useState(false)
   const [bonusLifeToast, setBonusLifeToast] = useState<string | null>(null)
   const [medalToast, setMedalToast] = useState<string | null>(null)
@@ -58,8 +60,17 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     }
     hasStartedRef.current = true
     setShowPreGame(false)
-    startRun(chosenMode, selectedCategoryId)
-  }, [mode, startRun, selectedCategoryId])
+    startRun(chosenMode, Array.from(selectedCategoryIds))
+  }, [mode, startRun, selectedCategoryIds])
+
+  const toggleCategoryId = useCallback((id: number) => {
+    setSelectedCategoryIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   // Timer logic
   useEffect(() => {
@@ -128,6 +139,11 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
 
   // Pre-game screen — inline, not a modal
   if (showPreGame) {
+    const selectionCount = selectedCategoryIds.size
+    const isAllMode = selectionCount === 0
+    const startLabel = isAllMode
+      ? 'Start'
+      : `Start (${selectionCount} categor${selectionCount === 1 ? 'y' : 'ies'})`
     return (
       <div className="flex flex-col gap-4 max-w-lg mx-auto py-6">
         <div className="text-center">
@@ -141,28 +157,47 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
           </button>
         </div>
 
-        {/* Category selector — always visible, inline */}
+        {/* All-categories quick-pick + Start buttons sit above the grid so
+            the most common action is always visible without scrolling. */}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedCategoryIds(new Set())}
+            className={`flex items-center justify-center gap-2 py-2 rounded-ds-md text-sm font-medium transition-colors ${
+              isAllMode
+                ? 'bg-ds-primary text-on-primary'
+                : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
+            }`}
+          >
+            <span aria-hidden="true">🌐</span>
+            All Categories
+          </button>
+          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}>
+            {startLabel}
+          </ChunkyButton>
+          <ChunkyButton variant="secondary" size="sm" className="w-full" onClick={() => handleStart('practice')}>
+            Practice Mode
+          </ChunkyButton>
+        </div>
+
+        {/* Browse + multi-select categories. Tapping a tile toggles
+            membership; "All Categories" above clears the set. */}
         <ChunkyCard variant="surface-variant">
           <ChunkyCardContent className="pt-4 pb-4 flex flex-col gap-3">
-            <p className="text-on-surface/70 text-sm font-medium">Category</p>
-            <button
-              type="button"
-              onClick={() => setSelectedCategoryId(undefined)}
-              className={`flex items-center justify-center gap-2 py-2 rounded-ds-md text-sm font-medium transition-colors ${
-                selectedCategoryId === undefined
-                  ? 'bg-ds-primary text-on-primary'
-                  : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
-              }`}
-            >
-              <span aria-hidden="true">🌐</span>
-              All Categories
-            </button>
+            <p className="text-on-surface/70 text-sm font-medium">
+              Pick categories
+              {selectionCount > 0 && (
+                <span className="ml-2 text-on-surface/50 text-xs">
+                  · {selectionCount} selected
+                </span>
+              )}
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {categoryEntries.map(({ id, name, icon }) => {
                 const medal = medalsByCategoryId.get(id)
                 const earnedTier = medal && medal.tier !== 'none' ? medal.tier : null
                 const tierEmoji = earnedTier ? TIER_EMOJI[earnedTier] : null
-                const isSelected = selectedCategoryId === id
+                const isSelected = selectedCategoryIds.has(id)
                 const titleText = medal && medal.label
                   ? `${medal.label} — ${medal.correctCount} correct${medal.nextThreshold ? ` (next tier at ${medal.nextThreshold})` : ''}`
                   : medal
@@ -172,8 +207,9 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setSelectedCategoryId(id)}
+                    onClick={() => toggleCategoryId(id)}
                     title={titleText}
+                    aria-pressed={isSelected}
                     className={`flex flex-col items-center justify-between gap-2 p-3 rounded-ds-md text-xs font-medium transition-colors min-h-[120px] ${
                       isSelected
                         ? 'bg-ds-primary text-on-primary ring-2 ring-ds-primary'
@@ -209,16 +245,6 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
             </div>
           </ChunkyCardContent>
         </ChunkyCard>
-
-        {/* Start buttons */}
-        <div className="flex flex-col gap-2">
-          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}>
-            Start
-          </ChunkyButton>
-          <ChunkyButton variant="secondary" size="sm" className="w-full" onClick={() => handleStart('practice')}>
-            Practice Mode
-          </ChunkyButton>
-        </div>
 
         <ChunkyButton variant="ghost" size="sm" onClick={onBack}>
           ← Back to Trivia
@@ -335,7 +361,13 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         onFlee={handleFlee}
         isPlaying={state.phase === 'playing'}
         mode={state.mode}
-        categoryName={state.categoryId != null ? CATEGORY_META[state.categoryId]?.name : undefined}
+        categoryName={
+          state.categoryIds.length === 1
+            ? CATEGORY_META[state.categoryIds[0]]?.name
+            : state.categoryIds.length > 1
+              ? `${state.categoryIds.length} categories`
+              : undefined
+        }
         categoryProgress={categoryProgress}
         skipsRemaining={state.skipsRemaining}
       />

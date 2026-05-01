@@ -6,7 +6,9 @@ export interface SamplerOptions {
   uid: string
   streak: number
   type?: 'free-text' // v1 only free-text
-  categoryId?: number
+  // List of category ids to draw from. Empty/undefined = all categories.
+  // Single-element arrays behave the same as the old single-category mode.
+  categoryIds?: number[]
 }
 
 /**
@@ -56,7 +58,7 @@ function freshnessWeight(timesShown: number): number {
 }
 
 export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQuestion | null> {
-  const { uid, streak, type = 'free-text', categoryId } = options
+  const { uid, streak, type = 'free-text', categoryIds } = options
   const db = getFirestoreDb()
 
   // 1. Query active questions of the requested type
@@ -65,11 +67,17 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
     .where('status', '==', 'active')
     .where('type', '==', type)
 
-  // If a category filter is provided, restrict to that category by name
-  if (categoryId !== undefined) {
-    const categoryMeta = CATEGORY_META[categoryId]
-    if (categoryMeta) {
-      query = query.where('category', '==', categoryMeta.name)
+  // Resolve the optional category filter to category-name strings (the
+  // shape stored on aiQuestions docs). Firestore `in` clause caps at 30
+  // values, which is comfortably more than our 24 categories.
+  if (categoryIds && categoryIds.length > 0) {
+    const names = categoryIds
+      .map((id) => CATEGORY_META[id]?.name)
+      .filter((name): name is string => !!name)
+    if (names.length === 1) {
+      query = query.where('category', '==', names[0])
+    } else if (names.length > 1) {
+      query = query.where('category', 'in', names)
     }
   }
 
