@@ -809,6 +809,36 @@ export const bootstrapsJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const theTrioJoker: JokerDefinition = {
+  id: 'theTrioJoker',
+  name: 'The Trio',
+  description: 'X3 Mult if played hand contains a Three of a Kind',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handsContainingThreeOfAKind = ['threeOfAKind', 'fullHouse', 'fourOfAKind', 'fiveOfAKind', 'flushHouse']
+        if (handsContainingThreeOfAKind.includes(handId)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 3,
+            source: 'The Trio',
+          })
+          ctx.game.gamePlayState.score.mult *= 3
+        }
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const theDuoJoker: JokerDefinition = {
   id: 'theDuoJoker',
   name: 'The Duo',
@@ -864,6 +894,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   bullJoker,
   acrobatJoker,
   bootstrapsJoker,
+  theTrioJoker,
   theDuoJoker,
 }
 
