@@ -54,7 +54,36 @@ const theOx: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
+const verdantLeaf: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Verdant Leaf',
+  description: 'All cards debuffed until 1 Joker sold',
+  image: 'verdant-leaf.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.allCardsDebuffed = true
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'JOKER_SOLD',
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.allCardsDebuffed = false
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, verdantLeaf]
 
 /**
  

@@ -126,6 +126,7 @@ const gameState: GameState = {
     numberOfCardsRequiredForFlushAndStraight: 5,
     areAllCardsFaceCards: false,
     allowDuplicateJokersInShop: false,
+    allCardsDebuffed: false,
   },
   tags: [],
   totalScore: 0n,
@@ -143,8 +144,7 @@ export function applyDeckModifiers(state: GameState, deck: DeckDefinition): Game
     maxConsumables: state.maxConsumables + (modifiers.maxConsumables ?? 0),
     gamePlayState: {
       ...state.gamePlayState,
-      remainingDiscards:
-        state.gamePlayState.remainingDiscards + (modifiers.maxDiscards ?? 0),
+      remainingDiscards: state.gamePlayState.remainingDiscards + (modifiers.maxDiscards ?? 0),
       remainingHands: state.gamePlayState.remainingHands + (modifiers.maxHands ?? 0),
     },
   }

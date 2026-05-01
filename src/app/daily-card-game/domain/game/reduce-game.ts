@@ -102,7 +102,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'BOSS_BLIND_SELECTED': {
-        handleBossBlindSelected(draft)
+        handleBossBlindSelected(draft, event)
         return
       }
       case 'BLIND_SKIPPED': {

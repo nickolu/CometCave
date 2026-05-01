@@ -232,6 +232,19 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
   const currentCardToScore = gamePlayState.cardsToScore.shift()
   if (!currentCardToScore) return
   const scoredCardId = currentCardToScore.id
+
+  if (draft.staticRules.allCardsDebuffed) {
+    gamePlayState.selectedCardIds = gamePlayState.selectedCardIds.filter(id => id !== scoredCardId)
+    if (gamePlayState.selectedHand) {
+      gamePlayState.selectedHand = [
+        gamePlayState.selectedHand[0],
+        gamePlayState.selectedHand[1].filter(card => card.id !== scoredCardId),
+      ]
+    }
+    gamePlayState.handIds = gamePlayState.handIds.filter(id => id !== scoredCardId)
+    return
+  }
+
   const hasRedSeal = currentCardToScore.flags.seal === 'red'
 
   // Score the card (and score again if it has a red seal)

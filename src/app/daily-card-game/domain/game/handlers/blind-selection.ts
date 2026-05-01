@@ -1,7 +1,11 @@
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { GameEvent } from '@/app/daily-card-game/domain/events/types'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
-import { collectEffects, shuffleCardIds } from '@/app/daily-card-game/domain/game/utils'
+import {
+  collectEffects,
+  getEffectContext,
+  shuffleCardIds,
+} from '@/app/daily-card-game/domain/game/utils'
 import { buildSeedString } from '@/app/daily-card-game/domain/randomness'
 import { blindIndices, getNextBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { initializeTag } from '@/app/daily-card-game/domain/tag/utils'
@@ -44,7 +48,7 @@ export function handleBigBlindSelected(draft: GameState) {
   draft.gamePlayState.discardPileIds = []
 }
 
-export function handleBossBlindSelected(draft: GameState) {
+export function handleBossBlindSelected(draft: GameState, event?: GameEvent) {
   const round = draft.rounds[draft.roundIndex]
   round.bossBlind.status = 'inProgress'
   draft.gamePhase = 'gameplay'
@@ -61,6 +65,10 @@ export function handleBossBlindSelected(draft: GameState) {
   })
   draft.gamePlayState.handIds = []
   draft.gamePlayState.discardPileIds = []
+
+  if (event) {
+    dispatchEffects(event, getEffectContext(draft, event), collectEffects(draft))
+  }
 }
 
 export function handleBlindSkipped(draft: GameState, event: GameEvent) {
