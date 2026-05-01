@@ -1,9 +1,17 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
+import { LIVES_MAX, computeStreakMultiplier } from '@/app/trivia/lib/infiniteScoring'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Pill, ScoreChip } from '@/components/ui/pill'
-import { computeStreakMultiplier, LIVES_MAX } from '@/app/trivia/lib/infiniteScoring'
-import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
+
+export interface CategoryProgress {
+  name: string
+  icon?: string
+  correctCount: number
+  nextThreshold: number | null
+}
 
 interface InfiniteHUDProps {
   livesRemaining: number
@@ -15,7 +23,49 @@ interface InfiniteHUDProps {
   isPlaying: boolean
   mode?: InfiniteMode
   categoryName?: string
+  categoryProgress?: CategoryProgress | null
   skipsRemaining?: number
+}
+
+// Renders a number that briefly pulses + floats a "+1" badge when it
+// increases. Used by the HUD's per-category progress line so each correct
+// answer feels like it landed.
+function TickUpCount({ value }: { value: number }) {
+  const prev = useRef(value)
+  const [pulse, setPulse] = useState(false)
+
+  useEffect(() => {
+    if (value > prev.current) {
+      // Transient animation flag triggered by a prop change; the cascade
+      // is bounded (one extra render to clear pulse after the timeout).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPulse(true)
+      const id = window.setTimeout(() => setPulse(false), 700)
+      prev.current = value
+      return () => window.clearTimeout(id)
+    }
+    prev.current = value
+  }, [value])
+
+  return (
+    <span className="relative inline-block">
+      <span
+        className={`inline-block transition-transform duration-300 ${
+          pulse ? 'scale-125 text-ds-tertiary' : 'scale-100'
+        }`}
+      >
+        {value}
+      </span>
+      {pulse && (
+        <span
+          aria-hidden="true"
+          className="absolute -top-3 left-1/2 -translate-x-1/2 text-ds-tertiary text-[10px] font-bold animate-bounce"
+        >
+          +1
+        </span>
+      )}
+    </span>
+  )
 }
 
 export function InfiniteHUD({
@@ -28,6 +78,7 @@ export function InfiniteHUD({
   isPlaying,
   mode = 'scored',
   categoryName,
+  categoryProgress,
   skipsRemaining,
 }: InfiniteHUDProps) {
   const [showFleeConfirm, setShowFleeConfirm] = useState(false)
@@ -107,11 +158,23 @@ export function InfiniteHUD({
         />
       </div>
 
-      {/* Timer pill + category label */}
-      <div className="flex justify-center items-center gap-2">
+      {/* Timer pill + category progress */}
+      <div className="flex justify-center items-center gap-2 flex-wrap">
         <Pill tone="neutral" size="sm">{Math.ceil(timeRemaining)}s</Pill>
-        {categoryName && (
-          <Pill tone="neutral" size="sm">{categoryName}</Pill>
+        {categoryProgress ? (
+          <Pill tone="neutral" size="sm">
+            <span className="flex items-center gap-1">
+              {categoryProgress.icon && <span aria-hidden="true">{categoryProgress.icon}</span>}
+              <span>{categoryProgress.name}</span>
+              <span className="opacity-60">·</span>
+              <TickUpCount value={categoryProgress.correctCount} />
+              {categoryProgress.nextThreshold != null && (
+                <span className="opacity-60">/ {categoryProgress.nextThreshold}</span>
+              )}
+            </span>
+          </Pill>
+        ) : (
+          categoryName && <Pill tone="neutral" size="sm">{categoryName}</Pill>
         )}
       </div>
 

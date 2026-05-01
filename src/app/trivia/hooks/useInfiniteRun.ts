@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from 'react'
 
 import { type AnswerResult, LIVES_START, SKIPS_PER_RUN } from '@/app/trivia/lib/infiniteScoring'
 import { useAuth } from '@/hooks/useAuth'
+import { getCategoryIdByName } from '@/lib/trivia/categories'
 import type { MedalEarned } from '@/lib/trivia/medals'
 
 export type InfinitePhase = 'idle' | 'loading' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
@@ -33,6 +34,10 @@ export interface InfiniteRunState {
   skipsUsed: number
   flaggedQuestionIds: string[]
   lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number; medalEarned?: MedalEarned | null }) | null
+  // Per-category correct-answer deltas accumulated within the current run.
+  // Combined with each category's lifetime baseline (from the category-stats
+  // API), this gives the player's live count for any question.
+  correctsByCategoryThisRun: Record<number, number>
   answers: Array<{
     questionId: string
     correct: boolean
@@ -67,6 +72,7 @@ export function useInfiniteRun() {
     skipsUsed: 0,
     flaggedQuestionIds: [],
     lastAnswer: null,
+    correctsByCategoryThisRun: {},
     answers: [],
     error: null,
   })
@@ -160,6 +166,7 @@ export function useInfiniteRun() {
         skipsUsed: 0,
         flaggedQuestionIds: [],
         lastAnswer: null,
+        correctsByCategoryThisRun: {},
         answers: [],
       }))
     } catch (err) {
@@ -201,10 +208,16 @@ export function useInfiniteRun() {
         startPrefetch(result.currentStreak, state.categoryId)
       }
 
+      // If this was a correct answer in scored mode, increment the live
+      // per-category counter (HUD shows it as the player's current count).
+      const answeredCategoryId = getCategoryIdByName(currentQuestion.category)
+
       // Always show the answer feedback (correct answer + explanation + rating)
       // before transitioning to the summary, even when this answer ended the
       // run. The player clicks through to view the summary.
-      setState(s => ({
+      setState(s => {
+        const shouldBump = result.correct && s.mode === 'scored' && answeredCategoryId !== null
+        return {
         ...s,
         phase: 'answered',
         lastAnswer: result,
@@ -214,6 +227,9 @@ export function useInfiniteRun() {
         score: result.score,
         questionsAnswered: s.questionsAnswered + 1,
         trailblazes: result.trailblazer ? s.trailblazes + 1 : s.trailblazes,
+        correctsByCategoryThisRun: shouldBump && answeredCategoryId !== null
+          ? { ...s.correctsByCategoryThisRun, [answeredCategoryId]: (s.correctsByCategoryThisRun[answeredCategoryId] ?? 0) + 1 }
+          : s.correctsByCategoryThisRun,
         answers: [...s.answers, {
           questionId: currentQuestionId,
           correct: result.correct,
@@ -227,7 +243,8 @@ export function useInfiniteRun() {
           correctAnswer: result.correctAnswer,
           explanation: result.explanation,
         }],
-      }))
+        }
+      })
     } catch (err) {
       console.error('[infinite] submitAnswer failed:', err)
       setState(s => ({ ...s, phase: 'error', error: 'Failed to submit answer.' }))

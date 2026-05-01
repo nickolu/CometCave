@@ -7,7 +7,8 @@ import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
-import { CATEGORY_META } from '@/lib/trivia/categories'
+import { CATEGORY_META, getCategoryIdByName } from '@/lib/trivia/categories'
+import { getMedalTier, getNextThreshold } from '@/lib/trivia/medals'
 
 import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
 import { InfiniteHUD } from './InfiniteHUD'
@@ -295,6 +296,34 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   // Playing or answered
   if (!state.question) return null
 
+  // Live per-category progress for the question currently on screen.
+  // Lifetime baseline comes from the category-stats fetch on mount; in-run
+  // delta is tracked by useInfiniteRun. Combined they give the count we
+  // display, plus the next-tier threshold for the "47 / 64" suffix.
+  const currentQuestionCategoryId = state.question
+    ? getCategoryIdByName(state.question.category)
+    : null
+  const currentQuestionCategoryMeta =
+    currentQuestionCategoryId !== null ? CATEGORY_META[currentQuestionCategoryId] : null
+  const baselineCount =
+    currentQuestionCategoryId !== null
+      ? medalsByCategoryId.get(currentQuestionCategoryId)?.correctCount ?? 0
+      : 0
+  const runDelta =
+    currentQuestionCategoryId !== null
+      ? state.correctsByCategoryThisRun[currentQuestionCategoryId] ?? 0
+      : 0
+  const liveCorrectCount = baselineCount + runDelta
+  const categoryProgress =
+    currentQuestionCategoryId !== null && currentQuestionCategoryMeta && state.mode === 'scored'
+      ? {
+          name: currentQuestionCategoryMeta.name,
+          icon: currentQuestionCategoryMeta.icon,
+          correctCount: liveCorrectCount,
+          nextThreshold: getNextThreshold(getMedalTier(liveCorrectCount)),
+        }
+      : null
+
   return (
     <div className="flex flex-col gap-3 sm:gap-4 max-w-lg mx-auto py-2 sm:py-4">
       <InfiniteHUD
@@ -307,6 +336,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         isPlaying={state.phase === 'playing'}
         mode={state.mode}
         categoryName={state.categoryId != null ? CATEGORY_META[state.categoryId]?.name : undefined}
+        categoryProgress={categoryProgress}
         skipsRemaining={state.skipsRemaining}
       />
 
