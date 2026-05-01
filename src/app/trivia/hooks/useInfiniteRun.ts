@@ -379,7 +379,7 @@ export function useInfiniteRun() {
     setState(s => ({ ...s, phase: 'ended' }))
   }, [state.runId, state.lastAnswer, getAuthHeaders, cancelPrefetch])
 
-  const handleQuestionFlagged = useCallback((questionId: string, result: { wasFirstFlag: boolean; bonusLifeGranted: boolean }) => {
+  const handleQuestionFlagged = useCallback((questionId: string, result: { bonusLifeGranted: boolean }) => {
     setState(s => {
       const newFlaggedQuestionIds = s.flaggedQuestionIds.includes(questionId)
         ? s.flaggedQuestionIds

@@ -12,7 +12,6 @@ export interface AIQuestion {
   status: 'active' | 'flagged' | 'removed'
   timesShown: number
   timesCorrect: number
-  flaggedCount: number
   avgTimeMs: number | null
 }
 
@@ -22,7 +21,7 @@ export interface SeenQuestion {
 }
 
 export async function saveAIQuestion(
-  question: Omit<AIQuestion, 'status' | 'timesShown' | 'timesCorrect' | 'flaggedCount' | 'avgTimeMs'>
+  question: Omit<AIQuestion, 'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs'>
 ): Promise<string> {
   const db = getFirestoreDb()
   const doc: AIQuestion = {
@@ -30,7 +29,6 @@ export async function saveAIQuestion(
     status: 'active',
     timesShown: 0,
     timesCorrect: 0,
-    flaggedCount: 0,
     avgTimeMs: null,
   }
   const ref = db.collection('aiQuestions').doc(question.id)

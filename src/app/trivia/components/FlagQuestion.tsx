@@ -14,7 +14,6 @@ const FLAG_REASONS = [
 ] as const
 
 interface FlagResult {
-  wasFirstFlag: boolean
   bonusLifeGranted: boolean
 }
 
@@ -66,10 +65,10 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
       setSubmitted(true)
       setShowModal(false)
       if (onFlagged) {
-        let result: FlagResult = { wasFirstFlag: false, bonusLifeGranted: false }
+        let result: FlagResult = { bonusLifeGranted: false }
         try {
           const data = await res.json()
-          result = { wasFirstFlag: data.wasFirstFlag ?? false, bonusLifeGranted: data.bonusLifeGranted ?? false }
+          result = { bonusLifeGranted: data.bonusLifeGranted ?? false }
         } catch {
           // use defaults
         }
