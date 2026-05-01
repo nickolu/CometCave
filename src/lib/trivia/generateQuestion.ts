@@ -153,12 +153,25 @@ Category: ${ctx.categoryName}
 Difficulty: ${ctx.difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[ctx.difficulty]}
 
 Rules:
+- The question MUST have ONE unambiguous correct answer. If a knowledgeable person could plausibly give a different answer than the keyDetail, you must add identifying details to the question that rule out the alternatives. Do not write a question whose answer is "any X that fits Y" when many X fit Y.
 - The question must ask specifically for the keyDetail.
 - The question must NOT contain the keyDetail or a synonym/translation of it.
-- The correct_answer should equal the keyDetail or an equivalent variant (e.g. "1986" if the keyDetail is "February 21, 1986" and the question asks for the year).
+- The correct_answer must equal the keyDetail or a clear variant (e.g. "1986" if the keyDetail is "February 21, 1986" and the question asks for the year).
 - The explanation may elaborate beyond the fact (2-3 sentences).
 - Stay in the "${ctx.categoryName}" category. Do not drift.
-- Free-text answer; this is NOT a multiple-choice question.`,
+- Free-text answer; this is NOT a multiple-choice question.
+
+Examples:
+
+GOOD: fact="Serena Williams won her 23rd and final Grand Slam singles title at the 2017 Australian Open." keyDetail="2017 Australian Open"
+  Question: "At which Grand Slam tournament did Serena Williams win her 23rd and final singles title?"
+  → unambiguous because the question pins it to her specific 23rd title.
+
+BAD: same fact, keyDetail="2017 Australian Open"
+  Question: "At which Grand Slam did Serena Williams win a major title?"
+  → ambiguous; she won several. The question must specify "her 23rd / final" to rule out alternatives.
+
+If you cannot construct a question with one unambiguous answer from this fact, output the best-effort question you can — the reviewer will reject ambiguous questions and we will retry with a different fact.`,
     temperature: 0.5,
     maxTokens: 400,
   })

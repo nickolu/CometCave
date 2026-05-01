@@ -61,15 +61,26 @@ ${seedLine}Difficulty: ${difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[diffic
 
 Each fact must:
 - Be specifically about the category "${category}" — not adjacent topics.
-- State ONE specific, verifiable claim.
-- Have a single concrete keyDetail (a name, date, number, place, or 1-3 word phrase) that uniquely identifies the answer.
+- State ONE specific, verifiable claim about ONE specific subject (a particular person, work, event, place, or thing — not a category of things).
+- Have a single concrete keyDetail (a name, date, number, place, or 1-3 word phrase) that is the UNIQUE answer to a question about this fact. If multiple things could plausibly be the answer (e.g. "a tennis player who won many Grand Slams" — there are several), the fact is too vague; pick a more specific subject.
 - Have the keyDetail appear verbatim inside the claim sentence.
 - Reach for surprising or deep-cut angles rather than obvious common knowledge.
 - Be true. If you are uncertain, replace the fact with one you are confident about.
 
+Examples of good vs bad facts:
+
+GOOD: claim="Serena Williams won her 23rd and final Grand Slam singles title at the 2017 Australian Open." keyDetail="2017 Australian Open"
+  → unique because there's only one 23rd-Grand-Slam-win event for her.
+
+BAD: claim="Serena Williams is a tennis player who has won many Grand Slam titles." keyDetail="Serena Williams"
+  → degenerate; the keyDetail is named in the claim and the fact gives no specific answer.
+
+BAD: claim="The Basenji is known as the 'barkless dog'." keyDetail="Basenji"
+  → other quiet breeds could plausibly be called "barkless" too. Pick a more specific framing.
+
 Avoid duplicates: each of the ${count} facts should be about a different subject.`,
       temperature: 0.7,
-      maxTokens: 800,
+      maxTokens: 1000,
     })
 
     return result.object.facts.map((f) => ({
