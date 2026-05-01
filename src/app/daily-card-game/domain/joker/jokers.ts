@@ -3546,6 +3546,45 @@ export const bloodstone: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const throwback: JokerDefinition = {
+  id: 'throwback',
+  name: 'Throwback',
+  description: 'X0.25 Mult for each Blind skipped this run',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'BLIND_SKIPPED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tb = ctx.game.jokers.find(j => j.jokerId === 'throwback')
+        if (!tb) return
+        if (tb.counter === 0) tb.counter = 4
+        tb.counter += 1
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tb = ctx.game.jokers.find(j => j.jokerId === 'throwback')
+        if (!tb) return
+        if (tb.counter === 0) tb.counter = 4
+        if (tb.counter <= 4) return
+        const xMult = tb.counter / 4
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Throwback',
+        })
+        ctx.game.gamePlayState.score.mult *= xMult
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3648,6 +3687,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hiker,
   ramen,
   bloodstone,
+  throwback,
 }
 
 /***
