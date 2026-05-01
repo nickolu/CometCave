@@ -54,7 +54,35 @@ const theOx: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
+const crimsonHeart: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Crimson Heart',
+  description: 'One random Joker disabled every hand (changes every hand)',
+  image: 'crimson-heart.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        const faceUpJokers = ctx.game.jokers.filter(joker => joker.isFaceUp)
+        if (faceUpJokers.length === 0) return
+
+        const scoringSeed = `${ctx.game.seed}-${ctx.game.roundIndex}-${ctx.game.gamePlayState.handsPlayed}-crimson-heart`
+        const randomIndex = getRandomNumberWithSeed(scoringSeed, 0, faceUpJokers.length - 1)
+        const selectedJoker = faceUpJokers[randomIndex]
+        const jokerToDisable = ctx.game.jokers.find(joker => joker.id === selectedJoker.id)
+        if (jokerToDisable) jokerToDisable.isFaceUp = false
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, crimsonHeart]
 
 /**
  

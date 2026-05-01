@@ -53,7 +53,11 @@ export function collectEffects(game: GameState): Effect[] {
     effects.push(...getBlindDefinition(blind.type, game.rounds[game.roundIndex]).effects)
   }
 
-  effects.push(...game.jokers.flatMap(j => jokers[j.jokerId]?.effects || []))
+  effects.push(
+    ...game.jokers
+      .filter(joker => joker.isFaceUp)
+      .flatMap(j => jokers[j.jokerId]?.effects || [])
+  )
 
   effects.push(...game.vouchers.flatMap(v => vouchers[v.type]?.effects || []))
 
