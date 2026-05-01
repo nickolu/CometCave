@@ -756,6 +756,33 @@ export const bullJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const bootstrapsJoker: JokerDefinition = {
+  id: 'bootstrapsJoker',
+  name: 'Bootstraps',
+  description: '+2 Mult for every $5 you have',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const money = Math.max(0, ctx.game.money)
+        const multBonus = 2 * Math.floor(money / 5)
+        if (multBonus > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: multBonus,
+            source: 'Bootstraps',
+          })
+          ctx.game.gamePlayState.score.mult += multBonus
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -779,6 +806,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   dietColaJoker,
   cloud9Joker,
   bullJoker,
+  bootstrapsJoker,
 }
 
 /***
