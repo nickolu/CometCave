@@ -3252,6 +3252,26 @@ export const riffRaff: JokerDefinition = {
   rarity: 'common',
 }
 
+function applyCartomancer(ctx: EffectContext) {
+  if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'cartomancer'])
+  const tarotCard = getRandomTarotCards(1, seed)[0]
+  ctx.game.consumables.push(initializeTarotCard(tarotCard))
+}
+
+export const cartomancer: JokerDefinition = {
+  id: 'cartomancer',
+  name: 'Cartomancer',
+  description: 'Create a Tarot card when Blind is selected (Must have room)',
+  price: 6,
+  effects: [
+    { event: { type: 'SMALL_BLIND_SELECTED' }, priority: 1, apply: applyCartomancer },
+    { event: { type: 'BIG_BLIND_SELECTED' }, priority: 1, apply: applyCartomancer },
+    { event: { type: 'BOSS_BLIND_SELECTED' }, priority: 1, apply: applyCartomancer },
+  ],
+  rarity: 'uncommon',
+}
+
 function applyMadnessBlindEffect(ctx: EffectContext) {
   const m = ctx.game.jokers.find(j => j.jokerId === 'madness')
   if (!m) return
@@ -3744,6 +3764,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hack,
   seltzer,
   riffRaff,
+  cartomancer,
   ceremonialDagger,
   madness,
   spaceJoker,
