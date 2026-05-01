@@ -1,3 +1,4 @@
+import { after } from 'next/server'
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { verifyRequestAuth } from '@/lib/api/auth'
@@ -8,6 +9,7 @@ import { generateInfiniteQuestion } from '@/lib/trivia/generateQuestion'
 import { MAX_GENERATIONS_PER_WINDOW, WINDOW_MS, checkAndIncrementGenerationLimit } from '@/lib/trivia/generationLimit'
 import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
+import { warmQuestionPoolForUser } from '@/lib/trivia/warmQuestionPool'
 
 // GET /api/v1/trivia/infinite/next?streak=N[&categoryIds=12,13,15]
 // Backward-compat: also accepts the legacy single ?categoryId=N param.
@@ -93,6 +95,11 @@ export async function GET(request: NextRequest) {
     // Strip correctAnswer before sending to client
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { correctAnswer, ...safeQuestion }: AIQuestion = question
+
+    // Background top-up: keep the player ahead of pool exhaustion by
+    // pre-generating one question per /next when their unanswered
+    // pool drops below the target. Runs after the response is sent.
+    after(() => warmQuestionPoolForUser(auth.claims.uid))
 
     return NextResponse.json(safeQuestion)
   } catch (err) {
