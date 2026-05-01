@@ -1261,6 +1261,28 @@ export const erosionJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const roughGemJoker: JokerDefinition = {
+  id: 'roughGemJoker',
+  name: 'Rough Gem',
+  description: 'Played cards with Diamond suit earn $1 when scored',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (cardDef && cardDef.suit === 'diamonds') {
+          ctx.game.money += 1
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1298,6 +1320,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   stoneJokerJoker,
   steelJokerJoker,
   erosionJoker,
+  roughGemJoker,
 }
 
 /***
