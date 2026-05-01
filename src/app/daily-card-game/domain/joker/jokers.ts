@@ -679,6 +679,28 @@ export const midasMaskJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const dietColaJoker: JokerDefinition = {
+  id: 'dietColaJoker',
+  name: 'Diet Cola',
+  description: 'Sell this card to create a free Double Tag',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'dietColaJoker')) {
+          ctx.game.tags.push({
+            id: uuid(),
+            tagType: 'double',
+          })
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -699,6 +721,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   toTheMoonJoker,
   rocketJoker,
   midasMaskJoker,
+  dietColaJoker,
 }
 
 /***
