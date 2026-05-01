@@ -2481,6 +2481,44 @@ export const splash: JokerDefinition = {
   rarity: 'common',
 }
 
+export const greenJoker: JokerDefinition = {
+  id: 'greenJoker',
+  name: 'Green Joker',
+  description: '+1 Mult per hand played, -1 Mult per discard',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const gj = ctx.game.jokers.find(j => j.jokerId === 'greenJoker')
+        if (!gj) return
+        gj.counter += 1
+
+        if (gj.counter > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: gj.counter,
+            source: 'Green Joker',
+          })
+          ctx.game.gamePlayState.score.mult += gj.counter
+        }
+      },
+    },
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const gj = ctx.game.jokers.find(j => j.jokerId === 'greenJoker')
+        if (!gj) return
+        gj.counter = Math.max(0, gj.counter - 1)
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2555,6 +2593,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   iceCream,
   egg,
   splash,
+  greenJoker,
 }
 
 /***
