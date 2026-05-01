@@ -2391,6 +2391,48 @@ export const runner: JokerDefinition = {
   rarity: 'common',
 }
 
+export const iceCream: JokerDefinition = {
+  id: 'iceCream',
+  name: 'Ice Cream',
+  description: '+100 Chips. -5 Chips for every hand played',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const iceCreamJoker = ctx.game.jokers.find(j => j.jokerId === 'iceCream')
+        if (!iceCreamJoker) return
+
+        // Initialize counter to 100 on first use
+        if (iceCreamJoker.counter === 0) {
+          iceCreamJoker.counter = 100
+        }
+
+        // Apply current chips bonus
+        if (iceCreamJoker.counter > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: iceCreamJoker.counter,
+            source: 'Ice Cream',
+          })
+          ctx.game.gamePlayState.score.chips += iceCreamJoker.counter
+        }
+
+        // Reduce by 5 after applying
+        iceCreamJoker.counter -= 5
+
+        // Destroy if chips reach 0 or below
+        if (iceCreamJoker.counter <= 0) {
+          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== iceCreamJoker.id)
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const egg: JokerDefinition = {
   id: 'egg',
   name: 'Egg',
@@ -2482,6 +2524,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   delayedGratification,
   grosMichel,
   runner,
+  iceCream,
   egg,
 }
 
