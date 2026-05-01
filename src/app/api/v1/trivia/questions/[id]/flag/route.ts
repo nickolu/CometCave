@@ -51,14 +51,26 @@ export async function POST(
   const qRef = db.doc(`aiQuestions/${questionId}`);
   const flagRef = db.doc(`aiQuestions/${questionId}/flags/${uid}`);
 
+  const runRef = validRunId ? db.doc(`users/${uid}/triviaInfinite/${validRunId}`) : null;
+
   try {
     const result = await db.runTransaction(async (tx) => {
+      // Firestore transactions require all reads before any writes.
+      // Read the question doc and (optionally) the run doc up front,
+      // then do every write below.
       const qSnap = await tx.get(qRef);
       if (!qSnap.exists) throw new Error('Question not found');
+      const runSnap = runRef ? await tx.get(runRef) : null;
+
+      const qData = qSnap.data()!;
+      const runData = runSnap?.exists ? runSnap.data()! : null;
+      const bonusLivesEarned = runData?.bonusLivesEarned ?? 0;
+      const shouldGrantBonusLife = runData !== null && bonusLivesEarned < BONUS_LIVES_PER_RUN;
+
+      // ── all writes below ──────────────────────────────────────────
 
       // Only flip status from active → flagged. Already-flagged or removed
       // questions stay where they are (still record this user's flag doc).
-      const qData = qSnap.data()!;
       if (qData.status === 'active') {
         tx.update(qRef, { status: 'flagged' });
       }
@@ -78,29 +90,18 @@ export async function POST(
       tx.set(flagRef, flagDoc);
 
       // Award one bonus life per run (capped) when a flag is filed during play.
-      let bonusLifeGranted = false;
-      if (validRunId) {
-        const runRef = db.doc(`users/${uid}/triviaInfinite/${validRunId}`);
-        const runSnap = await tx.get(runRef);
-        if (runSnap.exists) {
-          const runData = runSnap.data()!;
-          const bonusLivesEarned = runData.bonusLivesEarned ?? 0;
-
-          const runUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
-            flaggedQuestionIds: FieldValue.arrayUnion(questionId),
-          };
-
-          if (bonusLivesEarned < BONUS_LIVES_PER_RUN) {
-            runUpdates.livesRemaining = FieldValue.increment(1);
-            runUpdates.bonusLivesEarned = FieldValue.increment(1);
-            bonusLifeGranted = true;
-          }
-
-          tx.update(runRef, runUpdates);
+      if (runRef && runData) {
+        const runUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
+          flaggedQuestionIds: FieldValue.arrayUnion(questionId),
+        };
+        if (shouldGrantBonusLife) {
+          runUpdates.livesRemaining = FieldValue.increment(1);
+          runUpdates.bonusLivesEarned = FieldValue.increment(1);
         }
+        tx.update(runRef, runUpdates);
       }
 
-      return { bonusLifeGranted };
+      return { bonusLifeGranted: shouldGrantBonusLife };
     });
 
     // Increment lifetime reports counter (independent of the flag tx;
