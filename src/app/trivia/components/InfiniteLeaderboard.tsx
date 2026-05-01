@@ -7,12 +7,14 @@ import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
+import { CATEGORY_META } from '@/lib/trivia/categories'
+import type { MedalTier } from '@/lib/trivia/medals'
 
 import { SignInBanner } from './SignInCTA'
 
-type Sort = 'score' | 'streak'
+type Sort = 'score' | 'streak' | 'category'
 
-interface InfiniteLeaderboardEntry {
+interface OverallEntry {
   uid: string
   displayName: string
   score: number
@@ -20,18 +22,47 @@ interface InfiniteLeaderboardEntry {
   questionsAnswered: number
 }
 
-interface InfiniteLeaderboardResponse {
-  sort: Sort
-  entries: InfiniteLeaderboardEntry[]
+interface CategoryEntry {
+  uid: string
+  displayName: string
+  correctCount: number
+  tier: MedalTier
+  label: string | null
+}
+
+interface OverallResponse {
+  sort: 'score' | 'streak'
+  entries: OverallEntry[]
   notice?: string
 }
+
+interface CategoryResponse {
+  sort: 'category'
+  categoryId: number
+  entries: CategoryEntry[]
+  notice?: string
+}
+
+type LeaderboardResponse = OverallResponse | CategoryResponse
+
+const TIER_EMOJI: Record<MedalTier, string> = {
+  none: '',
+  bronze: '🥉',
+  silver: '🥈',
+  gold: '🥇',
+  platinum: '🏅',
+  diamond: '💎',
+}
+
+const FIRST_CATEGORY_ID = Number(Object.keys(CATEGORY_META)[0])
 
 export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [sort, setSort] = useState<Sort>('score')
+  const [categoryId, setCategoryId] = useState<number>(FIRST_CATEGORY_ID)
   const [loading, setLoading] = useState(true)
-  const [data, setData] = useState<InfiniteLeaderboardResponse | null>(null)
+  const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const currentUid = user?.uid ?? null
@@ -42,9 +73,12 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/trivia/infinite/leaderboard?sort=${sort}`)
+        const url = sort === 'category'
+          ? `/api/v1/trivia/infinite/leaderboard?sort=category&categoryId=${categoryId}`
+          : `/api/v1/trivia/infinite/leaderboard?sort=${sort}`
+        const res = await fetch(url)
         if (!res.ok) throw new Error('Failed to load leaderboard')
-        const json = await res.json()
+        const json = (await res.json()) as LeaderboardResponse
         setData(json)
       } catch {
         setError('Failed to load leaderboard.')
@@ -53,10 +87,10 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       }
     }
     load()
-  }, [sort])
+  }, [sort, categoryId])
 
   const renderEntries = () => {
-    if (!data || !data.entries) return null
+    if (!data) return null
 
     if (data.entries.length === 0) {
       return (
@@ -66,11 +100,29 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       )
     }
 
+    if (data.sort === 'category') {
+      return data.entries.map((entry, i) => {
+        const tierEmoji = entry.tier !== 'none' ? TIER_EMOJI[entry.tier] : ''
+        const primary = `${entry.correctCount.toLocaleString()} correct`
+        const secondary = entry.label ? `${tierEmoji} ${entry.label}`.trim() : 'No medal yet'
+        return (
+          <LeaderboardRow
+            key={`${entry.uid}-${i}`}
+            rank={i + 1}
+            name={entry.displayName || 'Unknown'}
+            primary={primary}
+            secondary={secondary}
+            isCurrentUser={!!currentUid && entry.uid === currentUid}
+          />
+        )
+      })
+    }
+
     return data.entries.map((entry, i) => {
-      const primary = sort === 'score'
+      const primary = data.sort === 'score'
         ? `${entry.score.toLocaleString()} pts`
         : `${entry.longestStreak} streak`
-      const secondary = sort === 'score'
+      const secondary = data.sort === 'score'
         ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs`
         : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs`
 
@@ -105,17 +157,33 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Sort tabs */}
-      <div className="grid grid-cols-2 gap-2">
-        {(['score', 'streak'] as Sort[]).map((s) => (
+      <div className="grid grid-cols-3 gap-2">
+        {(['score', 'streak', 'category'] as Sort[]).map((s) => (
           <ChunkyButton
             key={s}
             variant={sort === s ? 'primary' : 'secondary'}
             onClick={() => setSort(s)}
           >
-            {s === 'score' ? 'Top Score' : 'Top Streak'}
+            {s === 'score' ? 'Top Score' : s === 'streak' ? 'Top Streak' : 'By Category'}
           </ChunkyButton>
         ))}
       </div>
+
+      {/* Category picker — only visible when "By Category" is selected */}
+      {sort === 'category' && (
+        <select
+          aria-label="Pick a category"
+          className="bg-surface-container-high text-on-surface border border-outline-variant rounded-ds-md py-2 px-3 text-sm"
+          value={categoryId}
+          onChange={(e) => setCategoryId(Number(e.target.value))}
+        >
+          {Object.entries(CATEGORY_META).map(([id, meta]) => (
+            <option key={id} value={id}>
+              {meta.icon} {meta.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Content */}
       <ChunkyCard variant="surface-container-high" className="bg-surface-container/80 border-outline-variant">
