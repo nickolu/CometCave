@@ -3277,6 +3277,33 @@ export const seltzer: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const dusk: JokerDefinition = {
+  id: 'dusk',
+  name: 'Dusk',
+  description: 'Retrigger all played cards in final hand of the round',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.gamePlayState.remainingHands !== 0) return
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: cardDef.baseChips,
+          source: 'Dusk',
+        })
+        ctx.game.gamePlayState.score.chips += cardDef.baseChips
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const riffRaff: JokerDefinition = {
   id: 'riffRaff',
   name: 'Riff-raff',
@@ -4174,6 +4201,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hangingChad,
   hack,
   seltzer,
+  dusk,
   riffRaff,
   cartomancer,
   ceremonialDagger,
