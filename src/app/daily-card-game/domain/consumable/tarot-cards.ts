@@ -72,6 +72,25 @@ const theMagician: TarotCardDefinition = {
   ],
 }
 
+const theHermit: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theHermit',
+  name: 'The Hermit',
+  price: 2,
+  description: 'Doubles your money (max $20 gain)',
+  isPlayable: () => true,
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const gain = Math.min(Math.max(ctx.game.money, 0), 20)
+        ctx.game.money += gain
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -93,7 +112,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theLovers: notImplemented,
   theChariot: notImplemented,
   strength: notImplemented,
-  theHermit: notImplemented,
+  theHermit,
   wheelOfFortune: notImplemented,
   justice: notImplemented,
   theHangedMan: notImplemented,
