@@ -2453,6 +2453,34 @@ export const egg: JokerDefinition = {
   rarity: 'common',
 }
 
+export const splash: JokerDefinition = {
+  id: 'splash',
+  name: 'Splash',
+  description: 'Every played card counts in scoring',
+  price: 3,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const allPlayedIds = ctx.game.gamePlayState.selectedCardIds
+        const existingIds = new Set(
+          ctx.game.gamePlayState.cardsToScore.map(c => c.id)
+        )
+        for (const cardId of allPlayedIds) {
+          if (!existingIds.has(cardId)) {
+            const card = ctx.game.cards[cardId]
+            if (card) {
+              ctx.game.gamePlayState.cardsToScore.push(card)
+            }
+          }
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2526,6 +2554,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   runner,
   iceCream,
   egg,
+  splash,
 }
 
 /***
