@@ -1700,7 +1700,7 @@ export const fortuneTellerJoker: JokerDefinition = {
       event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const tarotCount = ctx.game.consumablesUsed.filter(c => c.type === 'tarotCard').length
+        const tarotCount = ctx.game.consumablesUsed.filter(c => c.consumableType === 'tarotCard').length
         if (tarotCount > 0) {
           ctx.game.gamePlayState.scoringEvents.push({
             id: uuid(),

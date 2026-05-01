@@ -13,9 +13,9 @@ describe('Fortune Teller joker', () => {
     game.rounds[game.roundIndex].smallBlind.status = 'inProgress'
     game.gamePhase = 'gameplay'
     game.consumablesUsed = [
-      { id: '1', type: 'tarotCard', name: 'The Fool', isFaceUp: true } as any,
-      { id: '2', type: 'tarotCard', name: 'The Magician', isFaceUp: true } as any,
-      { id: '3', type: 'tarotCard', name: 'The Empress', isFaceUp: true } as any,
+      { id: '1', consumableType: 'tarotCard', name: 'The Fool', isFaceUp: true, tarotType: 'theFool' } as any,
+      { id: '2', consumableType: 'tarotCard', name: 'The Magician', isFaceUp: true, tarotType: 'theMagician' } as any,
+      { id: '3', consumableType: 'tarotCard', name: 'The Empress', isFaceUp: true, tarotType: 'theEmpress' } as any,
     ]
     const after = reduceGame(game, { type: 'HAND_SCORING_FINALIZE' })
     expect(
