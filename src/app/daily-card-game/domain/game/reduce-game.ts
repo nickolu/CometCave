@@ -116,7 +116,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
       case 'HAND_DEALT': {
         if (draft.gamePlayState.handIds.length) return
-        dealCardsFromDrawPile(draft, HAND_SIZE)
+        dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
         return
       }
       case 'CARD_SELECTED': {
@@ -313,6 +313,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'ROUND_END': {
+        const roundEndCtx = getEffectContext(draft as unknown as GameState, event)
+        dispatchEffects(event, roundEndCtx, collectEffects(roundEndCtx.game))
         return
       }
 
