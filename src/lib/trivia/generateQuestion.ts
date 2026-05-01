@@ -28,7 +28,15 @@ export interface GenerateInfiniteQuestionOptions {
   factSource?: FactSource
 }
 
-const QUESTION_MODEL = 'gpt-4o-mini'
+// Question construction needs to satisfy multiple constraints at once
+// (specific, leak-free, category-bound). gpt-4o-mini was repeatedly
+// oscillating between the constraints — fixing a leak would introduce
+// ambiguity, repairing the ambiguity would re-introduce the leak. Use
+// the full gpt-4o for construction and repair where instruction-
+// following matters; keep mini for the cheaper fact extraction and
+// reviewer stages.
+const QUESTION_MODEL = 'gpt-4o'
+const REPAIR_MODEL = 'gpt-4o'
 const REVIEW_MODEL = 'gpt-4o-mini'
 const FACTS_PER_FETCH = 5
 const MAX_GENERATION_ATTEMPTS = 3
@@ -222,7 +230,7 @@ async function repairDraft(
   const openaiClient = createOpenAI({ apiKey })
 
   const result = await generateObject({
-    model: openaiClient(QUESTION_MODEL),
+    model: openaiClient(REPAIR_MODEL),
     schema: QuestionSchema,
     system:
       'You are a trivia question writer fixing a previous draft that a reviewer rejected. You receive the original fact, the rejected draft, and the rejection reason. Produce a revised question that resolves the specific issue while staying faithful to the fact.',
@@ -461,6 +469,8 @@ export async function generateInfiniteQuestion(
         factSource: factSource.id,
         factSourceCitation: fact.source,
         reason: lastReason,
+        keyDetail: fact.keyDetail,
+        question: draft.question,
       })
 
       if (repair < MAX_REPAIRS_PER_DRAFT) {
