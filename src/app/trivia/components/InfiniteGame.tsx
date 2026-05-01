@@ -161,6 +161,10 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 const medal = medalsByCategoryId.get(id)
                 const earnedTier = medal && medal.tier !== 'none' ? medal.tier : null
                 const tierEmoji = earnedTier ? TIER_EMOJI[earnedTier] : null
+                // For categories with no medal yet, show a ghosted bronze
+                // medal as an empty-slot indicator so every tile reads as
+                // "there is a medal here to earn."
+                const showEmptySlot = !earnedTier && !!medal
                 const titleText = medal && medal.label
                   ? `${medal.label} — ${medal.correctCount} correct${medal.nextThreshold ? ` (next tier at ${medal.nextThreshold})` : ''}`
                   : medal
@@ -182,6 +186,14 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                     {name}
                     {tierEmoji && (
                       <span aria-label={`${medal?.label ?? earnedTier} medal`}>{tierEmoji}</span>
+                    )}
+                    {showEmptySlot && (
+                      <span
+                        aria-label="No medal yet"
+                        className="opacity-30 grayscale"
+                      >
+                        🥉
+                      </span>
                     )}
                   </button>
                 )
