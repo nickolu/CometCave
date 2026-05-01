@@ -72,7 +72,7 @@ const crimsonHeart: BossBlindDefinition = {
         const faceUpJokers = ctx.game.jokers.filter(joker => joker.isFaceUp)
         if (faceUpJokers.length === 0) return
 
-        const scoringSeed = `${ctx.game.seed}-${ctx.game.roundIndex}-${ctx.game.gamePlayState.handsPlayed}-crimson-heart`
+        const scoringSeed = `${ctx.game.gameSeed}-${ctx.game.roundIndex}-${ctx.game.handsPlayed}-crimson-heart`
         const randomIndex = getRandomNumberWithSeed(scoringSeed, 0, faceUpJokers.length - 1)
         const selectedJoker = faceUpJokers[randomIndex]
         const jokerToDisable = ctx.game.jokers.find(joker => joker.id === selectedJoker.id)
