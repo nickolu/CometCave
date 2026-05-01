@@ -1,6 +1,7 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { type Auth, getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
 
 let _db: FirebaseFirestore.Firestore | null = null
 let _auth: Auth | null = null
@@ -37,4 +38,9 @@ export function getFirebaseAuthAdmin(): Auth {
     _auth = getAuth()
   }
   return _auth
+}
+
+export function getStorageBucket() {
+  ensureApp()
+  return getStorage().bucket()
 }
