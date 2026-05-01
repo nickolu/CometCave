@@ -1,5 +1,6 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import {
+  findHighestPriorityHand,
   flushHand,
   pairHand,
   straightHand,
@@ -4149,6 +4150,44 @@ export const troubadour: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+function resetBurntJoker(ctx: EffectContext) {
+  const bj = ctx.game.jokers.find(j => j.jokerId === 'burntJoker')
+  if (bj) bj.counter = 0
+}
+
+export const burntJoker: JokerDefinition = {
+  id: 'burntJoker',
+  name: 'Burnt Joker',
+  description: 'Upgrade the level of the first discarded poker hand each round',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const bj = ctx.game.jokers.find(j => j.jokerId === 'burntJoker')
+        if (!bj) return
+        if (bj.counter !== 0) return
+
+        const discardedCards = ctx.game.gamePlayState.selectedCardIds
+          .map(id => ctx.game.cards[id])
+          .filter(Boolean)
+
+        if (discardedCards.length === 0) return
+
+        const { hand } = findHighestPriorityHand(discardedCards, ctx.game.staticRules)
+        ctx.game.pokerHands[hand].level += 1
+
+        bj.counter = 1
+      },
+    },
+    { event: { type: 'SMALL_BLIND_SELECTED' }, priority: 1, apply: resetBurntJoker },
+    { event: { type: 'BIG_BLIND_SELECTED' }, priority: 1, apply: resetBurntJoker },
+    { event: { type: 'BOSS_BLIND_SELECTED' }, priority: 1, apply: resetBurntJoker },
+  ],
+  rarity: 'rare',
+}
+
 export const showman: JokerDefinition = {
   id: 'showman',
   name: 'Showman',
@@ -4298,6 +4337,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   burglar,
   troubadour,
   showman,
+  burntJoker,
 }
 
 /***
