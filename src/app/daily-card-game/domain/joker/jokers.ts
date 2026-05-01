@@ -782,6 +782,36 @@ export const acrobatJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const theDuoJoker: JokerDefinition = {
+  id: 'theDuoJoker',
+  name: 'The Duo',
+  description: 'X2 Mult if played hand contains a Pair',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handsContainingPair = ['pair', 'twoPair', 'fullHouse', 'threeOfAKind', 'fourOfAKind', 'fiveOfAKind', 'flushHouse']
+        if (handsContainingPair.includes(handId)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 2,
+            source: 'The Duo',
+          })
+          ctx.game.gamePlayState.score.mult *= 2
+        }
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -806,6 +836,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   cloud9Joker,
   bullJoker,
   acrobatJoker,
+  theDuoJoker,
 }
 
 /***
