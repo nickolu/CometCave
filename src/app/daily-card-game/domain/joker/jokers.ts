@@ -2436,6 +2436,37 @@ export const runner: JokerDefinition = {
   rarity: 'common',
 }
 
+export const squareJoker: JokerDefinition = {
+  id: 'squareJoker',
+  name: 'Square Joker',
+  description: 'This Joker gains +4 Chips if played hand has exactly 4 cards',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const sj = ctx.game.jokers.find(j => j.jokerId === 'squareJoker')
+        if (!sj) return
+        const playedCardCount = ctx.game.gamePlayState.playedCardIds.length
+        if (playedCardCount === 4) {
+          sj.counter += 4
+        }
+        if (sj.counter > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'chips',
+            value: sj.counter,
+            source: 'Square Joker',
+          })
+          ctx.game.gamePlayState.score.chips += sj.counter
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const iceCream: JokerDefinition = {
   id: 'iceCream',
   name: 'Ice Cream',
@@ -2764,6 +2795,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   grosMichel,
   cavendish,
   runner,
+  squareJoker,
   redCard,
   iceCream,
   egg,
