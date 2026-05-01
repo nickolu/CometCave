@@ -221,6 +221,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'SHOP_OPEN_PACK': {
         handleShopOpenPack(draft, event)
+        const ctx = getEffectContext(draft, event)
+        dispatchEffects(event, ctx, collectEffects(ctx.game))
         return
       }
       case 'SHOP_BUY_VOUCHER': {
