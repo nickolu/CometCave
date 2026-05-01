@@ -1716,6 +1716,37 @@ export const fortuneTellerJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const supernovaJoker: JokerDefinition = {
+  id: 'supernovaJoker',
+  name: 'Supernova',
+  description: 'Adds the number of times poker hand has been played this run to Mult',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handState = ctx.game.pokerHands[handId]
+        if (!handState) return
+        const timesPlayed = handState.timesPlayed
+        if (timesPlayed > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: timesPlayed,
+            source: 'Supernova',
+          })
+          ctx.game.gamePlayState.score.mult += timesPlayed
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1766,6 +1797,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   goldenJokerJoker,
   shootTheMoonJoker,
   fortuneTellerJoker,
+  supernovaJoker,
 }
 
 /***
