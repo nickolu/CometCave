@@ -3861,6 +3861,38 @@ export const hitTheRoad: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const ancientJoker: JokerDefinition = {
+  id: 'ancientJoker',
+  name: 'Ancient Joker',
+  description: 'Each played card with target suit gives X1.5 Mult when scored, suit changes each round',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades']
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'ancientJoker', 'suit'])
+        const roll = getRandomNumbersWithSeed({ seed, min: 0, max: 3, numberOfNumbers: 1 })
+        const targetSuit = suits[roll[0]]
+        if (cardDef.suit !== targetSuit) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: 1.5,
+          source: 'Ancient Joker',
+        })
+        ctx.game.gamePlayState.score.mult *= 1.5
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3972,6 +4004,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   castle,
   vagabond,
   hitTheRoad,
+  ancientJoker,
 }
 
 /***
