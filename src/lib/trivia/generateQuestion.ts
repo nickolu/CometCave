@@ -16,7 +16,7 @@ import {
 
 export type GeneratedQuestion = Omit<
   AIQuestion,
-  'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs'
+  'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs' | 'likeCount' | 'dislikeCount'
 >
 
 export interface GenerateInfiniteQuestionOptions {
@@ -310,36 +310,22 @@ async function reviewQuestion(
     model: openaiClient(REVIEW_MODEL),
     schema: ReviewSchema,
     system:
-      'You are a quality reviewer for trivia questions. Your job is to catch GENUINE problems, not to second-guess perfectly-good descriptive questions. A great trivia question describes its answer without naming it — that is the whole point of trivia.',
+      'You are a quality reviewer for trivia questions. You evaluate ONLY the question text against the failure modes listed below. Answer-leak checks happen elsewhere (deterministically on the question text alone) — you should NOT flag answer-leaks under any circumstances; that is not your job.',
     prompt: `Review this trivia question for the category "${draft.categoryName}".
 
-Source fact: ${draft.fact.claim}
 Question: ${draft.question}
 Expected answer: ${draft.correct_answer}
-Explanation: ${draft.explanation}
 
-A question is a LEAK only if the expected answer string (or a clear synonym/translation of it) appears in the question text. Describing the answer is NOT a leak — it's good trivia.
+(Source fact and explanation withheld so they cannot be confused with the question text.)
 
-LEAK examples (REJECT):
-  Question: "What is the Pythagorean theorem?" Answer: "Pythagorean theorem"
-    → "Pythagorean theorem" appears verbatim. Leak.
-  Question: "When did the Lincoln Futura concept car appear in the 1966 Batman series?" Answer: "Lincoln Futura"
-    → "Lincoln Futura" appears verbatim. Leak.
+DO NOT FLAG:
+- "answer in question" / "answer is leaked" / "answer is stated in question text" — answer-leak detection is performed deterministically on the question text elsewhere in the pipeline. Do not check for or report leaks. Even if you think you see one, do not flag it.
 
-NOT-A-LEAK examples (ACCEPT, do not flag as leak):
-  Question: "Which early arcade video game, released by Atari in 1972, simulated table tennis?" Answer: "Pong"
-    → "Pong" does not appear. The question describes Pong via its features. ACCEPT.
-  Question: "How many novels are in Terry Pratchett's Discworld series?" Answer: "41"
-    → "41" does not appear. The word "novels" is in the question, but that's the unit, not the answer. ACCEPT.
-  Question: "What 2019 anthology explores the worldbuilding of Robert Jordan's Wheel of Time series?" Answer: "The World of the Wheel of Time"
-    → The phrase "Wheel of Time" appears in the question, but it refers to the SERIES being described, not the ANTHOLOGY. The answer (the anthology title) does not appear as the answer. ACCEPT.
-
-Then check the OTHER failure modes:
-- The question has multiple equally-valid answers (must have ONE specific answer).
-- The question is too vague to answer without options.
-- The question is nonsensical or contradicts itself.
+Reject the question ONLY if one of these is true:
+- The question has multiple equally-valid answers — it must have ONE specific answer.
+- The question is too vague to answer without multiple-choice options.
+- The question is nonsensical, broken, or self-contradicting.
 - The "expected answer" doesn't actually answer the question.
-- The question's claim contradicts the source fact, or the answer doesn't match what the fact supports.
 - The question doesn't belong to category "${draft.categoryName}" — pick the best fit from: ${KNOWN_CATEGORIES.join(', ')}
 
 Set accept=true if all checks pass. If you reject, give a one-sentence rejection_reason naming the specific failure. inferred_category is the category you think the question best belongs to.`,
@@ -347,14 +333,21 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
     maxTokens: 200,
   })
 
-  // Trust the LLM's overall accept signal. We previously also required
-  // inferred_category === draft.categoryName exactly, but that produced
-  // false rejections for near-matches ("Pop Music" vs "Music") and the
-  // construction prompt already enforces category fidelity upstream.
-  // Keep inferred_category in the return for telemetry.
+  // Defense in depth: the prompt tells the LLM not to flag leaks, but
+  // gpt-4o-mini sometimes hallucinates one anyway by reading the
+  // "Expected answer:" prompt line as if it were the question. If we
+  // see a rejection that names a leak-style reason, override the
+  // accept decision — the deterministic detectAnswerLeak() pre-check
+  // is the source of truth for leaks, and if it didn't fire, there is
+  // no leak.
+  const reason = result.object.rejection_reason ?? ''
+  const looksLikeLeakHallucination =
+    !result.object.accept &&
+    /\b(leak|appears? in (the )?question|stated in (the )?question|in the question text|in the question)\b/i.test(reason)
+
   return {
-    accept: result.object.accept,
-    reason: result.object.rejection_reason,
+    accept: result.object.accept || looksLikeLeakHallucination,
+    reason: looksLikeLeakHallucination ? null : (result.object.rejection_reason ?? null),
     inferred_category: result.object.inferred_category,
   }
 }

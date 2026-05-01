@@ -200,12 +200,14 @@ export async function applyRunToAggregate(uid: string, runId: string): Promise<v
 
 export async function incrementVoiceStat(
   uid: string,
-  field: 'likesGiven' | 'dislikesGiven' | 'reportsFiled'
+  field: 'likesGiven' | 'dislikesGiven' | 'reportsFiled',
+  delta = 1
 ): Promise<void> {
+  if (delta === 0) return
   const db = getFirestoreDb()
   const aggRef = db.doc(`users/${uid}/triviaStats/aggregate`)
   await aggRef.set(
-    { [field]: FieldValue.increment(1), lastUpdatedAt: FieldValue.serverTimestamp() },
+    { [field]: FieldValue.increment(delta), lastUpdatedAt: FieldValue.serverTimestamp() },
     { merge: true }
   )
 }
