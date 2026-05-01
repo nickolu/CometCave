@@ -163,7 +163,12 @@ Difficulty: ${ctx.difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[ctx.difficult
 
 Rules:
 - The question MUST have ONE unambiguous correct answer. If a knowledgeable person could plausibly give a different answer than the keyDetail, you must add identifying details to the question that rule out the alternatives. Do not write a question whose answer is "any X that fits Y" when many X fit Y.
-- AVOID "what year did X happen?" framings. Year-guess questions are weak free-text trivia — players just guess a number. If the keyDetail you've been given is a year, look for a different angle from the SAME fact: what was the person, place, work, rule, or consequence? Ask about that instead, and adjust correct_answer accordingly. Only ask for a year if the year is genuinely the most distinctive thing about the fact AND a knowledgeable person would actually know it (e.g. "1066" for the Battle of Hastings is fair; "1982" for an arbitrary book release is not).
+- AVOID "guess a number" framings. Questions whose answer is a year, count, percentage, or measurement are weak free-text trivia UNLESS the number is the famous/defining property of the subject (e.g. "23" for Serena Williams's Grand Slam total, "1066" for the Battle of Hastings). Bad examples to avoid:
+    "What year was [arbitrary book] published?"
+    "Into how many languages has [book] been translated?"
+    "What is the population of [city]?"
+    "How many [things] did [person] do in [year]?"
+  If the keyDetail you've been given is a number that fails this test, look for a different angle from the SAME fact: ask about the person, the place, the work, the rule, the consequence — and adjust correct_answer accordingly. Only ask for a number when a fan of the topic would actually know it.
 - The question must ask specifically for the keyDetail (or your repointed answer).
 - The question must NOT contain the answer or a synonym/translation of it.
 - The correct_answer must equal the keyDetail or a clear variant.
