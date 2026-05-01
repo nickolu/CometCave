@@ -1546,6 +1546,54 @@ export const flowerPotJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const drunkardJoker: JokerDefinition = {
+  id: 'drunkardJoker',
+  name: 'Drunkard',
+  description: '+1 discard each round',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.some(j => j.jokerId === 'drunkardJoker')) {
+          ctx.game.maxDiscards += 1
+          ctx.game.gamePlayState.remainingDiscards += 1
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.maxDiscards += 1
+        ctx.game.gamePlayState.remainingDiscards += 1
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'drunkardJoker')) {
+          ctx.game.maxDiscards -= 1
+          ctx.game.gamePlayState.remainingDiscards = Math.max(0, ctx.game.gamePlayState.remainingDiscards - 1)
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'drunkardJoker')) {
+          ctx.game.maxDiscards -= 1
+          ctx.game.gamePlayState.remainingDiscards = Math.max(0, ctx.game.gamePlayState.remainingDiscards - 1)
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1591,6 +1639,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   baronJoker,
   seeingDoubleJoker,
   flowerPotJoker,
+  drunkardJoker,
 }
 
 /***
