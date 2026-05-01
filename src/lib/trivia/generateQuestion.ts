@@ -32,6 +32,7 @@ const QUESTION_MODEL = 'gpt-4o-mini'
 const REVIEW_MODEL = 'gpt-4o-mini'
 const FACTS_PER_FETCH = 5
 const MAX_GENERATION_ATTEMPTS = 3
+const MAX_REPAIRS_PER_DRAFT = 2
 
 const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
   easy: 'Should be approachable — a well-known fact that many people could answer correctly.',
@@ -208,6 +209,61 @@ interface ReviewResult {
   inferred_category: string
 }
 
+// Targeted repair pass: given a draft that the reviewer rejected, ask
+// the LLM to fix the SAME fact's question using the rejection reason as
+// guidance. Cheaper than throwing the draft away (which costs a fresh
+// fact extraction + construction), and tends to converge because the
+// reviewer's rejection is concrete and actionable.
+async function repairDraft(
+  apiKey: string,
+  draft: DraftQuestion,
+  rejectionReason: string
+): Promise<DraftQuestion> {
+  const openaiClient = createOpenAI({ apiKey })
+
+  const result = await generateObject({
+    model: openaiClient(QUESTION_MODEL),
+    schema: QuestionSchema,
+    system:
+      'You are a trivia question writer fixing a previous draft that a reviewer rejected. You receive the original fact, the rejected draft, and the rejection reason. Produce a revised question that resolves the specific issue while staying faithful to the fact.',
+    prompt: `A reviewer rejected the following draft trivia question. Produce a revised version that resolves the rejection.
+
+Source fact: ${draft.fact.claim}
+Answer (keyDetail): ${draft.fact.keyDetail}
+Category: ${draft.categoryName}
+Difficulty: ${draft.difficulty.toUpperCase()}
+
+Rejected question: ${draft.question}
+Rejected correct_answer: ${draft.correct_answer}
+Rejected explanation: ${draft.explanation}
+
+Reviewer's rejection reason: ${rejectionReason}
+
+Rules for the fix:
+- Keep the SAME fact and the SAME keyDetail as the answer. Do not switch facts.
+- Address the rejection reason directly — if the reviewer said the answer was leaked, reword so the question describes the answer rather than naming it. If the reviewer said the answer was ambiguous, add identifying details that rule out alternatives.
+- The revised question must NOT contain the keyDetail or any obvious synonym of it.
+- The revised question must have ONE unambiguous correct answer.
+- Stay in the "${draft.categoryName}" category.
+- Free-text answer (not multiple choice).
+
+Output the revised question, the correct_answer (still equivalent to the keyDetail), and an explanation. If you genuinely cannot fix this fact's question without changing the answer, output your best attempt — we will fall through to a fresh fact.`,
+    temperature: 0.4,
+    maxTokens: 400,
+  })
+
+  if (!result.object.question || !result.object.correct_answer) {
+    throw new Error('Repair returned empty fields')
+  }
+
+  return {
+    ...draft,
+    question: result.object.question,
+    correct_answer: result.object.correct_answer,
+    explanation: result.object.explanation,
+  }
+}
+
 // Cheap, deterministic pre-check that catches the most common reviewer-
 // rejection reason: the keyDetail is echoed verbatim inside the question
 // text. Saves a reviewer call when we can already tell the draft will
@@ -285,7 +341,7 @@ If you reject, give a one-sentence rejection_reason. Otherwise rejection_reason 
 /**
  * Generate a single trivia question on the fly for Infinite Trivia.
  *
- * Three-stage pipeline:
+ * Pipeline:
  *
  *   1. Fact extraction — call the configured FactSource (LLM-only
  *      today; Wikipedia / Perplexity planned) to surface candidate
@@ -293,17 +349,24 @@ If you reject, give a one-sentence rejection_reason. Otherwise rejection_reason 
  *   2. Question construction (gpt-4o-mini, temp 0.5) — pick a fact
  *      and turn it into a question whose answer is the fact's
  *      keyDetail.
- *   3. Quality review (gpt-4o-mini, temp 0) — strict reviewer that
- *      rejects answer-leaks, vague questions, factual contradictions,
- *      and category drift.
+ *   3. Inner repair loop:
+ *      a. Deterministic pre-check (detectAnswerLeak) for verbatim
+ *         keyDetail leaks — fast-fails before a reviewer call.
+ *      b. Quality review (gpt-4o-mini, temp 0) — strict reviewer.
+ *      c. If rejected, call repairDraft with the rejection reason
+ *         as targeted feedback. Up to MAX_REPAIRS_PER_DRAFT repairs
+ *         per draft before falling through to a fresh fact.
+ *   4. Outer retry: up to MAX_GENERATION_ATTEMPTS fresh fact extractions.
  *
- * On rejection we retry once (fresh facts, fresh seed) before giving
- * up. The /next route maps the throw to a 204 (pool exhausted), same
- * as any other generation failure.
+ * Repair is cheaper than blind retry because it preserves the (already
+ * vetted) fact and uses the reviewer's specific complaint to guide the
+ * fix. Most rejections converge on the first repair pass.
+ *
+ * On total failure the /next route maps the throw to a 204.
  *
  * The FactSource interface lets us migrate to grounded sources
- * (Wikipedia, Wikidata, Perplexity) without touching the question
- * construction or review stages.
+ * (Wikipedia, Wikidata, Perplexity) without touching construction,
+ * repair, or review stages.
  */
 export async function generateInfiniteQuestion(
   options: GenerateInfiniteQuestionOptions = {}
@@ -345,29 +408,75 @@ export async function generateInfiniteQuestion(
     }
 
     const fact = pickRandom(facts)
-    const draft = await constructQuestionFromFact(apiKey, fact, {
+    let draft = await constructQuestionFromFact(apiKey, fact, {
       categoryName,
       difficulty,
       seedSummary,
     })
 
-    // Cheap pre-check: if the question echoes the keyDetail verbatim,
-    // skip the reviewer (it would just reject anyway) and retry.
-    if (detectAnswerLeak(draft.question, fact.keyDetail)) {
-      lastReason = `pre-check: question contains keyDetail "${fact.keyDetail}" verbatim`
-      console.warn('[generateInfiniteQuestion] draft rejected (pre-check)', {
+    // Inner repair loop: try to fix this draft up to MAX_REPAIRS_PER_DRAFT
+    // times before falling through to a fresh outer attempt.
+    let acceptedDraft: DraftQuestion | null = null
+    let acceptedReview: ReviewResult | null = null
+
+    for (let repair = 0; repair <= MAX_REPAIRS_PER_DRAFT; repair++) {
+      // Deterministic pre-check: if the question echoes the keyDetail
+      // verbatim, attempt repair without paying for a reviewer call.
+      if (detectAnswerLeak(draft.question, fact.keyDetail)) {
+        const reason = `Question contains the answer "${fact.keyDetail}" verbatim. Reword so the question describes the answer rather than naming it.`
+        lastReason = `pre-check leak: ${reason}`
+        console.warn('[generateInfiniteQuestion] draft rejected (pre-check)', {
+          attempt,
+          repair,
+          category: categoryName,
+          keyDetail: fact.keyDetail,
+          question: draft.question,
+        })
+        if (repair < MAX_REPAIRS_PER_DRAFT) {
+          try {
+            draft = await repairDraft(apiKey, draft, reason)
+          } catch (err) {
+            lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
+            console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
+            break
+          }
+          continue
+        }
+        break
+      }
+
+      const review = await reviewQuestion(apiKey, draft)
+      if (review.accept) {
+        acceptedDraft = draft
+        acceptedReview = review
+        break
+      }
+
+      lastReason = review.reason ?? `inferred=${review.inferred_category}`
+      console.warn('[generateInfiniteQuestion] draft rejected', {
         attempt,
+        repair,
         category: categoryName,
         seed: seedSummary,
-        keyDetail: fact.keyDetail,
-        question: draft.question,
+        factSource: factSource.id,
+        factSourceCitation: fact.source,
+        reason: lastReason,
       })
-      continue
+
+      if (repair < MAX_REPAIRS_PER_DRAFT) {
+        try {
+          draft = await repairDraft(apiKey, draft, lastReason)
+        } catch (err) {
+          lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
+          console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
+          break
+        }
+        continue
+      }
+      break
     }
 
-    const review = await reviewQuestion(apiKey, draft)
-
-    if (review.accept) {
+    if (acceptedDraft && acceptedReview) {
       const id = `ai-infinite-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       console.info('[generateInfiniteQuestion] generated', {
         id,
@@ -376,28 +485,18 @@ export async function generateInfiniteQuestion(
         attempt,
         factSource: factSource.id,
         factSourceCitation: fact.source,
-        inferredCategory: review.inferred_category,
+        inferredCategory: acceptedReview.inferred_category,
       })
       return {
         id,
-        question: draft.question,
-        correctAnswer: draft.correct_answer,
-        explanation: draft.explanation,
+        question: acceptedDraft.question,
+        correctAnswer: acceptedDraft.correct_answer,
+        explanation: acceptedDraft.explanation,
         category: categoryName,
         difficulty,
         type: 'free-text',
       }
     }
-
-    lastReason = review.reason ?? `inferred=${review.inferred_category}`
-    console.warn('[generateInfiniteQuestion] draft rejected', {
-      attempt,
-      category: categoryName,
-      seed: seedSummary,
-      factSource: factSource.id,
-      factSourceCitation: fact.source,
-      reason: lastReason,
-    })
   }
 
   throw new Error(
