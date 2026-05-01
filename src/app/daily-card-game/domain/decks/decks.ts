@@ -5,6 +5,7 @@ import { initializePlayingCard } from '@/app/daily-card-game/domain/playing-card
 import { abandonedDeck } from './abandoned-deck'
 import { blackDeck } from './black-deck'
 import { blueDeck } from './blue-deck'
+import { checkeredDeck } from './checkered-deck'
 import { pokerDeck } from './poker-deck'
 import { redDeck } from './red-deck'
 import { yellowDeck } from './yellow-deck'
@@ -17,6 +18,7 @@ export const decks: Record<string, DeckDefinition> = {
   yellowDeck: yellowDeck,
   blackDeck: blackDeck,
   abandonedDeck: abandonedDeck,
+  checkeredDeck: checkeredDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {
