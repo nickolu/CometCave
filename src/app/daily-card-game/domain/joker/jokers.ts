@@ -3236,6 +3236,37 @@ export const spaceJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const cardSharp: JokerDefinition = {
+  id: 'cardSharp',
+  name: 'Card Sharp',
+  description: 'X3 Mult if played poker hand has already been played this round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        // Count how many times this hand type appears (current play is already tracked)
+        const count = ctx.game.gamePlayState.handTypesPlayedThisRound.filter(h => h === handId).length
+        if (count > 1) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 3,
+            source: 'Card Sharp',
+          })
+          ctx.game.gamePlayState.score.mult *= 3
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3330,6 +3361,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hack,
   riffRaff,
   spaceJoker,
+  cardSharp,
 }
 
 /***
