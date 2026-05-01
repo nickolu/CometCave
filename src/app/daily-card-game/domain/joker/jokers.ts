@@ -1935,6 +1935,36 @@ export const scholarJoker: JokerDefinition = {
   rarity: 'common',
 }
 
+export const evenStevenJoker: JokerDefinition = {
+  id: 'evenStevenJoker',
+  name: 'Even Steven',
+  description: '+4 Mult if played card has even rank',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+        const evenValues = ['2', '4', '6', '8', '10']
+        if (evenValues.includes(cardDef.value)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: 4,
+            source: 'Even Steven',
+          })
+          ctx.game.gamePlayState.score.mult += 4
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -1992,6 +2022,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   abstractJokerJoker,
   smileyFaceJoker,
   scholarJoker,
+  evenStevenJoker,
 }
 
 /***
