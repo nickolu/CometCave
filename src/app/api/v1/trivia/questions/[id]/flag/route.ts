@@ -5,10 +5,15 @@ import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 import { incrementVoiceStat } from '@/lib/trivia/triviaStats';
 
-const FLAG_THRESHOLD = 1;
 const BONUS_LIVES_PER_RUN = 1;
 const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'other'] as const;
 type FlagReason = (typeof VALID_REASONS)[number];
+
+// One flag from any user is enough to remove a question from rotation.
+// We no longer maintain a denormalized flaggedCount on the question doc;
+// the flags subcollection is the source of truth. If the threshold is
+// ever raised above 1, this route can read the subcollection (or use a
+// Firestore aggregation count) inside the transaction.
 
 export async function POST(
   request: NextRequest,
@@ -51,24 +56,16 @@ export async function POST(
       const qSnap = await tx.get(qRef);
       if (!qSnap.exists) throw new Error('Question not found');
 
+      // Only flip status from active → flagged. Already-flagged or removed
+      // questions stay where they are (still record this user's flag doc).
       const qData = qSnap.data()!;
-      const currentFlaggedCount = qData.flaggedCount ?? 0;
-      const newFlaggedCount = currentFlaggedCount + 1;
-      const wasFirstFlag = currentFlaggedCount === 0;
-
-      const qUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
-        flaggedCount: FieldValue.increment(1),
-      };
-
-      if (newFlaggedCount >= FLAG_THRESHOLD && qData.status === 'active') {
-        qUpdates.status = 'flagged';
+      if (qData.status === 'active') {
+        tx.update(qRef, { status: 'flagged' });
       }
 
-      tx.update(qRef, qUpdates);
-
-      // Store uid as a field too — the doc id is already the uid, but
-      // having it as a field lets us do collection-group queries like
-      // "all flags by user X" and lets admin tooling display it.
+      // Store uid + questionId as fields too — the doc id is already the
+      // uid, but having them as fields lets us do collection-group queries
+      // ("all flags by user X") and lets admin tooling display them.
       const flagDoc: Record<string, unknown> = {
         uid,
         questionId,
@@ -80,7 +77,7 @@ export async function POST(
       }
       tx.set(flagRef, flagDoc);
 
-      // Handle run updates if a runId is provided
+      // Award one bonus life per run (capped) when a flag is filed during play.
       let bonusLifeGranted = false;
       if (validRunId) {
         const runRef = db.doc(`users/${uid}/triviaInfinite/${validRunId}`);
@@ -103,15 +100,16 @@ export async function POST(
         }
       }
 
-      return { wasFirstFlag, bonusLifeGranted };
+      return { bonusLifeGranted };
     });
 
-    // Increment lifetime reports counter
+    // Increment lifetime reports counter (independent of the flag tx;
+    // owned by incrementVoiceStat exclusively after the run-aggregate fix).
     await incrementVoiceStat(uid, 'reportsFiled').catch((err) =>
       console.error('[flag] Failed to increment voice stat:', err)
     );
 
-    return NextResponse.json({ ok: true, wasFirstFlag: result.wasFirstFlag, bonusLifeGranted: result.bonusLifeGranted }, { status: 200 });
+    return NextResponse.json({ ok: true, bonusLifeGranted: result.bonusLifeGranted }, { status: 200 });
   } catch (err) {
     if (err instanceof Error && err.message === 'Question not found') {
       return NextResponse.json({ error: 'Question not found.' }, { status: 404 });

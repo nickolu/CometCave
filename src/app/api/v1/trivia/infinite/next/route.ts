@@ -72,7 +72,6 @@ export async function GET(request: NextRequest) {
           status: 'active',
           timesShown: 0,
           timesCorrect: 0,
-          flaggedCount: 0,
           avgTimeMs: null,
         }
       } catch (genErr) {

@@ -48,10 +48,10 @@ async function main() {
     console.log(`Question:     ${data.question}`)
     console.log(`Category:     ${data.category}`)
     console.log(`Difficulty:   ${data.difficulty}`)
-    console.log(`FlaggedCount: ${data.flaggedCount ?? 0}`)
 
-    // Fetch flag subcollection
+    // Fetch flag subcollection (the source of truth for flag count)
     const flagsSnap = await db.collection(`aiQuestions/${doc.id}/flags`).get()
+    console.log(`Flag count:   ${flagsSnap.size}`)
     if (flagsSnap.size > 0) {
       console.log('Flags:')
       for (const flagDoc of flagsSnap.docs) {

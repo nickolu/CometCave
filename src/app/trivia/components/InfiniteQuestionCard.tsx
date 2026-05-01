@@ -1,15 +1,16 @@
 'use client'
 import { useState } from 'react'
-import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader } from '@/components/ui/chunky-card'
-import { ChunkyButton } from '@/components/ui/chunky-button'
-import { Input } from '@/components/ui/input'
+
 import type { InfiniteQuestion } from '@/app/trivia/hooks/useInfiniteRun'
 import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader } from '@/components/ui/chunky-card'
+import { Input } from '@/components/ui/input'
+
 import { FlagQuestion } from './FlagQuestion'
 import { QuestionRating } from './QuestionRating'
 
 interface FlagResult {
-  wasFirstFlag: boolean
   bonusLifeGranted: boolean
 }
 

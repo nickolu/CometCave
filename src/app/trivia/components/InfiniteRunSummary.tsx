@@ -1,16 +1,17 @@
 'use client'
 import { useState } from 'react'
+
+import type { InfiniteMode, InfiniteRunState } from '@/app/trivia/hooks/useInfiniteRun'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
-import { SignInCard } from './SignInCTA'
-import { QuestionRating } from './QuestionRating'
+
 import { FlagQuestion } from './FlagQuestion'
-import type { InfiniteRunState, InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
+import { QuestionRating } from './QuestionRating'
+import { SignInCard } from './SignInCTA'
 
 interface FlagResult {
-  wasFirstFlag: boolean
   bonusLifeGranted: boolean
 }
 
