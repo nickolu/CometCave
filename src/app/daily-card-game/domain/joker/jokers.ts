@@ -1509,6 +1509,43 @@ export const seeingDoubleJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const flowerPotJoker: JokerDefinition = {
+  id: 'flowerPotJoker',
+  name: 'Flower Pot',
+  description: 'X3 Mult if poker hand contains a Diamond, Club, Heart, and Spade card',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handCards = selectedHand[1]
+        if (!handCards || handCards.length === 0) return
+
+        const suits = new Set<string>()
+        for (const card of handCards) {
+          const cardDef = playingCards[card.playingCardId]
+          if (cardDef) suits.add(cardDef.suit)
+        }
+
+        if (suits.has('diamonds') && suits.has('clubs') && suits.has('hearts') && suits.has('spades')) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 3,
+            source: 'Flower Pot',
+          })
+          ctx.game.gamePlayState.score.mult *= 3
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1553,6 +1590,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   flashCardJoker,
   baronJoker,
   seeingDoubleJoker,
+  flowerPotJoker,
 }
 
 /***
