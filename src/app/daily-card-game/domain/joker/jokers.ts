@@ -2127,6 +2127,44 @@ export const eightBall: JokerDefinition = {
   rarity: 'common',
 }
 
+export const misprint: JokerDefinition = {
+  id: 'misprint',
+  name: 'Misprint',
+  description: '+0-23 Mult',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          ctx.game.handsPlayed.toString(),
+          'misprint',
+        ])
+        const roll = getRandomNumbersWithSeed({
+          seed,
+          min: 0,
+          max: 23,
+          numberOfNumbers: 1,
+        })
+        const multBonus = roll[0]
+        if (multBonus > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: multBonus,
+            source: 'Misprint',
+          })
+          ctx.game.gamePlayState.score.mult += multBonus
+        }
+      },
+    },
+  ],
+  rarity: 'common',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -2190,6 +2228,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   banner,
   mysticSummit,
   eightBall,
+  misprint,
 }
 
 /***
