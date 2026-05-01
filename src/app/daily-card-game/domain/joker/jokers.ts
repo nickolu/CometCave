@@ -3120,6 +3120,33 @@ function applyRiffRaff(ctx: EffectContext) {
   }
 }
 
+export const hack: JokerDefinition = {
+  id: 'hack',
+  name: 'Hack',
+  description: 'Retrigger each played 2, 3, 4, or 5',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!['2', '3', '4', '5'].includes(cardDef.value)) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: cardDef.baseChips,
+          source: 'Hack',
+        })
+        ctx.game.gamePlayState.score.chips += cardDef.baseChips
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const riffRaff: JokerDefinition = {
   id: 'riffRaff',
   name: 'Riff-raff',
@@ -3235,6 +3262,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hallucination,
   mailInRebate,
   hangingChad,
+  hack,
   riffRaff,
 }
 
