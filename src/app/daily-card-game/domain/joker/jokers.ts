@@ -4108,6 +4108,47 @@ export const burglar: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const troubadour: JokerDefinition = {
+  id: 'troubadour',
+  name: 'Troubadour',
+  description: '+2 hand size, -1 hand per round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.handSizeModifier += 2
+        ctx.game.maxHands -= 1
+        ctx.game.gamePlayState.remainingHands = Math.max(0, ctx.game.gamePlayState.remainingHands - 1)
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'troubadour')) {
+          ctx.game.handSizeModifier -= 2
+          ctx.game.maxHands += 1
+          ctx.game.gamePlayState.remainingHands += 1
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'troubadour')) {
+          ctx.game.handSizeModifier -= 2
+          ctx.game.maxHands += 1
+          ctx.game.gamePlayState.remainingHands += 1
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4227,6 +4268,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   triboulet,
   chicot,
   burglar,
+  troubadour,
 }
 
 /***
