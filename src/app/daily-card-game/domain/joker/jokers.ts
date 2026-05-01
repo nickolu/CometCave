@@ -756,6 +756,32 @@ export const bullJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const acrobatJoker: JokerDefinition = {
+  id: 'acrobatJoker',
+  name: 'Acrobat',
+  description: 'X3 Mult on final hand of round',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.gamePlayState.remainingHands > 0) return
+
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: 3,
+          source: 'Acrobat',
+        })
+        ctx.game.gamePlayState.score.mult *= 3
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const bootstrapsJoker: JokerDefinition = {
   id: 'bootstrapsJoker',
   name: 'Bootstraps',
@@ -806,6 +832,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   dietColaJoker,
   cloud9Joker,
   bullJoker,
+  acrobatJoker,
   bootstrapsJoker,
 }
 
