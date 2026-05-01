@@ -371,6 +371,34 @@ const theSun: TarotCardDefinition = {
   ],
 }
 
+const theWorld: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theWorld',
+  name: 'The World',
+  price: 2,
+  description: 'Converts suit of up to 3 selected cards to Spades',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds.slice(0, 3)) {
+          const card = ctx.game.cards[cardId]
+          if (card) {
+            const cardDef = playingCards[card.playingCardId]
+            if (cardDef) {
+              card.playingCardId = `${cardDef.value}_spades`
+            }
+          }
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -404,7 +432,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theMoon,
   theSun,
   judgement: notImplemented,
-  theWorld: notImplemented,
+  theWorld,
 }
 
 export const implementedTarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefinition> =
