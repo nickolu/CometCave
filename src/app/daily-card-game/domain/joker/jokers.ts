@@ -899,6 +899,36 @@ export const theOrderJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const theTribeJoker: JokerDefinition = {
+  id: 'theTribeJoker',
+  name: 'The Tribe',
+  description: 'X2 Mult if played hand contains a Flush',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handsContainingFlush = ['flush', 'straightFlush', 'flushHouse', 'flushFive']
+        if (handsContainingFlush.includes(handId)) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 2,
+            source: 'The Tribe',
+          })
+          ctx.game.gamePlayState.score.mult *= 2
+        }
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -927,6 +957,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   theTrioJoker,
   theDuoJoker,
   theOrderJoker,
+  theTribeJoker,
 }
 
 /***
