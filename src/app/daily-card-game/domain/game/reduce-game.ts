@@ -128,7 +128,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'DISCARD_SELECTED_CARDS': {
-        handleDiscardSelectedCards(draft)
+        handleDiscardSelectedCards(draft, event)
         return
       }
 

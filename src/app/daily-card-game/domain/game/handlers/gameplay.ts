@@ -60,7 +60,7 @@ export function handleCardDeselected(draft: GameState, event: CardDeselectedEven
   gamePlayState.selectedHand = selectedHand
 }
 
-export function handleDiscardSelectedCards(draft: GameState) {
+export function handleDiscardSelectedCards(draft: GameState, event: GameEvent) {
   const gamePlayState = draft.gamePlayState
 
   // Find discarded cards before we clear selection
@@ -93,6 +93,20 @@ export function handleDiscardSelectedCards(draft: GameState) {
       draft.consumables.push(initializeTarotCard(getRandomTarotCards(1, randomTarotCardsSeed)[0]))
     }
   }
+
+  // Dispatch joker effects for DISCARD_SELECTED_CARDS
+  const ctx: EffectContext = {
+    event,
+    game: draft as unknown as GameState,
+    score: gamePlayState.score,
+    playedCards: [],
+    round: draft.rounds[draft.roundIndex],
+    bossBlind: draft.rounds[draft.roundIndex].bossBlind,
+    jokers: draft.jokers,
+    vouchers: draft.vouchers,
+    tags: draft.tags,
+  }
+  dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
 
 /**
