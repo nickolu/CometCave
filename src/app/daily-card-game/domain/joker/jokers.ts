@@ -13,6 +13,7 @@ import {
   getRandomWeightedChoiceWithSeed,
   uuid,
 } from '@/app/daily-card-game/domain/randomness'
+import type { CelestialCardState } from '@/app/daily-card-game/domain/consumable/types'
 import { initializeTarotCard } from '@/app/daily-card-game/domain/consumable/utils'
 import { getRandomTarotCards } from '@/app/daily-card-game/domain/shop/utils'
 
@@ -3624,6 +3625,31 @@ export const constellation: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const satellite: JokerDefinition = {
+  id: 'satellite',
+  name: 'Satellite',
+  description: 'Earn $1 at end of round per unique Planet card used this run',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const uniquePlanets = new Set(
+          ctx.game.consumablesUsed
+            .filter(c => c.consumableType === 'celestialCard')
+            .map(c => (c as CelestialCardState).handId)
+        )
+        const payout = uniquePlanets.size
+        if (payout > 0) {
+          ctx.game.money += payout
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -3728,6 +3754,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   bloodstone,
   throwback,
   constellation,
+  satellite,
 }
 
 /***
