@@ -1232,6 +1232,35 @@ export const steelJokerJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const erosionJoker: JokerDefinition = {
+  id: 'erosionJoker',
+  name: 'Erosion',
+  description: '+4 Mult for each card below starting deck size',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const startingDeckSize = 52
+        const currentDeckSize = ctx.game.ownedCardIds.length
+        const cardsBelow = Math.max(0, startingDeckSize - currentDeckSize)
+        if (cardsBelow > 0) {
+          const multBonus = 4 * cardsBelow
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: multBonus,
+            source: 'Erosion',
+          })
+          ctx.game.gamePlayState.score.mult += multBonus
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1268,6 +1297,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   spareTrousersJoker,
   stoneJokerJoker,
   steelJokerJoker,
+  erosionJoker,
 }
 
 /***
