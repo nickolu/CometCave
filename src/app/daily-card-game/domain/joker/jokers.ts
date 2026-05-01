@@ -1107,6 +1107,64 @@ export const baseballCardJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const spareTrousersJoker: JokerDefinition = {
+  id: 'spareTrousersJoker',
+  name: 'Spare Trousers',
+  description: 'This Joker gains +2 Mult if played hand contains a Two Pair',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
+        if (st) {
+          st.metadata = { ...st.metadata, multBonus: st.metadata?.multBonus ?? 0 }
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
+        if (st) {
+          st.metadata = { ...st.metadata, multBonus: 0 }
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
+        if (!st || !st.metadata) return
+
+        // Apply accumulated mult bonus
+        if (st.metadata.multBonus > 0) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            value: st.metadata.multBonus,
+            source: 'Spare Trousers',
+          })
+          ctx.game.gamePlayState.score.mult += st.metadata.multBonus
+        }
+
+        // Check if hand contains Two Pair and gain +2
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handsContainingTwoPair = ['twoPair', 'fullHouse', 'flushHouse']
+        if (handsContainingTwoPair.includes(handId)) {
+          st.metadata.multBonus += 2
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1140,6 +1198,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   theFamilyJoker,
   stuntmanJoker,
   baseballCardJoker,
+  spareTrousersJoker,
 }
 
 /***
