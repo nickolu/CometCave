@@ -1,6 +1,7 @@
 import { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 
 import { TarotCardDefinition } from './types'
 
@@ -286,6 +287,34 @@ const theHierophant: TarotCardDefinition = {
   ],
 }
 
+const theStar: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theStar',
+  name: 'The Star',
+  price: 2,
+  description: 'Converts suit of up to 3 selected cards to Diamonds',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const cardId of ctx.game.gamePlayState.selectedCardIds.slice(0, 3)) {
+          const card = ctx.game.cards[cardId]
+          if (card) {
+            const cardDef = playingCards[card.playingCardId]
+            if (cardDef) {
+              card.playingCardId = `${cardDef.value}_diamonds`
+            }
+          }
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -315,7 +344,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   temperance,
   theDevil,
   theTower,
-  theStar: notImplemented,
+  theStar,
   theMoon: notImplemented,
   theSun: notImplemented,
   judgement: notImplemented,
