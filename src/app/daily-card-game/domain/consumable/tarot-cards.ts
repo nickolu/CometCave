@@ -140,6 +140,30 @@ const theTower: TarotCardDefinition = {
   ],
 }
 
+const theDevil: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'theDevil',
+  name: 'The Devil',
+  price: 2,
+  description: 'Enhances 1 selected card to a Gold card',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 1
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds[0]
+        const card = ctx.game.cards[cardId]
+        if (card) {
+          card.flags.enchantment = 'gold'
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -167,7 +191,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   theHangedMan: notImplemented,
   death: notImplemented,
   temperance,
-  theDevil: notImplemented,
+  theDevil,
   theTower,
   theStar: notImplemented,
   theMoon: notImplemented,
