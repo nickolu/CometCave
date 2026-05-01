@@ -1,5 +1,6 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { getMostPlayedHand } from '@/app/daily-card-game/domain/hand/utils'
+import { shuffleCardIds } from '@/app/daily-card-game/domain/game/utils'
 import { getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 import type { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
@@ -54,7 +55,47 @@ const theOx: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
+const amberAcorn: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Amber Acorn',
+  description: 'Flips and shuffles all Joker cards',
+  image: 'amber-acorn.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) =>
+        ctx.event.type === 'BOSS_BLIND_SELECTED' && ctx.round?.bossBlindName === 'Amber Acorn',
+      apply: (ctx: EffectContext) => {
+        ctx.game.jokers.forEach(joker => {
+          joker.isFaceUp = false
+        })
+
+        if (ctx.game.jokers.length <= 1) {
+          return
+        }
+
+        const shuffledJokers = shuffleCardIds({
+          cardIds: ctx.game.jokers.map(joker => joker.id),
+          seed: ctx.game.gameSeed,
+          iteration: ctx.game.roundIndex,
+        })
+
+        const jokerMap = new Map(ctx.game.jokers.map(joker => [joker.id, joker]))
+        ctx.game.jokers = shuffledJokers.flatMap(jokerId => {
+          const joker = jokerMap.get(jokerId)
+          return joker ? [joker] : []
+        })
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, amberAcorn]
 
 /**
  
