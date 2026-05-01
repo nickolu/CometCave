@@ -91,6 +91,7 @@ export interface GamePlayState {
   score: ScoreState
   scoringEvents: (ScoringEvent | CustomScoringEvent)[]
   selectedCardIds: string[]
+  forcedSelectedCardIds?: string[]
   selectedHand?: [PokerHandDefinition['id'], PlayingCardState[]]
   selectedConsumable?: CelestialCardState | TarotCardState
   selectedJokerId?: string

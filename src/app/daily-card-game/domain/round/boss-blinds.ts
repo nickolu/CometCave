@@ -54,7 +54,20 @@ const theOx: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx]
+const ceruleanBell: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Cerulean Bell',
+  description: 'Forces 1 card to always be selected',
+  image: 'cerulean-bell.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [],
+}
+
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, ceruleanBell]
 
 /**
  

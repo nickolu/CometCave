@@ -47,6 +47,8 @@ export function handleCardDeselected(draft: GameState, event: CardDeselectedEven
   const gamePlayState = draft.gamePlayState
   if (!gamePlayState.selectedCardIds.includes(id)) return
 
+  if (gamePlayState.forcedSelectedCardIds?.includes(id)) return
+
   const selectedCardIds = gamePlayState.selectedCardIds.filter(cardId => cardId !== id)
   const selectedCards = getCards(draft as unknown as GameState, selectedCardIds)
 

@@ -1,7 +1,7 @@
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { GameEvent } from '@/app/daily-card-game/domain/events/types'
 import type { GameState } from '@/app/daily-card-game/domain/game/types'
-import { collectEffects, shuffleCardIds } from '@/app/daily-card-game/domain/game/utils'
+import { collectEffects, getBlindDefinition, shuffleCardIds } from '@/app/daily-card-game/domain/game/utils'
 import { buildSeedString } from '@/app/daily-card-game/domain/randomness'
 import { blindIndices, getNextBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { initializeTag } from '@/app/daily-card-game/domain/tag/utils'
@@ -61,6 +61,18 @@ export function handleBossBlindSelected(draft: GameState) {
   })
   draft.gamePlayState.handIds = []
   draft.gamePlayState.discardPileIds = []
+
+  if (getBlindDefinition('bossBlind', draft.rounds[draft.roundIndex]).name === 'Cerulean Bell') {
+    const forcedCardId = draft.gamePlayState.drawPileIds[0]
+    const card = draft.cards[forcedCardId]
+    if (!forcedCardId || !card) return
+
+    draft.gamePlayState.handIds = [forcedCardId]
+    draft.gamePlayState.drawPileIds = draft.gamePlayState.drawPileIds.filter(id => id !== forcedCardId)
+    draft.gamePlayState.selectedCardIds = [forcedCardId]
+    draft.gamePlayState.forcedSelectedCardIds = [forcedCardId]
+    draft.gamePlayState.selectedHand = ['highCard', [card]]
+  }
 }
 
 export function handleBlindSkipped(draft: GameState, event: GameEvent) {
