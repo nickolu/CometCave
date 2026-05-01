@@ -55,25 +55,46 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   return map
 }
 
+// Returns the resolved display name for a leaderboard row, preferring the
+// player's current nickname and falling back to the snapshot taken when
+// the row was written. Returns null for fully-anonymous players (no
+// nickname in either place) so callers can drop them.
+function resolveDisplayName(
+  uid: string,
+  nicknames: Map<string, string>,
+  snapshot: string | undefined | null
+): string | null {
+  return nicknames.get(uid) || snapshot || null
+}
+
 export async function getDailyTop(date: string, limit = 20): Promise<TriviaLeaderboardEntry[]> {
   const db = getFirestoreDb()
+  // Overfetch so the post-hydration drop-anonymous filter still returns
+  // up to `limit` named entries.
   const snap = await db
     .collectionGroup('triviaDaily')
     .where('date', '==', date)
     .orderBy('score', 'desc')
-    .limit(limit)
+    .limit(limit * 2)
     .get()
 
   const docs = snap.docs.map((d) => d.data() as DailyDoc)
   const nicknames = await hydrateNicknames(docs.map((d) => d.uid))
 
-  return docs.map((d) => ({
-    uid: d.uid,
-    displayName: nicknames.get(d.uid) || d.nicknameSnapshot,
-    score: d.score,
-    correct: d.correct,
-    total: d.total,
-  }))
+  const result: TriviaLeaderboardEntry[] = []
+  for (const d of docs) {
+    const displayName = resolveDisplayName(d.uid, nicknames, d.nicknameSnapshot)
+    if (!displayName) continue
+    result.push({
+      uid: d.uid,
+      displayName,
+      score: d.score,
+      correct: d.correct,
+      total: d.total,
+    })
+    if (result.length >= limit) break
+  }
+  return result
 }
 
 export async function getWeeklyTop(
@@ -85,21 +106,28 @@ export async function getWeeklyTop(
     .collectionGroup('triviaWeekly')
     .where('weekKey', '==', weekKey)
     .orderBy('totalScore', 'desc')
-    .limit(limit)
+    .limit(limit * 2)
     .get()
 
   const docs = snap.docs.map((d) => d.data() as WeeklyDoc)
   const nicknames = await hydrateNicknames(docs.map((d) => d.uid))
 
-  return docs.map((d) => ({
-    uid: d.uid,
-    displayName: nicknames.get(d.uid) || d.nicknameSnapshot,
-    score: d.totalScore,
-    totalScore: d.totalScore,
-    gamesPlayed: d.gamesPlayed,
-    totalCorrect: d.totalCorrect,
-    totalQuestions: d.totalQuestions,
-  }))
+  const result: TriviaLeaderboardEntry[] = []
+  for (const d of docs) {
+    const displayName = resolveDisplayName(d.uid, nicknames, d.nicknameSnapshot)
+    if (!displayName) continue
+    result.push({
+      uid: d.uid,
+      displayName,
+      score: d.totalScore,
+      totalScore: d.totalScore,
+      gamesPlayed: d.gamesPlayed,
+      totalCorrect: d.totalCorrect,
+      totalQuestions: d.totalQuestions,
+    })
+    if (result.length >= limit) break
+  }
+  return result
 }
 
 export async function getAllTimeTop(limit = 20): Promise<TriviaLeaderboardEntry[]> {
@@ -111,10 +139,11 @@ export async function getAllTimeTop(limit = 20): Promise<TriviaLeaderboardEntry[
     crownCounts.set(crown.winnerUid, (crownCounts.get(crown.winnerUid) ?? 0) + 1)
   }
 
-  // Sort by crown count desc, take top N
+  // Sort by crown count desc, overfetch so the drop-anonymous filter
+  // still returns up to `limit` named entries.
   const sorted = Array.from(crownCounts.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
+    .slice(0, limit * 2)
 
   if (sorted.length === 0) {
     return []
@@ -122,10 +151,13 @@ export async function getAllTimeTop(limit = 20): Promise<TriviaLeaderboardEntry[
 
   const nicknames = await hydrateNicknames(sorted.map(([uid]) => uid))
 
-  return sorted.map(([uid, count]) => ({
-    uid,
-    displayName: nicknames.get(uid) || 'Player',
-    score: count,
-    crowns: count,
-  }))
+  return sorted
+    .filter(([uid]) => !!nicknames.get(uid))
+    .slice(0, limit)
+    .map(([uid, count]) => ({
+      uid,
+      displayName: nicknames.get(uid) as string,
+      score: count,
+      crowns: count,
+    }))
 }

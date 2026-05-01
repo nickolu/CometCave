@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching leaderboard:', error)
     const errMsg = error instanceof Error ? error.message : String(error)
     if (
-      errMsg.includes('index') ||
       errMsg.includes('FAILED_PRECONDITION') ||
       errMsg.includes('requires an index')
     ) {

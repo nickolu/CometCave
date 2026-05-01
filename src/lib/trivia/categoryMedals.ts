@@ -72,11 +72,13 @@ export async function getInfiniteTopByCategory(
   limit = 20
 ): Promise<CategoryLeaderboardEntry[]> {
   const db = getFirestoreDb()
+  // Overfetch so the post-hydration "drop unnamed players" filter still
+  // returns up to `limit` entries.
   const snap = await db
     .collectionGroup('triviaCategoryStats')
     .where('categoryId', '==', categoryId)
     .orderBy('correctCount', 'desc')
-    .limit(limit)
+    .limit(limit * 2)
     .get()
 
   const rows = snap.docs.map((d) => {
@@ -96,16 +98,19 @@ export async function getInfiniteTopByCategory(
     if (data?.nickname) nicknameByUid.set(s.ref.id, data.nickname)
   }
 
-  return rows.map((r) => {
-    const tier = getMedalTier(r.correctCount)
-    return {
-      uid: r.uid,
-      displayName: nicknameByUid.get(r.uid) || 'Player',
-      correctCount: r.correctCount,
-      tier,
-      label: getMedalLabel(categoryId, tier),
-    }
-  })
+  return rows
+    .filter((r) => !!nicknameByUid.get(r.uid))
+    .slice(0, limit)
+    .map((r) => {
+      const tier = getMedalTier(r.correctCount)
+      return {
+        uid: r.uid,
+        displayName: nicknameByUid.get(r.uid) as string,
+        correctCount: r.correctCount,
+        tier,
+        label: getMedalLabel(categoryId, tier),
+      }
+    })
 }
 
 // Returns one section per category that has at least one player, each
