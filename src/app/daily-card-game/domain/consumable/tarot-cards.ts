@@ -495,6 +495,33 @@ const theHangedMan: TarotCardDefinition = {
   ],
 }
 
+const death: TarotCardDefinition = {
+  type: 'tarotCard',
+  tarotType: 'death',
+  name: 'Death',
+  price: 2,
+  description: 'Converts the left selected card into the right selected card',
+  isPlayable: (game: GameState) => {
+    return game.gamePlayState.selectedCardIds.length >= 2
+  },
+  effects: [
+    {
+      event: { type: 'TAROT_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const [leftCardId, rightCardId] = ctx.game.gamePlayState.selectedCardIds
+        const leftCard = ctx.game.cards[leftCardId]
+        const rightCard = ctx.game.cards[rightCardId]
+        if (leftCard && rightCard) {
+          leftCard.playingCardId = rightCard.playingCardId
+          leftCard.flags = { ...rightCard.flags }
+          leftCard.bonusChips = rightCard.bonusChips
+        }
+      },
+    },
+  ],
+}
+
 const notImplemented: TarotCardDefinition = {
   price: 2,
   type: 'tarotCard',
@@ -520,7 +547,7 @@ export const tarotCards: Record<TarotCardDefinition['tarotType'], TarotCardDefin
   wheelOfFortune: notImplemented,
   justice,
   theHangedMan,
-  death: notImplemented,
+  death,
   temperance,
   theDevil,
   theTower,
