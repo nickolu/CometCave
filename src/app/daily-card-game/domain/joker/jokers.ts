@@ -1198,6 +1198,40 @@ export const stoneJokerJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const steelJokerJoker: JokerDefinition = {
+  id: 'steelJokerJoker',
+  name: 'Steel Joker',
+  description: 'Gives X0.2 Mult for each Steel Card in your full deck',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let steelCount = 0
+        for (const cardId of ctx.game.ownedCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (cardState && cardState.flags.enchantment === 'steel') {
+            steelCount++
+          }
+        }
+        if (steelCount > 0) {
+          const xMult = 1 + 0.2 * steelCount
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: xMult,
+            source: 'Steel Joker',
+          })
+          ctx.game.gamePlayState.score.mult *= xMult
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1233,6 +1267,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   baseballCardJoker,
   spareTrousersJoker,
   stoneJokerJoker,
+  steelJokerJoker,
 }
 
 /***
