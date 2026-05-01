@@ -988,6 +988,63 @@ export const weeJokerJoker: JokerDefinition = {
   rarity: 'rare',
 }
 
+export const stuntmanJoker: JokerDefinition = {
+  id: 'stuntmanJoker',
+  name: 'Stuntman',
+  description: '+250 Chips, -2 hand size',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.some(j => j.jokerId === 'stuntmanJoker')) {
+          ctx.game.handSizeModifier -= 2
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.handSizeModifier -= 2
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'stuntmanJoker')) {
+          ctx.game.handSizeModifier += 2
+        }
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(j => j.jokerId === 'stuntmanJoker')) {
+          ctx.game.handSizeModifier += 2
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: 250,
+          source: 'Stuntman',
+        })
+        ctx.game.gamePlayState.score.chips += 250
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   jokerJoker,
   greedyJoker,
@@ -1018,6 +1075,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   theOrderJoker,
   theTribeJoker,
   weeJokerJoker,
+  stuntmanJoker,
 }
 
 /***
