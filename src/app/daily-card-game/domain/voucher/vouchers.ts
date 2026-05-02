@@ -419,8 +419,7 @@ export const magicTrick: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'magicTrick' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement magic trick effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.playingCard.multiplier += 1
       },
     },
   ],
@@ -547,6 +546,7 @@ export const implementedVouchers: VoucherType[] = [
   'overstockPlus',
   'clearanceSale',
   'liquidation',
+  'magicTrick',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
