@@ -11,7 +11,7 @@ import {
   initializePlayingCard,
 } from '@/app/daily-card-game/domain/playing-card/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, getRandomNumberWithSeed, uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { SpectralCardDefinition, SpectralCardType } from './types'
 
@@ -237,7 +237,28 @@ const ankh: SpectralCardDefinition = {
   name: 'Ankh',
   description:
     'Creates a copy of 1 of your Jokers at random, then destroys the others, leaving you with two identical Jokers. (Editions are also copied, except Negative)',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length === 0) return
+
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'ankh'])
+        const idx = getRandomNumberWithSeed(seed, 0, ctx.game.jokers.length - 1)
+        const chosen = ctx.game.jokers[idx]
+
+        const copy = {
+          ...chosen,
+          id: uuid(),
+          edition: chosen.edition === 'negative' ? 'normal' as const : chosen.edition,
+        }
+
+        ctx.game.jokers = [chosen, copy]
+      },
+    },
+  ],
 }
 
 const dejaVu: SpectralCardDefinition = {
@@ -330,6 +351,7 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   ectoplasm,
   sigil,
   ouija,
+  ankh,
 }
 
 /**
