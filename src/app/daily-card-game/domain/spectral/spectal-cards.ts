@@ -134,7 +134,33 @@ const immolate: SpectralCardDefinition = {
   spectralType: 'immolate',
   name: 'Immolate',
   description: 'Destroys 5 random cards in hand, but gain $20.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const handIds = [...ctx.game.gamePlayState.handIds]
+        const cardsToDestroy = Math.min(5, handIds.length)
+
+        // Pick random unique indices to destroy
+        const idsToRemove: string[] = []
+        const remaining = [...handIds]
+        for (let i = 0; i < cardsToDestroy && remaining.length > 0; i++) {
+          const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'immolate', i.toString()])
+          const idx = getRandomNumberWithSeed(seed, 0, remaining.length - 1)
+          idsToRemove.push(remaining[idx])
+          remaining.splice(idx, 1)
+        }
+
+        for (const cardId of idsToRemove) {
+          removeOwnedCard(ctx.game, cardId)
+        }
+
+        ctx.game.money += 20
+      },
+    },
+  ],
 }
 
 const ankh: SpectralCardDefinition = {
@@ -230,6 +256,7 @@ export const spectralCards: Record<SpectralCardType, SpectralCardDefinition> = {
 export const implementedSpectralCards: Partial<typeof spectralCards> = {
   familiar,
   blackHole,
+  immolate,
 }
 
 /**
