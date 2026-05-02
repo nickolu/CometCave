@@ -143,14 +143,50 @@ const ectoplasm: SpectralCardDefinition = {
   name: 'Ectoplasm',
   description:
     'Add Negative to a random Joker, but -1 Hand Size, plus another -1 hand size for each time Ectoplasm has been used this run, e.g. using Ectoplasm 3 times in the same run decreases hand size by a total of 6 (1+2+3)',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const nonNegativeJokers = ctx.game.jokers.filter(j => j.edition !== 'negative')
+        if (nonNegativeJokers.length === 0) return
+
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'ectoplasm'])
+        const idx = getRandomNumberWithSeed(seed, 0, nonNegativeJokers.length - 1)
+        nonNegativeJokers[idx].edition = 'negative'
+
+        ctx.game.handSizeModifier -= 1
+      },
+    },
+  ],
 }
 
 const immolate: SpectralCardDefinition = {
   spectralType: 'immolate',
   name: 'Immolate',
   description: 'Destroys 5 random cards in hand, but gain $20.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const handIds = [...ctx.game.gamePlayState.handIds]
+        const cardsToDestroy = Math.min(5, handIds.length)
+
+        const remaining = [...handIds]
+        for (let i = 0; i < cardsToDestroy && remaining.length > 0; i++) {
+          const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'immolate', i.toString()])
+          const idx = getRandomNumberWithSeed(seed, 0, remaining.length - 1)
+          removeOwnedCard(ctx.game, remaining[idx])
+          remaining.splice(idx, 1)
+        }
+
+        ctx.game.money += 20
+      },
+    },
+  ],
 }
 
 const ankh: SpectralCardDefinition = {
@@ -247,6 +283,8 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   familiar,
   blackHole,
   wraith,
+  immolate,
+  ectoplasm,
 }
 
 /**
