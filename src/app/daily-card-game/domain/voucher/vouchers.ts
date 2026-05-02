@@ -338,12 +338,11 @@ export const planetTycoon: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'planetTycoon' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement planet tycoon effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.celestialMultiplier *= 2
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'planetMerchant',
 }
 
 export const seedMoney: VoucherDefinition = {
@@ -549,6 +548,7 @@ export const implementedVouchers: VoucherType[] = [
   'liquidation',
   'magicTrick',
   'illusion',
+  'planetTycoon',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
