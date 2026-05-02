@@ -175,12 +175,11 @@ export const omenGlobe: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'omenGlobe' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement omen globe effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.staticRules.spectralInArcanaPacks = true
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'crystalBall',
 }
 
 export const telescope: VoucherDefinition = {
@@ -208,12 +207,11 @@ export const observatory: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'observatory' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement observatory effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.staticRules.observatoryActive = true
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'telescope',
 }
 
 export const grabber: VoucherDefinition = {
@@ -571,6 +569,8 @@ export const implementedVouchers: VoucherType[] = [
   'tarotMerchant',
   'tarotTycoon',
   'telescope',
+  'observatory',
+  'omenGlobe',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {

@@ -132,6 +132,8 @@ const gameState: GameState = {
     bossBlindRerolls: 0,
     bossBlindRerollCost: 0,
     telescopeActive: false,
+    observatoryActive: false,
+    spectralInArcanaPacks: false,
   },
   tags: [],
   totalScore: 0n,
