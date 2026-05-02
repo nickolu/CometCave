@@ -46,7 +46,7 @@ export const getPackDefinition = (
   }
 }
 
-const initializePackState = (game: GameState, packDefinition: PackDefinition): PackState => {
+export const initializePackState = (game: GameState, packDefinition: PackDefinition): PackState => {
   const id = uuid()
   const rarity = packDefinition.rarity
   const numberOfCardsToSelect = packDefinition.numberOfCardsToSelect

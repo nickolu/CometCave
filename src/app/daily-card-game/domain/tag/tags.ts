@@ -1,4 +1,5 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
+import { getPackDefinition, initializePackState } from '@/app/daily-card-game/domain/booster-pack/utils'
 import { getRandomCommonJoker, getRandomRareJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { buildSeedString, getRandomNumberWithSeed, uuid } from '@/app/daily-card-game/domain/randomness'
 import { getRandomBossBlind } from '@/app/daily-card-game/domain/round/boss-blinds'
@@ -250,7 +251,19 @@ const standard: TagDefinition = {
   name: 'Standard',
   benefit: 'Immediately open a free Mega Standard Pack.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const packDef = getPackDefinition('playingCard', 'mega')
+        const pack = initializePackState(ctx.game, packDef)
+        ctx.game.shopState.packsForSale.push(pack)
+        const tag = ctx.game.tags.find(t => t.tagType === 'standard')
+        if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
+      },
+    },
+  ],
 }
 
 const charm: TagDefinition = {
@@ -520,6 +533,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   negative,
   voucher,
   double,
+  standard,
 }
 
 /* Tags
