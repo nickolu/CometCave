@@ -63,7 +63,28 @@ const holographic: TagDefinition = {
   benefit:
     'The next base edition Joker you find in a Shop becomes Holographic (+10 Mult) and free.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const randomJoker = getRandomCommonJoker(ctx.game, 'holographic')
+        if (randomJoker) {
+          const jokerState = initializeJoker(randomJoker, ctx.game)
+          jokerState.edition = 'holographic'
+          ctx.game.shopState.guaranteedForSaleItems.push({
+            type: 'jokerCard',
+            card: jokerState,
+            price: 0,
+          })
+        }
+        const holoTag = ctx.game.tags.find(tag => tag.tagType === 'holographic')
+        if (holoTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== holoTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const polychrome: TagDefinition = {
@@ -406,6 +427,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   investment,
   boss,
   polychrome,
+  holographic,
 }
 
 /* Tags
