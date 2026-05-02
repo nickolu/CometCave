@@ -394,9 +394,8 @@ export const blank: VoucherDefinition = {
     {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'blank' },
       priority: 1,
-      apply: (ctx: EffectContext) => {
-        // TODO: Implement blank effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+      apply: () => {
+        // Blank does nothing - it's a prerequisite for Antimatter
       },
     },
   ],
@@ -412,8 +411,7 @@ export const antimatter: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'antimatter' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement antimatter effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxJokers += 1
       },
     },
   ],
