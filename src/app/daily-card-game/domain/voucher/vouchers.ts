@@ -531,8 +531,7 @@ export const paintBrush: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'paintBrush' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement paint brush effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.handSizeModifier += 1
       },
     },
   ],
@@ -548,8 +547,7 @@ export const palette: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'palette' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement palette effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.handSizeModifier += 1
       },
     },
   ],
