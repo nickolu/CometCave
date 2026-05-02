@@ -4,9 +4,10 @@ import { z } from 'zod'
 
 import {
   CATEGORIZED_SEEDS,
-  MODIFIERS,
   getOpenTDBCategoryName,
 } from '@/app/trivia/data/seeds'
+import { MODIFIERS_BY_DIFFICULTY } from '@/app/trivia/data/seeds/modifiersByDifficulty'
+import { getSeedsForDifficulty } from '@/app/trivia/data/seedsByDifficulty'
 import type { AIQuestion, QuestionGenerationModels } from '@/lib/trivia/aiQuestions'
 import {
   type Fact,
@@ -47,10 +48,10 @@ const MAX_GENERATION_ATTEMPTS = 3
 const MAX_REPAIRS_PER_DRAFT = 2
 
 const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
-  easy: 'Should be approachable — a well-known fact that many people could answer correctly.',
+  easy: 'Should be answerable by a typical adult — common knowledge with maybe a slight twist. Avoid niche or insider framing. The kind of question someone could answer at a casual party trivia night.',
   medium:
-    'Should require some specific knowledge — harder than common knowledge but not obscure trivia.',
-  hard: 'Should require real, specific knowledge of the topic — challenging but fair.',
+    'Should require some specific knowledge — harder than common knowledge but still in reach for someone who follows the category casually. Not deep cuts.',
+  hard: 'Should require real, specific knowledge of the topic — challenging but fair. Genuine deep cuts welcome here.',
 }
 
 function streakBiasedDifficulty(streak: number): 'easy' | 'medium' | 'hard' {
@@ -479,9 +480,17 @@ export async function generateInfiniteQuestion(
     const difficulty = options.difficulty ?? streakBiasedDifficulty(options.streak ?? 0)
     const categoryId = options.categoryId ?? pickCategoryId()
     const categoryName = getOpenTDBCategoryName(categoryId)
-    const seeds = CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]
-    const seedWord = pickRandom(seeds)
-    const modifier = pickRandom(MODIFIERS)
+    // Difficulty-aware seed + modifier selection. Easy generations
+    // pick from iconic / common-knowledge seeds and "origin / first /
+    // most famous" modifiers; hard generations pick from niche seeds
+    // and "cut content / exploit / headcanon" modifiers. Both pools
+    // fall back to broader buckets when their preferred bucket is
+    // empty for a category — see seedsByDifficulty.ts /
+    // modifiersByDifficulty.ts.
+    const seeds = getSeedsForDifficulty(categoryId, difficulty)
+    const modifiers = MODIFIERS_BY_DIFFICULTY[difficulty]
+    const seedWord = pickRandom(seeds.length > 0 ? seeds : (CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]))
+    const modifier = pickRandom(modifiers)
     const seedSummary = `${seedWord} :: ${modifier}`
 
     let facts: Fact[]
