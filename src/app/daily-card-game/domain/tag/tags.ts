@@ -371,7 +371,19 @@ const ethereal: TagDefinition = {
   name: 'Ethereal',
   benefit: 'Immediately open a free Spectral Pack.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const packDef = getPackDefinition('spectralCard', 'normal')
+        const pack = initializePackState(ctx.game, packDef)
+        ctx.game.shopState.packsForSale.push(pack)
+        const tag = ctx.game.tags.find(t => t.tagType === 'ethereal')
+        if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
+      },
+    },
+  ],
 }
 
 const coupon: TagDefinition = {
@@ -476,7 +488,22 @@ const speed: TagDefinition = {
   name: 'Speed',
   benefit: "Gives $5 for each Blind you've skipped this run.",
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        let skipped = 0
+        for (const round of ctx.game.rounds) {
+          if (round.smallBlind.status === 'skipped') skipped++
+          if (round.bigBlind.status === 'skipped') skipped++
+        }
+        ctx.game.money += 5 * Math.max(skipped, 1)
+        const tag = ctx.game.tags.find(t => t.tagType === 'speed')
+        if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
+      },
+    },
+  ],
 }
 
 const orbital: TagDefinition = {
@@ -573,6 +600,8 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   charm,
   meteor,
   buffoon,
+  speed,
+  ethereal,
 }
 
 /* Tags
