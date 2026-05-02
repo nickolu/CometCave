@@ -463,8 +463,7 @@ export const hieroglyph: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'hieroglyph' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement hieroglyph effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxHands -= 1
       },
     },
   ],
@@ -480,8 +479,7 @@ export const petroglyph: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'petroglyph' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement petroglyph effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxDiscards -= 1
       },
     },
   ],
