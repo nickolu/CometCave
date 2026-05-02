@@ -46,7 +46,29 @@ const negative: TagDefinition = {
   benefit:
     'The next base edition Joker you find in a Shop becomes Negative (+1 joker slot) and free.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const randomJoker = getRandomCommonJoker(ctx.game, 'negative')
+        if (randomJoker) {
+          const jokerState = initializeJoker(randomJoker, ctx.game)
+          jokerState.edition = 'negative'
+          ctx.game.shopState.guaranteedForSaleItems.push({
+            type: 'jokerCard',
+            card: jokerState,
+            price: 0,
+          })
+          ctx.game.maxJokers += 1
+        }
+        const negTag = ctx.game.tags.find(tag => tag.tagType === 'negative')
+        if (negTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== negTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const foil: TagDefinition = {
@@ -450,6 +472,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   polychrome,
   holographic,
   foil,
+  negative,
 }
 
 /* Tags
