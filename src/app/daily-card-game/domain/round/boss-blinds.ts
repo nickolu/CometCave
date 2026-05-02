@@ -1,7 +1,7 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { getMostPlayedHand } from '@/app/daily-card-game/domain/hand/utils'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
-import { getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 import type { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
 const theHook: BossBlindDefinition = {
@@ -353,7 +353,34 @@ const theArm: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm]
+const theWheel: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Wheel',
+  description: '1 in 7 cards get drawn face down',
+  image: 'the-wheel.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        for (const cardId of Object.keys(ctx.game.cards)) {
+          const seed = buildSeedString([ctx.game.gameSeed, cardId, 'wheel'])
+          const roll = getRandomNumberWithSeed(seed, 1, 7)
+          if (roll === 1) {
+            ctx.game.cards[cardId].isFaceUp = false
+          }
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel]
 
 /**
  
