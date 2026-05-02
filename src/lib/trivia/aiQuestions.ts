@@ -6,6 +6,7 @@ import { getFirestoreDb } from '@/lib/firebase/server'
 // regressions to a model swap and run before/after analyses.
 export interface QuestionGenerationModels {
   facts?: string
+  factPicker?: string
   question?: string
   repair?: string
   review?: string

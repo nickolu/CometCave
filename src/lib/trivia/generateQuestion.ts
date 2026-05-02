@@ -461,6 +461,59 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
   }
 }
 
+// For EASY generations, rank the candidate facts by how recognizable
+// their keyDetail would be to a casual trivia player and pick the
+// most-recognizable one. The seed picker (B) does most of this work
+// upstream by narrowing the seed pool, but a single seed (e.g. "World
+// War 2") can still produce facts that vary widely in fame ("Pearl
+// Harbor" vs "Operation Market Garden"). Cheap Haiku call; falls back
+// to pickRandom on failure so a transient model error never blocks the
+// pipeline.
+async function pickEasiestFact(
+  apiKey: string,
+  facts: Fact[],
+  categoryName: string
+): Promise<Fact> {
+  if (facts.length <= 1) return facts[0]
+
+  const PickSchema = z.object({
+    pickedIndex: z
+      .number()
+      .int()
+      .min(0)
+      .max(facts.length - 1)
+      .describe('Index of the most universally recognizable fact for an easy question.'),
+  })
+
+  try {
+    const anthropicClient = createAnthropic({ apiKey })
+    const result = await generateObject({
+      model: anthropicClient(REVIEW_MODEL),
+      schema: PickSchema,
+      system:
+        'You rank trivia facts by how recognizable their answer (keyDetail) would be to a typical adult who has never specifically studied this category. Lower is more recognizable.',
+      prompt: `Category: ${categoryName}
+Pick the fact whose keyDetail is the name a typical casual trivia player would most readily produce — household-name people, places, works, events; common short answer strings; things taught in school or dominant in pop culture.
+
+Avoid: specialist labels for famous things ("Atomic Bomb Dome" vs "Hiroshima"), regnal forms when shorter casual forms exist ("Constantine the Great" vs "Constantine"), scientific/technical terms, deep-cut historical figures, obscure works.
+
+Facts:
+${facts.map((f, i) => `[${i}] keyDetail: "${f.keyDetail}" — ${f.claim}`).join('\n')}
+
+Output the index (0-based) of the best fact for an easy question.`,
+      temperature: 0,
+      maxTokens: 50,
+    })
+    const idx = Math.max(0, Math.min(facts.length - 1, result.object.pickedIndex))
+    return facts[idx]
+  } catch (err) {
+    console.warn('[pickEasiestFact] failed, falling back to random', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+    return pickRandom(facts)
+  }
+}
+
 /**
  * Generate a single trivia question on the fly for Infinite Trivia.
  *
@@ -542,7 +595,12 @@ export async function generateInfiniteQuestion(
       continue
     }
 
-    const fact = pickRandom(facts)
+    // For easy, ask Haiku to pick the fact with the most casually-
+    // recognizable keyDetail. For medium/hard, randomness keeps things
+    // varied. Falls back to random if the picker call fails.
+    const fact = difficulty === 'easy' && facts.length > 1
+      ? await pickEasiestFact(apiKey, facts, categoryName)
+      : pickRandom(facts)
     let draft = await constructQuestionFromFact(apiKey, fact, {
       categoryName,
       difficulty,
@@ -556,6 +614,7 @@ export async function generateInfiniteQuestion(
       question: QUESTION_MODEL,
     }
     if (factSource.model) models.facts = factSource.model
+    if (difficulty === 'easy' && facts.length > 1) models.factPicker = REVIEW_MODEL
 
     // Inner repair loop: try to fix this draft up to MAX_REPAIRS_PER_DRAFT
     // times before falling through to a fresh outer attempt.
