@@ -104,7 +104,30 @@ const incantation: SpectralCardDefinition = {
   name: 'Incantation',
   description:
     'Destroy 1 random card in your hand, but add 4 random Enhanced numbered cards instead.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const destructionSeed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'incantation'])
+        const randomCards = getRandomPlayingCardsWithFilters({
+          game: ctx.game,
+          numberOfCards: 4,
+          values: ['2', '3', '4', '5', '6', '7', '8', '9', '10'],
+        })
+        const cardsToAdd = randomCards.map(card => {
+          const cardState = initializePlayingCard(card, ctx.game, true)
+          cardState.flags.enchantment = cardState.flags.enchantment === 'none'
+            ? getRandomEnchantment(ctx.game, card.id, true) : cardState.flags.enchantment
+          return cardState
+        })
+        const randomIdx = getRandomNumberWithSeed(destructionSeed, 0, ctx.game.gamePlayState.handIds.length - 1)
+        removeOwnedCard(ctx.game, ctx.game.gamePlayState.handIds[randomIdx])
+        cardsToAdd.forEach(card => { addOwnedCard(ctx.game, card); ctx.game.gamePlayState.handIds.push(card.id) })
+      },
+    },
+  ],
 }
 
 const talisman: SpectralCardDefinition = {
@@ -387,6 +410,7 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   ankh,
   grim,
   hex,
+  incantation,
 }
 
 /**
