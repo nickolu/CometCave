@@ -55,14 +55,22 @@ async function classifyCategory(
     model: anthropic(MODEL),
     schema: ResultSchema,
     system:
-      'You categorize trivia seeds (topical hints used to vary question generation) by player recognizability. Your output drives difficulty-aware seed selection: easy generations sample from the "easy" bucket, hard from the "hard" bucket.',
+      'You categorize trivia seeds (topical hints used to vary question generation) by player answerability. Your output drives difficulty-aware seed selection: easy generations sample from the "easy" bucket, hard from the "hard" bucket. Be strict — easy should be the SMALLEST bucket. Recognizing a name is not enough; the casual player has to be able to ANSWER multiple specific trivia questions about it.',
     prompt: `Category: ${categoryName}
 
-Bucket each of the following seeds into easy / medium / hard, judged by what facts about that seed a player would need to recall:
+Bucket each of the following seeds into easy / medium / hard, judged by what a player would need to answer free-text trivia about the seed.
 
-- easy = a typical adult would recognize the term and could name at least one related fact about it (e.g. "Mona Lisa" in Art, "Beatles" in Music, "Olympics" in Sports)
-- medium = an enthusiast or fan of the category would know it (e.g. "color theory" in Art, "concept albums" in Music, "decathlon" in Sports)
-- hard = only a specialist or deep fan would know it well enough to answer trivia about it (e.g. "chiaroscuro" in Art, "modal interchange" in Music, "lutsa" in Sports)
+- easy = a typical adult who has NEVER studied this category could answer 3+ distinct specific trivia questions about this term off the top of their head, with no lookup. Both halves matter:
+    1) the term is universally familiar (household name, taught in school, dominant in pop culture), AND
+    2) the casual player has internalized enough specific facts about it to actually produce trivia answers — not just recognize the name.
+  Examples that PASS easy: "Beatles" (any adult can name songs, members, decades), "Eiffel Tower" (city, country, height ballpark, what era), "World War 2" (sides, key events, dates ballpark).
+  Examples that FAIL easy (recognizable names that adults can't answer trivia about): "Cervantes" (most adults: "wrote Don Quixote" — and that's it), "Kurosawa" (most adults: "Japanese director" — and that's it), "Constantine the Great" (most adults: "Roman emperor"), "alkali metals" (most adults: "from the periodic table"). These belong in medium.
+
+- medium = an enthusiast or someone who follows the category casually could answer trivia about it, but a typical adult would struggle past one or two surface facts. (e.g. "color theory" in Art, "concept albums" in Music, "decathlon" in Sports.) ALSO put here: famous-sounding names where adults recognize the name but can't actually answer specific questions about them (Cervantes, Kurosawa, Constantine the Great).
+
+- hard = only a specialist or deep fan would know it well enough to answer trivia about it (e.g. "chiaroscuro" in Art, "modal interchange" in Music, "lutsa" in Sports).
+
+Default toward medium when unsure between easy and medium. Easy should feel narrow — a strict bar produces a more enjoyable easy difficulty for casual players.
 
 Every seed must end up in exactly one bucket. The shape of the response is { easy, medium, hard }, each an array of strings copied verbatim from the input list.
 
@@ -90,8 +98,24 @@ async function classifyCategoryChunked(
     medium: [],
     hard: [],
   }
+  // Per-chunk try/retry so one flaky schema-validation failure doesn't
+  // drop an entire category (which forces sampling to fall back to the
+  // unfiltered pool for that category — we lose all difficulty signal).
   for (let i = 0; i < chunks.length; i++) {
-    const part = await classifyCategory(apiKey, categoryName, chunks[i])
+    let part: { easy: string[]; medium: string[]; hard: string[] } | null = null
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        part = await classifyCategory(apiKey, categoryName, chunks[i])
+        break
+      } catch (err) {
+        if (attempt === 2) {
+          console.log(
+            `  chunk ${i + 1}/${chunks.length} failed after retry: ${err instanceof Error ? err.message : String(err)} — skipping`
+          )
+        }
+      }
+    }
+    if (!part) continue
     merged.easy.push(...part.easy)
     merged.medium.push(...part.medium)
     merged.hard.push(...part.hard)
