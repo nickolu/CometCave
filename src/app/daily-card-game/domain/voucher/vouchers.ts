@@ -89,8 +89,10 @@ export const hone: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'hone' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement hone effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.joker.editionWeights.holographic *= 2
+        ctx.game.shopState.joker.editionWeights.foil *= 2
+        ctx.game.shopState.joker.editionWeights.polychrome *= 2
+        ctx.game.shopState.playingCard.editionBaseChance *= 2
       },
     },
   ],
@@ -106,12 +108,14 @@ export const glowUp: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'glowUp' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement glow up effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.joker.editionWeights.holographic *= 2
+        ctx.game.shopState.joker.editionWeights.foil *= 2
+        ctx.game.shopState.joker.editionWeights.polychrome *= 2
+        ctx.game.shopState.playingCard.editionBaseChance *= 2
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'hone',
 }
 
 export const rerollSurplus: VoucherDefinition = {
@@ -565,6 +569,8 @@ export const implementedVouchers: VoucherType[] = [
   'paintBrush',
   'palette',
   'crystalBall',
+  'hone',
+  'glowUp',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
