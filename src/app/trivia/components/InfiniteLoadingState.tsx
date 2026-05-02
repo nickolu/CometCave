@@ -65,7 +65,7 @@ export function InfiniteLoadingState({ phase, onReady }: Props) {
       aria-live="polite"
       aria-busy={!isReady}
     >
-      <CosmicSpinner />
+      <CosmicSpinner ready={isReady} />
 
       <div className="flex flex-col gap-2 min-h-[3.5rem]">
         <p className="text-on-surface text-base sm:text-lg leading-snug font-medium">
@@ -89,26 +89,45 @@ export function InfiniteLoadingState({ phase, onReady }: Props) {
 
 // Three concentric rings drifting at different speeds with a small spark at
 // the center. Pure CSS — respects prefers-reduced-motion via the
-// motion-reduce: utilities.
-function CosmicSpinner({ small = false }: { small?: boolean }) {
+// motion-safe: utilities.
+//
+// `ready` flips the spinner from "researching" to a settled "I'm done"
+// state: rotation stops, the ring gaps close (broken rings show motion;
+// solid rings read as complete), opacity comes up, and the center spark
+// grows + glows brighter. Same component so the transition is in-place.
+function CosmicSpinner({ small = false, ready = false }: { small?: boolean; ready?: boolean }) {
   const size = small ? 'h-10 w-10' : 'h-24 w-24 sm:h-28 sm:w-28'
+  const sparkSize = small ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5'
+  const readySparkSize = small ? 'h-2 w-2' : 'h-4 w-4'
   return (
     <div className={`relative ${size}`} aria-hidden="true">
       <span
-        className="absolute inset-0 rounded-full border-2 border-ds-primary/40 motion-safe:animate-[spin_3s_linear_infinite]"
-        style={{ borderTopColor: 'transparent', borderLeftColor: 'transparent' }}
+        className={`absolute inset-0 rounded-full border-2 transition-[border-color,opacity] duration-500 ${
+          ready
+            ? 'border-ds-primary/80'
+            : 'border-ds-primary/40 motion-safe:animate-[spin_3s_linear_infinite]'
+        }`}
+        style={ready ? undefined : { borderTopColor: 'transparent', borderLeftColor: 'transparent' }}
       />
       <span
-        className="absolute inset-1.5 rounded-full border-2 border-ds-secondary/35 motion-safe:animate-[spin_4.5s_linear_infinite_reverse]"
-        style={{ borderRightColor: 'transparent', borderBottomColor: 'transparent' }}
+        className={`absolute inset-1.5 rounded-full border-2 transition-[border-color,opacity] duration-500 ${
+          ready
+            ? 'border-ds-secondary/70'
+            : 'border-ds-secondary/35 motion-safe:animate-[spin_4.5s_linear_infinite_reverse]'
+        }`}
+        style={ready ? undefined : { borderRightColor: 'transparent', borderBottomColor: 'transparent' }}
       />
       <span
-        className="absolute inset-3 rounded-full border-2 border-ds-tertiary/30 motion-safe:animate-[spin_6s_linear_infinite]"
-        style={{ borderTopColor: 'transparent' }}
+        className={`absolute inset-3 rounded-full border-2 transition-[border-color,opacity] duration-500 ${
+          ready
+            ? 'border-ds-tertiary/70'
+            : 'border-ds-tertiary/30 motion-safe:animate-[spin_6s_linear_infinite]'
+        }`}
+        style={ready ? undefined : { borderTopColor: 'transparent' }}
       />
       <span
-        className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ds-primary motion-safe:animate-pulse shadow-glow-primary ${
-          small ? 'h-1.5 w-1.5' : 'h-2.5 w-2.5'
+        className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ds-primary shadow-glow-primary transition-all duration-500 ${
+          ready ? `${readySparkSize} motion-safe:animate-pulse` : `${sparkSize} motion-safe:animate-pulse`
         }`}
       />
     </div>
