@@ -131,6 +131,7 @@ const gameState: GameState = {
     allowDuplicateJokersInShop: false,
     bossBlindRerolls: 0,
     bossBlindRerollCost: 0,
+    telescopeActive: false,
   },
   tags: [],
   totalScore: 0n,
