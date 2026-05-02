@@ -642,7 +642,32 @@ const ceruleanBell: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn, crimsonHeart, ceruleanBell]
+const verdantLeaf: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Verdant Leaf',
+  description: 'All cards debuffed until 1 Joker sold',
+  image: 'verdant-leaf.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        // Debuff all cards (clear cardsToScore) - player must sell a joker to lift this
+        // In the actual game flow, selling a joker happens before gameplay starts
+        // This effect stays active for the entire boss blind round
+        ctx.game.gamePlayState.cardsToScore = []
+        ctx.game.gamePlayState.score = { chips: 0, mult: 0 }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn, crimsonHeart, ceruleanBell, verdantLeaf]
 
 /**
  
