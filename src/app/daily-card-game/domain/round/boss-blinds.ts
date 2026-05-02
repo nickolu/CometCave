@@ -136,7 +136,28 @@ const thePlant: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant]
+const theTooth: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Tooth',
+  description: 'Lose $1 per card played',
+  image: 'the-tooth.png',
+  minimumAnte: 3,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'CARD_SCORED',
+      apply: (ctx: EffectContext) => {
+        ctx.game.money = Math.max(ctx.game.minimumMoney, ctx.game.money - 1)
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth]
 
 /**
  
