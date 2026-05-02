@@ -134,7 +134,19 @@ const talisman: SpectralCardDefinition = {
   spectralType: 'talisman',
   name: 'Talisman',
   description: 'Add a Gold Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'gold'
+      },
+    },
+  ],
 }
 
 const aura: SpectralCardDefinition = {
@@ -307,7 +319,19 @@ const dejaVu: SpectralCardDefinition = {
   spectralType: 'dejaVu',
   name: 'Deja Vu',
   description: 'Adds a Red Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'red'
+      },
+    },
+  ],
 }
 
 const hex: SpectralCardDefinition = {
@@ -335,14 +359,38 @@ const trance: SpectralCardDefinition = {
   spectralType: 'trance',
   name: 'Trance',
   description: 'Adds a Blue Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'blue'
+      },
+    },
+  ],
 }
 
 const medium: SpectralCardDefinition = {
   spectralType: 'medium',
   name: 'Medium',
   description: 'Adds a Purple Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'purple'
+      },
+    },
+  ],
 }
 
 const cryptid: SpectralCardDefinition = {
@@ -411,6 +459,10 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   grim,
   hex,
   incantation,
+  talisman,
+  dejaVu,
+  trance,
+  medium,
 }
 
 /**
