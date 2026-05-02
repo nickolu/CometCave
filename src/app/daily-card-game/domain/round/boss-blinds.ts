@@ -232,7 +232,37 @@ const theMouth: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth]
+const theEye: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Eye',
+  description: 'No repeat hand types this round',
+  image: 'the-eye.png',
+  minimumAnte: 3,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        const handId = ctx.game.gamePlayState.selectedHand?.[0]
+        if (!handId) return
+        const playedTypes = ctx.game.gamePlayState.handTypesPlayedThisRound
+        // Count how many times this hand type appears (including current)
+        const count = playedTypes.filter(t => t === handId).length
+        if (count > 1) {
+          // Repeated hand type - zero out scoring
+          ctx.game.gamePlayState.score = { chips: 0, mult: 0 }
+          ctx.game.gamePlayState.cardsToScore = []
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye]
 
 /**
  
