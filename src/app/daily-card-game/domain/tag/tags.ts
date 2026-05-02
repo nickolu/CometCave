@@ -226,7 +226,20 @@ const economy: TagDefinition = {
   name: 'Economy',
   benefit: 'Doubles your money (adds a maximum of $40).',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const gain = Math.min(ctx.game.money, 40)
+        ctx.game.money += gain
+        const economyTag = ctx.game.tags.find(tag => tag.tagType === 'economy')
+        if (economyTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== economyTag.id)
+        }
+      },
+    },
+  ],
 }
 
 export const tags: Record<TagType, TagDefinition> = {
@@ -259,6 +272,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   uncommon,
   d6,
   coupon,
+  economy,
 }
 
 /* Tags
