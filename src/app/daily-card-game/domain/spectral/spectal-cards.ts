@@ -4,6 +4,7 @@ import {
   removeOwnedCard,
 } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { GameState } from '@/app/daily-card-game/domain/game/types'
+import { getRandomRareJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import {
   getRandomEnchantment,
   getRandomPlayingCardsWithFilters,
@@ -105,7 +106,22 @@ const wraith: SpectralCardDefinition = {
   spectralType: 'wraith',
   name: 'Wraith',
   description: 'Creates a random Rare Joker (must have room), but sets money to $0.',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length < game.maxJokers,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length >= ctx.game.maxJokers) return
+        const rareJokerDef = getRandomRareJoker(ctx.game)
+        if (rareJokerDef) {
+          const jokerState = initializeJoker(rareJokerDef, ctx.game)
+          ctx.game.jokers.push(jokerState)
+        }
+        ctx.game.money = 0
+      },
+    },
+  ],
 }
 
 const sigil: SpectralCardDefinition = {
@@ -230,6 +246,7 @@ export const spectralCards: Record<SpectralCardType, SpectralCardDefinition> = {
 export const implementedSpectralCards: Partial<typeof spectralCards> = {
   familiar,
   blackHole,
+  wraith,
 }
 
 /**
