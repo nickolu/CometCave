@@ -134,7 +134,19 @@ const handy: TagDefinition = {
   name: 'Handy',
   benefit: 'Gain $1 for each hand played this run.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.money += ctx.game.handsPlayed
+        const handyTag = ctx.game.tags.find(tag => tag.tagType === 'handy')
+        if (handyTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== handyTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const garbage: TagDefinition = {
@@ -286,6 +298,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   coupon,
   economy,
   juggle,
+  handy,
 }
 
 /* Tags
