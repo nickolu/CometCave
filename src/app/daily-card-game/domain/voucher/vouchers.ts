@@ -321,8 +321,7 @@ export const planetMerchant: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'planetMerchant' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement planet merchant effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.celestialMultiplier *= 2
       },
     },
   ],
@@ -547,6 +546,7 @@ export const implementedVouchers: VoucherType[] = [
   'clearanceSale',
   'liquidation',
   'magicTrick',
+  'planetMerchant',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
