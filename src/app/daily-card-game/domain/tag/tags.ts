@@ -79,7 +79,23 @@ const investment: TagDefinition = {
   name: 'Investment',
   benefit: 'Gain $25 after defeating the next Boss Blind.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // Check if the boss blind was just completed (roundIndex advanced)
+        const prevRound = ctx.game.rounds[ctx.game.roundIndex - 1]
+        if (prevRound && prevRound.bossBlind.status === 'completed') {
+          ctx.game.money += 25
+          const investmentTag = ctx.game.tags.find(tag => tag.tagType === 'investment')
+          if (investmentTag) {
+            ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== investmentTag.id)
+          }
+        }
+      },
+    },
+  ],
 }
 
 const voucher: TagDefinition = {
@@ -350,6 +366,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   garbage,
   topUp,
   orbital,
+  investment,
 }
 
 /* Tags
