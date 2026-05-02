@@ -209,7 +209,17 @@ const voucher: TagDefinition = {
   name: 'Voucher',
   benefit: 'Adds a Voucher to the next Shop.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.shopState.maxVouchersForSale += 1
+        const tag = ctx.game.tags.find(t => t.tagType === 'voucher')
+        if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
+      },
+    },
+  ],
 }
 
 const boss: TagDefinition = {
@@ -494,6 +504,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   holographic,
   foil,
   negative,
+  voucher,
 }
 
 /* Tags
