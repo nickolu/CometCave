@@ -1,6 +1,6 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { getRandomCommonJoker, getRandomRareJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
-import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { buildSeedString, getRandomNumberWithSeed, uuid } from '@/app/daily-card-game/domain/randomness'
 import { getRandomBossBlind } from '@/app/daily-card-game/domain/round/boss-blinds'
 
 import { TagDefinition, TagType } from './types'
@@ -338,7 +338,21 @@ const double: TagDefinition = {
   name: 'Double',
   benefit: 'Gives a copy of the next Tag selected (excluding Double Tags).',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 0,
+      apply: (ctx: EffectContext) => {
+        const otherTags = ctx.game.tags.filter(t => t.tagType !== 'double')
+        if (otherTags.length > 0) {
+          const tagToCopy = otherTags[0]
+          ctx.game.tags.push({ ...tagToCopy, id: uuid() })
+        }
+        const doubleTag = ctx.game.tags.find(t => t.tagType === 'double')
+        if (doubleTag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== doubleTag.id)
+      },
+    },
+  ],
 }
 
 const juggle: TagDefinition = {
@@ -505,6 +519,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   foil,
   negative,
   voucher,
+  double,
 }
 
 /* Tags
