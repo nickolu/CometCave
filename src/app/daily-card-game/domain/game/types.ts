@@ -55,6 +55,8 @@ export interface StaticRulesState {
   bossBlindRerolls: number
   bossBlindRerollCost: number
   telescopeActive: boolean
+  observatoryActive: boolean
+  spectralInArcanaPacks: boolean
 }
 
 export type GamePhase =
