@@ -251,7 +251,23 @@ const hex: SpectralCardDefinition = {
   spectralType: 'hex',
   name: 'Hex',
   description: 'Adds Polychrome to a random Joker, and destroys the rest.',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length === 0) return
+
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'hex'])
+        const idx = getRandomNumberWithSeed(seed, 0, ctx.game.jokers.length - 1)
+        const chosen = ctx.game.jokers[idx]
+        chosen.edition = 'polychrome'
+
+        ctx.game.jokers = [chosen]
+      },
+    },
+  ],
 }
 
 const trance: SpectralCardDefinition = {
@@ -330,6 +346,7 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   ectoplasm,
   sigil,
   ouija,
+  hex,
 }
 
 /**
