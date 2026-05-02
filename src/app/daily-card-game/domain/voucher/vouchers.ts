@@ -435,12 +435,13 @@ export const illusion: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'illusion' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement illusion effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.playingCard.enchantmentBaseChance = 1
+        ctx.game.shopState.playingCard.editionBaseChance *= 4
+        ctx.game.shopState.playingCard.chipBaseChance *= 4
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'magicTrick',
 }
 
 export const hieroglyph: VoucherDefinition = {
@@ -547,6 +548,7 @@ export const implementedVouchers: VoucherType[] = [
   'clearanceSale',
   'liquidation',
   'magicTrick',
+  'illusion',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
