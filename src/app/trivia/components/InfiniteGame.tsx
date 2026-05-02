@@ -12,6 +12,7 @@ import { getMedalTier, getNextThreshold } from '@/lib/trivia/medals'
 
 import { InfiniteExhaustedScreen } from './InfiniteExhaustedScreen'
 import { InfiniteHUD } from './InfiniteHUD'
+import { InfiniteLoadingState } from './InfiniteLoadingState'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
 
@@ -27,7 +28,7 @@ interface Props {
 
 export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored' }: Props) {
   const { user, loading: authLoading } = useAuth()
-  const { state, startRun, submitAnswer, nextQuestion, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
+  const { state, startRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
@@ -288,12 +289,26 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     )
   }
 
-  // Loading state
-  if (state.phase === 'loading' || state.phase === 'idle') {
+  // Idle — pre-fetch / pre-start. Bare placeholder; pre-game screen above
+  // catches the actual "ready to start" state.
+  if (state.phase === 'idle') {
     return (
       <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto">
-        <div className="text-on-surface/60 text-lg">Loading Infinite Trivia...</div>
+        <div className="text-on-surface/60 text-lg">Loading Infinite Trivia…</div>
       </div>
+    )
+  }
+
+  // Loading or ready-to-reveal: cosmic spinner + researchy copy. The loading
+  // component escalates from a brief spinner to the full research treatment
+  // after a short delay; awaiting-ready always renders the full treatment
+  // with a Ready CTA so a player who walked away doesn't burn the timer.
+  if (state.phase === 'loading' || state.phase === 'awaiting-ready') {
+    return (
+      <InfiniteLoadingState
+        phase={state.phase}
+        onReady={confirmReady}
+      />
     )
   }
 
