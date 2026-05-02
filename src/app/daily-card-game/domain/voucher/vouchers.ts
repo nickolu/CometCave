@@ -484,8 +484,8 @@ export const directorsCut: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'directorsCut' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement directors cut effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.staticRules.bossBlindRerolls = 1
+        ctx.game.staticRules.bossBlindRerollCost = 10
       },
     },
   ],
@@ -549,6 +549,7 @@ export const implementedVouchers: VoucherType[] = [
   'magicTrick',
   'illusion',
   'planetTycoon',
+  'directorsCut',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
