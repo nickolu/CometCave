@@ -361,8 +361,7 @@ export const seedMoney: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'seedMoney' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement seed money effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxInterest = 10
       },
     },
   ],
@@ -378,8 +377,7 @@ export const moneyTree: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'moneyTree' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement money tree effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxInterest = 20
       },
     },
   ],
