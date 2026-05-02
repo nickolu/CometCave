@@ -193,7 +193,18 @@ const blackHole: SpectralCardDefinition = {
   name: 'Black Hole',
   description:
     'Upgrades every poker hand (including secret hands not yet discovered) by one level.',
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        for (const handId of Object.keys(ctx.game.pokerHands)) {
+          const hand = ctx.game.pokerHands[handId as keyof typeof ctx.game.pokerHands]
+          hand.level += 1
+        }
+      },
+    },
+  ],
 }
 
 export const spectralCards: Record<SpectralCardType, SpectralCardDefinition> = {
@@ -218,6 +229,7 @@ export const spectralCards: Record<SpectralCardType, SpectralCardDefinition> = {
 }
 export const implementedSpectralCards: Partial<typeof spectralCards> = {
   familiar,
+  blackHole,
 }
 
 /**
