@@ -129,6 +129,8 @@ const gameState: GameState = {
     numberOfCardsRequiredForFlushAndStraight: 5,
     areAllCardsFaceCards: false,
     allowDuplicateJokersInShop: false,
+    bossBlindRerolls: 0,
+    bossBlindRerollCost: 0,
   },
   tags: [],
   totalScore: 0n,

@@ -52,6 +52,8 @@ export interface StaticRulesState {
   numberOfCardsRequiredForFlushAndStraight: number
   areAllCardsFaceCards: boolean
   allowDuplicateJokersInShop: boolean
+  bossBlindRerolls: number
+  bossBlindRerollCost: number
 }
 
 export type GamePhase =
