@@ -10,9 +10,19 @@ async function main() {
 
   const { generateInfiniteQuestion } = await import('../src/lib/trivia/generateQuestion')
 
+  // Optional CLI args: difficulty=easy|medium|hard category=<id>
+  const args = Object.fromEntries(
+    process.argv.slice(2).map((a) => {
+      const [k, v] = a.split('=')
+      return [k, v]
+    })
+  )
+  const difficulty = (args.difficulty as 'easy' | 'medium' | 'hard') ?? 'medium'
+  const categoryId = args.category ? parseInt(args.category, 10) : 9
+
   const t0 = Date.now()
-  const q = await generateInfiniteQuestion({ categoryId: 9, difficulty: 'medium' })
-  console.log(`OK in ${Date.now() - t0}ms`)
+  const q = await generateInfiniteQuestion({ categoryId, difficulty })
+  console.log(`OK in ${Date.now() - t0}ms (category=${categoryId} difficulty=${difficulty})`)
   console.log(JSON.stringify(q, null, 2))
 }
 

@@ -30,10 +30,10 @@ const FactsSchema = z.object({
 })
 
 const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
-  easy: 'Facts should be approachable — well-known but rewarding to recall.',
+  easy: 'Facts must be COMMON KNOWLEDGE — about subjects a typical adult would recognize from popular culture, school, or daily life. Famous people, iconic places, well-known works, mainstream events. Do NOT reach for surprising / obscure / deep-cut framings; an "easy" fact is one that confirms something a player likely already knows.',
   medium:
-    'Facts should require some specific knowledge — beyond common knowledge but not obscure trivia.',
-  hard: 'Facts should be genuinely deep cuts — surprising, specific, the kind only an enthusiast would know.',
+    'Facts should require some category-specific knowledge — beyond what an average adult knows, but in reach for someone who follows the category casually. Not deep cuts; not insider trivia.',
+  hard: 'Facts should be genuinely deep cuts — surprising, specific, the kind only an enthusiast or specialist would know.',
 }
 
 export class LLMFactSource implements FactSource {
@@ -71,7 +71,7 @@ Each fact must:
 - The keyDetail must be the MINIMAL answer string — drop articles and unit words the question would naturally contain ("Mount Everest" not "the mountain Mount Everest"). Names that legitimately contain a number ("Apollo 11", "Area 51", "Catch-22") are fine; the rule is about pure-numeric answers, not names that happen to include digits.
 - The keyDetail must be UNIQUE — if multiple things could plausibly be the answer (e.g. "a tennis player who won many Grand Slams" — there are several), the fact is too vague; pick a more specific subject.
 - Have the keyDetail appear verbatim inside the claim sentence.
-- Reach for surprising or deep-cut angles rather than obvious common knowledge.
+- Match the difficulty above. At EASY, prefer common-knowledge subjects (famous people, iconic places, mainstream works); the surprise should be a small twist on something the player already recognizes, not an obscure deep cut. At HARD, deep cuts are welcome.
 - Be true. If you are uncertain, replace the fact with one you are confident about.
 
 Examples of good vs bad facts:
