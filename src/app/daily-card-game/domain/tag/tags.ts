@@ -1,6 +1,7 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { getRandomCommonJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { getRandomBossBlind } from '@/app/daily-card-game/domain/round/boss-blinds'
 
 import { TagDefinition, TagType } from './types'
 
@@ -111,7 +112,22 @@ const boss: TagDefinition = {
   name: 'Boss',
   benefit: 'Re-rolls the next Boss Blind.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 0,
+      apply: (ctx: EffectContext) => {
+        const round = ctx.game.rounds[ctx.game.roundIndex]
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'boss-reroll'])
+        const newBossBlind = getRandomBossBlind(ctx.game.roundIndex + 1, seed)
+        round.bossBlindName = newBossBlind.name
+        const bossTag = ctx.game.tags.find(tag => tag.tagType === 'boss')
+        if (bossTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== bossTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const standard: TagDefinition = {
@@ -367,6 +383,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   topUp,
   orbital,
   investment,
+  boss,
 }
 
 /* Tags
