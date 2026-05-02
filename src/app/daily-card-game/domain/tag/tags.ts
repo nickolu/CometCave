@@ -182,7 +182,19 @@ const d6: TagDefinition = {
   name: 'D6',
   benefit: 'In the next Shop, Rerolls start at $0.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.shopState.freeRerolls += 100
+        const d6Tag = ctx.game.tags.find(tag => tag.tagType === 'd6')
+        if (d6Tag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== d6Tag.id)
+        }
+      },
+    },
+  ],
 }
 
 const topUp: TagDefinition = {
@@ -245,6 +257,7 @@ export const tags: Record<TagType, TagDefinition> = {
 }
 export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   uncommon,
+  d6,
 }
 
 /* Tags
