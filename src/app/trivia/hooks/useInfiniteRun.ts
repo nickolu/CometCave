@@ -6,8 +6,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { getCategoryIdByName } from '@/lib/trivia/categories'
 import type { MedalEarned } from '@/lib/trivia/medals'
 
-export type InfinitePhase = 'idle' | 'loading' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
+export type InfinitePhase = 'idle' | 'loading' | 'awaiting-ready' | 'playing' | 'answering' | 'answered' | 'exhausted' | 'ended' | 'error'
 export type InfiniteMode = 'scored' | 'practice'
+
+// If a between-question fetch takes longer than this, gate the next question
+// behind a Ready click — so a player who wandered off doesn't burn the
+// per-question timer the moment the question lands.
+const READY_GATE_THRESHOLD_MS = 1200
 
 export interface InfiniteQuestion {
   id: string
@@ -148,10 +153,11 @@ export function useInfiniteRun() {
       if (!qRes.ok) throw new Error('Failed to fetch question')
       const question = await qRes.json()
 
-      startTimeRef.current = Date.now()
+      // First question always gates behind a Ready click — starting a run is
+      // a deliberate moment and the player may have stepped away during setup.
       setState(s => ({
         ...s,
-        phase: 'playing',
+        phase: 'awaiting-ready',
         mode,
         categoryIds,
         runId: data.runId,
@@ -255,6 +261,8 @@ export function useInfiniteRun() {
   const nextQuestion = useCallback(async () => {
     if (state.phase !== 'answered' || !state.runId) return
 
+    const fetchStartedAt = Date.now()
+
     // If a prefetch is in-flight or already complete, await/consume it before
     // falling back to a fresh request.
     if (prefetchRef.current) {
@@ -263,8 +271,13 @@ export function useInfiniteRun() {
       prefetchAbortRef.current = null
       const prefetched = await pending
       if (prefetched) {
-        startTimeRef.current = Date.now()
-        setState(s => ({ ...s, phase: 'playing', question: prefetched, lastAnswer: null }))
+        const elapsed = Date.now() - fetchStartedAt
+        if (elapsed > READY_GATE_THRESHOLD_MS) {
+          setState(s => ({ ...s, phase: 'awaiting-ready', question: prefetched, lastAnswer: null }))
+        } else {
+          startTimeRef.current = Date.now()
+          setState(s => ({ ...s, phase: 'playing', question: prefetched, lastAnswer: null }))
+        }
         return
       }
     }
@@ -286,13 +299,28 @@ export function useInfiniteRun() {
       if (!qRes.ok) throw new Error('Failed to fetch question')
       const question = await qRes.json()
 
-      startTimeRef.current = Date.now()
-      setState(s => ({ ...s, phase: 'playing', question, lastAnswer: null }))
+      const elapsed = Date.now() - fetchStartedAt
+      if (elapsed > READY_GATE_THRESHOLD_MS) {
+        setState(s => ({ ...s, phase: 'awaiting-ready', question, lastAnswer: null }))
+      } else {
+        startTimeRef.current = Date.now()
+        setState(s => ({ ...s, phase: 'playing', question, lastAnswer: null }))
+      }
     } catch (err) {
       console.error('[infinite] nextQuestion failed:', err)
       setState(s => ({ ...s, phase: 'error', error: 'Failed to fetch next question.' }))
     }
   }, [state.phase, state.runId, state.currentStreak, state.categoryIds, getAuthHeaders])
+
+  // Player clicked "Ready" on the gated loading screen — start the
+  // per-question timer now and reveal the question.
+  const confirmReady = useCallback(() => {
+    setState(s => {
+      if (s.phase !== 'awaiting-ready' || !s.question) return s
+      startTimeRef.current = Date.now()
+      return { ...s, phase: 'playing' }
+    })
+  }, [])
 
   const skipQuestion = useCallback(async () => {
     if (state.phase !== 'playing' || state.skipsRemaining <= 0 || !state.question || !state.runId) return
@@ -400,5 +428,5 @@ export function useInfiniteRun() {
     })
   }, [])
 
-  return { state, startRun, submitAnswer, nextQuestion, skipQuestion, endRun, handleQuestionFlagged }
+  return { state, startRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged }
 }
