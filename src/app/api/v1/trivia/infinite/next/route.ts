@@ -83,11 +83,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Strip correctAnswer before sending to client. The non-null assertion
-    // is safe: either the sampler returned a question, or the inner try
-    // assigned one (catch branch returns early).
+    // Strip correctAnswer before sending to client. Also strip `seed` —
+    // it often contains the answer word verbatim (e.g. seed
+    // "phoenix :: random" → answer "Phoenix"), so shipping it would leak
+    // the answer to the client. seed is server-only diagnostic data.
+    // The non-null assertion is safe: either the sampler returned a
+    // question, or the inner try assigned one (catch branch returns
+    // early).
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { correctAnswer, ...safeQuestion }: AIQuestion = question!
+    const { correctAnswer, seed, ...safeQuestion }: AIQuestion = question!
 
     // Background top-up: keep the player ahead of pool exhaustion by
     // pre-generating one question per /next when their unanswered
