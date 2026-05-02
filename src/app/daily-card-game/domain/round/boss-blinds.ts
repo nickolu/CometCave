@@ -328,7 +328,32 @@ const thePsychic: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic]
+const theArm: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Arm',
+  description: 'Decrease level of played poker hand by 1',
+  image: 'the-arm.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        const handId = ctx.game.gamePlayState.selectedHand?.[0]
+        if (!handId) return
+        if (ctx.game.pokerHands[handId].level > 1) {
+          ctx.game.pokerHands[handId].level -= 1
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm]
 
 /**
  
