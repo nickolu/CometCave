@@ -1,4 +1,4 @@
-import { createOpenAI } from '@ai-sdk/openai'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
@@ -7,12 +7,13 @@ import {
   MODIFIERS,
   getOpenTDBCategoryName,
 } from '@/app/trivia/data/seeds'
-import type { AIQuestion } from '@/lib/trivia/aiQuestions'
+import type { AIQuestion, QuestionGenerationModels } from '@/lib/trivia/aiQuestions'
 import {
   type Fact,
   type FactSource,
   getDefaultFactSource,
 } from '@/lib/trivia/factSources'
+import { APP_VERSION } from '@/lib/version'
 
 export type GeneratedQuestion = Omit<
   AIQuestion,
@@ -28,16 +29,19 @@ export interface GenerateInfiniteQuestionOptions {
   factSource?: FactSource
 }
 
-// Question construction needs to satisfy multiple constraints at once
-// (specific, leak-free, category-bound). gpt-4o-mini was repeatedly
-// oscillating between the constraints — fixing a leak would introduce
-// ambiguity, repairing the ambiguity would re-introduce the leak. Use
-// the full gpt-4o for construction and repair where instruction-
-// following matters; keep mini for the cheaper fact extraction and
-// reviewer stages.
-const QUESTION_MODEL = 'gpt-4o'
-const REPAIR_MODEL = 'gpt-4o'
-const REVIEW_MODEL = 'gpt-4o-mini'
+// Construction and repair are the stages where reasoning matters most:
+// the model has to satisfy multiple constraints at once (specific,
+// leak-free, category-bound). Sonnet 4.6 handles this far better than
+// gpt-4o, which oscillated between constraints. Review is a cheap
+// deterministic-style pass — Haiku is enough.
+//
+// Note: Anthropic's extended-thinking mode is not enabled here because
+// the AI SDK v4 Anthropic adapter requires forced tool use to validate
+// against a Zod schema, and that path is incompatible with thinking.
+// Sonnet 4.6 without thinking is still a clear quality upgrade.
+const QUESTION_MODEL = 'claude-sonnet-4-6'
+const REPAIR_MODEL = 'claude-sonnet-4-6'
+const REVIEW_MODEL = 'claude-haiku-4-5-20251001'
 const FACTS_PER_FETCH = 5
 const MAX_GENERATION_ATTEMPTS = 3
 const MAX_REPAIRS_PER_DRAFT = 2
@@ -146,10 +150,10 @@ async function constructQuestionFromFact(
     seedSummary: string
   }
 ): Promise<DraftQuestion> {
-  const openaiClient = createOpenAI({ apiKey })
+  const anthropicClient = createAnthropic({ apiKey })
 
   const result = await generateObject({
-    model: openaiClient(QUESTION_MODEL),
+    model: anthropicClient(QUESTION_MODEL),
     schema: QuestionSchema,
     system:
       'You are a trivia question writer for a cosmic-cave-themed game. You receive a verified fact and turn it into a single short trivia question that asks for the fact\'s keyDetail. You never invent details; you only ask about what the fact already states.',
@@ -199,7 +203,7 @@ A useful test: if you removed the keyDetail (and obvious synonyms) from your que
 
 If you cannot construct a question that is both unambiguous AND leak-free from this fact, output the best-effort question you can — the reviewer will reject and we will retry with a different fact.`,
     temperature: 0.5,
-    maxTokens: 400,
+    maxTokens: 600,
   })
 
   if (!result.object.question || !result.object.correct_answer) {
@@ -233,10 +237,10 @@ async function repairDraft(
   draft: DraftQuestion,
   rejectionReason: string
 ): Promise<DraftQuestion> {
-  const openaiClient = createOpenAI({ apiKey })
+  const anthropicClient = createAnthropic({ apiKey })
 
   const result = await generateObject({
-    model: openaiClient(REPAIR_MODEL),
+    model: anthropicClient(REPAIR_MODEL),
     schema: QuestionSchema,
     system:
       'You are a trivia question writer fixing a previous draft that a reviewer rejected. You receive the original fact, the rejected draft, and the rejection reason. Produce a revised question that resolves the specific issue while staying faithful to the fact.',
@@ -263,7 +267,7 @@ Rules for the fix:
 
 Output the revised question, the correct_answer (still equivalent to the keyDetail), and an explanation. If you genuinely cannot fix this fact's question without changing the answer, output your best attempt — we will fall through to a fresh fact.`,
     temperature: 0.4,
-    maxTokens: 400,
+    maxTokens: 600,
   })
 
   if (!result.object.question || !result.object.correct_answer) {
@@ -331,10 +335,10 @@ async function reviewQuestion(
   apiKey: string,
   draft: DraftQuestion
 ): Promise<ReviewResult> {
-  const openaiClient = createOpenAI({ apiKey })
+  const anthropicClient = createAnthropic({ apiKey })
 
   const result = await generateObject({
-    model: openaiClient(REVIEW_MODEL),
+    model: anthropicClient(REVIEW_MODEL),
     schema: ReviewSchema,
     system:
       'You are a quality reviewer for trivia questions. You evaluate ONLY the question text against the failure modes listed below. Answer-leak checks happen elsewhere (deterministically on the question text alone) — you should NOT flag answer-leaks under any circumstances; that is not your job.',
@@ -361,7 +365,7 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
   })
 
   // Defense in depth: the prompt tells the LLM not to flag leaks, but
-  // gpt-4o-mini sometimes hallucinates one anyway by reading the
+  // smaller models sometimes hallucinate one anyway by reading the
   // "Expected answer:" prompt line as if it were the question. If we
   // see a rejection that names a leak-style reason, override the
   // accept decision — the deterministic detectAnswerLeak() pre-check
@@ -387,16 +391,16 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
  *   1. Fact extraction — call the configured FactSource (LLM-only
  *      today; Wikipedia / Perplexity planned) to surface candidate
  *      facts about the chosen category + seed.
- *   2. Question construction (gpt-4o-mini, temp 0.5) — pick a fact
- *      and turn it into a question whose answer is the fact's
- *      keyDetail.
+ *   2. Question construction (Claude Sonnet 4.6) — pick a fact and
+ *      turn it into a question whose answer is the fact's keyDetail.
  *   3. Inner repair loop:
  *      a. Deterministic pre-check (detectAnswerLeak) for verbatim
  *         keyDetail leaks — fast-fails before a reviewer call.
- *      b. Quality review (gpt-4o-mini, temp 0) — strict reviewer.
- *      c. If rejected, call repairDraft with the rejection reason
- *         as targeted feedback. Up to MAX_REPAIRS_PER_DRAFT repairs
- *         per draft before falling through to a fresh fact.
+ *      b. Quality review (Claude Haiku 4.5, temp 0) — strict reviewer.
+ *      c. If rejected, call repairDraft (Sonnet 4.6) with the
+ *         rejection reason as targeted feedback. Up to
+ *         MAX_REPAIRS_PER_DRAFT repairs per draft before falling
+ *         through to a fresh fact.
  *   4. Outer retry: up to MAX_GENERATION_ATTEMPTS fresh fact extractions.
  *
  * Repair is cheaper than blind retry because it preserves the (already
@@ -408,12 +412,16 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
  * The FactSource interface lets us migrate to grounded sources
  * (Wikipedia, Wikidata, Perplexity) without touching construction,
  * repair, or review stages.
+ *
+ * The returned question carries provenance — `appVersion` (commit hash)
+ * and `models` (per-stage model id) — so we can later attribute quality
+ * regressions to a model swap or prompt change.
  */
 export async function generateInfiniteQuestion(
   options: GenerateInfiniteQuestionOptions = {}
 ): Promise<GeneratedQuestion> {
-  const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
-  if (!apiKey) throw new Error('OpenAI API key not configured')
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('Anthropic API key not configured')
 
   const factSource = options.factSource ?? getDefaultFactSource()
 
@@ -455,6 +463,14 @@ export async function generateInfiniteQuestion(
       seedSummary,
     })
 
+    // Track which models actually ran for this question. Repair is
+    // populated only if the inner loop invokes it; review is set the
+    // first time the reviewer is called.
+    const models: QuestionGenerationModels = {
+      question: QUESTION_MODEL,
+    }
+    if (factSource.model) models.facts = factSource.model
+
     // Inner repair loop: try to fix this draft up to MAX_REPAIRS_PER_DRAFT
     // times before falling through to a fresh outer attempt.
     let acceptedDraft: DraftQuestion | null = null
@@ -476,6 +492,7 @@ export async function generateInfiniteQuestion(
         if (repair < MAX_REPAIRS_PER_DRAFT) {
           try {
             draft = await repairDraft(apiKey, draft, reason)
+            models.repair = REPAIR_MODEL
           } catch (err) {
             lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
             console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
@@ -502,6 +519,7 @@ export async function generateInfiniteQuestion(
         if (repair < MAX_REPAIRS_PER_DRAFT) {
           try {
             draft = await repairDraft(apiKey, draft, reason)
+            models.repair = REPAIR_MODEL
           } catch (err) {
             lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
             console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
@@ -513,6 +531,7 @@ export async function generateInfiniteQuestion(
       }
 
       const review = await reviewQuestion(apiKey, draft)
+      models.review = REVIEW_MODEL
       if (review.accept) {
         acceptedDraft = draft
         acceptedReview = review
@@ -535,6 +554,7 @@ export async function generateInfiniteQuestion(
       if (repair < MAX_REPAIRS_PER_DRAFT) {
         try {
           draft = await repairDraft(apiKey, draft, lastReason)
+          models.repair = REPAIR_MODEL
         } catch (err) {
           lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
           console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
@@ -555,6 +575,8 @@ export async function generateInfiniteQuestion(
         factSource: factSource.id,
         factSourceCitation: fact.source,
         inferredCategory: acceptedReview.inferred_category,
+        appVersion: APP_VERSION,
+        models,
       })
       return {
         id,
@@ -564,6 +586,8 @@ export async function generateInfiniteQuestion(
         category: categoryName,
         difficulty,
         type: 'free-text',
+        appVersion: APP_VERSION,
+        models,
       }
     }
   }

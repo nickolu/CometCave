@@ -1,10 +1,14 @@
-import { createOpenAI } from '@ai-sdk/openai'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
 import type { Fact, FactSource, FetchFactsOptions } from './types'
 
-const FACT_MODEL = 'gpt-4o-mini'
+// Sonnet without extended thinking. Fact extraction is mostly recall,
+// not multi-constraint reasoning — bumping to thinking adds latency
+// without obvious quality wins. Construction and repair are the stages
+// that actually benefit from reasoning.
+const FACT_MODEL = 'claude-sonnet-4-6'
 
 const FactsSchema = z.object({
   facts: z
@@ -34,6 +38,7 @@ const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
 
 export class LLMFactSource implements FactSource {
   readonly id = `llm:${FACT_MODEL}`
+  readonly model = FACT_MODEL
 
   private apiKey: string
 
@@ -47,12 +52,12 @@ export class LLMFactSource implements FactSource {
     difficulty,
     count,
   }: FetchFactsOptions): Promise<Fact[]> {
-    const openaiClient = createOpenAI({ apiKey: this.apiKey })
+    const anthropicClient = createAnthropic({ apiKey: this.apiKey })
 
     const seedLine = seed ? `Topical seed: ${seed}\n` : ''
 
     const result = await generateObject({
-      model: openaiClient(FACT_MODEL),
+      model: anthropicClient(FACT_MODEL),
       schema: FactsSchema,
       system:
         'You are a meticulous trivia researcher for a cosmic-cave-themed game. You surface facts that make people say "huh, I didn\'t know that." You never invent facts; if you are not confident a claim is true, you do not include it.',
@@ -91,7 +96,7 @@ BAD: claim="The first edition of 'The Dark Tower: The Gunslinger' by Stephen Kin
 
 Avoid duplicates: each of the ${count} facts should be about a different subject.`,
       temperature: 0.7,
-      maxTokens: 1000,
+      maxTokens: 1500,
     })
 
     return result.object.facts.map((f) => ({
