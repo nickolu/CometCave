@@ -304,7 +304,31 @@ const theWater: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater]
+const thePsychic: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Psychic',
+  description: 'Must play 5 cards',
+  image: 'the-psychic.png',
+  minimumAnte: 1,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.gamePlayState.playedCardIds.length < 5) {
+          ctx.game.gamePlayState.score = { chips: 0, mult: 0 }
+          ctx.game.gamePlayState.cardsToScore = []
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic]
 
 /**
  
