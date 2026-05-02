@@ -179,7 +179,34 @@ const theFlint: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint]
+const theMark: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Mark',
+  description: 'All face cards are drawn face down',
+  image: 'the-mark.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        // Flip all face cards in the entire deck face down
+        for (const cardId of Object.keys(ctx.game.cards)) {
+          const card = ctx.game.cards[cardId]
+          if (['J', 'Q', 'K'].includes(playingCards[card.playingCardId].value)) {
+            card.isFaceUp = false
+          }
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark]
 
 /**
  
