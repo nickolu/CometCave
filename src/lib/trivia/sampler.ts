@@ -2,10 +2,9 @@ import { getFirestoreDb } from '@/lib/firebase/server'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
 import { CATEGORY_META } from '@/lib/trivia/categories'
 import {
-  computeTrim,
+  CURRENT_MIGRATION_VERSION,
   ensureMigratedTriviaState,
   readTriviaState,
-  trimRecentSeen,
 } from '@/lib/trivia/triviaState'
 
 export interface SamplerOptions {
@@ -76,6 +75,11 @@ function buildCandidateQuery(
   type: 'free-text',
   categoryIds: number[] | undefined,
 ): FirebaseFirestore.Query {
+  // `status == 'active'` is the flag filter: when any user flags a
+  // question, the flag route flips status to 'flagged' atomically with
+  // creating the flag doc (see api/v1/trivia/questions/[id]/flag/route).
+  // So this single equality filter excludes everything in any question's
+  // /flags subcollection without a separate read per candidate.
   let query: FirebaseFirestore.Query = db
     .collection('aiQuestions')
     .where('status', '==', 'active')
@@ -131,13 +135,15 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
   const { uid, streak, type = 'free-text', categoryIds } = options
   const db = getFirestoreDb()
 
-  // 1. Load the per-user state doc. Lazily migrate users who pre-date the
-  //    state doc (one-time full subcollection scan, then never again).
+  // 1. Load the per-user state doc. Lazily (re-)migrate users whose
+  //    state predates the current migration version — pays a one-time
+  //    full subcollection scan per migration bump, then every subsequent
+  //    /next is a single doc read.
   let state = await readTriviaState(uid)
-  if (state === null || state.migrated !== true) {
+  if (state === null || state.migrationVersion < CURRENT_MIGRATION_VERSION) {
     state = await ensureMigratedTriviaState(uid)
   }
-  const recentSeenSet = new Set(state.recentSeen)
+  const seenSet = new Set(state.recentSeen)
 
   // 2. Fetch a bounded candidate window around a random cursor instead of
   //    scanning the whole pool. Reads ~CANDIDATE_WINDOW docs regardless of
@@ -148,19 +154,12 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
   const candidates = await fetchCandidateWindow(query, CANDIDATE_WINDOW)
   if (candidates.length === 0) return null
 
-  // 3. Filter out questions the user has recently seen.
-  const unseen = candidates.filter((q) => !recentSeenSet.has(q.id))
+  // 3. Filter out every question this user has previously seen. The
+  //    state doc holds the full set, so this filter is exhaustive.
+  const unseen = candidates.filter((q) => !seenSet.has(q.id))
   if (unseen.length === 0) return null
 
-  // 4. Opportunistically trim recentSeen if it has grown past the cap. Use
-  //    arrayRemove (not overwrite) so concurrent writes in flight aren't
-  //    clobbered. Fire-and-forget; never blocks the response.
-  const evict = computeTrim(state.recentSeen)
-  if (evict !== null) {
-    void trimRecentSeen(uid, evict)
-  }
-
-  // 5. Bucket by difficulty
+  // 4. Bucket by difficulty
   const byDifficulty: Record<'easy' | 'medium' | 'hard', AIQuestion[]> = {
     easy: [],
     medium: [],
@@ -170,7 +169,7 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
     byDifficulty[q.difficulty].push(q)
   }
 
-  // 6. Determine which difficulty to pick from, weighted by streak
+  // 5. Determine which difficulty to pick from, weighted by streak
   const [easyW, mediumW, hardW] = getDifficultyWeights(streak)
 
   // Only include difficulty levels that have available questions
@@ -186,11 +185,11 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
     availableDifficulties.map((d) => d.weight)
   )
 
-  // 7. Within the chosen bucket, apply freshness bias (lower timesShown → higher weight)
+  // 6. Within the chosen bucket, apply freshness bias (lower timesShown → higher weight)
   const bucket = byDifficulty[chosenDifficulty]
   const bucketWeights = bucket.map((q) => freshnessWeight(q.timesShown))
 
-  // 8. Select one question
+  // 7. Select one question
   const selected = weightedRandom(bucket, bucketWeights)
 
   return selected

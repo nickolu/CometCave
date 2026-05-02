@@ -5,11 +5,12 @@ import { getFirestoreDb } from '@/lib/firebase/server'
 // Per-user hot-path state for the Infinite trivia sampler. Lives at
 // `users/{uid}/triviaInfiniteMeta/state` alongside `generationLimit`.
 //
-// Why this exists: the sampler needs to filter recently-seen questions
-// without scanning `users/{uid}/seenQuestions` on every /next, and the
-// warmer needs an unanswered-pool estimate without count() aggregations
-// per request. We mirror a bounded "recent" set + a monotonic seen
-// counter onto a single doc so /next reads are O(1) in user history.
+// Why this exists: the sampler needs to filter every previously-seen
+// question without scanning `users/{uid}/seenQuestions` on each /next,
+// and the warmer needs an unanswered-pool estimate without count()
+// aggregations per request. We mirror the full set of seen ids + a
+// monotonic counter onto a single doc so /next reads are O(1) in user
+// history.
 //
 // `seenQuestions` remains source of truth for analytics; this doc is a
 // denormalized cache of the bits the hot path needs.
@@ -17,55 +18,65 @@ import { getFirestoreDb } from '@/lib/firebase/server'
 export const TRIVIA_STATE_DOC_PATH = (uid: string) =>
   `users/${uid}/triviaInfiniteMeta/state`
 
-// Cap recentSeen at this length. Long enough to suppress repeats across
-// a typical session; short enough that the doc stays cheap to read.
-// Beyond this, the oldest entries are evicted; an extra-long-running
-// player may eventually see a question resurface — acceptable.
-export const MAX_RECENT_SEEN = 200
-
-// Slack before the sampler trims. Trimming on every read would thrash;
-// waiting until we're meaningfully over the cap amortizes the cost.
-const TRIM_SLACK = 50
+// Bump when the migration semantics change. Anything below this number
+// re-runs ensureMigratedTriviaState on the next /next.
+//   v1 — initial migration; capped recentSeen at 200, evicting older
+//        ids and letting them resurface (regression).
+//   v2 — store the full seen-id set so the filter is exhaustive.
+export const CURRENT_MIGRATION_VERSION = 2
 
 export interface TriviaState {
   recentSeen: string[]
   totalSeenCount: number
-  // Set true once we've migrated this user from full-subcollection scans.
-  migrated?: boolean
+  // Highest migration version this doc satisfies. Older docs (v1 only,
+  // which used the legacy `migrated: true` boolean) are treated as
+  // version 1 by readTriviaState and re-migrated to the current version.
+  migrationVersion: number
 }
 
 export async function readTriviaState(uid: string): Promise<TriviaState | null> {
   const db = getFirestoreDb()
   const snap = await db.doc(TRIVIA_STATE_DOC_PATH(uid)).get()
   if (!snap.exists) return null
-  const data = snap.data() as Partial<TriviaState>
+  const data = snap.data() as { recentSeen?: string[]; totalSeenCount?: number; migrationVersion?: number; migrated?: boolean }
+  // Legacy v1 docs only set `migrated: true`. Treat as version 1 so the
+  // sampler triggers a re-migration that fills in the rest of the seen ids.
+  const migrationVersion = typeof data.migrationVersion === 'number'
+    ? data.migrationVersion
+    : data.migrated === true ? 1 : 0
   return {
     recentSeen: data.recentSeen ?? [],
     totalSeenCount: data.totalSeenCount ?? 0,
-    migrated: data.migrated === true,
+    migrationVersion,
   }
 }
 
-// One-shot migration for users with a pre-existing `seenQuestions`
-// subcollection. Pays the full scan once per user, then every subsequent
-// /next reads only the state doc. Idempotent — setting `migrated: true`
-// prevents re-running.
+// One-shot migration: pulls every id from `seenQuestions` onto the state
+// doc so the sampler can filter exhaustively from a single read. Pays
+// the full subcollection scan once per user (or once per migration-
+// version bump); every subsequent /next is one doc read.
+//
+// Idempotent. Safe to call concurrently — last write wins, the result
+// is the same.
+//
+// Doc-size note: a typical user is well under 1 MiB even after years of
+// play (~25 bytes/id, ~30K ids = ~750 KB). If we ever need to support
+// users past that point, shard the array across `triviaInfiniteMeta/
+// seen-{n}` chunks.
 export async function ensureMigratedTriviaState(uid: string): Promise<TriviaState> {
   const db = getFirestoreDb()
   const ref = db.doc(TRIVIA_STATE_DOC_PATH(uid))
   const seenSnap = await db.collection(`users/${uid}/seenQuestions`).get()
-  const docs = seenSnap.docs
+  const recentSeen = seenSnap.docs.map((d) => d.id)
+  const totalSeenCount = recentSeen.length
 
-  const sorted = docs.slice().sort((a, b) => {
-    const ta = (a.data().at as FirebaseFirestore.Timestamp | undefined)?.toMillis() ?? 0
-    const tb = (b.data().at as FirebaseFirestore.Timestamp | undefined)?.toMillis() ?? 0
-    return ta - tb
-  })
-  const tail = sorted.slice(Math.max(0, sorted.length - MAX_RECENT_SEEN))
-  const recentSeen = tail.map((d) => d.id)
-  const totalSeenCount = docs.length
-
-  const state: TriviaState = { recentSeen, totalSeenCount, migrated: true }
+  const state: TriviaState = {
+    recentSeen,
+    totalSeenCount,
+    migrationVersion: CURRENT_MIGRATION_VERSION,
+  }
+  // `set` with `{ merge: true }` so we don't clobber any unrelated
+  // fields a future writer might add to the doc.
   await ref.set(state, { merge: true })
   return state
 }
@@ -92,33 +103,5 @@ export function buildMarkSeenWrite(
       recentSeen: FieldValue.arrayUnion(questionId),
       totalSeenCount: FieldValue.increment(1),
     },
-  }
-}
-
-// Returns the trimmed array if recentSeen has grown past MAX + slack;
-// returns null if no trim needed. The sampler calls this opportunistically
-// and writes back fire-and-forget. Concurrent arrayUnion writes from the
-// hot path are preserved across the trim window because we evict by value
-// (arrayRemove), not by overwriting the whole array.
-export function computeTrim(recentSeen: string[]): string[] | null {
-  if (recentSeen.length <= MAX_RECENT_SEEN + TRIM_SLACK) return null
-  const evictCount = recentSeen.length - MAX_RECENT_SEEN
-  return recentSeen.slice(0, evictCount)
-}
-
-// Fire-and-forget trim; never throws. Uses arrayRemove so concurrent
-// writes (which arrayUnion at the tail) are not clobbered.
-export async function trimRecentSeen(uid: string, evict: string[]): Promise<void> {
-  if (evict.length === 0) return
-  const db = getFirestoreDb()
-  try {
-    await db.doc(TRIVIA_STATE_DOC_PATH(uid)).update({
-      recentSeen: FieldValue.arrayRemove(...evict),
-    })
-  } catch (err) {
-    console.warn('[triviaState] trim failed', {
-      uid,
-      error: err instanceof Error ? err.message : String(err),
-    })
   }
 }
