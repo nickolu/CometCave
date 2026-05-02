@@ -89,21 +89,12 @@
     },
     {
       "id": "ai-2026-05-08-6",
-      "question": "What is the capital city of Japan?",
-      "difficulty": "easy",
+      "question": "What is the name of the highest point on the Pacific island nation of Nauru?",
+      "difficulty": "hard",
       "category": "Geography",
       "source": "ai",
-      "correctAnswer": "Tokyo",
-      "explanation": "Tokyo is the capital city of Japan and is known for its blend of modernity and traditional culture. It is one of the most populous and important cities in the world, serving as a major economic and cultural hub."
-    },
-    {
-      "id": "ai-2026-05-08-7",
-      "question": "Which river, considered the longest in Australia, has been extensively utilized for irrigation and water supply to support agricultural activities in the Murray-Darling Basin?",
-      "difficulty": "medium",
-      "category": "Geography",
-      "source": "ai",
-      "correctAnswer": "Murray River",
-      "explanation": "The Murray River is the longest river in Australia, stretching over 2,500 kilometers. It is a crucial component of the Murray-Darling Basin, which is one of the most productive agricultural regions in Australia, providing water for a variety of crops and supporting the livelihoods of many communities."
+      "correctAnswer": "Command Ridge",
+      "explanation": "Command Ridge is the highest point on Nauru, the world's smallest island nation, rising to about 71 meters above sea level. Its name reflects the island's strategic military significance during World War II, when it was occupied by Japanese forces. Nauru's relatively flat terrain makes this modest ridge its most elevated geographic feature."
     }
   ]
 }

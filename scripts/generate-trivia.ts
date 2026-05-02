@@ -11,8 +11,8 @@
 
 import fs from 'fs'
 import path from 'path'
-import { OpenAI } from 'openai'
-import { CATEGORIZED_SEEDS, MODIFIERS, getOpenTDBCategoryName } from '../src/app/trivia/data/seeds'
+import { getOpenTDBCategoryName } from '../src/app/trivia/data/seeds'
+import { generateInfiniteQuestion } from '../src/lib/trivia/generateQuestion'
 import type { DailyTrivia, TriviaQuestion } from '../src/app/trivia/models/question'
 
 // Resolve the project root (parent of scripts/)
@@ -24,10 +24,11 @@ const PROJECT_ROOT = process.cwd()
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-function parseArgs(): { days: number; start: string } {
+function parseArgs(): { days: number; start: string; regenAiOnly: boolean } {
   const args = process.argv.slice(2)
   let days = 30
   let start = getTodayPST()
+  let regenAiOnly = false
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--days' && args[i + 1]) {
@@ -36,10 +37,17 @@ function parseArgs(): { days: number; start: string } {
     } else if (args[i] === '--start' && args[i + 1]) {
       start = args[i + 1]
       i++
+    } else if (args[i] === '--regen-ai-only') {
+      // Patch existing daily JSON files in place: keep the OpenTDB
+      // questions, drop the existing AI question, generate a fresh
+      // one via the new pipeline, write back. Useful for refreshing
+      // the AI-generated slot after a generation-pipeline change
+      // without re-burning OpenTDB rate limit on the MC questions.
+      regenAiOnly = true
     }
   }
 
-  return { days, start }
+  return { days, start, regenAiOnly }
 }
 
 function getTodayPST(): string {
@@ -244,80 +252,32 @@ async function generateAIQuestion(
   dateStr: string,
   categoryId: number,
   categoryName: string,
-  openaiClient: OpenAI,
   questionIndex: { current: number }
 ): Promise<TriviaQuestion | null> {
-  const days = daysSinceEpoch(dateStr)
-  const seeds = CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]
-
-  // Pick seed and modifier deterministically using days-based index
-  const seedIndex = days % seeds.length
-  const modifierIndex = (days * 7 + 13) % MODIFIERS.length
-  const seedWord = seeds[seedIndex]
-  const modifier = MODIFIERS[modifierIndex]
-  const seedStr = `${seedWord} :: ${modifier}`
-
-  console.log(`  Generating AI question with seed: "${seedStr}"`)
+  console.log(`  Generating AI question via Infinite pipeline (category=${categoryId} difficulty=hard)`)
 
   try {
-    const response = await openaiClient.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a trivia question creator. Create a hard, specific trivia question with a clear factual answer. Return only valid JSON.',
-        },
-        {
-          role: 'user',
-          content: `Generate a hard trivia question about the topic: "${seedStr}"
-Category: ${categoryName}
-Date: ${dateStr}
-
-The question should:
-- Be specific enough that someone knowledgeable could guess the exact answer
-- Not mention the answer in the question text
-- Have a clear, specific correct answer (a name, date, number, place, or concept)
-- Be answerable without multiple choice options
-
-Return JSON in this exact format:
-{
-  "question": "Your trivia question here?",
-  "correct_answer": "The specific correct answer",
-  "explanation": "2-3 sentences explaining the answer and why it's interesting."
-}`,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 400,
-      response_format: { type: 'json_object' },
+    // Use the same Perplexity-grounded + Claude-construction +
+    // numeric-flip + difficulty-aware pipeline as Infinite Trivia.
+    // The pipeline picks its own seed + modifier internally (now
+    // difficulty-aware via seedsByDifficulty.json).
+    const generated = await generateInfiniteQuestion({
+      categoryId,
+      difficulty: 'hard',
     })
-
-    const content = response.choices[0]?.message?.content
-    if (!content) throw new Error('No content in OpenAI response')
-
-    const parsed = JSON.parse(content) as {
-      question: string
-      correct_answer: string
-      explanation: string
-    }
-
-    if (!parsed.question || !parsed.correct_answer) {
-      throw new Error('Missing required fields in AI response')
-    }
 
     const aiQuestion: TriviaQuestion = {
       id: `ai-${dateStr}-${questionIndex.current}`,
-      question: parsed.question,
+      question: generated.question,
       options: undefined,
       difficulty: 'hard',
       category: categoryName,
       source: 'ai',
-      correctAnswer: parsed.correct_answer,
-      explanation: parsed.explanation,
+      correctAnswer: generated.correctAnswer,
+      explanation: generated.explanation,
     }
     questionIndex.current++
-    console.log(`  AI question generated: "${parsed.question.slice(0, 60)}..."`)
+    console.log(`  AI question generated: "${generated.question.slice(0, 60)}..."`)
     return aiQuestion
   } catch (error) {
     console.error('  Failed to generate AI question:', error)
@@ -330,34 +290,84 @@ Return JSON in this exact format:
 // ────────────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const { days, start } = parseArgs()
+  const { days, start, regenAiOnly } = parseArgs()
 
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    console.error('ERROR: OPENAI_API_KEY environment variable is not set.')
+  // The new pipeline reads PERPLEXITY_API_KEY (preferred) and
+  // ANTHROPIC_API_KEY at call time; we sanity-check at least one is
+  // set so the script fails fast rather than mid-loop.
+  if (!process.env.PERPLEXITY_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    console.error(
+      'ERROR: Need PERPLEXITY_API_KEY or ANTHROPIC_API_KEY. Run via `yarn generate-trivia` (which loads .env.local), not raw node.'
+    )
     process.exit(1)
   }
-
-  const openaiClient = new OpenAI({ apiKey })
 
   const outputDir = path.join(PROJECT_ROOT, 'src/app/trivia/data/questions')
   fs.mkdirSync(outputDir, { recursive: true })
 
-  console.log(`Generating ${days} days of trivia questions starting from ${start}`)
+  if (regenAiOnly) {
+    console.log(`Regenerating AI question for ${days} day(s) starting ${start} (preserves OpenTDB questions)`)
+  } else {
+    console.log(`Generating ${days} days of trivia questions starting from ${start}`)
+  }
   console.log(`Output directory: ${outputDir}`)
   console.log('─'.repeat(60))
 
-  const results = {
-    generated: 0,
-    skipped: 0,
-    failed: 0,
-  }
+  const results = { generated: 0, skipped: 0, failed: 0 }
 
   for (let dayOffset = 0; dayOffset < days; dayOffset++) {
     const dateStr = addDays(start, dayOffset)
     const outputFile = path.join(outputDir, `${dateStr}.json`)
 
-    // Skip if file already exists (idempotent)
+    if (regenAiOnly) {
+      // Patch path: file MUST exist; we keep its OpenTDB questions
+      // and replace just the AI one. Skip dates that aren't already
+      // generated.
+      if (!fs.existsSync(outputFile)) {
+        console.log(`[${dayOffset + 1}/${days}] ${dateStr} — SKIP (no existing file to patch)`)
+        results.skipped++
+        continue
+      }
+
+      console.log(`[${dayOffset + 1}/${days}] ${dateStr}`)
+      try {
+        const existing: DailyTrivia = JSON.parse(fs.readFileSync(outputFile, 'utf-8'))
+        const opentdbOnly = existing.questions.filter((q) => q.source !== 'ai')
+        const questionIndex = { current: opentdbOnly.length }
+
+        const aiQuestion = await generateAIQuestion(
+          dateStr,
+          existing.categoryId,
+          existing.categoryName,
+          questionIndex
+        )
+
+        if (!aiQuestion) {
+          console.error(`  ERROR: AI generation returned null for ${dateStr}`)
+          results.failed++
+          continue
+        }
+
+        const updated: DailyTrivia = {
+          ...existing,
+          questions: [...opentdbOnly, aiQuestion],
+        }
+        fs.writeFileSync(outputFile, JSON.stringify(updated, null, 2), 'utf-8')
+        console.log(`  Patched AI question in ${path.basename(outputFile)}`)
+        results.generated++
+      } catch (error) {
+        console.error(`  ERROR patching ${dateStr}:`, error)
+        results.failed++
+      }
+
+      if (dayOffset < days - 1) {
+        await new Promise((r) => setTimeout(r, 500))
+      }
+      continue
+    }
+
+    // Standard path: full generation (OpenTDB + AI). Skip dates
+    // already generated to keep the script idempotent.
     if (fs.existsSync(outputFile)) {
       console.log(`[${dayOffset + 1}/${days}] ${dateStr} — SKIP (already exists)`)
       results.skipped++
@@ -374,24 +384,14 @@ async function main() {
     try {
       const questionIndex = { current: 0 }
 
-      // Fetch OpenTDB questions (3 easy, 2 medium, 1 hard)
       const opentdbQuestions = await fetchOpenTDBQuestions(dateStr, categoryId, questionIndex)
       console.log(`  OpenTDB: got ${opentdbQuestions.length}/6 questions`)
 
-      // Wait before AI call
       console.log('  Waiting 5.1s before AI question...')
       await new Promise((r) => setTimeout(r, 5100))
 
-      // Generate AI question
-      const aiQuestion = await generateAIQuestion(
-        dateStr,
-        categoryId,
-        categoryName,
-        openaiClient,
-        questionIndex
-      )
+      const aiQuestion = await generateAIQuestion(dateStr, categoryId, categoryName, questionIndex)
 
-      // Build questions array
       const allQuestions: TriviaQuestion[] = [...opentdbQuestions]
       if (aiQuestion) allQuestions.push(aiQuestion)
 
@@ -401,7 +401,6 @@ async function main() {
         continue
       }
 
-      // Build DailyTrivia object
       const dailyTrivia: DailyTrivia = {
         date: dateStr,
         categoryId,
@@ -409,7 +408,6 @@ async function main() {
         questions: allQuestions,
       }
 
-      // Write to file
       fs.writeFileSync(outputFile, JSON.stringify(dailyTrivia, null, 2), 'utf-8')
       console.log(`  Wrote ${allQuestions.length} questions to ${path.basename(outputFile)}`)
       results.generated++
@@ -418,7 +416,6 @@ async function main() {
       results.failed++
     }
 
-    // Brief pause between days to avoid hammering APIs
     if (dayOffset < days - 1) {
       await new Promise((r) => setTimeout(r, 1000))
     }

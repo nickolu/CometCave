@@ -89,21 +89,12 @@
     },
     {
       "id": "ai-2026-05-14-6",
-      "question": "Which racing video game series is known for its 'It's a me, Mario!' meme?",
-      "difficulty": "easy",
+      "question": "Launched in 1958, which British motorcycle — notable for being the smallest-engined model its manufacturer ever produced at just 250cc — bore a name evoking a royal anniversary celebration?",
+      "difficulty": "hard",
       "category": "Vehicles",
       "source": "ai",
-      "correctAnswer": "Mario Kart",
-      "explanation": "The Mario Kart series, featuring characters from the Mario franchise, is famous for its fun racing gameplay. The phrase 'It's a me, Mario!' is iconic and often associated with the character Mario, making it a popular meme among fans."
-    },
-    {
-      "id": "ai-2026-05-14-7",
-      "question": "Which automotive designer is credited with creating the iconic 1964 1/2 Ford Mustang?",
-      "difficulty": "medium",
-      "category": "Vehicles",
-      "source": "ai",
-      "correctAnswer": "Lee Iacocca",
-      "explanation": "Lee Iacocca was a key figure in the creation of the Ford Mustang, which was first introduced in 1964. His vision for a sporty yet affordable car helped revolutionize the automotive industry, leading to the Mustang becoming an enduring symbol of American automotive culture."
+      "correctAnswer": "Norton Jubilee",
+      "explanation": "The Norton Jubilee, introduced in 1958, was a lightweight twin-cylinder motorcycle with a 250cc engine — the smallest displacement Norton ever put into production. Its name referenced a celebratory milestone, fitting for a company with a long racing heritage. Despite its modest size, it represented Norton's attempt to compete in the growing commuter and lightweight bike market of the late 1950s."
     }
   ]
 }

@@ -89,21 +89,12 @@
     },
     {
       "id": "ai-2026-05-09-6",
-      "question": "Which Italian city is widely recognized as the birthplace of the Renaissance due to its significant cultural and artistic influence during the period?",
-      "difficulty": "easy",
+      "question": "Which ancient Indus Valley city, one of the largest urban centers of its civilization, is believed to have been rebuilt seven times as a result of catastrophic flooding?",
+      "difficulty": "hard",
       "category": "History",
       "source": "ai",
-      "correctAnswer": "Florence",
-      "explanation": "Florence is considered the cradle of the Renaissance, a period of great cultural change and achievement. It was home to influential figures such as Leonardo da Vinci, Michelangelo, and Dante Alighieri, and its patronage systems supported the flourishing of arts and sciences."
-    },
-    {
-      "id": "ai-2026-05-09-7",
-      "question": "Which Chinese dynasty was responsible for the design and expansion of the Silk Road, significantly enhancing trade and cultural exchange between the East and the West?",
-      "difficulty": "medium",
-      "category": "History",
-      "source": "ai",
-      "correctAnswer": "Han Dynasty",
-      "explanation": "The Han Dynasty, which lasted from 206 BCE to 220 CE, played a crucial role in establishing the Silk Road. The trade routes were expanded under their rule, promoting exchange of goods, ideas, and culture between China and other civilizations, such as those in the Middle East and Europe, profoundly impacting global history."
+      "correctAnswer": "Mohenjo-Daro",
+      "explanation": "Mohenjo-Daro, located in present-day Pakistan, was one of the most sophisticated cities of the ancient Indus Valley Civilization (c. 2500 BCE). Archaeological evidence suggests the city was rebuilt at least seven times, each time on top of flood debris left by the Indus River. This repeated reconstruction reflects both the city's vulnerability to flooding and the remarkable resilience and urban planning capabilities of its inhabitants."
     }
   ]
 }
