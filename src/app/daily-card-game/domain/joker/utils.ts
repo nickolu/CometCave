@@ -166,3 +166,36 @@ export const getRandomUncommonJoker = (
   })
   return filteredJokers[randomCardIndices[0]]
 }
+
+const isCommonPredicate: JokerPredicate = (joker: JokerDefinition): boolean => {
+  return joker.rarity === 'common'
+}
+
+export const getRandomCommonJoker = (
+  game: GameState,
+  seedSuffix: string = '',
+  allowDuplicates: boolean = false
+): JokerDefinition => {
+  const allJokers = Object.values(jokers)
+  const predicates: JokerPredicate[] = [isCommonPredicate]
+  if (!allowDuplicates) {
+    predicates.push(isNotOwnedPredicate)
+  }
+  const filteredJokers = allJokers.filter(joker =>
+    predicates.every(predicate => predicate(joker, game))
+  )
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'common',
+    seedSuffix,
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: filteredJokers.length - 1,
+    numberOfNumbers: 1,
+  })
+  return filteredJokers[randomCardIndices[0]]
+}

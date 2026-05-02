@@ -1,5 +1,5 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
-import { getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
+import { getRandomCommonJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 
 import { TagDefinition, TagType } from './types'
 
@@ -238,7 +238,26 @@ const topUp: TagDefinition = {
   name: 'Top-up',
   benefit: 'Create up to 2 Common Jokers (if you have space).',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const jokersToAdd = Math.min(2, ctx.game.maxJokers - ctx.game.jokers.length)
+        for (let i = 0; i < jokersToAdd; i++) {
+          const jokerDef = getRandomCommonJoker(ctx.game, String(i))
+          if (jokerDef) {
+            const jokerState = initializeJoker(jokerDef, ctx.game)
+            ctx.game.jokers.push(jokerState)
+          }
+        }
+        const topUpTag = ctx.game.tags.find(tag => tag.tagType === 'topUp')
+        if (topUpTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== topUpTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const speed: TagDefinition = {
@@ -312,6 +331,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   juggle,
   handy,
   garbage,
+  topUp,
 }
 
 /* Tags
