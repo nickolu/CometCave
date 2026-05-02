@@ -10,6 +10,7 @@ import {
   getRandomPlayingCardsWithFilters,
   initializePlayingCard,
 } from '@/app/daily-card-game/domain/playing-card/utils'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 
 import { SpectralCardDefinition, SpectralCardType } from './types'
@@ -128,7 +129,27 @@ const sigil: SpectralCardDefinition = {
   spectralType: 'sigil',
   name: 'Sigil',
   description: 'Converts all cards in hand to a single random suit.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades'] as const
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'sigil'])
+        const roll = getRandomNumberWithSeed(seed, 0, suits.length - 1)
+        const targetSuit = suits[roll]
+
+        for (const cardId of ctx.game.gamePlayState.handIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState || !('playingCardId' in cardState)) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (!cardDef) continue
+          cardState.playingCardId = `${cardDef.value}_${targetSuit}` as any
+        }
+      },
+    },
+  ],
 }
 
 const ouija: SpectralCardDefinition = {
@@ -285,6 +306,7 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   wraith,
   immolate,
   ectoplasm,
+  sigil,
 }
 
 /**
