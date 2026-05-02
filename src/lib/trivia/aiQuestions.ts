@@ -44,6 +44,10 @@ export interface AIQuestion {
   appVersion?: string
   models?: QuestionGenerationModels
   sourceUrl?: string
+  // Uniform [0,1) value assigned at write time so the sampler can pick a
+  // random window via `orderBy('random').startAt(r).limit(N)` instead of
+  // scanning the full pool on every /next.
+  random: number
 }
 
 export interface SeenQuestion {
@@ -52,8 +56,8 @@ export interface SeenQuestion {
 }
 
 export async function saveAIQuestion(
-  question: Omit<AIQuestion, 'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs' | 'likeCount' | 'dislikeCount'>
-): Promise<string> {
+  question: Omit<AIQuestion, 'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs' | 'likeCount' | 'dislikeCount' | 'random'>
+): Promise<AIQuestion> {
   const db = getFirestoreDb()
   const doc: AIQuestion = {
     ...question,
@@ -63,6 +67,7 @@ export async function saveAIQuestion(
     avgTimeMs: null,
     likeCount: 0,
     dislikeCount: 0,
+    random: Math.random(),
   }
   const ref = db.collection('aiQuestions').doc(question.id)
   // Firestore rejects `undefined` values; strip optional provenance fields
@@ -72,5 +77,5 @@ export async function saveAIQuestion(
     if (v !== undefined) cleaned[k] = v
   }
   await ref.set(cleaned)
-  return ref.id
+  return doc
 }

@@ -5,6 +5,7 @@ import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 import { getFirestoreDb } from '@/lib/firebase/server'
 import { getCategoryIdByName } from '@/lib/trivia/categories'
 import { type MedalEarned, detectMedalEarned } from '@/lib/trivia/medals'
+import { buildMarkSeenWrite } from '@/lib/trivia/triviaState'
 import { applyRunToAggregate } from '@/lib/trivia/triviaStats'
 
 export interface RunDoc {
@@ -138,8 +139,13 @@ export async function submitAnswer(params: {
 
     tx.update(questionRef, qUpdates)
 
-    // Write seenQuestions
+    // Write seenQuestions (source of truth for analytics)
     tx.set(seenRef, { at: now, correct })
+
+    // Mirror onto the per-user state doc so the sampler doesn't have to
+    // scan the seenQuestions subcollection on every /next.
+    const markSeen = buildMarkSeenWrite(uid, questionId)
+    tx.set(markSeen.ref, markSeen.data, { merge: true })
 
     // Write answeredBy reverse index
     tx.set(answeredByRef, { uid, runId, correct, at: now })
@@ -249,6 +255,8 @@ export async function recordSkip(uid: string, runId: string, questionId: string)
       correct: false,
       skipped: true,
     })
+    const markSeen = buildMarkSeenWrite(uid, questionId)
+    await markSeen.ref.set(markSeen.data, { merge: true })
   }
 }
 

@@ -3,8 +3,14 @@
  * Backfill new infinite-mode fields onto existing aiQuestions documents.
  *
  * For each doc in the `aiQuestions` collection that is missing any of the new
- * fields (status, timesShown, timesCorrect, flaggedCount, avgTimeMs), this
- * script sets sensible defaults using batched writes.
+ * fields (status, timesShown, timesCorrect, flaggedCount, avgTimeMs, random),
+ * this script sets sensible defaults using batched writes.
+ *
+ * `random` is a uniform [0,1) value the sampler uses to draw a small candidate
+ * window via `orderBy('random').startAt(r).limit(N)` instead of scanning the
+ * full pool. Each missing doc gets a fresh Math.random() — must be set before
+ * the new sampler ships, since `orderBy('random')` excludes docs without the
+ * field.
  *
  * Idempotent — safe to re-run. Docs that already have all fields are skipped.
  *
@@ -18,7 +24,7 @@
  */
 
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
-import { getFirestore, WriteBatch } from 'firebase-admin/firestore'
+import { WriteBatch, getFirestore } from 'firebase-admin/firestore'
 
 const BATCH_SIZE = 400 // Firestore max is 500; stay well under
 
@@ -59,14 +65,20 @@ async function main() {
 
   for (const doc of snap.docs) {
     const data = doc.data()
-    const missing: Partial<typeof DEFAULTS> = {}
+    const missing: Record<string, unknown> = {}
 
     for (const [field, defaultValue] of Object.entries(DEFAULTS) as Array<
       [keyof typeof DEFAULTS, (typeof DEFAULTS)[keyof typeof DEFAULTS]]
     >) {
       if (!(field in data)) {
-        ;(missing as Record<string, unknown>)[field] = defaultValue
+        missing[field] = defaultValue
       }
+    }
+
+    // `random` needs a fresh draw per doc, so it lives outside the
+    // static DEFAULTS map. Skipped if the field already exists.
+    if (!('random' in data)) {
+      missing.random = Math.random()
     }
 
     if (Object.keys(missing).length === 0) {
@@ -74,7 +86,7 @@ async function main() {
       continue
     }
 
-    batch.update(doc.ref, missing)
+    batch.update(doc.ref, missing as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>)
     batchCount++
     updatedTotal++
 
