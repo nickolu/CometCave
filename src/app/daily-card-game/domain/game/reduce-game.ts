@@ -2,7 +2,7 @@ import { produce } from 'immer'
 
 import { dispatchEffects } from '@/app/daily-card-game/domain/events/dispatch-effects'
 import type { GameEvent } from '@/app/daily-card-game/domain/events/types'
-import { dealCardsFromDrawPile } from '@/app/daily-card-game/domain/game/card-registry-utils'
+import { dealCardsFromDrawPile, updateCard } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
 
 import { HAND_SIZE } from './constants'
@@ -119,7 +119,19 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
 
       case 'HAND_DEALT': {
         if (draft.gamePlayState.handIds.length) return
-        dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
+        const dealtCardIds = dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
+
+        const currentRound = draft.rounds[draft.roundIndex]
+        const isTheHouseFirstHand =
+          currentRound.bossBlindName === 'The House' &&
+          currentRound.bossBlind.status === 'inProgress' &&
+          draft.handsPlayed === 0
+
+        if (isTheHouseFirstHand) {
+          dealtCardIds.forEach(cardId => {
+            updateCard(draft, cardId, { isFaceUp: false })
+          })
+        }
         return
       }
       case 'CARD_SELECTED': {

@@ -100,6 +100,18 @@ const thePillar: BossBlindDefinition = {
   ],
 }
 
+const theHouse: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The House',
+  description: 'First hand is drawn face down',
+  image: 'the-house.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [],
+}
+
 const theSerpent: BossBlindDefinition = {
   type: 'bossBlind',
   status: 'notStarted',
@@ -112,7 +124,7 @@ const theSerpent: BossBlindDefinition = {
   effects: [],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent]
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theHouse, theSerpent]
 
 /**
  
