@@ -72,7 +72,28 @@ const polychrome: TagDefinition = {
   benefit:
     'The next base edition Joker you find in a Shop becomes Polychrome (X1.5 Mult) and free.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const randomJoker = getRandomCommonJoker(ctx.game, 'polychrome')
+        if (randomJoker) {
+          const jokerState = initializeJoker(randomJoker, ctx.game)
+          jokerState.edition = 'polychrome'
+          ctx.game.shopState.guaranteedForSaleItems.push({
+            type: 'jokerCard',
+            card: jokerState,
+            price: 0,
+          })
+        }
+        const polyTag = ctx.game.tags.find(tag => tag.tagType === 'polychrome')
+        if (polyTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== polyTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const investment: TagDefinition = {
@@ -384,6 +405,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   orbital,
   investment,
   boss,
+  polychrome,
 }
 
 /* Tags
