@@ -89,21 +89,12 @@
     },
     {
       "id": "ai-2026-05-04-6",
-      "question": "What is the name of the infamous software bug that caused a rocket to explode just 37 seconds after launch in 1996?",
-      "difficulty": "easy",
+      "question": "A language model is trained exclusively on human-verified mathematical solutions and fine-tuned using a reward signal derived from human preference rankings of its outputs. Compared to a base language model, what specific kind of model results when this human-feedback-driven training loop is applied to steer the model away from narrative responses and toward precise, correct numerical answers?",
+      "difficulty": "hard",
       "category": "Science: Computers",
       "source": "ai",
-      "correctAnswer": "Ariane 5",
-      "explanation": "The Ariane 5 rocket explosion was caused by a software error related to the conversion of a 64-bit floating point number to a 16-bit integer, which led to an overflow. This incident highlights the critical importance of software reliability in aerospace engineering."
-    },
-    {
-      "id": "ai-2026-05-04-7",
-      "question": "Which significant event in internet history, often referred to as the 'dot-com bubble', reached its peak in March 2000 before a dramatic fall?",
-      "difficulty": "medium",
-      "category": "Science: Computers",
-      "source": "ai",
-      "correctAnswer": "Dot-com crash",
-      "explanation": "The dot-com crash, also known as the dot-com bubble, was a period of excessive speculation in internet-based companies during the late 1990s. This bubble peaked in March 2000 when many of these internet companies saw their stock prices skyrocket, only to crash dramatically in subsequent months, leading to significant financial losses and marking a pivotal moment in internet history."
+      "correctAnswer": "RLHF-enhanced model",
+      "explanation": "Reinforcement Learning from Human Feedback (RLHF) is a fine-tuning technique where human evaluators rank model outputs to train a reward model, which then guides the language model toward preferred behaviors. When this feedback loop is applied using human-verified mathematical solutions as training data, the resulting RLHF-enhanced model learns to prioritize arithmetic correctness over verbose, narrative-style answers. This alignment approach underpins systems like InstructGPT and is a cornerstone of modern LLM alignment research."
     }
   ]
 }

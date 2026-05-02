@@ -89,21 +89,12 @@
     },
     {
       "id": "ai-2026-05-12-6",
-      "question": "Which Hollywood actress is famously known for her rule of not working on weekends?",
-      "difficulty": "easy",
+      "question": "The pioneering Black supermodel whose full legal name was Peggy Anne Donyale Aragonea Peugot Luna is known professionally by what name?",
+      "difficulty": "hard",
       "category": "Celebrities",
       "source": "ai",
-      "correctAnswer": "Jennifer Lopez",
-      "explanation": "Jennifer Lopez is known for her rule of not working on weekends, emphasizing the importance of work-life balance. This approach has allowed her to maintain her personal life while managing a successful career in the entertainment industry."
-    },
-    {
-      "id": "ai-2026-05-12-7",
-      "question": "Which fashion icon became the first Black woman to serve as the artistic director of a major French luxury fashion house in 2023?",
-      "difficulty": "medium",
-      "category": "Celebrities",
-      "source": "ai",
-      "correctAnswer": "Pharrell Williams",
-      "explanation": "Pharrell Williams, known for his influence in music and fashion, was appointed as the artistic director for menswear at Louis Vuitton in 2023. This marked a significant milestone in the fashion industry as he became the first Black woman to hold such a prestigious position at a major French luxury brand, showcasing the increasing diversity in fashion leadership."
+      "correctAnswer": "Donyale Luna",
+      "explanation": "Donyale Luna, born Peggy Anne Donyale Aragonea Peugot Luna, was a groundbreaking model who in 1966 became the first Black woman to appear on the cover of British Vogue. She rose to international fame in the 1960s and worked with legendary photographers such as Richard Avedon and David Bailey. Her exotic stage name, drawn from her middle names, became iconic in the fashion world."
     }
   ]
 }

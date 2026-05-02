@@ -89,21 +89,12 @@
     },
     {
       "id": "ai-2026-05-11-6",
-      "question": "In photography, what term describes the difference in luminance or color that makes an object distinguishable from other objects and the background?",
-      "difficulty": "easy",
+      "question": "Which Picasso lithograph uses the imagery of a dark vessel and a human skull to explore the fleeting nature of worldly pleasures alongside the inevitability of death?",
+      "difficulty": "hard",
       "category": "Art",
       "source": "ai",
-      "correctAnswer": "Contrast",
-      "explanation": "Contrast in photography is the distinction between the brightest and darkest parts of an image. It is a critical element in creating depth, texture, and emphasis in photographs, helping to highlight the image's subject and mood."
-    },
-    {
-      "id": "ai-2026-05-11-7",
-      "question": "Which digital art cliche involves the overuse of neon color palettes and retro-futuristic aesthetics reminiscent of 1980s pop culture?",
-      "difficulty": "medium",
-      "category": "Art",
-      "source": "ai",
-      "correctAnswer": "Vaporwave",
-      "explanation": "Vaporwave is a subgenre of digital art and music that emerged in the early 2010s, characterized by its nostalgic blend of 1980s and 1990s aesthetics. It often features neon colors, glitch effects, and surreal imagery, making it a popular yet cliche theme in digital art circles. Its appeal lies in its critique of consumer capitalism and its exploration of retrofuturism."
+      "correctAnswer": "Black Jug and Skull",
+      "explanation": "Pablo Picasso's lithograph \"Black Jug and Skull\" is a vanitas-style work that juxtaposes symbols of earthly enjoyment with mortality, a tradition rooted in classical still-life painting. The skull serves as a memento mori, reminding viewers of life's impermanence. Picasso revisited themes of death and time throughout his career, and this piece is a striking example of his engagement with that tradition."
     }
   ]
 }
