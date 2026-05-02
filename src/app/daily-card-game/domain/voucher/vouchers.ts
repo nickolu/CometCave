@@ -225,8 +225,7 @@ export const grabber: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'grabber' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement grabber effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxHands += 1
       },
     },
   ],
@@ -242,8 +241,7 @@ export const nachoTong: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'nachoTong' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement nacho tong effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxHands += 1
       },
     },
   ],
@@ -259,8 +257,7 @@ export const wasteful: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'wasteful' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement wasteful effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxDiscards += 1
       },
     },
   ],
@@ -276,8 +273,7 @@ export const recyclomancy: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'recyclomancy' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement recyclomancy effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxDiscards += 1
       },
     },
   ],
