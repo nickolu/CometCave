@@ -84,9 +84,6 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
     for (const item of draft.shopState.cardsForSale) {
       item.price = 0
     }
-    for (const pack of draft.shopState.packsForSale) {
-      pack.price = 0
-    }
     draft.tags = draft.tags.filter(t => t.id !== couponTag.id)
   }
 }
