@@ -174,7 +174,19 @@ const juggle: TagDefinition = {
   name: 'Juggle',
   benefit: '+3 Hand Size for the next round only.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.handSizeModifier += 3
+        const juggleTag = ctx.game.tags.find(tag => tag.tagType === 'juggle')
+        if (juggleTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== juggleTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const d6: TagDefinition = {
@@ -273,6 +285,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   d6,
   coupon,
   economy,
+  juggle,
 }
 
 /* Tags
