@@ -2069,6 +2069,11 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.9.1.tgz#c1b0346de336ba55af2d5a7970882037baedec05"
   integrity sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q==
 
+"@perplexity-ai/perplexity_ai@^0.27.0":
+  version "0.27.0"
+  resolved "https://registry.yarnpkg.com/@perplexity-ai/perplexity_ai/-/perplexity_ai-0.27.0.tgz#e98e52764ba13c087d6fd2c0f0a970551f741b96"
+  integrity sha512-iavFLkvSjuja81lSat6+Ewq1aDcxi5kierzhfcet9t2sKlsAXS208Nf+JcXzskquZlHkana3Impn69oMNYpg/w==
+
 "@pixi/colord@^2.9.6":
   version "2.9.6"
   resolved "https://registry.npmjs.org/@pixi/colord/-/colord-2.9.6.tgz"
