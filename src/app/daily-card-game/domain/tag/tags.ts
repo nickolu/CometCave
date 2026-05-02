@@ -291,7 +291,19 @@ const meteor: TagDefinition = {
   name: 'Meteor',
   benefit: 'Immediately open a free Mega Celestial Pack.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const packDef = getPackDefinition('celestialCard', 'mega')
+        const pack = initializePackState(ctx.game, packDef)
+        ctx.game.shopState.packsForSale.push(pack)
+        const tag = ctx.game.tags.find(t => t.tagType === 'meteor')
+        if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
+      },
+    },
+  ],
 }
 
 const buffoon: TagDefinition = {
@@ -547,6 +559,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   double,
   standard,
   charm,
+  meteor,
 }
 
 /* Tags
