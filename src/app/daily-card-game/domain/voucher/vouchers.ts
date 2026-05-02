@@ -155,8 +155,7 @@ export const crystalBall: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'crystalBall' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement crystal ball effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.maxConsumables += 1
       },
     },
   ],
@@ -565,6 +564,7 @@ export const implementedVouchers: VoucherType[] = [
   'retcon',
   'paintBrush',
   'palette',
+  'crystalBall',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
