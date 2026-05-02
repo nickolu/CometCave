@@ -56,7 +56,7 @@ export function collectEffects(game: GameState): Effect[] {
   effects.push(
     ...game.jokers
       .filter(joker => joker.isFaceUp)
-      .flatMap(j => jokers[j.jokerId]?.effects || [])
+      .flatMap(j => (jokers[j.jokerId]?.effects || []).map(effect => ({ ...effect, source: j.id })))
   )
 
   effects.push(...game.vouchers.flatMap(v => vouchers[v.type]?.effects || []))

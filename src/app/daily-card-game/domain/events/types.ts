@@ -1,6 +1,6 @@
 import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
 import type { GameState, ScoreState } from '@/app/daily-card-game/domain/game/types'
-import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
+import type { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
 import type { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import type { BlindState, RoundState } from '@/app/daily-card-game/domain/round/types'
 import type { TagState } from '@/app/daily-card-game/domain/tag/types'
@@ -241,6 +241,7 @@ export interface EffectContext {
 export interface Effect {
   event: GameEvent
   priority: number
+  source?: JokerDefinition['id']
   condition?: (ctx: EffectContext) => boolean
   apply: (ctx: EffectContext) => void
 }

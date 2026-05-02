@@ -6,6 +6,10 @@ export function dispatchEffects(event: GameEvent, ctx: EffectContext, effects: E
     .sort((a, b) => a.priority - b.priority)
 
   for (const effect of matching) {
+    if (effect.source) {
+      const sourceJoker = ctx.game.jokers.find(joker => joker.id === effect.source)
+      if (!sourceJoker?.isFaceUp) continue
+    }
     if (effect.condition && !effect.condition(ctx)) continue
     effect.apply(ctx)
   }
