@@ -154,7 +154,19 @@ const garbage: TagDefinition = {
   name: 'Garbage',
   benefit: 'Gain $1 for each unused discard this run.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.money += ctx.game.gamePlayState.remainingDiscards
+        const garbageTag = ctx.game.tags.find(tag => tag.tagType === 'garbage')
+        if (garbageTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== garbageTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const ethereal: TagDefinition = {
@@ -299,6 +311,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   economy,
   juggle,
   handy,
+  garbage,
 }
 
 /* Tags
