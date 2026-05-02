@@ -192,8 +192,7 @@ export const telescope: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'telescope' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement telescope effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.staticRules.telescopeActive = true
       },
     },
   ],
@@ -571,6 +570,7 @@ export const implementedVouchers: VoucherType[] = [
   'glowUp',
   'tarotMerchant',
   'tarotTycoon',
+  'telescope',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
