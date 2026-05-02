@@ -48,7 +48,11 @@ const MAX_GENERATION_ATTEMPTS = 3
 const MAX_REPAIRS_PER_DRAFT = 2
 
 const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
-  easy: 'Should be answerable by a typical adult — common knowledge with maybe a slight twist. Avoid niche or insider framing. The kind of question someone could answer at a casual party trivia night.',
+  easy:
+    'Casual party-trivia bar. Two strict rules:\n' +
+    '1) The CORRECT ANSWER must be a name a typical adult would naturally produce — not a specialist label for a famous thing. If the fact\'s keyDetail is specialist (e.g. "Atomic Bomb Dome" for the Hiroshima memorial, "Genbaku Dome", "modal interchange" for the music idea, "Constantine the Great" when "Constantine" is what most people would type), the question is NOT easy as-is. Either repoint to ask about a more universally recognizable element of the same fact (e.g. "Which Japanese city was destroyed by the first wartime atomic bomb?" → "Hiroshima"), or skip this fact.\n' +
+    '2) The correct answer must NOT be a fragile string-form (e.g. "Lifetime Achievement Grammy Award" when "Lifetime Achievement Award" is what a casual player would type). Prefer answers a casual player would type without overthinking.\n' +
+    'Test: would 70%+ of casual players (no special interest in the topic) produce the exact correct_answer string from this question? If no, it\'s not easy.',
   medium:
     'Should require some specific knowledge — harder than common knowledge but still in reach for someone who follows the category casually. Not deep cuts.',
   hard: 'Should require real, specific knowledge of the topic — challenging but fair. Genuine deep cuts welcome here.',
@@ -178,10 +182,23 @@ Rules:
     "Which Terry Pratchett fantasy series consists of 41 novels?" → "Discworld" — GOOD
 - The question must ask specifically for the keyDetail (or your repointed answer).
 - The question must NOT contain the answer or a synonym/translation of it.
-- The correct_answer must equal the keyDetail or a clear variant.
+- The correct_answer must equal the keyDetail or a clear variant. EXCEPTION: for EASY difficulty, if the keyDetail is a specialist label, you MAY repoint to a more universally recognizable element of the same fact (see EASY-DIFFICULTY REPOINT below).
 - The explanation may elaborate beyond the fact (2-3 sentences).
 - Stay in the "${ctx.categoryName}" category. Do not drift.
 - Free-text answer; this is NOT a multiple-choice question.
+
+${ctx.difficulty === 'easy' ? `EASY-DIFFICULTY REPOINT (only when difficulty is EASY):
+If the keyDetail is a specialist label that a casual player wouldn\'t produce on their own — e.g. the building name "Atomic Bomb Dome" for Hiroshima, the term "modal interchange" for the music idea, the regnal name "Constantine the Great" when "Constantine" is the casual form — REPOINT the question. Ask about a more universally recognizable element of the same fact (the city, the artist, the work, the era), and set correct_answer to that. The specialist label can stay in the explanation. Do not ship an EASY question whose answer is a specialist string.
+
+Examples of the easy repoint:
+  fact="The Atomic Bomb Dome in Hiroshima was preserved as a memorial to the 1945 atomic bombing." keyDetail="Atomic Bomb Dome"
+    NAIVE: "Which UNESCO World Heritage Site in Hiroshima preserves a skeletal domed building from the 1945 blast?" → "Atomic Bomb Dome" — BAD for easy
+    REPOINTED: "Which Japanese city was destroyed by the first wartime atomic bomb in 1945?" → "Hiroshima" — GOOD for easy
+
+  fact="Earth, Wind & Fire received the Lifetime Achievement Grammy in 2012." keyDetail="Lifetime Achievement Grammy Award"
+    NAIVE: "What Grammy honor for body of work did Earth, Wind & Fire receive in 2012?" → "Lifetime Achievement Grammy Award" — BAD for easy (fragile string)
+    REPOINTED: "Which funk-soul group behind \\"September\\" and \\"Boogie Wonderland\\" received a 2012 Lifetime Achievement Grammy?" → "Earth, Wind & Fire" — GOOD for easy
+` : ''}
 
 Examples:
 
@@ -261,14 +278,18 @@ Rejected explanation: ${draft.explanation}
 Reviewer's rejection reason: ${rejectionReason}
 
 Rules for the fix:
-- Keep the SAME fact and the SAME keyDetail as the answer. Do not switch facts.
+- Keep the SAME fact (do not switch facts).
 - Address the rejection reason directly — if the reviewer said the answer was leaked, reword so the question describes the answer rather than naming it. If the reviewer said the answer was ambiguous, add identifying details that rule out alternatives.
-- The revised question must NOT contain the keyDetail or any obvious synonym of it.
+- The revised question must NOT contain the answer or any obvious synonym of it.
 - The revised question must have ONE unambiguous correct answer.
 - Stay in the "${draft.categoryName}" category.
 - Free-text answer (not multiple choice).
+- Default: keep the SAME keyDetail as the answer. EXCEPTIONS where you SHOULD change the correct_answer to a different element of the same fact:
+  · The reviewer flagged a "easy-difficulty misfit" or "specialist answer" — repoint to a more universally recognizable element (the city/artist/work/era the fact is about). Put the specialist label INTO the question as a clue.
+  · The reviewer flagged a numeric/date answer — repoint to a NAMED entity from the fact, putting the number into the question as a clue.
+  In both cases, the new correct_answer must still be supported by the source fact above.
 
-Output the revised question, the correct_answer (still equivalent to the keyDetail), and an explanation. If you genuinely cannot fix this fact's question without changing the answer, output your best attempt — we will fall through to a fresh fact.`,
+${draft.difficulty === 'easy' ? `For EASY questions specifically: the correct_answer must be a string a casual party-trivia player would naturally produce. Specialist labels ("Atomic Bomb Dome" instead of "Hiroshima"; "Constantine the Great" instead of "Constantine"; "Lifetime Achievement Grammy Award" instead of "Lifetime Achievement Award") are unacceptable for easy. If the source fact's keyDetail is specialist, repoint per the exception above.\n\n` : ''}Output the revised question, the correct_answer, and an explanation. If you genuinely cannot fix this fact's question, output your best attempt — we will fall through to a fresh fact.`,
     temperature: 0.4,
     maxTokens: 600,
   })
@@ -396,6 +417,7 @@ async function reviewQuestion(
 
 Question: ${draft.question}
 Expected answer: ${draft.correct_answer}
+Difficulty target: ${draft.difficulty.toUpperCase()}
 
 (Source fact and explanation withheld so they cannot be confused with the question text.)
 
@@ -408,6 +430,12 @@ Reject the question ONLY if one of these is true:
 - The question is nonsensical, broken, or self-contradicting.
 - The "expected answer" doesn't actually answer the question.
 - The question doesn't belong to category "${draft.categoryName}" — pick the best fit from: ${KNOWN_CATEGORIES.join(', ')}
+${draft.difficulty === 'easy' ? `- DIFFICULTY MISFIT (EASY ONLY): The "Expected answer" is a string a casual party-trivia player would NOT naturally produce from this question. Examples that fail this check:
+    · Specialist labels for famous things ("Atomic Bomb Dome" instead of "Hiroshima"; "modal interchange" for the music idea; "Genbaku Dome").
+    · Regnal/full forms when a casual player would type the short form ("Constantine the Great" → most would type "Constantine"; "Pope John Paul II" is fine because that IS the casual form).
+    · Fragile multi-word strings the casual player would partially-match ("Lifetime Achievement Grammy Award" — most would type "Lifetime Achievement Award").
+    · Deep-cut historical figures, scientific terms, building/work names that require category expertise.
+  Test: would 70%+ of casual players (no special interest in this category) produce the EXACT "Expected answer" string from this question? If no, reject with reason "easy-difficulty misfit: <one phrase on what makes the answer too specialist>".` : ''}
 
 Set accept=true if all checks pass. If you reject, give a one-sentence rejection_reason naming the specific failure. inferred_category is the category you think the question best belongs to.`,
     temperature: 0,
@@ -535,16 +563,20 @@ export async function generateInfiniteQuestion(
     let acceptedReview: ReviewResult | null = null
 
     for (let repair = 0; repair <= MAX_REPAIRS_PER_DRAFT; repair++) {
-      // Deterministic pre-check: if the question echoes the keyDetail
+      // Deterministic pre-check: if the question echoes the answer
       // verbatim, attempt repair without paying for a reviewer call.
-      if (detectAnswerLeak(draft.question, fact.keyDetail)) {
-        const reason = `Question contains the answer "${fact.keyDetail}" verbatim. Reword so the question describes the answer rather than naming it.`
+      // We check against draft.correct_answer (not fact.keyDetail) so
+      // intentional repoints — numeric flips, easy-difficulty repoints —
+      // can put the original keyDetail into the question as a CLUE
+      // without spurious leak rejection.
+      if (detectAnswerLeak(draft.question, draft.correct_answer)) {
+        const reason = `Question contains the answer "${draft.correct_answer}" verbatim. Reword so the question describes the answer rather than naming it.`
         lastReason = `pre-check leak: ${reason}`
         console.warn('[generateInfiniteQuestion] draft rejected (pre-check)', {
           attempt,
           repair,
           category: categoryName,
-          keyDetail: fact.keyDetail,
+          correctAnswer: draft.correct_answer,
           question: draft.question,
         })
         if (repair < MAX_REPAIRS_PER_DRAFT) {
