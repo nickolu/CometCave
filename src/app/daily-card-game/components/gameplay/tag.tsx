@@ -1,6 +1,6 @@
-import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { TokenCard } from '@/app/daily-card-game/components/cosmic/token-card'
 import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
-import { TagState } from '@/app/daily-card-game/domain/tag/types'
+import type { TagState } from '@/app/daily-card-game/domain/tag/types'
 
 export const Tag = ({
   tag,
@@ -11,34 +11,41 @@ export const Tag = ({
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
-  const tagDefinition = tags[tag.tagType]
-  if (!tagDefinition) {
+  const def = tags[tag.tagType]
+  if (!def) {
     return (
-      <GameCard>
-        <div className={'px-1 h-full '}>
-          <div>
-            <h3 className="text-sm font-bold">Not Implemented</h3>
-            <p className="text-xs text-muted-foreground">This tag has not yet been implemented.</p>
-          </div>
-        </div>
-      </GameCard>
+      <TokenCard
+        title="Not Implemented"
+        description="This tag has not yet been implemented."
+        glyph="◉"
+        accent="var(--cc-mint)"
+        size="sm"
+        disabled
+      />
     )
   }
   return (
-    <GameCard
-      onClick={() => {
-        onClick?.(isSelected ?? false, tag.id)
-      }}
-    >
-      <div className={'px-1 h-full '}>
-        <div>
-          <h3 className="text-sm font-bold">{tagDefinition.name}</h3>
-          <p className="text-xs text-muted-foreground">{tagDefinition.benefit}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Min Ante: {tagDefinition.minimumAnte}
-          </p>
+    <TokenCard
+      title={def.name}
+      description={def.benefit}
+      glyph="◉"
+      accent="var(--cc-mint)"
+      selected={isSelected}
+      size="sm"
+      footer={
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 9,
+            letterSpacing: 1.5,
+            opacity: 0.6,
+          }}
+        >
+          Min ante {def.minimumAnte}
         </div>
-      </div>
-    </GameCard>
+      }
+      onClick={onClick ? () => onClick(isSelected ?? false, tag.id) : undefined}
+    />
   )
 }

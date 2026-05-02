@@ -222,6 +222,142 @@ body {
   }
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   Cosmic Cards palette — scoped to .cosmic-cards (daily card game)
+   Hand-crafted, surreal, cosmic. Mint accent + cosmic-glowing suits.
+   ─────────────────────────────────────────────────────────────────── */
+
+.cosmic-cards {
+  --cc-bg-deep: #02080a;
+  --cc-bg-grad-1: #0a1f1c;
+  --cc-bg-grad-2: #050d0e;
+  --cc-bg-grad-3: #02080a;
+
+  --cc-panel-grad-from: rgba(15, 30, 28, 0.7);
+  --cc-panel-grad-to: rgba(6, 15, 15, 0.7);
+  --cc-panel-border: rgba(94, 234, 212, 0.1);
+  --cc-panel-divider: rgba(94, 234, 212, 0.08);
+
+  --cc-text-default: #e6fff7;
+  --cc-text-muted: rgba(230, 255, 247, 0.65);
+
+  --cc-mint: #5eead4;
+  --cc-mint-hi: #2dd4bf;
+  --cc-mint-soft: rgba(94, 234, 212, 0.12);
+  --cc-mint-line: rgba(94, 234, 212, 0.15);
+  --cc-mint-glow: 0 0 20px rgba(94, 234, 212, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  --cc-pink: #ff6b9d;
+  --cc-pink-soft: rgba(255, 107, 157, 0.12);
+  --cc-pink-bg: rgba(255, 107, 157, 0.1);
+  --cc-pink-border: rgba(255, 107, 157, 0.35);
+  --cc-pink-glow: 0 0 24px rgba(255, 107, 157, 0.35);
+
+  --cc-gold: #ffd166;
+
+  --cc-on-mint: #031a16;
+  --cc-modal-bg-from: #0a1f1c;
+  --cc-modal-bg-to: #050d0e;
+  --cc-modal-border: rgba(94, 234, 212, 0.2);
+  --cc-modal-scrim: rgba(2, 8, 10, 0.75);
+
+  --cc-card-bg: linear-gradient(160deg, #0d1f1a 0%, #061712 60%, #03100d 100%);
+  --cc-card-border: rgba(94, 234, 212, 0.18);
+  --cc-card-shadow-base: 0 8px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(94, 234, 212, 0.08);
+  --cc-card-shadow-selected-tail: 0 16px 28px rgba(0, 0, 0, 0.7);
+  --cc-card-mini-bg: linear-gradient(155deg, #07120f, #0a1f1c);
+
+  --cc-card-hearts: #ff6b9d;
+  --cc-card-hearts-22: rgba(255, 107, 157, 0.13);
+  --cc-card-hearts-1f: rgba(255, 107, 157, 0.12);
+  --cc-card-hearts-1a: rgba(255, 107, 157, 0.10);
+  --cc-card-hearts-55: rgba(255, 107, 157, 0.33);
+  --cc-card-hearts-88: rgba(255, 107, 157, 0.53);
+
+  --cc-card-diamonds: #ffd166;
+  --cc-card-diamonds-22: rgba(255, 209, 102, 0.13);
+  --cc-card-diamonds-1f: rgba(255, 209, 102, 0.12);
+  --cc-card-diamonds-1a: rgba(255, 209, 102, 0.10);
+  --cc-card-diamonds-55: rgba(255, 209, 102, 0.33);
+  --cc-card-diamonds-88: rgba(255, 209, 102, 0.53);
+
+  --cc-card-spades: #e6e6f0;
+  --cc-card-spades-22: rgba(230, 230, 240, 0.13);
+  --cc-card-spades-1f: rgba(230, 230, 240, 0.12);
+  --cc-card-spades-1a: rgba(230, 230, 240, 0.10);
+  --cc-card-spades-55: rgba(230, 230, 240, 0.33);
+  --cc-card-spades-88: rgba(230, 230, 240, 0.53);
+
+  --cc-card-clubs: #5eead4;
+  --cc-card-clubs-22: rgba(94, 234, 212, 0.13);
+  --cc-card-clubs-1f: rgba(94, 234, 212, 0.12);
+  --cc-card-clubs-1a: rgba(94, 234, 212, 0.10);
+  --cc-card-clubs-55: rgba(94, 234, 212, 0.33);
+  --cc-card-clubs-88: rgba(94, 234, 212, 0.53);
+
+  --cc-rarity-uncommon: #63b3ff;
+
+  --cc-seal-blue: #63b3ff;
+  --cc-seal-purple: #c084fc;
+  --cc-seal-gold: #ffd166;
+  --cc-seal-red: #ff6b6b;
+
+  --cc-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Per-suit composite tokens. BrandCard uses data-suit to pick the right set. */
+.cosmic-cards [data-suit='hearts'] {
+  --cc-suit-color: var(--cc-card-hearts);
+  --cc-suit-22: var(--cc-card-hearts-22);
+  --cc-suit-1f: var(--cc-card-hearts-1f);
+  --cc-suit-1a: var(--cc-card-hearts-1a);
+  --cc-suit-55: var(--cc-card-hearts-55);
+  --cc-suit-88: var(--cc-card-hearts-88);
+}
+.cosmic-cards [data-suit='diamonds'] {
+  --cc-suit-color: var(--cc-card-diamonds);
+  --cc-suit-22: var(--cc-card-diamonds-22);
+  --cc-suit-1f: var(--cc-card-diamonds-1f);
+  --cc-suit-1a: var(--cc-card-diamonds-1a);
+  --cc-suit-55: var(--cc-card-diamonds-55);
+  --cc-suit-88: var(--cc-card-diamonds-88);
+}
+.cosmic-cards [data-suit='spades'] {
+  --cc-suit-color: var(--cc-card-spades);
+  --cc-suit-22: var(--cc-card-spades-22);
+  --cc-suit-1f: var(--cc-card-spades-1f);
+  --cc-suit-1a: var(--cc-card-spades-1a);
+  --cc-suit-55: var(--cc-card-spades-55);
+  --cc-suit-88: var(--cc-card-spades-88);
+}
+.cosmic-cards [data-suit='clubs'] {
+  --cc-suit-color: var(--cc-card-clubs);
+  --cc-suit-22: var(--cc-card-clubs-22);
+  --cc-suit-1f: var(--cc-card-clubs-1f);
+  --cc-suit-1a: var(--cc-card-clubs-1a);
+  --cc-suit-55: var(--cc-card-clubs-55);
+  --cc-suit-88: var(--cc-card-clubs-88);
+}
+
+.cosmic-cards .bc-card {
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2),
+    box-shadow 220ms,
+    border-color 220ms;
+  /* The Hand wrapper sets pointer-events:none so a lifted card's original
+     layout slot doesn't shadow its neighbour. Re-enable hits on the button
+     itself, whose hit-test area moves with its CSS transform. */
+  pointer-events: auto;
+}
+
+.cosmic-cards .bc-card:hover:not(:disabled):not([data-selected='true']) {
+  transform: translateY(-6px);
+}
+
+.cosmic-cards .bc-card[data-selected='true'] {
+  transform: translateY(var(--cc-card-lift, -16px));
+}
+
 /* When game is active on mobile, hide site chrome and fix scrolling */
 @media (max-width: 767px) {
   body.game-active header,

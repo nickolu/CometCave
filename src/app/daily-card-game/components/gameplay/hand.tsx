@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { getHand } from '@/app/daily-card-game/domain/game/card-registry-utils'
@@ -8,74 +8,94 @@ import { cardValuePriority } from '@/app/daily-card-game/domain/hand/constants'
 import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/daily-card-game/domain/playing-card/types'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { cn } from '@/lib/utils'
 
 import { PlayingCard } from './playing-card'
 
-export const Hand = () => {
-  const [sortKey, setSortKey] = useState<'value' | 'suit'>('value')
+const CARD_W = 92
+const OVERLAP = 48
+
+export type HandSortKey = 'value' | 'suit'
+
+export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
   const { game } = useGameState()
   const { gamePlayState } = game
   const { selectedCardIds } = gamePlayState
   const dealtCards = getHand(game)
 
-  const sortedCards: PlayingCardState[] | undefined = useMemo(() => {
-    return (
-      [...dealtCards].sort((a, b) => {
-        if (sortKey === 'value') {
-          return (
-            cardValuePriority[playingCards[b.playingCardId]?.value] -
-            cardValuePriority[playingCards[a.playingCardId]?.value]
-          )
-        }
-        return playingCards[a.playingCardId]?.suit.localeCompare(
-          playingCards[b.playingCardId]?.suit
+  const sortedCards: PlayingCardState[] = useMemo(() => {
+    return [...dealtCards].sort((a, b) => {
+      if (sortKey === 'value') {
+        return (
+          cardValuePriority[playingCards[b.playingCardId]?.value] -
+          cardValuePriority[playingCards[a.playingCardId]?.value]
         )
-      }) ?? undefined
-    )
+      }
+      const suitCompare = playingCards[a.playingCardId]?.suit.localeCompare(
+        playingCards[b.playingCardId]?.suit
+      )
+      if (suitCompare !== 0) return suitCompare
+      return (
+        cardValuePriority[playingCards[b.playingCardId]?.value] -
+        cardValuePriority[playingCards[a.playingCardId]?.value]
+      )
+    })
   }, [dealtCards, sortKey])
 
+  const fanWidth = sortedCards.length
+    ? CARD_W + (sortedCards.length - 1) * (CARD_W - OVERLAP)
+    : CARD_W
+  const half = sortedCards.length / 2
+
   return (
-    <>
-      <div>
-        <div className="flex flex-wrap gap-2 w-full justify-start">
-          {sortedCards?.map((card: PlayingCardState) => (
+    <div
+      className="relative mx-auto"
+      style={
+        {
+          width: fanWidth,
+          height: 160,
+          perspective: 1200,
+          paddingTop: 14,
+          // Selected cards lift fully above the resting row instead of overlapping.
+          ['--cc-card-lift' as string]: '-160px',
+        } as React.CSSProperties
+      }
+    >
+      {sortedCards.map((card, i) => {
+        const isSelected = selectedCardIds.includes(card.id)
+        const offsetFromCenter = i - half + 0.5
+        const arcY = Math.abs(offsetFromCenter) * 3
+        const rotation = offsetFromCenter * 2
+        return (
+          <div
+            key={card.id}
+            style={{
+              position: 'absolute',
+              left: i * (CARD_W - OVERLAP),
+              top: 14 + arcY,
+              transform: `rotateZ(${rotation}deg)`,
+              transition: 'transform 300ms, top 300ms',
+              zIndex: isSelected ? 20 : i,
+              // Wrapper doesn't capture clicks — the inner BrandCard button
+              // does, at its translated position. Without this, a selected
+              // card's wrapper stays in the original layout slot and shadows
+              // its neighbour.
+              pointerEvents: 'none',
+            }}
+          >
             <PlayingCard
-              key={card.id}
               playingCard={card}
-              isSelected={selectedCardIds.includes(card.id)}
-              onClick={(isSelected, id) => {
-                if (isSelected) {
+              isSelected={isSelected}
+              onClick={(wasSelected, id) => {
+                if (wasSelected) {
                   eventEmitter.emit({ type: 'CARD_DESELECTED', id })
                 } else {
                   eventEmitter.emit({ type: 'CARD_SELECTED', id })
                 }
               }}
             />
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 w-full justify-start mt-2">
-          Sort By:{' '}
-          <span
-            className={cn(
-              'cursor-pointer text-underline inline-block',
-              sortKey === 'value' ? 'text-white font-bold' : 'text-space-gray'
-            )}
-            onClick={() => setSortKey('value')}
-          >
-            Value
-          </span>
-          <span
-            className={cn(
-              'cursor-pointer text-underline inline-block',
-              sortKey === 'suit' ? 'text-white font-bold' : 'text-space-gray'
-            )}
-            onClick={() => setSortKey('suit')}
-          >
-            Suit
-          </span>
-        </div>
-      </div>
-    </>
+          </div>
+        )
+      })}
+    </div>
   )
 }

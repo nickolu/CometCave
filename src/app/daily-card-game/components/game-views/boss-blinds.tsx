@@ -1,13 +1,15 @@
 import { BlindCard } from '@/app/daily-card-game/components/blind-selection/blind-card'
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
+import { ReferenceView } from '@/app/daily-card-game/components/cosmic/reference-view'
 import { bossBlinds } from '@/app/daily-card-game/domain/round/boss-blinds'
-import { Button } from '@/components/ui/button'
 
 export const BossBlindsView = () => {
   return (
-    <div className="flex flex-col items-center mt-10 w-3/4 mx-auto">
-      <h1 className="text-2xl font-bold">Boss Blinds</h1>
-      <div className="flex flex-wrap justify-center gap-2 mt-4 mx-auto">
+    <ReferenceView
+      eyebrow="Reference"
+      title="Boss Blinds"
+      description="The third blind of every round. Each warps a different rule."
+    >
+      <div className="flex flex-wrap gap-4">
         {bossBlinds.map(bossBlind => (
           <BlindCard
             key={bossBlind.name}
@@ -19,14 +21,6 @@ export const BossBlindsView = () => {
           />
         ))}
       </div>
-      <Button
-        className="mt-4"
-        onClick={() => {
-          eventEmitter.emit({ type: 'BACK_TO_MAIN_MENU' })
-        }}
-      >
-        Back to Main Menu
-      </Button>
-    </div>
+    </ReferenceView>
   )
 }

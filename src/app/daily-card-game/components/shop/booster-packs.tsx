@@ -1,10 +1,10 @@
-import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { PrimaryButton } from '@/app/daily-card-game/components/cosmic/buttons'
+import { TokenCard } from '@/app/daily-card-game/components/cosmic/token-card'
 import { getPackDefinition } from '@/app/daily-card-game/domain/booster-pack/utils'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import type { BuyableCard, PackState } from '@/app/daily-card-game/domain/shop/types'
 import { canAffordToBuy } from '@/app/daily-card-game/domain/shop/utils'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
 const packRarityLabels: Record<PackState['rarity'], string> = {
   normal: 'Normal',
@@ -15,9 +15,25 @@ const packRarityLabels: Record<PackState['rarity'], string> = {
 const cardTypeLabels: Record<BuyableCard['type'], string> = {
   playingCard: 'Playing Cards',
   tarotCard: 'Tarot Cards',
-  jokerCard: 'Joker Cards',
-  celestialCard: 'Celestial Cards',
-  spectralCard: 'Spectral Cards',
+  jokerCard: 'Jokers',
+  celestialCard: 'Celestials',
+  spectralCard: 'Spectrals',
+}
+
+const cardTypeAccent: Record<BuyableCard['type'], string> = {
+  playingCard: 'var(--cc-mint)',
+  tarotCard: 'var(--cc-pink)',
+  jokerCard: 'var(--cc-mint)',
+  celestialCard: 'var(--cc-gold)',
+  spectralCard: 'var(--cc-rarity-uncommon)',
+}
+
+const cardTypeGlyph: Record<BuyableCard['type'], string> = {
+  playingCard: '♣',
+  tarotCard: '◈',
+  jokerCard: '✺',
+  celestialCard: '✷',
+  spectralCard: '✦',
 }
 
 function BoosterPackForSale({ pack }: { pack: PackState }) {
@@ -27,23 +43,21 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
   const discountedPrice = Math.floor(packDefinition.price * game.shopState.priceMultiplier)
   const canAffordPack = canAffordToBuy(discountedPrice, game)
   return (
-    <div className="flex flex-col gap-2">
-      <GameCard>
-        <h2 className="text-sm font-bold">{packRarityLabels[pack.rarity]} Pack</h2>
-        <p className="text-xs font-bold"> of {cardTypeLabels[cardType]}</p>
-        <p className="text-xs text-gray-500">
-          Choose {packDefinition.numberOfCardsToSelect} of {packDefinition.numberOfCardsPerPack}{' '}
-          cards
-        </p>
-      </GameCard>
-      <Button
+    <div className="flex flex-col items-stretch gap-2">
+      <TokenCard
+        title={`${packRarityLabels[pack.rarity]} Pack`}
+        description={`${cardTypeLabels[cardType]} · choose ${packDefinition.numberOfCardsToSelect} of ${packDefinition.numberOfCardsPerPack}`}
+        glyph={cardTypeGlyph[cardType]}
+        accent={cardTypeAccent[cardType]}
+        size="sm"
+      />
+      <PrimaryButton
+        style={{ width: '100%' }}
         disabled={!canAffordPack}
-        onClick={() => {
-          eventEmitter.emit({ type: 'SHOP_OPEN_PACK', id: pack.id })
-        }}
+        onClick={() => eventEmitter.emit({ type: 'SHOP_OPEN_PACK', id: pack.id })}
       >
-        Open (${discountedPrice})
-      </Button>
+        Open · ${discountedPrice}
+      </PrimaryButton>
     </div>
   )
 }
@@ -51,11 +65,9 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
 export function BoosterPacksForSale() {
   const { game } = useGameState()
   const boosterPacks = game.shopState.packsForSale
-  if (boosterPacks.length === 0) {
-    return null
-  }
+  if (boosterPacks.length === 0) return null
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap items-stretch gap-3">
       {boosterPacks.map(pack => (
         <BoosterPackForSale key={pack.id} pack={pack} />
       ))}

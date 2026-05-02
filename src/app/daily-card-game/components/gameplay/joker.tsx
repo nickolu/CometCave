@@ -1,30 +1,13 @@
-import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { TokenCard } from '@/app/daily-card-game/components/cosmic/token-card'
 import { jokers } from '@/app/daily-card-game/domain/joker/jokers'
-import { JokerDefinition, JokerState } from '@/app/daily-card-game/domain/joker/types'
+import type { JokerState } from '@/app/daily-card-game/domain/joker/types'
 
-const FaceUpJoker = ({ joker }: { joker: JokerDefinition }) => {
-  return (
-    <div className={'px-1 h-full '}>
-      <div>
-        <h3 className="text-sm font-bold">{joker?.name}</h3>
-        <p className="text-xs text-muted-foreground">{joker?.description}</p>
-      </div>
-    </div>
-  )
+const RARITY_ACCENT: Record<string, string> = {
+  common: 'var(--cc-mint)',
+  uncommon: 'var(--cc-rarity-uncommon)',
+  rare: 'var(--cc-pink)',
+  legendary: 'var(--cc-gold)',
 }
-
-// const FaceDownJoker = () => {
-//   return (
-//     <div className="flex flex-col px-1 h-full bg-surface-container-highest">
-//       <div data-name="top-row" className="flex justify-between">
-//         <div>?</div>
-//       </div>
-//       <div data-name="image-row" className="flex justify-center grow items-center">
-//         <div>?</div>
-//       </div>
-//     </div>
-//   )
-// }
 
 export const Joker = ({
   joker,
@@ -35,15 +18,17 @@ export const Joker = ({
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
-  const jokerDefinition = jokers[joker.jokerId]
+  const def = jokers[joker.jokerId]
+  const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
   return (
-    <GameCard
-      isSelected={isSelected}
-      onClick={() => {
-        onClick?.(isSelected ?? false, joker.id)
-      }}
-    >
-      <FaceUpJoker joker={jokerDefinition} />
-    </GameCard>
+    <TokenCard
+      title={def?.name ?? 'Unknown'}
+      description={def?.description}
+      glyph="✺"
+      accent={accent}
+      selected={isSelected}
+      size="sm"
+      onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
+    />
   )
 }

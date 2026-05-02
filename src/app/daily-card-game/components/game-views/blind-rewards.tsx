@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react'
 
+import { PrimaryButton } from '@/app/daily-card-game/components/cosmic/buttons'
+import { Panel } from '@/app/daily-card-game/components/cosmic/panel'
 import { ViewTemplate } from '@/app/daily-card-game/components/game-views/view-template'
-import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-signs'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
 export function BlindRewardsView() {
   const { game } = useGameState()
@@ -23,33 +23,113 @@ export function BlindRewardsView() {
       .baseReward ?? 0
   const additionalRewards = currentBlind?.additionalRewards ?? []
 
+  const totalReward =
+    baseReward + additionalRewards.reduce((acc, [, amount]) => acc + amount, 0)
+
   return (
     <ViewTemplate>
-      <div>
-        <h2>Blind Rewards</h2>
-        <div>
-          Your Score: {currentBlind?.score.toString()}
-          <div>
-            <p>
-              Blind: <DollarSigns count={baseReward || 0} />
-            </p>
-            {additionalRewards?.map(([rewardName, rewardAmount]) => (
-              <p key={rewardName}>
-                {rewardName}: <DollarSigns count={rewardAmount} />
-              </p>
-            ))}
+      <div className="mx-auto" style={{ maxWidth: 520, padding: '32px 0' }}>
+        <Panel title="Blind Cleared">
+          <div className="flex flex-col" style={{ padding: '20px 18px', gap: 14 }}>
+            <div className="flex items-center justify-between">
+              <span
+                className="uppercase"
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  opacity: 0.55,
+                }}
+              >
+                Your Score
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: 'var(--cc-mint)',
+                }}
+              >
+                {currentBlind?.score.toString() ?? '0'}
+              </span>
+            </div>
+
+            <div
+              style={{
+                borderTop: '1px solid var(--cc-panel-divider)',
+                paddingTop: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <RewardRow label="Blind reward" amount={baseReward} />
+              {additionalRewards.map(([rewardName, rewardAmount]) => (
+                <RewardRow key={rewardName} label={rewardName} amount={rewardAmount} />
+              ))}
+            </div>
+
+            <div
+              className="flex items-center justify-between"
+              style={{
+                borderTop: '1px solid var(--cc-panel-divider)',
+                paddingTop: 14,
+              }}
+            >
+              <span
+                className="uppercase"
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 11,
+                  letterSpacing: 2,
+                  opacity: 0.7,
+                }}
+              >
+                Total
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: 'var(--cc-gold)',
+                }}
+              >
+                ${totalReward}
+              </span>
+            </div>
+
+            <PrimaryButton
+              style={{ width: '100%', marginTop: 6 }}
+              disabled={hasCashedOut}
+              onClick={() => {
+                setHasCashedOut(true)
+                eventEmitter.emit({ type: 'BLIND_REWARDS_END' })
+              }}
+            >
+              Cash Out
+            </PrimaryButton>
           </div>
-        </div>
+        </Panel>
       </div>
-      <Button
-        disabled={hasCashedOut}
-        onClick={() => {
-          setHasCashedOut(true)
-          eventEmitter.emit({ type: 'BLIND_REWARDS_END' })
+    </ViewTemplate>
+  )
+}
+
+function RewardRow({ label, amount }: { label: string; amount: number }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span style={{ fontSize: 12, opacity: 0.75 }}>{label}</span>
+      <span
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 13,
+          color: 'var(--cc-gold)',
         }}
       >
-        Cash Out
-      </Button>
-    </ViewTemplate>
+        +${amount}
+      </span>
+    </div>
   )
 }

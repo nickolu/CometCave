@@ -1,9 +1,12 @@
+import {
+  DangerButton,
+  PrimaryButton,
+} from '@/app/daily-card-game/components/cosmic/buttons'
 import { CelestialCard } from '@/app/daily-card-game/components/gameplay/celestial-card'
 import { TarotCard } from '@/app/daily-card-game/components/gameplay/tarot-card'
 import { getConsumableDefinition } from '@/app/daily-card-game/domain/consumable/utils'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
 export const CurrentConsumables = () => {
   const { game } = useGameState()
@@ -14,8 +17,8 @@ export const CurrentConsumables = () => {
     : undefined
 
   return (
-    <div>
-      <div className="flex flex-wrap justify-end gap-2">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-3">
         {game.consumables.map(consumable =>
           consumable.consumableType === 'tarotCard' ? (
             <TarotCard
@@ -24,15 +27,9 @@ export const CurrentConsumables = () => {
               isSelected={selectedConsumable?.id === consumable.id}
               onClick={(isSelected, id) => {
                 if (isSelected) {
-                  eventEmitter.emit({
-                    type: 'CONSUMABLE_DESELECTED',
-                    id,
-                  })
+                  eventEmitter.emit({ type: 'CONSUMABLE_DESELECTED', id })
                 } else {
-                  eventEmitter.emit({
-                    type: 'CONSUMABLE_SELECTED',
-                    id,
-                  })
+                  eventEmitter.emit({ type: 'CONSUMABLE_SELECTED', id })
                 }
               }}
             />
@@ -43,15 +40,9 @@ export const CurrentConsumables = () => {
               isSelected={selectedConsumable?.id === consumable.id}
               onClick={(isSelected, id) => {
                 if (isSelected) {
-                  eventEmitter.emit({
-                    type: 'CONSUMABLE_DESELECTED',
-                    id,
-                  })
+                  eventEmitter.emit({ type: 'CONSUMABLE_DESELECTED', id })
                 } else {
-                  eventEmitter.emit({
-                    type: 'CONSUMABLE_SELECTED',
-                    id,
-                  })
+                  eventEmitter.emit({ type: 'CONSUMABLE_SELECTED', id })
                 }
               }}
             />
@@ -60,8 +51,8 @@ export const CurrentConsumables = () => {
       </div>
 
       {selectedConsumable && (
-        <div className="flex gap-2">
-          <Button
+        <div className="flex flex-wrap gap-2">
+          <PrimaryButton
             disabled={!selectedConsumableDefinition?.isPlayable(game)}
             onClick={() => {
               if (selectedConsumable.consumableType === 'tarotCard') {
@@ -72,14 +63,10 @@ export const CurrentConsumables = () => {
             }}
           >
             Use
-          </Button>
-          <Button
-            onClick={() => {
-              eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })
-            }}
-          >
-            Sell (${selectedConsumableDefinition?.price})
-          </Button>
+          </PrimaryButton>
+          <DangerButton onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}>
+            Sell · ${selectedConsumableDefinition?.price}
+          </DangerButton>
         </div>
       )}
     </div>

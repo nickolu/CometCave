@@ -7,43 +7,44 @@ export const Hands = ({ pokerHandsState }: { pokerHandsState: PokerHandsState })
   )
 
   return (
-    <div>
-      <div className="grid grid-cols-4 gap-2">
-        <div className="col-span-1">
-          <p>Name</p>
-        </div>
-        <div className="col-span-1">
-          <p>Level</p>
-        </div>
-        <div className="col-span-1">
-          <p>Chips x Mult</p>
-        </div>
-        <div className="col-span-1">
-          <p>Times Played</p>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {visiblePokerHands.map(hand => {
+        const definition = pokerHands[hand.handId]
         const currentHandChips =
-          pokerHands[hand.handId].baseChips +
-          pokerHands[hand.handId].chipIncreasePerLevel * (hand.level - 1)
+          definition.baseChips + definition.chipIncreasePerLevel * (hand.level - 1)
         const currentHandMult =
-          pokerHands[hand.handId].baseMult +
-          pokerHands[hand.handId].multIncreasePerLevel * (hand.level - 1)
+          definition.baseMult + definition.multIncreasePerLevel * (hand.level - 1)
         return (
-          <div key={hand.handId} className="grid grid-cols-4 gap-2">
-            <div className="col-span-1">
-              <p>
-                <strong>{pokerHands[hand.handId].name}</strong>
-              </p>
+          <div
+            key={hand.handId}
+            className="flex items-center justify-between gap-3 rounded-md p-2.5"
+            style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(94,234,212,0.1)',
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{definition.name}</div>
+              <div
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 10,
+                  opacity: 0.55,
+                  marginTop: 2,
+                }}
+              >
+                Lvl {hand.level} · played {hand.timesPlayed}
+              </div>
             </div>
-            <div className="col-span-1">
-              <p>{hand.level}</p>
-            </div>
-            <div className="col-span-1">
-              <p>{`${currentHandChips} x ${currentHandMult}`}</p>
-            </div>
-            <div className="col-span-1">
-              <p>{hand.timesPlayed}</p>
+            <div
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 12,
+              }}
+            >
+              <span style={{ color: 'var(--cc-mint)' }}>{currentHandChips}</span>
+              <span style={{ opacity: 0.4, padding: '0 4px' }}>×</span>
+              <span style={{ color: 'var(--cc-pink)' }}>{currentHandMult}</span>
             </div>
           </div>
         )

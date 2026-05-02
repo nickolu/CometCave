@@ -1,15 +1,50 @@
-import { Chip } from '@mui/material'
+'use client'
+
 import { useState } from 'react'
 
+import { GhostButton } from '@/app/daily-card-game/components/cosmic/buttons'
+import { Panel } from '@/app/daily-card-game/components/cosmic/panel'
 import { Hands } from '@/app/daily-card-game/components/hands/hands'
 import { Modal } from '@/app/daily-card-game/components/ui/modal'
 import { Vouchers } from '@/app/daily-card-game/components/voucher/vouchers'
-import { isCustomScoringEvent } from '@/app/daily-card-game/domain/game/types'
 import { calculateAnte, getBlindDefinition } from '@/app/daily-card-game/domain/game/utils'
 import { getInProgressBlind } from '@/app/daily-card-game/domain/round/blinds'
 import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
+
+const monoLabel = {
+  fontFamily: 'var(--cc-font-mono)',
+  textTransform: 'uppercase' as const,
+  letterSpacing: 2,
+  fontSize: 10,
+  opacity: 0.55,
+}
+
+function StatRow({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: string | number | bigint
+  accent?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 whitespace-nowrap">
+      <span style={{ ...monoLabel, opacity: 0.6 }}>{label}</span>
+      <span
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 12,
+          fontWeight: 600,
+          color: accent ?? 'var(--cc-text-default)',
+        }}
+      >
+        {value.toString()}
+      </span>
+    </div>
+  )
+}
 
 export function ViewTemplate({
   sidebarContentTop,
@@ -24,113 +59,196 @@ export function ViewTemplate({
   const currentBlind = getInProgressBlind(game)
   const [showHands, setShowHands] = useState(false)
   const [showVouchers, setShowVouchers] = useState(false)
+
+  const blindDefinition = currentBlind
+    ? getBlindDefinition(currentBlind.type, game.rounds[game.roundIndex])
+    : undefined
+  const targetScore = currentBlind && blindDefinition
+    ? calculateAnte(game.rounds[game.roundIndex].baseAnte, blindDefinition.anteMultiplier)
+    : 0n
+
   return (
-    <div>
-      <div className="flex">
-        {/* Sidebar */}
-        <div id="game-sidebar" className="w-1/4 min-w-[300px] p-4 flex flex-col gap-4">
-          {sidebarContentTop}
-
-          <hr />
-          <div className="flex flex-col gap-2 pl-2">
-            <div>
-              <strong>Total Score:</strong> {game.totalScore.toString()}
-            </div>
-            <div>
-              <strong>Round:</strong> {game.roundIndex}/{game.rounds.length}
-            </div>
-            <div>
-              <strong>Current Money:</strong> ${game.money}
-            </div>
-            <div>
-              <strong>Hands Played:</strong> {game.handsPlayed}
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowHands(!showHands)}>Show Hands</Button>
-              {game.vouchers.length > 0 && (
-                <Button onClick={() => setShowVouchers(!showVouchers)}>Show Vouchers</Button>
-              )}
-            </div>
-            {showHands && (
-              <Modal onClose={() => setShowHands(false)}>
-                <Hands pokerHandsState={game.pokerHands} />
-              </Modal>
-            )}
-            {showVouchers && (
-              <Modal onClose={() => setShowVouchers(false)}>
-                <Vouchers vouchers={game.vouchers.map(voucher => voucher.type)} />
-              </Modal>
-            )}
-          </div>
-          {currentBlind && (
-            <>
-              <hr />
-              <div className="pl-2 flex flex-col gap-2">
-                <div>
-                  <strong>Current Blind:</strong>{' '}
-                  {
-                    getBlindDefinition(
-                      currentBlind?.type ?? 'smallBlind',
-                      game.rounds[game.roundIndex]
-                    ).name
-                  }
-                </div>
-                <div>
-                  <strong>Score at Least:</strong>{' '}
-                  {calculateAnte(
-                    game.rounds[game.roundIndex].baseAnte,
-                    getBlindDefinition(
-                      currentBlind?.type ?? 'smallBlind',
-                      game.rounds[game.roundIndex]
-                    ).anteMultiplier
-                  ).toString()}
-                </div>
-                <div>
-                  <strong>Remaining Hands:</strong> {game.gamePlayState.remainingHands}
-                </div>
-                <div>
-                  <strong>Remaining Discards:</strong> {game.gamePlayState.remainingDiscards}
-                </div>
-              </div>
-            </>
-          )}
-          <hr />
-          <div className="pl-2 text-sm text-gray-500">
-            <div>
-              Tags:{' '}
-              {game.tags.map(tag => (
-                <Chip key={tag.id} label={tags[tag.tagType]?.name} />
-              ))}
-            </div>
-          </div>
-          {sidebarContentBottom}
-          <div className="pl-2 flex flex-col gap-2">
-            {game.gamePlayState.scoringEvents.length > 0 && (
-              <>
-                <h2 className="text-lg font-bold">Scoring Events Log</h2>
-                <div className="flex flex-col gap-0.5 pl-1 max-h-[100px] overflow-y-auto">
-                  {game.gamePlayState.scoringEvents.map(event =>
-                    isCustomScoringEvent(event) ? (
-                      <div key={event.id}>{event.message}</div>
-                    ) : (
-                      <div key={event.id}>
-                        {event.source}: {event.type} {event.operator ?? '+'} {event.value}
-                      </div>
-                    )
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+    <div className="relative">
+      {/* Top stat strip — keeps every view aligned with gameplay */}
+      <div
+        className="relative z-10 flex flex-wrap items-center justify-between gap-4"
+        style={{
+          padding: '12px 22px',
+          borderBottom: '1px solid var(--cc-panel-divider)',
+        }}
+      >
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 2,
+            color: 'var(--cc-mint)',
+          }}
+        >
+          Cards
         </div>
-
-        {/* Main Content */}
-        <div id="game-content" className="w-3/4 p-4">
-          {children}
+        <div
+          className="flex flex-wrap items-center gap-5"
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            textTransform: 'uppercase',
+          }}
+        >
+          <Stat label="Round" value={`${game.roundIndex + 1}/${game.rounds.length}`} />
+          <Stat label="Money" value={`$${game.money}`} accent="var(--cc-gold)" />
+          <Stat label="Hands" value={String(game.handsPlayed)} />
         </div>
       </div>
-      <div className="text-sm text-gray-500">
-        <div>Current seed: &quot;{game.gameSeed}&quot;</div>
+
+      <div
+        className="grid"
+        style={{
+          gridTemplateColumns: 'minmax(240px, 280px) minmax(0, 1fr)',
+          gap: 18,
+          padding: '14px 22px 22px',
+          alignItems: 'start',
+        }}
+      >
+        {/* Sidebar */}
+        <aside id="game-sidebar" className="flex flex-col gap-4">
+          {sidebarContentTop}
+
+          <Panel title="Run Stats">
+            <div
+              className="flex flex-col"
+              style={{
+                gap: 6,
+                padding: '12px 16px',
+              }}
+            >
+              <StatRow label="Total Score" value={game.totalScore} accent="var(--cc-mint)" />
+              <StatRow label="Money" value={`$${game.money}`} accent="var(--cc-gold)" />
+              <StatRow label="Hands Played" value={game.handsPlayed} />
+            </div>
+            <div
+              style={{
+                padding: '8px 16px 14px',
+                borderTop: '1px solid var(--cc-panel-divider)',
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+              }}
+            >
+              <GhostButton onClick={() => setShowHands(true)}>Show Hands</GhostButton>
+              {game.vouchers.length > 0 && (
+                <GhostButton onClick={() => setShowVouchers(true)}>Vouchers</GhostButton>
+              )}
+            </div>
+          </Panel>
+
+          {currentBlind && blindDefinition && (
+            <Panel title="Current Blind">
+              <div
+                className="flex flex-col"
+                style={{
+                  gap: 8,
+                  padding: '14px 16px',
+                }}
+              >
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--cc-mint)' }}>
+                  {blindDefinition.name}
+                </div>
+                <StatRow
+                  label="Score at Least"
+                  value={targetScore}
+                  accent="var(--cc-pink)"
+                />
+                <StatRow
+                  label="Remaining Hands"
+                  value={game.gamePlayState.remainingHands}
+                  accent="var(--cc-mint)"
+                />
+                <StatRow
+                  label="Remaining Discards"
+                  value={game.gamePlayState.remainingDiscards}
+                  accent="var(--cc-pink)"
+                />
+              </div>
+            </Panel>
+          )}
+
+          {game.tags.length > 0 && (
+            <Panel title="Tags">
+              <div
+                className="flex flex-wrap"
+                style={{ gap: 6, padding: '12px 16px' }}
+              >
+                {game.tags.map(tag => (
+                  <span
+                    key={tag.id}
+                    className="uppercase"
+                    style={{
+                      fontFamily: 'var(--cc-font-mono)',
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      padding: '4px 8px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(94,234,212,0.25)',
+                      color: 'var(--cc-mint)',
+                    }}
+                  >
+                    {tags[tag.tagType]?.name ?? tag.tagType}
+                  </span>
+                ))}
+              </div>
+            </Panel>
+          )}
+
+          {sidebarContentBottom}
+
+          <div
+            style={{
+              padding: '4px 16px',
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.5,
+              opacity: 0.4,
+              textTransform: 'uppercase',
+            }}
+          >
+            Seed · {game.gameSeed}
+          </div>
+        </aside>
+
+        {/* Main */}
+        <main id="game-content" className="min-w-0">
+          {children}
+        </main>
+      </div>
+
+      {showHands && (
+        <Modal eyebrow="Show Hands" title="Poker Hands" onClose={() => setShowHands(false)}>
+          <Hands pokerHandsState={game.pokerHands} />
+        </Modal>
+      )}
+      {showVouchers && (
+        <Modal eyebrow="Show Vouchers" title="Active Vouchers" onClose={() => setShowVouchers(false)}>
+          <Vouchers vouchers={game.vouchers.map(voucher => voucher.type)} />
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="flex flex-col" style={{ gap: 2 }}>
+      <div style={{ opacity: 0.45, fontSize: 10 }}>{label}</div>
+      <div
+        style={{
+          color: accent ?? 'var(--cc-text-default)',
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        {value}
       </div>
     </div>
   )
