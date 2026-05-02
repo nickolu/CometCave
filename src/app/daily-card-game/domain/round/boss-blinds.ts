@@ -544,7 +544,41 @@ const violetVessel: BossBlindDefinition = {
   effects: [],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel]
+const amberAcorn: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Amber Acorn',
+  description: 'Flips and shuffles all Joker cards',
+  image: 'amber-acorn.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        // Flip all jokers face down
+        for (const joker of ctx.game.jokers) {
+          joker.isFaceUp = false
+        }
+        // Shuffle jokers deterministically
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'amber-acorn'])
+        for (let i = ctx.game.jokers.length - 1; i > 0; i--) {
+          const j = getRandomNumberWithSeed(
+            buildSeedString([seed, String(i)]),
+            0,
+            i
+          )
+          ;[ctx.game.jokers[i], ctx.game.jokers[j]] = [ctx.game.jokers[j], ctx.game.jokers[i]]
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn]
 
 /**
  
