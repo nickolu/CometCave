@@ -4,13 +4,15 @@ import {
   removeOwnedCard,
 } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { GameState } from '@/app/daily-card-game/domain/game/types'
+import { jokers as allJokerDefs } from '@/app/daily-card-game/domain/joker/jokers'
 import { getRandomRareJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import {
   getRandomEnchantment,
   getRandomPlayingCardsWithFilters,
   initializePlayingCard,
 } from '@/app/daily-card-game/domain/playing-card/utils'
-import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
+import { buildSeedString, getRandomNumberWithSeed, uuid } from '@/app/daily-card-game/domain/randomness'
 
 import { SpectralCardDefinition, SpectralCardType } from './types'
 
@@ -76,7 +78,26 @@ const grim: SpectralCardDefinition = {
   spectralType: 'grim',
   name: 'Grim',
   description: 'Destroy 1 random card in your hand, but add 2 random Enhanced Aces instead.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const destructionSeed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'grim'])
+        const randomCards = getRandomPlayingCardsWithFilters({ game: ctx.game, numberOfCards: 2, values: ['A'] })
+        const cardsToAdd = randomCards.map(card => {
+          const cardState = initializePlayingCard(card, ctx.game, true)
+          cardState.flags.enchantment = cardState.flags.enchantment === 'none'
+            ? getRandomEnchantment(ctx.game, card.id, true) : cardState.flags.enchantment
+          return cardState
+        })
+        const randomIdx = getRandomNumberWithSeed(destructionSeed, 0, ctx.game.gamePlayState.handIds.length - 1)
+        removeOwnedCard(ctx.game, ctx.game.gamePlayState.handIds[randomIdx])
+        cardsToAdd.forEach(card => { addOwnedCard(ctx.game, card); ctx.game.gamePlayState.handIds.push(card.id) })
+      },
+    },
+  ],
 }
 
 const incantation: SpectralCardDefinition = {
@@ -84,14 +105,49 @@ const incantation: SpectralCardDefinition = {
   name: 'Incantation',
   description:
     'Destroy 1 random card in your hand, but add 4 random Enhanced numbered cards instead.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const destructionSeed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'incantation'])
+        const randomCards = getRandomPlayingCardsWithFilters({
+          game: ctx.game,
+          numberOfCards: 4,
+          values: ['2', '3', '4', '5', '6', '7', '8', '9', '10'],
+        })
+        const cardsToAdd = randomCards.map(card => {
+          const cardState = initializePlayingCard(card, ctx.game, true)
+          cardState.flags.enchantment = cardState.flags.enchantment === 'none'
+            ? getRandomEnchantment(ctx.game, card.id, true) : cardState.flags.enchantment
+          return cardState
+        })
+        const randomIdx = getRandomNumberWithSeed(destructionSeed, 0, ctx.game.gamePlayState.handIds.length - 1)
+        removeOwnedCard(ctx.game, ctx.game.gamePlayState.handIds[randomIdx])
+        cardsToAdd.forEach(card => { addOwnedCard(ctx.game, card); ctx.game.gamePlayState.handIds.push(card.id) })
+      },
+    },
+  ],
 }
 
 const talisman: SpectralCardDefinition = {
   spectralType: 'talisman',
   name: 'Talisman',
   description: 'Add a Gold Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'gold'
+      },
+    },
+  ],
 }
 
 const aura: SpectralCardDefinition = {
@@ -99,7 +155,23 @@ const aura: SpectralCardDefinition = {
   name: 'Aura',
   description:
     'Add Foil, Holographic, or Polychrome edition (determined at random) to 1 selected card in hand.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (!cardState || !('flags' in cardState)) return
+        const editions = ['foil', 'holographic', 'polychrome'] as const
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'aura'])
+        const idx = getRandomNumberWithSeed(seed, 0, editions.length - 1)
+        cardState.flags.edition = editions[idx]
+      },
+    },
+  ],
 }
 
 const wraith: SpectralCardDefinition = {
@@ -128,14 +200,56 @@ const sigil: SpectralCardDefinition = {
   spectralType: 'sigil',
   name: 'Sigil',
   description: 'Converts all cards in hand to a single random suit.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const suits = ['hearts', 'diamonds', 'clubs', 'spades'] as const
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'sigil'])
+        const roll = getRandomNumberWithSeed(seed, 0, suits.length - 1)
+        const targetSuit = suits[roll]
+
+        for (const cardId of ctx.game.gamePlayState.handIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState || !('playingCardId' in cardState)) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (!cardDef) continue
+          cardState.playingCardId = `${cardDef.value}_${targetSuit}` as any
+        }
+      },
+    },
+  ],
 }
 
 const ouija: SpectralCardDefinition = {
   spectralType: 'ouija',
   name: 'Ouija',
   description: 'Converts all cards in hand to a single random rank, but -1 Hand Size.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const allValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'ouija'])
+        const roll = getRandomNumberWithSeed(seed, 0, allValues.length - 1)
+        const targetValue = allValues[roll]
+
+        for (const cardId of ctx.game.gamePlayState.handIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState || !('playingCardId' in cardState)) continue
+          const cardDef = playingCards[cardState.playingCardId]
+          if (!cardDef) continue
+          cardState.playingCardId = `${targetValue}_${cardDef.suit}` as any
+        }
+
+        ctx.game.handSizeModifier -= 1
+      },
+    },
+  ],
 }
 
 const ectoplasm: SpectralCardDefinition = {
@@ -194,35 +308,106 @@ const ankh: SpectralCardDefinition = {
   name: 'Ankh',
   description:
     'Creates a copy of 1 of your Jokers at random, then destroys the others, leaving you with two identical Jokers. (Editions are also copied, except Negative)',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length === 0) return
+
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'ankh'])
+        const idx = getRandomNumberWithSeed(seed, 0, ctx.game.jokers.length - 1)
+        const chosen = ctx.game.jokers[idx]
+
+        const copy = {
+          ...chosen,
+          id: uuid(),
+          edition: chosen.edition === 'negative' ? 'normal' as const : chosen.edition,
+        }
+
+        ctx.game.jokers = [chosen, copy]
+      },
+    },
+  ],
 }
 
 const dejaVu: SpectralCardDefinition = {
   spectralType: 'dejaVu',
   name: 'Deja Vu',
   description: 'Adds a Red Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'red'
+      },
+    },
+  ],
 }
 
 const hex: SpectralCardDefinition = {
   spectralType: 'hex',
   name: 'Hex',
   description: 'Adds Polychrome to a random Joker, and destroys the rest.',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length === 0) return
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'hex'])
+        const idx = getRandomNumberWithSeed(seed, 0, ctx.game.jokers.length - 1)
+        const chosen = ctx.game.jokers[idx]
+        chosen.edition = 'polychrome'
+        ctx.game.jokers = [chosen]
+      },
+    },
+  ],
 }
 
 const trance: SpectralCardDefinition = {
   spectralType: 'trance',
   name: 'Trance',
   description: 'Adds a Blue Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'blue'
+      },
+    },
+  ],
 }
 
 const medium: SpectralCardDefinition = {
   spectralType: 'medium',
   name: 'Medium',
   description: 'Adds a Purple Seal to 1 selected card.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (cardState && 'flags' in cardState) cardState.flags.seal = 'purple'
+      },
+    },
+  ],
 }
 
 const cryptid: SpectralCardDefinition = {
@@ -230,14 +415,47 @@ const cryptid: SpectralCardDefinition = {
   name: 'Cryptid',
   description:
     'Creates 2 exact copies (including Enhancements, Editions and Seals) of a selected card in your hand.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (!cardState || !('playingCardId' in cardState)) return
+
+        for (let i = 0; i < 2; i++) {
+          const copy = { ...cardState, id: uuid(), flags: { ...cardState.flags } }
+          addOwnedCard(ctx.game, copy)
+          ctx.game.gamePlayState.handIds.push(copy.id)
+        }
+      },
+    },
+  ],
 }
 
 const theSoul: SpectralCardDefinition = {
   spectralType: 'theSoul',
   name: 'The Soul',
   description: 'Creates a Legendary Joker.',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length < game.maxJokers,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length >= ctx.game.maxJokers) return
+        const legendaryJokers = Object.values(allJokerDefs).filter(j => j.rarity === 'legendary')
+        if (legendaryJokers.length === 0) return
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'theSoul'])
+        const idx = getRandomNumberWithSeed(seed, 0, legendaryJokers.length - 1)
+        const jokerState = initializeJoker(legendaryJokers[idx], ctx.game)
+        ctx.game.jokers.push(jokerState)
+      },
+    },
+  ],
 }
 
 const blackHole: SpectralCardDefinition = {
@@ -285,6 +503,19 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   wraith,
   immolate,
   ectoplasm,
+  sigil,
+  ouija,
+  ankh,
+  grim,
+  hex,
+  incantation,
+  talisman,
+  dejaVu,
+  trance,
+  medium,
+  aura,
+  cryptid,
+  theSoul,
 }
 
 /**

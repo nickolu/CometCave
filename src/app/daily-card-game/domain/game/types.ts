@@ -54,6 +54,9 @@ export interface StaticRulesState {
   allowDuplicateJokersInShop: boolean
   bossBlindRerolls: number
   bossBlindRerollCost: number
+  telescopeActive: boolean
+  observatoryActive: boolean
+  spectralInArcanaPacks: boolean
 }
 
 export type GamePhase =

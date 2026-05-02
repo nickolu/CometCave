@@ -68,16 +68,7 @@ export async function GET(request: NextRequest) {
           ? categoryIds[Math.floor(Math.random() * categoryIds.length)]
           : undefined
         const generated = await generateInfiniteQuestion({ streak: parsedStreak, categoryId: generationCategoryId })
-        await saveAIQuestion(generated)
-        question = {
-          ...generated,
-          status: 'active',
-          timesShown: 0,
-          timesCorrect: 0,
-          avgTimeMs: null,
-          likeCount: 0,
-          dislikeCount: 0,
-        }
+        question = await saveAIQuestion(generated)
       } catch (genErr) {
         console.error('[trivia/infinite/next] generation failed', {
           uid: auth.claims.uid,
@@ -92,9 +83,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Strip correctAnswer before sending to client
+    // Strip correctAnswer before sending to client. The non-null assertion
+    // is safe: either the sampler returned a question, or the inner try
+    // assigned one (catch branch returns early).
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { correctAnswer, ...safeQuestion }: AIQuestion = question
+    const { correctAnswer, ...safeQuestion }: AIQuestion = question!
 
     // Background top-up: keep the player ahead of pool exhaustion by
     // pre-generating one question per /next when their unanswered

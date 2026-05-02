@@ -1,6 +1,12 @@
 import { getFirestoreDb } from '@/lib/firebase/server'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
 import { CATEGORY_META } from '@/lib/trivia/categories'
+import {
+  computeTrim,
+  ensureMigratedTriviaState,
+  readTriviaState,
+  trimRecentSeen,
+} from '@/lib/trivia/triviaState'
 
 export interface SamplerOptions {
   uid: string
@@ -10,6 +16,12 @@ export interface SamplerOptions {
   // Single-element arrays behave the same as the old single-category mode.
   categoryIds?: number[]
 }
+
+// Number of candidates to fetch around a random cursor. Large enough that
+// difficulty bucketing + freshness bias still produces a reasonable
+// distribution; small enough that reads-per-/next stays in low double
+// digits. Tunable; bump if buckets routinely come back thin.
+const CANDIDATE_WINDOW = 50
 
 /**
  * Difficulty-bias curve for the sampler.
@@ -57,12 +69,14 @@ function freshnessWeight(timesShown: number): number {
   return 1 / (1 + timesShown)
 }
 
-export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQuestion | null> {
-  const { uid, streak, type = 'free-text', categoryIds } = options
-  const db = getFirestoreDb()
-
-  // 1. Query active questions of the requested type
-  let query = db
+// Build the base candidate query (status + type + optional category filter).
+// Returned as a Query so callers can layer ordering/cursors on top.
+function buildCandidateQuery(
+  db: FirebaseFirestore.Firestore,
+  type: 'free-text',
+  categoryIds: number[] | undefined,
+): FirebaseFirestore.Query {
+  let query: FirebaseFirestore.Query = db
     .collection('aiQuestions')
     .where('status', '==', 'active')
     .where('type', '==', type)
@@ -80,23 +94,73 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
       query = query.where('category', 'in', names)
     }
   }
+  return query
+}
 
-  const questionsSnap = await query.get()
+// Fetch up to LIMIT candidates near a random cursor, wrapping around to
+// the start of the random ordering if the forward window comes back short
+// (happens when r is close to 1 or the pool is small). De-dupes by id.
+async function fetchCandidateWindow(
+  query: FirebaseFirestore.Query,
+  limit: number,
+): Promise<AIQuestion[]> {
+  const r = Math.random()
+  const fwd = await query.orderBy('random').startAt(r).limit(limit).get()
 
-  if (questionsSnap.empty) return null
+  const seen = new Set<string>()
+  const out: AIQuestion[] = []
+  for (const d of fwd.docs) {
+    if (seen.has(d.id)) continue
+    seen.add(d.id)
+    out.push({ id: d.id, ...(d.data() as Omit<AIQuestion, 'id'>) })
+  }
 
-  // 2. Get IDs already seen by this user
-  const seenSnap = await db.collection(`users/${uid}/seenQuestions`).get()
-  const seenIds = new Set(seenSnap.docs.map((d) => d.id))
+  if (out.length < limit) {
+    const more = await query.orderBy('random').limit(limit - out.length).get()
+    for (const d of more.docs) {
+      if (seen.has(d.id)) continue
+      seen.add(d.id)
+      out.push({ id: d.id, ...(d.data() as Omit<AIQuestion, 'id'>) })
+    }
+  }
 
-  // 3. Filter out seen questions
-  const unseen = questionsSnap.docs
-    .map((d) => ({ id: d.id, ...(d.data() as Omit<AIQuestion, 'id'>) }))
-    .filter((q) => !seenIds.has(q.id))
+  return out
+}
 
+export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQuestion | null> {
+  const { uid, streak, type = 'free-text', categoryIds } = options
+  const db = getFirestoreDb()
+
+  // 1. Load the per-user state doc. Lazily migrate users who pre-date the
+  //    state doc (one-time full subcollection scan, then never again).
+  let state = await readTriviaState(uid)
+  if (state === null || state.migrated !== true) {
+    state = await ensureMigratedTriviaState(uid)
+  }
+  const recentSeenSet = new Set(state.recentSeen)
+
+  // 2. Fetch a bounded candidate window around a random cursor instead of
+  //    scanning the whole pool. Reads ~CANDIDATE_WINDOW docs regardless of
+  //    pool size. Selection precision drops slightly — freshness bias now
+  //    ranks within the window, not globally — but with a 1000-doc pool
+  //    the effect is small.
+  const query = buildCandidateQuery(db, type, categoryIds)
+  const candidates = await fetchCandidateWindow(query, CANDIDATE_WINDOW)
+  if (candidates.length === 0) return null
+
+  // 3. Filter out questions the user has recently seen.
+  const unseen = candidates.filter((q) => !recentSeenSet.has(q.id))
   if (unseen.length === 0) return null
 
-  // 4. Bucket by difficulty
+  // 4. Opportunistically trim recentSeen if it has grown past the cap. Use
+  //    arrayRemove (not overwrite) so concurrent writes in flight aren't
+  //    clobbered. Fire-and-forget; never blocks the response.
+  const evict = computeTrim(state.recentSeen)
+  if (evict !== null) {
+    void trimRecentSeen(uid, evict)
+  }
+
+  // 5. Bucket by difficulty
   const byDifficulty: Record<'easy' | 'medium' | 'hard', AIQuestion[]> = {
     easy: [],
     medium: [],
@@ -106,7 +170,7 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
     byDifficulty[q.difficulty].push(q)
   }
 
-  // 5. Determine which difficulty to pick from, weighted by streak
+  // 6. Determine which difficulty to pick from, weighted by streak
   const [easyW, mediumW, hardW] = getDifficultyWeights(streak)
 
   // Only include difficulty levels that have available questions
@@ -122,11 +186,11 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
     availableDifficulties.map((d) => d.weight)
   )
 
-  // 6. Within the chosen bucket, apply freshness bias (lower timesShown → higher weight)
+  // 7. Within the chosen bucket, apply freshness bias (lower timesShown → higher weight)
   const bucket = byDifficulty[chosenDifficulty]
   const bucketWeights = bucket.map((q) => freshnessWeight(q.timesShown))
 
-  // 7. Select one question
+  // 8. Select one question
   const selected = weightedRandom(bucket, bucketWeights)
 
   return selected
