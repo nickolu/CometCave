@@ -501,12 +501,12 @@ export const retcon: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'retcon' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement retcon effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.staticRules.bossBlindRerolls = Infinity
+        ctx.game.staticRules.bossBlindRerollCost = 10
       },
     },
   ],
-  dependentVoucher: null,
+  dependentVoucher: 'directorsCut',
 }
 
 export const paintBrush: VoucherDefinition = {
@@ -550,6 +550,7 @@ export const implementedVouchers: VoucherType[] = [
   'illusion',
   'planetTycoon',
   'directorsCut',
+  'retcon',
 ]
 
 export const vouchers: Record<VoucherType, VoucherDefinition> = {
