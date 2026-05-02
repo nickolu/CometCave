@@ -484,7 +484,30 @@ const theWall: BossBlindDefinition = {
   effects: [],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall]
+const theHouse: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The House',
+  description: 'First hand is drawn face down',
+  image: 'the-house.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        for (const cardId of Object.keys(ctx.game.cards)) {
+          ctx.game.cards[cardId].isFaceUp = false
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse]
 
 /**
  
