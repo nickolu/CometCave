@@ -1,5 +1,6 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { getRandomCommonJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
+import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 
 import { TagDefinition, TagType } from './types'
 
@@ -273,7 +274,23 @@ const orbital: TagDefinition = {
   name: 'Orbital',
   benefit: 'Upgrades a specified random Poker Hand by three levels.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const handIds = Object.keys(ctx.game.pokerHands)
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'orbital'])
+        const randomIndex = getRandomNumberWithSeed(seed, 0, handIds.length - 1)
+        const handId = handIds[randomIndex]
+        ctx.game.pokerHands[handId as keyof typeof ctx.game.pokerHands].level += 3
+        const orbitalTag = ctx.game.tags.find(tag => tag.tagType === 'orbital')
+        if (orbitalTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== orbitalTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const economy: TagDefinition = {
@@ -332,6 +349,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   handy,
   garbage,
   topUp,
+  orbital,
 }
 
 /* Tags
