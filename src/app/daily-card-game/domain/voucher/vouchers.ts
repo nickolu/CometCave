@@ -123,8 +123,7 @@ export const rerollSurplus: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'rerollSurplus' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement reroll surplus effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.baseRerollPrice = Math.max(0, ctx.game.shopState.baseRerollPrice - 2)
       },
     },
   ],
@@ -140,8 +139,7 @@ export const rerollGlut: VoucherDefinition = {
       event: { type: 'SHOP_BUY_VOUCHER', id: 'rerollGlut' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        // TODO: Implement reroll glut effect
-        throw new Error('Not implemented' + JSON.stringify(ctx))
+        ctx.game.shopState.baseRerollPrice = Math.max(0, ctx.game.shopState.baseRerollPrice - 2)
       },
     },
   ],
