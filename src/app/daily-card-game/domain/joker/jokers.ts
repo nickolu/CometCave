@@ -4216,6 +4216,27 @@ export const showman: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const astronomer: JokerDefinition = {
+  id: 'astronomer',
+  name: 'Astronomer',
+  description: 'All Planet cards and Celestial Packs in the shop are free',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 2,
+      apply: (ctx: EffectContext) => {
+        for (const card of ctx.game.shopState.cardsForSale) {
+          if (card.type === 'celestialCard') {
+            card.price = 0
+          }
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4338,6 +4359,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   troubadour,
   showman,
   burntJoker,
+  astronomer,
 }
 
 /***
