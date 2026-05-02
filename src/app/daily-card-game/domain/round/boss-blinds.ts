@@ -262,7 +262,28 @@ const theEye: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye]
+const theManacle: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Manacle',
+  description: '-1 Hand Size',
+  image: 'the-manacle.png',
+  minimumAnte: 1,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        ctx.game.handSizeModifier -= 1
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle]
 
 /**
  
