@@ -206,7 +206,33 @@ const theMark: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark]
+const theMouth: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Mouth',
+  description: 'Only one hand type can be played this round',
+  image: 'the-mouth.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        const playedTypes = ctx.game.gamePlayState.handTypesPlayedThisRound
+        if (playedTypes.length > 1 && ctx.game.gamePlayState.selectedHand?.[0] !== playedTypes[0]) {
+          // Wrong hand type - zero out scoring
+          ctx.game.gamePlayState.score = { chips: 0, mult: 0 }
+          ctx.game.gamePlayState.cardsToScore = []
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth]
 
 /**
  
