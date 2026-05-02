@@ -578,7 +578,41 @@ const amberAcorn: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn]
+const crimsonHeart: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Crimson Heart',
+  description: 'One random Joker disabled every hand',
+  image: 'crimson-heart.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        // First, re-enable all jokers (reset from last hand)
+        for (const joker of ctx.game.jokers) {
+          joker.isFaceUp = true
+        }
+        // Then disable one random joker
+        if (ctx.game.jokers.length > 0) {
+          const seed = buildSeedString([
+            ctx.game.gameSeed,
+            ctx.game.handsPlayed.toString(),
+            'crimson-heart',
+          ])
+          const randomIndex = getRandomNumberWithSeed(seed, 0, ctx.game.jokers.length - 1)
+          ctx.game.jokers[randomIndex].isFaceUp = false
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn, crimsonHeart]
 
 /**
  
