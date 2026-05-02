@@ -6,6 +6,7 @@ import { abandonedDeck } from './abandoned-deck'
 import { blackDeck } from './black-deck'
 import { blueDeck } from './blue-deck'
 import { checkeredDeck } from './checkered-deck'
+import { greenDeck } from './green-deck'
 import { paintedDeck } from './painted-deck'
 import { pokerDeck } from './poker-deck'
 import { redDeck } from './red-deck'
@@ -21,6 +22,7 @@ export const decks: Record<string, DeckDefinition> = {
   abandonedDeck: abandonedDeck,
   checkeredDeck: checkeredDeck,
   paintedDeck: paintedDeck,
+  greenDeck: greenDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {

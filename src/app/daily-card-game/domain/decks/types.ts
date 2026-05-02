@@ -15,4 +15,5 @@ export interface DeckModifiers {
   maxJokers?: number
   maxConsumables?: number
   handSizeModifier?: number
+  maxInterest?: number
 }

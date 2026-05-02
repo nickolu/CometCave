@@ -143,6 +143,10 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     if (draft.gamePlayState.remainingHands > 0) {
       currentBlind.additionalRewards.push(['Remaining Hands', draft.gamePlayState.remainingHands])
     }
+    // Green Deck: earn $1 per remaining discard
+    if (draft.selectedDeck === 'greenDeck' && draft.gamePlayState.remainingDiscards > 0) {
+      currentBlind.additionalRewards.push(['Remaining Discards', draft.gamePlayState.remainingDiscards])
+    }
     const interest = calculateInterest(draft)
 
     if (interest > 0) {
