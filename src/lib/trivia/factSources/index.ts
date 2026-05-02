@@ -1,21 +1,32 @@
 import { LLMFactSource } from './llmFactSource'
+import { PerplexityFactSource } from './perplexityFactSource'
 
 import type { FactSource } from './types'
 
 export type { Fact, FactSource, FetchFactsOptions, Difficulty } from './types'
 export { LLMFactSource } from './llmFactSource'
+export { PerplexityFactSource } from './perplexityFactSource'
 
 let _default: FactSource | null = null
 
-// Returns the default FactSource implementation. Today this is the
-// LLM-only source; planned implementations include WikipediaFactSource,
-// WikidataFactSource, and PerplexityFactSource. Callers should not
-// hardcode a specific implementation — the factory picks based on env
-// or a future feature flag.
+// Returns the default FactSource implementation. Perplexity is the
+// preferred source — facts come back grounded in live web search with
+// citations attached. Falls back to the parametric LLMFactSource when
+// the Perplexity key isn't configured (so local dev without a
+// Perplexity key still works).
 export function getDefaultFactSource(): FactSource {
   if (_default) return _default
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('Anthropic API key not configured')
-  _default = new LLMFactSource(apiKey)
+
+  const perplexityKey = process.env.PERPLEXITY_API_KEY
+  if (perplexityKey) {
+    _default = new PerplexityFactSource(perplexityKey)
+    return _default
+  }
+
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  if (!anthropicKey) {
+    throw new Error('Neither PERPLEXITY_API_KEY nor ANTHROPIC_API_KEY is configured')
+  }
+  _default = new LLMFactSource(anthropicKey)
   return _default
 }

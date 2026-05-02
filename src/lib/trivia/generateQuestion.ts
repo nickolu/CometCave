@@ -588,6 +588,7 @@ export async function generateInfiniteQuestion(
         type: 'free-text',
         appVersion: APP_VERSION,
         models,
+        ...(fact.source ? { sourceUrl: fact.source } : {}),
       }
     }
   }

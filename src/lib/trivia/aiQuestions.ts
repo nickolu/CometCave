@@ -37,10 +37,13 @@ export interface AIQuestion {
   dislikeCount: number
   // Provenance for generated questions. `appVersion` is the commit hash
   // that produced the question (proxy for prompt version); `models` records
-  // which LLM ran each stage. Optional for backwards compatibility with
-  // pre-existing docs that pre-date this tracking.
+  // which LLM ran each stage; `sourceUrl` is the grounding citation from
+  // the FactSource (set when the source is grounded — Perplexity, future
+  // Wikipedia/Wikidata — and absent for parametric LLM facts). Optional
+  // for backwards compatibility with pre-existing docs.
   appVersion?: string
   models?: QuestionGenerationModels
+  sourceUrl?: string
 }
 
 export interface SeenQuestion {
