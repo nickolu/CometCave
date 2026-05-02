@@ -77,7 +77,26 @@ const grim: SpectralCardDefinition = {
   spectralType: 'grim',
   name: 'Grim',
   description: 'Destroy 1 random card in your hand, but add 2 random Enhanced Aces instead.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const destructionSeed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'grim'])
+        const randomCards = getRandomPlayingCardsWithFilters({ game: ctx.game, numberOfCards: 2, values: ['A'] })
+        const cardsToAdd = randomCards.map(card => {
+          const cardState = initializePlayingCard(card, ctx.game, true)
+          cardState.flags.enchantment = cardState.flags.enchantment === 'none'
+            ? getRandomEnchantment(ctx.game, card.id, true) : cardState.flags.enchantment
+          return cardState
+        })
+        const randomIdx = getRandomNumberWithSeed(destructionSeed, 0, ctx.game.gamePlayState.handIds.length - 1)
+        removeOwnedCard(ctx.game, ctx.game.gamePlayState.handIds[randomIdx])
+        cardsToAdd.forEach(card => { addOwnedCard(ctx.game, card); ctx.game.gamePlayState.handIds.push(card.id) })
+      },
+    },
+  ],
 }
 
 const incantation: SpectralCardDefinition = {
@@ -272,7 +291,21 @@ const hex: SpectralCardDefinition = {
   spectralType: 'hex',
   name: 'Hex',
   description: 'Adds Polychrome to a random Joker, and destroys the rest.',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length === 0) return
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'hex'])
+        const idx = getRandomNumberWithSeed(seed, 0, ctx.game.jokers.length - 1)
+        const chosen = ctx.game.jokers[idx]
+        chosen.edition = 'polychrome'
+        ctx.game.jokers = [chosen]
+      },
+    },
+  ],
 }
 
 const trance: SpectralCardDefinition = {
@@ -352,6 +385,8 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   sigil,
   ouija,
   ankh,
+  grim,
+  hex,
 }
 
 /**
