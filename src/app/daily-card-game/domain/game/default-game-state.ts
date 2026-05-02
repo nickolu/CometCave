@@ -145,6 +145,7 @@ export function applyDeckModifiers(state: GameState, deck: DeckDefinition): Game
     maxJokers: state.maxJokers + (modifiers.maxJokers ?? 0),
     maxConsumables: state.maxConsumables + (modifiers.maxConsumables ?? 0),
     handSizeModifier: state.handSizeModifier + (modifiers.handSizeModifier ?? 0),
+    maxInterest: state.maxInterest + (modifiers.maxInterest ?? 0),
     gamePlayState: {
       ...state.gamePlayState,
       remainingDiscards:
