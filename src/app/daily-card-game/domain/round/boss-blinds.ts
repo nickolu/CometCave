@@ -612,7 +612,37 @@ const crimsonHeart: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn, crimsonHeart]
+const ceruleanBell: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'Cerulean Bell',
+  description: 'Forces 1 card to always be selected',
+  image: 'cerulean-bell.png',
+  minimumAnte: 8,
+  baseReward: 8,
+  effects: [
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
+      apply: (ctx: EffectContext) => {
+        // Force-select a random card from owned cards (hand isn't dealt yet at this point)
+        const cardIds = ctx.game.ownedCardIds
+        if (cardIds.length > 0) {
+          const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'cerulean-bell'])
+          const randomIndex = getRandomNumberWithSeed(seed, 0, cardIds.length - 1)
+          const forcedCardId = cardIds[randomIndex]
+          if (!ctx.game.gamePlayState.selectedCardIds.includes(forcedCardId)) {
+            ctx.game.gamePlayState.selectedCardIds.push(forcedCardId)
+          }
+        }
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint, theMark, theMouth, theEye, theManacle, theWater, thePsychic, theArm, theWheel, theHead, theWindow, theGoad, theClub, theWall, theHouse, theFish, violetVessel, amberAcorn, crimsonHeart, ceruleanBell]
 
 /**
  
