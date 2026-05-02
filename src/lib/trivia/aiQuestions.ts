@@ -40,11 +40,14 @@ export interface AIQuestion {
   // that produced the question (proxy for prompt version); `models` records
   // which LLM ran each stage; `sourceUrl` is the grounding citation from
   // the FactSource (set when the source is grounded — Perplexity, future
-  // Wikipedia/Wikidata — and absent for parametric LLM facts). Optional
-  // for backwards compatibility with pre-existing docs.
+  // Wikipedia/Wikidata — and absent for parametric LLM facts); `seed` is
+  // the "seedWord :: modifier" string fed to the FactSource, persisted so
+  // we can diagnose duplicate-answer clusters and (later) dedupe by seed.
+  // Optional for backwards compatibility with pre-existing docs.
   appVersion?: string
   models?: QuestionGenerationModels
   sourceUrl?: string
+  seed?: string
   // Uniform [0,1) value assigned at write time so the sampler can pick a
   // random window via `orderBy('random').startAt(r).limit(N)` instead of
   // scanning the full pool on every /next.
