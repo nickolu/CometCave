@@ -199,3 +199,34 @@ export const getRandomCommonJoker = (
   })
   return filteredJokers[randomCardIndices[0]]
 }
+
+const isRarePredicate: JokerPredicate = (joker: JokerDefinition): boolean => {
+  return joker.rarity === 'rare'
+}
+
+export const getRandomRareJoker = (
+  game: GameState,
+  allowDuplicates: boolean = false
+): JokerDefinition => {
+  const allJokers = Object.values(jokers)
+  const predicates: JokerPredicate[] = [isRarePredicate]
+  if (!allowDuplicates) {
+    predicates.push(isNotOwnedPredicate)
+  }
+  const filteredJokers = allJokers.filter(joker =>
+    predicates.every(predicate => predicate(joker, game))
+  )
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'rare',
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: filteredJokers.length - 1,
+    numberOfNumbers: 1,
+  })
+  return filteredJokers[randomCardIndices[0]]
+}

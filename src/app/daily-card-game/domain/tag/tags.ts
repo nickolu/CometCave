@@ -1,5 +1,5 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
-import { getRandomCommonJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
+import { getRandomCommonJoker, getRandomRareJoker, getRandomUncommonJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import { buildSeedString, getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 import { getRandomBossBlind } from '@/app/daily-card-game/domain/round/boss-blinds'
 
@@ -37,7 +37,27 @@ const rare: TagDefinition = {
   name: 'Rare',
   benefit: 'The next shop will have a free Rare Joker.',
   minimumAnte: 1,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const randomRareJoker = getRandomRareJoker(ctx.game)
+        if (randomRareJoker) {
+          const jokerState = initializeJoker(randomRareJoker, ctx.game)
+          ctx.game.shopState.guaranteedForSaleItems.push({
+            type: 'jokerCard',
+            card: jokerState,
+            price: 0,
+          })
+        }
+        const rareTag = ctx.game.tags.find(tag => tag.tagType === 'rare')
+        if (rareTag) {
+          ctx.game.tags = ctx.game.tags.filter(tag => tag.id !== rareTag.id)
+        }
+      },
+    },
+  ],
 }
 
 const negative: TagDefinition = {
@@ -459,6 +479,7 @@ export const tags: Record<TagType, TagDefinition> = {
 }
 export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   uncommon,
+  rare,
   d6,
   coupon,
   economy,
