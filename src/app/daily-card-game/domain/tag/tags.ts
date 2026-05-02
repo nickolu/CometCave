@@ -371,7 +371,19 @@ const ethereal: TagDefinition = {
   name: 'Ethereal',
   benefit: 'Immediately open a free Spectral Pack.',
   minimumAnte: 2,
-  effects: [],
+  effects: [
+    {
+      event: { type: 'SHOP_OPEN' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const packDef = getPackDefinition('spectralCard', 'normal')
+        const pack = initializePackState(ctx.game, packDef)
+        ctx.game.shopState.packsForSale.push(pack)
+        const tag = ctx.game.tags.find(t => t.tagType === 'ethereal')
+        if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
+      },
+    },
+  ],
 }
 
 const coupon: TagDefinition = {
@@ -573,6 +585,7 @@ export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   charm,
   meteor,
   buffoon,
+  ethereal,
 }
 
 /* Tags
