@@ -157,7 +157,29 @@ const theTooth: BossBlindDefinition = {
   ],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth]
+const theFlint: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Flint',
+  description: 'Base Chips and Mult are halved',
+  image: 'the-flint.png',
+  minimumAnte: 2,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        ctx.game.gamePlayState.score.chips = Math.floor(ctx.game.gamePlayState.score.chips / 2)
+        ctx.game.gamePlayState.score.mult = Math.floor(ctx.game.gamePlayState.score.mult / 2)
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant, theTooth, theFlint]
 
 /**
  
