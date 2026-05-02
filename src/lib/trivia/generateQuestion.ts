@@ -167,12 +167,14 @@ Difficulty: ${ctx.difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[ctx.difficult
 
 Rules:
 - The question MUST have ONE unambiguous correct answer. If a knowledgeable person could plausibly give a different answer than the keyDetail, you must add identifying details to the question that rule out the alternatives. Do not write a question whose answer is "any X that fits Y" when many X fit Y.
-- AVOID "guess a number" framings. Questions whose answer is a year, count, percentage, or measurement are weak free-text trivia UNLESS the number is the famous/defining property of the subject (e.g. "23" for Serena Williams's Grand Slam total, "1066" for the Battle of Hastings). Bad examples to avoid:
-    "What year was [arbitrary book] published?"
-    "Into how many languages has [book] been translated?"
-    "What is the population of [city]?"
-    "How many [things] did [person] do in [year]?"
-  If the keyDetail you've been given is a number that fails this test, look for a different angle from the SAME fact: ask about the person, the place, the work, the rule, the consequence — and adjust correct_answer accordingly. Only ask for a number when a fan of the topic would actually know it.
+- The answer MUST be a NAMED entity (person, place, work, event, concept, organism, etc.) — never a number, year, date, percentage, or measurement on its own. If the keyDetail you've been given is a number/date/measurement, FLIP the question: ask about a named entity in the same fact and put the number INSIDE the question text as a discriminating clue. Adjust correct_answer to be that named entity. Specific numbers and dates are unfair as trivia answers — players have to guess. Use them as clues instead.
+  Examples of the flip:
+    "What is the depth of Lake Baikal?" → "1,642 meters" — BAD (guess-a-number)
+    "Which Russian lake reaches a maximum depth of 1,642 meters, the deepest in the world?" → "Lake Baikal" — GOOD (the number anchors the question, the answer is a name)
+    "What year did the Battle of Hastings happen?" → "1066" — BAD
+    "Which 1066 battle marked the Norman conquest of England?" → "Battle of Hastings" — GOOD
+    "How many novels are in the Discworld series?" → "41" — BAD
+    "Which Terry Pratchett fantasy series consists of 41 novels?" → "Discworld" — GOOD
 - The question must ask specifically for the keyDetail (or your repointed answer).
 - The question must NOT contain the answer or a synonym/translation of it.
 - The correct_answer must equal the keyDetail or a clear variant.
@@ -310,25 +312,72 @@ export function detectAnswerLeak(question: string, keyDetail: string): boolean {
   return false
 }
 
-// Catch year-guess questions ("In what year did X happen?" with a
-// year-shaped answer) before they reach the player. The construction
-// prompt tells the LLM to avoid these, but the LLM sometimes ignores
-// the rule. This is the deterministic backstop — same pattern as
-// detectAnswerLeak.
-export function detectYearGuessQuestion(question: string, correctAnswer: string): boolean {
-  const q = question.toLowerCase()
-  const a = correctAnswer.trim()
+// Tokens that don't count as "real noun content" inside a numeric
+// answer — units, qualifiers, era markers, months, articles, etc.
+// Used by detectNumericAnswer to decide whether an answer is "just a
+// number with maybe some units around it" vs. "a named entity that
+// happens to contain a number" (e.g. "Apollo 11", "Area 51").
+const NUMERIC_FILLER_WORDS = new Set([
+  // approximations
+  'about', 'approximately', 'approx', 'roughly', 'around', 'over', 'under', 'nearly', 'almost', 'circa',
+  // magnitude qualifiers
+  'million', 'millions', 'billion', 'billions', 'thousand', 'thousands', 'hundred', 'hundreds', 'trillion', 'trillions',
+  // duration / age
+  'year', 'years', 'yr', 'yrs', 'old', 'month', 'months', 'day', 'days', 'hour', 'hours', 'minute', 'minutes', 'second', 'seconds', 'decade', 'decades', 'century', 'centuries',
+  // length / distance
+  'meter', 'meters', 'metre', 'metres', 'm', 'cm', 'mm', 'km', 'kms', 'kilometer', 'kilometers', 'kilometre', 'kilometres', 'mi', 'mile', 'miles', 'foot', 'feet', 'ft', 'inch', 'inches',
+  // weight
+  'kg', 'kgs', 'kilogram', 'kilograms', 'g', 'gram', 'grams', 'lb', 'lbs', 'pound', 'pounds', 'ton', 'tons', 'tonne', 'tonnes',
+  // descriptors
+  'tall', 'wide', 'long', 'deep', 'high', 'across', 'thick', 'heavy', 'large', 'small',
+  // era markers
+  'ad', 'bc', 'bce', 'ce',
+  // months
+  'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
+  'jan', 'feb', 'mar', 'apr', 'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec',
+  // weekdays
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+  // currency
+  'usd', 'eur', 'gbp', 'cent', 'cents', 'dollar', 'dollars',
+  // percent
+  'percent', 'percentage', 'percents', 'pct',
+  // area / volume
+  'square', 'cubic',
+  // articles / connectives
+  'the', 'a', 'an', 'of', 'and', 'or', 'to',
+])
 
-  const asksForYear =
-    /\b(in (what|which|the) year|what year|year (did|was|in which|that)|year of|when (was|did))\b/.test(q)
-  if (!asksForYear) return false
+// Catch numeric-answer questions ("...how deep / how many / what year /
+// what is the depth..." with a year/measurement/count-shaped answer)
+// before they reach the player. Trivia where the player has to guess
+// a specific number is unfair — the construction prompt is told to
+// flip the question (named entity becomes the answer, the number
+// becomes a clue) but sometimes ignores the rule. This is the
+// deterministic backstop — same pattern as detectAnswerLeak.
+//
+// The check is answer-side only: if the answer is purely numeric
+// content (digits + units + qualifiers + era markers + dates), with
+// no real noun anchoring it, fire. Answers like "Apollo 11" or
+// "Area 51" survive because they contain a real noun ("Apollo",
+// "Area") in addition to the number.
+export function detectNumericAnswer(correctAnswer: string): boolean {
+  const a = correctAnswer.toLowerCase().trim()
+  if (a.length === 0) return false
+  // Must contain at least one digit to be considered numeric.
+  if (!/\d/.test(a)) return false
 
-  // Year-shaped: 1-4 digits, optionally with era suffix. Allows "49 BC"
-  // and "5 AD" as well as "1066", "1994". Won't false-positive on
-  // larger numbers like "12345" since the question-side filter only
-  // fires when the question asks "what year" / "when was".
-  const isYearLike = /^\s*\d{1,4}\s*(ad|bc|bce|ce)?\s*$/i.test(a)
-  return isYearLike
+  // Strip currency symbols, punctuation, exponent suffixes (², ³, °,
+  // %), parens, slashes — they don't carry noun content.
+  const cleaned = a.replace(/[$€£¥,.()²³%°/'"]/g, ' ')
+  const tokens = cleaned.split(/\s+/).filter((t) => t.length > 0)
+
+  const substantive = tokens.filter((t) => {
+    if (/^\d+$/.test(t)) return false  // pure digits
+    if (NUMERIC_FILLER_WORDS.has(t)) return false  // unit/qualifier/article
+    return true
+  })
+
+  return substantive.length === 0
 }
 
 async function reviewQuestion(
@@ -503,13 +552,15 @@ export async function generateInfiniteQuestion(
         break
       }
 
-      // Deterministic pre-check: catch year-guess questions before
-      // they reach the player. The construction prompt is supposed to
-      // avoid these but the LLM sometimes ignores the rule.
-      if (detectYearGuessQuestion(draft.question, draft.correct_answer)) {
-        const reason = `The question is a year-guess ("what year did X happen?") with a year-shaped answer "${draft.correct_answer}". Reframe to ask about a different aspect of the same fact — the person, place, work, rule, or consequence — and adjust correct_answer accordingly. Do NOT ask for a year.`
-        lastReason = `pre-check year-guess: ${reason}`
-        console.warn('[generateInfiniteQuestion] draft rejected (pre-check year-guess)', {
+      // Deterministic pre-check: catch numeric-answer questions before
+      // they reach the player. Trivia where the answer is just a
+      // number, year, date, or measurement is unfair (the player has
+      // to guess). The construction prompt is supposed to flip these
+      // but the LLM sometimes ignores the rule.
+      if (detectNumericAnswer(draft.correct_answer)) {
+        const reason = `The current answer "${draft.correct_answer}" is a number, year, date, or measurement. Numeric answers are unfair — players have to guess. FLIP the question: ask about a NAMED entity in the source fact (the person, place, work, event, or thing the number describes) and put the number INSIDE the question text as a discriminating clue. Adjust correct_answer to that named entity. Example: instead of "What is the depth of Lake Baikal?" → "1,642 meters", ask "Which Russian lake reaches a maximum depth of 1,642 meters?" → "Lake Baikal".`
+        lastReason = `pre-check numeric-answer: ${reason}`
+        console.warn('[generateInfiniteQuestion] draft rejected (pre-check numeric-answer)', {
           attempt,
           repair,
           category: categoryName,

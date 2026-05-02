@@ -67,9 +67,9 @@ ${seedLine}Difficulty: ${difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[diffic
 Each fact must:
 - Be specifically about the category "${category}" — not adjacent topics.
 - State ONE specific, verifiable claim about ONE specific subject (a particular person, work, event, place, or thing — not a category of things).
-- Have a single concrete keyDetail (a name, date, number, place, or 1-3 word phrase) that is the UNIQUE answer to a question about this fact. If multiple things could plausibly be the answer (e.g. "a tennis player who won many Grand Slams" — there are several), the fact is too vague; pick a more specific subject.
-- The keyDetail must be the MINIMAL answer string — drop unit words and articles that the question would naturally contain. Use "40" not "40 novels" if the question would already say "how many novels"; use "Mount Everest" not "the mountain Mount Everest." If the answer is fundamentally tied to a unit (e.g. an album title that contains the word "Album"), keep the unit.
-- AVOID "guess a number" keyDetails. A numeric keyDetail (a year, count, percentage, measurement) is acceptable ONLY when the number is the famous/defining property of the subject — something an enthusiast would know off the top of their head. Examples that ARE acceptable: "23" for Serena Williams's Grand Slam total (a record fans know), "1066" for the Battle of Hastings (canonical history), "41" for the Discworld novel count (well-known to fans). Examples that are NOT acceptable: a book's translation count, a city's population, the publication year of an arbitrary work, an obscure film's box office. Test: would a fan of this topic know the exact number with confidence, or would they have to guess? If guess, pick a different angle from the same subject (the person, place, work, rule, or consequence) and write a fact about that instead.
+- The keyDetail must be a NAMED ENTITY — a person, place, work, event, organism, concept, or short proper-noun phrase. NEVER a number, year, date, percentage, or measurement on its own. Specific numbers and dates are unfair as trivia answers — players have to guess. If a fact's most surprising aspect is a number ("Lake Baikal is 1,642m deep"), use the named entity as the keyDetail ("Lake Baikal") and let the number live inside the claim — it will become a clue in the eventual question.
+- The keyDetail must be the MINIMAL answer string — drop articles and unit words the question would naturally contain ("Mount Everest" not "the mountain Mount Everest"). Names that legitimately contain a number ("Apollo 11", "Area 51", "Catch-22") are fine; the rule is about pure-numeric answers, not names that happen to include digits.
+- The keyDetail must be UNIQUE — if multiple things could plausibly be the answer (e.g. "a tennis player who won many Grand Slams" — there are several), the fact is too vague; pick a more specific subject.
 - Have the keyDetail appear verbatim inside the claim sentence.
 - Reach for surprising or deep-cut angles rather than obvious common knowledge.
 - Be true. If you are uncertain, replace the fact with one you are confident about.
@@ -77,10 +77,13 @@ Each fact must:
 Examples of good vs bad facts:
 
 GOOD: claim="Serena Williams won her 23rd and final Grand Slam singles title at the 2017 Australian Open." keyDetail="2017 Australian Open"
-  → unique because there's only one 23rd-Grand-Slam-win event for her.
+  → unique because there's only one 23rd-Grand-Slam-win event for her. Number ("23rd") and date ("2017") sit inside the claim as clues; the answer is a named event.
 
-GOOD: claim="The Discworld series by Terry Pratchett comprises 41 novels published between 1983 and 2015." keyDetail="41"
-  → minimal; the question will naturally say "how many novels," so the keyDetail is just the number.
+GOOD: claim="The Discworld series by Terry Pratchett comprises 41 novels published between 1983 and 2015." keyDetail="Discworld"
+  → answer is a named series; the count "41" lives in the claim and will become a clue in the eventual question ("Which Terry Pratchett series comprises 41 novels?").
+
+BAD: claim="The Discworld series by Terry Pratchett comprises 41 novels." keyDetail="41"
+  → numeric keyDetail. The resulting question would ask "how many novels" — players just have to guess the number.
 
 BAD: claim="Serena Williams is a tennis player who has won many Grand Slam titles." keyDetail="Serena Williams"
   → degenerate; the keyDetail is named in the claim and the fact gives no specific answer.
@@ -88,11 +91,8 @@ BAD: claim="Serena Williams is a tennis player who has won many Grand Slam title
 BAD: claim="The Basenji is known as the 'barkless dog'." keyDetail="Basenji"
   → other quiet breeds could plausibly be called "barkless" too. Pick a more specific framing.
 
-BAD: claim="The Discworld series has 41 novels." keyDetail="41 novels"
-  → keyDetail includes "novels" which the question will naturally contain. Use just "41."
-
 BAD: claim="The first edition of 'The Dark Tower: The Gunslinger' by Stephen King was published in 1982." keyDetail="1982"
-  → year-only keyDetail. The resulting question is "what year did X happen?" which is a guessing game with no skill signal. Pick a different angle from the same subject — e.g. claim="'The Dark Tower: The Gunslinger' was Stephen King's first novel in his 'Dark Tower' series." keyDetail="The Gunslinger" (or "Stephen King" if the fact framed it that way).
+  → year-only keyDetail; numeric answers are forbidden. Pick a different angle from the same subject — e.g. claim="'The Dark Tower: The Gunslinger' was Stephen King's first novel in his 'Dark Tower' series." keyDetail="The Gunslinger".
 
 Avoid duplicates: each of the ${count} facts should be about a different subject.`,
       temperature: 0.7,
