@@ -4,6 +4,7 @@ import {
   removeOwnedCard,
 } from '@/app/daily-card-game/domain/game/card-registry-utils'
 import { GameState } from '@/app/daily-card-game/domain/game/types'
+import { jokers as allJokerDefs } from '@/app/daily-card-game/domain/joker/jokers'
 import { getRandomRareJoker, initializeJoker } from '@/app/daily-card-game/domain/joker/utils'
 import {
   getRandomEnchantment,
@@ -154,7 +155,23 @@ const aura: SpectralCardDefinition = {
   name: 'Aura',
   description:
     'Add Foil, Holographic, or Polychrome edition (determined at random) to 1 selected card in hand.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (!cardState || !('flags' in cardState)) return
+        const editions = ['foil', 'holographic', 'polychrome'] as const
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'aura'])
+        const idx = getRandomNumberWithSeed(seed, 0, editions.length - 1)
+        cardState.flags.edition = editions[idx]
+      },
+    },
+  ],
 }
 
 const wraith: SpectralCardDefinition = {
@@ -398,14 +415,47 @@ const cryptid: SpectralCardDefinition = {
   name: 'Cryptid',
   description:
     'Creates 2 exact copies (including Enhancements, Editions and Seals) of a selected card in your hand.',
-  effects: [],
+  isPlayable: (game: GameState) => game.gamePlayState.handIds.length > 0,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const cardId = ctx.game.gamePlayState.selectedCardIds?.[0] ?? ctx.game.gamePlayState.handIds[0]
+        if (!cardId) return
+        const cardState = ctx.game.cards[cardId]
+        if (!cardState || !('playingCardId' in cardState)) return
+
+        for (let i = 0; i < 2; i++) {
+          const copy = { ...cardState, id: uuid(), flags: { ...cardState.flags } }
+          addOwnedCard(ctx.game, copy)
+          ctx.game.gamePlayState.handIds.push(copy.id)
+        }
+      },
+    },
+  ],
 }
 
 const theSoul: SpectralCardDefinition = {
   spectralType: 'theSoul',
   name: 'The Soul',
   description: 'Creates a Legendary Joker.',
-  effects: [],
+  isPlayable: (game: GameState) => game.jokers.length < game.maxJokers,
+  effects: [
+    {
+      event: { type: 'SPECTRAL_CARD_USED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.jokers.length >= ctx.game.maxJokers) return
+        const legendaryJokers = Object.values(allJokerDefs).filter(j => j.rarity === 'legendary')
+        if (legendaryJokers.length === 0) return
+        const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'theSoul'])
+        const idx = getRandomNumberWithSeed(seed, 0, legendaryJokers.length - 1)
+        const jokerState = initializeJoker(legendaryJokers[idx], ctx.game)
+        ctx.game.jokers.push(jokerState)
+      },
+    },
+  ],
 }
 
 const blackHole: SpectralCardDefinition = {
@@ -463,6 +513,9 @@ export const implementedSpectralCards: Partial<typeof spectralCards> = {
   dejaVu,
   trance,
   medium,
+  aura,
+  cryptid,
+  theSoul,
 }
 
 /**
