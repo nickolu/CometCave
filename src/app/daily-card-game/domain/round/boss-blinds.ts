@@ -1,5 +1,6 @@
 import type { EffectContext } from '@/app/daily-card-game/domain/events/types'
 import { getMostPlayedHand } from '@/app/daily-card-game/domain/hand/utils'
+import { playingCards } from '@/app/daily-card-game/domain/playing-card/playing-cards'
 import { getRandomNumberWithSeed } from '@/app/daily-card-game/domain/randomness'
 import type { BossBlindDefinition } from '@/app/daily-card-game/domain/round/types'
 
@@ -112,7 +113,30 @@ const theSerpent: BossBlindDefinition = {
   effects: [],
 }
 
-export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent]
+const thePlant: BossBlindDefinition = {
+  type: 'bossBlind',
+  status: 'notStarted',
+  anteMultiplier: 2,
+  name: 'The Plant',
+  description: 'All face cards are debuffed',
+  image: 'the-plant.png',
+  minimumAnte: 4,
+  baseReward: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_START' },
+      priority: 0,
+      condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
+      apply: (ctx: EffectContext) => {
+        ctx.game.gamePlayState.cardsToScore = ctx.game.gamePlayState.cardsToScore.filter(
+          card => !['J', 'Q', 'K'].includes(playingCards[card.playingCardId].value)
+        )
+      },
+    },
+  ],
+}
+
+export const bossBlinds: BossBlindDefinition[] = [theHook, theOx, theNeedle, thePillar, theSerpent, thePlant]
 
 /**
  
