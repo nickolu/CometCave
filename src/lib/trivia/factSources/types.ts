@@ -64,7 +64,12 @@ export interface FactSource {
   fetchFacts(options: FetchFactsOptions): Promise<Fact[]>
 
   // Identifier used in logs and saved citations to track which
-  // implementation produced a fact. e.g. "llm:gpt-4o-mini",
+  // implementation produced a fact. e.g. "llm:claude-sonnet-4-6",
   // "wikipedia", "perplexity:sonar-medium-online".
   readonly id: string
+
+  // Optional: the underlying model id, when the source is LLM-backed.
+  // Recorded on saved questions so we can attribute fact-quality
+  // regressions to a model swap. Grounded sources can omit this.
+  readonly model?: string
 }

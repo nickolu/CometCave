@@ -14,8 +14,8 @@ let _default: FactSource | null = null
 // or a future feature flag.
 export function getDefaultFactSource(): FactSource {
   if (_default) return _default
-  const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
-  if (!apiKey) throw new Error('OpenAI API key not configured')
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('Anthropic API key not configured')
   _default = new LLMFactSource(apiKey)
   return _default
 }
