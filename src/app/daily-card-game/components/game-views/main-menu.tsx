@@ -1,87 +1,106 @@
 'use client'
 
+import {
+  GhostButton,
+  PrimaryButton,
+} from '@/app/daily-card-game/components/cosmic/buttons'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
-import { Button } from '@/components/ui/button'
+
+const REFERENCE_BUTTONS = [
+  { event: 'DISPLAY_JOKERS', label: 'Jokers' },
+  { event: 'DISPLAY_VOUCHERS', label: 'Vouchers' },
+  { event: 'DISPLAY_TAROT_CARDS', label: 'Tarot Cards' },
+  { event: 'DISPLAY_CELESTIALS', label: 'Celestial Cards' },
+  { event: 'DISPLAY_BOSS_BLINDS', label: 'Boss Blinds' },
+  { event: 'DISPLAY_TAGS', label: 'Tags' },
+  { event: 'DISPLAY_SPECTRAL_CARDS', label: 'Spectral Cards' },
+] as const
 
 export function MainMenuView() {
   return (
-    <div className="flex flex-col items-center mt-10">
-      <h1 className="text-2xl font-bold">Daily Card Game</h1>
-      <Button
-        className="mt-4"
-        size="lg"
-        onClick={() => {
-          eventEmitter.emit({ type: 'GAME_START' })
+    <div
+      className="relative mx-auto flex flex-col items-center"
+      style={{
+        padding: '64px 24px',
+        gap: 28,
+        maxWidth: 720,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        className="uppercase"
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 11,
+          letterSpacing: 4,
+          color: 'var(--cc-mint)',
+          opacity: 0.85,
         }}
       >
-        Start Game
-      </Button>
+        CometCave
+      </div>
+      <h1
+        style={{
+          fontSize: 48,
+          fontWeight: 200,
+          letterSpacing: -1.5,
+          lineHeight: 1.05,
+          color: 'var(--cc-text-default)',
+          textShadow: '0 0 60px rgba(94,234,212,0.3)',
+          margin: 0,
+        }}
+      >
+        Daily Cards
+      </h1>
+      <p
+        style={{
+          fontSize: 14,
+          opacity: 0.65,
+          maxWidth: 460,
+          lineHeight: 1.55,
+          margin: 0,
+        }}
+      >
+        A new run, every day. Stack chips, multiply, and bend the rules with jokers.
+      </p>
 
-      <div className="flex flex-wrap justify-center gap-2 mt-4 w-3/4 mx-auto">
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_JOKERS' })
-          }}
-        >
-          Jokers
-        </Button>
+      <PrimaryButton
+        style={{ padding: '14px 32px', fontSize: 13, letterSpacing: 3 }}
+        onClick={() => eventEmitter.emit({ type: 'GAME_START' })}
+      >
+        Start Run
+      </PrimaryButton>
 
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_VOUCHERS' })
+      <div
+        className="w-full"
+        style={{
+          marginTop: 8,
+          paddingTop: 24,
+          borderTop: '1px solid var(--cc-panel-divider)',
+        }}
+      >
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 10,
+            letterSpacing: 2,
+            opacity: 0.45,
+            marginBottom: 12,
           }}
         >
-          Vouchers
-        </Button>
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_TAROT_CARDS' })
-          }}
-        >
-          Tarot Cards
-        </Button>
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_CELESTIALS' })
-          }}
-        >
-          Celestial Cards
-        </Button>
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_BOSS_BLINDS' })
-          }}
-        >
-          Boss Blinds
-        </Button>
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_TAGS' })
-          }}
-        >
-          Tags
-        </Button>
-        <Button
-          className="mt-4"
-          variant="space"
-          onClick={() => {
-            eventEmitter.emit({ type: 'DISPLAY_SPECTRAL_CARDS' })
-          }}
-        >
-          Spectral Cards
-        </Button>
+          Reference
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {REFERENCE_BUTTONS.map(item => (
+            <GhostButton
+              key={item.event}
+              onClick={() => eventEmitter.emit({ type: item.event })}
+            >
+              {item.label}
+            </GhostButton>
+          ))}
+        </div>
       </div>
     </div>
   )

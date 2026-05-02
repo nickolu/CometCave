@@ -1,9 +1,17 @@
-import { DollarSigns } from '@/app/daily-card-game/components/global/dollar-signs'
+import {
+  GhostButton,
+  PrimaryButton,
+} from '@/app/daily-card-game/components/cosmic/buttons'
+import { Panel } from '@/app/daily-card-game/components/cosmic/panel'
 import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { implementedTags as tags } from '@/app/daily-card-game/domain/tag/tags'
 import type { TagType } from '@/app/daily-card-game/domain/tag/types'
-import { ChunkyButton } from '@/components/ui/chunky-button'
-import { Card } from '@/components/ui/card'
+
+const BLIND_ACCENT: Record<string, string> = {
+  SMALL_BLIND_SELECTED: 'var(--cc-mint)',
+  BIG_BLIND_SELECTED: 'var(--cc-gold)',
+  BOSS_BLIND_SELECTED: 'var(--cc-pink)',
+}
 
 export function BlindCard({
   name,
@@ -22,47 +30,148 @@ export function BlindCard({
   selectEventName: 'SMALL_BLIND_SELECTED' | 'BIG_BLIND_SELECTED' | 'BOSS_BLIND_SELECTED'
   tag?: TagType
 }) {
-  return (
-    <Card className="bg-surface-container-highest border-surface-variant p-4 text-on-surface h-63 w-1/3 flex flex-col justify-between text-center">
-      <div className="flex flex-col gap-2 h-full">
-        <h3 className="text-xl font-bold">{name}</h3>
-        {description && <p className="text-sm text-on-surface/50">{description}</p>}
-        <p>
-          Reward: <DollarSigns count={reward} />
-        </p>
-      </div>
+  const accent = BLIND_ACCENT[selectEventName] ?? 'var(--cc-mint)'
+  const eyebrow = selectEventName === 'BOSS_BLIND_SELECTED' ? 'Boss Blind' : 'Blind'
 
-      <div className="flex flex-col gap-2 justify-start h-full mt-7">
-        {minimumScore !== undefined && <p>Score at Least: {minimumScore.toString()}</p>}
-        <div>
-          <ChunkyButton
-            className="w-full"
-            disabled={disabled}
-            onClick={() => {
-              eventEmitter.emit({ type: selectEventName })
+  return (
+    <Panel className="flex w-full max-w-sm flex-col" title={eyebrow}>
+      <div
+        className="flex flex-col"
+        style={{
+          padding: '18px 18px 14px',
+          gap: 8,
+          opacity: disabled ? 0.5 : 1,
+          transition: 'opacity 200ms',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: -0.3,
+            color: accent,
+          }}
+        >
+          {name}
+        </div>
+        {description && (
+          <div
+            style={{
+              fontSize: 12,
+              opacity: 0.7,
+              lineHeight: 1.5,
             }}
           >
-            Select
-          </ChunkyButton>
-          {tag && (
-            <div className="flex flex-col gap-2">
-              <ChunkyButton
-                variant="secondary"
-                className="w-full mt-2 h-auto whitespace-break-spaces"
-                disabled={disabled}
-                onClick={() => {
-                  eventEmitter.emit({ type: 'BLIND_SKIPPED' })
-                }}
-              >
-                Skip and get the {tags[tag]?.name} tag
-              </ChunkyButton>{' '}
-              <div className="text-sm text-on-surface/50">
-                {tags[tag]?.name} Tag: {tags[tag]?.benefit}
-              </div>
-            </div>
-          )}
+            {description}
+          </div>
+        )}
+
+        <div
+          className="flex items-center justify-between"
+          style={{
+            marginTop: 10,
+            padding: '10px 12px',
+            borderRadius: 6,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(94,234,212,0.1)',
+          }}
+        >
+          <span
+            className="uppercase"
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 10,
+              letterSpacing: 1.5,
+              opacity: 0.55,
+            }}
+          >
+            Reward
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--cc-gold)',
+            }}
+          >
+            ${reward}
+          </span>
         </div>
+
+        {minimumScore !== undefined && (
+          <div
+            className="flex items-center justify-between"
+            style={{
+              padding: '10px 12px',
+              borderRadius: 6,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(94,234,212,0.1)',
+            }}
+          >
+            <span
+              className="uppercase"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 1.5,
+                opacity: 0.55,
+              }}
+            >
+              Score at Least
+            </span>
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--cc-pink)',
+              }}
+            >
+              {minimumScore.toString()}
+            </span>
+          </div>
+        )}
       </div>
-    </Card>
+
+      <div
+        className="flex flex-col"
+        style={{
+          gap: 8,
+          padding: '10px 18px 18px',
+          borderTop: '1px solid var(--cc-panel-divider)',
+        }}
+      >
+        <PrimaryButton
+          className="w-full"
+          style={{ width: '100%' }}
+          disabled={disabled}
+          onClick={() => eventEmitter.emit({ type: selectEventName })}
+        >
+          Select
+        </PrimaryButton>
+        {tag && (
+          <>
+            <GhostButton
+              style={{ width: '100%' }}
+              disabled={disabled}
+              onClick={() => eventEmitter.emit({ type: 'BLIND_SKIPPED' })}
+            >
+              Skip · Get {tags[tag]?.name} Tag
+            </GhostButton>
+            <div
+              style={{
+                fontSize: 11,
+                opacity: 0.6,
+                lineHeight: 1.45,
+              }}
+            >
+              <strong style={{ color: 'var(--cc-mint)' }}>{tags[tag]?.name}</strong>:{' '}
+              {tags[tag]?.benefit}
+            </div>
+          </>
+        )}
+      </div>
+    </Panel>
   )
 }

@@ -2,9 +2,9 @@
 
 import { useCallback, useMemo, useState } from 'react'
 
+import { PrimaryButton } from '@/app/daily-card-game/components/cosmic/buttons'
+import { Panel } from '@/app/daily-card-game/components/cosmic/panel'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { ChunkyButton } from '@/components/ui/chunky-button'
-import { Card } from '@/components/ui/card'
 
 import { ViewTemplate } from './view-template'
 
@@ -16,7 +16,6 @@ async function copyToClipboard(text: string) {
     return
   }
 
-  // Fallback for non-secure contexts / older browsers
   const textArea = document.createElement('textarea')
   textArea.value = text
   textArea.style.position = 'fixed'
@@ -59,49 +58,130 @@ export function GameOverView() {
       setHasCopied(true)
       window.setTimeout(() => setHasCopied(false), 2000)
     } catch {
-      // If clipboard fails, at least surface the text for manual copy.
       window.prompt('Copy your score report:', shareText)
     }
   }, [shareText])
 
+  const accent = didWin ? 'var(--cc-mint)' : 'var(--cc-pink)'
+  const eyebrow = didWin ? 'Victory' : 'Run Ended'
+  const headline = didWin ? 'The cave aligns.' : 'The cave goes quiet.'
+
   return (
     <ViewTemplate>
-      <Card className="bg-surface-container-highest border-surface-variant p-4 text-on-surface h-63 w-1/3 flex flex-col justify-between text-center mx-auto">
-        <div className="flex flex-col items-center justify-center">
-          <h2>{didWin ? 'You Win!' : 'Game Over: You Lose'}</h2>
-          <div>Total Score: {game.totalScore.toString()}</div>
-          <div>Hands Played: {game.handsPlayed}</div>
-          <div>
-            Rounds Completed: {roundsCompleted} / {totalRounds}
-            <div className="mt-2 flex justify-center gap-1">
+      <div className="mx-auto" style={{ maxWidth: 520, padding: '32px 0' }}>
+        <Panel title={eyebrow}>
+          <div
+            className="flex flex-col items-center text-center"
+            style={{ padding: '28px 24px', gap: 16 }}
+          >
+            <div
+              className="uppercase"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 11,
+                letterSpacing: 2.5,
+                opacity: 0.55,
+                color: accent,
+              }}
+            >
+              {didWin ? 'You Win' : 'Game Over'}
+            </div>
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 300,
+                letterSpacing: -0.5,
+                lineHeight: 1.2,
+                color: 'var(--cc-text-default)',
+              }}
+            >
+              {headline}
+            </div>
+            <div
+              className="uppercase"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 2,
+                opacity: 0.5,
+                marginTop: 8,
+              }}
+            >
+              Total Score
+            </div>
+            <div
+              style={{
+                fontSize: 44,
+                fontWeight: 200,
+                letterSpacing: -1.5,
+                lineHeight: 1,
+                color: 'var(--cc-text-default)',
+                textShadow: '0 0 60px rgba(94,234,212,0.3)',
+              }}
+            >
+              {game.totalScore.toString()}
+            </div>
+            <div
+              className="flex items-center justify-center gap-1"
+              style={{ marginTop: 4 }}
+              role="img"
+              aria-label={`Rounds completed ${roundsCompleted} of ${totalRounds}`}
+            >
               {Array.from({ length: totalRounds }).map((_, idx) => {
                 const isCompleted = idx < roundsCompleted
                 return (
                   <span
                     key={idx}
-                    title={
-                      isCompleted ? `Round ${idx + 1} completed` : `Round ${idx + 1} remaining`
-                    }
-                    aria-label={
-                      isCompleted ? `Round ${idx + 1} completed` : `Round ${idx + 1} remaining`
-                    }
-                    className={[
-                      'inline-block h-3 w-3 rounded-sm border',
-                      isCompleted ? 'bg-green-600 border-green-700' : 'bg-red-600 border-red-700',
-                    ].join(' ')}
+                    className="inline-block"
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 3,
+                      background: isCompleted
+                        ? 'color-mix(in srgb, var(--cc-mint) 65%, transparent)'
+                        : 'transparent',
+                      border: isCompleted
+                        ? '1px solid var(--cc-mint)'
+                        : '1px solid rgba(255,107,157,0.4)',
+                      boxShadow: isCompleted ? '0 0 10px rgba(94,234,212,0.45)' : 'none',
+                    }}
                   />
                 )
               })}
             </div>
+            <div
+              className="uppercase"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 2,
+                opacity: 0.45,
+              }}
+            >
+              {roundsCompleted} / {totalRounds} rounds
+            </div>
+            <div className="flex flex-col items-center" style={{ gap: 6, marginTop: 8 }}>
+              <div style={{ fontSize: 12, opacity: 0.7 }}>
+                Hands Played: <strong>{game.handsPlayed}</strong>
+              </div>
+            </div>
+            <PrimaryButton style={{ marginTop: 12 }} onClick={onShare}>
+              {hasCopied ? 'Copied' : 'Share Score'}
+            </PrimaryButton>
+            <div
+              style={{
+                fontSize: 12,
+                opacity: 0.55,
+                marginTop: 8,
+                color: 'var(--cc-gold)',
+                fontWeight: 600,
+              }}
+            >
+              Try again tomorrow for a new game.
+            </div>
           </div>
-          <div className="mt-4">
-            <ChunkyButton onClick={onShare}>{hasCopied ? 'Copied!' : 'Share Score'}</ChunkyButton>
-          </div>
-          <div className="mt-4">
-            <p className="text-lg font-bold text-ds-tertiary">Try again tomorrow for a new game!</p>
-          </div>
-        </div>
-      </Card>
+        </Panel>
+      </div>
     </ViewTemplate>
   )
 }

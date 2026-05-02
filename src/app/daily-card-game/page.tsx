@@ -1,4 +1,5 @@
 'use client'
+import { CosmicShell } from './components/cosmic/shell'
 import { BlindRewardsView } from './components/game-views/blind-rewards'
 import { BlindSelectionView } from './components/game-views/blind-selection'
 import { BossBlindsView } from './components/game-views/boss-blinds'
@@ -16,9 +17,8 @@ import { VouchersView } from './components/game-views/vouchers'
 import { useGameEvents } from './useGameEvents'
 import { useGameState } from './useGameState'
 
-export default function DailyCardGamePage() {
+function PhaseRouter() {
   const { game } = useGameState()
-  useGameEvents()
 
   switch (game.gamePhase) {
     case 'mainMenu':
@@ -52,4 +52,13 @@ export default function DailyCardGamePage() {
     default:
       return <div>Error: Unknown game phase {game.gamePhase}</div>
   }
+}
+
+export default function DailyCardGamePage() {
+  useGameEvents()
+  return (
+    <CosmicShell>
+      <PhaseRouter />
+    </CosmicShell>
+  )
 }

@@ -3,6 +3,12 @@
 import { useEffect } from 'react'
 
 import { CurrentConsumables } from '@/app/daily-card-game/components/consumables/current-consumables'
+import {
+  DangerButton,
+  GhostButton,
+  PrimaryButton,
+} from '@/app/daily-card-game/components/cosmic/buttons'
+import { Panel } from '@/app/daily-card-game/components/cosmic/panel'
 import { CurrentJokers } from '@/app/daily-card-game/components/joker/current-jokers'
 import { BoosterPacksForSale } from '@/app/daily-card-game/components/shop/booster-packs'
 import { BuyableCard } from '@/app/daily-card-game/components/shop/buyable-card'
@@ -15,7 +21,6 @@ import {
 } from '@/app/daily-card-game/domain/shop/utils'
 import { VOUCHER_PRICE } from '@/app/daily-card-game/domain/voucher/constants'
 import { useGameState } from '@/app/daily-card-game/useGameState'
-import { Button } from '@/components/ui/button'
 
 import { ViewTemplate } from './view-template'
 
@@ -34,107 +39,127 @@ export function ShopView() {
   const canAffordVoucher = canAffordToBuy(VOUCHER_PRICE, game)
   const isSelectedCardPlayable = getIsSelectedCardPlayable(selectedCard, game)
   const isRoomForSelectedCard = getIsRoomForSelectedCard(selectedCard, game)
+  const rerollPrice = game.shopState.baseRerollPrice + game.shopState.rerollsUsed
 
   return (
     <ViewTemplate
       sidebarContentBottom={
-        <div className="flex flex-col gap-2">
-          <Button
-            onClick={() => {
-              eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })
-            }}
-          >
-            Finish and Select Blind
-          </Button>
-          <Button
-            disabled={game.money < game.shopState.baseRerollPrice + game.shopState.rerollsUsed}
-            onClick={() => {
-              eventEmitter.emit({ type: 'SHOP_REROLL' })
-            }}
-          >
-            Reroll (${game.shopState.baseRerollPrice + game.shopState.rerollsUsed})
-          </Button>
-        </div>
+        <Panel title="Shop Actions">
+          <div className="flex flex-col" style={{ gap: 8, padding: '12px 16px' }}>
+            <PrimaryButton
+              style={{ width: '100%' }}
+              onClick={() => eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })}
+            >
+              Continue → Blind
+            </PrimaryButton>
+            <DangerButton
+              style={{ width: '100%' }}
+              disabled={game.money < rerollPrice}
+              onClick={() => eventEmitter.emit({ type: 'SHOP_REROLL' })}
+            >
+              Reroll · ${rerollPrice}
+            </DangerButton>
+          </div>
+        </Panel>
       }
     >
-      <h2 className="text-xl font-bold">Shop</h2>
-      <div className="flex">
-        <div className="flex flex-col gap-2 w-3/4">
-          {game.jokers.length > 0 && (
-            <div className="mt-4">
-              <h3 className="mb-2">Jokers</h3>
-              <div className="flex flex-wrap">
+      <div className="flex flex-col" style={{ gap: 18 }}>
+        <Panel
+          title="Shop"
+          subtitle={`$${game.money} on hand`}
+        >
+          <div className="flex flex-col" style={{ padding: 16, gap: 18 }}>
+            {game.jokers.length > 0 && (
+              <SectionHeader label="Jokers in Play">
                 <CurrentJokers />
+              </SectionHeader>
+            )}
+
+            <SectionHeader label="Cards for Sale">
+              <div className="flex flex-wrap items-stretch gap-3">
+                {game.shopState.cardsForSale.map(buyableCard => (
+                  <BuyableCard
+                    key={buyableCard.card.id}
+                    buyableCard={buyableCard}
+                    isSelected={game.shopState.selectedCardId === buyableCard.card.id}
+                  />
+                ))}
               </div>
-            </div>
-          )}
-          <div className="mt-4">
-            <h3 className="mb-2">Cards for Sale</h3>
-            <div className="flex gap-2">
-              {game.shopState.cardsForSale.map(buyableCard => (
-                <BuyableCard
-                  key={buyableCard.card.id}
-                  buyableCard={buyableCard}
-                  isSelected={game.shopState.selectedCardId === buyableCard.card.id}
-                />
-              ))}
-            </div>
-          </div>
-          {selectedCard && (
-            <div className="mt-4 flex gap-2">
-              <Button
-                disabled={!canAffordSelectedCard || !isRoomForSelectedCard}
-                onClick={() => {
-                  eventEmitter.emit({ type: 'SHOP_BUY_CARD' })
-                }}
-              >
-                Buy (${Math.floor(selectedCard.price * game.shopState.priceMultiplier)})
-              </Button>
-              <Button
-                disabled={!canAffordSelectedCard || !isSelectedCardPlayable}
-                onClick={() => {
-                  eventEmitter.emit({ type: 'SHOP_BUY_AND_USE_CARD' })
-                }}
-              >
-                Buy and Use (${Math.floor(selectedCard.price * game.shopState.priceMultiplier)})
-              </Button>
-            </div>
-          )}
-          <div className="flex justify-between gap-2 mt-4 w-full">
-            {game.shopState.voucher !== null && (
-              <div className="mt-4">
-                <h3 className="mb-2">Voucher</h3>
-                <div className="flex flex-wrap">
-                  <Voucher voucher={game.shopState.voucher} />
-                </div>
-                <Button
-                  disabled={!canAffordVoucher}
-                  onClick={() => {
-                    eventEmitter.emit({ type: 'SHOP_BUY_VOUCHER', id: game.shopState.voucher! })
-                  }}
+            </SectionHeader>
+
+            {selectedCard && (
+              <div className="flex flex-wrap gap-2">
+                <PrimaryButton
+                  disabled={!canAffordSelectedCard || !isRoomForSelectedCard}
+                  onClick={() => eventEmitter.emit({ type: 'SHOP_BUY_CARD' })}
                 >
-                  Buy (${VOUCHER_PRICE})
-                </Button>
+                  Buy · ${Math.floor(selectedCard.price * game.shopState.priceMultiplier)}
+                </PrimaryButton>
+                <GhostButton
+                  disabled={!canAffordSelectedCard || !isSelectedCardPlayable}
+                  onClick={() => eventEmitter.emit({ type: 'SHOP_BUY_AND_USE_CARD' })}
+                >
+                  Buy &amp; Use · ${Math.floor(selectedCard.price * game.shopState.priceMultiplier)}
+                </GhostButton>
               </div>
             )}
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2 w-1/3">
-          {game.consumables.length > 0 && (
-            <div className="flex flex-col items-end gap-2 mt-4">
-              <h3 className="mb-2">Consumables</h3>
-              <div className="flex flex-wrap justify-end">
+            {game.shopState.voucher && (
+              <SectionHeader label="Voucher">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Voucher voucher={game.shopState.voucher} />
+                  <PrimaryButton
+                    disabled={!canAffordVoucher}
+                    onClick={() =>
+                      eventEmitter.emit({
+                        type: 'SHOP_BUY_VOUCHER',
+                        id: game.shopState.voucher!,
+                      })
+                    }
+                  >
+                    Buy · ${VOUCHER_PRICE}
+                  </PrimaryButton>
+                </div>
+              </SectionHeader>
+            )}
+
+            <SectionHeader label="Booster Packs">
+              <BoosterPacksForSale />
+            </SectionHeader>
+
+            {game.consumables.length > 0 && (
+              <SectionHeader label="Your Consumables">
                 <CurrentConsumables />
-              </div>
-            </div>
-          )}
-          <div className="mt-4 flex flex-col items-end gap-2">
-            <h3 className="mb-2">Booster Packs</h3>
-            <BoosterPacksForSale />
+              </SectionHeader>
+            )}
           </div>
-        </div>
+        </Panel>
       </div>
     </ViewTemplate>
+  )
+}
+
+function SectionHeader({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col" style={{ gap: 8 }}>
+      <div
+        className="uppercase"
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 10,
+          letterSpacing: 2,
+          opacity: 0.55,
+        }}
+      >
+        {label}
+      </div>
+      {children}
+    </div>
   )
 }

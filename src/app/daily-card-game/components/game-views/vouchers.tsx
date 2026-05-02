@@ -1,27 +1,21 @@
+import { ReferenceView } from '@/app/daily-card-game/components/cosmic/reference-view'
 import { Voucher } from '@/app/daily-card-game/components/shop/voucher'
-import { eventEmitter } from '@/app/daily-card-game/domain/events/event-emitter'
 import { implementedVouchers, vouchers } from '@/app/daily-card-game/domain/voucher/vouchers'
-import { Button } from '@/components/ui/button'
 
 export const VouchersView = () => {
   return (
-    <div className="flex flex-col items-center mt-10 w-3/4 mx-auto">
-      <h1 className="text-2xl font-bold">Vouchers</h1>
-      <div className="flex flex-wrap justify-center gap-2 mt-4 mx-auto">
+    <ReferenceView
+      eyebrow="Reference"
+      title="Vouchers"
+      description="Permanent run-wide perks. Buy from the shop; effects persist until the run ends."
+    >
+      <div className="flex flex-wrap gap-3">
         {Object.values(vouchers)
           .filter(voucher => implementedVouchers.includes(voucher.type))
           .map(voucher => (
             <Voucher key={voucher.type} voucher={voucher.type} />
           ))}
       </div>
-      <Button
-        className="mt-4"
-        onClick={() => {
-          eventEmitter.emit({ type: 'BACK_TO_MAIN_MENU' })
-        }}
-      >
-        Back to Main Menu
-      </Button>
-    </div>
+    </ReferenceView>
   )
 }

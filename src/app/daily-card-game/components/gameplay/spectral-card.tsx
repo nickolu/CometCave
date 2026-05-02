@@ -1,6 +1,6 @@
-import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { TokenCard } from '@/app/daily-card-game/components/cosmic/token-card'
 import { implementedSpectralCards as spectralCards } from '@/app/daily-card-game/domain/spectral/spectal-cards'
-import { SpectralCardState } from '@/app/daily-card-game/domain/spectral/types'
+import type { SpectralCardState } from '@/app/daily-card-game/domain/spectral/types'
 
 export const SpectralCard = ({
   spectralCard,
@@ -11,31 +11,28 @@ export const SpectralCard = ({
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
-  const spectralCardDefinition = spectralCards[spectralCard.spectralType]
-  if (!spectralCardDefinition) {
+  const def = spectralCards[spectralCard.spectralType]
+  if (!def) {
     return (
-      <GameCard>
-        <div className={'px-1 h-full '}>
-          <div>
-            <h3 className="text-sm font-bold">Not Implemented</h3>
-            <p className="text-xs text-muted-foreground">This card has not yet been implemented.</p>
-          </div>
-        </div>
-      </GameCard>
+      <TokenCard
+        title="Not Implemented"
+        description="This card has not yet been implemented."
+        glyph="✦"
+        accent="var(--cc-mint)"
+        size="sm"
+        disabled
+      />
     )
   }
   return (
-    <GameCard
-      onClick={() => {
-        onClick?.(isSelected ?? false, spectralCard.id)
-      }}
-    >
-      <div className={'px-1 h-full '}>
-        <div>
-          <h3 className="text-sm font-bold">{spectralCardDefinition.name}</h3>
-          <p className="text-xs text-muted-foreground">{spectralCardDefinition.description}</p>
-        </div>
-      </div>
-    </GameCard>
+    <TokenCard
+      title={def.name}
+      description={def.description}
+      glyph="✦"
+      accent="var(--cc-rarity-uncommon)"
+      selected={isSelected}
+      size="sm"
+      onClick={onClick ? () => onClick(isSelected ?? false, spectralCard.id) : undefined}
+    />
   )
 }

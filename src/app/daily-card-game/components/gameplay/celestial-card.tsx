@@ -1,6 +1,6 @@
-import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { TokenCard } from '@/app/daily-card-game/components/cosmic/token-card'
 import { celestialCards } from '@/app/daily-card-game/domain/consumable/celestial-cards'
-import { CelestialCardState } from '@/app/daily-card-game/domain/consumable/types'
+import type { CelestialCardState } from '@/app/daily-card-game/domain/consumable/types'
 
 export const CelestialCard = ({
   celestialCard,
@@ -11,21 +11,16 @@ export const CelestialCard = ({
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
+  const def = celestialCards[celestialCard.handId]
   return (
-    <GameCard
-      onClick={() => {
-        onClick?.(isSelected ?? false, celestialCard.id)
-      }}
-      isSelected={isSelected}
-    >
-      <div className={'px-1 h-full '}>
-        <div>
-          <h3 className="text-sm font-bold">{celestialCards[celestialCard.handId].name}</h3>
-          <p className="text-xs text-muted-foreground">
-            {celestialCards[celestialCard.handId].description}
-          </p>
-        </div>
-      </div>
-    </GameCard>
+    <TokenCard
+      title={def?.name ?? 'Celestial'}
+      description={def?.description}
+      glyph="✷"
+      accent="var(--cc-gold)"
+      selected={isSelected}
+      size="sm"
+      onClick={onClick ? () => onClick(isSelected ?? false, celestialCard.id) : undefined}
+    />
   )
 }

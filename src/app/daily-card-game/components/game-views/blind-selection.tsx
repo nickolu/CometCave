@@ -30,7 +30,7 @@ export function BlindSelectionView() {
 
   return (
     <ViewTemplate>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-stretch gap-4 justify-center">
         <BlindCard
           name="Small Blind"
           reward={smallBlindDefinition.baseReward}

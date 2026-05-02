@@ -1,6 +1,6 @@
-import { GameCard } from '@/app/daily-card-game/components/ui/game-card'
+import { TokenCard } from '@/app/daily-card-game/components/cosmic/token-card'
 import { implementedTarotCards as tarotCards } from '@/app/daily-card-game/domain/consumable/tarot-cards'
-import { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
+import type { TarotCardState } from '@/app/daily-card-game/domain/consumable/types'
 
 export const TarotCard = ({
   tarotCard,
@@ -11,20 +11,16 @@ export const TarotCard = ({
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
 }) => {
+  const def = tarotCards[tarotCard.tarotType]
   return (
-    <GameCard
-      onClick={() => {
-        onClick?.(isSelected ?? false, tarotCard.id)
-      }}
-    >
-      <div className={'px-1 h-full '}>
-        <div>
-          <h3 className="text-sm font-bold">{tarotCards[tarotCard.tarotType].name}</h3>
-          <p className="text-xs text-muted-foreground">
-            {tarotCards[tarotCard.tarotType].description}
-          </p>
-        </div>
-      </div>
-    </GameCard>
+    <TokenCard
+      title={def?.name ?? 'Tarot'}
+      description={def?.description}
+      glyph="◈"
+      accent="var(--cc-pink)"
+      selected={isSelected}
+      size="sm"
+      onClick={onClick ? () => onClick(isSelected ?? false, tarotCard.id) : undefined}
+    />
   )
 }
