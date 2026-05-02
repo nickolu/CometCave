@@ -77,6 +77,18 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
     draft.shopState.cardsForSale.push(...additionalCards)
   }
   draft.shopState.packsForSale = getRandomPacks(draft, 2)
+
+  // Coupon tag: make all initial items free
+  const couponTag = draft.tags.find(t => t.tagType === 'coupon')
+  if (couponTag) {
+    for (const item of draft.shopState.cardsForSale) {
+      item.price = 0
+    }
+    for (const pack of draft.shopState.packsForSale) {
+      pack.price = 0
+    }
+    draft.tags = draft.tags.filter(t => t.id !== couponTag.id)
+  }
 }
 
 export function handleShopSelectBlind(draft: GameState) {

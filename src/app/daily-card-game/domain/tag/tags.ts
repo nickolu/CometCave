@@ -258,6 +258,7 @@ export const tags: Record<TagType, TagDefinition> = {
 export const implementedTags: Partial<Record<TagType, TagDefinition>> = {
   uncommon,
   d6,
+  coupon,
 }
 
 /* Tags
