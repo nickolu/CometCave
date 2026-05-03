@@ -1,6 +1,7 @@
 import Perplexity from '@perplexity-ai/perplexity_ai'
 import { z } from 'zod'
 
+import { recordUsage } from '../usageRecorder'
 import type { Fact, FactSource, FetchFactsOptions } from './types'
 
 // Sonar is Perplexity's cheapest web-grounded model. Fact extraction
@@ -139,6 +140,12 @@ Avoid duplicates: each of the ${count} facts should be about a different subject
       },
       temperature: 0.7,
       max_tokens: 1500,
+    })
+    recordUsage({
+      stage: 'facts',
+      model: FACT_MODEL,
+      inputTokens: response.usage?.prompt_tokens ?? 0,
+      outputTokens: response.usage?.completion_tokens ?? 0,
     })
 
     const content = response.choices[0]?.message?.content
