@@ -14,6 +14,7 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { NicknameDialog } from './NicknameDialog'
 import { ResetNoticeButton } from './ResetNoticeButton'
+import { type ResetScopes, ResetStatsDialog } from './ResetStatsDialog'
 import { SignInBanner } from './SignInCTA'
 
 export function TriviaLanding({
@@ -24,6 +25,7 @@ export function TriviaLanding({
   onViewInfiniteStats,
   onStartPractice,
   onViewInfiniteLeaderboard,
+  onStatsReset,
   todayResult,
 }: {
   onStartGame?: () => void
@@ -33,6 +35,7 @@ export function TriviaLanding({
   onViewInfiniteStats?: () => void
   onStartPractice?: () => void
   onViewInfiniteLeaderboard?: () => void
+  onStatsReset?: (scopes: ResetScopes) => void
   todayResult: TriviaGameResult | null
 }) {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -45,6 +48,7 @@ export function TriviaLanding({
     setNickname,
   } = useTriviaUser()
   const [nicknameDialogOpen, setNicknameDialogOpen] = useState(false)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
 
   const todayStr = getTodayPST()
   const alreadyPlayed = !!todayResult
@@ -66,6 +70,7 @@ export function TriviaLanding({
             photoURL={user.photoURL}
             onSignOut={signOut}
             onEditNickname={() => setNicknameDialogOpen(true)}
+            onResetStats={() => setResetDialogOpen(true)}
           />
         ) : (
           <Link
@@ -257,6 +262,13 @@ export function TriviaLanding({
           onSave={setNickname}
         />
       )}
+
+      {resetDialogOpen && (
+        <ResetStatsDialog
+          onClose={() => setResetDialogOpen(false)}
+          onResetComplete={(scopes) => onStatsReset?.(scopes)}
+        />
+      )}
     </div>
   )
 }
@@ -266,11 +278,13 @@ function UserMenu({
   photoURL,
   onSignOut,
   onEditNickname,
+  onResetStats,
 }: {
   displayName: string
   photoURL: string | null
   onSignOut: () => Promise<void>
   onEditNickname: () => void
+  onResetStats: () => void
 }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -330,6 +344,17 @@ function UserMenu({
             className="w-full text-left px-3 py-2 text-sm text-on-surface/80 hover:bg-surface-variant/20 hover:text-on-surface transition-colors"
           >
             Edit nickname
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onResetStats()
+            }}
+            className="w-full text-left px-3 py-2 text-sm text-on-surface/80 hover:bg-surface-variant/20 hover:text-on-surface transition-colors"
+          >
+            Reset stats…
           </button>
           <button
             type="button"
