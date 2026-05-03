@@ -325,8 +325,8 @@ export const GENERAL_KNOWLEDGE_SEEDS: string[] = [
   'IMDB',
   'rotten tomatoes',
   'metacritic',
-  'pop quiz',
-  'rapid fire round',
-  'lightning round',
-  'final answer',
+  // Removed gameplay-meta seeds ("pop quiz", "rapid fire round",
+  // "lightning round", "final answer"): they're not topics, so the
+  // grounded fact source has nothing concrete to search for and
+  // converges on whatever generic "facts" listicle PageRank surfaces.
 ]

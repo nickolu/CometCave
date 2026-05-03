@@ -9,6 +9,7 @@ import {
 import { MODIFIERS_BY_DIFFICULTY } from '@/app/trivia/data/seeds/modifiersByDifficulty'
 import { getSeedsForDifficulty } from '@/app/trivia/data/seedsByDifficulty'
 import type { AIQuestion, QuestionGenerationModels } from '@/lib/trivia/aiQuestions'
+import { findActiveDuplicateAnswer } from '@/lib/trivia/aiQuestions'
 import {
   type Fact,
   type FactSource,
@@ -717,6 +718,27 @@ export async function generateInfiniteQuestion(
     }
 
     if (acceptedDraft && acceptedReview) {
+      // Duplicate-answer backstop: even with the seed-bound Perplexity
+      // prompt, different seeds can still surface the same famous
+      // answer (e.g. multiple seeds in Art genuinely landing on
+      // "Mona Lisa"). If an active question with this exact answer
+      // already exists, fall through to the next outer attempt — that
+      // re-rolls the seed, which usually produces a different answer.
+      const dupeId = await findActiveDuplicateAnswer(acceptedDraft.correct_answer)
+      if (dupeId) {
+        lastReason = `duplicate answer: "${acceptedDraft.correct_answer}" already exists as active question ${dupeId}`
+        console.warn('[generateInfiniteQuestion] duplicate-answer rejection', {
+          attempt,
+          category: categoryName,
+          seed: seedSummary,
+          factSource: factSource.id,
+          factSourceCitation: fact.source,
+          correctAnswer: acceptedDraft.correct_answer,
+          duplicateId: dupeId,
+        })
+        continue
+      }
+
       const id = `ai-infinite-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       console.info('[generateInfiniteQuestion] generated', {
         id,

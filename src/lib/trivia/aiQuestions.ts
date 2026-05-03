@@ -59,6 +59,39 @@ export interface SeenQuestion {
   correct: boolean
 }
 
+// Backstop against the convergence pattern: different seeds returning
+// the same Perplexity listicle and producing many active questions
+// whose correctAnswer was the same name (e.g. "Mona Lisa" landing as
+// the answer for seeds across Art and General Knowledge). Returns the
+// id of any active question whose correctAnswer matches verbatim, so
+// the generator can re-roll instead of saving yet another copy.
+//
+// Single-field equality query → no composite index needed; we filter
+// by status in code. The same correctAnswer rarely shows up on more
+// than a handful of docs, so capping at 5 is plenty.
+//
+// Case-sensitive on purpose: the upstream LLM is consistent about
+// proper-noun casing, and lower-casing would require a parallel field.
+// If we start seeing case drift in practice we can layer normalization
+// then.
+export async function findActiveDuplicateAnswer(
+  correctAnswer: string
+): Promise<string | null> {
+  const trimmed = correctAnswer.trim()
+  if (!trimmed) return null
+  const db = getFirestoreDb()
+  const snap = await db
+    .collection('aiQuestions')
+    .where('correctAnswer', '==', trimmed)
+    .limit(5)
+    .get()
+  for (const doc of snap.docs) {
+    const status = (doc.data() as { status?: string }).status
+    if (status === 'active') return doc.id
+  }
+  return null
+}
+
 export async function saveAIQuestion(
   question: Omit<AIQuestion, 'status' | 'timesShown' | 'timesCorrect' | 'avgTimeMs' | 'likeCount' | 'dislikeCount' | 'random'>
 ): Promise<AIQuestion> {
