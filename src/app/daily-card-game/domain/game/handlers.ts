@@ -26,8 +26,8 @@ function computeBlindScoreAndAnte(
 ) {
   if (!currentBlind) return null
 
-  // Convert hand score (chips * mult) to BigInt before adding to blind score
-  const handScore = BigInt(draft.gamePlayState.score.chips * draft.gamePlayState.score.mult)
+  // mult can be fractional (e.g. Bloodstone, Ancient Joker apply x1.5), so floor before BigInt
+  const handScore = BigInt(Math.floor(draft.gamePlayState.score.chips * draft.gamePlayState.score.mult))
   const blindScore = currentBlind.score + handScore
   const blindDefinition = getBlindDefinition(currentBlind.type, round)
   const ante = calculateAnte(round.baseAnte, blindDefinition.anteMultiplier)
