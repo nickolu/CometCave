@@ -9,11 +9,13 @@ import {
 import { MODIFIERS_BY_DIFFICULTY } from '@/app/trivia/data/seeds/modifiersByDifficulty'
 import { getSeedsForDifficulty } from '@/app/trivia/data/seedsByDifficulty'
 import type { AIQuestion, QuestionGenerationModels } from '@/lib/trivia/aiQuestions'
+import { findActiveDuplicateAnswer } from '@/lib/trivia/aiQuestions'
 import {
   type Fact,
   type FactSource,
   getDefaultFactSource,
 } from '@/lib/trivia/factSources'
+import { recordUsage } from '@/lib/trivia/usageRecorder'
 import { APP_VERSION } from '@/lib/version'
 
 export type GeneratedQuestion = Omit<
@@ -225,6 +227,12 @@ If you cannot construct a question that is both unambiguous AND leak-free from t
     temperature: 0.5,
     maxTokens: 600,
   })
+  recordUsage({
+    stage: 'construct',
+    model: QUESTION_MODEL,
+    inputTokens: result.usage?.promptTokens ?? 0,
+    outputTokens: result.usage?.completionTokens ?? 0,
+  })
 
   if (!result.object.question || !result.object.correct_answer) {
     throw new Error('Question construction returned empty fields')
@@ -292,6 +300,12 @@ Rules for the fix:
 ${draft.difficulty === 'easy' ? `For EASY questions specifically: the correct_answer must be a string a casual party-trivia player would naturally produce. Specialist labels ("Atomic Bomb Dome" instead of "Hiroshima"; "Constantine the Great" instead of "Constantine"; "Lifetime Achievement Grammy Award" instead of "Lifetime Achievement Award") are unacceptable for easy. If the source fact's keyDetail is specialist, repoint per the exception above.\n\n` : ''}Output the revised question, the correct_answer, and an explanation. If you genuinely cannot fix this fact's question, output your best attempt — we will fall through to a fresh fact.`,
     temperature: 0.4,
     maxTokens: 600,
+  })
+  recordUsage({
+    stage: 'repair',
+    model: REPAIR_MODEL,
+    inputTokens: result.usage?.promptTokens ?? 0,
+    outputTokens: result.usage?.completionTokens ?? 0,
   })
 
   if (!result.object.question || !result.object.correct_answer) {
@@ -441,6 +455,12 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
     temperature: 0,
     maxTokens: 200,
   })
+  recordUsage({
+    stage: 'review',
+    model: REVIEW_MODEL,
+    inputTokens: result.usage?.promptTokens ?? 0,
+    outputTokens: result.usage?.completionTokens ?? 0,
+  })
 
   // Defense in depth: the prompt tells the LLM not to flag leaks, but
   // smaller models sometimes hallucinate one anyway by reading the
@@ -503,6 +523,12 @@ ${facts.map((f, i) => `[${i}] keyDetail: "${f.keyDetail}" — ${f.claim}`).join(
 Output the index (0-based) of the best fact for an easy question.`,
       temperature: 0,
       maxTokens: 50,
+    })
+    recordUsage({
+      stage: 'factPicker',
+      model: REVIEW_MODEL,
+      inputTokens: result.usage?.promptTokens ?? 0,
+      outputTokens: result.usage?.completionTokens ?? 0,
     })
     const idx = Math.max(0, Math.min(facts.length - 1, result.object.pickedIndex))
     return facts[idx]
@@ -717,6 +743,27 @@ export async function generateInfiniteQuestion(
     }
 
     if (acceptedDraft && acceptedReview) {
+      // Duplicate-answer backstop: even with the seed-bound Perplexity
+      // prompt, different seeds can still surface the same famous
+      // answer (e.g. multiple seeds in Art genuinely landing on
+      // "Mona Lisa"). If an active question with this exact answer
+      // already exists, fall through to the next outer attempt — that
+      // re-rolls the seed, which usually produces a different answer.
+      const dupeId = await findActiveDuplicateAnswer(acceptedDraft.correct_answer)
+      if (dupeId) {
+        lastReason = `duplicate answer: "${acceptedDraft.correct_answer}" already exists as active question ${dupeId}`
+        console.warn('[generateInfiniteQuestion] duplicate-answer rejection', {
+          attempt,
+          category: categoryName,
+          seed: seedSummary,
+          factSource: factSource.id,
+          factSourceCitation: fact.source,
+          correctAnswer: acceptedDraft.correct_answer,
+          duplicateId: dupeId,
+        })
+        continue
+      }
+
       const id = `ai-infinite-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       console.info('[generateInfiniteQuestion] generated', {
         id,

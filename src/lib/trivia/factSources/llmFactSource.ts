@@ -2,6 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 
+import { recordUsage } from '../usageRecorder'
 import type { Fact, FactSource, FetchFactsOptions } from './types'
 
 // Sonnet without extended thinking. Fact extraction is mostly recall,
@@ -97,6 +98,12 @@ BAD: claim="The first edition of 'The Dark Tower: The Gunslinger' by Stephen Kin
 Avoid duplicates: each of the ${count} facts should be about a different subject.`,
       temperature: 0.7,
       maxTokens: 1500,
+    })
+    recordUsage({
+      stage: 'facts',
+      model: FACT_MODEL,
+      inputTokens: result.usage?.promptTokens ?? 0,
+      outputTokens: result.usage?.completionTokens ?? 0,
     })
 
     return result.object.facts.map((f) => ({

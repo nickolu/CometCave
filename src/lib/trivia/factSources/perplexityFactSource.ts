@@ -1,6 +1,7 @@
 import Perplexity from '@perplexity-ai/perplexity_ai'
 import { z } from 'zod'
 
+import { recordUsage } from '../usageRecorder'
 import type { Fact, FactSource, FetchFactsOptions } from './types'
 
 // Sonar is Perplexity's cheapest web-grounded model. Fact extraction
@@ -77,7 +78,28 @@ export class PerplexityFactSource implements FactSource {
     difficulty,
     count,
   }: FetchFactsOptions): Promise<Fact[]> {
-    const seedLine = seed ? `Topical seed: ${seed}\n` : ''
+    // Seed format from the generator is "${seedWord} :: ${modifier}".
+    // We parse it back out so the prompt can make seedWord the primary
+    // search subject (binding) and modifier the framing (decorative).
+    // Without this, Perplexity treats the category as the binding
+    // constraint and the seed as flavor — converging on whatever
+    // generic "facts about ${category}" listicle has highest PageRank
+    // (e.g. every Art seed → the Mona Lisa listicle).
+    let seedWord: string | null = null
+    let modifier: string | null = null
+    if (seed) {
+      const parts = seed.split(' :: ')
+      seedWord = (parts[0] ?? '').trim() || null
+      modifier = (parts[1] ?? '').trim() || null
+    }
+
+    const subject = seedWord ? `"${seedWord}"` : `the category "${category}"`
+    const subjectLine = seedWord
+      ? `Find ${count} distinct, well-sourced trivia facts SPECIFICALLY about ${subject} within the broader category of "${category}".`
+      : `Find ${count} distinct, well-sourced trivia facts about the category "${category}".`
+    const modifierLine = modifier
+      ? `\nAngle / framing to emphasize: "${modifier}" — bias the facts toward this aspect of ${subject}.`
+      : ''
 
     const response = await this.client.chat.completions.create({
       model: FACT_MODEL,
@@ -89,11 +111,17 @@ export class PerplexityFactSource implements FactSource {
         },
         {
           role: 'user',
-          content: `Produce ${count} distinct, interesting, well-sourced facts about the category "${category}".
-${seedLine}Difficulty: ${difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[difficulty]}
+          content: `${subjectLine}${modifierLine}
+
+Difficulty: ${difficulty.toUpperCase()}. ${DIFFICULTY_GUIDANCE[difficulty]}
+
+CRITICAL — bind your search to ${subject}, not to "${category}" generically:
+- Every fact MUST be specifically about ${subject} (or something directly tied to it). Facts about other subjects in "${category}" do not count, even if they're famous and even if they appear in the same search results.
+- If a search result is a generic "facts about ${category}" listicle that isn't specifically about ${subject}, IGNORE it. Search again with more specific queries (e.g. ${seedWord ? `"${seedWord} interesting facts", "${seedWord} history", "${seedWord} trivia"` : `"${category} <specific subtopic>"`}) instead.
+- The ${count} facts should come from at least 3 different source domains. If your search keeps returning the same listicle, broaden your queries — do not pull multiple facts from a single listicle.
+- Concrete failure mode to avoid: when seeded with "Pablo Picasso" within the Art category, do NOT return a fact about the Mona Lisa just because it appears in a "famous artworks" listicle. Return facts about Picasso.
 
 Each fact must:
-- Be specifically about the category "${category}" — not adjacent topics.
 - State ONE specific, verifiable claim about ONE specific subject (a particular person, work, event, place, or thing — not a category of things).
 - The keyDetail must be a NAMED ENTITY — a person, place, work, event, organism, concept, or short proper-noun phrase. NEVER a number, year, date, percentage, or measurement on its own. Specific numbers and dates are unfair as trivia answers — players have to guess. If a fact's most surprising aspect is a number ("Lake Baikal is 1,642m deep"), use the named entity as the keyDetail ("Lake Baikal") and let the number live inside the claim — it will become a clue in the eventual question.
 - The keyDetail must be the MINIMAL answer string — drop articles and unit words the question would naturally contain ("Mount Everest" not "the mountain Mount Everest"). Names that legitimately contain a number ("Apollo 11", "Area 51", "Catch-22") are fine; the rule is about pure-numeric answers, not about names that happen to include digits.
@@ -103,7 +131,7 @@ Each fact must:
 - Be DIRECTLY supported by one of the search results you retrieved. If you couldn't find a search result that supports the claim, do not include it.
 - Set sourceUrl to the single most-authoritative search result URL that supports the claim.
 
-Avoid duplicates: each of the ${count} facts should be about a different subject.`,
+Avoid duplicates: each of the ${count} facts should be about a different subject within ${subject}.`,
         },
       ],
       response_format: {
@@ -112,6 +140,12 @@ Avoid duplicates: each of the ${count} facts should be about a different subject
       },
       temperature: 0.7,
       max_tokens: 1500,
+    })
+    recordUsage({
+      stage: 'facts',
+      model: FACT_MODEL,
+      inputTokens: response.usage?.prompt_tokens ?? 0,
+      outputTokens: response.usage?.completion_tokens ?? 0,
     })
 
     const content = response.choices[0]?.message?.content
