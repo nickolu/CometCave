@@ -23,32 +23,21 @@ export interface SamplerOptions {
 const CANDIDATE_WINDOW = 50
 
 /**
- * Difficulty-bias curve for the sampler.
+ * Difficulty mix for the sampler. Fixed 4:2:1 (easy:medium:hard) —
+ * roughly 57% / 29% / 14% — regardless of streak. Earlier versions
+ * ramped toward hard as streak grew (up to 70% hard at streak 20+),
+ * but observation showed easy questions weren't surfacing nearly
+ * often enough; players want easy to dominate even when streaking.
  *
- * Designed to feel progressively harder without sudden cliff-edges.
- * The bands are:
- *
- *   Streak 0-4   → 60% easy, 30% medium, 10% hard   (onboarding)
- *   Streak 5-9   → 30% easy, 40% medium, 30% hard   (warming up)
- *   Streak 10-19 → 10% easy, 30% medium, 60% hard   (challenge zone)
- *   Streak 20+   → 5% easy, 25% medium, 70% hard    (expert territory)
- *
- * Tuning notes (v1 — 2026-04-28):
- * - No telemetry data yet; these are design estimates.
- * - The 20+ band caps hard at 70% rather than 100% to prevent
- *   frustration spirals where a single hard miss ends a long run.
- * - Freshness bias (1/(1+timesShown)) ensures under-seen questions
- *   surface first, preventing "greatest hits" stagnation.
- * - Revisit after ~1 week of real run data using:
- *     SELECT difficulty, AVG(correct::int), COUNT(*)
- *     FROM answers JOIN questions ON ...
- *     GROUP BY difficulty, streak_band
+ * The streak param is preserved on the function signature so callers
+ * don't have to change; if we ever want streak progression back, this
+ * is the only place it needs to land. Freshness bias
+ * (1/(1+timesShown)) still surfaces under-seen questions within each
+ * difficulty bucket, so the pool doesn't stagnate on the 4-easy
+ * majority.
  */
-function getDifficultyWeights(streak: number): [number, number, number] {
-  if (streak >= 20) return [0.05, 0.25, 0.70]
-  if (streak >= 10) return [0.10, 0.30, 0.60]
-  if (streak >= 5)  return [0.30, 0.40, 0.30]
-  return [0.60, 0.30, 0.10]
+function getDifficultyWeights(_streak: number): [number, number, number] {
+  return [4, 2, 1]
 }
 
 // Weighted random selection over an array of items with numeric weights

@@ -60,16 +60,15 @@ const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
   hard: 'Should require real, specific knowledge of the topic — challenging but fair. Genuine deep cuts welcome here.',
 }
 
-function streakBiasedDifficulty(streak: number): 'easy' | 'medium' | 'hard' {
-  let weights: [number, number, number]
-  if (streak >= 20) weights = [0.05, 0.25, 0.7]
-  else if (streak >= 10) weights = [0.1, 0.3, 0.6]
-  else if (streak >= 5) weights = [0.3, 0.4, 0.3]
-  else weights = [0.6, 0.3, 0.1]
-
+// Difficulty mix for fresh generations. Fixed 4:2:1 (easy:medium:hard)
+// — ~57% / ~29% / ~14% — regardless of streak. Mirrors the sampler's
+// distribution; see getDifficultyWeights() in sampler.ts for the full
+// rationale. The streak option is still accepted on
+// GenerateInfiniteQuestionOptions so callers don't need to change.
+function pickDifficulty(): 'easy' | 'medium' | 'hard' {
   const r = Math.random()
-  if (r < weights[0]) return 'easy'
-  if (r < weights[0] + weights[1]) return 'medium'
+  if (r < 4 / 7) return 'easy'
+  if (r < 6 / 7) return 'medium'
   return 'hard'
 }
 
@@ -584,7 +583,7 @@ export async function generateInfiniteQuestion(
 
   let lastReason = 'unknown'
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
-    const difficulty = options.difficulty ?? streakBiasedDifficulty(options.streak ?? 0)
+    const difficulty = options.difficulty ?? pickDifficulty()
     const categoryId = options.categoryId ?? pickCategoryId()
     const categoryName = getOpenTDBCategoryName(categoryId)
     // Difficulty-aware seed + modifier selection. Easy generations
