@@ -6,7 +6,7 @@ import { getFirestoreDb } from '@/lib/firebase/server';
 import { incrementVoiceStat } from '@/lib/trivia/triviaStats';
 
 const BONUS_LIVES_PER_RUN = 1;
-const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'other'] as const;
+const VALID_REASONS = ['obvious', 'unanswerable', 'nonsense', 'inaccurate', 'difficulty_mismatch', 'duplicate', 'other'] as const;
 type FlagReason = (typeof VALID_REASONS)[number];
 
 // One flag from any user is enough to remove a question from rotation.

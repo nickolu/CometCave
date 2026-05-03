@@ -10,6 +10,7 @@ const FLAG_REASONS = [
   { value: 'nonsense', label: "Question doesn't make sense" },
   { value: 'inaccurate', label: 'Inaccurate or incorrect' },
   { value: 'difficulty_mismatch', label: "Difficulty doesn't match the challenge" },
+  { value: 'duplicate', label: "Duplicate question (I've seen this before)" },
   { value: 'other', label: 'Other' },
 ] as const
 
