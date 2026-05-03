@@ -1,0 +1,363 @@
+{
+  "timestamp": "2026-05-03T04:50:17.169Z",
+  "appVersion": "8496c0d2fde2f27c66d7c7846a487da6e1902ebc",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 3,
+    "totalJobs": 153,
+    "concurrency": 4,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 153,
+    "generationFailed": 0,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 2.721725999999999,
+    "perTrialUsd": 0.017789058823529404,
+    "byStage": {
+      "facts": 0.19065,
+      "factPicker": 0.069142,
+      "construct": 1.4810670000000001,
+      "review": 0.30166800000000005,
+      "judge": 0.43128500000000003,
+      "repair": 0.24791400000000008
+    },
+    "byModel": {
+      "sonar": 0.19065,
+      "claude-haiku-4-5-20251001": 0.3708100000000002,
+      "claude-sonnet-4-6": 1.728981,
+      "gpt-4o": 0.43128500000000003
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 153,
+    "scored": 153,
+    "score3": 280,
+    "score2": 15,
+    "score1": 11,
+    "shipPct": 87.58169934640523,
+    "factualMean": 2.823529411764706,
+    "difficultyMean": 2.934640522875817
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 51,
+      "scored": 51,
+      "score3": 91,
+      "score2": 7,
+      "score1": 4,
+      "shipPct": 88.23529411764706,
+      "factualMean": 2.8627450980392157,
+      "difficultyMean": 2.843137254901961
+    },
+    "medium": {
+      "total": 51,
+      "scored": 51,
+      "score3": 97,
+      "score2": 3,
+      "score1": 2,
+      "shipPct": 94.11764705882354,
+      "factualMean": 2.9019607843137254,
+      "difficultyMean": 2.9607843137254903
+    },
+    "hard": {
+      "total": 51,
+      "scored": 51,
+      "score3": 92,
+      "score2": 5,
+      "score1": 5,
+      "shipPct": 80.3921568627451,
+      "factualMean": 2.7058823529411766,
+      "difficultyMean": 3
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 9,
+      "scored": 9,
+      "score3": 15,
+      "score2": 1,
+      "score1": 2,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.7777777777777777,
+      "difficultyMean": 2.6666666666666665
+    },
+    "Film": {
+      "total": 9,
+      "scored": 9,
+      "score3": 18,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 100,
+      "factualMean": 3,
+      "difficultyMean": 3
+    },
+    "Science & Nature": {
+      "total": 9,
+      "scored": 9,
+      "score3": 16,
+      "score2": 1,
+      "score1": 1,
+      "shipPct": 77.77777777777777,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 3
+    },
+    "Geography": {
+      "total": 9,
+      "scored": 9,
+      "score3": 18,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 100,
+      "factualMean": 3,
+      "difficultyMean": 3
+    },
+    "History": {
+      "total": 9,
+      "scored": 9,
+      "score3": 15,
+      "score2": 2,
+      "score1": 1,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.5555555555555554,
+      "difficultyMean": 3
+    },
+    "Music": {
+      "total": 9,
+      "scored": 9,
+      "score3": 17,
+      "score2": 0,
+      "score1": 1,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.7777777777777777,
+      "difficultyMean": 3
+    },
+    "Television": {
+      "total": 9,
+      "scored": 9,
+      "score3": 18,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 100,
+      "factualMean": 3,
+      "difficultyMean": 3
+    },
+    "Video Games": {
+      "total": 9,
+      "scored": 9,
+      "score3": 16,
+      "score2": 2,
+      "score1": 0,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.888888888888889,
+      "difficultyMean": 2.888888888888889
+    },
+    "Sports": {
+      "total": 9,
+      "scored": 9,
+      "score3": 17,
+      "score2": 1,
+      "score1": 0,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.888888888888889,
+      "difficultyMean": 3
+    },
+    "Mythology": {
+      "total": 9,
+      "scored": 9,
+      "score3": 14,
+      "score2": 1,
+      "score1": 3,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.4444444444444446,
+      "difficultyMean": 2.7777777777777777
+    },
+    "Books": {
+      "total": 9,
+      "scored": 9,
+      "score3": 17,
+      "score2": 0,
+      "score1": 1,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.7777777777777777,
+      "difficultyMean": 3
+    },
+    "Computers": {
+      "total": 9,
+      "scored": 9,
+      "score3": 16,
+      "score2": 1,
+      "score1": 1,
+      "shipPct": 77.77777777777777,
+      "factualMean": 2.888888888888889,
+      "difficultyMean": 2.7777777777777777
+    },
+    "Animals": {
+      "total": 9,
+      "scored": 9,
+      "score3": 18,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 100,
+      "factualMean": 3,
+      "difficultyMean": 3
+    },
+    "Politics": {
+      "total": 9,
+      "scored": 9,
+      "score3": 15,
+      "score2": 2,
+      "score1": 1,
+      "shipPct": 77.77777777777777,
+      "factualMean": 2.5555555555555554,
+      "difficultyMean": 3
+    },
+    "Art": {
+      "total": 9,
+      "scored": 9,
+      "score3": 17,
+      "score2": 1,
+      "score1": 0,
+      "shipPct": 100,
+      "factualMean": 3,
+      "difficultyMean": 2.888888888888889
+    },
+    "Vehicles": {
+      "total": 9,
+      "scored": 9,
+      "score3": 16,
+      "score2": 2,
+      "score1": 0,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.888888888888889,
+      "difficultyMean": 2.888888888888889
+    },
+    "Cartoons & Animation": {
+      "total": 9,
+      "scored": 9,
+      "score3": 17,
+      "score2": 1,
+      "score1": 0,
+      "shipPct": 88.88888888888889,
+      "factualMean": 2.888888888888889,
+      "difficultyMean": 3
+    }
+  },
+  "worst": [
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "question": "According to a popular claim about the origins of table etiquette, in which ancient religious text is the rule of \"no elbows on the table\" said to have its earliest roots?",
+      "correctAnswer": "Old Testament",
+      "factualScore": 1,
+      "factualRationale": "There is no evidence or widely accepted claim that the 'no elbows on the table' rule originates from the Old Testament.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mis-tiered as 'easy' because the answer is not common knowledge and relies on a dubious claim.",
+      "sourceUrl": "https://interestingfacts.com/table-etiquette-facts/"
+    },
+    {
+      "category": "Mythology",
+      "difficulty": "medium",
+      "question": "In the Pyramid Texts, which spell stands as the sole individual spell to bear a title — specifically, the 'Opening of the Mouth'?",
+      "correctAnswer": "Spell 355",
+      "factualScore": 1,
+      "factualRationale": "The Pyramid Texts do not contain a spell numbered 355 with the title 'Opening of the Mouth'; this is a misattribution as the 'Opening of the Mouth' is a well-known ritual but not specifically numbered or titled as such in the Pyramid Texts.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched for a medium difficulty as it requires specialist knowledge of the Pyramid Texts and misattributes a well-known ritual, making it confusing and misleading.",
+      "sourceUrl": "https://www.touregypt.net/featurestories/pyramidtext.htm"
+    },
+    {
+      "category": "Science & Nature",
+      "difficulty": "hard",
+      "question": "Which paleontologist accidentally discovered the dinosaur initially named Daptosaurus while searching for Tenontosaurus fossils in Wyoming during the 1930s — a find later reclassified as Deinonychus?",
+      "correctAnswer": "Barnum Brown",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer is incorrect; it was John Ostrom, not Barnum Brown, who discovered and named Deinonychus.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is a genuine deep cut, requiring specific knowledge of paleontology history, fitting the 'hard' tier.",
+      "sourceUrl": "https://www.xprize.org/news/ten-major-breakthroughs-that-were-happy-accidents"
+    },
+    {
+      "category": "History",
+      "difficulty": "hard",
+      "question": "Saladin was widely praised for his disciplined and even chivalrous conduct in warfare, but there is one notable city in northwestern Iraq — historically a heartland of the Yazidi people — where his forces broke from that reputation and went on a rampage after its capture. What city is that?",
+      "correctAnswer": "Sinjar",
+      "factualScore": 1,
+      "factualRationale": "There is no historical evidence or widely accepted account of Saladin's forces rampaging in Sinjar, making the premise and answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is appropriately difficult for a 'hard' tier, as it requires specific historical knowledge about Saladin's campaigns.",
+      "sourceUrl": "https://www.factinate.com/people/saladin-lionhearts-nemesis"
+    },
+    {
+      "category": "Music",
+      "difficulty": "hard",
+      "question": "Which American minimalist composer deliberately abandoned conventional rhythm and tempo, employing aleatoric techniques to introduce unpredictability into his performances?",
+      "correctAnswer": "La Monte Young",
+      "factualScore": 1,
+      "factualRationale": "La Monte Young is not primarily known for employing aleatoric techniques; John Cage is a more accurate answer for this description.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard, as it requires specific knowledge of minimalist composers and their techniques.",
+      "sourceUrl": "https://www.allclassical.org/the-story-of-minimalism-part-one-a-new-way-of-listening/"
+    },
+    {
+      "category": "Mythology",
+      "difficulty": "easy",
+      "question": "According to Greek mythology, which sporting event did Zeus create to celebrate his victory over the Titan Cronus?",
+      "correctAnswer": "Olympic Games",
+      "factualScore": 1,
+      "factualRationale": "There is no widely accepted myth that Zeus created the Olympic Games to celebrate his victory over Cronus; this is a misrepresentation of Greek mythology.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated for an easy difficulty level, as the Olympic Games are a well-known event.",
+      "sourceUrl": "https://historyfacts.com/world-history/article/6-little-known-facts-about-greek-mythology/"
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "question": "In Arthur C. Clarke's novel \"Rendezvous with Rama,\" what type of geometric symmetry — found in three-sided figures — is pervasively exhibited throughout the alien vessel's internal structures?",
+      "correctAnswer": "trilateral symmetry",
+      "factualScore": 1,
+      "factualRationale": "The correct term for the symmetry in 'Rendezvous with Rama' is 'triangular symmetry,' not 'trilateral symmetry.'",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard, as it requires specific knowledge of the book's details.",
+      "sourceUrl": "http://strakul.blogspot.com/2025/02/book-review-rendezvous-with-rama-by.html"
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "question": "Who developed the MVC software design pattern in 1979?",
+      "correctAnswer": "Trygve Reenskaug",
+      "factualScore": 3,
+      "factualRationale": "The question correctly attributes the development of the MVC pattern to Trygve Reenskaug in 1979.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The answer 'Trygve Reenskaug' is a specialist label not commonly known to the general public, making it unsuitable for an 'easy' difficulty level.",
+      "sourceUrl": "https://dev.to/dmitry-kabanov/model-view-controller-mvc-origins-of-design-pattern-1677"
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "question": "According to human rights literature, critics have used a two-word architectural metaphor to describe the structural weakness built into the Universal Declaration of Human Rights from its very foundation — what is that metaphor?",
+      "correctAnswer": "fragile architecture",
+      "factualScore": 1,
+      "factualRationale": "The term 'fragile architecture' is not widely recognized or verifiable as a specific critique of the UDHR in human rights literature.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is appropriately difficult for the 'hard' tier, as it requires specific knowledge of human rights literature.",
+      "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11464809/"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "question": "In British rhyming slang, whose name is used as a term for 'starving,' as in 'I'm absolutely [name]'?",
+      "correctAnswer": "Hank Marvin",
+      "factualScore": 3,
+      "factualRationale": "The question correctly identifies Hank Marvin as the name used in Cockney rhyming slang for 'starving.'",
+      "difficultyScore": 2,
+      "difficultyRationale": "While Hank Marvin is a well-known figure in British music, the use of his name in rhyming slang may not be common knowledge for a typical adult, making it borderline for an 'easy' tier.",
+      "sourceUrl": "https://www.italki.com/en/article/1271/5-interesting-facts-about-english-slang"
+    }
+  ],
+  "generationFailures": []
+}
