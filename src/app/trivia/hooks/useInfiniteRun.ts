@@ -86,6 +86,12 @@ export function useInfiniteRun() {
   const startTimeRef = useRef<number>(0)
   const prefetchRef = useRef<Promise<InfiniteQuestion | null> | null>(null)
   const prefetchAbortRef = useRef<AbortController | null>(null)
+  // Guards against a second nextQuestion firing while the first is still
+  // awaiting (a slow AI-gen prefetch keeps the "Next Question" button
+  // visible for seconds; a stray re-tap would otherwise kick off a parallel
+  // fetch whose late-arriving response clobbers the question the player is
+  // already reading).
+  const nextQuestionInFlightRef = useRef(false)
 
   const getAuthHeaders = useCallback(async () => {
     if (!user) throw new Error('Not authenticated')
@@ -260,55 +266,63 @@ export function useInfiniteRun() {
 
   const nextQuestion = useCallback(async () => {
     if (state.phase !== 'answered' || !state.runId) return
+    if (nextQuestionInFlightRef.current) return
+    nextQuestionInFlightRef.current = true
 
-    const fetchStartedAt = Date.now()
-
-    // If a prefetch is in-flight or already complete, await/consume it before
-    // falling back to a fresh request.
-    if (prefetchRef.current) {
-      const pending = prefetchRef.current
-      prefetchRef.current = null
-      prefetchAbortRef.current = null
-      const prefetched = await pending
-      if (prefetched) {
-        const elapsed = Date.now() - fetchStartedAt
+    // After every await, a second nextQuestion call (or stray click) may
+    // have already settled the run; only apply our setState if the run is
+    // still in a phase we own (answered → loading → playing/awaiting-ready).
+    const applyQuestion = (question: InfiniteQuestion, elapsed: number) => {
+      setState(s => {
+        if (s.phase !== 'answered' && s.phase !== 'loading') return s
         if (elapsed > READY_GATE_THRESHOLD_MS) {
-          setState(s => ({ ...s, phase: 'awaiting-ready', question: prefetched, lastAnswer: null }))
-        } else {
-          startTimeRef.current = Date.now()
-          setState(s => ({ ...s, phase: 'playing', question: prefetched, lastAnswer: null }))
+          return { ...s, phase: 'awaiting-ready', question, lastAnswer: null }
         }
-        return
-      }
+        startTimeRef.current = Date.now()
+        return { ...s, phase: 'playing', question, lastAnswer: null }
+      })
     }
 
-    setState(s => ({ ...s, phase: 'loading' }))
     try {
-      const headers = await getAuthHeaders()
-      const nextParams = new URLSearchParams({ streak: String(state.currentStreak) })
-      if (state.categoryIds.length > 0) nextParams.set('categoryIds', state.categoryIds.join(','))
-      const qRes = await fetch(`/api/v1/trivia/infinite/next?${nextParams.toString()}`, { headers })
-      if (qRes.status === 204) {
-        setState(s => ({ ...s, phase: 'exhausted' }))
-        return
-      }
-      if (qRes.status === 429) {
-        setState(s => ({ ...s, phase: 'error', error: 'Too many fresh questions generated for now. Try again in a bit.' }))
-        return
-      }
-      if (!qRes.ok) throw new Error('Failed to fetch question')
-      const question = await qRes.json()
+      const fetchStartedAt = Date.now()
 
-      const elapsed = Date.now() - fetchStartedAt
-      if (elapsed > READY_GATE_THRESHOLD_MS) {
-        setState(s => ({ ...s, phase: 'awaiting-ready', question, lastAnswer: null }))
-      } else {
-        startTimeRef.current = Date.now()
-        setState(s => ({ ...s, phase: 'playing', question, lastAnswer: null }))
+      // If a prefetch is in-flight or already complete, await/consume it before
+      // falling back to a fresh request.
+      if (prefetchRef.current) {
+        const pending = prefetchRef.current
+        prefetchRef.current = null
+        prefetchAbortRef.current = null
+        const prefetched = await pending
+        if (prefetched) {
+          applyQuestion(prefetched, Date.now() - fetchStartedAt)
+          return
+        }
       }
-    } catch (err) {
-      console.error('[infinite] nextQuestion failed:', err)
-      setState(s => ({ ...s, phase: 'error', error: 'Failed to fetch next question.' }))
+
+      setState(s => (s.phase === 'answered' ? { ...s, phase: 'loading' } : s))
+      try {
+        const headers = await getAuthHeaders()
+        const nextParams = new URLSearchParams({ streak: String(state.currentStreak) })
+        if (state.categoryIds.length > 0) nextParams.set('categoryIds', state.categoryIds.join(','))
+        const qRes = await fetch(`/api/v1/trivia/infinite/next?${nextParams.toString()}`, { headers })
+        if (qRes.status === 204) {
+          setState(s => ({ ...s, phase: 'exhausted' }))
+          return
+        }
+        if (qRes.status === 429) {
+          setState(s => ({ ...s, phase: 'error', error: 'Too many fresh questions generated for now. Try again in a bit.' }))
+          return
+        }
+        if (!qRes.ok) throw new Error('Failed to fetch question')
+        const question = await qRes.json()
+
+        applyQuestion(question, Date.now() - fetchStartedAt)
+      } catch (err) {
+        console.error('[infinite] nextQuestion failed:', err)
+        setState(s => ({ ...s, phase: 'error', error: 'Failed to fetch next question.' }))
+      }
+    } finally {
+      nextQuestionInFlightRef.current = false
     }
   }, [state.phase, state.runId, state.currentStreak, state.categoryIds, getAuthHeaders])
 
