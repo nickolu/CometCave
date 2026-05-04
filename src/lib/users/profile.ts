@@ -11,6 +11,7 @@ export interface UserProfile {
   photoURL: string | null
   nickname: string
   nicknameLower: string
+  isAnonymous: boolean
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -20,6 +21,7 @@ export interface AuthClaims {
   email?: string
   name?: string
   picture?: string
+  isAnonymous: boolean
 }
 
 export function sanitizeNickname(raw: string): string {
@@ -37,7 +39,20 @@ function nicknameDocRef(nicknameLower: string) {
 export async function getOrCreateProfile(claims: AuthClaims): Promise<UserProfile> {
   const ref = userDocRef(claims.uid)
   const snap = await ref.get()
-  if (snap.exists) return snap.data() as UserProfile
+  if (snap.exists) {
+    // Refresh isAnonymous on every auth touchpoint so leaderboard filters
+    // see current state — including the case where an anonymous user
+    // upgrades by linking a credential and now has sign_in_provider != 'anonymous'.
+    const data = snap.data() as UserProfile
+    if (data.isAnonymous !== claims.isAnonymous) {
+      await ref.set(
+        { isAnonymous: claims.isAnonymous, updatedAt: FieldValue.serverTimestamp() },
+        { merge: true }
+      )
+      return { ...data, isAnonymous: claims.isAnonymous }
+    }
+    return data
+  }
 
   const now = FieldValue.serverTimestamp()
   const seed = {
@@ -47,12 +62,23 @@ export async function getOrCreateProfile(claims: AuthClaims): Promise<UserProfil
     photoURL: claims.picture ?? null,
     nickname: '',
     nicknameLower: '',
+    isAnonymous: claims.isAnonymous,
     createdAt: now,
     updatedAt: now,
   }
   await ref.set(seed, { merge: true })
   const fresh = await ref.get()
   return fresh.data() as UserProfile
+}
+
+// Upsert just the isAnonymous flag without doing a full read. Cheaper than
+// getOrCreateProfile for write paths that already know they don't need the
+// rest of the profile (e.g. starting an infinite run).
+export async function ensureAnonymousFlag(claims: AuthClaims): Promise<void> {
+  await userDocRef(claims.uid).set(
+    { isAnonymous: claims.isAnonymous, updatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  )
 }
 
 export class NicknameInUseError extends Error {
