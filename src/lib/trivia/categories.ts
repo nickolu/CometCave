@@ -46,13 +46,32 @@ export function getDailyCategory(dateStr?: string): DailyCategory {
   return { id, name: meta.name, icon: meta.icon }
 }
 
-const CATEGORY_NAME_TO_ID: ReadonlyMap<string, number> = new Map(
-  Object.entries(CATEGORY_META).map(([id, meta]) => [meta.name, Number(id)])
-)
+// Questions store their category as the OpenTDB-prefixed name returned by
+// getOpenTDBCategoryName() in src/app/trivia/data/seeds/categoryNames.ts
+// (e.g. "Entertainment: Books", "Science: Computers"), not the bare
+// CATEGORY_META name. This map covers both forms so medal tracking matches
+// either spelling — including the OpenTDB pluralization quirks
+// ("Theatres", "Cartoon & Animations") that don't match CATEGORY_META.
+const CATEGORY_NAME_TO_ID: ReadonlyMap<string, number> = new Map<string, number>([
+  ...Object.entries(CATEGORY_META).map(([id, meta]) => [meta.name, Number(id)] as const),
+  ['Entertainment: Books', 10],
+  ['Entertainment: Film', 11],
+  ['Entertainment: Music', 12],
+  ['Entertainment: Musicals & Theatres', 13],
+  ['Entertainment: Television', 14],
+  ['Entertainment: Video Games', 15],
+  ['Entertainment: Board Games', 16],
+  ['Science: Computers', 18],
+  ['Science: Mathematics', 19],
+  ['Entertainment: Comics', 29],
+  ['Science: Gadgets', 30],
+  ['Entertainment: Japanese Anime & Manga', 31],
+  ['Entertainment: Cartoon & Animations', 32],
+])
 
 // Reverse lookup for the question.category string stored on aiQuestions docs.
-// Returns null when the name doesn't match a known category (e.g. legacy
-// questions tagged with a free-form topic).
+// Returns null when the name doesn't match a known category (e.g. a custom
+// free-form topic from an infinite run with customCategory set).
 export function getCategoryIdByName(name: string): number | null {
   return CATEGORY_NAME_TO_ID.get(name) ?? null
 }

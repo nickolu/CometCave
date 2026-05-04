@@ -2,6 +2,7 @@ import { getFirestoreDb } from '@/lib/firebase/server'
 import { CATEGORY_META } from '@/lib/trivia/categories'
 import {
   type MedalTier,
+  getCustomCategoryMedalLabel,
   getMedalLabel,
   getMedalTier,
   getNextThreshold,
@@ -138,4 +139,41 @@ export async function getInfiniteLeaderboardAllCategories(
     })
   )
   return sections.filter((s) => s.entries.length > 0)
+}
+
+export interface CustomCategoryMedalSummary {
+  topic: string
+  correctCount: number
+  tier: MedalTier
+  label: string | null
+  nextThreshold: number | null
+}
+
+// Returns one summary per custom topic the user has played in scored mode,
+// sorted by correctCount descending. Unlike preset categories we don't
+// pre-seed empty entries — the set of topics is open-ended and only those
+// the user has actually played are meaningful.
+export async function getCustomCategoryMedalsForUser(
+  uid: string
+): Promise<CustomCategoryMedalSummary[]> {
+  const db = getFirestoreDb()
+  const snap = await db.collection(`users/${uid}/triviaCustomCategoryStats`).get()
+
+  const summaries: CustomCategoryMedalSummary[] = []
+  for (const doc of snap.docs) {
+    const data = doc.data() as { topic?: string; correctCount?: number }
+    const topic = typeof data.topic === 'string' ? data.topic : ''
+    if (!topic) continue
+    const correctCount = data.correctCount ?? 0
+    const tier = getMedalTier(correctCount)
+    summaries.push({
+      topic,
+      correctCount,
+      tier,
+      label: getCustomCategoryMedalLabel(tier),
+      nextThreshold: getNextThreshold(tier),
+    })
+  }
+  summaries.sort((a, b) => b.correctCount - a.correctCount)
+  return summaries
 }

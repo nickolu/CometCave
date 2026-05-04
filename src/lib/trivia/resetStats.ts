@@ -88,9 +88,10 @@ export async function resetDailyStats(uid: string): Promise<DailyResetResult> {
 
 /**
  * Wipes a user's infinite-trivia stats: lifetime aggregate, all run docs
- * (including any in-progress run), and per-category medal counters. Leaves
- * `seenQuestions` intact so the no-repeat filter still works, and leaves the
- * `aiQuestions/{qid}/answeredBy` analytics breadcrumb alone.
+ * (including any in-progress run), per-category medal counters, and custom-
+ * topic medal counters. Leaves `seenQuestions` intact so the no-repeat
+ * filter still works, and leaves the `aiQuestions/{qid}/answeredBy`
+ * analytics breadcrumb alone.
  */
 export async function resetInfiniteStats(uid: string): Promise<InfiniteResetResult> {
   const db = getFirestoreDb()
@@ -105,6 +106,7 @@ export async function resetInfiniteStats(uid: string): Promise<InfiniteResetResu
 
   deletedDocs += await chunkedDeleteAll(db, db.collection(`users/${uid}/triviaInfinite`))
   deletedDocs += await chunkedDeleteAll(db, db.collection(`users/${uid}/triviaCategoryStats`))
+  deletedDocs += await chunkedDeleteAll(db, db.collection(`users/${uid}/triviaCustomCategoryStats`))
 
   return { deletedDocs }
 }

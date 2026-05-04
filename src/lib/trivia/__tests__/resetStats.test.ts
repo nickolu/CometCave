@@ -230,4 +230,20 @@ describe('resetInfiniteStats', () => {
 
     expect(store.listCollection(`users/${UID}/triviaInfinite`)).toHaveLength(0)
   })
+
+  it('also wipes per-topic custom-category medal stats', async () => {
+    store.set(`users/${UID}/triviaCustomCategoryStats/norse%20mythology`, {
+      topic: 'norse mythology',
+      correctCount: 25,
+    })
+    store.set(`users/${UID}/triviaCustomCategoryStats/the%20office`, {
+      topic: 'the office',
+      correctCount: 8,
+    })
+
+    const res = await resetInfiniteStats(UID)
+
+    expect(res.deletedDocs).toBe(2)
+    expect(store.listCollection(`users/${UID}/triviaCustomCategoryStats`)).toHaveLength(0)
+  })
 })
