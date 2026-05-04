@@ -25,6 +25,7 @@ export function TriviaLanding({
   onViewInfiniteStats,
   onStartPractice,
   onViewInfiniteLeaderboard,
+  onExplore,
   onStatsReset,
   todayResult,
 }: {
@@ -35,6 +36,7 @@ export function TriviaLanding({
   onViewInfiniteStats?: () => void
   onStartPractice?: () => void
   onViewInfiniteLeaderboard?: () => void
+  onExplore?: () => void
   onStatsReset?: (scopes: ResetScopes) => void
   todayResult: TriviaGameResult | null
 }) {
@@ -252,6 +254,13 @@ export function TriviaLanding({
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           Infinite Ranks
+        </button>
+        <span className="text-on-surface/20">·</span>
+        <button
+          onClick={onExplore}
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
+        >
+          Explore Questions
         </button>
       </div>
 
