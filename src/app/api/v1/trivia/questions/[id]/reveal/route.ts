@@ -9,12 +9,12 @@ import { buildMarkSeenWrite } from '@/lib/trivia/triviaState'
 // Marks a question as "seen" so it won't appear in future infinite trivia runs.
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ questionId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await verifyRequestAuth(request)
   if ('error' in auth) return auth.error
 
-  const { questionId } = await params
+  const { id: questionId } = await params
   const uid = auth.claims.uid
 
   const db = getFirestoreDb()
