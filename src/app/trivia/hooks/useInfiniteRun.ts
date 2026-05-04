@@ -283,6 +283,13 @@ export function useInfiniteRun() {
       })
     }
 
+    // Flip to 'loading' synchronously so the answered card disappears the
+    // instant the player taps Next Question. Without this the prefetch
+    // await below blocks for seconds while the answered view stays on
+    // screen, then the loading state renders already-resolved (jumping
+    // straight to awaiting-ready/Ready).
+    setState(s => (s.phase === 'answered' ? { ...s, phase: 'loading' } : s))
+
     try {
       const fetchStartedAt = Date.now()
 
@@ -299,7 +306,6 @@ export function useInfiniteRun() {
         }
       }
 
-      setState(s => (s.phase === 'answered' ? { ...s, phase: 'loading' } : s))
       try {
         const headers = await getAuthHeaders()
         const nextParams = new URLSearchParams({ streak: String(state.currentStreak) })
