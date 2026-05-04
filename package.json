@@ -16,7 +16,10 @@
     "reset-trivia-firestore": "esbuild scripts/reset-trivia-firestore.ts --bundle --platform=node --format=esm --packages=external --outfile=/tmp/reset-trivia-firestore-bundle.mjs && node /tmp/reset-trivia-firestore-bundle.mjs",
     "backfill-legacy-trivia": "tsx --env-file=.env.local scripts/backfill-legacy-models.ts",
     "retire-active-trivia": "tsx --env-file=.env.local scripts/retire-active-trivia.ts",
-    "classify-seed-difficulty": "tsx --env-file=.env.local scripts/classify-seed-difficulty.ts"
+    "classify-seed-difficulty": "tsx --env-file=.env.local scripts/classify-seed-difficulty.ts",
+    "eval:trivia": "tsx --env-file=.env.local scripts/eval-trivia.ts",
+    "eval:trivia:smoke": "tsx --env-file=.env.local scripts/eval-trivia.ts --smoke",
+    "seed-ai-questions": "tsx --env-file=.env.local scripts/seed-ai-questions.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

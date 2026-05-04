@@ -1,0 +1,290 @@
+#!/usr/bin/env tsx
+/**
+ * Bulk seed the aiQuestions Firestore collection.
+ *
+ * Generates N questions through the live infinite pipeline (same code
+ * path the runtime warmer and /next route use, including the duplicate-
+ * answer backstop), optionally judges each one with the eval rubric,
+ * optionally gates on the judge's ship verdict, then persists via
+ * saveAIQuestion. Prints a scorecard at the end summarizing what got
+ * saved and the quality distribution.
+ *
+ * Usage:
+ *   npm run seed-ai-questions -- --count 20
+ *   npm run seed-ai-questions -- --count 50 --difficulty easy
+ *   npm run seed-ai-questions -- --count 100 --gate     # only save ship=true
+ *   npm run seed-ai-questions -- --count 50 --no-judge  # skip judging entirely
+ *   npm run seed-ai-questions -- --count 30 --category 17
+ *
+ * Env (loaded from .env.local via tsx --env-file):
+ *   ANTHROPIC_API_KEY     — generation pipeline
+ *   PERPLEXITY_API_KEY    — fact source (if Perplexity is configured)
+ *   OPENAI_API_KEY        — judge (omit if --no-judge)
+ *   FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY — Firestore
+ */
+
+import { saveAIQuestion } from '../src/lib/trivia/aiQuestions'
+import { generateInfiniteQuestion } from '../src/lib/trivia/generateQuestion'
+import { judgeQuestion, JUDGE_MODEL_ID, type Verdict } from './eval/judge'
+
+interface Args {
+  count: number
+  concurrency: number
+  category: number | null
+  difficulty: 'easy' | 'medium' | 'hard' | null
+  gate: boolean
+  judge: boolean
+}
+
+function parseArgs(): Args {
+  const args = process.argv.slice(2)
+  let count = 20
+  let concurrency = 3
+  let category: number | null = null
+  let difficulty: Args['difficulty'] = null
+  let gate = false
+  let judge = true
+
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (a === '--count' && args[i + 1]) count = parseInt(args[++i], 10)
+    else if (a === '--concurrency' && args[i + 1]) concurrency = parseInt(args[++i], 10)
+    else if (a === '--category' && args[i + 1]) category = parseInt(args[++i], 10)
+    else if (a === '--difficulty' && args[i + 1]) {
+      const d = args[++i]
+      if (d !== 'easy' && d !== 'medium' && d !== 'hard') {
+        throw new Error(`--difficulty must be easy|medium|hard, got "${d}"`)
+      }
+      difficulty = d
+    } else if (a === '--gate') gate = true
+    else if (a === '--no-judge') judge = false
+    else if (a === '--help' || a === '-h') {
+      process.stdout.write(
+        'Usage: seed-ai-questions [--count N] [--concurrency N] [--category ID] [--difficulty easy|medium|hard] [--gate] [--no-judge]\n'
+      )
+      process.exit(0)
+    } else if (a.startsWith('--')) {
+      throw new Error(`Unknown flag: ${a}`)
+    }
+  }
+
+  if (gate && !judge) throw new Error('--gate requires --judge (cannot gate without scoring)')
+  return { count, concurrency, category, difficulty, gate, judge }
+}
+
+interface SeedResult {
+  index: number
+  saved: boolean
+  skipped: boolean
+  questionId: string | null
+  category: string | null
+  difficulty: 'easy' | 'medium' | 'hard' | null
+  question: string | null
+  correctAnswer: string | null
+  verdict: Verdict | null
+  error: string | null
+  durationMs: number
+}
+
+async function seedOne(args: Args, index: number): Promise<SeedResult> {
+  const start = Date.now()
+  try {
+    const generated = await generateInfiniteQuestion({
+      ...(args.category != null ? { categoryId: args.category } : {}),
+      ...(args.difficulty != null ? { difficulty: args.difficulty } : {}),
+    })
+
+    let verdict: Verdict | null = null
+    if (args.judge) {
+      try {
+        verdict = await judgeQuestion({
+          question: generated.question,
+          correctAnswer: generated.correctAnswer,
+          explanation: generated.explanation ?? '',
+          category: generated.category,
+          difficulty: generated.difficulty,
+          sourceUrl: generated.sourceUrl,
+        })
+      } catch (err) {
+        // Judge failure is logged but doesn't block the save — the
+        // pipeline's own quality gate already passed, the judge is
+        // additional signal.
+        console.warn(`[seed:${index}] judge failed: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+
+    if (args.gate && verdict && !verdict.ship) {
+      return {
+        index,
+        saved: false,
+        skipped: true,
+        questionId: generated.id,
+        category: generated.category,
+        difficulty: generated.difficulty,
+        question: generated.question,
+        correctAnswer: generated.correctAnswer,
+        verdict,
+        error: null,
+        durationMs: Date.now() - start,
+      }
+    }
+
+    await saveAIQuestion(generated)
+    return {
+      index,
+      saved: true,
+      skipped: false,
+      questionId: generated.id,
+      category: generated.category,
+      difficulty: generated.difficulty,
+      question: generated.question,
+      correctAnswer: generated.correctAnswer,
+      verdict,
+      error: null,
+      durationMs: Date.now() - start,
+    }
+  } catch (err) {
+    return {
+      index,
+      saved: false,
+      skipped: false,
+      questionId: null,
+      category: null,
+      difficulty: null,
+      question: null,
+      correctAnswer: null,
+      verdict: null,
+      error: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - start,
+    }
+  }
+}
+
+async function main(): Promise<void> {
+  const args = parseArgs()
+  process.stdout.write(
+    `\nSeeding ${args.count} question(s)  concurrency=${args.concurrency}` +
+      `${args.category != null ? `  category=${args.category}` : ''}` +
+      `${args.difficulty != null ? `  difficulty=${args.difficulty}` : ''}` +
+      `${args.gate ? '  GATED (only save ship=true)' : ''}` +
+      `${!args.judge ? '  (no judge)' : `  judge=${JUDGE_MODEL_ID}`}\n\n`
+  )
+
+  const results: SeedResult[] = []
+  let cursor = 0
+  let completed = 0
+  const startedAt = Date.now()
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const idx = cursor++
+      if (idx >= args.count) return
+      const r = await seedOne(args, idx)
+      results.push(r)
+      completed++
+      const tag = formatProgressTag(r)
+      process.stdout.write(`  [${String(completed).padStart(3)}/${args.count}] ${tag}\n`)
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(args.concurrency, args.count) },
+    () => worker()
+  )
+  await Promise.all(workers)
+
+  const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1)
+  process.stdout.write(`\nFinished in ${elapsedSec}s\n`)
+  printScorecard(results, args)
+}
+
+function formatProgressTag(r: SeedResult): string {
+  if (r.error) return `FAIL  ${truncate(r.error, 100)}`
+  const cell = `${r.category}/${r.difficulty}`
+  const v = r.verdict
+  const judgeBit = v ? `f=${v.factual_score} d=${v.difficulty_score} ${v.ship ? 'ship' : '----'}` : '         (no judge)'
+  const dispo = r.saved ? 'SAVED  ' : r.skipped ? 'GATED  ' : 'FAIL   '
+  return `${dispo}${cell.padEnd(36)} ${judgeBit}  "${truncate(r.question ?? '', 50)}"`
+}
+
+function printScorecard(results: SeedResult[], args: Args): void {
+  const w = (s = '') => process.stdout.write(s + '\n')
+  const total = results.length
+  const saved = results.filter((r) => r.saved)
+  const gated = results.filter((r) => r.skipped)
+  const failed = results.filter((r) => r.error)
+  const judged = results.filter((r) => r.verdict != null)
+
+  w()
+  w('═══════════════════════════════════════════════════════════════')
+  w('  Seed Results')
+  w('═══════════════════════════════════════════════════════════════')
+  w(`  attempted : ${total}`)
+  w(`  saved     : ${saved.length}   ${pct(saved.length, total)}`)
+  if (args.gate) w(`  gated     : ${gated.length}   ${pct(gated.length, total)}   (judge.ship=false)`)
+  w(`  failed    : ${failed.length}   ${pct(failed.length, total)}`)
+  w()
+
+  if (args.judge && judged.length > 0) {
+    const f3 = judged.filter((r) => r.verdict!.factual_score === 3).length
+    const f2 = judged.filter((r) => r.verdict!.factual_score === 2).length
+    const f1 = judged.filter((r) => r.verdict!.factual_score === 1).length
+    const d3 = judged.filter((r) => r.verdict!.difficulty_score === 3).length
+    const d2 = judged.filter((r) => r.verdict!.difficulty_score === 2).length
+    const d1 = judged.filter((r) => r.verdict!.difficulty_score === 1).length
+    const ship = judged.filter((r) => r.verdict!.ship).length
+
+    w('Judge scores (across attempted, judged)')
+    w(`  factual    : 3=${f3}  2=${f2}  1=${f1}   ship-eligible=${pct(ship, judged.length)}`)
+    w(`  difficulty : 3=${d3}  2=${d2}  1=${d1}`)
+    w()
+
+    // Worst examples — useful even when --gate=false to know what kind
+    // of garbage the pipeline let through.
+    const worst = judged
+      .filter((r) => r.verdict!.factual_score < 3 || r.verdict!.difficulty_score < 3)
+      .sort((a, b) => {
+        const sa = a.verdict!.factual_score + a.verdict!.difficulty_score
+        const sb = b.verdict!.factual_score + b.verdict!.difficulty_score
+        return sa - sb
+      })
+      .slice(0, 5)
+    if (worst.length > 0) {
+      w('Worst-scoring saved/attempted')
+      for (const r of worst) {
+        const v = r.verdict!
+        const dispo = r.saved ? '[SAVED]' : r.skipped ? '[GATED]' : '[FAIL]'
+        w(`  ${dispo} [${r.difficulty}/${r.category}] f=${v.factual_score} d=${v.difficulty_score}`)
+        w(`    Q: ${truncate(r.question ?? '', 100)}`)
+        w(`    A: ${truncate(r.correctAnswer ?? '', 60)}`)
+        if (v.factual_score < 3) w(`    factual: ${truncate(v.factual_rationale, 100)}`)
+        if (v.difficulty_score < 3) w(`    diff:    ${truncate(v.difficulty_rationale, 100)}`)
+      }
+      w()
+    }
+  }
+
+  if (failed.length > 0) {
+    w('Failures')
+    for (const r of failed.slice(0, 5)) {
+      w(`  [${r.index}] ${truncate(r.error ?? '', 140)}`)
+    }
+    if (failed.length > 5) w(`  …and ${failed.length - 5} more`)
+    w()
+  }
+}
+
+function pct(num: number, denom: number): string {
+  if (denom === 0) return '(n/a)'
+  return `${((num * 100) / denom).toFixed(1)}%`
+}
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s
+  return s.slice(0, max - 1) + '…'
+}
+
+main().catch((err) => {
+  process.stderr.write(`\nSeed failed: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`)
+  process.exit(1)
+})

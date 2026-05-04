@@ -1,0 +1,5 @@
+# Persisted eval runs. latest.json is committed so the scorecard can
+# diff a fresh checkout against the most recent baseline; timestamped
+# run files stay local.
+*.json
+!latest.json
