@@ -3,8 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { CATEGORY_META, getCategoryIdByName } from '@/lib/trivia/categories'
 import {
   CATEGORY_MEDAL_LADDERS,
+  CUSTOM_CATEGORY_MEDAL_LADDER,
   MEDAL_THRESHOLDS,
+  customCategorySlug,
+  detectCustomMedalEarned,
   detectMedalEarned,
+  getCustomCategoryMedalLabel,
   getMedalLabel,
   getMedalTier,
   getNextThreshold,
@@ -121,12 +125,76 @@ describe('detectMedalEarned', () => {
   })
 })
 
+describe('custom-topic medals', () => {
+  it('reuses the shared 5-tier threshold ladder', () => {
+    expect(CUSTOM_CATEGORY_MEDAL_LADDER).toHaveLength(5)
+  })
+
+  it('getCustomCategoryMedalLabel returns null for "none"', () => {
+    expect(getCustomCategoryMedalLabel('none')).toBeNull()
+  })
+
+  it('getCustomCategoryMedalLabel returns the same ladder for every topic', () => {
+    expect(getCustomCategoryMedalLabel('bronze')).toBe(CUSTOM_CATEGORY_MEDAL_LADDER[0])
+    expect(getCustomCategoryMedalLabel('diamond')).toBe(CUSTOM_CATEGORY_MEDAL_LADDER[4])
+  })
+
+  it('detectCustomMedalEarned mirrors detectMedalEarned at threshold crossings', () => {
+    expect(detectCustomMedalEarned(0, 1)).toBeNull()
+    expect(detectCustomMedalEarned(15, 16)).toEqual({
+      tier: 'bronze',
+      label: CUSTOM_CATEGORY_MEDAL_LADDER[0],
+    })
+    expect(detectCustomMedalEarned(4095, 4096)).toEqual({
+      tier: 'diamond',
+      label: CUSTOM_CATEGORY_MEDAL_LADDER[4],
+    })
+  })
+
+  describe('customCategorySlug', () => {
+    it('produces stable ids for plain topics', () => {
+      expect(customCategorySlug('norse mythology')).toBe('norse%20mythology')
+    })
+
+    it('escapes characters that Firestore cannot store in a doc id', () => {
+      expect(customCategorySlug('rock/pop')).not.toContain('/')
+      expect(customCategorySlug('a.b')).not.toContain('.')
+    })
+
+    it('never collides for distinct topics', () => {
+      const topics = ['music', 'Music', 'music ', 'mu/sic', 'mu.sic', '']
+      const slugs = new Set(topics.map(customCategorySlug))
+      expect(slugs.size).toBe(topics.length)
+    })
+  })
+})
+
 describe('getCategoryIdByName', () => {
   it('round-trips every CATEGORY_META entry', () => {
     for (const id of Object.keys(CATEGORY_META).map(Number)) {
       const name = CATEGORY_META[id].name
       expect(getCategoryIdByName(name)).toBe(id)
     }
+  })
+
+  // Questions are stamped with the OpenTDB-prefixed name from
+  // src/app/trivia/data/seeds/categoryNames.ts, not the bare CATEGORY_META
+  // name. Both must resolve to the same id or medal tracking silently
+  // skips most categories.
+  it('resolves OpenTDB-prefixed category names', () => {
+    expect(getCategoryIdByName('Entertainment: Books')).toBe(10)
+    expect(getCategoryIdByName('Entertainment: Film')).toBe(11)
+    expect(getCategoryIdByName('Entertainment: Music')).toBe(12)
+    expect(getCategoryIdByName('Entertainment: Musicals & Theatres')).toBe(13)
+    expect(getCategoryIdByName('Entertainment: Television')).toBe(14)
+    expect(getCategoryIdByName('Entertainment: Video Games')).toBe(15)
+    expect(getCategoryIdByName('Entertainment: Board Games')).toBe(16)
+    expect(getCategoryIdByName('Science: Computers')).toBe(18)
+    expect(getCategoryIdByName('Science: Mathematics')).toBe(19)
+    expect(getCategoryIdByName('Entertainment: Comics')).toBe(29)
+    expect(getCategoryIdByName('Science: Gadgets')).toBe(30)
+    expect(getCategoryIdByName('Entertainment: Japanese Anime & Manga')).toBe(31)
+    expect(getCategoryIdByName('Entertainment: Cartoon & Animations')).toBe(32)
   })
 
   it('returns null for unknown names', () => {

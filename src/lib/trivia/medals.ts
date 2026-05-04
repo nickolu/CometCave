@@ -109,10 +109,74 @@ export interface CategoryMedalStats {
 }
 
 // Returned from submitAnswer when an answer crosses a tier line. Client-safe.
+// Preset-category medals carry a categoryId; custom-topic medals leave it
+// null and supply customTopic. categoryName is whatever the UI should
+// display ("Music", or the user's topic string).
 export interface MedalEarned {
   tier: MedalTier
   label: string
-  categoryId: number
+  categoryId: number | null
   categoryName: string
   correctCount: number
+  customTopic?: string
+}
+
+// --- Custom-topic medals -------------------------------------------------
+//
+// Infinite runs can be played against a user-supplied topic instead of a
+// preset category. Those runs stamp their questions with `qData.category`
+// equal to the raw topic string, which getCategoryIdByName() (correctly)
+// won't resolve. We give those runs their own medal track keyed by topic.
+
+// Stored at users/{uid}/triviaCustomCategoryStats/{slug}. The original
+// topic string lives on the doc so callers don't have to round-trip the
+// slug. Same threshold ladder as preset categories — only the labels and
+// the keying differ.
+export interface CustomCategoryMedalStats {
+  topic: string
+  correctCount: number
+  lastAnswerAt: FirebaseFirestore.Timestamp | null
+  lastTierEarnedAt: FirebaseFirestore.Timestamp | null
+}
+
+// Single shared ladder for every custom topic. Preset categories get
+// bespoke honorifics; custom topics share this generic progression because
+// the topic itself is the personalization.
+export const CUSTOM_CATEGORY_MEDAL_LADDER: [string, string, string, string, string] = [
+  'Curious',
+  'Initiate',
+  'Devotee',
+  'Loremaster',
+  'Oracle',
+]
+
+// Build a Firestore-safe doc id from a free-form topic. encodeURIComponent
+// covers `/`, whitespace, and most punctuation; `.` is escaped explicitly
+// because Firestore rejects ids of `.` / `..` and we want stable behavior
+// for topics that contain dots. The encoding is reversible, so two
+// distinct topics never collide on the same slug.
+export function customCategorySlug(topic: string): string {
+  return encodeURIComponent(topic).replaceAll('.', '%2E')
+}
+
+export function getCustomCategoryMedalLabel(tier: MedalTier): string | null {
+  if (tier === 'none') return null
+  const idx = TIER_ORDER.indexOf(tier)
+  if (idx === -1) return null
+  return CUSTOM_CATEGORY_MEDAL_LADDER[idx]
+}
+
+// Pure tier-up detection for custom-topic runs. Mirrors detectMedalEarned
+// but pulls labels from the shared custom ladder.
+export function detectCustomMedalEarned(
+  prevCorrectCount: number,
+  newCorrectCount: number
+): { tier: MedalTier; label: string } | null {
+  const prevTier = getMedalTier(prevCorrectCount)
+  const newTier = getMedalTier(newCorrectCount)
+  if (newTier === prevTier) return null
+  if (newTier === 'none') return null
+  const label = getCustomCategoryMedalLabel(newTier)
+  if (!label) return null
+  return { tier: newTier, label }
 }

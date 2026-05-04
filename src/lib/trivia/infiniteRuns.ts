@@ -4,7 +4,12 @@ import { LIVES_START, applyAnswer } from '@/app/trivia/lib/infiniteScoring'
 import type { AnswerResult } from '@/app/trivia/lib/infiniteScoring'
 import { getFirestoreDb } from '@/lib/firebase/server'
 import { getCategoryIdByName } from '@/lib/trivia/categories'
-import { type MedalEarned, detectMedalEarned } from '@/lib/trivia/medals'
+import {
+  type MedalEarned,
+  customCategorySlug,
+  detectCustomMedalEarned,
+  detectMedalEarned,
+} from '@/lib/trivia/medals'
 import { buildMarkSeenWrite } from '@/lib/trivia/triviaState'
 import { applyRunToAggregate } from '@/lib/trivia/triviaStats'
 
@@ -108,13 +113,28 @@ export async function submitAnswer(params: {
     // Trailblazer: if timesShown was 0 before this answer
     const isTrailblazer = correct && (qData.timesShown ?? 0) === 0
 
-    // Resolve categoryId for medal tracking. Only correct answers in scored
-    // mode count toward medals; questions tagged with an unknown category
-    // string are silently skipped.
-    const categoryId = typeof qData.category === 'string' ? getCategoryIdByName(qData.category) : null
-    const eligibleForMedal = correct && run.mode === 'scored' && categoryId !== null
-    const medalStatsRef = eligibleForMedal
+    // Resolve the medal track for this answer. Only correct answers in
+    // scored mode count. Custom-topic runs win medals on their own per-topic
+    // track; preset-category runs win medals keyed by categoryId. The two
+    // paths are mutually exclusive — a run with run.customCategory set
+    // never produces preset-category medals, even if its question's category
+    // string happens to match a known preset.
+    const customTopic =
+      typeof run.customCategory === 'string' && run.customCategory.length > 0
+        ? run.customCategory
+        : null
+    const categoryId =
+      customTopic === null && typeof qData.category === 'string'
+        ? getCategoryIdByName(qData.category)
+        : null
+    const scoredAndCorrect = correct && run.mode === 'scored'
+    const eligibleForCategoryMedal = scoredAndCorrect && categoryId !== null
+    const eligibleForCustomMedal = scoredAndCorrect && customTopic !== null
+
+    const medalStatsRef = eligibleForCategoryMedal
       ? db.doc(`users/${uid}/triviaCategoryStats/${categoryId}`)
+      : eligibleForCustomMedal
+      ? db.doc(`users/${uid}/triviaCustomCategoryStats/${customCategorySlug(customTopic!)}`)
       : null
     const medalStatsSnap = medalStatsRef ? await tx.get(medalStatsRef) : null
     const prevCorrectCount = medalStatsSnap?.exists ? (medalStatsSnap.data()?.correctCount ?? 0) : 0
@@ -159,9 +179,9 @@ export async function submitAnswer(params: {
     // Write answeredBy reverse index
     tx.set(answeredByRef, { uid, runId, correct, at: now })
 
-    // Update or create the per-category medal aggregate.
+    // Update or create the medal aggregate for whichever track applies.
     let medalEarned: MedalEarned | null = null
-    if (eligibleForMedal && medalStatsRef && categoryId !== null) {
+    if (eligibleForCategoryMedal && medalStatsRef && categoryId !== null) {
       const newCorrectCount = prevCorrectCount + 1
       const earned = detectMedalEarned(prevCorrectCount, newCorrectCount, categoryId)
 
@@ -193,6 +213,40 @@ export async function submitAnswer(params: {
           categoryId,
           categoryName,
           correctCount: newCorrectCount,
+        }
+      }
+    } else if (eligibleForCustomMedal && medalStatsRef && customTopic !== null) {
+      const newCorrectCount = prevCorrectCount + 1
+      const earned = detectCustomMedalEarned(prevCorrectCount, newCorrectCount)
+
+      const baseUpdates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
+        topic: customTopic,
+        correctCount: FieldValue.increment(1),
+        lastAnswerAt: now,
+      }
+      if (earned) {
+        baseUpdates.lastTierEarnedAt = now
+      }
+
+      if (medalStatsSnap?.exists) {
+        tx.update(medalStatsRef, baseUpdates)
+      } else {
+        tx.set(medalStatsRef, {
+          topic: customTopic,
+          correctCount: 1,
+          lastAnswerAt: now,
+          lastTierEarnedAt: earned ? now : null,
+        })
+      }
+
+      if (earned) {
+        medalEarned = {
+          tier: earned.tier,
+          label: earned.label,
+          categoryId: null,
+          categoryName: customTopic,
+          correctCount: newCorrectCount,
+          customTopic,
         }
       }
     }
