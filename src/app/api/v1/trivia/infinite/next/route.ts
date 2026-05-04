@@ -11,7 +11,7 @@ import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
 import { warmQuestionPoolForUser } from '@/lib/trivia/warmQuestionPool'
 
-// GET /api/v1/trivia/infinite/next?streak=N[&categoryIds=12,13,15]
+// GET /api/v1/trivia/infinite/next?streak=N[&categoryIds=12,13,15][&customCategory=roman+empire]
 // Backward-compat: also accepts the legacy single ?categoryId=N param.
 export async function GET(request: NextRequest) {
   const auth = await verifyRequestAuth(request)
@@ -22,13 +22,19 @@ export async function GET(request: NextRequest) {
   const streak = streakParam !== null ? parseInt(streakParam, 10) : 0
   const parsedStreak = isNaN(streak) || streak < 0 ? 0 : streak
 
+  // Parse optional customCategory param.
+  const customCategoryParam = searchParams.get('customCategory')
+  const customCategory = customCategoryParam && customCategoryParam.trim().length >= 3
+    ? customCategoryParam.trim()
+    : null
+
   // Parse optional categoryIds (comma-separated). Legacy single
-  // ?categoryId= is honored too.
+  // ?categoryId= is honored too. Ignored when customCategory is set.
   const categoryIdsParam = searchParams.get('categoryIds')
   const legacyCategoryIdParam = searchParams.get('categoryId')
-  const rawIds = categoryIdsParam !== null
+  const rawIds = !customCategory && categoryIdsParam !== null
     ? categoryIdsParam.split(',')
-    : legacyCategoryIdParam !== null
+    : !customCategory && legacyCategoryIdParam !== null
       ? [legacyCategoryIdParam]
       : []
   const categoryIds = rawIds
@@ -36,7 +42,9 @@ export async function GET(request: NextRequest) {
     .filter((n) => !isNaN(n) && n in CATEGORY_META)
 
   try {
-    let question = await sampleNextQuestion({
+    // Custom category runs always generate fresh questions — no pre-existing
+    // question pool exists for arbitrary topics.
+    let question = customCategory ? null : await sampleNextQuestion({
       uid: auth.claims.uid,
       streak: parsedStreak,
       type: 'free-text',
@@ -62,18 +70,24 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        // For multi-category runs, pick a random selected category to
-        // generate within. (Single-category runs reuse the same id.)
-        const generationCategoryId = categoryIds.length > 0
-          ? categoryIds[Math.floor(Math.random() * categoryIds.length)]
-          : undefined
-        const generated = await generateInfiniteQuestion({ streak: parsedStreak, categoryId: generationCategoryId })
+        const genOptions: Parameters<typeof generateInfiniteQuestion>[0] = { streak: parsedStreak }
+        if (customCategory) {
+          genOptions.customCategory = customCategory
+        } else {
+          // For multi-category runs, pick a random selected category to
+          // generate within. (Single-category runs reuse the same id.)
+          genOptions.categoryId = categoryIds.length > 0
+            ? categoryIds[Math.floor(Math.random() * categoryIds.length)]
+            : undefined
+        }
+        const generated = await generateInfiniteQuestion(genOptions)
         question = await saveAIQuestion(generated)
       } catch (genErr) {
         console.error('[trivia/infinite/next] generation failed', {
           uid: auth.claims.uid,
           streak: parsedStreak,
           requestedCategoryIds: categoryIds,
+          customCategory,
           rateRemaining: remaining,
           error: genErr instanceof Error ? genErr.message : String(genErr),
           stack: genErr instanceof Error ? genErr.stack : undefined,

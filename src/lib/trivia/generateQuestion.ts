@@ -27,6 +27,8 @@ export interface GenerateInfiniteQuestionOptions {
   difficulty?: 'easy' | 'medium' | 'hard'
   categoryId?: number
   streak?: number
+  // When set, generate questions about this custom topic instead of a preset category.
+  customCategory?: string
   // Override for tests / future per-category source routing. Falls
   // back to getDefaultFactSource() when omitted.
   factSource?: FactSource
@@ -584,25 +586,38 @@ export async function generateInfiniteQuestion(
   let lastReason = 'unknown'
   for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
     const difficulty = options.difficulty ?? pickDifficulty()
-    const categoryId = options.categoryId ?? pickCategoryId()
-    const categoryName = getOpenTDBCategoryName(categoryId)
-    // Difficulty-aware seed + modifier selection. Easy generations
-    // pick from iconic / common-knowledge seeds and "origin / first /
-    // most famous" modifiers; hard generations pick from niche seeds
-    // and "cut content / exploit / headcanon" modifiers. Both pools
-    // fall back to broader buckets when their preferred bucket is
-    // empty for a category — see seedsByDifficulty.ts /
-    // modifiersByDifficulty.ts.
-    const seeds = getSeedsForDifficulty(categoryId, difficulty)
     const modifiers = MODIFIERS_BY_DIFFICULTY[difficulty]
-    const seedWord = pickRandom(seeds.length > 0 ? seeds : (CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]))
     const modifier = pickRandom(modifiers)
-    const seedSummary = `${seedWord} :: ${modifier}`
+
+    let categoryName: string
+    let seedSummary: string
+    let resolvedCategoryId: number | null
+
+    if (options.customCategory) {
+      // Custom topic: use the topic name directly, skip preset category lookup
+      categoryName = options.customCategory
+      seedSummary = `${options.customCategory} :: ${modifier}`
+      resolvedCategoryId = null
+    } else {
+      const categoryId = options.categoryId ?? pickCategoryId()
+      resolvedCategoryId = categoryId
+      categoryName = getOpenTDBCategoryName(categoryId)
+      // Difficulty-aware seed + modifier selection. Easy generations
+      // pick from iconic / common-knowledge seeds and "origin / first /
+      // most famous" modifiers; hard generations pick from niche seeds
+      // and "cut content / exploit / headcanon" modifiers. Both pools
+      // fall back to broader buckets when their preferred bucket is
+      // empty for a category — see seedsByDifficulty.ts /
+      // modifiersByDifficulty.ts.
+      const seeds = getSeedsForDifficulty(categoryId, difficulty)
+      const seedWord = pickRandom(seeds.length > 0 ? seeds : (CATEGORIZED_SEEDS[categoryId] ?? CATEGORIZED_SEEDS[9]))
+      seedSummary = `${seedWord} :: ${modifier}`
+    }
 
     let facts: Fact[]
     try {
       facts = await factSource.fetchFacts({
-        categoryId,
+        categoryId: resolvedCategoryId,
         category: categoryName,
         seed: seedSummary,
         difficulty,

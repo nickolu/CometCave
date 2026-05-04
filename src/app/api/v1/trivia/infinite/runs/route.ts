@@ -50,21 +50,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const mode = body.mode === 'practice' ? 'practice' : 'scored';
 
-    // Parse and validate categoryIds (preferred) — falls back to the legacy
-    // single categoryId field for backward compatibility.
-    let categoryIds: number[] = []
-    if (Array.isArray(body.categoryIds)) {
-      categoryIds = body.categoryIds
-        .map((v: unknown) => Number(v))
-        .filter((n: number) => !isNaN(n) && n in CATEGORY_META)
-    } else if (body.categoryId !== undefined && body.categoryId !== null) {
-      const parsed = Number(body.categoryId)
-      if (!isNaN(parsed) && parsed in CATEGORY_META) {
-        categoryIds = [parsed]
+    // Parse and validate customCategory — mutually exclusive with preset categories.
+    let customCategory: string | null = null
+    if (typeof body.customCategory === 'string') {
+      const trimmed = body.customCategory.trim().toLowerCase()
+      if (trimmed.length >= 3) {
+        customCategory = trimmed
       }
     }
 
-    const result = await startRun(auth.claims.uid, mode, categoryIds);
+    // Parse and validate categoryIds (preferred) — falls back to the legacy
+    // single categoryId field for backward compatibility.
+    // Ignored when customCategory is set.
+    let categoryIds: number[] = []
+    if (!customCategory) {
+      if (Array.isArray(body.categoryIds)) {
+        categoryIds = body.categoryIds
+          .map((v: unknown) => Number(v))
+          .filter((n: number) => !isNaN(n) && n in CATEGORY_META)
+      } else if (body.categoryId !== undefined && body.categoryId !== null) {
+        const parsed = Number(body.categoryId)
+        if (!isNaN(parsed) && parsed in CATEGORY_META) {
+          categoryIds = [parsed]
+        }
+      }
+    }
+
+    const result = await startRun(auth.claims.uid, mode, categoryIds, customCategory);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error('Failed to start infinite run:', err);
