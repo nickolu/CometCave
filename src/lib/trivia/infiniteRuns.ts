@@ -299,6 +299,9 @@ export interface InfiniteLeaderboardEntry {
   date: FirebaseFirestore.Timestamp | null
 }
 
+// Drops anonymous players (CLAUDE.md "Anonymous-first, sign-up as reward":
+// leaderboard visibility is one of the depth perks gated behind sign-up)
+// and any user without a current nickname.
 async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   if (uids.length === 0) return new Map()
   const db = getFirestoreDb()
@@ -307,7 +310,8 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>()
   for (const snap of snaps) {
     if (!snap.exists) continue
-    const data = snap.data() as { nickname?: string }
+    const data = snap.data() as { nickname?: string; isAnonymous?: boolean }
+    if (data?.isAnonymous) continue
     const nickname = data?.nickname ?? ''
     if (nickname) {
       map.set(snap.ref.id, nickname)

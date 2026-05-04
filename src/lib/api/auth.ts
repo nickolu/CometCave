@@ -20,6 +20,7 @@ export async function verifyRequestAuth(
         email: decoded.email,
         name: decoded.name,
         picture: decoded.picture,
+        isAnonymous: decoded.firebase?.sign_in_provider === 'anonymous',
       },
     }
   } catch {

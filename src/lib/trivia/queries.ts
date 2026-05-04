@@ -38,6 +38,14 @@ interface ProfileDoc {
   gamesPlayed: number
 }
 
+// Loads nicknames for the given uids, dropping any user whose Firebase
+// auth is currently anonymous. The leaderboard surfaces are gated on
+// signed-up status (CLAUDE.md "Anonymous-first, sign-up as reward"), so
+// anonymous players never appear regardless of whether they happened to
+// set a nickname on their anonymous user doc.
+//
+// Named users with an empty current nickname are kept in the map with an
+// empty-string value so callers can fall back to the row's snapshot.
 async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   if (uids.length === 0) return new Map()
   const db = getFirestoreDb()
@@ -46,24 +54,24 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>()
   for (const snap of snaps) {
     if (!snap.exists) continue
-    const data = snap.data() as { nickname?: string }
-    const nickname = data?.nickname ?? ''
-    if (nickname) {
-      map.set(snap.ref.id, nickname)
-    }
+    const data = snap.data() as { nickname?: string; isAnonymous?: boolean }
+    if (data?.isAnonymous) continue
+    map.set(snap.ref.id, data?.nickname ?? '')
   }
   return map
 }
 
 // Returns the resolved display name for a leaderboard row, preferring the
 // player's current nickname and falling back to the snapshot taken when
-// the row was written. Returns null for fully-anonymous players (no
-// nickname in either place) so callers can drop them.
+// the row was written. Returns null when the user is anonymous (absent
+// from the map) or has no usable name in either place, so callers can
+// drop the row.
 function resolveDisplayName(
   uid: string,
   nicknames: Map<string, string>,
   snapshot: string | undefined | null
 ): string | null {
+  if (!nicknames.has(uid)) return null
   return nicknames.get(uid) || snapshot || null
 }
 

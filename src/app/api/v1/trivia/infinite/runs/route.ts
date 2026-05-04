@@ -4,6 +4,7 @@ import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 import { CATEGORY_META } from '@/lib/trivia/categories';
 import { startRun } from '@/lib/trivia/infiniteRuns';
+import { ensureAnonymousFlag } from '@/lib/users/profile';
 
 export async function GET(request: NextRequest) {
   const auth = await verifyRequestAuth(request)
@@ -75,6 +76,10 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    // Keep the user doc's isAnonymous flag fresh so the leaderboard reader
+    // can filter anonymous players out without snapshotting per-run.
+    await ensureAnonymousFlag(auth.claims);
 
     const result = await startRun(auth.claims.uid, mode, categoryIds, customCategory);
     return NextResponse.json(result, { status: 201 });

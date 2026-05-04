@@ -94,7 +94,11 @@ export async function getInfiniteTopByCategory(
   const nicknameByUid = new Map<string, string>()
   for (const s of userSnaps) {
     if (!s.exists) continue
-    const data = s.data() as { nickname?: string }
+    const data = s.data() as { nickname?: string; isAnonymous?: boolean }
+    // Anonymous players are excluded from leaderboards even if they set
+    // a nickname on their anonymous user doc (CLAUDE.md "Anonymous-first,
+    // sign-up as reward").
+    if (data?.isAnonymous) continue
     if (data?.nickname) nicknameByUid.set(s.ref.id, data.nickname)
   }
 
