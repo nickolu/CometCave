@@ -35,7 +35,8 @@ export interface FetchFactsOptions {
   // Internal numeric category id (matches CATEGORY_META keys).
   // Sources may use this to scope their queries (e.g. Wikipedia
   // category trees) without doing their own string matching.
-  categoryId: number
+  // Null when the request is for a custom topic (no preset category id).
+  categoryId: number | null
 
   // Human-readable category name, e.g. "Music". Sources that don't
   // need a numeric id can use this directly in prompts.

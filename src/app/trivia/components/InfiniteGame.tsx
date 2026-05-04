@@ -37,6 +37,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   // Empty set = "All Categories" (no filter). Players toggle individual
   // tiles to build up a multi-category selection.
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set())
+  const [customCategoryInput, setCustomCategoryInput] = useState('')
   const [showRulesOverlay, setShowRulesOverlay] = useState(false)
   const [bonusLifeToast, setBonusLifeToast] = useState<string | null>(null)
   const [medalToast, setMedalToast] = useState<string | null>(null)
@@ -61,10 +62,13 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     }
     hasStartedRef.current = true
     setShowPreGame(false)
-    startRun(chosenMode, Array.from(selectedCategoryIds))
-  }, [mode, startRun, selectedCategoryIds])
+    const trimmedCustom = customCategoryInput.trim().toLowerCase()
+    const customCategory = trimmedCustom.length >= 3 ? trimmedCustom : null
+    startRun(chosenMode, customCategory ? [] : Array.from(selectedCategoryIds), customCategory)
+  }, [mode, startRun, selectedCategoryIds, customCategoryInput])
 
   const toggleCategoryId = useCallback((id: number) => {
+    setCustomCategoryInput('')
     setSelectedCategoryIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -141,10 +145,14 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   // Pre-game screen — inline, not a modal
   if (showPreGame) {
     const selectionCount = selectedCategoryIds.size
-    const isAllMode = selectionCount === 0
-    const startLabel = isAllMode
-      ? 'Start'
-      : `Start (${selectionCount} categor${selectionCount === 1 ? 'y' : 'ies'})`
+    const trimmedCustom = customCategoryInput.trim()
+    const hasValidCustom = trimmedCustom.length >= 3
+    const isAllMode = selectionCount === 0 && !hasValidCustom
+    const startLabel = hasValidCustom
+      ? `Start: "${trimmedCustom}"`
+      : isAllMode
+        ? 'Start'
+        : `Start (${selectionCount} categor${selectionCount === 1 ? 'y' : 'ies'})`
     return (
       <div className="flex flex-col gap-4 max-w-lg mx-auto py-6">
         <div className="text-center">
@@ -162,7 +170,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
             it doesn't get hidden when the player scrolls through tiles. */}
         <button
           type="button"
-          onClick={() => setSelectedCategoryIds(new Set())}
+          onClick={() => { setSelectedCategoryIds(new Set()); setCustomCategoryInput('') }}
           className={`flex items-center justify-center gap-2 py-2 rounded-ds-md text-sm font-medium transition-colors ${
             isAllMode
               ? 'bg-ds-primary text-on-primary'
@@ -186,7 +194,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 </span>
               )}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[40vh] overflow-y-auto pr-1">
               {categoryEntries.map(({ id, name, icon }) => {
                 const medal = medalsByCategoryId.get(id)
                 const earnedTier = medal && medal.tier !== 'none' ? medal.tier : null
@@ -237,6 +245,24 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 )
               })}
             </div>
+            <div className="pt-2 border-t border-outline/20">
+              <p className="text-on-surface/70 text-sm font-medium mb-2">Or type your own topic:</p>
+              <input
+                type="text"
+                value={customCategoryInput}
+                onChange={(e) => {
+                  setCustomCategoryInput(e.target.value)
+                  if (e.target.value.trim().length > 0) {
+                    setSelectedCategoryIds(new Set())
+                  }
+                }}
+                placeholder="e.g. Roman Empire, Pokemon Gen 1"
+                className="w-full px-3 py-2 rounded-ds-md bg-surface-container-highest text-on-surface text-sm border border-outline/30 focus:outline-none focus:ring-2 focus:ring-ds-primary placeholder:text-on-surface/40"
+              />
+              {customCategoryInput.trim().length > 0 && customCategoryInput.trim().length < 3 && (
+                <p className="text-ds-error text-xs mt-1">Topic must be at least 3 characters.</p>
+              )}
+            </div>
           </ChunkyCardContent>
         </ChunkyCard>
 
@@ -244,10 +270,22 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
             grid's max-height keeps these buttons visible without
             requiring any page scroll. */}
         <div className="flex flex-col gap-2">
-          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}>
+          <ChunkyButton
+            variant="primary"
+            size="lg"
+            className="w-full"
+            onClick={() => handleStart(mode === 'practice' ? 'practice' : 'scored')}
+            disabled={trimmedCustom.length > 0 && !hasValidCustom}
+          >
             {startLabel}
           </ChunkyButton>
-          <ChunkyButton variant="secondary" size="sm" className="w-full" onClick={() => handleStart('practice')}>
+          <ChunkyButton
+            variant="secondary"
+            size="sm"
+            className="w-full"
+            onClick={() => handleStart('practice')}
+            disabled={trimmedCustom.length > 0 && !hasValidCustom}
+          >
             Practice Mode
           </ChunkyButton>
         </div>
@@ -382,11 +420,13 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         isPlaying={state.phase === 'playing'}
         mode={state.mode}
         categoryName={
-          state.categoryIds.length === 1
-            ? CATEGORY_META[state.categoryIds[0]]?.name
-            : state.categoryIds.length > 1
-              ? `${state.categoryIds.length} categories`
-              : undefined
+          state.customCategory
+            ? state.customCategory
+            : state.categoryIds.length === 1
+              ? CATEGORY_META[state.categoryIds[0]]?.name
+              : state.categoryIds.length > 1
+                ? `${state.categoryIds.length} categories`
+                : undefined
         }
         categoryProgress={categoryProgress}
         skipsRemaining={state.skipsRemaining}

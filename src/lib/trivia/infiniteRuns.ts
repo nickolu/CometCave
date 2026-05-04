@@ -19,6 +19,9 @@ export interface RunDoc {
   // Deprecated, kept for backward compatibility. Equals categoryFilters[0]
   // when there's exactly one filter, null otherwise.
   categoryFilter: number | null
+  // When set, the run generates questions about this custom topic on-the-fly.
+  // Mutually exclusive with categoryFilters (stored as [] when customCategory is set).
+  customCategory?: string | null
   score: number
   livesRemaining: number
   currentStreak: number
@@ -44,17 +47,19 @@ export interface RunAnswer {
 export async function startRun(
   uid: string,
   mode: 'scored' | 'practice' = 'scored',
-  categoryIds: number[] = []
+  categoryIds: number[] = [],
+  customCategory?: string | null
 ): Promise<{ runId: string; livesRemaining: number; currentStreak: number }> {
   const db = getFirestoreDb()
   const runRef = db.collection(`users/${uid}/triviaInfinite`).doc()
   const now = FieldValue.serverTimestamp()
-  await runRef.set({
+  const filters = customCategory ? [] : categoryIds
+  const docData: Record<string, unknown> = {
     runId: runRef.id,
     uid,
     mode,
-    categoryFilters: categoryIds,
-    categoryFilter: categoryIds.length === 1 ? categoryIds[0] : null,
+    categoryFilters: filters,
+    categoryFilter: filters.length === 1 ? filters[0] : null,
     score: 0,
     livesRemaining: LIVES_START,
     currentStreak: 0,
@@ -66,7 +71,11 @@ export async function startRun(
     flaggedQuestionIds: [],
     startedAt: now,
     endedAt: null,
-  })
+  }
+  if (customCategory) {
+    docData.customCategory = customCategory
+  }
+  await runRef.set(docData)
   return { runId: runRef.id, livesRemaining: LIVES_START, currentStreak: 0 }
 }
 
@@ -307,6 +316,8 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   return map
 }
 
+// TODO(#1263): Add getTopRunsByCustomCategory(customCategory, limit) for per-topic leaderboards.
+// This requires a composite index on (customCategory, mode, score) which isn't yet defined.
 export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
   const db = getFirestoreDb()
   // Overfetch so that the post-hydration filter that drops players without
