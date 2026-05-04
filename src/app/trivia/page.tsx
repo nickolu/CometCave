@@ -119,6 +119,17 @@ export default function TriviaPage() {
   const handleStartPractice = () => setView('practice')
   const handleViewInfiniteLeaderboard = () => setView('infinite-leaderboard')
 
+  const handleStatsReset = useCallback(
+    (scopes: { daily: boolean; infinite: boolean }) => {
+      if (scopes.daily) {
+        setLocalToday(null)
+        setLastResult(null)
+        setAutoResultsShown(true)
+      }
+    },
+    []
+  )
+
   const handleFinish = useCallback(
     (result: TriviaGameResult) => {
       saveTodayResult(result)
@@ -187,6 +198,7 @@ export default function TriviaPage() {
       onViewInfiniteStats={handleViewInfiniteStats}
       onStartPractice={handleStartPractice}
       onViewInfiniteLeaderboard={handleViewInfiniteLeaderboard}
+      onStatsReset={handleStatsReset}
       todayResult={todayResult}
     />
   )
