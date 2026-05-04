@@ -16,6 +16,7 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 import { InfiniteGame } from './components/InfiniteGame'
 import { InfiniteLeaderboard } from './components/InfiniteLeaderboard'
 import { QuestionExplorer } from './components/QuestionExplorer'
+import { QuestionLibrary } from './components/QuestionLibrary'
 import { UnifiedStats } from './components/UnifiedStats'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'
@@ -25,7 +26,7 @@ import { TriviaResults } from './components/TriviaResults'
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
-type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'explore'
+type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'explore' | 'library'
 
 type StatsDefaultTab = 'daily' | 'infinite'
 
@@ -112,6 +113,7 @@ export default function TriviaPage() {
       )
   }, [user, triviaLoading, firestoreToday, today])
 
+  const handleLibrary = () => setView('library')
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => { setStatsDefaultTab('daily'); setView('stats') }
   const handleViewLeaderboard = () => setView('leaderboard')
@@ -195,6 +197,10 @@ export default function TriviaPage() {
     return <QuestionExplorer onBack={handleBackToLanding} />
   }
 
+  if (view === 'library') {
+    return <QuestionLibrary onBack={handleBackToLanding} />
+  }
+
   return (
     <TriviaLanding
       onStartGame={handleStartGame}
@@ -205,6 +211,7 @@ export default function TriviaPage() {
       onStartPractice={handleStartPractice}
       onViewInfiniteLeaderboard={handleViewInfiniteLeaderboard}
       onExplore={handleExplore}
+      onLibrary={handleLibrary}
       onStatsReset={handleStatsReset}
       todayResult={todayResult}
     />

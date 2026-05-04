@@ -26,6 +26,7 @@ export function TriviaLanding({
   onStartPractice,
   onViewInfiniteLeaderboard,
   onExplore,
+  onLibrary,
   onStatsReset,
   todayResult,
 }: {
@@ -37,6 +38,7 @@ export function TriviaLanding({
   onStartPractice?: () => void
   onViewInfiniteLeaderboard?: () => void
   onExplore?: () => void
+  onLibrary?: () => void
   onStatsReset?: (scopes: ResetScopes) => void
   todayResult: TriviaGameResult | null
 }) {
@@ -261,6 +263,13 @@ export function TriviaLanding({
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
         >
           Explore Questions
+        </button>
+        <span className="text-on-surface/20">·</span>
+        <button
+          onClick={onLibrary}
+          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
+        >
+          Question Library
         </button>
       </div>
 
