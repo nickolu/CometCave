@@ -438,51 +438,59 @@ export function GamePlayView() {
           style={{ gap: 18, minHeight: 540 }}
         >
           <div className="flex flex-col items-center" style={{ paddingTop: 8 }}>
+            {currentBlind && blindDefinition && (
+              <>
+                <div
+                  className="uppercase"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 10,
+                    opacity: 0.5,
+                    letterSpacing: 3,
+                  }}
+                >
+                  {blindDefinition.name}
+                </div>
+                <div
+                  style={{
+                    fontSize: 44,
+                    fontWeight: 200,
+                    letterSpacing: -1.5,
+                    lineHeight: 1,
+                    marginTop: 4,
+                    color: 'var(--cc-mint)',
+                    textShadow: '0 0 60px rgba(94,234,212,0.3)',
+                    transition: 'transform 0.2s',
+                    transform: isScoring ? 'scale(1.04)' : 'scale(1)',
+                  }}
+                >
+                  {currentBlind.score.toString()}
+                  <span
+                    style={{
+                      fontSize: 20,
+                      opacity: 0.5,
+                      marginLeft: 4,
+                      color: 'var(--cc-pink)',
+                    }}
+                  >
+                    / {targetScore.toString()}
+                  </span>
+                </div>
+              </>
+            )}
             <div
               className="uppercase"
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 10,
-                opacity: 0.5,
-                letterSpacing: 3,
+                letterSpacing: 2,
+                opacity: 0.45,
+                marginTop: 8,
               }}
             >
-              Total Score
+              <span>Total</span>
+              <span style={{ marginLeft: 6 }}>{totalScore.toString()}</span>
             </div>
-            <div
-              style={{
-                fontSize: 44,
-                fontWeight: 200,
-                letterSpacing: -1.5,
-                lineHeight: 1,
-                marginTop: 4,
-                color: 'var(--cc-text-default)',
-                textShadow: '0 0 60px rgba(94,234,212,0.3)',
-                transition: 'transform 0.2s',
-                transform: isScoring ? 'scale(1.04)' : 'scale(1)',
-              }}
-            >
-              {totalScore.toString()}
-            </div>
-            {currentBlind && (
-              <div
-                className="uppercase"
-                style={{
-                  fontFamily: 'var(--cc-font-mono)',
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  opacity: 0.55,
-                  marginTop: 6,
-                }}
-              >
-                <span>Blind</span>
-                <span style={{ marginLeft: 8, color: 'var(--cc-mint)' }}>
-                  {currentBlind.score.toString()}
-                </span>
-                <span style={{ margin: '0 6px', opacity: 0.5 }}>/</span>
-                <span style={{ color: 'var(--cc-pink)' }}>{targetScore.toString()}</span>
-              </div>
-            )}
           </div>
 
           <div
