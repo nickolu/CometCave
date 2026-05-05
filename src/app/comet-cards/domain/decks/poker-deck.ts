@@ -1,0 +1,75 @@
+import { GameState } from '@/app/comet-cards/domain/game/types'
+import { getDefaultCard } from '@/app/comet-cards/domain/playing-card/playing-cards'
+import {
+  PlayingCardDefinition,
+  PlayingCardState,
+} from '@/app/comet-cards/domain/playing-card/types'
+import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
+
+import { DeckDefinition } from './types'
+
+export const pokerDeckDefinition: PlayingCardDefinition[] = [
+  getDefaultCard('2', 'hearts'),
+  getDefaultCard('2', 'diamonds'),
+  getDefaultCard('2', 'clubs'),
+  getDefaultCard('2', 'spades'),
+  getDefaultCard('3', 'hearts'),
+  getDefaultCard('3', 'diamonds'),
+  getDefaultCard('3', 'clubs'),
+  getDefaultCard('3', 'spades'),
+  getDefaultCard('4', 'hearts'),
+  getDefaultCard('4', 'diamonds'),
+  getDefaultCard('4', 'clubs'),
+  getDefaultCard('4', 'spades'),
+  getDefaultCard('5', 'hearts'),
+  getDefaultCard('5', 'diamonds'),
+  getDefaultCard('5', 'clubs'),
+  getDefaultCard('5', 'spades'),
+  getDefaultCard('6', 'hearts'),
+  getDefaultCard('6', 'diamonds'),
+  getDefaultCard('6', 'clubs'),
+  getDefaultCard('6', 'spades'),
+  getDefaultCard('7', 'hearts'),
+  getDefaultCard('7', 'diamonds'),
+  getDefaultCard('7', 'clubs'),
+  getDefaultCard('7', 'spades'),
+  getDefaultCard('8', 'hearts'),
+  getDefaultCard('8', 'diamonds'),
+  getDefaultCard('8', 'clubs'),
+  getDefaultCard('8', 'spades'),
+  getDefaultCard('9', 'hearts'),
+  getDefaultCard('9', 'diamonds'),
+  getDefaultCard('9', 'clubs'),
+  getDefaultCard('9', 'spades'),
+  getDefaultCard('10', 'hearts'),
+  getDefaultCard('10', 'diamonds'),
+  getDefaultCard('10', 'clubs'),
+  getDefaultCard('10', 'spades'),
+  getDefaultCard('J', 'hearts'),
+  getDefaultCard('J', 'diamonds'),
+  getDefaultCard('J', 'clubs'),
+  getDefaultCard('J', 'spades'),
+  getDefaultCard('Q', 'hearts'),
+  getDefaultCard('Q', 'diamonds'),
+  getDefaultCard('Q', 'clubs'),
+  getDefaultCard('Q', 'spades'),
+  getDefaultCard('K', 'hearts'),
+  getDefaultCard('K', 'diamonds'),
+  getDefaultCard('K', 'clubs'),
+  getDefaultCard('K', 'spades'),
+  getDefaultCard('A', 'hearts'),
+  getDefaultCard('A', 'diamonds'),
+  getDefaultCard('A', 'clubs'),
+  getDefaultCard('A', 'spades'),
+]
+
+export const initialPokerDeckState = (game: GameState): PlayingCardState[] =>
+  pokerDeckDefinition.map(card => initializePlayingCard(card, game))
+
+export const pokerDeck: DeckDefinition = {
+  id: 'pokerDeck',
+  name: 'Poker Deck',
+  description: 'Standard 52-card deck',
+  cards: pokerDeckDefinition,
+  modifiers: {},
+}

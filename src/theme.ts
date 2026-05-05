@@ -8,7 +8,7 @@ import { createTheme } from '@mui/material/styles'
 // globals.css, update the matching value below.
 //
 // Decision (issue #536): KEEP MUI temporarily. It's used across 18 files
-// in Chat Room, Oracle, and Daily Card Game. Each Phase 6 per-game refresh
+// in Chat Room, Oracle, and Comet Cards. Each Phase 6 per-game refresh
 // will migrate MUI components to Radix/shadcn equivalents. Once all games
 // are migrated, MUI + Emotion dependencies can be removed entirely.
 
