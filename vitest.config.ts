@@ -14,8 +14,8 @@ export default defineConfig({
     include: [
       'src/app/api/v1/tap-tap-adventure/**/*.test.ts',
       'src/app/tap-tap-adventure/**/*.test.ts',
-      'src/app/daily-card-game/**/*.test.ts',
-      'src/app/daily-card-game/**/*.test.tsx',
+      'src/app/comet-cards/**/*.test.ts',
+      'src/app/comet-cards/**/*.test.tsx',
       'src/lib/trivia/**/*.test.ts',
       'src/app/trivia/**/*.test.ts',
     ],
