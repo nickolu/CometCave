@@ -1,5 +1,7 @@
 import { decks, initialDeckStates } from '@/app/comet-cards/domain/decks/decks'
 import { DeckDefinition } from '@/app/comet-cards/domain/decks/types'
+import { spectralCards } from '@/app/comet-cards/domain/spectral/spectal-cards'
+import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 import {
   fiveOfAKindHand,
   flushFiveHand,
@@ -214,6 +216,15 @@ export function createGameStateWithDeck(deckId: string): GameState {
     stateWithModifiers = {
       ...stateWithModifiers,
       consumables: [...stateWithModifiers.consumables, ...tarotCards],
+    }
+  }
+
+  // Ghost Deck starts with a Hex spectral card
+  if (deckId === 'ghostDeck') {
+    const hexCard = initializeSpectralCard(spectralCards.hex)
+    stateWithModifiers = {
+      ...stateWithModifiers,
+      consumables: [...stateWithModifiers.consumables, hexCard as any],
     }
   }
 
