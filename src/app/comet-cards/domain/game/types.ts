@@ -2,6 +2,7 @@ import type {
   CelestialCardState,
   TarotCardState,
 } from '@/app/comet-cards/domain/consumable/types'
+import type { SpectralCardState } from '@/app/comet-cards/domain/spectral/types'
 import type { PokerHandDefinition, PokerHandsState } from '@/app/comet-cards/domain/hand/types'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
 import type { PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
@@ -16,8 +17,8 @@ export interface GameState {
   // Card registry: single source of truth for all card state
   cards: Record<string, PlayingCardState>
 
-  consumables: (CelestialCardState | TarotCardState)[]
-  consumablesUsed: (CelestialCardState | TarotCardState)[]
+  consumables: (CelestialCardState | TarotCardState | SpectralCardState)[]
+  consumablesUsed: (CelestialCardState | TarotCardState | SpectralCardState)[]
   discardsPlayed: number
   gamePhase: GamePhase
   gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
