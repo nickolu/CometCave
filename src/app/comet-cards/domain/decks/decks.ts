@@ -6,6 +6,7 @@ import { abandonedDeck } from './abandoned-deck'
 import { blackDeck } from './black-deck'
 import { blueDeck } from './blue-deck'
 import { checkeredDeck } from './checkered-deck'
+import { erraticDeck, generateErraticDeckCards } from './erratic-deck'
 import { greenDeck } from './green-deck'
 import { paintedDeck } from './painted-deck'
 import { pokerDeck } from './poker-deck'
@@ -23,12 +24,16 @@ export const decks: Record<string, DeckDefinition> = {
   checkeredDeck: checkeredDeck,
   paintedDeck: paintedDeck,
   greenDeck: greenDeck,
+  erraticDeck: erraticDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {
   const result: Record<string, PlayingCardState[]> = {}
   for (const [key, deck] of Object.entries(decks)) {
-    result[key] = deck.cards.map(card => initializePlayingCard(card, game))
+    const cards = key === 'erraticDeck'
+      ? generateErraticDeckCards(game.gameSeed)
+      : deck.cards
+    result[key] = cards.map(card => initializePlayingCard(card, game))
   }
   return result
 }
