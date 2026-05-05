@@ -16,7 +16,8 @@ import {
 } from '@/app/comet-cards/domain/randomness'
 import type { CelestialCardState } from '@/app/comet-cards/domain/consumable/types'
 import { initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
-import { getRandomTarotCards } from '@/app/comet-cards/domain/shop/utils'
+import { getRandomTarotCards, getRandomSpectralCards } from '@/app/comet-cards/domain/shop/utils'
+import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 
 import { addOwnedCard, removeOwnedCard } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
@@ -4364,6 +4365,102 @@ export const tradingCard: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const seance: JokerDefinition = {
+  id: 'seance',
+  name: 'Séance',
+  description: 'If poker hand is a Straight Flush, create a random Spectral card (Must have room)',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        if (handId !== 'straightFlush') return
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          ctx.game.handsPlayed.toString(),
+          'seance',
+        ])
+        const spectralCard = getRandomSpectralCards(1, seed)[0]
+        ctx.game.consumables.push(initializeSpectralCard(spectralCard))
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+export const sixthSense: JokerDefinition = {
+  id: 'sixthSense',
+  name: 'Sixth Sense',
+  description: 'If first hand of round is a single 6, destroy it and create a Spectral card (Must have room)',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.handsPlayed !== 0) return
+        if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handCards = selectedHand[1]
+        if (!handCards || handCards.length !== 1) return
+        const card = handCards[0]
+        const cardDef = playingCards[card.playingCardId]
+        if (!cardDef || cardDef.value !== '6') return
+        // Destroy the card
+        removeOwnedCard(ctx.game, card.id)
+        // Create a random spectral card
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'sixthSense',
+        ])
+        const spectralCard = getRandomSpectralCards(1, seed)[0]
+        ctx.game.consumables.push(initializeSpectralCard(spectralCard))
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+export const dna: JokerDefinition = {
+  id: 'dna',
+  name: 'DNA',
+  description: 'If first hand of round has only 1 card, add a permanent copy to deck and draw it to hand',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (ctx.game.handsPlayed !== 0) return
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handCards = selectedHand[1]
+        if (!handCards || handCards.length !== 1) return
+        const originalCard = handCards[0]
+        const cardDef = playingCards[originalCard.playingCardId]
+        if (!cardDef) return
+        // Create a copy of the card
+        const newCard = initializePlayingCard(cardDef)
+        // Copy the original card's enchantment/edition/seal
+        newCard.flags = { ...originalCard.flags }
+        newCard.bonusChips = originalCard.bonusChips
+        addOwnedCard(ctx.game, newCard)
+        // Draw it to hand
+        ctx.game.gamePlayState.handIds.push(newCard.id)
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4493,6 +4590,9 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   glassJoker,
   marbleJoker,
   tradingCard,
+  seance,
+  sixthSense,
+  dna,
 }
 
 /***
