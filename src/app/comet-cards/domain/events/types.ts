@@ -14,6 +14,7 @@ export type GameEvent =
   | BackToMenuEvent
   | BossBlindSelectedEvent
   | CardDeselectedEvent
+  | CardDestroyedEvent
   | CardScoredEvent
   | CardSelectedEvent
   | CelestialCardUsedEvent
@@ -109,6 +110,11 @@ export type BossBlindSelectedEvent = {
 export type CardDeselectedEvent = {
   type: 'CARD_DESELECTED'
   id: string
+}
+export type CardDestroyedEvent = {
+  type: 'CARD_DESTROYED'
+  cardId: string
+  source: 'glass_break' | 'spectral' | 'joker_effect' | 'other'
 }
 export type CardScoredEvent = {
   type: 'CARD_SCORED'

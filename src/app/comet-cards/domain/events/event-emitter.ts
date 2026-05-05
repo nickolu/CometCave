@@ -11,6 +11,7 @@ class EventEmitter {
     CONSUMABLE_DESELECTED: [],
     CONSUMABLE_SELECTED: [],
     CONSUMABLE_SOLD: [],
+    CARD_DESTROYED: [],
     CARD_SCORED: [],
     CARD_SELECTED: [],
     CARD_DESELECTED: [],

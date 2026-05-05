@@ -275,6 +275,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         // This case handles the event for effect dispatching purposes
         return
       }
+      case 'CARD_DESTROYED': {
+        dispatchEffects(event, getEffectContext(draft as unknown as GameState, event), collectEffects(draft as unknown as GameState))
+        return
+      }
       case 'CONSUMABLE_SOLD': {
         handleConsumableSold(draft)
         return
