@@ -4182,6 +4182,56 @@ function applyPerkeoEffect(ctx: EffectContext) {
   ctx.game.consumables.push(copy)
 }
 
+export const canio: JokerDefinition = {
+  id: 'canio',
+  name: 'Canio',
+  description: 'This Joker gains X1 Mult when a face card is destroyed (Currently X1 Mult)',
+  price: 20,
+  effects: [
+    {
+      event: { type: 'CARD_DESTROYED', cardId: '', source: 'glass_break' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const c = ctx.game.jokers.find(j => j.jokerId === 'canio')
+        if (!c) return
+        if (!c.metadata) c.metadata = { xMult: 100 }
+        if (!c.metadata.xMult) c.metadata.xMult = 100
+        // Check if destroyed card is a face card
+        const destroyedEvent = ctx.event as { cardId?: string }
+        if (!destroyedEvent.cardId) return
+        const cardState = ctx.game.cards[destroyedEvent.cardId]
+        if (!cardState) return
+        const cardDef = playingCards[cardState.playingCardId]
+        if (!cardDef) return
+        const faceValues = ['J', 'Q', 'K']
+        if (!faceValues.includes(cardDef.value)) return
+        c.metadata.xMult += 100
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const c = ctx.game.jokers.find(j => j.jokerId === 'canio')
+        if (!c) return
+        if (!c.metadata) c.metadata = { xMult: 100 }
+        const xMult = (c.metadata.xMult ?? 100) / 100
+        if (xMult > 1) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: xMult,
+            source: 'Canio',
+          })
+          ctx.game.gamePlayState.score.mult *= xMult
+        }
+      },
+    },
+  ],
+  rarity: 'legendary',
+}
+
 function applyBurglar(ctx: EffectContext) {
   ctx.game.maxHands += 3
   ctx.game.gamePlayState.remainingHands += 3
@@ -4674,6 +4724,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   chicot,
   yorick,
   perkeo,
+  canio,
   burglar,
   troubadour,
   showman,
