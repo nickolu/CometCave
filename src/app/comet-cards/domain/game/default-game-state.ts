@@ -17,6 +17,7 @@ import {
 import { initializeHand } from '@/app/comet-cards/domain/hand/utils'
 import { getCurrentDayAsSeedString } from '@/app/comet-cards/domain/randomness'
 import { initializeRounds } from '@/app/comet-cards/domain/round/rounds'
+import { generateStartingTarotCards } from '@/app/comet-cards/domain/decks/deck-consumables'
 import { applyStartingVouchers } from '@/app/comet-cards/domain/voucher/deck-vouchers'
 
 import { GameState } from './types'
@@ -201,6 +202,19 @@ export function createGameStateWithDeck(deckId: string): GameState {
   // Apply starting vouchers
   if (deck.modifiers.startingVouchers?.length) {
     stateWithModifiers = applyStartingVouchers(stateWithModifiers, deck.modifiers.startingVouchers)
+  }
+
+  // Apply starting tarot cards
+  if (deck.modifiers.startingTarotCards || deck.modifiers.startingTarotTypes?.length) {
+    const tarotCards = generateStartingTarotCards(
+      stateWithModifiers.gameSeed,
+      deck.modifiers.startingTarotCards ?? 0,
+      deck.modifiers.startingTarotTypes,
+    )
+    stateWithModifiers = {
+      ...stateWithModifiers,
+      consumables: [...stateWithModifiers.consumables, ...tarotCards],
+    }
   }
 
   const deckCards = initialDeckStates(stateWithModifiers)[deckId]
