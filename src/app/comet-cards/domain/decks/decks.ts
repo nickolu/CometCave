@@ -8,6 +8,7 @@ import { blueDeck } from './blue-deck'
 import { checkeredDeck } from './checkered-deck'
 import { erraticDeck, generateErraticDeckCards } from './erratic-deck'
 import { greenDeck } from './green-deck'
+import { magicDeck } from './magic-deck'
 import { nebulaDeck } from './nebula-deck'
 import { plasmaDeck } from './plasma-deck'
 import { paintedDeck } from './painted-deck'
@@ -30,6 +31,7 @@ export const decks: Record<string, DeckDefinition> = {
   erraticDeck: erraticDeck,
   plasmaDeck: plasmaDeck,
   nebulaDeck: nebulaDeck,
+  magicDeck: magicDeck,
   zodiacDeck: zodiacDeck,
 }
 
