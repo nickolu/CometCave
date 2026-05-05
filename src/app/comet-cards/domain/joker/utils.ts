@@ -1,0 +1,232 @@
+import type { EffectContext } from '@/app/comet-cards/domain/events/types'
+import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { PokerHandDefinition } from '@/app/comet-cards/domain/hand/types'
+import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
+import {
+  buildSeedString,
+  getRandomNumbersWithSeed,
+  getRandomWeightedChoiceWithSeed,
+  uuid,
+} from '@/app/comet-cards/domain/randomness'
+
+import { jokers } from './jokers'
+import { JokerDefinition, JokerState } from './types'
+
+export const bonusOnCardScored = ({
+  ctx,
+  suit,
+  type,
+  value,
+  source,
+}: {
+  ctx: EffectContext
+  suit: 'hearts' | 'diamonds' | 'spades' | 'clubs'
+  type: 'mult' | 'chips'
+  value: number
+  source: string
+}) => {
+  const scoredCard = ctx.scoredCards?.[0]
+  if (scoredCard && playingCards[scoredCard.playingCardId].suit === suit) {
+    ctx.game.gamePlayState.scoringEvents.push({
+      id: uuid(),
+      type,
+      value,
+      source,
+    })
+    ctx.game.gamePlayState.score[type] += value
+  }
+}
+
+export const bonusOnHandPlayed = ({
+  ctx,
+  hand,
+  type,
+  value,
+  source,
+}: {
+  ctx: EffectContext
+  hand: PokerHandDefinition
+  type: 'mult' | 'chips'
+  value: number
+  source: string
+}) => {
+  const scoredHandId = ctx.game.gamePlayState.selectedHand?.[0]
+
+  if (scoredHandId === hand.id) {
+    ctx.game.gamePlayState.scoringEvents.push({
+      id: uuid(),
+      type,
+      value,
+      source,
+    })
+    ctx.game.gamePlayState.score[type] += value
+  }
+}
+
+export const isJokerState = (card: unknown): card is JokerState => {
+  return typeof card === 'object' && card !== null && 'jokerId' in card
+}
+
+export const isJokerDefinition = (card: unknown): card is JokerDefinition => {
+  return typeof card === 'object' && card !== null && 'id' in card
+}
+
+function getRandomJokerEdition(game: GameState): JokerState['edition'] {
+  const baseSeed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'edition',
+  ])
+
+  const pickSeed = buildSeedString([baseSeed, 'pick'])
+  return (
+    getRandomWeightedChoiceWithSeed({
+      seed: pickSeed,
+      weightedOptions: game.shopState.joker.editionWeights,
+    }) ?? 'normal'
+  )
+}
+
+const getRandomFlag = (
+  possibleFlags: ('isRentable' | 'isPerishable' | 'isEternal')[],
+  game: GameState
+): ('isRentable' | 'isPerishable' | 'isEternal') | undefined => {
+  if (possibleFlags.length === 0) {
+    return undefined
+  }
+  return getRandomWeightedChoiceWithSeed({
+    seed: buildSeedString([
+      game.gameSeed,
+      game.roundIndex.toString(),
+      game.shopState.rerollsUsed.toString(),
+      'flag',
+    ]),
+    weightedOptions: possibleFlags.reduce(
+      (acc, flag) => {
+        acc[flag] = 1
+        return acc
+      },
+      {} as Record<'isRentable' | 'isPerishable' | 'isEternal', number>
+    ),
+  })
+}
+
+export const initializeJoker = (joker: JokerDefinition, game: GameState): JokerState => {
+  const edition = getRandomJokerEdition(game)
+  const allowedFlags = game.allowedJokerFlags
+  const flag = getRandomFlag(allowedFlags, game)
+  return {
+    id: uuid(),
+    jokerId: joker.id,
+    edition,
+    isFaceUp: true,
+    bonusSellValue: 0,
+    counter: 0,
+    flags: {
+      isRentable: flag === 'isRentable',
+      isPerishable: flag === 'isPerishable',
+      isEternal: flag === 'isEternal',
+    },
+  }
+}
+
+type JokerPredicate = (joker: JokerDefinition, game: GameState) => boolean
+
+const isUncommonPredicate: JokerPredicate = (joker: JokerDefinition): boolean => {
+  return joker.rarity === 'uncommon'
+}
+
+const isNotOwnedPredicate: JokerPredicate = (joker: JokerDefinition, game: GameState): boolean => {
+  return !game.jokers.some(existingJoker => existingJoker.jokerId === joker.id)
+}
+
+export const getRandomUncommonJoker = (
+  game: GameState,
+  allowDuplicates: boolean = false
+): JokerDefinition => {
+  const allJokers = Object.values(jokers)
+  const predicates = [isUncommonPredicate]
+  if (!allowDuplicates) {
+    predicates.push(isNotOwnedPredicate)
+  }
+  const filteredJokers = allJokers.filter(joker =>
+    predicates.every(predicate => predicate(joker, game))
+  )
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: filteredJokers.length - 1,
+    numberOfNumbers: 1,
+  })
+  return filteredJokers[randomCardIndices[0]]
+}
+
+const isCommonPredicate: JokerPredicate = (joker: JokerDefinition): boolean => {
+  return joker.rarity === 'common'
+}
+
+export const getRandomCommonJoker = (
+  game: GameState,
+  seedSuffix: string = '',
+  allowDuplicates: boolean = false
+): JokerDefinition => {
+  const allJokers = Object.values(jokers)
+  const predicates: JokerPredicate[] = [isCommonPredicate]
+  if (!allowDuplicates) {
+    predicates.push(isNotOwnedPredicate)
+  }
+  const filteredJokers = allJokers.filter(joker =>
+    predicates.every(predicate => predicate(joker, game))
+  )
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'common',
+    seedSuffix,
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: filteredJokers.length - 1,
+    numberOfNumbers: 1,
+  })
+  return filteredJokers[randomCardIndices[0]]
+}
+
+const isRarePredicate: JokerPredicate = (joker: JokerDefinition): boolean => {
+  return joker.rarity === 'rare'
+}
+
+export const getRandomRareJoker = (
+  game: GameState,
+  allowDuplicates: boolean = false
+): JokerDefinition => {
+  const allJokers = Object.values(jokers)
+  const predicates: JokerPredicate[] = [isRarePredicate]
+  if (!allowDuplicates) {
+    predicates.push(isNotOwnedPredicate)
+  }
+  const filteredJokers = allJokers.filter(joker =>
+    predicates.every(predicate => predicate(joker, game))
+  )
+  const seed = buildSeedString([
+    game.gameSeed,
+    game.roundIndex.toString(),
+    game.shopState.rerollsUsed.toString(),
+    'rare',
+  ])
+  const randomCardIndices = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: filteredJokers.length - 1,
+    numberOfNumbers: 1,
+  })
+  return filteredJokers[randomCardIndices[0]]
+}
