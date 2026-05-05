@@ -18,6 +18,8 @@ import type { CelestialCardState } from '@/app/comet-cards/domain/consumable/typ
 import { initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
 import { getRandomTarotCards } from '@/app/comet-cards/domain/shop/utils'
 
+import { addOwnedCard, removeOwnedCard } from '@/app/comet-cards/domain/game/card-registry-utils'
+import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
 import { JokerDefinition, JokerState } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
 
@@ -4327,6 +4329,131 @@ export const astronomer: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const glassJoker: JokerDefinition = {
+  id: 'glassJoker',
+  name: 'Glass Joker',
+  description: 'This Joker gains X0.75 Mult for every Glass Card that is destroyed (Currently X1 Mult)',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'CARD_DESTROYED', cardId: '', source: 'glass_break' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const gj = ctx.game.jokers.find(j => j.jokerId === 'glassJoker')
+        if (!gj) return
+        if (!gj.metadata) gj.metadata = { xMult: 100 }
+        if (!gj.metadata.xMult) gj.metadata.xMult = 100
+        gj.metadata.xMult += 75
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const gj = ctx.game.jokers.find(j => j.jokerId === 'glassJoker')
+        if (!gj) return
+        if (!gj.metadata) gj.metadata = { xMult: 100 }
+        const xMult = (gj.metadata.xMult ?? 100) / 100
+        if (xMult > 1) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: xMult,
+            source: 'Glass Joker',
+          })
+          ctx.game.gamePlayState.score.mult *= xMult
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+function applyMarbleJokerEffect(ctx: EffectContext) {
+  const allCards = Object.values(playingCards)
+  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'marble'])
+  const roll = getRandomNumbersWithSeed({ seed, min: 0, max: allCards.length - 1, numberOfNumbers: 1 })
+  const cardDef = allCards[roll[0]]
+  const newCard = initializePlayingCard(cardDef)
+  newCard.flags.enchantment = 'stone'
+  addOwnedCard(ctx.game, newCard)
+}
+
+export const marbleJoker: JokerDefinition = {
+  id: 'marbleJoker',
+  name: 'Marble Joker',
+  description: 'Adds one Stone card to the deck when Blind is selected',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyMarbleJokerEffect(ctx),
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyMarbleJokerEffect(ctx),
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyMarbleJokerEffect(ctx),
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+export const tradingCard: JokerDefinition = {
+  id: 'tradingCard',
+  name: 'Trading Card',
+  description: 'If first discard of round has only 1 card, destroy it and earn $3',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tc = ctx.game.jokers.find(j => j.jokerId === 'tradingCard')
+        if (!tc) return
+        // Only trigger on first discard of round (use counter: 0 = not used this round)
+        if (tc.counter !== 0) return
+        tc.counter = 1
+        if (ctx.game.gamePlayState.selectedCardIds.length !== 1) return
+        const cardId = ctx.game.gamePlayState.selectedCardIds[0]
+        removeOwnedCard(ctx.game, cardId)
+        ctx.game.money += 3
+      },
+    },
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tc = ctx.game.jokers.find(j => j.jokerId === 'tradingCard')
+        if (tc) tc.counter = 0
+      },
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tc = ctx.game.jokers.find(j => j.jokerId === 'tradingCard')
+        if (tc) tc.counter = 0
+      },
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const tc = ctx.game.jokers.find(j => j.jokerId === 'tradingCard')
+        if (tc) tc.counter = 0
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4342,6 +4469,9 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   cleverJoker,
   deviousJoker,
   craftyJoker,
+  lustyJoker,
+  zanyJoker,
+  slyJoker,
   halfJoker,
   jokerStencil,
   fourFingersJoker,
@@ -4452,6 +4582,9 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   showman,
   burntJoker,
   astronomer,
+  glassJoker,
+  marbleJoker,
+  tradingCard,
 }
 
 /***
