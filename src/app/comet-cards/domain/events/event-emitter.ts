@@ -47,6 +47,7 @@ class EventEmitter {
     PACK_OPEN_SKIP: [],
     SHOP_BUY_AND_USE_CARD: [],
     SHOP_BUY_VOUCHER: [],
+    SHOP_END: [],
     DISPLAY_BOSS_BLINDS: [],
     DISPLAY_CELESTIALS: [],
     DISPLAY_SPECTRAL_CARDS: [],

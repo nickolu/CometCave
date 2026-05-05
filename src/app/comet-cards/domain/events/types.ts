@@ -45,6 +45,7 @@ export type GameEvent =
   | ShopBuyAndUseCardEvent
   | ShopRerollEvent
   | ShopBuyVoucherEvent
+  | ShopEndEvent
   | DisplayBossBlindsEvent
   | DisplayCelestialsEvent
   | DisplaySpectralCardsEvent
@@ -211,6 +212,9 @@ export type ShopOpenPackEvent = {
 export type ShopBuyVoucherEvent = {
   type: 'SHOP_BUY_VOUCHER'
   id: VoucherType
+}
+export type ShopEndEvent = {
+  type: 'SHOP_END'
 }
 export type DisplayBossBlindsEvent = {
   type: 'DISPLAY_BOSS_BLINDS'

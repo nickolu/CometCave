@@ -172,7 +172,13 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
 
+      case 'SHOP_END': {
+        dispatchEffects(event, getEffectContext(draft as unknown as GameState, event), collectEffects(draft as unknown as GameState))
+        return
+      }
       case 'SHOP_SELECT_BLIND': {
+        // Dispatch SHOP_END effects before leaving the shop
+        dispatchEffects({ type: 'SHOP_END' }, getEffectContext(draft as unknown as GameState, { type: 'SHOP_END' }), collectEffects(draft as unknown as GameState))
         handleShopSelectBlind(draft)
         return
       }
