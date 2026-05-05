@@ -7,6 +7,7 @@ import { blackDeck } from './black-deck'
 import { blueDeck } from './blue-deck'
 import { checkeredDeck } from './checkered-deck'
 import { erraticDeck, generateErraticDeckCards } from './erratic-deck'
+import { ghostDeck } from './ghost-deck'
 import { greenDeck } from './green-deck'
 import { magicDeck } from './magic-deck'
 import { nebulaDeck } from './nebula-deck'
@@ -33,6 +34,7 @@ export const decks: Record<string, DeckDefinition> = {
   nebulaDeck: nebulaDeck,
   magicDeck: magicDeck,
   zodiacDeck: zodiacDeck,
+  ghostDeck: ghostDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {

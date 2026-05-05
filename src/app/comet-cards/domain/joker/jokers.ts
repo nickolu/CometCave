@@ -4089,6 +4089,96 @@ export const chicot: JokerDefinition = {
   rarity: 'legendary',
 }
 
+export const yorick: JokerDefinition = {
+  id: 'yorick',
+  name: 'Yorick',
+  description: 'This Joker gains X1 Mult every 23 cards discarded (Currently X1 Mult)',
+  price: 20,
+  effects: [
+    {
+      event: { type: 'DISCARD_SELECTED_CARDS' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const y = ctx.game.jokers.find(j => j.jokerId === 'yorick')
+        if (!y) return
+        if (y.counter === 0) y.counter = 23
+        if (!y.metadata) y.metadata = { xMult: 100 }
+        if (!y.metadata.xMult) y.metadata.xMult = 100
+        const cardsDiscarded = ctx.game.gamePlayState.selectedCardIds.length
+        y.counter -= cardsDiscarded
+        while (y.counter <= 0) {
+          y.metadata.xMult += 100
+          y.counter += 23
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const y = ctx.game.jokers.find(j => j.jokerId === 'yorick')
+        if (!y) return
+        if (!y.metadata) y.metadata = { xMult: 100 }
+        const xMult = (y.metadata.xMult ?? 100) / 100
+        if (xMult > 1) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: xMult,
+            source: 'Yorick',
+          })
+          ctx.game.gamePlayState.score.mult *= xMult
+        }
+      },
+    },
+  ],
+  rarity: 'legendary',
+}
+
+export const perkeo: JokerDefinition = {
+  id: 'perkeo',
+  name: 'Perkeo',
+  description: 'Creates a Negative copy of 1 random consumable card in your possession at the end of the shop',
+  price: 20,
+  effects: [
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyPerkeoEffect(ctx),
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyPerkeoEffect(ctx),
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyPerkeoEffect(ctx),
+    },
+  ],
+  rarity: 'legendary',
+}
+
+function applyPerkeoEffect(ctx: EffectContext) {
+  if (ctx.game.consumables.length === 0) return
+  const seed = buildSeedString([
+    ctx.game.gameSeed,
+    ctx.game.roundIndex.toString(),
+    'perkeo',
+  ])
+  const roll = getRandomNumbersWithSeed({
+    seed,
+    min: 0,
+    max: ctx.game.consumables.length - 1,
+    numberOfNumbers: 1,
+  })
+  const originalConsumable = ctx.game.consumables[roll[0]]
+  const copy = { ...originalConsumable, id: uuid() }
+  ctx.game.consumables.push(copy)
+}
+
 function applyBurglar(ctx: EffectContext) {
   ctx.game.maxHands += 3
   ctx.game.gamePlayState.remainingHands += 3
@@ -4355,6 +4445,8 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   obelisk,
   triboulet,
   chicot,
+  yorick,
+  perkeo,
   burglar,
   troubadour,
   showman,
