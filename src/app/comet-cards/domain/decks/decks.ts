@@ -14,6 +14,7 @@ import { paintedDeck } from './painted-deck'
 import { pokerDeck } from './poker-deck'
 import { redDeck } from './red-deck'
 import { yellowDeck } from './yellow-deck'
+import { zodiacDeck } from './zodiac-deck'
 import { DeckDefinition } from './types'
 
 export const decks: Record<string, DeckDefinition> = {
@@ -29,6 +30,7 @@ export const decks: Record<string, DeckDefinition> = {
   erraticDeck: erraticDeck,
   plasmaDeck: plasmaDeck,
   nebulaDeck: nebulaDeck,
+  zodiacDeck: zodiacDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {
