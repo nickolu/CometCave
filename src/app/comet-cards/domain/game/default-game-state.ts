@@ -224,7 +224,7 @@ export function createGameStateWithDeck(deckId: string): GameState {
     const hexCard = initializeSpectralCard(spectralCards.hex)
     stateWithModifiers = {
       ...stateWithModifiers,
-      consumables: [...stateWithModifiers.consumables, hexCard],
+      consumables: [...stateWithModifiers.consumables, hexCard as any],
     }
   }
 
