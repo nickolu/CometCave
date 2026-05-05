@@ -1,4 +1,5 @@
 import { PlayingCardDefinition } from '@/app/comet-cards/domain/playing-card/types'
+import { VoucherType } from '@/app/comet-cards/domain/voucher/types'
 
 export interface DeckDefinition {
   id: string
@@ -16,4 +17,5 @@ export interface DeckModifiers {
   maxConsumables?: number
   handSizeModifier?: number
   maxInterest?: number
+  startingVouchers?: VoucherType[]
 }
