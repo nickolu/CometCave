@@ -187,7 +187,15 @@ export function createGameStateWithDeck(deckId: string): GameState {
     selectedDeck: deckId,
   }
 
-  const stateWithModifiers = applyDeckModifiers(baseState, deck)
+  let stateWithModifiers = applyDeckModifiers(baseState, deck)
+
+  // Plasma Deck doubles all blind requirements
+  if (deckId === 'plasmaDeck') {
+    stateWithModifiers = {
+      ...stateWithModifiers,
+      rounds: initializeRounds(stateWithModifiers.gameSeed, 2n),
+    }
+  }
 
   const deckCards = initialDeckStates(stateWithModifiers)[deckId]
   const deckCardMap: Record<string, (typeof deckCards)[number]> = {}
