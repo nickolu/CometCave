@@ -27,7 +27,14 @@ function computeBlindScoreAndAnte(
   if (!currentBlind) return null
 
   // mult can be fractional (e.g. Bloodstone, Ancient Joker apply x1.5), so floor before BigInt
-  const handScore = BigInt(Math.floor(draft.gamePlayState.score.chips * draft.gamePlayState.score.mult))
+  let handScore: bigint
+  if (draft.selectedDeck === 'plasmaDeck') {
+    // Plasma Deck: average chips and mult, then square the result
+    const avg = Math.floor((draft.gamePlayState.score.chips + draft.gamePlayState.score.mult) / 2)
+    handScore = BigInt(avg) * BigInt(avg)
+  } else {
+    handScore = BigInt(Math.floor(draft.gamePlayState.score.chips * draft.gamePlayState.score.mult))
+  }
   const blindScore = currentBlind.score + handScore
   const blindDefinition = getBlindDefinition(currentBlind.type, round)
   const ante = calculateAnte(round.baseAnte, blindDefinition.anteMultiplier)
