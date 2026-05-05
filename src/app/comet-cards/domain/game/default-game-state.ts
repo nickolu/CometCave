@@ -204,9 +204,12 @@ export function createGameStateWithDeck(deckId: string): GameState {
     const voucherStates = deck.modifiers.startingVouchers.map(vType =>
       initializeVoucherState(vouchers[vType])
     )
+    // Deep clone shop state and static rules to avoid mutating the module-level base state
     stateWithModifiers = {
       ...stateWithModifiers,
       vouchers: [...stateWithModifiers.vouchers, ...voucherStates],
+      shopState: JSON.parse(JSON.stringify(stateWithModifiers.shopState)),
+      staticRules: { ...stateWithModifiers.staticRules },
     }
     // Apply voucher effects directly to game state
     for (const vType of deck.modifiers.startingVouchers) {
