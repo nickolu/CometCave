@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-25",
+  "categoryId": 15,
+  "categoryName": "Entertainment: Video Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-25-0",
+      "question": "What is the name of the main character in \"Life is Strange\"?",
+      "options": [
+        "Victoria Chase",
+        "Stella Hill",
+        "Chloe Price",
+        "Maxine Caulfield"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Maxine Caulfield"
+    },
+    {
+      "id": "opentdb-2026-05-25-1",
+      "question": "Which Animal Crossing game was for the Nintendo Wii?",
+      "options": [
+        "Animal Crossing: New Leaf",
+        "Animal Crossing: Wild World",
+        "Animal Crossing: Population Growing!",
+        "Animal Crossing: City Folk"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Animal Crossing: City Folk"
+    },
+    {
+      "id": "opentdb-2026-05-25-2",
+      "question": "In most FPS video games such as Counter-Strike, shooting which part of the body does the highest damage?",
+      "options": [
+        "Arm",
+        "Chest",
+        "Leg",
+        "Head"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Head"
+    },
+    {
+      "id": "opentdb-2026-05-25-3",
+      "question": "What was the first interactive movie video game?",
+      "options": [
+        "Dragon's Lair",
+        "Cube Quest",
+        "M.A.C.H. 3",
+        "Astron Belt"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Astron Belt"
+    },
+    {
+      "id": "opentdb-2026-05-25-4",
+      "question": "What is the name of the child performing the Black Sacrament, in The Elder Scrolls V: Skyrim?",
+      "options": [
+        "Proventus Avenicci",
+        "Aval Atheron",
+        "Arngeir",
+        "Aventus Aretino"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Aventus Aretino"
+    },
+    {
+      "id": "opentdb-2026-05-25-5",
+      "question": "In \"Starbound\", according to the asset files, the description of the \"Erchius Ghost\" is the same as which other assets?",
+      "options": [
+        "Trictus",
+        "Pyromantle",
+        "Petricub",
+        "Spookit"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Spookit"
+    },
+    {
+      "id": "ai-2026-05-25-6",
+      "question": "Which Sony home console holds the record as the best-selling video game console of all time?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "PlayStation 2",
+      "explanation": "The PlayStation 2, released in 2000, sold over 155 million units worldwide, making it the best-selling video game console in history. It dominated the market for years, outlasting many of its competitors and even continuing to sell well into the next console generation. Its massive library of games and DVD playback capability were key factors in its enormous success."
+    },
+    {
+      "id": "ai-2026-05-25-7",
+      "question": "Which classic Nintendo 64 adventure game, starring a young hero named Link, is one of the most popular titles in the speedrunning community?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Ocarina of Time",
+      "explanation": "The Legend of Zelda: Ocarina of Time is one of the most iconic speedrunning games ever, with runners exploiting glitches and optimized routes to complete it in record time. Speedrunning transforms single-player classics like this into a competitive, fast-paced experience. It adds an entirely new perspective on a game most players originally took dozens of hours to finish."
+    },
+    {
+      "id": "ai-2026-05-25-8",
+      "question": "Before Shigeru Miyamoto intervened to incorporate Fox McCloud into the project, what was the original working title of the game that eventually became Star Fox Adventures?",
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Dinosaur Planet",
+      "explanation": "Star Fox Adventures started life as an original Rare title called Dinosaur Planet, but Shigeru Miyamoto noticed similarities between its protagonist and Fox McCloud and suggested merging the two projects. The result was released on the GameCube in 2002 as Star Fox Adventures, one of the last games Rare developed before being acquired by Microsoft."
+    },
+    {
+      "id": "ai-2026-05-25-9",
+      "question": "Which Nintendo development division, known for producing landmark 3D platformers, completed its final full game with the globally released Super Mario Odyssey on October 27th, 2017?",
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "EPD Tokyo",
+      "explanation": "Nintendo EPD Tokyo (formerly EAD Tokyo) was the studio behind acclaimed titles like Super Mario Galaxy and Donkey Kong Jungle Beat before capping its run with Super Mario Odyssey in 2017. After Odyssey's release, the division was reorganized within Nintendo's EPD structure. The studio's legacy is defined by some of the most celebrated 3D platformers in gaming history."
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-16",
+  "categoryId": 30,
+  "categoryName": "Science: Gadgets",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-16-0",
+      "question": "Which gaming console is developed by Sony?",
+      "options": [
+        "Atari",
+        "Nintendo Switch",
+        "Xbox",
+        "PlayStation"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "PlayStation"
+    },
+    {
+      "id": "opentdb-2026-05-16-1",
+      "question": "Which virtual assistant is developed by Amazon?",
+      "options": [
+        "Google Assistant",
+        "Siri",
+        "Cortana",
+        "Alexa"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "Alexa"
+    },
+    {
+      "id": "opentdb-2026-05-16-2",
+      "question": "When was the iPhone released?",
+      "options": [
+        "2005",
+        "2004",
+        "2006",
+        "2007"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "2007"
+    },
+    {
+      "id": "opentdb-2026-05-16-3",
+      "question": "When was the compact disc player first released?",
+      "options": [
+        "1983",
+        "1981",
+        "1980",
+        "1982"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "1982"
+    },
+    {
+      "id": "opentdb-2026-05-16-4",
+      "question": "What are the base station trackers used for the HTC Vive called?",
+      "options": [
+        "Motion",
+        "Constellation ",
+        "Trackers",
+        "Lighthouse"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "Lighthouse"
+    },
+    {
+      "id": "opentdb-2026-05-16-5",
+      "question": "Which of the following is the standard THX subwoofer crossover frequency?",
+      "options": [
+        "70 Hz",
+        "90 Hz",
+        "100 Hz",
+        "80 Hz"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "80 Hz"
+    },
+    {
+      "id": "ai-2026-05-16-6",
+      "question": "The Amazon Echo Dot (1st Gen) is famously described as being the size of what common sports equipment?",
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "hockey puck",
+      "explanation": "The Amazon Echo Dot (1st Gen) is often described as hockey-puck sized due to its small, flat, circular design. It was Amazon's more compact and affordable alternative to the full-sized Echo, making smart home voice control more accessible. Its distinctive shape helped it become one of the best-selling smart speakers of its time."
+    },
+    {
+      "id": "ai-2026-05-16-7",
+      "question": "Modern smartphones are said to have more computing power and memory than the typical version of what type of human-made object launched into orbit?",
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "satellite",
+      "explanation": "It's a surprising fact that the powerful computers we carry in our pockets outperform most satellites in orbit in terms of raw computing power and memory. Satellites are often built with older, radiation-hardened components that prioritize durability over speed. This highlights just how rapidly consumer technology has advanced compared to specialized space hardware."
+    },
+    {
+      "id": "ai-2026-05-16-8",
+      "question": "Which Casio calculator model features a removable hard cover designed to protect its screen, solar panel, and keypad from wear-and-tear?",
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "SL-450S",
+      "explanation": "The Casio SL-450S is a compact solar-powered calculator that includes a snap-on hard cover to shield its delicate components — the display, solar panel, and keys — from daily damage. This protective cover design is a practical feature aimed at extending the calculator's lifespan, making it a popular choice for students and professionals. Casio's SL series is known for slim, portable designs suited for on-the-go use."
+    },
+    {
+      "id": "ai-2026-05-16-9",
+      "question": "In Neuralink's surgical implantation process, the device's electrode threads are designed to pass through which protective membrane surrounding the brain — without requiring its removal — in a streamlined procedure planned for high-volume production in 2026?",
+      "difficulty": "hard",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Dura",
+      "explanation": "The Dura mater (commonly called the \"Dura\") is the tough, outermost membrane encasing the brain and spinal cord. Traditional neurosurgical approaches often require cutting or removing a portion of the Dura to access brain tissue, but Neuralink's design threads its flexible electrodes directly through it, reducing surgical complexity. This minimally invasive technique is a key part of Neuralink's strategy for scaling up implant procedures toward high-volume production in 2026."
+    }
+  ]
+}

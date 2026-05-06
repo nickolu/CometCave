@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-29",
+  "categoryId": 19,
+  "categoryName": "Science: Mathematics",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-29-0",
+      "question": "What is the least number of sides a polygon can have?",
+      "options": [
+        "1",
+        "7",
+        "2",
+        "3"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "3"
+    },
+    {
+      "id": "opentdb-2026-05-29-1",
+      "question": "What prime number comes next after 19?",
+      "options": [
+        "21",
+        "27",
+        "25",
+        "23"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "23"
+    },
+    {
+      "id": "opentdb-2026-05-29-2",
+      "question": "How many sides does a Möbius strip have?",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "1"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "1"
+    },
+    {
+      "id": "opentdb-2026-05-29-3",
+      "question": "What numbers are in the 5th row of Pascal's Triangle?",
+      "options": [
+        "1 3 3 1",
+        "1 5 10 10 5 1",
+        "1 6 15 20 15 6 1",
+        "1 4 6 4 1"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "1 4 6 4 1"
+    },
+    {
+      "id": "opentdb-2026-05-29-4",
+      "question": "What type of function is x&sup2;+2x+1?",
+      "options": [
+        "Linear",
+        "Exponential",
+        "Rational",
+        "Quadratic"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Quadratic"
+    },
+    {
+      "id": "opentdb-2026-05-29-5",
+      "question": "How many Millibars (mbar) to 1 Inch of Mercury (inHg)",
+      "options": [
+        "30.0",
+        "27.4",
+        "10.6",
+        "33.9"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "33.9"
+    },
+    {
+      "id": "ai-2026-05-29-6",
+      "question": "Which mathematician discovered the famous number sequence named after him while studying rabbit breeding patterns?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Fibonacci",
+      "explanation": "Leonardo Pisano Fibonacci discovered his famous sequence while recording patterns in the breeding of rabbits in the 13th century. The Fibonacci sequence (1, 1, 2, 3, 5, 8, 13…) appears throughout nature, from flower petals to spiral shells. Each number in the sequence is the sum of the two preceding numbers."
+    },
+    {
+      "id": "ai-2026-05-29-7",
+      "question": "In mathematics, what famous fractal set is defined as all complex numbers c for which the function z² + c does not spiral off to infinity when repeatedly applied starting at zero?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Mandelbrot set",
+      "explanation": "The Mandelbrot set is one of the most iconic objects in mathematics, famous for its infinitely complex, self-similar boundary that emerges from a surprisingly simple rule. It is defined in the complex plane as all values of c for which iterating f(z) = z² + c starting at z = 0 remains bounded forever. Its stunning visual representations have made it a pop-culture symbol of chaos theory and fractal geometry."
+    },
+    {
+      "id": "ai-2026-05-29-8",
+      "question": "Which Italian mathematician founded the INAC in 1927 at the University of Naples, making it one of the first institutions in the world entirely devoted to numerical analysis?",
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Mauro Picone",
+      "explanation": "Mauro Picone founded the Istituto Nazionale per le Applicazioni del Calcolo (INAC) in 1927 at the University of Naples, establishing one of the world's earliest institutions dedicated entirely to numerical analysis. Picone was a prominent Italian mathematician known for his work on differential equations and computational methods. The institute he created eventually evolved into the Istituto per le Applicazioni del Calcolo \"Mauro Picone,\" now part of Italy's National Research Council (CNR)."
+    },
+    {
+      "id": "ai-2026-05-29-9",
+      "question": "In linear algebra, what term describes the number of linearly independent eigenvectors associated with a given eigenvalue, guaranteed to be at least one?",
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "geometric multiplicity",
+      "explanation": "The geometric multiplicity of an eigenvalue is the dimension of its corresponding eigenspace — that is, the number of linearly independent eigenvectors associated with it — and is always at least 1 by definition of an eigenvalue. It contrasts with algebraic multiplicity, which counts the eigenvalue's repetition as a root of the characteristic polynomial. Crucially, geometric multiplicity never exceeds algebraic multiplicity, and equality for all eigenvalues is the condition for a matrix to be diagonalizable."
+    }
+  ]
+}

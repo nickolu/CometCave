@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-26",
+  "categoryId": 16,
+  "categoryName": "Entertainment: Board Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-26-0",
+      "question": "Which of the following is NOT a class in Dungeons and Dragons 5e?",
+      "options": [
+        "Bard",
+        "Fighter ",
+        "Paladin ",
+        "Engineer "
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Engineer "
+    },
+    {
+      "id": "opentdb-2026-05-26-1",
+      "question": "In Dungeons and Dragons (5th edition), what stat do you normally add onto your initiative die roll?",
+      "options": [
+        "Speed",
+        "Wisdom",
+        "Strength",
+        "Dexterity"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Dexterity"
+    },
+    {
+      "id": "opentdb-2026-05-26-2",
+      "question": "How many dots are on a single die?",
+      "options": [
+        "24",
+        "15",
+        "18",
+        "21"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "21"
+    },
+    {
+      "id": "opentdb-2026-05-26-3",
+      "question": "What special item did the creators of Cards Against Humanity ship for their Black Friday pack?",
+      "options": [
+        "A Card Expansion",
+        "A Racist Toy",
+        "Cat Urine",
+        "Bull Feces"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Bull Feces"
+    },
+    {
+      "id": "opentdb-2026-05-26-4",
+      "question": "At the start of a standard game of the Monopoly, if you throw a double six, which square would you land on?",
+      "options": [
+        "Water Works",
+        "Community Chest",
+        "Chance",
+        "Electric Company"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Electric Company"
+    },
+    {
+      "id": "opentdb-2026-05-26-5",
+      "question": "What Magic: The Gathering card's flavor text is just 'Ribbit.'?",
+      "options": [
+        "Bloated Toad",
+        "Frogmite",
+        "Spore Frog",
+        "Turn to Frog"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Turn to Frog"
+    },
+    {
+      "id": "ai-2026-05-26-6",
+      "question": "In the Star Wars: X-Wing board game, players command Rebel X-wings battling which type of Imperial starfighter?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "TIE fighters",
+      "explanation": "Star Wars: X-Wing is a miniatures board game where players dogfight using iconic ships from the Star Wars universe, including Rebel X-wings and Imperial TIE fighters. The game is known for its detailed, pre-painted miniatures and fast-paced tactical gameplay. It was first published by Fantasy Flight Games in 2012."
+    },
+    {
+      "id": "ai-2026-05-26-7",
+      "question": "The streets on a classic Monopoly board are based on the real streets of which famous New Jersey seaside city?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Atlantic City, New Jersey",
+      "explanation": "The iconic Monopoly board was modeled after the streets of Atlantic City, New Jersey, a layout introduced by the local Quaker community in the early 20th century. That's why properties like Boardwalk, Park Place, and Marvin Gardens all correspond to real locations in Atlantic City. It remains one of the most recognizable city layouts in board game history."
+    },
+    {
+      "id": "ai-2026-05-26-8",
+      "question": "The card game Coup is noted for having large, well-differentiated cards that are relatively easy to visually parse — making it accessible to players with what condition?",
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "visual impairments",
+      "explanation": "Coup's card design, featuring large and clearly distinct visuals, makes it more accessible than many other card games for players with visual impairments. Accessibility in board games is an increasingly important consideration for designers and publishers. Coup's straightforward card differentiation helps ensure players don't need to rely on fine visual details to participate."
+    },
+    {
+      "id": "ai-2026-05-26-9",
+      "question": "Among the board game designs by Vital Lacerda, which title set in a Portuguese capital city market is specifically categorized as one of his \"Lacerda-Lite\" games?",
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Mercado de Lisboa",
+      "explanation": "Vital Lacerda is renowned for his heavy, complex euro games, but his \"Lacerda-Lite\" label denotes more accessible, streamlined designs. Mercado de Lisboa, themed around a bustling Lisbon market, falls into this lighter category alongside titles like Kanban EV's simpler variants. It offers a gateway into Lacerda's design style without the full weight of games like Lisboa or On Mars."
+    }
+  ]
+}

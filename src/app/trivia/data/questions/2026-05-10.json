@@ -89,12 +89,39 @@
     },
     {
       "id": "ai-2026-05-10-6",
-      "question": "Which European treaty first codified the principle of subsidiarity as both a broader political objective and a binding legal provision in Article 3b(2) ECT, serving as a barrier against misuse of Union competences?",
-      "difficulty": "hard",
-      "category": "Politics",
+      "question": "Which U.S. president signed Mother's Day into law as an official holiday in 1914?",
+      "difficulty": "easy",
+      "category": "Mother's Day",
       "source": "ai",
-      "correctAnswer": "Maastricht Treaty",
-      "explanation": "The Maastricht Treaty (1992) was the first EU treaty to formally enshrine subsidiarity in a dual form: as a general political goal and as a legally enforceable rule under Article 3b(2) of the EC Treaty. This provision was designed to prevent the Union from acting beyond its competences by requiring that action be taken at the EU level only where member states cannot sufficiently achieve the objectives themselves. Subsidiarity has since become a cornerstone principle of EU constitutional law."
+      "correctAnswer": "Woodrow Wilson",
+      "explanation": "President Woodrow Wilson officially established Mother's Day as a national holiday in 1914, making the United States one of the first countries to formally recognize it. The holiday is celebrated on the second Sunday of May each year. Anna Jarvis had campaigned tirelessly for the holiday's creation, though she later grew to oppose its commercialization."
+    },
+    {
+      "id": "ai-2026-05-10-7",
+      "question": "Which flower is the official bloom of Mother's Day, with white ones honoring deceased mothers and red ones celebrating living mothers?",
+      "difficulty": "easy",
+      "category": "Mother's Day",
+      "source": "ai",
+      "correctAnswer": "carnation",
+      "explanation": "The carnation is the official flower of Mother's Day, a tradition popularized by Anna Jarvis, who wore white carnations to honor her own late mother. White carnations symbolize remembrance of deceased mothers, while red carnations celebrate mothers who are still living."
+    },
+    {
+      "id": "ai-2026-05-10-8",
+      "question": "Originating in 16th-century England as a day when domestic servants returned home to visit their 'mother church' and family, what observance — held on the fourth Sunday of Lent — is now celebrated as the United Kingdom's equivalent of the U.S. spring holiday honoring mothers?",
+      "difficulty": "medium",
+      "category": "Mother's Day",
+      "source": "ai",
+      "correctAnswer": "Mothering Sunday",
+      "explanation": "Mothering Sunday traces back to a 16th-century Christian custom in which the faithful returned to their 'mother church' on the fourth Sunday of Lent. It became one of the few annual days off for domestic servants and apprentices, who used the occasion to visit their families. After Anna Jarvis's American Mother's Day spread internationally in the 20th century, the two observances effectively merged in popular British practice."
+    },
+    {
+      "id": "ai-2026-05-10-9",
+      "question": "Anna Jarvis founded the modern American Mother's Day in memory of her own mother — an Appalachian social activist who, before the Civil War, organized 'Mothers' Day Work Clubs' in West Virginia to combat infant mortality and later treated wounded soldiers from both sides of the conflict. What was her name?",
+      "difficulty": "hard",
+      "category": "Mother's Day",
+      "source": "ai",
+      "correctAnswer": "Ann Reeves Jarvis",
+      "explanation": "Ann Reeves Jarvis (1832–1905) organized 'Mothers' Day Work Clubs' across rural West Virginia to teach hygiene practices that reduced infant mortality, and during the Civil War her clubs cared for soldiers from both Union and Confederate forces. After her death in 1905, her daughter Anna Jarvis launched the campaign for a national Mother's Day, holding the first official observance at her mother's church in Grafton, West Virginia in 1908. President Woodrow Wilson signed the holiday into federal law six years later."
     }
   ]
 }

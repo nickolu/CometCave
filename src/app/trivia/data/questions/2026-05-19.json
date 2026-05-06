@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-19",
+  "categoryId": 9,
+  "categoryName": "General Knowledge",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-19-0",
+      "question": "What is the Spanish word for \"donkey\"?",
+      "options": [
+        "Toro",
+        "Perro",
+        "Caballo",
+        "Burro"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Burro"
+    },
+    {
+      "id": "opentdb-2026-05-19-1",
+      "question": "If you are caught \"Goldbricking\", what are you doing wrong?",
+      "options": [
+        "Stealing",
+        "Cheating",
+        "Smoking",
+        "Slacking"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Slacking"
+    },
+    {
+      "id": "opentdb-2026-05-19-2",
+      "question": "Which of these Marvel games was released on the Playstation 2?",
+      "options": [
+        "Silver Surfer",
+        "Wolverine: Adamantium Rage",
+        "Howard the Duck",
+        "Spider-Man 2"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Spider-Man 2"
+    },
+    {
+      "id": "opentdb-2026-05-19-3",
+      "question": "In ancient Greece, if your job were a \"hippeus\" which of these would you own?",
+      "options": [
+        "Weave",
+        "Boat",
+        "Guitar",
+        "Horse"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Horse"
+    },
+    {
+      "id": "opentdb-2026-05-19-4",
+      "question": "What is the average life span of a garden ant?",
+      "options": [
+        "1 week",
+        "3 years",
+        "24 hours",
+        "15 years"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "15 years"
+    },
+    {
+      "id": "opentdb-2026-05-19-5",
+      "question": "Before the 19th Century, the \"Living Room\" was originally called the...",
+      "options": [
+        "Open Room",
+        "Sitting Room",
+        "Loft",
+        "Parlor"
+      ],
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Parlor"
+    },
+    {
+      "id": "ai-2026-05-19-6",
+      "question": "Which famous English playwright and poet is credited with inventing over 1,500 words still used today, including 'swagger', 'fashionable', and 'bedroom'?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "William Shakespeare",
+      "explanation": "William Shakespeare is credited with coining or first recording over 1,500 words and phrases in the English language. His works, written in the late 16th and early 17th centuries, introduced everyday words like 'bedroom', 'swagger', and 'fashionable' that we still use today. This makes him one of the single greatest contributors to the English vocabulary in history."
+    },
+    {
+      "id": "ai-2026-05-19-7",
+      "question": "The modern Greek alphabet has 24 letters — what are the names of its first and last letters, in order?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Alpha to Omega",
+      "explanation": "The Greek alphabet's 24 letters run from Alpha (Α) to Omega (Ω). This range is so well-known that \"from alpha to omega\" has become a common phrase meaning \"from beginning to end.\" It's also the origin of the English word \"alphabet,\" derived from the first two Greek letters, Alpha and Beta."
+    },
+    {
+      "id": "ai-2026-05-19-8",
+      "question": "Which common English word for domesticated canines is made up of exactly four phonemes: /d/, /ɒ/, /ɡ/, and /z/?",
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "dogs",
+      "explanation": "The word \"dogs\" contains four distinct phonemes: the consonants /d/ and /ɡ/, the short vowel /ɒ/, and the voiced sibilant /z/ (even though it's spelled with an 's'). Phonemes are the smallest units of sound in a language, and English spelling often doesn't map one-to-one with phonemes — the plural 's' in \"dogs\" is actually pronounced as /z/."
+    },
+    {
+      "id": "ai-2026-05-19-9",
+      "question": "Heteronyms are a strict subset of which broader linguistic category — meaning all heteronyms belong to it, but only the members that also carry different pronunciations and different meanings qualify as heteronyms?",
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "homographs",
+      "explanation": "Homographs are words that share the same spelling, and heteronyms are a specialized subset of homographs distinguished by having both different pronunciations and different meanings (e.g., \"lead\" the metal vs. \"lead\" meaning to guide). Not all homographs are heteronyms — some homographs share the same pronunciation, making them homophones instead. This layered classification is a genuine deep cut in linguistics."
+    }
+  ]
+}

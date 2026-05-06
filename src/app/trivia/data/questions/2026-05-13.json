@@ -89,12 +89,39 @@
     },
     {
       "id": "ai-2026-05-13-6",
-      "question": "Of the only three regions on Earth with no native corvids — the poles, the southern tip of South America, and one island nation — which island nation is it?",
+      "question": "A turtle's body contains over 50 bones, including its rib cage and spine — all fused together to form which iconic structure?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "shell",
+      "explanation": "A turtle's shell is not just an outer covering — it is deeply integrated with the animal's skeleton, comprising over 50 bones including the rib cage and spine. This means a turtle cannot simply \"leave\" its shell, as it is essentially part of its body. The shell is divided into two sections: the carapace (top) and the plastron (bottom)."
+    },
+    {
+      "id": "ai-2026-05-13-7",
+      "question": "Which cat holds the record as the oldest ever, having lived for 38 years and 3 days?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Creme Puff",
+      "explanation": "Creme Puff, a cat from Austin, Texas, lived an astonishing 38 years and 3 days, earning the Guinness World Record for the oldest cat ever. Her owner, Jake Perry, credited her unusual diet — which included bacon, eggs, and coffee — for her remarkable longevity. For comparison, the average domestic cat lives only 12–15 years."
+    },
+    {
+      "id": "ai-2026-05-13-8",
+      "question": "What species of spiny, flat-bodied lizard native to the American Southwest relies on harvester ants for roughly seventy percent of its diet?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Phrynosoma cornutum",
+      "explanation": "Texas horned lizards (*Phrynosoma cornutum*) are highly specialized ant predators, relying on harvester ants for the bulk of their nutrition. Their broad, flat bodies and slow metabolism are well-suited to processing large quantities of these insects. Declines in harvester ant populations due to invasive fire ants have contributed to the species' shrinking range across the American Southwest."
+    },
+    {
+      "id": "ai-2026-05-13-9",
+      "question": "In an 1884 aquarium observation — one of the earliest documented cases of audible sound production in sea slugs — what type of sounds were reported to be made by two nudibranch species loud enough for humans to hear?",
       "difficulty": "hard",
       "category": "Animals",
       "source": "ai",
-      "correctAnswer": "New Zealand",
-      "explanation": "New Zealand, along with the poles and the southern part of South America, is one of only three places on Earth where no corvids (the family including crows, ravens, and jays) are native. This is notable because corvids are otherwise found on every continent and in nearly every habitat worldwide. New Zealand's geographic isolation has resulted in many unique absences and adaptations in its wildlife."
+      "correctAnswer": "tapping noises",
+      "explanation": "In 1884, two nudibranch species housed in an aquarium were observed producing tapping noises audible to humans, a remarkable and little-known phenomenon for these soft-bodied mollusks. Nudibranchs are generally not associated with sound production, making this early report particularly surprising to naturalists. The exact mechanism by which they generated these sounds remains a curiosity in the study of invertebrate behavior."
     }
   ]
 }
