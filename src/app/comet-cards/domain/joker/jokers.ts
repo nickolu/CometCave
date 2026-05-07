@@ -8,6 +8,7 @@ import {
   twoPairHand,
 } from '@/app/comet-cards/domain/hand/hands'
 import { cardValuePriority, playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
+import type { CardValue } from '@/app/comet-cards/domain/playing-card/types'
 import {
   buildSeedString,
   getRandomNumbersWithSeed,
@@ -4654,6 +4655,69 @@ export const dna: JokerDefinition = {
   rarity: 'rare',
 }
 
+const IDOL_VALUES: CardValue[] = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+const IDOL_SUITS: ('hearts' | 'diamonds' | 'clubs' | 'spades')[] = ['hearts', 'diamonds', 'clubs', 'spades']
+
+function idolPickTarget(game: { gameSeed: string; roundIndex: number }, tag: string): number {
+  const seed = buildSeedString([game.gameSeed, game.roundIndex.toString(), 'theIdol', tag])
+  const rolls = getRandomNumbersWithSeed({ seed, min: 0, max: 51, numberOfNumbers: 1 })
+  return rolls[0]
+}
+
+export const theIdol: JokerDefinition = {
+  id: 'theIdol',
+  name: 'The Idol',
+  description: 'Each played [rank] of [suit] gives X2 Mult when scored. Card changes every round.',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const idol = ctx.game.jokers.find(j => j.jokerId === 'theIdol')
+        if (!idol) return
+        idol.counter = idolPickTarget(ctx.game, 'init')
+      },
+    },
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const idol = ctx.game.jokers.find(j => j.jokerId === 'theIdol')
+        if (!idol) return
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!cardDef) return
+
+        const targetValueIdx = Math.floor(idol.counter / 4)
+        const targetSuitIdx = idol.counter % 4
+
+        if (cardDef.value === IDOL_VALUES[targetValueIdx] && cardDef.suit === IDOL_SUITS[targetSuitIdx]) {
+          ctx.game.gamePlayState.scoringEvents.push({
+            id: uuid(),
+            type: 'mult',
+            operator: 'x',
+            value: 2,
+            source: 'The Idol',
+          })
+          ctx.game.gamePlayState.score.mult *= 2
+        }
+      },
+    },
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const idol = ctx.game.jokers.find(j => j.jokerId === 'theIdol')
+        if (!idol) return
+        idol.counter = idolPickTarget(ctx.game, 'rotate')
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4790,6 +4854,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   seance,
   sixthSense,
   dna,
+  theIdol,
 }
 
 /***
