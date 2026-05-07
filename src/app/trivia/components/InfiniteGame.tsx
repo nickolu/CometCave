@@ -15,6 +15,7 @@ import { InfiniteHUD } from './InfiniteHUD'
 import { InfiniteLoadingState } from './InfiniteLoadingState'
 import { InfiniteQuestionCard } from './InfiniteQuestionCard'
 import { InfiniteRunSummary } from './InfiniteRunSummary'
+import { RateGate } from './RateGate'
 
 const TIME_LIMIT = 60 // 60 seconds for AI free-text
 const RULES_SEEN_KEY = 'cometcave-infinite-rules-seen-v1'
@@ -439,14 +440,6 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         isSubmitting={state.phase === 'answering'}
         answerResult={state.lastAnswer}
         questionsAnswered={state.questionsAnswered}
-        runId={state.runId}
-        onFlagged={(questionId, result) => {
-          handleQuestionFlagged(questionId, result)
-          if (result.bonusLifeGranted) {
-            setBonusLifeToast('❤️ +1 Bonus Life for reporting!')
-            setTimeout(() => setBonusLifeToast(null), 3000)
-          }
-        }}
         skipsRemaining={state.skipsRemaining}
         onSkip={skipQuestion}
       />
@@ -471,13 +464,33 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
 
       {state.phase === 'answered' && (
         state.lastAnswer?.runOver ? (
+          // End-of-run is an emotional beat — let the player see their
+          // summary without a forced rating step. They can still rate
+          // each question inside the summary view.
           <ChunkyButton variant="primary" size="lg" className="w-full" onClick={endRun}>
             View Run Summary
           </ChunkyButton>
         ) : (
-          <ChunkyButton variant="primary" size="lg" className="w-full" onClick={nextQuestion}>
-            Next Question
-          </ChunkyButton>
+          (() => {
+            // Capture id outside the flag callback so the closure
+            // doesn't reach back into a possibly-null state.question
+            // after a phase transition.
+            const qid = state.question.id
+            return (
+              <RateGate
+                questionId={qid}
+                runId={state.runId}
+                onComplete={nextQuestion}
+                onFlagged={(result) => {
+                  handleQuestionFlagged(qid, result)
+                  if (result.bonusLifeGranted) {
+                    setBonusLifeToast('❤️ +1 Bonus Life for reporting!')
+                    setTimeout(() => setBonusLifeToast(null), 3000)
+                  }
+                }}
+              />
+            )
+          })()
         )
       )}
     </div>

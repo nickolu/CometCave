@@ -7,21 +7,12 @@ import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader } from '@/components/ui/chunky-card'
 import { Input } from '@/components/ui/input'
 
-import { FlagQuestion } from './FlagQuestion'
-import { QuestionRating } from './QuestionRating'
-
-interface FlagResult {
-  bonusLifeGranted: boolean
-}
-
 interface Props {
   question: InfiniteQuestion
   onSubmit: (answer: string) => void
   isSubmitting: boolean
   answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number }) | null
   questionsAnswered: number
-  runId?: string | null
-  onFlagged?: (questionId: string, result: FlagResult) => void
   skipsRemaining?: number
   onSkip?: () => void
 }
@@ -38,8 +29,6 @@ export function InfiniteQuestionCard({
   isSubmitting,
   answerResult,
   questionsAnswered,
-  runId,
-  onFlagged,
   skipsRemaining,
   onSkip,
 }: Props) {
@@ -126,7 +115,7 @@ export function InfiniteQuestionCard({
                 : 'bg-ds-error/20 border border-ds-error/40'
             }`}
           >
-            <div className="font-bold mb-1 flex items-start justify-between gap-2">
+            <div className="font-bold mb-1">
               {answerResult.correct ? (
                 <span className="text-ds-primary">
                   Correct! +{answerResult.points} pts
@@ -137,14 +126,6 @@ export function InfiniteQuestionCard({
               ) : (
                 <span className="text-ds-error">Incorrect — 0 pts</span>
               )}
-              <div className="flex items-center gap-2 shrink-0">
-                <QuestionRating questionId={question.id} />
-                <FlagQuestion
-                  questionId={question.id}
-                  runId={runId}
-                  onFlagged={onFlagged ? (result) => onFlagged(question.id, result) : undefined}
-                />
-              </div>
             </div>
             {!answerResult.correct && (
               <div className="text-on-surface/70 text-sm">

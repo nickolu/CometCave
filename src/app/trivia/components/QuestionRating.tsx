@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+
 import { useAuth } from '@/hooks/useAuth'
 
 interface Props {
@@ -10,7 +11,10 @@ export function QuestionRating({ questionId }: Props) {
   const { user } = useAuth()
   const [vote, setVote] = useState<'up' | 'down' | null>(null)
 
-  if (!user) return null  // logged-in only
+  // Anonymous Firebase users still have a uid, so the rate API accepts
+  // their vote — we just need to obtain a token. Truly logged-out users
+  // (no user object at all) cannot rate.
+  if (!user) return null
 
   const handleVote = async (newVote: 'up' | 'down') => {
     if (vote !== null) return // terminal — one vote per question per session
