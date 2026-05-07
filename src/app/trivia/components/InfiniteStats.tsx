@@ -92,6 +92,7 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true)
   const [runs, setRuns] = useState<RunHistoryEntry[]>([])
   const [runsLoading, setRunsLoading] = useState(true)
+  const [rebuilding, setRebuilding] = useState(false)
 
   const fetchStats = useCallback(async () => {
     if (!user) {
@@ -583,6 +584,35 @@ export function InfiniteStats({ onBack }: { onBack: () => void }) {
           </ChunkyCardContent>
         </ChunkyCard>
       )}
+
+      <div className="flex flex-col items-center gap-1">
+        <ChunkyButton
+          variant="ghost"
+          disabled={rebuilding}
+          onClick={async () => {
+            if (!user) return
+            setRebuilding(true)
+            try {
+              const token = await user.getIdToken()
+              await fetch('/api/v1/trivia/stats/me/rebuild', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+              })
+              await fetchStats()
+            } catch {
+              // silent
+            } finally {
+              setRebuilding(false)
+            }
+          }}
+          className="w-full"
+        >
+          {rebuilding ? 'Recalculating...' : 'Recalculate stats'}
+        </ChunkyButton>
+        <p className="text-on-surface/30 text-xs text-center">
+          If your stats look wrong, recalculate from your run history
+        </p>
+      </div>
 
       <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
         Back
