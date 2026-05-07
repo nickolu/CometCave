@@ -45,12 +45,14 @@ export function BrandCard({
   size = 'md',
   onClick,
   faceDown,
+  debuffed,
 }: {
   card: PlayingCardState
   selected?: boolean
   size?: Size
   onClick?: (isSelected: boolean, id: string) => void
   faceDown?: boolean
+  debuffed?: boolean
 }) {
   const dims = SIZES[size]
   const definition = playingCards[card.playingCardId]
@@ -264,6 +266,24 @@ export function BrandCard({
           pointerEvents: 'none',
         }}
       />
+
+      {/* Debuff overlay */}
+      {debuffed && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            borderRadius: 14,
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <span style={{ fontSize: dims.pip * 0.6, opacity: 0.7 }}>🚫</span>
+        </div>
+      )}
 
       {/* Edition label */}
       {card.flags.edition !== 'normal' && (
