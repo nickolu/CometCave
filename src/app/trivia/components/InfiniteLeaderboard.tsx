@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
+import { getCategoryIdByName } from '@/lib/trivia/categories'
 import type { MedalTier } from '@/lib/trivia/medals'
 
 import { SignInBanner } from './SignInCTA'
@@ -71,6 +72,55 @@ export function InfiniteLeaderboard({ onBack, nav }: { onBack: () => void; nav?:
   const currentUid = user?.uid ?? null
   const authName = user ? triviaDisplayName || user.email || null : null
 
+  // Fetch user's per-category accuracy for the "By Category" view
+  const [userCategoryStats, setUserCategoryStats] = useState<
+    Record<string, { answered: number; correct: number }> | null
+  >(null)
+
+  const fetchUserStats = useCallback(async () => {
+    if (!user) return
+    try {
+      const token = await user.getIdToken()
+      const res = await fetch('/api/v1/trivia/stats/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const stats = await res.json()
+        setUserCategoryStats(stats.byCategory ?? null)
+      }
+    } catch {
+      // silent — accuracy is a nice-to-have
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (sort === 'allCategories' && user && !userCategoryStats) {
+      fetchUserStats()
+    }
+  }, [sort, user, userCategoryStats, fetchUserStats])
+
+  // Map category strings (e.g. "Entertainment: Books") → category IDs → accuracy
+  const accuracyByCategoryId = useMemo(() => {
+    if (!userCategoryStats) return new Map<number, number>()
+    const map = new Map<number, { answered: number; correct: number }>()
+    for (const [cat, stats] of Object.entries(userCategoryStats)) {
+      const id = getCategoryIdByName(cat)
+      if (id === null || stats.answered === 0) continue
+      const existing = map.get(id)
+      if (existing) {
+        existing.answered += stats.answered
+        existing.correct += stats.correct
+      } else {
+        map.set(id, { answered: stats.answered, correct: stats.correct })
+      }
+    }
+    const result = new Map<number, number>()
+    for (const [id, s] of map) {
+      result.set(id, Math.round((s.correct / s.answered) * 100))
+    }
+    return result
+  }, [userCategoryStats])
+
   useEffect(() => {
     async function load() {
       setLoading(true)
@@ -104,9 +154,16 @@ export function InfiniteLeaderboard({ onBack, nav }: { onBack: () => void; nav?:
         <div className="flex flex-col gap-4">
           {data.sections.map((section) => (
             <div key={section.categoryId} className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2 px-1">
-                <span aria-hidden="true">{section.icon}</span>
-                <span className="text-on-surface text-sm font-semibold">{section.categoryName}</span>
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true">{section.icon}</span>
+                  <span className="text-on-surface text-sm font-semibold">{section.categoryName}</span>
+                </div>
+                {accuracyByCategoryId.has(section.categoryId) && (
+                  <span className="text-on-surface/40 text-xs">
+                    You: {accuracyByCategoryId.get(section.categoryId)}% correct
+                  </span>
+                )}
               </div>
               {section.entries.map((entry, i) => {
                 const tierEmoji = entry.tier !== 'none' ? TIER_EMOJI[entry.tier] : ''
