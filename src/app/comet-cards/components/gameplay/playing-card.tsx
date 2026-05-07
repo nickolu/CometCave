@@ -5,10 +5,12 @@ export const PlayingCard = ({
   playingCard,
   isSelected,
   onClick,
+  debuffed,
 }: {
   playingCard: PlayingCardState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
+  debuffed?: boolean
 }) => {
-  return <BrandCard card={playingCard} selected={isSelected} onClick={onClick} size="md" />
+  return <BrandCard card={playingCard} selected={isSelected} onClick={onClick} size="md" debuffed={debuffed} />
 }
