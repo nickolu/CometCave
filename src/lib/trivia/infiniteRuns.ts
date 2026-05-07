@@ -374,18 +374,32 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   return map
 }
 
+// Keeps only the first entry per uid. Inputs must already be sorted so that
+// each player's best run appears before their lesser ones.
+function dedupeByUid<T extends { uid: string }>(entries: T[]): T[] {
+  const seen = new Set<string>()
+  const out: T[] = []
+  for (const entry of entries) {
+    if (seen.has(entry.uid)) continue
+    seen.add(entry.uid)
+    out.push(entry)
+  }
+  return out
+}
+
 // TODO(#1263): Add getTopRunsByCustomCategory(customCategory, limit) for per-topic leaderboards.
 // This requires a composite index on (customCategory, mode, score) which isn't yet defined.
 export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
   const db = getFirestoreDb()
-  // Overfetch so that the post-hydration filter that drops players without
-  // a nickname still returns up to `limit` entries.
+  // Overfetch to absorb (a) runs from anonymous/nicknameless players that get
+  // dropped post-hydration and (b) repeat runs from the same player that get
+  // collapsed by the per-uid dedupe below.
   const snap = await db
     .collectionGroup('triviaInfinite')
     .where('mode', '==', 'scored')
     .where('endedAt', '!=', null)
     .orderBy('score', 'desc')
-    .limit(limit * 2)
+    .limit(limit * 10)
     .get()
 
   const entries = snap.docs.map((d) => {
@@ -394,8 +408,7 @@ export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderb
     return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
   })
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
-  return entries
-    .filter((e) => !!nicknames.get(e.uid))
+  return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
     .slice(0, limit)
     .map((e) => ({
       ...e,
@@ -410,7 +423,7 @@ export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeader
     .where('mode', '==', 'scored')
     .where('endedAt', '!=', null)
     .orderBy('longestStreak', 'desc')
-    .limit(limit * 2)
+    .limit(limit * 10)
     .get()
 
   const entries = snap.docs.map((d) => {
@@ -419,8 +432,7 @@ export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeader
     return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
   })
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
-  return entries
-    .filter((e) => !!nicknames.get(e.uid))
+  return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
     .slice(0, limit)
     .map((e) => ({
       ...e,
