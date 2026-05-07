@@ -205,7 +205,9 @@ function formatProgressTag(r: SeedResult): string {
   if (r.error) return `FAIL  ${truncate(r.error, 100)}`
   const cell = `${r.category}/${r.difficulty}`
   const v = r.verdict
-  const judgeBit = v ? `f=${v.factual_score} d=${v.difficulty_score} ${v.ship ? 'ship' : '----'}` : '         (no judge)'
+  const judgeBit = v
+    ? `f=${v.factual_score} d=${v.difficulty_score} c=${v.concision_score} ${v.ship ? 'ship' : '----'}`
+    : '             (no judge)'
   const dispo = r.saved ? 'SAVED  ' : r.skipped ? 'GATED  ' : 'FAIL   '
   return `${dispo}${cell.padEnd(36)} ${judgeBit}  "${truncate(r.question ?? '', 50)}"`
 }
@@ -235,20 +237,35 @@ function printScorecard(results: SeedResult[], args: Args): void {
     const d3 = judged.filter((r) => r.verdict!.difficulty_score === 3).length
     const d2 = judged.filter((r) => r.verdict!.difficulty_score === 2).length
     const d1 = judged.filter((r) => r.verdict!.difficulty_score === 1).length
+    const c3 = judged.filter((r) => r.verdict!.concision_score === 3).length
+    const c2 = judged.filter((r) => r.verdict!.concision_score === 2).length
+    const c1 = judged.filter((r) => r.verdict!.concision_score === 1).length
     const ship = judged.filter((r) => r.verdict!.ship).length
 
     w('Judge scores (across attempted, judged)')
     w(`  factual    : 3=${f3}  2=${f2}  1=${f1}   ship-eligible=${pct(ship, judged.length)}`)
     w(`  difficulty : 3=${d3}  2=${d2}  1=${d1}`)
+    w(`  concision  : 3=${c3}  2=${c2}  1=${c1}`)
     w()
 
     // Worst examples — useful even when --gate=false to know what kind
     // of garbage the pipeline let through.
     const worst = judged
-      .filter((r) => r.verdict!.factual_score < 3 || r.verdict!.difficulty_score < 3)
+      .filter(
+        (r) =>
+          r.verdict!.factual_score < 3 ||
+          r.verdict!.difficulty_score < 3 ||
+          r.verdict!.concision_score < 3
+      )
       .sort((a, b) => {
-        const sa = a.verdict!.factual_score + a.verdict!.difficulty_score
-        const sb = b.verdict!.factual_score + b.verdict!.difficulty_score
+        const sa =
+          a.verdict!.factual_score +
+          a.verdict!.difficulty_score +
+          a.verdict!.concision_score
+        const sb =
+          b.verdict!.factual_score +
+          b.verdict!.difficulty_score +
+          b.verdict!.concision_score
         return sa - sb
       })
       .slice(0, 5)
@@ -257,11 +274,14 @@ function printScorecard(results: SeedResult[], args: Args): void {
       for (const r of worst) {
         const v = r.verdict!
         const dispo = r.saved ? '[SAVED]' : r.skipped ? '[GATED]' : '[FAIL]'
-        w(`  ${dispo} [${r.difficulty}/${r.category}] f=${v.factual_score} d=${v.difficulty_score}`)
+        w(
+          `  ${dispo} [${r.difficulty}/${r.category}] f=${v.factual_score} d=${v.difficulty_score} c=${v.concision_score}`
+        )
         w(`    Q: ${truncate(r.question ?? '', 100)}`)
         w(`    A: ${truncate(r.correctAnswer ?? '', 60)}`)
         if (v.factual_score < 3) w(`    factual: ${truncate(v.factual_rationale, 100)}`)
         if (v.difficulty_score < 3) w(`    diff:    ${truncate(v.difficulty_rationale, 100)}`)
+        if (v.concision_score < 3) w(`    concise: ${truncate(v.concision_rationale, 100)}`)
       }
       w()
     }

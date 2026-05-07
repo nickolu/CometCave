@@ -113,7 +113,7 @@ function formatProgressTag(r: TrialResult): string {
   }
   const v = r.outcome.verdict
   const ship = v.ship ? 'ship' : '----'
-  return `${cell}  f=${v.factual_score} d=${v.difficulty_score} ${ship}  "${truncate(r.outcome.question, 50)}"`
+  return `${cell}  f=${v.factual_score} d=${v.difficulty_score} c=${v.concision_score} ${ship}  "${truncate(r.outcome.question, 50)}"`
 }
 
 function truncate(s: string, max: number): string {

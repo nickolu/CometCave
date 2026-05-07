@@ -18,6 +18,7 @@ export interface DimensionBreakdown {
   shipPct: number
   factualMean: number
   difficultyMean: number
+  concisionMean: number
 }
 
 export interface CostSummary {
@@ -59,6 +60,8 @@ export interface RunSummary {
     factualRationale: string
     difficultyScore: number
     difficultyRationale: string
+    concisionScore: number
+    concisionRationale: string
     sourceUrl?: string
   }>
   generationFailures: Array<{
@@ -115,12 +118,17 @@ export function summarize(args: {
         factualRationale: r.outcome.verdict.factual_rationale,
         difficultyScore: r.outcome.verdict.difficulty_score,
         difficultyRationale: r.outcome.verdict.difficulty_rationale,
+        concisionScore: r.outcome.verdict.concision_score,
+        concisionRationale: r.outcome.verdict.concision_rationale,
         sourceUrl: r.outcome.sourceUrl,
       }
     })
     .sort(
       (a, b) =>
-        a.factualScore + a.difficultyScore - (b.factualScore + b.difficultyScore)
+        a.factualScore +
+        a.difficultyScore +
+        a.concisionScore -
+        (b.factualScore + b.difficultyScore + b.concisionScore)
     )
     .slice(0, 10)
 
@@ -195,9 +203,13 @@ function computeBreakdown(results: TrialResult[]): DimensionBreakdown {
   let d3 = 0
   let d2 = 0
   let d1 = 0
+  let c3 = 0
+  let c2 = 0
+  let c1 = 0
   let ship = 0
   let factualSum = 0
   let difficultySum = 0
+  let concisionSum = 0
 
   for (const r of judged) {
     if (r.outcome.kind !== 'generated') continue
@@ -208,20 +220,25 @@ function computeBreakdown(results: TrialResult[]): DimensionBreakdown {
     if (v.difficulty_score === 3) d3++
     else if (v.difficulty_score === 2) d2++
     else d1++
+    if (v.concision_score === 3) c3++
+    else if (v.concision_score === 2) c2++
+    else c1++
     if (v.ship) ship++
     factualSum += v.factual_score
     difficultySum += v.difficulty_score
+    concisionSum += v.concision_score
   }
 
   return {
     total,
     scored,
-    score3: f3 + d3, // not used directly but kept for completeness
-    score2: f2 + d2,
-    score1: f1 + d1,
+    score3: f3 + d3 + c3, // not used directly but kept for completeness
+    score2: f2 + d2 + c2,
+    score1: f1 + d1 + c1,
     shipPct: scored === 0 ? 0 : (ship * 100) / scored,
     factualMean: scored === 0 ? 0 : factualSum / scored,
     difficultyMean: scored === 0 ? 0 : difficultySum / scored,
+    concisionMean: scored === 0 ? 0 : concisionSum / scored,
   }
 }
 
@@ -310,6 +327,7 @@ export function printScorecard(summary: RunSummary, previous: RunSummary | null)
   printDimensionRow('  ship-worthy : ', summary.overall.shipPct, previous?.overall.shipPct)
   printMeanRow('  factual μ   : ', summary.overall.factualMean, previous?.overall.factualMean)
   printMeanRow('  difficulty μ: ', summary.overall.difficultyMean, previous?.overall.difficultyMean)
+  printMeanRow('  concision μ : ', summary.overall.concisionMean, previous?.overall.concisionMean)
   line('')
 
   // By difficulty
@@ -340,11 +358,14 @@ export function printScorecard(summary: RunSummary, previous: RunSummary | null)
   if (summary.worst.length > 0) {
     line('Worst-scoring questions (lowest combined score)')
     for (const w of summary.worst.slice(0, 5)) {
-      line(`  [${w.difficulty}/${w.category}] f=${w.factualScore} d=${w.difficultyScore}`)
+      line(
+        `  [${w.difficulty}/${w.category}] f=${w.factualScore} d=${w.difficultyScore} c=${w.concisionScore}`
+      )
       line(`     Q: ${truncate(w.question, 100)}`)
       line(`     A: ${truncate(w.correctAnswer, 60)}`)
       if (w.factualScore < 3) line(`     factual: ${truncate(w.factualRationale, 100)}`)
       if (w.difficultyScore < 3) line(`     diff:    ${truncate(w.difficultyRationale, 100)}`)
+      if (w.concisionScore < 3) line(`     concise: ${truncate(w.concisionRationale, 100)}`)
     }
     line('')
   }
