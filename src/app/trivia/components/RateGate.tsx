@@ -18,6 +18,9 @@ interface Props {
   // signals they're done with this question. The host decides whether
   // that means "next question" or "view run summary".
   onComplete: () => void
+  // Reports which vote the player cast so the host can carry the
+  // rating forward (e.g. into the run summary).
+  onRated?: (questionId: string, vote: 'up' | 'down') => void
   // Optional flag callback so the host can react to bonus-life rewards
   // before progression happens.
   onFlagged?: (result: FlagResult) => void
@@ -28,7 +31,7 @@ interface Props {
 // button. Best-effort against the rate API; we always advance even if
 // the network request fails so a flaky connection doesn't trap the
 // player on a question.
-export function RateGate({ questionId, runId, onComplete, onFlagged }: Props) {
+export function RateGate({ questionId, runId, onComplete, onRated, onFlagged }: Props) {
   const { user } = useAuth()
   const [submitting, setSubmitting] = useState<'up' | 'down' | null>(null)
 
@@ -48,6 +51,7 @@ export function RateGate({ questionId, runId, onComplete, onFlagged }: Props) {
         // summary lets them retry if they care.
       }
     }
+    onRated?.(questionId, vote)
     onComplete()
   }
 

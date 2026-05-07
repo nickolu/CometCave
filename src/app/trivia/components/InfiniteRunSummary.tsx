@@ -24,6 +24,7 @@ interface Props {
   mode?: InfiniteMode
   runId?: string | null
   onFlagged?: (questionId: string, result: FlagResult) => void
+  ratings?: Map<string, 'up' | 'down'>
 }
 
 function formatTime(ms: number): string {
@@ -43,7 +44,7 @@ const ANSWERS_PAGE_SIZE = 20
 
 type AnswerEntry = InfiniteRunState['answers'][number]
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, onViewLeaderboard, mode = 'scored', runId, onFlagged }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, onViewLeaderboard, mode = 'scored', runId, onFlagged, ratings }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
@@ -158,7 +159,7 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, on
                     <span className={`font-bold text-sm min-w-[4rem] text-right ${a.correct ? 'text-ds-tertiary' : 'text-on-surface/30'}`}>
                       +{a.points}
                     </span>
-                    <QuestionRating questionId={a.questionId} />
+                    <QuestionRating questionId={a.questionId} initialVote={ratings?.get(a.questionId) ?? null} />
                     <FlagQuestion
                       questionId={a.questionId}
                       runId={runId}

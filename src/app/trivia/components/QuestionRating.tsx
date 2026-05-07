@@ -5,11 +5,12 @@ import { useAuth } from '@/hooks/useAuth'
 
 interface Props {
   questionId: string
+  initialVote?: 'up' | 'down' | null
 }
 
-export function QuestionRating({ questionId }: Props) {
+export function QuestionRating({ questionId, initialVote = null }: Props) {
   const { user } = useAuth()
-  const [vote, setVote] = useState<'up' | 'down' | null>(null)
+  const [vote, setVote] = useState<'up' | 'down' | null>(initialVote)
 
   // Anonymous Firebase users still have a uid, so the rate API accepts
   // their vote — we just need to obtain a token. Truly logged-out users
