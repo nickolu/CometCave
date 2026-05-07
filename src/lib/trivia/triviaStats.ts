@@ -220,3 +220,130 @@ export async function trackExhaustion(uid: string): Promise<void> {
     { merge: true }
   )
 }
+
+export async function rebuildAggregateStats(uid: string): Promise<void> {
+  const db = getFirestoreDb()
+
+  const runsSnap = await db.collection(`users/${uid}/triviaInfinite`).get()
+  const runs = runsSnap.docs
+    .map((d) => d.data() as RunDoc & { statsApplied?: boolean })
+    .filter((r) => r.mode !== 'practice' && r.endedAt !== null)
+
+  // Collect all unique question IDs across all runs
+  const allQuestionIds = Array.from(
+    new Set(runs.flatMap((r) => r.answers.map((a) => a.questionId)))
+  )
+
+  // Batch-read question docs in chunks of 500 (Firestore getAll limit)
+  const questionMap = new Map<string, { category: string; difficulty: 'easy' | 'medium' | 'hard' }>()
+  for (let i = 0; i < allQuestionIds.length; i += 500) {
+    const chunk = allQuestionIds.slice(i, i + 500)
+    const refs = chunk.map((id) => db.doc(`aiQuestions/${id}`))
+    const snaps = await db.getAll(...refs)
+    for (const qs of snaps) {
+      if (qs.exists) {
+        const qd = qs.data()!
+        questionMap.set(qs.id, { category: qd.category, difficulty: qd.difficulty })
+      }
+    }
+  }
+
+  // Compute fresh totals from all runs
+  let totalAnswered = 0
+  let totalCorrect = 0
+  let totalScore = 0
+  let runsPlayed = 0
+  let bestStreak = 0
+  let trailblazerCount = 0
+  let totalTimeMs = 0
+  let bestRun: AggregateStats['bestRun'] = null
+  const byCategory: Record<string, { answered: number; correct: number; totalTimeMs: number }> = {}
+  const byDifficulty: AggregateStats['byDifficulty'] = {
+    easy: { answered: 0, correct: 0 },
+    medium: { answered: 0, correct: 0 },
+    hard: { answered: 0, correct: 0 },
+  }
+
+  for (const run of runs) {
+    runsPlayed += 1
+    totalScore += run.score
+    if (run.longestStreak > bestStreak) bestStreak = run.longestStreak
+    if (!bestRun || run.score > bestRun.score) {
+      bestRun = {
+        score: run.score,
+        longestStreak: run.longestStreak,
+        runId: run.runId,
+        endedAt: run.endedAt,
+      }
+    }
+
+    const flaggedSet = new Set<string>(run.flaggedQuestionIds ?? [])
+    for (const answer of run.answers) {
+      if (flaggedSet.has(answer.questionId)) continue
+
+      totalAnswered += 1
+      if (answer.correct) totalCorrect += 1
+      totalTimeMs += answer.timeMs
+      if (answer.trailblazer) trailblazerCount += 1
+
+      const qInfo = questionMap.get(answer.questionId)
+      if (qInfo) {
+        if (!byCategory[qInfo.category]) {
+          byCategory[qInfo.category] = { answered: 0, correct: 0, totalTimeMs: 0 }
+        }
+        byCategory[qInfo.category].answered += 1
+        if (answer.correct) byCategory[qInfo.category].correct += 1
+        byCategory[qInfo.category].totalTimeMs += answer.timeMs
+
+        byDifficulty[qInfo.difficulty].answered += 1
+        if (answer.correct) byDifficulty[qInfo.difficulty].correct += 1
+      }
+    }
+  }
+
+  // Read existing aggregate doc to preserve voice stats
+  const aggRef = db.doc(`users/${uid}/triviaStats/aggregate`)
+  const aggSnap = await aggRef.get()
+  const existing: Partial<AggregateStats> = aggSnap.exists ? (aggSnap.data() as Partial<AggregateStats>) : {}
+
+  const rebuilt: AggregateStats = {
+    totalAnswered,
+    totalCorrect,
+    totalScore,
+    runsPlayed,
+    bestRun,
+    bestStreak,
+    trailblazerCount,
+    totalTimeMs,
+    byCategory,
+    byDifficulty,
+    exhaustionCount: existing.exhaustionCount ?? 0,
+    likesGiven: existing.likesGiven ?? 0,
+    dislikesGiven: existing.dislikesGiven ?? 0,
+    reportsFiled: existing.reportsFiled ?? 0,
+    lastUpdatedAt: null,
+  }
+
+  // Firestore batches are limited to 500 operations
+  const BATCH_LIMIT = 499 // reserve 1 for the aggregate write
+  const firstBatch = db.batch()
+  firstBatch.set(aggRef, { ...rebuilt, lastUpdatedAt: FieldValue.serverTimestamp() })
+  let opsInBatch = 1
+  let currentBatch = firstBatch
+  const batches = [firstBatch]
+
+  for (const run of runs) {
+    if (opsInBatch >= BATCH_LIMIT) {
+      currentBatch = db.batch()
+      batches.push(currentBatch)
+      opsInBatch = 0
+    }
+    const runRef = db.doc(`users/${uid}/triviaInfinite/${run.runId}`)
+    currentBatch.update(runRef, { statsApplied: true })
+    opsInBatch += 1
+  }
+
+  for (const b of batches) {
+    await b.commit()
+  }
+}
