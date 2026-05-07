@@ -43,6 +43,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const [bonusLifeToast, setBonusLifeToast] = useState<string | null>(null)
   const [medalToast, setMedalToast] = useState<string | null>(null)
   const prevLivesRef = useRef<number | null>(null)
+  const flagBonusRef = useRef(false)
   const lastMedalAnswerIdRef = useRef<string | null>(null)
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
@@ -107,13 +108,15 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     endRun()
   }, [endRun])
 
-  // Detect streak bonus life — compare lives before and after answering
+  // Detect streak bonus life — compare lives before and after answering.
+  // Skip when a flag bonus just granted the extra life (flagBonusRef).
   useEffect(() => {
     if (state.phase === 'answered' && state.lastAnswer?.correct && prevLivesRef.current !== null) {
-      if (state.livesRemaining > prevLivesRef.current) {
+      if (state.livesRemaining > prevLivesRef.current && !flagBonusRef.current) {
         setBonusLifeToast(`🔥 ${state.lastAnswer.currentStreak}-streak! +1 Bonus Life`)
         setTimeout(() => setBonusLifeToast(null), 3000)
       }
+      flagBonusRef.current = false
     }
     if (state.phase === 'playing' || state.phase === 'answered') {
       prevLivesRef.current = state.livesRemaining
@@ -484,6 +487,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 onFlagged={(result) => {
                   handleQuestionFlagged(qid, result)
                   if (result.bonusLifeGranted) {
+                    flagBonusRef.current = true
                     setBonusLifeToast('❤️ +1 Bonus Life for reporting!')
                     setTimeout(() => setBonusLifeToast(null), 3000)
                   }
