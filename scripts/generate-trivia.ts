@@ -1,12 +1,15 @@
 #!/usr/bin/env tsx
 /**
  * Trivia question generator script.
- * Generates N days of trivia questions (6 OpenTDB + 1 AI per day)
+ * Generates N days of trivia questions (6 OpenTDB + AI_COUNT AI per day)
  * and writes them as static JSON files to src/app/trivia/data/questions/YYYY-MM-DD.json
  *
  * Usage:
  *   npm run generate-trivia -- --days 30
  *   npm run generate-trivia -- --days 7 --start 2025-01-01
+ *   npm run generate-trivia -- --start 2026-05-16 --days 16 --ai-count 4
+ *   npm run generate-trivia -- --start 2026-05-10 --days 6 --regen-ai-only --ai-count 4
+ *   npm run generate-trivia -- --days 5 --overwrite          # blow away existing files
  */
 
 import fs from 'fs'
@@ -20,15 +23,43 @@ import type { DailyTrivia, TriviaQuestion } from '../src/app/trivia/models/quest
 // so we use process.cwd() as the base (which should be the project root)
 const PROJECT_ROOT = process.cwd()
 
+// Per-date theme override. When a date appears here, the AI questions
+// for that day are generated against the theme via customCategory
+// instead of the rotating OpenTDB category. The OpenTDB questions are
+// untouched (they keep their own category assignment).
+const DATE_THEMES: Record<string, string> = {
+  '2026-05-10': "Mother's Day",
+}
+
+// Difficulty mix used when generating AI_COUNT AI questions per day.
+// 2 easy / 1 medium / 1 hard pairs with OpenTDB's 3 easy / 2 medium /
+// 1 hard for a 5/3/2 day. Cycles when AI_COUNT > length.
+const AI_DIFFICULTY_MIX: Array<'easy' | 'medium' | 'hard'> = [
+  'easy',
+  'easy',
+  'medium',
+  'hard',
+]
+
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-function parseArgs(): { days: number; start: string; regenAiOnly: boolean } {
+interface ParsedArgs {
+  days: number
+  start: string
+  regenAiOnly: boolean
+  aiCount: number
+  overwrite: boolean
+}
+
+function parseArgs(): ParsedArgs {
   const args = process.argv.slice(2)
   let days = 30
   let start = getTodayPST()
   let regenAiOnly = false
+  let aiCount = 4
+  let overwrite = false
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--days' && args[i + 1]) {
@@ -37,17 +68,28 @@ function parseArgs(): { days: number; start: string; regenAiOnly: boolean } {
     } else if (args[i] === '--start' && args[i + 1]) {
       start = args[i + 1]
       i++
+    } else if (args[i] === '--ai-count' && args[i + 1]) {
+      aiCount = parseInt(args[i + 1], 10)
+      if (!Number.isFinite(aiCount) || aiCount < 0) {
+        throw new Error(`--ai-count must be a non-negative integer, got "${args[i + 1]}"`)
+      }
+      i++
+    } else if (args[i] === '--overwrite') {
+      // Re-fetch OpenTDB AND regenerate AI for dates whose JSON
+      // already exists. Without this, the standard path skips
+      // existing dates to stay idempotent.
+      overwrite = true
     } else if (args[i] === '--regen-ai-only') {
       // Patch existing daily JSON files in place: keep the OpenTDB
-      // questions, drop the existing AI question, generate a fresh
-      // one via the new pipeline, write back. Useful for refreshing
-      // the AI-generated slot after a generation-pipeline change
-      // without re-burning OpenTDB rate limit on the MC questions.
+      // questions, drop the existing AI question(s), generate fresh
+      // ones via the new pipeline, write back. Useful for refreshing
+      // the AI slot after a generation-pipeline change without
+      // re-burning OpenTDB rate limit on the MC questions.
       regenAiOnly = true
     }
   }
 
-  return { days, start, regenAiOnly }
+  return { days, start, regenAiOnly, aiCount, overwrite }
 }
 
 function getTodayPST(): string {
@@ -248,41 +290,91 @@ async function fetchOpenTDBQuestions(
 // AI question generation
 // ────────────────────────────────────────────────────────────────────────────
 
+interface AIGenContext {
+  dateStr: string
+  categoryId: number
+  categoryName: string
+  // When set, generates against this topic via customCategory instead
+  // of using categoryId. The returned question's category field reflects
+  // the theme (e.g. "Mother's Day"), not the OpenTDB category.
+  theme: string | null
+}
+
+// Generate a single AI question. Avoids correctAnswer collisions
+// against `seenAnswers` by retrying internally — useful when generating
+// multiple AI questions in a row from the same theme (e.g. 4 Mother's
+// Day questions converging on "Anna Jarvis"). Themed days get a higher
+// retry budget because their fact pool is narrower.
 async function generateAIQuestion(
-  dateStr: string,
-  categoryId: number,
-  categoryName: string,
-  questionIndex: { current: number }
+  ctx: AIGenContext,
+  difficulty: 'easy' | 'medium' | 'hard',
+  questionIndex: number,
+  seenAnswers: Set<string>
 ): Promise<TriviaQuestion | null> {
-  console.log(`  Generating AI question via Infinite pipeline (category=${categoryId} difficulty=hard)`)
+  const themeTag = ctx.theme ? ` theme="${ctx.theme}"` : ''
+  console.log(
+    `  Generating AI question via Infinite pipeline (category=${ctx.categoryId}${themeTag} difficulty=${difficulty})`
+  )
 
-  try {
-    // Use the same Perplexity-grounded + Claude-construction +
-    // numeric-flip + difficulty-aware pipeline as Infinite Trivia.
-    // The pipeline picks its own seed + modifier internally (now
-    // difficulty-aware via seedsByDifficulty.json).
-    const generated = await generateInfiniteQuestion({
-      categoryId,
-      difficulty: 'hard',
-    })
+  const maxRetries = ctx.theme ? 5 : 3
+  for (let retry = 0; retry < maxRetries; retry++) {
+    try {
+      // Use the same Perplexity-grounded + Claude-construction +
+      // numeric-flip + difficulty-aware pipeline as Infinite Trivia.
+      // The pipeline picks its own seed + modifier internally (now
+      // difficulty-aware via seedsByDifficulty.json).
+      const generated = await generateInfiniteQuestion(
+        ctx.theme
+          ? { customCategory: ctx.theme, difficulty }
+          : { categoryId: ctx.categoryId, difficulty }
+      )
 
-    const aiQuestion: TriviaQuestion = {
-      id: `ai-${dateStr}-${questionIndex.current}`,
-      question: generated.question,
-      options: undefined,
-      difficulty: 'hard',
-      category: categoryName,
-      source: 'ai',
-      correctAnswer: generated.correctAnswer,
-      explanation: generated.explanation,
+      const norm = generated.correctAnswer.trim().toLowerCase()
+      if (seenAnswers.has(norm)) {
+        console.warn(
+          `  Duplicate answer "${generated.correctAnswer}" within day — retrying (attempt ${retry + 2}/${maxRetries})`
+        )
+        continue
+      }
+      seenAnswers.add(norm)
+
+      const aiQuestion: TriviaQuestion = {
+        id: `ai-${ctx.dateStr}-${questionIndex}`,
+        question: generated.question,
+        options: undefined,
+        difficulty,
+        category: generated.category,
+        source: 'ai',
+        correctAnswer: generated.correctAnswer,
+        explanation: generated.explanation,
+      }
+      console.log(`  AI question generated: "${generated.question.slice(0, 60)}..."`)
+      return aiQuestion
+    } catch (error) {
+      console.error(`  AI generation attempt ${retry + 1} failed:`, error)
     }
-    questionIndex.current++
-    console.log(`  AI question generated: "${generated.question.slice(0, 60)}..."`)
-    return aiQuestion
-  } catch (error) {
-    console.error('  Failed to generate AI question:', error)
-    return null
   }
+  return null
+}
+
+// Generate `count` AI questions for a single day, sequentially, with
+// per-day duplicate-answer dedup. Cycles through AI_DIFFICULTY_MIX so
+// the difficulty curve stays balanced when count > mix length. IDs are
+// contiguous on the successful subset (a failed slot collapses out
+// rather than leaving a gap).
+async function generateAIQuestionsForDay(
+  ctx: AIGenContext,
+  count: number,
+  startIndex: number
+): Promise<TriviaQuestion[]> {
+  const seen = new Set<string>()
+  const out: TriviaQuestion[] = []
+  for (let i = 0; i < count; i++) {
+    const difficulty = AI_DIFFICULTY_MIX[i % AI_DIFFICULTY_MIX.length]
+    const q = await generateAIQuestion(ctx, difficulty, startIndex + out.length, seen)
+    if (q) out.push(q)
+  }
+  return out
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -290,7 +382,7 @@ async function generateAIQuestion(
 // ────────────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const { days, start, regenAiOnly } = parseArgs()
+  const { days, start, regenAiOnly, aiCount, overwrite } = parseArgs()
 
   // The new pipeline reads PERPLEXITY_API_KEY (preferred) and
   // ANTHROPIC_API_KEY at call time; we sanity-check at least one is
@@ -306,9 +398,14 @@ async function main() {
   fs.mkdirSync(outputDir, { recursive: true })
 
   if (regenAiOnly) {
-    console.log(`Regenerating AI question for ${days} day(s) starting ${start} (preserves OpenTDB questions)`)
+    console.log(
+      `Regenerating ${aiCount} AI question(s)/day for ${days} day(s) starting ${start} (preserves OpenTDB questions)`
+    )
   } else {
-    console.log(`Generating ${days} days of trivia questions starting from ${start}`)
+    console.log(
+      `Generating ${days} days of trivia questions starting from ${start}` +
+        ` (${aiCount} AI/day${overwrite ? ', overwrite=on' : ''})`
+    )
   }
   console.log(`Output directory: ${outputDir}`)
   console.log('─'.repeat(60))
@@ -318,10 +415,11 @@ async function main() {
   for (let dayOffset = 0; dayOffset < days; dayOffset++) {
     const dateStr = addDays(start, dayOffset)
     const outputFile = path.join(outputDir, `${dateStr}.json`)
+    const theme = DATE_THEMES[dateStr] ?? null
 
     if (regenAiOnly) {
       // Patch path: file MUST exist; we keep its OpenTDB questions
-      // and replace just the AI one. Skip dates that aren't already
+      // and replace the AI questions. Skip dates that aren't already
       // generated.
       if (!fs.existsSync(outputFile)) {
         console.log(`[${dayOffset + 1}/${days}] ${dateStr} — SKIP (no existing file to patch)`)
@@ -329,31 +427,40 @@ async function main() {
         continue
       }
 
-      console.log(`[${dayOffset + 1}/${days}] ${dateStr}`)
+      console.log(`[${dayOffset + 1}/${days}] ${dateStr}${theme ? ` — theme: ${theme}` : ''}`)
       try {
         const existing: DailyTrivia = JSON.parse(fs.readFileSync(outputFile, 'utf-8'))
         const opentdbOnly = existing.questions.filter((q) => q.source !== 'ai')
-        const questionIndex = { current: opentdbOnly.length }
-
-        const aiQuestion = await generateAIQuestion(
-          dateStr,
-          existing.categoryId,
-          existing.categoryName,
-          questionIndex
+        const aiQuestions = await generateAIQuestionsForDay(
+          {
+            dateStr,
+            categoryId: existing.categoryId,
+            categoryName: existing.categoryName,
+            theme,
+          },
+          aiCount,
+          opentdbOnly.length
         )
 
-        if (!aiQuestion) {
-          console.error(`  ERROR: AI generation returned null for ${dateStr}`)
+        if (aiQuestions.length === 0) {
+          console.error(`  ERROR: AI generation produced 0 questions for ${dateStr}`)
           results.failed++
           continue
+        }
+        if (aiQuestions.length < aiCount) {
+          console.warn(
+            `  WARN: only ${aiQuestions.length}/${aiCount} AI questions generated for ${dateStr}`
+          )
         }
 
         const updated: DailyTrivia = {
           ...existing,
-          questions: [...opentdbOnly, aiQuestion],
+          questions: [...opentdbOnly, ...aiQuestions],
         }
         fs.writeFileSync(outputFile, JSON.stringify(updated, null, 2), 'utf-8')
-        console.log(`  Patched AI question in ${path.basename(outputFile)}`)
+        console.log(
+          `  Patched ${aiQuestions.length} AI question(s) in ${path.basename(outputFile)}`
+        )
         results.generated++
       } catch (error) {
         console.error(`  ERROR patching ${dateStr}:`, error)
@@ -367,14 +474,14 @@ async function main() {
     }
 
     // Standard path: full generation (OpenTDB + AI). Skip dates
-    // already generated to keep the script idempotent.
-    if (fs.existsSync(outputFile)) {
+    // already generated unless --overwrite is set.
+    if (fs.existsSync(outputFile) && !overwrite) {
       console.log(`[${dayOffset + 1}/${days}] ${dateStr} — SKIP (already exists)`)
       results.skipped++
       continue
     }
 
-    console.log(`[${dayOffset + 1}/${days}] ${dateStr}`)
+    console.log(`[${dayOffset + 1}/${days}] ${dateStr}${theme ? ` — theme: ${theme}` : ''}`)
 
     const daysEpoch = daysSinceEpoch(dateStr)
     const categoryId = 9 + (daysEpoch % 24)
@@ -387,13 +494,16 @@ async function main() {
       const opentdbQuestions = await fetchOpenTDBQuestions(dateStr, categoryId, questionIndex)
       console.log(`  OpenTDB: got ${opentdbQuestions.length}/6 questions`)
 
-      console.log('  Waiting 5.1s before AI question...')
+      console.log('  Waiting 5.1s before AI questions...')
       await new Promise((r) => setTimeout(r, 5100))
 
-      const aiQuestion = await generateAIQuestion(dateStr, categoryId, categoryName, questionIndex)
+      const aiQuestions = await generateAIQuestionsForDay(
+        { dateStr, categoryId, categoryName, theme },
+        aiCount,
+        questionIndex.current
+      )
 
-      const allQuestions: TriviaQuestion[] = [...opentdbQuestions]
-      if (aiQuestion) allQuestions.push(aiQuestion)
+      const allQuestions: TriviaQuestion[] = [...opentdbQuestions, ...aiQuestions]
 
       if (allQuestions.length === 0) {
         console.error(`  ERROR: No questions generated for ${dateStr}`)

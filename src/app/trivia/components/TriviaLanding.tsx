@@ -16,6 +16,7 @@ import { NicknameDialog } from './NicknameDialog'
 import { ResetNoticeButton } from './ResetNoticeButton'
 import { type ResetScopes, ResetStatsDialog } from './ResetStatsDialog'
 import { SignInBanner } from './SignInCTA'
+import { TriviaFooter } from './TriviaFooter'
 
 export function TriviaLanding({
   onStartGame,
@@ -25,7 +26,6 @@ export function TriviaLanding({
   onViewInfiniteStats,
   onStartPractice,
   onViewInfiniteLeaderboard,
-  onExplore,
   onLibrary,
   onStatsReset,
   todayResult,
@@ -37,7 +37,6 @@ export function TriviaLanding({
   onViewInfiniteStats?: () => void
   onStartPractice?: () => void
   onViewInfiniteLeaderboard?: () => void
-  onExplore?: () => void
   onLibrary?: () => void
   onStatsReset?: (scopes: ResetScopes) => void
   todayResult: TriviaGameResult | null
@@ -228,50 +227,14 @@ export function TriviaLanding({
         </ChunkyCard>
       </div>
 
-      {/* Links */}
-      <div className="flex gap-3 text-sm flex-wrap justify-center">
-        <button
-          onClick={onViewStats}
-          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
-        >
-          My Stats
-        </button>
-        <span className="text-on-surface/20">·</span>
-        <button
-          onClick={onViewLeaderboard}
-          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
-        >
-          Leaderboard
-        </button>
-        <span className="text-on-surface/20">·</span>
-        <button
-          onClick={onViewInfiniteStats}
-          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
-        >
-          Infinite Stats
-        </button>
-        <span className="text-on-surface/20">·</span>
-        <button
-          onClick={onViewInfiniteLeaderboard}
-          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
-        >
-          Infinite Ranks
-        </button>
-        <span className="text-on-surface/20">·</span>
-        <button
-          onClick={onExplore}
-          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
-        >
-          Explore Questions
-        </button>
-        <span className="text-on-surface/20">·</span>
-        <button
-          onClick={onLibrary}
-          className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors underline-offset-4 hover:underline"
-        >
-          Question Library
-        </button>
-      </div>
+      <TriviaFooter
+        current="home"
+        onViewStats={onViewStats}
+        onViewLeaderboard={onViewLeaderboard}
+        onViewInfiniteStats={onViewInfiniteStats}
+        onViewInfiniteLeaderboard={onViewInfiniteLeaderboard}
+        onLibrary={onLibrary}
+      />
 
       {nicknameDialogOpen && (
         <NicknameDialog

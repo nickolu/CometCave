@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-30",
+  "categoryId": 20,
+  "categoryName": "Mythology",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-30-0",
+      "question": "The ancient Roman god of war was commonly known as which of the following?",
+      "options": [
+        "Juno",
+        "Ares",
+        "Jupiter",
+        "Mars"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Mars"
+    },
+    {
+      "id": "opentdb-2026-05-30-1",
+      "question": "Who was the only god from Greece who did not get a name change in Rome?",
+      "options": [
+        "Demeter",
+        "Zeus",
+        "Athena",
+        "Apollo"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Apollo"
+    },
+    {
+      "id": "opentdb-2026-05-30-2",
+      "question": "Who in Greek mythology, who led the Argonauts in search of the Golden Fleece?",
+      "options": [
+        "Castor",
+        "Odysseus",
+        "Daedalus",
+        "Jason"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Jason"
+    },
+    {
+      "id": "opentdb-2026-05-30-3",
+      "question": "Hel was the daughter of which Norse Mythological figure?",
+      "options": [
+        "Thor",
+        "Balder",
+        "Odin",
+        "Loki"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Loki"
+    },
+    {
+      "id": "opentdb-2026-05-30-4",
+      "question": "In Norse Mythology, Baldr was killed by Loki with a magical spear made from what plant?",
+      "options": [
+        "Wolf's Bane",
+        "Buckthorn",
+        "Hemlock",
+        "Mistletoe"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Mistletoe"
+    },
+    {
+      "id": "opentdb-2026-05-30-5",
+      "question": "According to Algonquian folklore, how does one transform into a Wendigo?",
+      "options": [
+        "Excessive mutilation of animal corpses.",
+        "Performing a ritual involving murder.",
+        "Drinking the blood of many slain animals.",
+        "Participating in cannibalism."
+      ],
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Participating in cannibalism."
+    },
+    {
+      "id": "ai-2026-05-30-6",
+      "question": "In which Arthurian literary work did Sir Thomas Malory popularize Excalibur as the sword drawn from the stone?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Le Morte d'Arthur",
+      "explanation": "Sir Thomas Malory's Le Morte d'Arthur, written in the 15th century, is the seminal work that cemented many of the Arthurian legends we know today, including Excalibur as the iconic sword pulled from the stone. The title translates from French as \"The Death of Arthur.\" Malory's retelling drew from earlier French and English sources but shaped how generations of readers would imagine King Arthur's legendary world."
+    },
+    {
+      "id": "ai-2026-05-30-7",
+      "question": "In mythology, the phoenix is said to rise from the ashes of its predecessor and is associated with which celestial body?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Sun",
+      "explanation": "The phoenix is a mythical bird that cyclically regenerates by rising from the ashes of its predecessor, symbolizing rebirth and immortality. Its association with the Sun stems from ancient Egyptian mythology, where it was linked to the sun god Ra. The bird's fiery nature and cycle of death and renewal mirrored the daily rising and setting of the Sun."
+    },
+    {
+      "id": "ai-2026-05-30-8",
+      "question": "According to Greek mythology, the Oracle of Delphi called which Spartan lawgiver \"beloved of the gods, and rather god than man,\" inspiring him to establish Sparta's laws?",
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Lycurgus",
+      "explanation": "Lycurgus was the legendary lawgiver of Sparta, credited with establishing the city-state's unique military and social constitution. The Oracle of Delphi's divine endorsement — declaring him \"beloved of the gods, and rather god than man\" — lent him the sacred authority needed to reshape Spartan society. His reforms, known as the \"Great Rhetra,\" laid the foundation for Sparta's legendary discipline and military prowess."
+    },
+    {
+      "id": "ai-2026-05-30-9",
+      "question": "In the mythological origin of Inari worship, a rice cake that was struck transformed into what creature, which then perched on a cedar tree and inspired the building of the first shrine?",
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "white bird",
+      "explanation": "According to Japanese mythology, Inari worship traces its origins to a miraculous event in which a struck rice cake transformed into a white bird that landed on a cedar tree, prompting the construction of a shrine at that spot. Inari is the Shinto kami of foxes, fertility, rice, agriculture, and industry, and remains one of the most widely venerated deities in Japan. The white bird in this legend underscores the sacred and transformative symbolism central to Inari's mythology."
+    }
+  ]
+}

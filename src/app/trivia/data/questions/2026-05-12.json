@@ -89,12 +89,39 @@
     },
     {
       "id": "ai-2026-05-12-6",
-      "question": "The pioneering Black supermodel whose full legal name was Peggy Anne Donyale Aragonea Peugot Luna is known professionally by what name?",
+      "question": "Which glitzy Hollywood ceremony, famous for handing out Oscars, is one of the celebrity events where a red carpet has been regularly used for at least four decades?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Academy Awards",
+      "explanation": "The Academy Awards, popularly known as the Oscars, is one of the most iconic events associated with the \"Hollywood red carpet\" tradition, which has been a staple of the ceremony for over four decades. The red carpet has become a global spectacle in its own right, with celebrities showcasing designer fashion before the awards are even handed out. Today, red carpet coverage is a major part of entertainment media worldwide."
+    },
+    {
+      "id": "ai-2026-05-12-7",
+      "question": "Princess Diana was the first wife of which current British king?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Charles III",
+      "explanation": "Princess Diana married Prince Charles in 1981, making her the first wife of the man who would later become King Charles III. After their divorce in 1996, Charles went on to marry Camilla Parker Bowles, who became Queen Consort when he ascended to the throne in 2022 following the death of Queen Elizabeth II."
+    },
+    {
+      "id": "ai-2026-05-12-8",
+      "question": "To which streaming platform did content creator Valkyrae make her return on January 8, 2025?",
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Twitch",
+      "explanation": "Valkyrae, one of the most-watched female streamers in the world, returned to Twitch on January 8, 2025, after a period of streaming exclusively on YouTube. Her return to Twitch marked a notable shift in her streaming career and drew significant attention from the gaming and content creation community."
+    },
+    {
+      "id": "ai-2026-05-12-9",
+      "question": "In 2009, which stalker was arrested after being discovered blending in with photographers outside Ben Affleck's daughter's preschool and was caught lurking outside the couple's home on multiple occasions?",
       "difficulty": "hard",
       "category": "Celebrities",
       "source": "ai",
-      "correctAnswer": "Donyale Luna",
-      "explanation": "Donyale Luna, born Peggy Anne Donyale Aragonea Peugot Luna, was a groundbreaking model who in 1966 became the first Black woman to appear on the cover of British Vogue. She rose to international fame in the 1960s and worked with legendary photographers such as Richard Avedon and David Bailey. Her exotic stage name, drawn from her middle names, became iconic in the fashion world."
+      "correctAnswer": "Steven Burky",
+      "explanation": "Steven Burky was apprehended in 2009 after authorities found he had been disguising himself among paparazzi photographers outside the preschool attended by Ben Affleck and Jennifer Garner's daughter. He had also been spotted outside the couple's home on multiple occasions, raising serious security concerns for the family."
     }
   ]
 }

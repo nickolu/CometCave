@@ -64,7 +64,7 @@ export async function warmQuestionPoolForUser(uid: string): Promise<void> {
     })
 
     const generated = await generateInfiniteQuestion({})
-    await saveAIQuestion(generated)
+    await saveAIQuestion({ ...generated, createdBy: uid })
 
     // The pool just grew. Bust the cache so the next call sees the new
     // total instead of waiting for TTL.

@@ -35,6 +35,16 @@
       ]
     },
     {
+      "collectionGroup": "aiQuestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "createdBy", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "triviaInfinite",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

@@ -43,7 +43,7 @@ export function SpoilerCard({
         <ChunkyCardContent>
           <p
             className={[
-              'text-on-surface text-base mb-3',
+              'text-on-surface text-base mb-3 pt-4',
               'transition-[filter] duration-500',
               revealed ? '' : 'blur-[8px] select-none',
             ]
@@ -69,7 +69,7 @@ export function SpoilerCard({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div
             className="bg-surface-container-high rounded-ds-lg p-6 max-w-sm mx-4 shadow-hero flex flex-col gap-4"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <p className="text-on-surface text-sm">
               Revealing this question means it won&apos;t appear in your future trivia runs. Are you

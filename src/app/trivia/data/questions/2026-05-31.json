@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-31",
+  "categoryId": 21,
+  "categoryName": "Sports",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-31-0",
+      "question": "What team did England beat to win in the 1966 World Cup final?",
+      "options": [
+        "Soviet Union",
+        "Brazil",
+        "Portugal",
+        "West Germany"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "West Germany"
+    },
+    {
+      "id": "opentdb-2026-05-31-1",
+      "question": "When was the FC Schalke 04 founded?",
+      "options": [
+        "1909",
+        "2008",
+        "1999",
+        "1904"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "1904"
+    },
+    {
+      "id": "opentdb-2026-05-31-2",
+      "question": "Who won the 2015 Formula 1 World Championship?",
+      "options": [
+        "Nico Rosberg",
+        "Sebastian Vettel",
+        "Jenson Button",
+        "Lewis Hamilton"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Lewis Hamilton"
+    },
+    {
+      "id": "opentdb-2026-05-31-3",
+      "question": "Which Formula 1 driver switched teams in the middle of the 2017 season?",
+      "options": [
+        "Jolyon Palmer",
+        "Rio Haryanto",
+        "Daniil Kvyat",
+        "Carlos Sainz Jr."
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Carlos Sainz Jr."
+    },
+    {
+      "id": "opentdb-2026-05-31-4",
+      "question": "What is the nickname of Northampton town's rugby union club?",
+      "options": [
+        "Harlequins",
+        "Wasps",
+        "Saracens",
+        "Saints"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Saints"
+    },
+    {
+      "id": "opentdb-2026-05-31-5",
+      "question": "Who did Drew Brees pass in all time NFL passing yards in 2018?",
+      "options": [
+        "Dan Marino",
+        "Joe Montana",
+        "Tom Brady",
+        "Peyton Manning"
+      ],
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Peyton Manning"
+    },
+    {
+      "id": "ai-2026-05-31-6",
+      "question": "Which Olympic swimmer, who won five gold medals in the 1920s, later became famous for playing Tarzan in Hollywood films?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Johnny Weissmuller",
+      "explanation": "Johnny Weissmuller was one of the greatest swimmers of his era, winning five Olympic gold medals across the 1924 Paris and 1928 Amsterdam Games. After retiring from competitive swimming, he became a Hollywood icon by portraying Tarzan in a long-running film series. He is widely considered one of the most versatile athlete-turned-actor success stories in sports history."
+    },
+    {
+      "id": "ai-2026-05-31-7",
+      "question": "Which NHL legend, known as \"The Great One,\" won the league's MVP award a record nine times throughout his career?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Wayne Gretzky",
+      "explanation": "Wayne Gretzky won the Hart Memorial Trophy (NHL MVP) nine times, more than any other player has won an MVP award in any of the four major North American sports leagues. Known as \"The Great One,\" Gretzky is widely considered the greatest hockey player of all time, holding over 60 NHL records. His dominance was so extraordinary that his career assists alone would make him the all-time NHL points leader, even without counting his goals."
+    },
+    {
+      "id": "ai-2026-05-31-8",
+      "question": "Which NBA superstar has publicly argued that the games he and Michael Jordan played are \"totally different,\" making it a central point in the GOAT debate?",
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "LeBron James",
+      "explanation": "LeBron James has often deflected direct GOAT comparisons with Michael Jordan by pointing out that the eras, rules, and styles of play differ significantly between their careers. This argument highlights how the GOAT debate is complicated by the evolution of the game over decades. It remains one of the most hotly contested discussions in all of sports."
+    },
+    {
+      "id": "ai-2026-05-31-9",
+      "question": "The book \"Moneyball\" is credited with inspiring MLB teams to build analytics departments, but in 2002 — the year it was set — the number of full-time front office staff in Major League Baseball who identified as what professional role was close to zero?",
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "data analysts in MLB",
+      "explanation": "Before Michael Lewis's \"Moneyball\" brought widespread attention to the Oakland A's data-driven approach, virtually no MLB front offices employed dedicated data analysts. The book's 2003 publication sparked a revolution, and within a decade nearly every team had built a formal analytics department. Today, analytics staffs can number in the dozens for a single franchise."
+    }
+  ]
+}

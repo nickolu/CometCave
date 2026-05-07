@@ -36,8 +36,7 @@ const chunkyCardVariants = cva(
 )
 
 export interface ChunkyCardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof chunkyCardVariants> {
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof chunkyCardVariants> {
   cornerGlow?: 'primary' | 'secondary' | 'tertiary'
 }
 
@@ -78,30 +77,16 @@ ChunkyCardHeader.displayName = 'ChunkyCardHeader'
 
 const ChunkyCardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn('font-headline text-headline-md', className)}
-      {...props}
-    />
+    <div ref={ref} className={cn('font-headline text-headline-md', className)} {...props} />
   )
 )
 ChunkyCardTitle.displayName = 'ChunkyCardTitle'
 
 const ChunkyCardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn('px-component-px pb-component-py', className)}
-      {...props}
-    />
+    <div ref={ref} className={cn('px-component-px pb-component-py', className)} {...props} />
   )
 )
 ChunkyCardContent.displayName = 'ChunkyCardContent'
 
-export {
-  ChunkyCard,
-  ChunkyCardHeader,
-  ChunkyCardTitle,
-  ChunkyCardContent,
-  chunkyCardVariants,
-}
+export { ChunkyCard, ChunkyCardHeader, ChunkyCardTitle, ChunkyCardContent, chunkyCardVariants }

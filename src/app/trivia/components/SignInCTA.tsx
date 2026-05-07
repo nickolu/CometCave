@@ -5,20 +5,27 @@ import Link from 'next/link'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 
-const REDIRECT = '/auth?redirect=/trivia'
+const DEFAULT_REDIRECT = '/auth?redirect=/trivia'
+
+function buildAuthHref(redirectTo?: string): string {
+  if (!redirectTo) return DEFAULT_REDIRECT
+  return `/auth?redirect=${encodeURIComponent(redirectTo)}`
+}
 
 export function SignInBanner({
   message,
   cta = 'Log in',
+  redirectTo,
 }: {
   message: string
   cta?: string
+  redirectTo?: string
 }) {
   return (
     <div className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-ds-sm bg-surface-variant/15 border border-surface-variant/30 text-sm">
       <span className="text-on-surface/80">{message}</span>
       <Link
-        href={REDIRECT}
+        href={buildAuthHref(redirectTo)}
         className="text-ds-tertiary hover:text-ds-tertiary/80 underline-offset-4 hover:underline whitespace-nowrap font-semibold"
       >
         {cta} →
@@ -30,16 +37,18 @@ export function SignInBanner({
 export function SignInCard({
   title,
   description,
+  redirectTo,
 }: {
   title: string
   description: string
+  redirectTo?: string
 }) {
   return (
     <ChunkyCard variant="surface-container-high" className="w-full">
       <ChunkyCardContent className="pt-5 pb-5 flex flex-col items-center gap-3 text-center">
         <h3 className="text-lg font-bold text-on-surface">{title}</h3>
         <p className="text-on-surface/70 text-sm">{description}</p>
-        <Link href={REDIRECT} className="w-full">
+        <Link href={buildAuthHref(redirectTo)} className="w-full">
           <ChunkyButton variant="primary" size="lg" className="w-full">
             Sign in
           </ChunkyButton>

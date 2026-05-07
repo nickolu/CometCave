@@ -1,0 +1,127 @@
+{
+  "date": "2026-05-20",
+  "categoryId": 10,
+  "categoryName": "Entertainment: Books",
+  "questions": [
+    {
+      "id": "opentdb-2026-05-20-0",
+      "question": "Under what pseudonym did Stephen King publish five novels between 1977 and 1984?",
+      "options": [
+        "Mark Twain",
+        "Lewis Carroll",
+        "J. D. Robb",
+        "Richard Bachman"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Richard Bachman"
+    },
+    {
+      "id": "opentdb-2026-05-20-1",
+      "question": "Who was the author of the 1954 novel, \"Lord of the Flies\"?",
+      "options": [
+        "Stephen King",
+        "F. Scott Fitzgerald",
+        "Hunter Fox",
+        "William Golding"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "William Golding"
+    },
+    {
+      "id": "opentdb-2026-05-20-2",
+      "question": "What is the name of the three headed dog in Harry Potter and the Sorcerer's Stone?",
+      "options": [
+        "Spike",
+        "Spot",
+        "Poofy",
+        "Fluffy"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Fluffy"
+    },
+    {
+      "id": "opentdb-2026-05-20-3",
+      "question": "Which of these book series is by James Patterson?",
+      "options": [
+        "The Legend of Xanth",
+        "The Bartemaeus Trilogy",
+        "Harry Potter",
+        "Maximum Ride"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Maximum Ride"
+    },
+    {
+      "id": "opentdb-2026-05-20-4",
+      "question": "Which of the following authors was not born in England? ",
+      "options": [
+        "Graham Greene",
+        "Arthur C Clarke",
+        "H G Wells",
+        "Arthur Conan Doyle"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Arthur Conan Doyle"
+    },
+    {
+      "id": "opentdb-2026-05-20-5",
+      "question": "In the Magic: The Gathering universe, the Fallen Empires expansion takes place on which continent?",
+      "options": [
+        "Otaria",
+        "Shiv",
+        "Terisiare",
+        "Sarpadia"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Sarpadia"
+    },
+    {
+      "id": "ai-2026-05-20-6",
+      "question": "Homer is credited with writing down two ancient Greek epic poems — one about the Trojan War and one about a hero's long journey home. Which of these two works focuses on the events of the Trojan War itself?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "The Iliad",
+      "explanation": "Homer's The Iliad is one of the oldest works of Western literature, recounting the final weeks of the Trojan War and the rage of the hero Achilles. Its companion epic, The Odyssey, follows the hero Odysseus on his decade-long journey home after the war. Both works are foundational texts of ancient Greek culture and storytelling."
+    },
+    {
+      "id": "ai-2026-05-20-7",
+      "question": "Suzanne Collins' dystopian novel about a televised fight to the death was adapted into a film that grossed over $400 million in North America and became the third-highest grossing film of 2012 — what is the title of that novel (and film series)?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "The Hunger Games",
+      "explanation": "The Hunger Games, written by Suzanne Collins, is a bestselling young-adult dystopian novel set in a future society where children are forced to compete in a televised battle for survival. Its 2012 film adaptation was a massive box-office success, grossing over $400 million in North America and ranking as the third-highest grossing film of that year. The novel's gripping premise and beloved characters made it one of the most successful book-to-film adaptations of the decade."
+    },
+    {
+      "id": "ai-2026-05-20-8",
+      "question": "S.E. Hinton's novel *The Outsiders* appears at #43 on which organization's list of the Top 100 Most Challenged Books of 1990–2000, due to its depictions of gang violence, underage drinking, and strong language?",
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "American Library Association",
+      "explanation": "The American Library Association tracks books that are challenged or banned in schools and libraries across the United States, publishing periodic lists to highlight censorship trends. *The Outsiders* by S.E. Hinton has faced challenges for its raw portrayal of teen gang life, substance use, and family dysfunction. Despite — or perhaps because of — this controversy, it remains one of the best-selling young adult novels of all time."
+    },
+    {
+      "id": "ai-2026-05-20-9",
+      "question": "In a candid admission about his novel The Martian, author Andy Weir confessed that one specific physical phenomenon behaving differently on Mars than he depicted was his biggest scientific inaccuracy — what was that phenomenon?",
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "sound traveling on Mars",
+      "explanation": "Andy Weir, known for his meticulous scientific research in The Martian, acknowledged that his portrayal of sound on Mars was his greatest inaccuracy. Mars has an extremely thin atmosphere — about 1% the density of Earth's — meaning sound would travel very differently and be far quieter than depicted in the novel. Weir has spoken about this in interviews, noting that despite his efforts at accuracy, this was the one area he knowingly or unknowingly got wrong."
+    }
+  ]
+}

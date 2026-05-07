@@ -89,12 +89,39 @@
     },
     {
       "id": "ai-2026-05-15-6",
-      "question": "Which X-Men villain manipulated Donald Trask III into deploying Wild Sentinels that massacred nearly the entire population of the mutant nation of Genosha?",
+      "question": "Which comic character, created by Robert Crumb, was adapted into an X-rated animated film by Ralph Bakshi?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Fritz the Cat",
+      "explanation": "Fritz the Cat was a satirical underground comic character created by Robert Crumb in the 1960s. Ralph Bakshi adapted the character into a 1972 X-rated animated film, the first animated feature to receive that rating in the U.S. Crumb was famously unhappy with the adaptation and later killed off the character in his comics."
+    },
+    {
+      "id": "ai-2026-05-15-7",
+      "question": "Which beloved newspaper comic strip features a mischievous boy and his stuffed tiger companion?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Calvin and Hobbes",
+      "explanation": "Calvin and Hobbes was written and illustrated by Bill Watterson, running from 1985 to 1995. The strip follows the imaginative adventures of six-year-old Calvin and his tiger Hobbes, who is alive in Calvin's world but appears as a stuffed animal to others. It remains one of the most beloved and widely syndicated comic strips in history."
+    },
+    {
+      "id": "ai-2026-05-15-8",
+      "question": "In which comic book series, issues #141–142, was the iconic 'Days of Future Past' storyline first introduced?",
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Uncanny X-Men",
+      "explanation": "The 'Days of Future Past' storyline debuted in Uncanny X-Men #141–142, published in 1981, written by Chris Claremont with art by John Byrne. It depicted a dystopian future where mutants are hunted by Sentinels, and became one of the most celebrated and influential X-Men stories ever told. The arc later inspired the 2014 film X-Men: Days of Future Past."
+    },
+    {
+      "id": "ai-2026-05-15-9",
+      "question": "Which creator of the globally popular comic series *Spy x Family* has reportedly stated that he doesn't care about its characters because they weren't what he originally wanted to draw?",
       "difficulty": "hard",
       "category": "Entertainment: Comics",
       "source": "ai",
-      "correctAnswer": "Cassandra Nova",
-      "explanation": "Cassandra Nova, Charles Xavier's twin sister and one of the X-Men's most powerful foes, orchestrated the genocide of Genosha by using Donald Trask III — a descendant of Sentinel creator Bolivar Trask — to activate Wild Sentinels. The attack killed an estimated 16 million mutants, making it one of the darkest events in Marvel Comics history. This storyline was introduced in Grant Morrison's landmark \"New X-Men\" run beginning in 2001."
+      "correctAnswer": "Tatsuya Endo",
+      "explanation": "Tatsuya Endo, the creator of *Spy x Family*, has reportedly admitted a surprising detachment from his own characters, claiming they weren't what he truly wanted to draw. Despite this candid admission, the series became a massive international hit, spawning an anime adaptation and merchandise worldwide. This unexpected revelation is a fascinating piece of trivia for dedicated fans of the comic."
     }
   ]
 }

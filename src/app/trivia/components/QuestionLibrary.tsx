@@ -1,18 +1,34 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { type SelectHTMLAttributes, useEffect, useMemo, useState } from 'react'
 
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
-import type { QuestionStats } from '@/lib/trivia/questionStats'
+import { CATEGORY_META, getCategoryIdByName } from '@/lib/trivia/categories'
 import type { QuestionBrowseRow, SortOption } from '@/lib/trivia/questionQueries'
+import type { QuestionStats } from '@/lib/trivia/questionStats'
 
+import { SignInCard } from './SignInCTA'
 import { SpoilerCard } from './SpoilerCard'
+import { TriviaFooter, type TriviaNav } from './TriviaFooter'
+
+type LibraryTab = 'all' | 'mine'
+
+// Tile grid is the entry; selecting a tile drills into the existing
+// browse experience filtered to that category. Custom is a single
+// bucket for free-form topics that don't map to CATEGORY_META.
+type SelectedView =
+  | { kind: 'tiles' }
+  | { kind: 'known'; id: number }
+  | { kind: 'custom' }
 
 interface QuestionLibraryProps {
   onBack: () => void
+  nav?: TriviaNav
 }
+
+const CUSTOM_ICON = '✨'
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'newest', label: 'Newest' },
@@ -38,8 +54,9 @@ interface BrowseResponse {
   nextCursor: string | null
 }
 
-export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
+export function QuestionLibrary({ onBack, nav }: QuestionLibraryProps) {
   const { user } = useAuth()
+  const isNamedUser = !!user && !user.isAnonymous
 
   // Stats state
   const [stats, setStats] = useState<QuestionStats | null>(null)
@@ -54,9 +71,76 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
   const [hasLoaded, setHasLoaded] = useState(false)
 
   // Filter/sort state
+  const [tab, setTab] = useState<LibraryTab>('all')
   const [sort, setSort] = useState<SortOption>('newest')
-  const [category, setCategory] = useState<string>('')
   const [difficulty, setDifficulty] = useState<Difficulty | ''>('')
+
+  // Tile grid drives the active filter. selectedCustomLabel is only
+  // meaningful when view.kind === 'custom'.
+  const [view, setView] = useState<SelectedView>({ kind: 'tiles' })
+  const [selectedCustomLabel, setSelectedCustomLabel] = useState<string>('')
+
+  // Anonymous and unauthed users can't view "mine" — the API would 403,
+  // and per product spec we sell sign-up here instead of fetching.
+  const mineLocked = tab === 'mine' && !isNamedUser
+
+  // Group stats by canonical category id. Multiple stored category
+  // strings can map to the same id (e.g. "Books" and "Entertainment:
+  // Books"); we keep them all so the API filter can hit either. Anything
+  // that doesn't resolve to a CATEGORY_META id is treated as a custom
+  // free-form topic.
+  const grouped = useMemo(() => {
+    const known = new Map<
+      number,
+      { count: number; storedNames: string[]; primaryName: string }
+    >()
+    const customLabels: { label: string; count: number }[] = []
+    let customTotal = 0
+    for (const entry of stats?.byCategory ?? []) {
+      const id = getCategoryIdByName(entry.category)
+      if (id !== null) {
+        const existing = known.get(id)
+        if (existing) {
+          existing.count += entry.count
+          existing.storedNames.push(entry.category)
+        } else {
+          // stats.byCategory is sorted by count desc, so the first stored
+          // name we see for an id is the most populous variant.
+          known.set(id, {
+            count: entry.count,
+            storedNames: [entry.category],
+            primaryName: entry.category,
+          })
+        }
+      } else {
+        customLabels.push({ label: entry.category, count: entry.count })
+        customTotal += entry.count
+      }
+    }
+    return { known, customLabels, customTotal }
+  }, [stats])
+
+  // Default the custom-view dropdown to the most populous custom label
+  // when the user enters that view. Cleared when they leave.
+  useEffect(() => {
+    if (view.kind !== 'custom') return
+    if (selectedCustomLabel) return
+    const first = grouped.customLabels[0]?.label
+    if (first) setSelectedCustomLabel(first)
+  }, [view, grouped.customLabels, selectedCustomLabel])
+
+  // The category string passed to the API is the actual stored name on
+  // the question doc — known categories use the most populous stored
+  // variant; custom categories use the user's selected label verbatim.
+  const activeCategory: string = (() => {
+    if (view.kind === 'known') {
+      return grouped.known.get(view.id)?.primaryName ?? ''
+    }
+    if (view.kind === 'custom') {
+      return selectedCustomLabel
+    }
+    return ''
+  })()
 
   // Load stats (no auth needed)
   useEffect(() => {
@@ -90,8 +174,9 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
       const params = new URLSearchParams()
       params.set('sort', sort)
       params.set('limit', '20')
-      if (category) params.set('category', category)
+      if (activeCategory) params.set('category', activeCategory)
       if (difficulty) params.set('difficulty', difficulty)
+      if (tab === 'mine') params.set('mine', '1')
       if (!replace && nextCursor) params.set('cursor', nextCursor)
 
       const res = await fetch(`/api/v1/trivia/questions?${params.toString()}`, {
@@ -110,13 +195,28 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
     }
   }
 
-  // Reload when filters/sort change
+  // Reload when filters/sort/tab change. Skip the fetch when the tab is
+  // locked behind sign-in — we render a CTA instead. The tile-grid view
+  // doesn't need a list fetch either; the grid is built from stats.
   useEffect(() => {
+    if (view.kind === 'tiles') {
+      setQuestions([])
+      setNextCursor(null)
+      setHasLoaded(false)
+      return
+    }
+    if (mineLocked) {
+      setQuestions([])
+      setNextCursor(null)
+      setHasLoaded(false)
+      return
+    }
+    // Custom view with no resolved label hasn't picked a topic yet;
+    // wait for the default-selection effect to populate it.
+    if (view.kind === 'custom' && !activeCategory) return
     void loadQuestions(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sort, category, difficulty])
-
-  const categoryOptions = stats?.byCategory.map((c) => c.category) ?? []
+  }, [tab, sort, activeCategory, difficulty, mineLocked, view.kind])
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto py-8 px-4">
@@ -173,149 +273,313 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
         </ChunkyCardContent>
       </ChunkyCard>
 
-      {/* Question Browser */}
+      {/* Question Browser — tile grid first, drills into a filtered
+          list once the player picks a category. */}
       <ChunkyCard variant="surface-container-high">
         <ChunkyCardHeader>
           <ChunkyCardTitle className="text-on-surface">Browse Questions</ChunkyCardTitle>
         </ChunkyCardHeader>
         <ChunkyCardContent>
-          <div className="flex flex-col gap-4">
-            {/* Sort + Filters */}
-            <div className="flex flex-wrap gap-2 items-center">
-              {/* Sort dropdown */}
-              <div className="flex items-center gap-1.5">
-                <label className="text-xs text-on-surface/50 uppercase tracking-widest whitespace-nowrap">
-                  Sort
-                </label>
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as SortOption)}
-                  className="rounded-md bg-surface-variant/30 border border-outline-variant/40 text-on-surface text-sm px-2 py-1 focus:outline-none focus:border-ds-tertiary/60"
+          {view.kind === 'tiles' ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-on-surface/70 text-sm">
+                {statsLoading
+                  ? 'Tallying the cave…'
+                  : 'Pick a category to browse its questions.'}
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {statsLoading ? (
+                  // Skeleton tiles render the icon/name layout with a
+                  // shimmering count line so the grid doesn't appear
+                  // populated with "0" placeholders during load.
+                  Object.entries(CATEGORY_META).map(([idStr, meta]) => (
+                    <div
+                      key={idStr}
+                      aria-hidden="true"
+                      className="flex flex-col items-center justify-between gap-2 p-3 rounded-ds-md text-xs font-medium min-h-[110px] bg-surface-container/60"
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <span aria-hidden="true" className="text-2xl opacity-50">{meta.icon}</span>
+                        <span className="text-center leading-tight text-on-surface/40">{meta.name}</span>
+                      </div>
+                      <span className="block h-3 w-16 rounded bg-surface-variant/40 animate-pulse" />
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    {Object.entries(CATEGORY_META).map(([idStr, meta]) => {
+                      const id = Number(idStr)
+                      const count = grouped.known.get(id)?.count ?? 0
+                      const disabled = count === 0
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setView({ kind: 'known', id })}
+                          className={`flex flex-col items-center justify-between gap-2 p-3 rounded-ds-md text-xs font-medium transition-colors min-h-[110px] ${
+                            disabled
+                              ? 'bg-surface-container/40 text-on-surface/30 cursor-not-allowed'
+                              : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <span aria-hidden="true" className="text-2xl">{meta.icon}</span>
+                            <span className="text-center leading-tight">{meta.name}</span>
+                          </div>
+                          <span className="text-[11px] text-on-surface/60">
+                            {count.toLocaleString()} {count === 1 ? 'question' : 'questions'}
+                          </span>
+                        </button>
+                      )
+                    })}
+                    {/* Custom tile aggregates every free-form topic. The
+                        inner view lets the player pick which one. */}
+                    <button
+                      type="button"
+                      disabled={grouped.customTotal === 0}
+                      onClick={() => setView({ kind: 'custom' })}
+                      className={`flex flex-col items-center justify-between gap-2 p-3 rounded-ds-md text-xs font-medium transition-colors min-h-[110px] ${
+                        grouped.customTotal === 0
+                          ? 'bg-surface-container/40 text-on-surface/30 cursor-not-allowed'
+                          : 'bg-surface-container text-on-surface/80 hover:bg-surface-container-highest'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <span aria-hidden="true" className="text-2xl">{CUSTOM_ICON}</span>
+                        <span className="text-center leading-tight">Custom Topics</span>
+                      </div>
+                      <span className="text-[11px] text-on-surface/60">
+                        {grouped.customTotal.toLocaleString()}{' '}
+                        {grouped.customTotal === 1 ? 'question' : 'questions'}
+                      </span>
+                    </button>
+                  </>
+                )}
+              </div>
+              {statsError && (
+                <p className="text-ds-error text-sm">{statsError}</p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {/* Sub-header: back to tiles + the chosen category. */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setView({ kind: 'tiles' })}
+                  className="text-xs text-on-surface/70 hover:text-on-surface flex items-center gap-1"
                 >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  ← All categories
+                </button>
+                <div className="flex items-center gap-2">
+                  <span aria-hidden="true" className="text-xl">
+                    {view.kind === 'known' ? CATEGORY_META[view.id]?.icon : CUSTOM_ICON}
+                  </span>
+                  <span className="text-on-surface font-medium text-sm">
+                    {view.kind === 'known'
+                      ? CATEGORY_META[view.id]?.name
+                      : 'Custom Topics'}
+                  </span>
+                </div>
               </div>
 
-              {/* Category filter */}
-              {categoryOptions.length > 0 && (
+              {/* Custom view: dropdown to pick which custom label. */}
+              {view.kind === 'custom' && (
                 <div className="flex items-center gap-1.5">
                   <label className="text-xs text-on-surface/50 uppercase tracking-widest whitespace-nowrap">
-                    Category
+                    Topic
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="rounded-md bg-surface-variant/30 border border-outline-variant/40 text-on-surface text-sm px-2 py-1 focus:outline-none focus:border-ds-tertiary/60"
+                  <DarkSelect
+                    value={selectedCustomLabel}
+                    onChange={(e) => setSelectedCustomLabel(e.target.value)}
+                    className="max-w-full"
                   >
-                    <option value="">All</option>
-                    {categoryOptions.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    {grouped.customLabels.map(({ label, count }) => (
+                      <option key={label} value={label}>
+                        {label} ({count})
                       </option>
                     ))}
-                  </select>
+                  </DarkSelect>
                 </div>
               )}
 
-              {/* Difficulty chips */}
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => setDifficulty('')}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    difficulty === ''
-                      ? 'bg-ds-tertiary/20 text-ds-tertiary border-ds-tertiary/40'
-                      : 'bg-transparent text-on-surface/50 border-outline-variant/30 hover:border-outline-variant/60'
-                  }`}
-                >
-                  All
-                </button>
-                {DIFFICULTY_OPTIONS.map((diff) => (
+              {/* Tab toggle: All vs Mine */}
+              <div className="flex gap-1 p-1 rounded-md bg-surface-variant/20 border border-outline-variant/20 self-start">
+                {(
+                  [
+                    { value: 'all' as const, label: 'All questions' },
+                    { value: 'mine' as const, label: 'Generated by me' },
+                  ]
+                ).map((opt) => (
                   <button
-                    key={diff}
-                    onClick={() => setDifficulty(diff === difficulty ? '' : diff)}
-                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors capitalize ${
-                      difficulty === diff
-                        ? DIFFICULTY_COLORS[diff]
-                        : 'bg-transparent text-on-surface/50 border-outline-variant/30 hover:border-outline-variant/60'
+                    key={opt.value}
+                    onClick={() => setTab(opt.value)}
+                    className={`text-xs px-3 py-1.5 rounded transition-colors ${
+                      tab === opt.value
+                        ? 'bg-ds-tertiary/25 text-ds-tertiary'
+                        : 'text-on-surface/60 hover:text-on-surface'
                     }`}
+                    aria-pressed={tab === opt.value}
                   >
-                    {diff}
+                    {opt.label}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* Questions list */}
-            {browseLoading && !hasLoaded && (
-              <p className="text-on-surface/50 text-sm">Loading questions…</p>
-            )}
-            {browseError && (
-              <p className="text-ds-error text-sm">{browseError}</p>
-            )}
+              {/* Sort + Difficulty */}
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-on-surface/50 uppercase tracking-widest whitespace-nowrap">
+                    Sort
+                  </label>
+                  <DarkSelect
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as SortOption)}
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </DarkSelect>
+                </div>
 
-            {!user && hasLoaded && (
-              <p className="text-on-surface/50 text-sm italic">
-                Sign in to see personalized spoiler protection.
-              </p>
-            )}
-
-            {hasLoaded && questions.length === 0 && !browseLoading && (
-              <p className="text-on-surface/50 text-sm">No questions found with these filters.</p>
-            )}
-
-            <div className="flex flex-col gap-3">
-              {questions.map((q) => (
-                <SpoilerCard
-                  key={q.id}
-                  questionId={q.id}
-                  questionText={q.question}
-                  userHasSeen={q.userHasSeen}
-                >
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {/* Category badge */}
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-surface-variant/40 text-on-surface/60 border border-outline-variant/30">
-                      {q.category}
-                    </span>
-                    {/* Difficulty badge */}
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full border capitalize ${DIFFICULTY_COLORS[q.difficulty]}`}
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setDifficulty('')}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      difficulty === ''
+                        ? 'bg-ds-tertiary/20 text-ds-tertiary border-ds-tertiary/40'
+                        : 'bg-transparent text-on-surface/50 border-outline-variant/30 hover:border-outline-variant/60'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {DIFFICULTY_OPTIONS.map((diff) => (
+                    <button
+                      key={diff}
+                      onClick={() => setDifficulty(diff === difficulty ? '' : diff)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors capitalize ${
+                        difficulty === diff
+                          ? DIFFICULTY_COLORS[diff]
+                          : 'bg-transparent text-on-surface/50 border-outline-variant/30 hover:border-outline-variant/60'
+                      }`}
                     >
-                      {q.difficulty}
-                    </span>
-                    {/* Stats */}
-                    <div className="ml-auto flex gap-3 text-xs text-on-surface/50">
-                      <span title="Times shown">👁 {q.timesShown}</span>
-                      <span title="Accuracy">{q.accuracyPct}%</span>
-                      <span title="Likes">👍 {q.likeCount}</span>
-                      <span title="Dislikes">👎 {q.dislikeCount}</span>
-                    </div>
-                  </div>
-                </SpoilerCard>
-              ))}
-            </div>
+                      {diff}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Load More */}
-            {nextCursor && !browseLoading && (
-              <ChunkyButton
-                variant="secondary"
-                size="md"
-                className="w-full"
-                onClick={() => void loadQuestions(false)}
-              >
-                Load More
-              </ChunkyButton>
-            )}
-            {browseLoading && hasLoaded && (
-              <p className="text-on-surface/50 text-sm text-center">Loading…</p>
-            )}
-          </div>
+              {/* Mine tab: gate behind a real account */}
+              {mineLocked ? (
+                <SignInCard
+                  title="✨ See questions you generated"
+                  description={
+                    user?.isAnonymous
+                      ? 'Create an account to track every question your play has added to the cave.'
+                      : 'Sign in to see questions your play has added to the cave.'
+                  }
+                />
+              ) : (
+                <>
+                  {browseLoading && !hasLoaded && (
+                    <p className="text-on-surface/50 text-sm">Loading questions…</p>
+                  )}
+                  {browseError && (
+                    <p className="text-ds-error text-sm">{browseError}</p>
+                  )}
+
+                  {!user && hasLoaded && (
+                    <p className="text-on-surface/50 text-sm italic">
+                      Sign in to see personalized spoiler protection.
+                    </p>
+                  )}
+
+                  {hasLoaded && questions.length === 0 && !browseLoading && (
+                    <p className="text-on-surface/50 text-sm">
+                      {tab === 'mine'
+                        ? "You haven't generated any questions yet. Play infinite mode — each question the cave generates for you shows up here."
+                        : 'No questions found with these filters.'}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    {questions.map((q) => (
+                      <SpoilerCard
+                        key={q.id}
+                        questionId={q.id}
+                        questionText={q.question}
+                        userHasSeen={q.userHasSeen}
+                      >
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-surface-variant/40 text-on-surface/60 border border-outline-variant/30">
+                            {q.category}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full border capitalize ${DIFFICULTY_COLORS[q.difficulty]}`}
+                          >
+                            {q.difficulty}
+                          </span>
+                          <div className="ml-auto flex gap-3 text-xs text-on-surface/50">
+                            <span title="Times shown">👁 {q.timesShown}</span>
+                            <span title="Accuracy">{q.accuracyPct}%</span>
+                            <span title="Likes">👍 {q.likeCount}</span>
+                            <span title="Dislikes">👎 {q.dislikeCount}</span>
+                          </div>
+                        </div>
+                      </SpoilerCard>
+                    ))}
+                  </div>
+
+                  {nextCursor && !browseLoading && (
+                    <ChunkyButton
+                      variant="secondary"
+                      size="md"
+                      className="w-full"
+                      onClick={() => void loadQuestions(false)}
+                    >
+                      Load More
+                    </ChunkyButton>
+                  )}
+                  {browseLoading && hasLoaded && (
+                    <p className="text-on-surface/50 text-sm text-center">Loading…</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </ChunkyCardContent>
       </ChunkyCard>
+
+      {nav && <TriviaFooter current="library" {...nav} />}
     </div>
+  )
+}
+
+// Native <select> defers to the browser's light theme on macOS, which
+// makes our white-on-dark UI flash a white pill. appearance-none strips
+// the native control, [color-scheme:dark] tells Chrome/Firefox to render
+// the dropdown popover in dark mode, and a manual chevron stands in for
+// the native arrow.
+function DarkSelect(props: SelectHTMLAttributes<HTMLSelectElement>) {
+  const { className = '', children, ...rest } = props
+  return (
+    <span className="relative inline-flex">
+      <select
+        {...rest}
+        className={`appearance-none [color-scheme:dark] rounded-md bg-surface-container-highest border border-outline-variant/40 text-on-surface text-sm pl-2 pr-7 py-1 focus:outline-none focus:border-ds-tertiary/60 ${className}`}
+      >
+        {children}
+      </select>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-on-surface/50 text-[10px]"
+      >
+        ▾
+      </span>
+    </span>
   )
 }
 
