@@ -4232,6 +4232,59 @@ export const canio: JokerDefinition = {
   rarity: 'legendary',
 }
 
+export const invisibleJoker: JokerDefinition = {
+  id: 'invisibleJoker',
+  name: 'Invisible Joker',
+  description: 'After 2 rounds, sell this card to Duplicate a random Joker (Currently 0/2)',
+  price: 8,
+  effects: [
+    {
+      event: { type: 'ROUND_END' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const ij = ctx.game.jokers.find(j => j.jokerId === 'invisibleJoker')
+        if (!ij) return
+        if (ij.counter < 2) ij.counter += 1
+      },
+    },
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        // This effect fires after Invisible Joker is removed from the array.
+        // If it's gone, it was the one sold. Duplicate a random other joker.
+        if (ctx.game.jokers.some(j => j.jokerId === 'invisibleJoker')) return
+        if (ctx.game.jokers.length === 0) return
+        if (ctx.game.jokers.length >= ctx.game.maxJokers) return
+        const seed = buildSeedString([
+          ctx.game.gameSeed,
+          ctx.game.roundIndex.toString(),
+          'invisibleJoker',
+        ])
+        const roll = getRandomNumbersWithSeed({
+          seed,
+          min: 0,
+          max: ctx.game.jokers.length - 1,
+          numberOfNumbers: 1,
+        })
+        const jokerToCopy = ctx.game.jokers[roll[0]]
+        const copy: JokerState = {
+          id: uuid(),
+          jokerId: jokerToCopy.jokerId,
+          flags: { ...jokerToCopy.flags },
+          edition: jokerToCopy.edition === 'negative' ? 'normal' : jokerToCopy.edition,
+          isFaceUp: true,
+          bonusSellValue: 0,
+          counter: 0,
+          metadata: jokerToCopy.metadata ? { ...jokerToCopy.metadata } : undefined,
+        }
+        ctx.game.jokers.push(copy)
+      },
+    },
+  ],
+  rarity: 'rare',
+}
+
 function applyBurglar(ctx: EffectContext) {
   ctx.game.maxHands += 3
   ctx.game.gamePlayState.remainingHands += 3
@@ -4725,6 +4778,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   yorick,
   perkeo,
   canio,
+  invisibleJoker,
   burglar,
   troubadour,
   showman,
