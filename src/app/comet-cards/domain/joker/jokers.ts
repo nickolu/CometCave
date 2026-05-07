@@ -4718,6 +4718,15 @@ export const theIdol: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const mrBones: JokerDefinition = {
+  id: 'mrBones',
+  name: 'Mr. Bones',
+  description: 'Prevents Death if chips scored are at least 25% of required chips. Self destructs.',
+  price: 5,
+  effects: [],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4855,6 +4864,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   sixthSense,
   dna,
   theIdol,
+  mrBones,
 }
 
 /***
