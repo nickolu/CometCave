@@ -5,12 +5,22 @@ import { useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 
 import { InfiniteStats } from './InfiniteStats'
+import { TriviaFooter, type TriviaNav } from './TriviaFooter'
 import { TriviaStats } from './TriviaStats'
 
 type StatsTab = 'daily' | 'infinite'
 
-export function UnifiedStats({ onBack, defaultTab = 'daily' }: { onBack: () => void; defaultTab?: StatsTab }) {
+export function UnifiedStats({
+  onBack,
+  defaultTab = 'daily',
+  nav,
+}: {
+  onBack: () => void
+  defaultTab?: StatsTab
+  nav?: TriviaNav
+}) {
   const [tab, setTab] = useState<StatsTab>(defaultTab)
+  const currentTarget = tab === 'daily' ? 'stats' : 'infinite-stats'
 
   return (
     <div className="flex flex-col gap-4 max-w-lg mx-auto pt-6">
@@ -35,6 +45,12 @@ export function UnifiedStats({ onBack, defaultTab = 'daily' }: { onBack: () => v
         <TriviaStats onBack={onBack} />
       ) : (
         <InfiniteStats onBack={onBack} />
+      )}
+
+      {nav && (
+        <div className="px-4 pb-6">
+          <TriviaFooter current={currentTarget} {...nav} />
+        </div>
       )}
     </div>
   )

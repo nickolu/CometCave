@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
             : undefined
         }
         const generated = await generateInfiniteQuestion(genOptions)
-        question = await saveAIQuestion(generated)
+        question = await saveAIQuestion({ ...generated, createdBy: auth.claims.uid })
       } catch (genErr) {
         console.error('[trivia/infinite/next] generation failed', {
           uid: auth.claims.uid,

@@ -15,18 +15,17 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { InfiniteGame } from './components/InfiniteGame'
 import { InfiniteLeaderboard } from './components/InfiniteLeaderboard'
-import { QuestionExplorer } from './components/QuestionExplorer'
 import { QuestionLibrary } from './components/QuestionLibrary'
-import { UnifiedStats } from './components/UnifiedStats'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaLeaderboard } from './components/TriviaLeaderboard'
 import { TriviaResults } from './components/TriviaResults'
+import { UnifiedStats } from './components/UnifiedStats'
 
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
-type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'explore' | 'library'
+type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'library'
 
 type StatsDefaultTab = 'daily' | 'infinite'
 
@@ -150,8 +149,19 @@ export default function TriviaPage() {
     [user, today]
   )
 
-  const handleExplore = () => setView('explore')
   const handleBackToLanding = () => setView('landing')
+
+  // Bundle of nav targets the persistent footer needs. Defined once so
+  // each view can drop in <TriviaFooter {...nav} /> without re-deriving
+  // handlers.
+  const nav = {
+    onHome: handleBackToLanding,
+    onViewStats: handleViewStats,
+    onViewLeaderboard: handleViewLeaderboard,
+    onViewInfiniteStats: handleViewInfiniteStats,
+    onViewInfiniteLeaderboard: handleViewInfiniteLeaderboard,
+    onLibrary: handleLibrary,
+  }
 
   if (view === 'infinite') {
     return <InfiniteGame onBack={handleBackToLanding} onViewStats={handleViewInfiniteStats} onViewLeaderboard={handleViewInfiniteLeaderboard} />
@@ -162,7 +172,7 @@ export default function TriviaPage() {
   }
 
   if (view === 'infinite-stats') {
-    return <UnifiedStats onBack={handleBackToLanding} defaultTab="infinite" />
+    return <UnifiedStats onBack={handleBackToLanding} defaultTab="infinite" nav={nav} />
   }
 
   if (view === 'playing') {
@@ -177,28 +187,25 @@ export default function TriviaPage() {
         onViewStats={handleViewStats}
         onViewLeaderboard={handleViewLeaderboard}
         onStartInfinite={handleStartInfinite}
+        nav={nav}
       />
     )
   }
 
   if (view === 'stats') {
-    return <UnifiedStats onBack={handleBackToLanding} defaultTab={statsDefaultTab} />
+    return <UnifiedStats onBack={handleBackToLanding} defaultTab={statsDefaultTab} nav={nav} />
   }
 
   if (view === 'leaderboard') {
-    return <TriviaLeaderboard onBack={handleBackToLanding} />
+    return <TriviaLeaderboard onBack={handleBackToLanding} nav={nav} />
   }
 
   if (view === 'infinite-leaderboard') {
-    return <InfiniteLeaderboard onBack={handleBackToLanding} />
-  }
-
-  if (view === 'explore') {
-    return <QuestionExplorer onBack={handleBackToLanding} />
+    return <InfiniteLeaderboard onBack={handleBackToLanding} nav={nav} />
   }
 
   if (view === 'library') {
-    return <QuestionLibrary onBack={handleBackToLanding} />
+    return <QuestionLibrary onBack={handleBackToLanding} nav={nav} />
   }
 
   return (
@@ -210,7 +217,6 @@ export default function TriviaPage() {
       onViewInfiniteStats={handleViewInfiniteStats}
       onStartPractice={handleStartPractice}
       onViewInfiniteLeaderboard={handleViewInfiniteLeaderboard}
-      onExplore={handleExplore}
       onLibrary={handleLibrary}
       onStatsReset={handleStatsReset}
       todayResult={todayResult}

@@ -12,6 +12,7 @@ import { formatDisplayDate } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { SignInCard } from './SignInCTA'
+import { TriviaFooter, type TriviaNav } from './TriviaFooter'
 
 
 
@@ -95,9 +96,10 @@ interface TriviaResultsProps {
   onStartInfinite?: () => void
   // Optional: pass questions data for difficulty display
   questionDifficulties?: Array<{ difficulty: string; source: string }>
+  nav?: TriviaNav
 }
 
-export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, onStartInfinite }: TriviaResultsProps) {
+export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, onStartInfinite, nav }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { user } = useAuth()
   const { stats, displayName } = useTriviaUser()
@@ -296,6 +298,8 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
           </ChunkyButton>
         )}
       </div>
+
+      {nav && <TriviaFooter {...nav} />}
     </div>
   )
 }

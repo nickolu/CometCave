@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { MedalTier } from '@/lib/trivia/medals'
 
 import { SignInBanner } from './SignInCTA'
+import { TriviaFooter, type TriviaNav } from './TriviaFooter'
 
 type Sort = 'score' | 'streak' | 'allCategories'
 
@@ -59,7 +60,7 @@ const TIER_EMOJI: Record<MedalTier, string> = {
   diamond: '💎',
 }
 
-export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
+export function InfiniteLeaderboard({ onBack, nav }: { onBack: () => void; nav?: TriviaNav }) {
   const { user } = useAuth()
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [sort, setSort] = useState<Sort>('score')
@@ -207,6 +208,8 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
         Back to Trivia
       </ChunkyButton>
+
+      {nav && <TriviaFooter current="infinite-leaderboard" {...nav} />}
     </div>
   )
 }
