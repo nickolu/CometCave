@@ -45,6 +45,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const prevLivesRef = useRef<number | null>(null)
   const flagBonusRef = useRef(false)
   const lastMedalAnswerIdRef = useRef<string | null>(null)
+  const ratingsRef = useRef<Map<string, 'up' | 'down'>>(new Map())
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
     id: Number(id),
@@ -378,7 +379,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
 
   // End of run
   if (state.phase === 'ended') {
-    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} onViewLeaderboard={onViewLeaderboard} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} />
+    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} onViewLeaderboard={onViewLeaderboard} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} ratings={ratingsRef.current} />
   }
 
   // Playing or answered
@@ -484,6 +485,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                 questionId={qid}
                 runId={state.runId}
                 onComplete={nextQuestion}
+                onRated={(id, vote) => ratingsRef.current.set(id, vote)}
                 onFlagged={(result) => {
                   handleQuestionFlagged(qid, result)
                   if (result.bonusLifeGranted) {
