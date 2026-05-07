@@ -93,14 +93,29 @@ export function InfiniteQuestionCard({
               >
                 {isSubmitting ? 'Checking...' : 'Submit Answer'}
               </ChunkyButton>
-              {onSkip && skipsRemaining != null && skipsRemaining > 0 && !isSubmitting && (
-                <ChunkyButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={onSkip}
-                >
-                  Skip
-                </ChunkyButton>
+              {/* Skip when the player still has skips banked; otherwise
+                  Dunno lets them concede the question without typing a
+                  throwaway answer. Submits an empty string, which the
+                  answer route already treats as incorrect (timeout
+                  path), so the run continues with 0 pts on this Q. */}
+              {!isSubmitting && skipsRemaining != null && (
+                skipsRemaining > 0 && onSkip ? (
+                  <ChunkyButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={onSkip}
+                  >
+                    Skip
+                  </ChunkyButton>
+                ) : (
+                  <ChunkyButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSubmit('')}
+                  >
+                    Dunno
+                  </ChunkyButton>
+                )
               )}
             </div>
           )}
