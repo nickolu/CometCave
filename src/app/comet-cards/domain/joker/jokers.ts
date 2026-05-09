@@ -4932,6 +4932,42 @@ export const luckyCat: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const hologram: JokerDefinition = {
+  id: 'hologram',
+  name: 'Hologram',
+  description:
+    'This Joker gains X0.25 Mult every time a playing card is added to your deck (Currently X1 Mult)',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const h = ctx.game.jokers.find(j => j.jokerId === 'hologram')
+        if (!h) return
+
+        // Initialize counter to baseline deck size on first use
+        if (h.counter === 0) h.counter = ctx.game.ownedCardIds.length
+
+        // Cards added since joker was acquired
+        const cardsAdded = Math.max(0, ctx.game.ownedCardIds.length - h.counter)
+        if (cardsAdded === 0) return
+
+        const xMult = 1 + cardsAdded * 0.25
+        ctx.game.gamePlayState.score.mult *= xMult
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Hologram',
+        })
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5076,6 +5112,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   certificate,
   sockAndBuskin,
   luckyCat,
+  hologram,
 }
 
 /***
