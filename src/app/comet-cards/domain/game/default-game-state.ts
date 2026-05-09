@@ -138,6 +138,7 @@ const gameState: GameState = {
     telescopeActive: false,
     observatoryActive: false,
     spectralInArcanaPacks: false,
+    probabilityMultiplier: 1,
   },
   tags: [],
   totalScore: 0n,
