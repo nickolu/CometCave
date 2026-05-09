@@ -22,6 +22,7 @@ import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 
 import { addOwnedCard, removeOwnedCard } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
+import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { JokerDefinition, JokerState } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
 
@@ -4755,6 +4756,33 @@ export const oopsAll6s: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const matador: JokerDefinition = {
+  id: 'matador',
+  name: 'Matador',
+  description: 'Earn $8 if played hand triggers the Boss Blind ability',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const currentRound = ctx.game.rounds[ctx.game.roundIndex]
+        if (!currentRound) return
+        // Only award during boss blind rounds with active effects
+        if (currentRound.bossBlind.status !== 'inProgress') return
+        // Boss blinds with no effects (e.g. disabled by Chicot) don't trigger
+        // We need to look up the boss blind definition to check for effects
+        const bossBlindDef = bossBlinds.find(
+          b => b.name === currentRound.bossBlindName
+        )
+        if (!bossBlindDef || bossBlindDef.effects.length === 0) return
+        ctx.game.money += 8
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4894,6 +4922,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   theIdol,
   mrBones,
   oopsAll6s,
+  matador,
 }
 
 /***
