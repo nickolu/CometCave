@@ -120,6 +120,13 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   draft.totalScore = newTotalScore
 
   if (outcome === 'gameOver') {
+    // Mr. Bones: prevent death if chips scored ≥ 25% of required, then self-destruct
+    const hasMrBones = draft.jokers.some(j => j.jokerId === 'mrBones')
+    if (hasMrBones && blindScore * 4n >= ante) {
+      draft.jokers = draft.jokers.filter(j => j.jokerId !== 'mrBones') as typeof draft.jokers
+      resetScoreForNextHand(draft.gamePlayState)
+      return
+    }
     draft.gamePhase = 'gameOver'
     draft.gamePlayState.isScoring = false
     return
