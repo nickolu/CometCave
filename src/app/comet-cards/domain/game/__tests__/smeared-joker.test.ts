@@ -81,6 +81,7 @@ describe('Smeared Joker', () => {
       spectralInArcanaPacks: false,
       probabilityMultiplier: 1,
       smearedSuits: true,
+      allowStraightGaps: false,
     }
 
     const mixedRedCards = [
@@ -107,6 +108,7 @@ describe('Smeared Joker', () => {
       spectralInArcanaPacks: false,
       probabilityMultiplier: 1,
       smearedSuits: true,
+      allowStraightGaps: false,
     }
 
     const mixedBlackCards = [
@@ -133,6 +135,7 @@ describe('Smeared Joker', () => {
       spectralInArcanaPacks: false,
       probabilityMultiplier: 1,
       smearedSuits: false,
+      allowStraightGaps: false,
     }
 
     const mixedColorCards = [
@@ -159,6 +162,7 @@ describe('Smeared Joker', () => {
       spectralInArcanaPacks: false,
       probabilityMultiplier: 1,
       smearedSuits: true,
+      allowStraightGaps: false,
     }
 
     const mixedColorCards = [

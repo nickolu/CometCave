@@ -140,6 +140,7 @@ const gameState: GameState = {
     spectralInArcanaPacks: false,
     probabilityMultiplier: 1,
     smearedSuits: false,
+    allowStraightGaps: false,
   },
   tags: [],
   totalScore: 0n,

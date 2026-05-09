@@ -190,7 +190,7 @@ export const checkHandForThreeOfAKind: HandCheckFunction = cards => {
 }
 
 export const checkHandForStraight: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
-  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight, staticRules.allowStraightGaps)
   if (straights.length > 0) {
     return [true, straights[0]]
   }
@@ -240,7 +240,7 @@ export const checkHandForStraightFlush: HandCheckFunction<[StaticRulesState]> = 
   cards,
   staticRules
 ) => {
-  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight, staticRules.allowStraightGaps)
   if (straights.length > 0) {
     const flush = areAllCardsSameSuit(straights[0], staticRules)
     if (flush) {
@@ -254,7 +254,7 @@ export const checkHandForFlushHouse: HandCheckFunction<[StaticRulesState]> = (
   cards,
   staticRules
 ) => {
-  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
+  const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight, staticRules.allowStraightGaps)
   if (straights.length > 0) {
     const flush = areAllCardsSameSuit(straights[0], staticRules)
     if (flush) {
