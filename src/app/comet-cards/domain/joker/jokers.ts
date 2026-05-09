@@ -4849,6 +4849,33 @@ export const certificate: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const sockAndBuskin: JokerDefinition = {
+  id: 'sockAndBuskin',
+  name: 'Sock and Buskin',
+  description: 'Retrigger all played face cards',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        const cardDef = playingCards[scoredCard.playingCardId]
+        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'chips',
+          value: cardDef.baseChips,
+          source: 'Sock and Buskin',
+        })
+        ctx.game.gamePlayState.score.chips += cardDef.baseChips
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4991,6 +5018,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   matador,
   smearedJoker,
   certificate,
+  sockAndBuskin,
 }
 
 /***
