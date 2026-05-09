@@ -48,7 +48,7 @@ export function getBlindDefinition(type: BlindState['type'], round: RoundState):
 export function collectEffects(game: GameState): Effect[] {
   const effects: Effect[] = []
 
-  const hasBossBlindDisabled = game.jokers.some(j => j.jokerId === 'chicot')
+  const hasBossBlindDisabled = game.jokers.some(j => j.jokerId === 'chicot') || game.staticRules.bossBlindDisabled
   const blind = getInProgressBlind(game)
   if (blind && blind.type === 'bossBlind' && !hasBossBlindDisabled) {
     effects.push(...getBlindDefinition(blind.type, game.rounds[game.roundIndex]).effects)
