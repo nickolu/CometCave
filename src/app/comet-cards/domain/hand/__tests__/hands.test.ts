@@ -349,8 +349,14 @@ describe('comet-cards hand checkers', () => {
   })
 
   it('checkHandForFlushFive requires exactly five cards with the same value and same suit', () => {
+    const staticRules = {
+      numberOfCardsRequiredForFlushAndStraight: 5,
+      areAllCardsFaceCards: false,
+      allowDuplicateJokersInShop: false,
+      smearedSuits: false,
+    }
     const flushFive = [c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts')]
-    const [isFlushFive, flushFiveCards] = checkHandForFlushFive(flushFive)
+    const [isFlushFive, flushFiveCards] = checkHandForFlushFive(flushFive, staticRules)
     expect(isFlushFive).toBe(true)
     expect(flushFiveCards).toEqual(flushFive)
 
@@ -360,7 +366,7 @@ describe('comet-cards hand checkers', () => {
       c('7_clubs'),
       c('7_spades'),
       c('7_hearts'),
-    ])
+    ], staticRules)
     expect(isNotFlushFive).toBe(false)
     expect(notFlushFiveCards).toEqual([])
   })

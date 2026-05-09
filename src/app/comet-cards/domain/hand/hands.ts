@@ -2,6 +2,7 @@ import { StaticRulesState } from '@/app/comet-cards/domain/game/types'
 import { PokerHandDefinition } from '@/app/comet-cards/domain/hand/types'
 import {
   areAllCardsSameSuit,
+  doSuitsMatch,
   findAllPairs,
   findAllStraights,
   findAllThreeOfAKinds,
@@ -198,9 +199,9 @@ export const checkHandForStraight: HandCheckFunction<[StaticRulesState]> = (card
 
 export const checkHandForFlush: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
   const rankedCards = rankCardsByValueAndSuit(cards)
-  const flush = rankedCards.filter(
-    card =>
-      playingCards[card.playingCardId].suit === playingCards[rankedCards[0].playingCardId].suit
+  const firstSuit = playingCards[rankedCards[0].playingCardId].suit
+  const flush = rankedCards.filter(card =>
+    doSuitsMatch(playingCards[card.playingCardId].suit, firstSuit, staticRules)
   )
   if (flush.length >= staticRules.numberOfCardsRequiredForFlushAndStraight) {
     return [true, flush.slice(0, staticRules.numberOfCardsRequiredForFlushAndStraight)]
@@ -241,7 +242,7 @@ export const checkHandForStraightFlush: HandCheckFunction<[StaticRulesState]> = 
 ) => {
   const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
   if (straights.length > 0) {
-    const flush = areAllCardsSameSuit(straights[0])
+    const flush = areAllCardsSameSuit(straights[0], staticRules)
     if (flush) {
       return [true, straights[0]]
     }
@@ -255,7 +256,7 @@ export const checkHandForFlushHouse: HandCheckFunction<[StaticRulesState]> = (
 ) => {
   const straights = findAllStraights(cards, staticRules.numberOfCardsRequiredForFlushAndStraight)
   if (straights.length > 0) {
-    const flush = areAllCardsSameSuit(straights[0])
+    const flush = areAllCardsSameSuit(straights[0], staticRules)
     if (flush) {
       return [true, straights[0]]
     }
@@ -275,13 +276,13 @@ export const checkHandForFiveOfAKind: HandCheckFunction<[StaticRulesState]> = ca
   return [false, []]
 }
 
-export const checkHandForFlushFive: HandCheckFunction = cards => {
+export const checkHandForFlushFive: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
   if (
     cards.length === 5 &&
     cards.every(
       card =>
         playingCards[card.playingCardId].value === playingCards[cards[0].playingCardId].value &&
-        playingCards[card.playingCardId].suit === playingCards[cards[0].playingCardId].suit
+        doSuitsMatch(playingCards[card.playingCardId].suit, playingCards[cards[0].playingCardId].suit, staticRules)
     )
   ) {
     return [true, cards]

@@ -26,7 +26,14 @@ export const bonusOnCardScored = ({
   source: string
 }) => {
   const scoredCard = ctx.scoredCards?.[0]
-  if (scoredCard && playingCards[scoredCard.playingCardId].suit === suit) {
+  if (!scoredCard) return
+  const cardSuit = playingCards[scoredCard.playingCardId].suit
+  const smearedSuits = ctx.game.staticRules?.smearedSuits ?? false
+  const matches = cardSuit === suit || (smearedSuits && (
+    (['hearts', 'diamonds'].includes(cardSuit) && ['hearts', 'diamonds'].includes(suit)) ||
+    (['spades', 'clubs'].includes(cardSuit) && ['spades', 'clubs'].includes(suit))
+  ))
+  if (matches) {
     ctx.game.gamePlayState.scoringEvents.push({
       id: uuid(),
       type,
