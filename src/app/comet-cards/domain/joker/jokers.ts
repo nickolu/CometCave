@@ -2151,7 +2151,7 @@ export const eightBall: JokerDefinition = {
           max: 4,
           numberOfNumbers: 1,
         })
-        if (roll[0] !== 1) return
+        if (roll[0] > (ctx.game.staticRules.probabilityMultiplier ?? 1)) return
 
         // Create a random tarot card
         const tarotSeed = buildSeedString([seed, 'tarot'])
@@ -2181,7 +2181,7 @@ export const hallucination: JokerDefinition = {
           'chance',
         ])
         const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 2, numberOfNumbers: 1 })
-        if (roll[0] !== 1) return
+        if (roll[0] > (ctx.game.staticRules.probabilityMultiplier ?? 1)) return
         const tarotSeed = buildSeedString([seed, 'tarot'])
         const tarotCard = getRandomTarotCards(1, tarotSeed)[0]
         ctx.game.consumables.push(initializeTarotCard(tarotCard))
@@ -2218,7 +2218,7 @@ export const businessCard: JokerDefinition = {
           max: 2,
           numberOfNumbers: 1,
         })
-        if (roll[0] !== 1) return
+        if (roll[0] > (ctx.game.staticRules.probabilityMultiplier ?? 1)) return
 
         ctx.game.money += 2
       },
@@ -2443,7 +2443,7 @@ export const grosMichel: JokerDefinition = {
           max: 6,
           numberOfNumbers: 1,
         })
-        if (roll[0] === 1) {
+        if (roll[0] <= (ctx.game.staticRules.probabilityMultiplier ?? 1)) {
           ctx.game.jokers = ctx.game.jokers.filter(j => j.jokerId !== 'grosMichel')
         }
       },
@@ -2488,7 +2488,7 @@ export const cavendish: JokerDefinition = {
           max: 1000,
           numberOfNumbers: 1,
         })
-        if (roll[0] === 1) {
+        if (roll[0] <= (ctx.game.staticRules.probabilityMultiplier ?? 1)) {
           ctx.game.jokers = ctx.game.jokers.filter(j => j.jokerId !== 'cavendish')
         }
       },
@@ -3025,7 +3025,7 @@ export const reservedParking: JokerDefinition = {
             'reservedParking',
           ])
           const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 2, numberOfNumbers: 1 })
-          if (roll[0] === 1) {
+          if (roll[0] <= (ctx.game.staticRules.probabilityMultiplier ?? 1)) {
             moneyEarned += 1
           }
         }
@@ -3478,7 +3478,7 @@ export const spaceJoker: JokerDefinition = {
           'spaceJoker',
         ])
         const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 4, numberOfNumbers: 1 })
-        if (roll[0] !== 1) return
+        if (roll[0] > (ctx.game.staticRules.probabilityMultiplier ?? 1)) return
         ctx.game.pokerHands[handId].level += 1
       },
     },
@@ -3634,7 +3634,7 @@ export const bloodstone: JokerDefinition = {
           'bloodstone',
         ])
         const roll = getRandomNumbersWithSeed({ seed, min: 1, max: 2, numberOfNumbers: 1 })
-        if (roll[0] !== 1) return
+        if (roll[0] > (ctx.game.staticRules.probabilityMultiplier ?? 1)) return
         ctx.game.gamePlayState.scoringEvents.push({
           id: uuid(),
           type: 'mult',
@@ -4727,6 +4727,34 @@ export const mrBones: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const oopsAll6s: JokerDefinition = {
+  id: 'oopsAll6s',
+  name: 'Oops! All 6s',
+  description: 'Doubles all listed probabilities (ex: 1 in 3 → 2 in 3)',
+  price: 4,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.probabilityMultiplier =
+          (ctx.game.staticRules.probabilityMultiplier ?? 1) * 2
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.probabilityMultiplier = Math.max(
+          1,
+          (ctx.game.staticRules.probabilityMultiplier ?? 2) / 2,
+        )
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4865,6 +4893,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   dna,
   theIdol,
   mrBones,
+  oopsAll6s,
 }
 
 /***

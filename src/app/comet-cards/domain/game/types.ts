@@ -57,6 +57,7 @@ export interface StaticRulesState {
   telescopeActive: boolean
   observatoryActive: boolean
   spectralInArcanaPacks: boolean
+  probabilityMultiplier: number
 }
 
 export type GamePhase =
