@@ -1,6 +1,8 @@
 import { cardValuePriority, suitPriority } from '@/app/comet-cards/domain/hand/constants'
+import type { StaticRulesState } from '@/app/comet-cards/domain/game/types'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
+import type { PlayingCardDefinition } from '@/app/comet-cards/domain/playing-card/types'
 
 import { PokerHandDefinition, PokerHandState, PokerHandsState } from './types'
 
@@ -165,9 +167,29 @@ export const findFourOfAKind = (cards: PlayingCardState[]): PlayingCardState[] =
   return fourOfAKind
 }
 
-export const areAllCardsSameSuit = (cards: PlayingCardState[]): boolean => {
+export function doSuitsMatch(
+  suit1: PlayingCardDefinition['suit'],
+  suit2: PlayingCardDefinition['suit'],
+  staticRules: StaticRulesState,
+): boolean {
+  if (suit1 === suit2) return true
+  if (!staticRules.smearedSuits) return false
+  const redSuits: PlayingCardDefinition['suit'][] = ['hearts', 'diamonds']
+  const blackSuits: PlayingCardDefinition['suit'][] = ['spades', 'clubs']
+  if (redSuits.includes(suit1) && redSuits.includes(suit2)) return true
+  if (blackSuits.includes(suit1) && blackSuits.includes(suit2)) return true
+  return false
+}
+
+export const areAllCardsSameSuit = (cards: PlayingCardState[], staticRules?: StaticRulesState): boolean => {
+  const firstSuit = playingCards[cards[0].playingCardId].suit
+  if (staticRules) {
+    return cards.every(card =>
+      doSuitsMatch(playingCards[card.playingCardId].suit, firstSuit, staticRules)
+    )
+  }
   return cards.every(
-    card => playingCards[card.playingCardId].suit === playingCards[cards[0].playingCardId].suit
+    card => playingCards[card.playingCardId].suit === firstSuit
   )
 }
 

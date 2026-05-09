@@ -139,6 +139,7 @@ const gameState: GameState = {
     observatoryActive: false,
     spectralInArcanaPacks: false,
     probabilityMultiplier: 1,
+    smearedSuits: false,
   },
   tags: [],
   totalScore: 0n,

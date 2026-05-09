@@ -4783,6 +4783,30 @@ export const matador: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const smearedJoker: JokerDefinition = {
+  id: 'smearedJoker',
+  name: 'Smeared Joker',
+  description: 'Hearts and Diamonds count as the same suit, Spades and Clubs count as the same suit',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.smearedSuits = true
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.smearedSuits = false
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4923,6 +4947,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   mrBones,
   oopsAll6s,
   matador,
+  smearedJoker,
 }
 
 /***
