@@ -4876,6 +4876,62 @@ export const sockAndBuskin: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const luckyCat: JokerDefinition = {
+  id: 'luckyCat',
+  name: 'Lucky Cat',
+  description:
+    'This Joker gains X0.25 Mult every time a Lucky card successfully triggers (Currently X1 Mult)',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'CARD_SCORED' },
+      priority: 2, // Run after Lucky card enchantment effect
+      apply: (ctx: EffectContext) => {
+        const lc = ctx.game.jokers.find(j => j.jokerId === 'luckyCat')
+        if (!lc) return
+
+        // Initialize counter on first use (4 = X1.0)
+        if (lc.counter === 0) lc.counter = 4
+
+        const scoredCard = ctx.scoredCards?.[0]
+        if (!scoredCard) return
+        if (scoredCard.flags.enchantment !== 'lucky') return
+
+        // Check if Lucky triggered this scoring (Lucky-sourced events exist)
+        const luckyTriggers = ctx.game.gamePlayState.scoringEvents.filter(
+          e => 'source' in e && e.source === 'Lucky',
+        )
+        if (luckyTriggers.length > 0) {
+          lc.counter += 1 // +X0.25 per Lucky card that triggered
+        }
+      },
+    },
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        const lc = ctx.game.jokers.find(j => j.jokerId === 'luckyCat')
+        if (!lc) return
+
+        // Initialize counter on first use (4 = X1.0)
+        if (lc.counter === 0) lc.counter = 4
+        if (lc.counter <= 4) return
+
+        const xMult = lc.counter / 4
+        ctx.game.gamePlayState.score.mult *= xMult
+        ctx.game.gamePlayState.scoringEvents.push({
+          id: uuid(),
+          type: 'mult',
+          operator: 'x',
+          value: xMult,
+          source: 'Lucky Cat',
+        })
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5019,6 +5075,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   smearedJoker,
   certificate,
   sockAndBuskin,
+  luckyCat,
 }
 
 /***
