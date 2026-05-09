@@ -8,7 +8,7 @@ import {
   twoPairHand,
 } from '@/app/comet-cards/domain/hand/hands'
 import { cardValuePriority, playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
-import type { CardValue } from '@/app/comet-cards/domain/playing-card/types'
+import type { CardValue, PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
 import {
   buildSeedString,
   getRandomNumbersWithSeed,
@@ -4807,6 +4807,48 @@ export const smearedJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+function applyCertificateEffect(ctx: EffectContext) {
+  const allCards = Object.values(playingCards)
+  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'certificate'])
+  const roll = getRandomNumbersWithSeed({ seed, min: 0, max: allCards.length - 1, numberOfNumbers: 1 })
+  const cardDef = allCards[roll[0]]
+  const newCard = initializePlayingCard(cardDef)
+
+  // Add random seal
+  const seals: PlayingCardState['flags']['seal'][] = ['blue', 'purple', 'gold', 'red']
+  const sealSeed = buildSeedString([seed, 'seal'])
+  const sealRoll = getRandomNumbersWithSeed({ seed: sealSeed, min: 0, max: 3, numberOfNumbers: 1 })
+  newCard.flags.seal = seals[sealRoll[0]]
+
+  addOwnedCard(ctx.game, newCard)
+  ctx.game.gamePlayState.handIds.push(newCard.id)
+}
+
+export const certificate: JokerDefinition = {
+  id: 'certificate',
+  name: 'Certificate',
+  description: 'When round begins, add a random playing card with a random seal to your hand',
+  price: 6,
+  effects: [
+    {
+      event: { type: 'SMALL_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyCertificateEffect(ctx),
+    },
+    {
+      event: { type: 'BIG_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyCertificateEffect(ctx),
+    },
+    {
+      event: { type: 'BOSS_BLIND_SELECTED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => applyCertificateEffect(ctx),
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -4948,6 +4990,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   oopsAll6s,
   matador,
   smearedJoker,
+  certificate,
 }
 
 /***
