@@ -4968,6 +4968,30 @@ export const hologram: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const shortcut: JokerDefinition = {
+  id: 'shortcut',
+  name: 'Shortcut',
+  description: 'Allows Straights to be made with gaps of 1 rank (ex: 10 8 6 5 3)',
+  price: 7,
+  effects: [
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.allowStraightGaps = true
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.allowStraightGaps = false
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5113,6 +5137,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   sockAndBuskin,
   luckyCat,
   hologram,
+  shortcut,
 }
 
 /***

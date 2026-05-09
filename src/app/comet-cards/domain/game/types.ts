@@ -59,6 +59,7 @@ export interface StaticRulesState {
   spectralInArcanaPacks: boolean
   probabilityMultiplier: number
   smearedSuits: boolean
+  allowStraightGaps: boolean
 }
 
 export type GamePhase =

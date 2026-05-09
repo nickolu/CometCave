@@ -130,6 +130,7 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      allowStraightGaps: false,
     })
     expect(isStraight).toBe(true)
     // We return the straight cards in ascending value order.
@@ -208,6 +209,7 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 4,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      allowStraightGaps: false,
     })
     expect(isFlush).toBe(true)
     expect(
@@ -278,6 +280,7 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      allowStraightGaps: false,
     })
     expect(isStraightFlush).toBe(true)
     expect(straightFlushCards).toEqual(allSameSuitStraight)
@@ -295,6 +298,7 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      allowStraightGaps: false,
     })
     expect(isFlushHouse).toBe(true)
     expect(flushHouseCards).toEqual(suitedStraight)
@@ -310,6 +314,7 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      allowStraightGaps: false,
     })
     expect(isNotFlushHouse).toBe(false)
     expect(notFlushHouseCards).toEqual([])
@@ -321,6 +326,7 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      allowStraightGaps: false,
     })
     expect(isFive).toBe(true)
     expect(fiveCards).toEqual(fiveAces)
@@ -354,6 +360,7 @@ describe('comet-cards hand checkers', () => {
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
       smearedSuits: false,
+      allowStraightGaps: false,
     }
     const flushFive = [c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts')]
     const [isFlushFive, flushFiveCards] = checkHandForFlushFive(flushFive, staticRules)

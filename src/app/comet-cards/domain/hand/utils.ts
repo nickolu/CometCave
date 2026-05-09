@@ -66,7 +66,8 @@ export const findAllThreeOfAKinds = (cards: PlayingCardState[]): PlayingCardStat
 
 export const findAllStraights = (
   cards: PlayingCardState[],
-  minLength = 5
+  minLength = 5,
+  allowGaps = false,
 ): PlayingCardState[][] => {
   if (cards.length < minLength) return []
 
@@ -124,7 +125,8 @@ export const findAllStraights = (
     }
 
     const prev = currentRun[currentRun.length - 1]
-    if (pr === prev + 1) {
+    const maxGap = allowGaps ? 2 : 1
+    if (pr <= prev + maxGap) {
       currentRun.push(pr)
     } else {
       pushWindowsForRun(currentRun)
