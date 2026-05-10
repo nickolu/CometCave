@@ -45,6 +45,7 @@ export interface CompleteGameInput {
   total: number
   answers: TriviaAnswer[]
   category: { id: number; name: string; icon: string }
+  isRetroactive?: boolean
 }
 
 export interface CompleteGameResult {
@@ -111,9 +112,19 @@ export async function recordCompletedGame(
     const existing = profileSnap.exists
       ? (profileSnap.data() as TriviaProfile)
       : EMPTY_TRIVIA_PROFILE
-    const yesterday = getYesterdayOf(input.date)
-    const wasYesterday = existing.lastPlayedDate === yesterday
-    const newStreak = wasYesterday ? existing.currentStreak + 1 : 1
+
+    const isRetro = input.isRetroactive ?? false
+
+    // Streak logic: only update for same-day (non-retroactive) plays
+    let newStreak = existing.currentStreak
+    let newLastPlayed = existing.lastPlayedDate
+    if (!isRetro) {
+      const yesterday = getYesterdayOf(input.date)
+      const wasYesterday = existing.lastPlayedDate === yesterday
+      newStreak = wasYesterday ? existing.currentStreak + 1 : 1
+      newLastPlayed = input.date
+    }
+
     const nextProfile: TriviaProfile = {
       gamesPlayed: existing.gamesPlayed + 1,
       totalScore: existing.totalScore + input.score,
@@ -121,7 +132,7 @@ export async function recordCompletedGame(
       totalQuestions: existing.totalQuestions + input.total,
       currentStreak: newStreak,
       bestStreak: Math.max(newStreak, existing.bestStreak),
-      lastPlayedDate: input.date,
+      lastPlayedDate: newLastPlayed,
     }
 
     const existingWeekly = weeklySnap.exists
@@ -147,6 +158,8 @@ export async function recordCompletedGame(
       answers: input.answers,
       category: input.category,
       submittedAt: FieldValue.serverTimestamp(),
+      playedAt: FieldValue.serverTimestamp(),
+      isRetroactive: isRetro,
     })
     tx.set(profileRef, nextProfile)
     tx.set(dailyRef, {
@@ -157,6 +170,8 @@ export async function recordCompletedGame(
       total: input.total,
       nicknameSnapshot,
       submittedAt: FieldValue.serverTimestamp(),
+      playedAt: FieldValue.serverTimestamp(),
+      isRetroactive: isRetro,
     })
     tx.set(weeklyRef, nextWeekly)
 
