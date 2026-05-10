@@ -9,7 +9,14 @@ function InfiniteTriviaPageInner() {
   const searchParams = useSearchParams()
   const modeParam = searchParams.get('mode')
   const mode: InfiniteMode = modeParam === 'practice' ? 'practice' : 'scored'
-  return <InfiniteGame onBack={() => router.push('/trivia')} mode={mode} />
+  return (
+    <InfiniteGame
+      onBack={() => router.push('/trivia')}
+      onViewStats={() => router.push('/trivia/stats?tab=infinite')}
+      onViewLeaderboard={() => router.push('/trivia/leaderboard?tab=infinite')}
+      mode={mode}
+    />
+  )
 }
 
 export default function InfiniteTriviaPage() {

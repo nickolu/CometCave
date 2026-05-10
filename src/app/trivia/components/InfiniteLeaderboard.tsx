@@ -11,7 +11,7 @@ import { getCategoryIdByName } from '@/lib/trivia/categories'
 import type { MedalTier } from '@/lib/trivia/medals'
 
 import { SignInBanner } from './SignInCTA'
-import { TriviaFooter, type TriviaNav } from './TriviaFooter'
+import { TriviaFooter } from './TriviaFooter'
 
 type Sort = 'score' | 'streak' | 'allCategories'
 
@@ -61,7 +61,7 @@ const TIER_EMOJI: Record<MedalTier, string> = {
   diamond: '💎',
 }
 
-export function InfiniteLeaderboard({ onBack, nav }: { onBack: () => void; nav?: TriviaNav }) {
+export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [sort, setSort] = useState<Sort>('score')
@@ -266,7 +266,7 @@ export function InfiniteLeaderboard({ onBack, nav }: { onBack: () => void; nav?:
         Back to Trivia
       </ChunkyButton>
 
-      {nav && <TriviaFooter current="infinite-leaderboard" {...nav} />}
+      <TriviaFooter current="infinite-leaderboard" />
     </div>
   )
 }

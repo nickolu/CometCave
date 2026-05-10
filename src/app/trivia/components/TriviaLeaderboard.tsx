@@ -12,7 +12,7 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { ResetNoticeButton } from './ResetNoticeButton'
 import { SignInBanner } from './SignInCTA'
-import { TriviaFooter, type TriviaNav } from './TriviaFooter'
+import { TriviaFooter } from './TriviaFooter'
 
 type Period = 'daily' | 'weekly' | 'alltime'
 
@@ -35,7 +35,7 @@ interface LeaderboardResponse {
   notice?: string
 }
 
-export function TriviaLeaderboard({ onBack, nav }: { onBack: () => void; nav?: TriviaNav }) {
+export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [period, setPeriod] = useState<Period>('daily')
@@ -218,7 +218,7 @@ export function TriviaLeaderboard({ onBack, nav }: { onBack: () => void; nav?: T
         Back to Trivia
       </ChunkyButton>
 
-      {nav && <TriviaFooter current="leaderboard" {...nav} />}
+      <TriviaFooter current="leaderboard" />
     </div>
   )
 }
