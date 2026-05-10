@@ -12,6 +12,7 @@ import {
   startOfWeek,
   subMonths,
 } from 'date-fns'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
@@ -21,22 +22,14 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { TriviaFooter } from './TriviaFooter'
 
-import type { TriviaNav } from './TriviaFooter'
-
-interface TriviaCalendarProps {
-  onPlayToday: () => void
-  onSelectDate: (date: string) => void
-  onBack: () => void
-  nav: TriviaNav
-}
-
 type DayStatus = 'played' | 'missed' | 'today' | 'future'
 
 function toDateObj(dateStr: string): Date {
   return new Date(dateStr + 'T12:00:00')
 }
 
-export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: TriviaCalendarProps) {
+export function TriviaCalendar() {
+  const router = useRouter()
   const { history } = useTriviaUser()
   const todayStr = getTodayPST()
   const todayDate = toDateObj(todayStr)
@@ -68,9 +61,9 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
 
   function handleDayClick(day: Date, status: DayStatus) {
     if (status === 'today') {
-      onPlayToday()
+      router.push('/trivia/daily')
     } else if (status === 'missed') {
-      onSelectDate(format(day, 'yyyy-MM-dd'))
+      router.push('/trivia/daily?date=' + format(day, 'yyyy-MM-dd'))
     }
   }
 
@@ -81,7 +74,7 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
       <div className="w-full flex items-center justify-between">
         <button
           type="button"
-          onClick={onBack}
+          onClick={() => router.push('/trivia')}
           className="text-ds-tertiary hover:text-ds-tertiary/80 transition-colors text-sm underline-offset-4 hover:underline"
         >
           ← Back
@@ -216,7 +209,7 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
         </ChunkyCardContent>
       </ChunkyCard>
 
-      <TriviaFooter current="calendar" {...nav} />
+      <TriviaFooter current="calendar" />
     </div>
   )
 }

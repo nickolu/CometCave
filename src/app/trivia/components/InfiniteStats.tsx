@@ -1,6 +1,8 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 
+import { useRouter } from 'next/navigation'
+
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
@@ -86,7 +88,9 @@ function AccuracyRing({ accuracy, size = 48 }: { accuracy: number; size?: number
   )
 }
 
-export function InfiniteStats({ onBack }: { onBack: () => void }) {
+export function InfiniteStats() {
+  const router = useRouter()
+  const onBack = () => router.push('/trivia')
   const { user } = useAuth()
   const [stats, setStats] = useState<AggregateStats | null>(null)
   const [loading, setLoading] = useState(true)

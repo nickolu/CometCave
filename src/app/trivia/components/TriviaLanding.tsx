@@ -5,6 +5,12 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
+import { submitGameToServer } from '@/app/trivia/lib/submitGame'
+import {
+  cleanupOldDays,
+  clearTodayResult,
+  loadTodayResult,
+} from '@/app/trivia/lib/todayLocalStorage'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
@@ -14,37 +20,14 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 
 import { NicknameDialog } from './NicknameDialog'
 import { ResetNoticeButton } from './ResetNoticeButton'
-import { type ResetScopes, ResetStatsDialog } from './ResetStatsDialog'
+import { ResetStatsDialog } from './ResetStatsDialog'
 import { SignInBanner } from './SignInCTA'
 import { TriviaFooter } from './TriviaFooter'
 
-export function TriviaLanding({
-  onStartGame,
-  onViewStats,
-  onViewLeaderboard,
-  onStartInfinite,
-  onViewInfiniteStats,
-  onStartPractice,
-  onViewInfiniteLeaderboard,
-  onLibrary,
-  onCalendar,
-  onStatsReset,
-  todayResult,
-}: {
-  onStartGame?: () => void
-  onViewStats?: () => void
-  onViewLeaderboard?: () => void
-  onStartInfinite?: () => void
-  onViewInfiniteStats?: () => void
-  onStartPractice?: () => void
-  onViewInfiniteLeaderboard?: () => void
-  onLibrary?: () => void
-  onCalendar?: () => void
-  onStatsReset?: (scopes: ResetScopes) => void
-  todayResult: TriviaGameResult | null
-}) {
+export function TriviaLanding() {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
   const {
+    history,
     loading: firestoreLoading,
     displayName,
     nickname,
@@ -54,8 +37,50 @@ export function TriviaLanding({
   } = useTriviaUser()
   const [nicknameDialogOpen, setNicknameDialogOpen] = useState(false)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [localToday, setLocalToday] = useState<TriviaGameResult | null>(null)
+  const prevUserUid = useRef<string | null>(null)
+
+  const today = getTodayPST()
+
+  useEffect(() => {
+    cleanupOldDays(today)
+    setLocalToday(loadTodayResult(today))
+  }, [today])
+
+  const firestoreToday = user ? history.find((h) => h.date === today) ?? null : null
+
+  // Login reconciliation: if user just logged in and has a local result not yet in Firestore, submit it
+  useEffect(() => {
+    const uid = user?.uid ?? null
+    const prevUid = prevUserUid.current
+    prevUserUid.current = uid
+
+    if (!uid || !user) return
+    if (firestoreLoading) return
+
+    const local = loadTodayResult(today)
+    if (!local) return
+
+    if (firestoreToday) {
+      clearTodayResult(today)
+      setLocalToday(null)
+      return
+    }
+
+    if (prevUid === uid) return
+
+    submitGameToServer(user, local)
+      .then(() => {
+        clearTodayResult(today)
+        setLocalToday(null)
+      })
+      .catch((err) =>
+        console.error('Failed to reconcile local trivia result:', err)
+      )
+  }, [user, firestoreLoading, firestoreToday, today])
 
   const todayStr = getTodayPST()
+  const todayResult = firestoreToday ?? localToday
   const alreadyPlayed = !!todayResult
   const showFirestoreLoadingHint = !!user && firestoreLoading
   const category = getDailyCategory(todayStr)
@@ -117,15 +142,12 @@ export function TriviaLanding({
         </div>
       )}
 
-      {onCalendar && (
-        <button
-          type="button"
-          onClick={onCalendar}
-          className="text-ds-tertiary/70 hover:text-ds-tertiary text-sm underline-offset-4 hover:underline transition-colors"
-        >
-          View monthly calendar →
-        </button>
-      )}
+      <Link
+        href="/trivia/calendar"
+        className="text-ds-tertiary/70 hover:text-ds-tertiary text-sm underline-offset-4 hover:underline transition-colors"
+      >
+        View monthly calendar →
+      </Link>
 
       {showSignInPromos && (
         <SignInBanner message="Sign in to save your progress" />
@@ -157,15 +179,27 @@ export function TriviaLanding({
           </ChunkyCardTitle>
         </ChunkyCardHeader>
         <ChunkyCardContent className="flex flex-col items-center gap-4">
-          <ChunkyButton
-            variant="primary"
-            size="hero"
-            className="w-full"
-            disabled={alreadyPlayed || showFirestoreLoadingHint}
-            onClick={onStartGame}
-          >
-            {alreadyPlayed ? 'Come Back Tomorrow' : "Start Today's Trivia"}
-          </ChunkyButton>
+          {alreadyPlayed ? (
+            <ChunkyButton
+              variant="primary"
+              size="hero"
+              className="w-full"
+              disabled
+            >
+              Come Back Tomorrow
+            </ChunkyButton>
+          ) : (
+            <Link href="/trivia/daily" className="w-full">
+              <ChunkyButton
+                variant="primary"
+                size="hero"
+                className="w-full"
+                disabled={showFirestoreLoadingHint}
+              >
+                Start Today&apos;s Trivia
+              </ChunkyButton>
+            </Link>
+          )}
 
           {alreadyPlayed && todayResult && (
             <div className="text-center text-on-surface/60 text-sm">
@@ -187,22 +221,24 @@ export function TriviaLanding({
             <h3 className="text-on-surface font-bold text-lg">Endless Run</h3>
             <p className="text-on-surface/50 text-sm">The cave doesn&apos;t sleep. How far can you go?</p>
           </div>
-          <ChunkyButton
-            variant="secondary"
-            size="lg"
-            className="w-full"
-            onClick={onStartInfinite}
-          >
-            Start Infinite Trivia
-          </ChunkyButton>
-          <ChunkyButton
-            variant="ghost"
-            size="sm"
-            className="w-full"
-            onClick={onStartPractice}
-          >
-            Practice Mode
-          </ChunkyButton>
+          <Link href="/trivia/infinite" className="w-full">
+            <ChunkyButton
+              variant="secondary"
+              size="lg"
+              className="w-full"
+            >
+              Start Infinite Trivia
+            </ChunkyButton>
+          </Link>
+          <Link href="/trivia/infinite?mode=practice" className="w-full">
+            <ChunkyButton
+              variant="ghost"
+              size="sm"
+              className="w-full"
+            >
+              Practice Mode
+            </ChunkyButton>
+          </Link>
         </ChunkyCardContent>
       </ChunkyCard>
 
@@ -239,15 +275,7 @@ export function TriviaLanding({
         </ChunkyCard>
       </div>
 
-      <TriviaFooter
-        current="home"
-        onViewStats={onViewStats}
-        onViewLeaderboard={onViewLeaderboard}
-        onViewInfiniteStats={onViewInfiniteStats}
-        onViewInfiniteLeaderboard={onViewInfiniteLeaderboard}
-        onLibrary={onLibrary}
-        onCalendar={onCalendar}
-      />
+      <TriviaFooter current="home" />
 
       {nicknameDialogOpen && (
         <NicknameDialog
@@ -260,7 +288,7 @@ export function TriviaLanding({
       {resetDialogOpen && (
         <ResetStatsDialog
           onClose={() => setResetDialogOpen(false)}
-          onResetComplete={(scopes) => onStatsReset?.(scopes)}
+          onResetComplete={() => {}}
         />
       )}
     </div>

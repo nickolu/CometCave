@@ -11,7 +11,7 @@ import type { QuestionStats } from '@/lib/trivia/questionStats'
 
 import { SignInCard } from './SignInCTA'
 import { SpoilerCard } from './SpoilerCard'
-import { TriviaFooter, type TriviaNav } from './TriviaFooter'
+import { TriviaFooter } from './TriviaFooter'
 
 type LibraryTab = 'all' | 'mine'
 
@@ -25,7 +25,6 @@ type SelectedView =
 
 interface QuestionLibraryProps {
   onBack: () => void
-  nav?: TriviaNav
 }
 
 const CUSTOM_ICON = '✨'
@@ -54,7 +53,7 @@ interface BrowseResponse {
   nextCursor: string | null
 }
 
-export function QuestionLibrary({ onBack, nav }: QuestionLibraryProps) {
+export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
   const { user } = useAuth()
   const isNamedUser = !!user && !user.isAnonymous
 
@@ -553,7 +552,7 @@ export function QuestionLibrary({ onBack, nav }: QuestionLibraryProps) {
         </ChunkyCardContent>
       </ChunkyCard>
 
-      {nav && <TriviaFooter current="library" {...nav} />}
+      <TriviaFooter current="library" />
     </div>
   )
 }

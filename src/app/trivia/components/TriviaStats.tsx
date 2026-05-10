@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
@@ -17,7 +19,9 @@ function getAccuracyColor(accuracy: number): string {
   return 'text-ds-error'
 }
 
-export function TriviaStats({ onBack }: { onBack: () => void }) {
+export function TriviaStats() {
+  const router = useRouter()
+  const onBack = () => router.push('/trivia')
   const { user } = useAuth()
   const { stats, history } = useTriviaUser()
   // Treat anonymous Firebase users as "not signed in" for the empty-state CTA.
