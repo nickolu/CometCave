@@ -12,6 +12,8 @@ export interface TriviaGameResult {
   total: number
   answers: TriviaAnswer[]
   category?: { id: number; name: string; icon: string }
+  playedAt?: string // ISO timestamp of when the game was actually played
+  isRetroactive?: boolean // true if played after the original date
 }
 
 export interface TriviaStats {

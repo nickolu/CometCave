@@ -30,9 +30,14 @@ export async function POST(request: NextRequest) {
 
   const { date, score, correct, total, answers, category } = body
 
-  if (date !== getTodayPST()) {
-    return NextResponse.json({ error: 'Can only submit scores for today.' }, { status: 400 })
+  const today = getTodayPST()
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json({ error: 'date must be YYYY-MM-DD.' }, { status: 400 })
   }
+  if (date > today) {
+    return NextResponse.json({ error: 'Cannot submit scores for a future date.' }, { status: 400 })
+  }
+  const isRetroactive = date !== today
   if (typeof score !== 'number' || score < 0 || score > MAX_SCORE) {
     return NextResponse.json(
       { error: `score must be a number between 0 and ${MAX_SCORE}.` },
@@ -63,6 +68,7 @@ export async function POST(request: NextRequest) {
       total,
       answers,
       category,
+      isRetroactive,
     })
     return NextResponse.json(result, { status: result.alreadySubmitted ? 409 : 200 })
   } catch (err) {

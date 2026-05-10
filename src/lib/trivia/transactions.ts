@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 
 import type { TriviaAnswer } from '@/app/trivia/models/trivia'
-import { getWeekKey, getYesterdayOf } from '@/lib/dates'
+import { getTodayPST, getWeekKey, getYesterdayOf } from '@/lib/dates'
 import { getFirestoreDb } from '@/lib/firebase/server'
 import { type AuthClaims, getOrCreateProfile } from '@/lib/users/profile'
 
@@ -45,6 +45,7 @@ export interface CompleteGameInput {
   total: number
   answers: TriviaAnswer[]
   category: { id: number; name: string; icon: string }
+  isRetroactive?: boolean
 }
 
 export interface CompleteGameResult {
@@ -88,15 +89,19 @@ export async function recordCompletedGame(
   const gameRef = triviaGameRef(input.uid, input.date)
   const dailyRef = triviaDailyRef(input.uid, input.date)
   const weekKey = getWeekKey(input.date)
+  const currentWeekKey = getWeekKey(getTodayPST())
+  const isRetro = input.isRetroactive ?? false
+  // Skip weekly leaderboard write for retroactive plays from past weeks
+  const shouldUpdateWeekly = !isRetro || weekKey === currentWeekKey
   const weeklyRef = triviaWeeklyRef(input.uid, weekKey)
 
   return db.runTransaction(async (tx) => {
-    const [userSnap, profileSnap, gameSnap, weeklySnap] = await Promise.all([
+    const [userSnap, profileSnap, gameSnap] = await Promise.all([
       tx.get(userRef),
       tx.get(profileRef),
       tx.get(gameRef),
-      tx.get(weeklyRef),
     ])
+    const weeklySnap = shouldUpdateWeekly ? await tx.get(weeklyRef) : null
 
     if (gameSnap.exists) {
       const existingProfile = profileSnap.exists
@@ -111,9 +116,17 @@ export async function recordCompletedGame(
     const existing = profileSnap.exists
       ? (profileSnap.data() as TriviaProfile)
       : EMPTY_TRIVIA_PROFILE
-    const yesterday = getYesterdayOf(input.date)
-    const wasYesterday = existing.lastPlayedDate === yesterday
-    const newStreak = wasYesterday ? existing.currentStreak + 1 : 1
+
+    // Streak logic: only update for same-day (non-retroactive) plays
+    let newStreak = existing.currentStreak
+    let newLastPlayed = existing.lastPlayedDate
+    if (!isRetro) {
+      const yesterday = getYesterdayOf(input.date)
+      const wasYesterday = existing.lastPlayedDate === yesterday
+      newStreak = wasYesterday ? existing.currentStreak + 1 : 1
+      newLastPlayed = input.date
+    }
+
     const nextProfile: TriviaProfile = {
       gamesPlayed: existing.gamesPlayed + 1,
       totalScore: existing.totalScore + input.score,
@@ -121,21 +134,24 @@ export async function recordCompletedGame(
       totalQuestions: existing.totalQuestions + input.total,
       currentStreak: newStreak,
       bestStreak: Math.max(newStreak, existing.bestStreak),
-      lastPlayedDate: input.date,
+      lastPlayedDate: newLastPlayed,
     }
 
-    const existingWeekly = weeklySnap.exists
-      ? (weeklySnap.data() as TriviaWeeklyEntry)
-      : null
-    const nextWeekly: TriviaWeeklyEntry = {
-      uid: input.uid,
-      weekKey,
-      totalScore: (existingWeekly?.totalScore ?? 0) + input.score,
-      gamesPlayed: (existingWeekly?.gamesPlayed ?? 0) + 1,
-      totalCorrect: (existingWeekly?.totalCorrect ?? 0) + input.correct,
-      totalQuestions: (existingWeekly?.totalQuestions ?? 0) + input.total,
-      nicknameSnapshot,
-      lastUpdated: FieldValue.serverTimestamp(),
+    let nextWeekly: TriviaWeeklyEntry | null = null
+    if (shouldUpdateWeekly && weeklySnap) {
+      const existingWeekly = weeklySnap.exists
+        ? (weeklySnap.data() as TriviaWeeklyEntry)
+        : null
+      nextWeekly = {
+        uid: input.uid,
+        weekKey,
+        totalScore: (existingWeekly?.totalScore ?? 0) + input.score,
+        gamesPlayed: (existingWeekly?.gamesPlayed ?? 0) + 1,
+        totalCorrect: (existingWeekly?.totalCorrect ?? 0) + input.correct,
+        totalQuestions: (existingWeekly?.totalQuestions ?? 0) + input.total,
+        nicknameSnapshot,
+        lastUpdated: FieldValue.serverTimestamp(),
+      }
     }
 
     tx.set(gameRef, {
@@ -147,6 +163,8 @@ export async function recordCompletedGame(
       answers: input.answers,
       category: input.category,
       submittedAt: FieldValue.serverTimestamp(),
+      playedAt: FieldValue.serverTimestamp(),
+      isRetroactive: isRetro,
     })
     tx.set(profileRef, nextProfile)
     tx.set(dailyRef, {
@@ -157,8 +175,12 @@ export async function recordCompletedGame(
       total: input.total,
       nicknameSnapshot,
       submittedAt: FieldValue.serverTimestamp(),
+      playedAt: FieldValue.serverTimestamp(),
+      isRetroactive: isRetro,
     })
-    tx.set(weeklyRef, nextWeekly)
+    if (nextWeekly) {
+      tx.set(weeklyRef, nextWeekly)
+    }
 
     return { alreadySubmitted: false, profile: nextProfile }
   })

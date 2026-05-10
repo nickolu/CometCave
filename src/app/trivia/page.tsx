@@ -16,6 +16,7 @@ import { getDailyCategory } from '@/lib/trivia/categories'
 import { InfiniteGame } from './components/InfiniteGame'
 import { InfiniteLeaderboard } from './components/InfiniteLeaderboard'
 import { QuestionLibrary } from './components/QuestionLibrary'
+import { TriviaCalendar } from './components/TriviaCalendar'
 import { TriviaGame } from './components/TriviaGame'
 import { TriviaLanding } from './components/TriviaLanding'
 import { TriviaLeaderboard } from './components/TriviaLeaderboard'
@@ -25,7 +26,7 @@ import { UnifiedStats } from './components/UnifiedStats'
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
-type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'library'
+type View = 'landing' | 'playing' | 'playing-past' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'library' | 'calendar'
 
 type StatsDefaultTab = 'daily' | 'infinite'
 
@@ -61,6 +62,7 @@ export default function TriviaPage() {
 
   const [view, setView] = useState<View>('landing')
   const [statsDefaultTab, setStatsDefaultTab] = useState<StatsDefaultTab>('daily')
+  const [playingDate, setPlayingDate] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
   const [localToday, setLocalToday] = useState<TriviaGameResult | null>(null)
   const [autoResultsShown, setAutoResultsShown] = useState(false)
@@ -113,6 +115,7 @@ export default function TriviaPage() {
   }, [user, triviaLoading, firestoreToday, today])
 
   const handleLibrary = () => setView('library')
+  const handleViewCalendar = () => setView('calendar')
   const handleStartGame = () => setView('playing')
   const handleViewStats = () => { setStatsDefaultTab('daily'); setView('stats') }
   const handleViewLeaderboard = () => setView('leaderboard')
@@ -120,6 +123,28 @@ export default function TriviaPage() {
   const handleViewInfiniteStats = () => { setStatsDefaultTab('infinite'); setView('stats') }
   const handleStartPractice = () => setView('practice')
   const handleViewInfiniteLeaderboard = () => setView('infinite-leaderboard')
+
+  const handleSelectPastDate = useCallback((date: string) => {
+    const alreadyPlayed = history.some((h) => h.date === date)
+    if (alreadyPlayed) return
+    setPlayingDate(date)
+    setView('playing-past')
+  }, [history])
+
+  const handleFinishPast = useCallback(
+    (result: TriviaGameResult) => {
+      setLastResult(result)
+      setView('results')
+      setPlayingDate(null)
+      if (user) {
+        submitGameToServer(user, result)
+          .catch((err) =>
+            console.error('Failed to submit retroactive game:', err)
+          )
+      }
+    },
+    [user]
+  )
 
   const handleStatsReset = useCallback(
     (scopes: { daily: boolean; infinite: boolean }) => {
@@ -161,6 +186,7 @@ export default function TriviaPage() {
     onViewInfiniteStats: handleViewInfiniteStats,
     onViewInfiniteLeaderboard: handleViewInfiniteLeaderboard,
     onLibrary: handleLibrary,
+    onCalendar: handleViewCalendar,
   }
 
   if (view === 'infinite') {
@@ -177,6 +203,10 @@ export default function TriviaPage() {
 
   if (view === 'playing') {
     return <TriviaGame onFinish={handleFinish} />
+  }
+
+  if (view === 'playing-past' && playingDate) {
+    return <TriviaGame date={playingDate} onFinish={handleFinishPast} onFlee={() => { setPlayingDate(null); setView('calendar') }} />
   }
 
   if (view === 'results' && lastResult) {
@@ -208,6 +238,17 @@ export default function TriviaPage() {
     return <QuestionLibrary onBack={handleBackToLanding} nav={nav} />
   }
 
+  if (view === 'calendar') {
+    return (
+      <TriviaCalendar
+        onPlayToday={handleStartGame}
+        onSelectDate={handleSelectPastDate}
+        onBack={handleBackToLanding}
+        nav={nav}
+      />
+    )
+  }
+
   return (
     <TriviaLanding
       onStartGame={handleStartGame}
@@ -218,6 +259,7 @@ export default function TriviaPage() {
       onStartPractice={handleStartPractice}
       onViewInfiniteLeaderboard={handleViewInfiniteLeaderboard}
       onLibrary={handleLibrary}
+      onCalendar={handleViewCalendar}
       onStatsReset={handleStatsReset}
       todayResult={todayResult}
     />
