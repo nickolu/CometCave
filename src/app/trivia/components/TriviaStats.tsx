@@ -137,6 +137,9 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
               <div className="text-on-surface/50 text-xs mt-1">Best Streak</div>
             </div>
           </div>
+          <p className="text-on-surface/30 text-[10px] text-center mt-2">
+            Streaks count same-day plays only. Retroactive games count toward other stats.
+          </p>
         </ChunkyCardContent>
       </ChunkyCard>
 
@@ -195,6 +198,11 @@ export function TriviaStats({ onBack }: { onBack: () => void }) {
                     <div className="flex flex-col">
                       <span className="text-on-surface text-sm font-medium">
                         {formatDisplayDate(game.date)}
+                        {game.isRetroactive && (
+                          <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-surface-variant/50 text-on-surface/40 uppercase tracking-wide">
+                            Retroactive
+                          </span>
+                        )}
                       </span>
                       <span className="text-on-surface/40 text-xs">
                         {game.correct}/{game.total} correct

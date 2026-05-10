@@ -44,6 +44,7 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
   const [viewDate, setViewDate] = useState(() => startOfMonth(todayDate))
 
   const playedSet = new Set(history.map((r) => r.date))
+  const retroactiveSet = new Set(history.filter((r) => r.isRetroactive).map((r) => r.date))
 
   const monthStart = startOfMonth(viewDate)
   const monthEnd = endOfMonth(viewDate)
@@ -132,6 +133,7 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
               const status = getDayStatus(day)
               const category = status === 'played' || status === 'today' ? getDailyCategory(str) : null
 
+              const isRetro = retroactiveSet.has(str)
               const isClickable = inMonth && (status === 'today' || status === 'missed')
 
               const cellBase =
@@ -161,7 +163,7 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
                       : status === 'missed'
                         ? `${format(day, 'MMMM d')} — missed`
                         : status === 'played'
-                          ? `${format(day, 'MMMM d')} — played`
+                          ? `${format(day, 'MMMM d')} — played${isRetro ? ' (retroactive)' : ''}`
                           : format(day, 'MMMM d')
                   }
                 >
@@ -176,6 +178,9 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
                       Today
                     </span>
                   )}
+                  {status === 'played' && isRetro && (
+                    <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-yellow-400/70" title="Played retroactively" />
+                  )}
                 </button>
               )
             })}
@@ -188,7 +193,7 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
             {pastDaysThisMonth} days this month
           </div>
 
-          <div className="mt-3 flex items-center justify-center gap-4 text-xs text-on-surface/50">
+          <div className="mt-3 flex items-center justify-center gap-4 text-xs text-on-surface/50 flex-wrap">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-ds-tertiary/20 inline-block" />
               Played
@@ -200,6 +205,12 @@ export function TriviaCalendar({ onPlayToday, onSelectDate, onBack, nav }: Trivi
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-surface-variant/30 border border-outline-variant/40 inline-block" />
               Missed
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="relative w-3 h-3 rounded bg-ds-tertiary/20 inline-block">
+                <span className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-yellow-400/70" />
+              </span>
+              Retroactive
             </span>
           </div>
         </ChunkyCardContent>
