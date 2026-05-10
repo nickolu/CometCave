@@ -20,19 +20,19 @@ export async function POST(request: NextRequest) {
     }
 
     const today = getTodayPST()
-    if (date !== today) {
+    if (date > today) {
       return NextResponse.json(
-        { error: "Can only check answers for today's trivia." },
+        { error: 'Cannot check answers for a future date.' },
         { status: 400 }
       )
     }
 
     // Look up the question in the shared cache, or load from disk
-    let cachedQuestions = dailyCache.get(today)
+    let cachedQuestions = dailyCache.get(date)
     if (!cachedQuestions) {
-      const fromDisk = loadDailyQuestionsFromDisk(today)
+      const fromDisk = loadDailyQuestionsFromDisk(date)
       if (fromDisk && fromDisk.length > 0) {
-        dailyCache.set(today, fromDisk)
+        dailyCache.set(date, fromDisk)
         cachedQuestions = fromDisk
       }
     }

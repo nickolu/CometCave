@@ -251,34 +251,36 @@ async function generateFallbackQuestions(
 export async function GET(request: NextRequest) {
   try {
     const today = getTodayPST()
+    const dateParam = request.nextUrl.searchParams.get('date')
+    const targetDate = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : today
+
+    if (targetDate > today) {
+      return NextResponse.json({ error: 'Cannot load trivia for a future date.' }, { status: 400 })
+    }
 
     // Check cache first
-    if (dailyCache.has(today)) {
-      const cached = dailyCache.get(today)!
+    if (dailyCache.has(targetDate)) {
+      const cached = dailyCache.get(targetDate)!
       const questions: TriviaQuestion[] = cached.map(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ correctAnswer, explanation, ...q }) => q
       )
-      return NextResponse.json({ date: today, questions })
+      return NextResponse.json({ date: targetDate, questions })
     }
 
     // PREFERRED: Load pre-generated questions from disk (static JSON files)
-    const preGenerated = loadDailyQuestionsFromDisk(today)
+    const preGenerated = loadDailyQuestionsFromDisk(targetDate)
     if (preGenerated && preGenerated.length > 0) {
-      dailyCache.set(today, preGenerated)
-      // Clean old cache entries
-      for (const key of dailyCache.keys()) {
-        if (key !== today) dailyCache.delete(key)
-      }
+      dailyCache.set(targetDate, preGenerated)
       const questions: TriviaQuestion[] = preGenerated.map(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         ({ correctAnswer, explanation, ...q }) => q
       )
-      return NextResponse.json({ date: today, questions })
+      return NextResponse.json({ date: targetDate, questions })
     }
 
     // FALLBACK: Generate questions on-the-fly if no pre-generated file exists
-    console.warn(`No pre-generated questions for ${today}, falling back to live generation`)
+    console.warn(`No pre-generated questions for ${targetDate}, falling back to live generation`)
 
     // Resolve API key for AI question
     let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
@@ -286,12 +288,12 @@ export async function GET(request: NextRequest) {
     if (headerApiKey) apiKey = headerApiKey
 
     // Fetch OpenTDB questions
-    let opentdbQuestions = await fetchOpenTDBQuestions(today)
+    let opentdbQuestions = await fetchOpenTDBQuestions(targetDate)
 
     // If OpenTDB failed or returned too few, use AI fallback
     if (opentdbQuestions.length < 6 && apiKey) {
       const fallbacks = await generateFallbackQuestions(
-        today,
+        targetDate,
         6 - opentdbQuestions.length,
         apiKey
       )
@@ -303,7 +305,7 @@ export async function GET(request: NextRequest) {
     if (apiKey) {
       try {
         const aiQuestion = await generateAIQuestion(
-          today,
+          targetDate,
           opentdbQuestions[0]?.category || 'General Knowledge',
           apiKey
         )
@@ -315,23 +317,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Shuffle question order deterministically
-    const seed = daysSinceEpoch(today)
+    const seed = daysSinceEpoch(targetDate)
     allQuestions = seededShuffle(allQuestions, seed)
 
     // Cache the full questions (with answers) server-side
-    dailyCache.set(today, allQuestions)
-
-    // Clean old cache entries
-    for (const key of dailyCache.keys()) {
-      if (key !== today) dailyCache.delete(key)
-    }
+    dailyCache.set(targetDate, allQuestions)
 
     // Return questions WITHOUT answers
     const questions: TriviaQuestion[] = allQuestions.map(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       ({ correctAnswer, explanation, ...q }) => q
     )
-    return NextResponse.json({ date: today, questions })
+    return NextResponse.json({ date: targetDate, questions })
   } catch (error) {
     console.error('Error fetching daily trivia:', error)
     return NextResponse.json(
