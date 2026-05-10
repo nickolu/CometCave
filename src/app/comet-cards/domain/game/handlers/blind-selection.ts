@@ -7,6 +7,7 @@ import { blindIndices, getNextBlind } from '@/app/comet-cards/domain/round/blind
 import { initializeTag } from '@/app/comet-cards/domain/tag/utils'
 
 export function handleSmallBlindSelected(draft: GameState) {
+  draft.staticRules.bossBlindDisabled = false
   const round = draft.rounds[draft.roundIndex]
   round.smallBlind.status = 'inProgress'
   draft.gamePhase = 'gameplay'
@@ -26,6 +27,7 @@ export function handleSmallBlindSelected(draft: GameState) {
 }
 
 export function handleBigBlindSelected(draft: GameState) {
+  draft.staticRules.bossBlindDisabled = false
   const round = draft.rounds[draft.roundIndex]
   round.bigBlind.status = 'inProgress'
   draft.gamePhase = 'gameplay'
@@ -45,6 +47,7 @@ export function handleBigBlindSelected(draft: GameState) {
 }
 
 export function handleBossBlindSelected(draft: GameState) {
+  draft.staticRules.bossBlindDisabled = false
   const round = draft.rounds[draft.roundIndex]
   round.bossBlind.status = 'inProgress'
   draft.gamePhase = 'gameplay'

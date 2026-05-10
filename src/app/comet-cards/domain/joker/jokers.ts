@@ -4992,6 +4992,23 @@ export const shortcut: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const luchador: JokerDefinition = {
+  id: 'luchador',
+  name: 'Luchador',
+  description: 'Sell this card to disable the current Boss Blind',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'JOKER_SOLD' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.bossBlindDisabled = true
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5138,6 +5155,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   luckyCat,
   hologram,
   shortcut,
+  luchador,
 }
 
 /***

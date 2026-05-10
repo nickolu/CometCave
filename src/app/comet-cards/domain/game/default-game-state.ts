@@ -141,6 +141,7 @@ const gameState: GameState = {
     probabilityMultiplier: 1,
     smearedSuits: false,
     allowStraightGaps: false,
+    bossBlindDisabled: false,
   },
   tags: [],
   totalScore: 0n,

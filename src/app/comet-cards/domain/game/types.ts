@@ -60,6 +60,7 @@ export interface StaticRulesState {
   probabilityMultiplier: number
   smearedSuits: boolean
   allowStraightGaps: boolean
+  bossBlindDisabled: boolean
 }
 
 export type GamePhase =
