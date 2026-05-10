@@ -27,6 +27,7 @@ export function TriviaLanding({
   onStartPractice,
   onViewInfiniteLeaderboard,
   onLibrary,
+  onCalendar,
   onStatsReset,
   todayResult,
 }: {
@@ -38,6 +39,7 @@ export function TriviaLanding({
   onStartPractice?: () => void
   onViewInfiniteLeaderboard?: () => void
   onLibrary?: () => void
+  onCalendar?: () => void
   onStatsReset?: (scopes: ResetScopes) => void
   todayResult: TriviaGameResult | null
 }) {
@@ -113,6 +115,16 @@ export function TriviaLanding({
             </span>
           </span>
         </div>
+      )}
+
+      {onCalendar && (
+        <button
+          type="button"
+          onClick={onCalendar}
+          className="text-ds-tertiary/70 hover:text-ds-tertiary text-sm underline-offset-4 hover:underline transition-colors"
+        >
+          View monthly calendar →
+        </button>
       )}
 
       {showSignInPromos && (
@@ -234,6 +246,7 @@ export function TriviaLanding({
         onViewInfiniteStats={onViewInfiniteStats}
         onViewInfiniteLeaderboard={onViewInfiniteLeaderboard}
         onLibrary={onLibrary}
+        onCalendar={onCalendar}
       />
 
       {nicknameDialogOpen && (

@@ -7,6 +7,7 @@ export type TriviaFooterTarget =
   | 'infinite-stats'
   | 'infinite-leaderboard'
   | 'library'
+  | 'calendar'
 
 export interface TriviaNav {
   onHome?: () => void
@@ -15,6 +16,7 @@ export interface TriviaNav {
   onViewInfiniteStats?: () => void
   onViewInfiniteLeaderboard?: () => void
   onLibrary?: () => void
+  onCalendar?: () => void
 }
 
 interface TriviaFooterProps extends TriviaNav {
@@ -31,6 +33,7 @@ export function TriviaFooter({
   onViewInfiniteStats,
   onViewInfiniteLeaderboard,
   onLibrary,
+  onCalendar,
   current,
 }: TriviaFooterProps) {
   const links: { key: TriviaFooterTarget; label: string; onClick?: () => void }[] = [
@@ -40,6 +43,7 @@ export function TriviaFooter({
     { key: 'infinite-stats', label: 'Infinite Stats', onClick: onViewInfiniteStats },
     { key: 'infinite-leaderboard', label: 'Infinite Ranks', onClick: onViewInfiniteLeaderboard },
     { key: 'library', label: 'Question Library', onClick: onLibrary },
+    { key: 'calendar', label: 'Calendar', onClick: onCalendar },
   ]
   const visible = links.filter((l) => l.onClick && l.key !== current)
 
