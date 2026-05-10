@@ -74,6 +74,12 @@ function normalizeGame(data: DocumentData): TriviaGameResult {
   if (data.category && typeof data.category === 'object' && typeof data.category.name === 'string') {
     result.category = data.category
   }
+  if (data.playedAt?.toDate) {
+    result.playedAt = data.playedAt.toDate().toISOString()
+  }
+  if (typeof data.isRetroactive === 'boolean') {
+    result.isRetroactive = data.isRetroactive
+  }
   return result
 }
 
