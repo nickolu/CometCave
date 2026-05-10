@@ -30,7 +30,7 @@ function getQuestionConfig(q: TriviaQuestion) {
 
 type GamePhase = 'loading' | 'playing' | 'answered' | 'finished'
 
-export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGameResult) => void; onFlee?: () => void }) {
+export function TriviaGame({ onFinish, onFlee, date: dateProp }: { onFinish: (result: TriviaGameResult) => void; onFlee?: () => void; date?: string }) {
   const [questions, setQuestions] = useState<TriviaQuestion[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [phase, setPhase] = useState<GamePhase>('loading')
@@ -55,11 +55,16 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
   const [answers, setAnswers] = useState<TriviaAnswer[]>([])
   const [totalScore, setTotalScore] = useState(0)
 
+  const gameDate = dateProp || getTodayPST()
+
   // Fetch questions on mount
   useEffect(() => {
     async function fetchQuestions() {
       try {
-        const res = await fetch('/api/v1/trivia/daily')
+        const url = gameDate === getTodayPST()
+          ? '/api/v1/trivia/daily'
+          : `/api/v1/trivia/daily?date=${gameDate}`
+        const res = await fetch(url)
         if (!res.ok) throw new Error('Failed to fetch questions')
         const data = await res.json()
         setQuestions(data.questions)
@@ -74,7 +79,7 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
       }
     }
     fetchQuestions()
-  }, [])
+  }, [gameDate])
 
   // Timer logic
   useEffect(() => {
@@ -129,7 +134,6 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
     setSelectedAnswer(answer)
 
     try {
-      const today = getTodayPST()
       const question = questions[currentIndex]
 
       const res = await fetch('/api/v1/trivia/check-answer', {
@@ -138,7 +142,7 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
         body: JSON.stringify({
           questionId: question.id,
           answer,
-          date: today,
+          date: gameDate,
         }),
       })
 
@@ -186,7 +190,7 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
       body: JSON.stringify({
         questionId: q.id,
         rating,
-        date: getTodayPST(),
+        date: gameDate,
         question: q.question,
         correctAnswer: answerResult?.correctAnswer ?? '',
         userAnswer: selectedAnswer,
@@ -201,14 +205,13 @@ export function TriviaGame({ onFinish, onFlee }: { onFinish: (result: TriviaGame
     setQuestionRating(null)
     if (currentIndex + 1 >= questions.length) {
       // Game over
-      const today = getTodayPST()
       const correctCount = answers.length > 0 ? answers.filter(a => a.correct).length : 0
       // Include the latest answer that was just added
       const allAnswers = answers
       const finalScore = allAnswers.reduce((sum, a) => sum + a.points, 0)
 
       const result: TriviaGameResult = {
-        date: today,
+        date: gameDate,
         score: finalScore,
         correct: correctCount,
         total: questions.length,

@@ -26,7 +26,7 @@ import { UnifiedStats } from './components/UnifiedStats'
 import type { TriviaGameResult } from './models/trivia'
 import type { User } from 'firebase/auth'
 
-type View = 'landing' | 'playing' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'library' | 'calendar'
+type View = 'landing' | 'playing' | 'playing-past' | 'results' | 'stats' | 'leaderboard' | 'infinite' | 'infinite-stats' | 'practice' | 'infinite-leaderboard' | 'library' | 'calendar'
 
 type StatsDefaultTab = 'daily' | 'infinite'
 
@@ -62,6 +62,7 @@ export default function TriviaPage() {
 
   const [view, setView] = useState<View>('landing')
   const [statsDefaultTab, setStatsDefaultTab] = useState<StatsDefaultTab>('daily')
+  const [playingDate, setPlayingDate] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<TriviaGameResult | null>(null)
   const [localToday, setLocalToday] = useState<TriviaGameResult | null>(null)
   const [autoResultsShown, setAutoResultsShown] = useState(false)
@@ -123,6 +124,28 @@ export default function TriviaPage() {
   const handleStartPractice = () => setView('practice')
   const handleViewInfiniteLeaderboard = () => setView('infinite-leaderboard')
 
+  const handleSelectPastDate = useCallback((date: string) => {
+    const alreadyPlayed = history.some((h) => h.date === date)
+    if (alreadyPlayed) return
+    setPlayingDate(date)
+    setView('playing-past')
+  }, [history])
+
+  const handleFinishPast = useCallback(
+    (result: TriviaGameResult) => {
+      setLastResult(result)
+      setView('results')
+      setPlayingDate(null)
+      if (user) {
+        submitGameToServer(user, result)
+          .catch((err) =>
+            console.error('Failed to submit retroactive game:', err)
+          )
+      }
+    },
+    [user]
+  )
+
   const handleStatsReset = useCallback(
     (scopes: { daily: boolean; infinite: boolean }) => {
       if (scopes.daily) {
@@ -182,6 +205,10 @@ export default function TriviaPage() {
     return <TriviaGame onFinish={handleFinish} />
   }
 
+  if (view === 'playing-past' && playingDate) {
+    return <TriviaGame date={playingDate} onFinish={handleFinishPast} onFlee={() => { setPlayingDate(null); setView('calendar') }} />
+  }
+
   if (view === 'results' && lastResult) {
     return (
       <TriviaResults
@@ -215,7 +242,7 @@ export default function TriviaPage() {
     return (
       <TriviaCalendar
         onPlayToday={handleStartGame}
-        onSelectDate={() => {}}
+        onSelectDate={handleSelectPastDate}
         onBack={handleBackToLanding}
         nav={nav}
       />
