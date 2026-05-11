@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 
+import { useMemo } from 'react'
+
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
@@ -41,6 +43,48 @@ export function TriviaStats() {
 
   // Highest single-game score
   const bestScore = history.reduce((max, h) => Math.max(max, h.score), 0)
+
+  // Score trend: last 7 vs previous 7 games
+  const scoreTrend = useMemo(() => {
+    if (history.length < 2) return null
+    const recent = history.slice(0, 7)
+    const previous = history.slice(7, 14)
+    if (previous.length === 0) return null
+    const recentAvg = recent.reduce((s, g) => s + g.score, 0) / recent.length
+    const previousAvg = previous.reduce((s, g) => s + g.score, 0) / previous.length
+    const diff = recentAvg - previousAvg
+    const pctChange = previousAvg > 0 ? Math.round((diff / previousAvg) * 100) : 0
+    return { recentAvg: Math.round(recentAvg), previousAvg: Math.round(previousAvg), diff: Math.round(diff), pctChange }
+  }, [history])
+
+  // Day-of-week activity
+  const dayOfWeekStats = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const counts = new Array(7).fill(0)
+    for (const game of history) {
+      const d = new Date(game.date + 'T12:00:00')
+      counts[d.getDay()]++
+    }
+    const max = Math.max(...counts, 1)
+    return days.map((label, i) => ({ label, count: counts[i], pct: Math.round((counts[i] / max) * 100) }))
+  }, [history])
+
+  // Category performance
+  const categoryStats = useMemo(() => {
+    const cats = new Map<string, { name: string; icon: string; correct: number; total: number }>()
+    for (const game of history) {
+      if (!game.category) continue
+      const key = game.category.name
+      const existing = cats.get(key) ?? { name: game.category.name, icon: game.category.icon, correct: 0, total: 0 }
+      existing.correct += game.correct
+      existing.total += game.total
+      cats.set(key, existing)
+    }
+    return Array.from(cats.values())
+      .filter((c) => c.total >= 8) // At least one full game
+      .map((c) => ({ ...c, accuracy: Math.round((c.correct / c.total) * 100) }))
+      .sort((a, b) => b.accuracy - a.accuracy)
+  }, [history])
 
   if (stats.gamesPlayed === 0) {
     return (
@@ -175,6 +219,92 @@ export function TriviaStats() {
           </div>
         </ChunkyCardContent>
       </ChunkyCard>
+
+      {/* Score trend */}
+      {scoreTrend && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Score Trend
+            </h3>
+            <div className="flex items-center justify-between">
+              <div className="text-center flex-1">
+                <div className="text-2xl font-bold text-on-surface/50">{scoreTrend.previousAvg.toLocaleString()}</div>
+                <div className="text-on-surface/40 text-xs">Previous 7 avg</div>
+              </div>
+              <div className="text-center px-4">
+                <div className={`text-2xl font-bold ${scoreTrend.diff > 0 ? 'text-ds-primary' : scoreTrend.diff < 0 ? 'text-ds-error' : 'text-on-surface/50'}`}>
+                  {scoreTrend.diff > 0 ? '+' : ''}{scoreTrend.pctChange}%
+                </div>
+                <div className="text-on-surface/40 text-xs">
+                  {scoreTrend.diff > 0 ? 'Improving' : scoreTrend.diff < 0 ? 'Declining' : 'Steady'}
+                </div>
+              </div>
+              <div className="text-center flex-1">
+                <div className="text-2xl font-bold text-ds-tertiary">{scoreTrend.recentAvg.toLocaleString()}</div>
+                <div className="text-on-surface/40 text-xs">Last 7 avg</div>
+              </div>
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {/* Day-of-week activity */}
+      {history.length >= 7 && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Play Activity by Day
+            </h3>
+            <div className="flex items-end justify-between gap-1 h-20">
+              {dayOfWeekStats.map((day) => (
+                <div key={day.label} className="flex flex-col items-center flex-1 gap-1">
+                  <div className="w-full flex justify-center">
+                    <div
+                      className="w-5 rounded-t bg-ds-tertiary/60 transition-all"
+                      style={{ height: `${Math.max(day.pct, 4)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-on-surface/40">{day.label}</span>
+                  <span className="text-[10px] text-on-surface/60 font-medium">{day.count}</span>
+                </div>
+              ))}
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {/* Category performance */}
+      {categoryStats.length > 0 && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Category Performance
+            </h3>
+            <div className="flex flex-col gap-2">
+              {categoryStats.map((cat) => (
+                <div key={cat.name} className="flex items-center justify-between py-1.5 px-2 rounded bg-surface-dim/40">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{cat.icon}</span>
+                    <span className="text-on-surface text-sm">{cat.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-1.5 bg-outline-variant rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${cat.accuracy >= 80 ? 'bg-ds-primary' : cat.accuracy >= 60 ? 'bg-yellow-400' : 'bg-ds-error'}`}
+                        style={{ width: `${cat.accuracy}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-bold min-w-[3rem] text-right ${getAccuracyColor(cat.accuracy)}`}>
+                      {cat.accuracy}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
 
       {/* Recent history */}
       <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
