@@ -23,6 +23,7 @@ import { ResetNoticeButton } from './ResetNoticeButton'
 import { ResetStatsDialog } from './ResetStatsDialog'
 import { SignInBanner } from './SignInCTA'
 import { TriviaFooter } from './TriviaFooter'
+import { WeeklyWinnerBanner } from './WeeklyWinnerBanner'
 
 export function TriviaLanding() {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -111,6 +112,8 @@ export function TriviaLanding() {
           </Link>
         )}
       </div>
+
+      <WeeklyWinnerBanner />
 
       <div className="text-center">
         <h1 className="font-headline text-headline-lg text-ds-tertiary drop-shadow-[0_4px_0_var(--surface-container-lowest)] mb-2 inline-flex items-center gap-2">
