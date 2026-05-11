@@ -1,8 +1,17 @@
 import { getFirestoreDb } from '@/lib/firebase/server'
 import { getWeekKey, getTodayPST } from '@/lib/dates'
 
-interface CrownDoc {
+export interface PodiumEntry {
+  uid: string
+  displayName: string
+  score: number
+  rank: 1 | 2 | 3
+}
+
+export interface CrownDoc {
   weekKey: string
+  podium: PodiumEntry[]
+  // Legacy fields preserved for backward compat
   winnerUid: string
   winnerScore: number
 }
@@ -30,8 +39,8 @@ export async function ensureCrownsAwarded(): Promise<CrownDoc[]> {
   // 3. Get all triviaWeekly docs to find un-awarded weeks
   const weeklySnap = await db.collectionGroup('triviaWeekly').get()
 
-  // 4. Group by weekKey, track the top scorer for each un-awarded past week
-  const weekWinners = new Map<string, { uid: string; totalScore: number }>()
+  // 4. Group by weekKey, track the top 3 scorers for each un-awarded past week
+  const weekPlayers = new Map<string, Array<{ uid: string; totalScore: number; displayName: string }>>()
   for (const doc of weeklySnap.docs) {
     const data = doc.data()
     const weekKey = data.weekKey as string
@@ -40,20 +49,32 @@ export async function ensureCrownsAwarded(): Promise<CrownDoc[]> {
 
     const uid = data.uid as string
     const totalScore = data.totalScore as number
-    const current = weekWinners.get(weekKey)
-    if (!current || totalScore > current.totalScore) {
-      weekWinners.set(weekKey, { uid, totalScore })
-    }
+    const displayName = (data.nicknameSnapshot as string) || ''
+    const players = weekPlayers.get(weekKey) ?? []
+    players.push({ uid, totalScore, displayName })
+    weekPlayers.set(weekKey, players)
   }
 
   // 5. Write new crown docs (batch write for efficiency)
-  if (weekWinners.size > 0) {
+  if (weekPlayers.size > 0) {
     const batch = db.batch()
-    for (const [weekKey, winner] of weekWinners) {
+    for (const [weekKey, players] of weekPlayers) {
+      const top3 = players
+        .sort((a, b) => b.totalScore - a.totalScore)
+        .slice(0, 3)
+
+      const podium: PodiumEntry[] = top3.map((p, i) => ({
+        uid: p.uid,
+        displayName: p.displayName,
+        score: p.totalScore,
+        rank: (i + 1) as 1 | 2 | 3,
+      }))
+
       const crownDoc: CrownDoc = {
         weekKey,
-        winnerUid: winner.uid,
-        winnerScore: winner.totalScore,
+        podium,
+        winnerUid: top3[0].uid,
+        winnerScore: top3[0].totalScore,
       }
       batch.set(db.collection('weeklyCrowns').doc(weekKey), crownDoc)
       existing.set(weekKey, crownDoc)
