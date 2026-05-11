@@ -94,11 +94,14 @@ interface TriviaResultsProps {
   onViewStats?: () => void
   onViewLeaderboard?: () => void
   onStartInfinite?: () => void
+  onNextDay?: () => void
+  onPreviousDay?: () => void
+  isRetroactive?: boolean
   // Optional: pass questions data for difficulty display
   questionDifficulties?: Array<{ difficulty: string; source: string }>
 }
 
-export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, onStartInfinite }: TriviaResultsProps) {
+export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, onStartInfinite, onNextDay, onPreviousDay, isRetroactive }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
   const { user } = useAuth()
   const { stats, displayName } = useTriviaUser()
@@ -149,6 +152,9 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
           {getScoreRating(correctPercent)}
         </h2>
         <p className="text-on-surface/50 text-sm">{formatDisplayDate(result.date)}</p>
+        {isRetroactive && (
+          <Pill tone="info" icon="history" className="mt-1">Retroactive play</Pill>
+        )}
       </div>
 
       {/* Score card */}
@@ -252,6 +258,21 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
       >
         {copied ? 'Copied!' : 'Share Score'}
       </ChunkyButton>
+
+      {isRetroactive && (onNextDay || onPreviousDay) && (
+        <div className="flex gap-2 w-full">
+          {onPreviousDay && (
+            <ChunkyButton variant="secondary" className="flex-1" onClick={onPreviousDay}>
+              ← Previous Day
+            </ChunkyButton>
+          )}
+          {onNextDay && (
+            <ChunkyButton variant="secondary" className="flex-1" onClick={onNextDay}>
+              Next Day →
+            </ChunkyButton>
+          )}
+        </div>
+      )}
 
       {onStartInfinite && (
         <ChunkyCard variant="surface-variant" className="w-full bg-surface-container/80 border-outline-variant">
