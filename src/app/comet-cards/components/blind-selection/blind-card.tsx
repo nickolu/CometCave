@@ -34,7 +34,7 @@ export function BlindCard({
   const eyebrow = selectEventName === 'BOSS_BLIND_SELECTED' ? 'Boss Blind' : 'Blind'
 
   return (
-    <Panel className="flex w-full max-w-sm flex-col" title={eyebrow}>
+    <Panel className="flex w-full flex-col" title={eyebrow}>
       <div
         className="flex flex-col"
         style={{
