@@ -35,6 +35,8 @@ interface WeeklyDoc {
 
 interface ProfileDoc {
   totalScore: number
+  totalCorrect: number
+  totalQuestions: number
   gamesPlayed: number
 }
 
@@ -168,4 +170,83 @@ export async function getAllTimeTop(limit = 20): Promise<TriviaLeaderboardEntry[
       score: count,
       crowns: count,
     }))
+}
+
+export async function getAllTimePoints(limit = 20): Promise<TriviaLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaProfile')
+    .orderBy('totalScore', 'desc')
+    .limit(limit * 2)
+    .get()
+
+  const docs: Array<{ uid: string; data: ProfileDoc }> = []
+  for (const d of snap.docs) {
+    // Path: users/{uid}/triviaProfile/current
+    const uid = d.ref.parent.parent?.id
+    if (!uid) continue
+    docs.push({ uid, data: d.data() as ProfileDoc })
+  }
+
+  const nicknames = await hydrateNicknames(docs.map((d) => d.uid))
+
+  const result: TriviaLeaderboardEntry[] = []
+  for (const { uid, data } of docs) {
+    const displayName = resolveDisplayName(uid, nicknames, null)
+    if (!displayName) continue
+    result.push({
+      uid,
+      displayName,
+      score: data.totalScore,
+      totalScore: data.totalScore,
+      gamesPlayed: data.gamesPlayed,
+      totalCorrect: data.totalCorrect,
+      totalQuestions: data.totalQuestions,
+    })
+    if (result.length >= limit) break
+  }
+  return result
+}
+
+const ACCURACY_MIN_GAMES = 10
+
+export async function getAllTimeAccuracy(limit = 20): Promise<TriviaLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  // Fetch all profiles with enough games, sorted by gamesPlayed desc to get active players
+  const snap = await db
+    .collectionGroup('triviaProfile')
+    .where('gamesPlayed', '>=', ACCURACY_MIN_GAMES)
+    .orderBy('gamesPlayed', 'desc')
+    .limit(limit * 4)
+    .get()
+
+  const docs: Array<{ uid: string; data: ProfileDoc }> = []
+  for (const d of snap.docs) {
+    const uid = d.ref.parent.parent?.id
+    if (!uid) continue
+    docs.push({ uid, data: d.data() as ProfileDoc })
+  }
+
+  const nicknames = await hydrateNicknames(docs.map((d) => d.uid))
+
+  // Calculate accuracy and sort
+  const withAccuracy = docs
+    .filter(({ uid }) => !!resolveDisplayName(uid, nicknames, null))
+    .map(({ uid, data }) => ({
+      uid,
+      data,
+      accuracy: data.totalQuestions > 0 ? data.totalCorrect / data.totalQuestions : 0,
+    }))
+    .sort((a, b) => b.accuracy - a.accuracy)
+    .slice(0, limit)
+
+  return withAccuracy.map(({ uid, data, accuracy }) => ({
+    uid,
+    displayName: resolveDisplayName(uid, nicknames, null) as string,
+    score: Math.round(accuracy * 1000) / 10,
+    totalScore: data.totalScore,
+    gamesPlayed: data.gamesPlayed,
+    totalCorrect: data.totalCorrect,
+    totalQuestions: data.totalQuestions,
+  }))
 }

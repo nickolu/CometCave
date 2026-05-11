@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { getTodayPST, getWeekKey } from '@/lib/dates'
-import { getAllTimeTop, getDailyTop, getWeeklyTop } from '@/lib/trivia/queries'
+import { getAllTimeAccuracy, getAllTimePoints, getAllTimeTop, getDailyTop, getWeeklyTop } from '@/lib/trivia/queries'
 
 export async function GET(request: NextRequest) {
   const period = request.nextUrl.searchParams.get('period') || 'daily'
@@ -24,8 +24,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ period: 'alltime', entries })
     }
 
+    if (period === 'alltime-points') {
+      const entries = await getAllTimePoints(20)
+      return NextResponse.json({ period: 'alltime-points', entries })
+    }
+
+    if (period === 'alltime-accuracy') {
+      const entries = await getAllTimeAccuracy(20)
+      return NextResponse.json({ period: 'alltime-accuracy', entries })
+    }
+
     return NextResponse.json(
-      { error: 'Invalid period. Use daily, weekly, or alltime.' },
+      { error: 'Invalid period.' },
       { status: 400 }
     )
   } catch (error: unknown) {
