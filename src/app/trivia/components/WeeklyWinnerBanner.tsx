@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
+import Link from 'next/link'
+
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -122,6 +124,13 @@ export function WeeklyWinnerBanner() {
             Congratulations on making the podium!
           </p>
         )}
+
+        <Link
+          href="/trivia/winners"
+          className="block text-center text-xs text-on-surface/40 hover:text-ds-tertiary mt-3 underline-offset-4 hover:underline transition-colors"
+        >
+          See all past winners
+        </Link>
       </ChunkyCardContent>
     </ChunkyCard>
   )

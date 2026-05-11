@@ -278,6 +278,13 @@ export function TriviaLanding() {
         </ChunkyCard>
       </div>
 
+      <Link
+        href="/trivia/winners"
+        className="text-on-surface/50 hover:text-ds-tertiary text-sm underline-offset-4 hover:underline transition-colors"
+      >
+        View past weekly winners
+      </Link>
+
       <TriviaFooter current="home" />
 
       {nicknameDialogOpen && (
