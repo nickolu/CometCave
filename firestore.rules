@@ -23,6 +23,9 @@ service cloud.firestore {
       match /seenQuestions/{qid}     { allow read, write: if false; }
       match /triviaInfinite/{runId}  { allow read, write: if false; }
       match /triviaStats/{docId}     { allow read, write: if false; }
+
+      // Comet Cards sandbox — owner-only, accessed via /api/v1/comet-cards/sandbox/*
+      match /cometCardsSandbox/{docId} { allow read, write: if false; }
     }
 
     // Nicknames uniqueness index — server only
