@@ -14,7 +14,9 @@ import { ResetNoticeButton } from './ResetNoticeButton'
 import { SignInBanner } from './SignInCTA'
 import { TriviaFooter } from './TriviaFooter'
 
-type Period = 'daily' | 'weekly' | 'alltime'
+type Period = 'daily' | 'weekly' | 'alltime' | 'alltime-points' | 'alltime-accuracy'
+type TopTab = 'daily' | 'weekly' | 'alltime'
+type AlltimeSubTab = 'alltime' | 'alltime-points' | 'alltime-accuracy'
 
 interface LeaderboardEntry {
   uid: string
@@ -33,6 +35,10 @@ interface LeaderboardResponse {
   period: Period
   entries: LeaderboardEntry[]
   notice?: string
+}
+
+function isAlltimePeriod(p: Period): p is AlltimeSubTab {
+  return p === 'alltime' || p === 'alltime-points' || p === 'alltime-accuracy'
 }
 
 export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
@@ -155,6 +161,35 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
       })
     }
 
+    if (period === 'alltime-points') {
+      return data.entries.map((entry, i) => (
+        <LeaderboardRow
+          key={entry.uid || `${entry.displayName}-${i}`}
+          rank={i + 1}
+          name={entry.displayName || 'Unknown'}
+          primary={(entry.totalScore ?? entry.score ?? 0).toLocaleString()}
+          secondary={`${entry.gamesPlayed ?? 0} games`}
+          isCurrentUser={!!currentUid && entry.uid === currentUid}
+        />
+      ))
+    }
+
+    if (period === 'alltime-accuracy') {
+      return data.entries.map((entry, i) => {
+        const pct = entry.score ?? 0
+        return (
+          <LeaderboardRow
+            key={entry.uid || `${entry.displayName}-${i}`}
+            rank={i + 1}
+            name={entry.displayName || 'Unknown'}
+            primary={`${pct}%`}
+            secondary={`${entry.gamesPlayed ?? 0} games`}
+            isCurrentUser={!!currentUid && entry.uid === currentUid}
+          />
+        )
+      })
+    }
+
     return null
   }
 
@@ -178,10 +213,10 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
       {/* Tabs */}
       <div className="grid grid-cols-3 gap-2">
-        {(['daily', 'weekly', 'alltime'] as Period[]).map((p) => (
+        {(['daily', 'weekly', 'alltime'] as TopTab[]).map((p) => (
           <ChunkyButton
             key={p}
-            variant={period === p ? 'primary' : 'secondary'}
+            variant={(p === 'alltime' ? isAlltimePeriod(period) : period === p) ? 'primary' : 'secondary'}
             onClick={() => setPeriod(p)}
             className="capitalize"
           >
@@ -189,6 +224,30 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
           </ChunkyButton>
         ))}
       </div>
+
+      {/* All-time sub-tabs */}
+      {isAlltimePeriod(period) && (
+        <div className="grid grid-cols-3 gap-1.5">
+          {([
+            { key: 'alltime' as const, label: 'Crowns' },
+            { key: 'alltime-points' as const, label: 'Points' },
+            { key: 'alltime-accuracy' as const, label: 'Accuracy' },
+          ]).map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setPeriod(key)}
+              className={`text-sm py-1.5 rounded transition-colors ${
+                period === key
+                  ? 'bg-ds-tertiary/20 text-ds-tertiary font-semibold'
+                  : 'text-on-surface/50 hover:text-on-surface/70'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <ChunkyCard variant="surface-container-high" className="bg-surface-container/80 border-outline-variant">
