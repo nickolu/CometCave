@@ -1,0 +1,410 @@
+{
+  "timestamp": "2026-05-07T16:29:13.250Z",
+  "appVersion": "235241b56de3b390d7a56b6404590e785d91c204",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 254,
+    "generationFailed": 1,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.169290999999993,
+    "perTrialUsd": 0.02027172941176468,
+    "byStage": {
+      "facts": 0.36046699999999987,
+      "factPicker": 0.12055399999999995,
+      "construct": 2.575335000000001,
+      "review": 0.521273,
+      "judge": 1.12227,
+      "repair": 0.4693919999999998
+    },
+    "byModel": {
+      "sonar": 0.36046699999999987,
+      "claude-haiku-4-5-20251001": 0.6418270000000013,
+      "claude-sonnet-4-6": 3.044727000000001,
+      "gpt-4o": 1.12227
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 254,
+    "score3": 632,
+    "score2": 32,
+    "score1": 98,
+    "shipPct": 62.99212598425197,
+    "factualMean": 2.7755905511811023,
+    "difficultyMean": 2.8149606299212597,
+    "concisionMean": 2.5118110236220472
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 85,
+      "score3": 201,
+      "score2": 17,
+      "score1": 37,
+      "shipPct": 54.11764705882353,
+      "factualMean": 2.9176470588235293,
+      "difficultyMean": 2.5294117647058822,
+      "concisionMean": 2.4823529411764707
+    },
+    "medium": {
+      "total": 85,
+      "scored": 84,
+      "score3": 216,
+      "score2": 8,
+      "score1": 28,
+      "shipPct": 69.04761904761905,
+      "factualMean": 2.7261904761904763,
+      "difficultyMean": 2.9166666666666665,
+      "concisionMean": 2.5952380952380953
+    },
+    "hard": {
+      "total": 85,
+      "scored": 85,
+      "score3": 215,
+      "score2": 7,
+      "score1": 33,
+      "shipPct": 65.88235294117646,
+      "factualMean": 2.6823529411764704,
+      "difficultyMean": 3,
+      "concisionMean": 2.458823529411765
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 0,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.8666666666666667
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 3,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.4
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 4,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.2666666666666666
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 6,
+      "score1": 4,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.4
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 0,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.7333333333333334
+    },
+    "Music": {
+      "total": 15,
+      "scored": 14,
+      "score3": 36,
+      "score2": 0,
+      "score1": 6,
+      "shipPct": 57.142857142857146,
+      "factualMean": 2.857142857142857,
+      "difficultyMean": 2.5714285714285716,
+      "concisionMean": 2.7142857142857144
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 31,
+      "score2": 2,
+      "score1": 12,
+      "shipPct": 40,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 1.9333333333333333
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.533333333333333
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.8
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 1,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8,
+      "difficultyMean": 3,
+      "concisionMean": 2.7333333333333334
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.1333333333333333
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 3,
+      "score1": 8,
+      "shipPct": 46.666666666666664,
+      "factualMean": 2.8,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.2666666666666666
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 1,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 3,
+      "difficultyMean": 3,
+      "concisionMean": 2.6666666666666665
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 3,
+      "score1": 5,
+      "shipPct": 60,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.4,
+      "concisionMean": 2.8666666666666667
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.6,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.6666666666666665
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 3,
+      "concisionMean": 2.1333333333333333
+    }
+  },
+  "worst": [
+    {
+      "category": "Television",
+      "difficulty": "medium",
+      "question": "In an infamous, controversy-pulling episode of *Sanford and Son*, Fred uttered a racial slur to a crowd of Black people and said there were enough of them to make what kind of film — a reference so offensive it temporarily took the show off the air?",
+      "correctAnswer": "Tarzan movie",
+      "factualScore": 1,
+      "factualRationale": "There is no evidence that an episode of *Sanford and Son* was pulled from the air due to Fred Sanford making a reference to a 'Tarzan movie' in a controversial scene.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because it requires specific knowledge of a particular episode of *Sanford and Son*, which is beyond common knowledge but accessible to casual followers of television history.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the racial slur, the crowd of Black people, and the temporary removal from air, all of which point directly to the specific controversial episode and trivialize the answer.",
+      "sourceUrl": "https://www.youtube.com/watch?v=I_NixGtBhYc"
+    },
+    {
+      "category": "Television",
+      "difficulty": "medium",
+      "question": "In *The Simpsons*, what was the original name of Moe's Tavern — chosen by Moe to both sound fancy and help him evade loan sharks and the IRS?",
+      "correctAnswer": "Meaux's Tavern",
+      "factualScore": 1,
+      "factualRationale": "There is no evidence in 'The Simpsons' that Moe's Tavern was originally named 'Meaux's Tavern'; this appears to be incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because it requires specific knowledge of a detail from 'The Simpsons' that casual fans might know, but is not common knowledge.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues by mentioning both the fancy-sounding name and the reason for the name change, making it too easy to guess.",
+      "sourceUrl": "https://simpsons.fandom.com/wiki/Moe's_Tavern"
+    },
+    {
+      "category": "Television",
+      "difficulty": "hard",
+      "question": "When Jean Smart won the Emmy for Outstanding Guest Actress for *Hacks*, she became the second-oldest actress to win in that category — but which actress, known for her roles in *Harold and Maude* and *Rosemary's Baby*, held the record as the oldest?",
+      "correctAnswer": "Ruth Gordon",
+      "factualScore": 1,
+      "factualRationale": "Jean Smart won the Emmy for Outstanding Lead Actress in a Comedy Series for *Hacks*, not Outstanding Guest Actress, making the premise incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Ruth Gordon is not a household name for most people, making this a genuine deep cut suitable for a hard difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues by mentioning both 'Harold and Maude' and 'Rosemary's Baby,' either of which alone would likely identify Ruth Gordon.",
+      "sourceUrl": "https://www.aarp.org/entertainment/television/why-you-should-watch-hacks/"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "hard",
+      "question": "Who is the Studio Head of Bend Studio, hired shortly after the company's founding in 1993 to help ship Live Action Football on PC?",
+      "correctAnswer": "Christopher Reese",
+      "factualScore": 1,
+      "factualRationale": "Christopher Reese was not hired shortly after the founding of Bend Studio in 1993; he joined later, making the stated correct answer factually incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about a lesser-known figure in the video game industry, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the specific role, company, and project, which together make the answer too easy to identify.",
+      "sourceUrl": "https://www.bendstudio.com/blog/history-of-bend-studio/"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "question": "Which London-based animation and visual effects school published a 2024 report stating that the United States employed over 220,000 animation professionals that year?",
+      "correctAnswer": "Escape Studios London",
+      "factualScore": 1,
+      "factualRationale": "There is no verifiable evidence that Escape Studios published a 2024 report on U.S. animation employment, making the stated correct answer factually unsupported.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a niche institution within the animation industry, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'London-based,' 'animation and visual effects school,' and 'published a 2024 report,' all of which independently lead to the answer.",
+      "sourceUrl": "https://garagefarm.net/blog/animation-production-pipeline-your-complete-guide-to-creating-professional-animations"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "question": "In a widely cited 2019 case study on the harsh financial realities of Japan's animation industry, which entry-level animator earned only 668,000 yen that year despite performing mostly key animation work through a combination of employed and freelance positions?",
+      "correctAnswer": "Ryoko",
+      "factualScore": 1,
+      "factualRationale": "The source does not mention a specific animator named Ryoko earning 668,000 yen in 2019, making the stated correct answer factually unsupported.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a niche case study in Japan's animation industry, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the specific year, the exact earnings, and the nature of the work, which collectively trivialize the answer.",
+      "sourceUrl": "https://www.cartoonbrew.com/anime/exploitation-in-the-anime-industry-an-entry-level-animator-in-japan-explains-why-she-earned-175-week-202283.html"
+    },
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "question": "Which classic horror film franchise, centered on Camp Crystal Lake and its masked killer Jason Voorhees, spawned 12 sequels?",
+      "correctAnswer": "Friday the 13th",
+      "factualScore": 2,
+      "factualRationale": "The 'Friday the 13th' franchise has 12 films in total, including the original, not 12 sequels.",
+      "difficultyScore": 3,
+      "difficultyRationale": "'Friday the 13th' is a well-known horror film franchise and fits the easy difficulty as it is a household name.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'Camp Crystal Lake,' 'masked killer Jason Voorhees,' and '12 sequels,' any of which alone could lead to the answer.",
+      "sourceUrl": "https://goldenglobes.com/articles/hollywood-sequels-havent-we-met/"
+    },
+    {
+      "category": "Science & Nature",
+      "difficulty": "easy",
+      "question": "What scientific principle, often described as the \"law of parsimony,\" holds that the simplest explanation is usually the correct one and helps distinguish science from superstition?",
+      "correctAnswer": "Occam's razor",
+      "factualScore": 3,
+      "factualRationale": "Occam's razor is indeed the scientific principle often described as the 'law of parsimony,' making the stated correct answer accurate.",
+      "difficultyScore": 2,
+      "difficultyRationale": "Occam's razor is a well-known concept but may not be familiar to those without some interest in science, making it borderline between easy and medium.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues ('law of parsimony' and 'simplest explanation is usually correct') that independently lead to the answer, trivializing it.",
+      "sourceUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10952609/"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "question": "Built in 1738, which iconic temple in early Taipei represents the cultural fusion of indigenous peoples, Chinese settlers, and later Japanese influence?",
+      "correctAnswer": "Longshan Temple",
+      "factualScore": 2,
+      "factualRationale": "Longshan Temple is indeed a significant cultural site in Taipei, but the question's framing about 'indigenous peoples' and 'Japanese influence' is misleading as these aspects are not prominently associated with its history.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Longshan Temple is a well-known cultural site in Taipei, making it appropriate for a medium difficulty level as it requires some knowledge of Taiwanese geography and history.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues (year built, location, cultural influences) that together make the answer too obvious.",
+      "sourceUrl": "https://www.kupi.com/en-ae/explore/taiwan-republic-of-china/taipei/history"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "question": "Which small European microstate, entirely landlocked within Italy, has exactly 292 km of paved roads within its borders?",
+      "correctAnswer": "San Marino",
+      "factualScore": 2,
+      "factualRationale": "The stated correct answer is broadly right, but the exact figure of 292 km of paved roads is not widely verified and may be slightly off.",
+      "difficultyScore": 3,
+      "difficultyRationale": "San Marino being a microstate entirely landlocked within Italy with specific road length is a deep cut, fitting the hard difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as either being a microstate landlocked within Italy or having 292 km of paved roads would independently identify San Marino.",
+      "sourceUrl": "https://thefactfile.org/san-marino-facts/"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Music",
+      "difficulty": "medium",
+      "error": "Generation failed quality gate after 3 attempts: The question references a 2026 release date, which is in the future and cannot be verified as factual at the time of question creation, making it impossible to confirm whether the expected answer is correct."
+    }
+  ]
+}

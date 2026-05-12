@@ -35,6 +35,12 @@ interface Args {
   smoke: boolean
   trialsOverride: number | null
   concurrency: number
+  // When true, ship-eligible generations are persisted to the live
+  // aiQuestions Firestore collection (same path the seeder uses, with
+  // createdBy='system-eval'). Default off so experiment runs stay
+  // clean — promoting an arm should not depend on whether the previous
+  // arm seeded the duplicate-answer backstop with its own outputs.
+  save: boolean
 }
 
 function parseArgs(): Args {
@@ -42,6 +48,7 @@ function parseArgs(): Args {
   let smoke = false
   let trialsOverride: number | null = null
   let concurrency = 4
+  let save = false
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
@@ -50,15 +57,16 @@ function parseArgs(): Args {
       trialsOverride = parseInt(args[++i], 10)
     } else if (a === '--concurrency' && args[i + 1]) {
       concurrency = parseInt(args[++i], 10)
-    } else if (a === '--help' || a === '-h') {
+    } else if (a === '--save') save = true
+    else if (a === '--help' || a === '-h') {
       process.stdout.write(
-        'Usage: eval-trivia [--smoke] [--trials N] [--concurrency N]\n'
+        'Usage: eval-trivia [--smoke] [--trials N] [--concurrency N] [--save]\n'
       )
       process.exit(0)
     }
   }
 
-  return { smoke, trialsOverride, concurrency }
+  return { smoke, trialsOverride, concurrency, save }
 }
 
 async function main(): Promise<void> {
@@ -68,7 +76,7 @@ async function main(): Promise<void> {
   const totalJobs = cells.length * trialsPerCell
 
   process.stdout.write(
-    `\nRunning ${args.smoke ? 'SMOKE' : 'FULL'} eval: ${cells.length} cells × ${trialsPerCell} trials = ${totalJobs} generations (concurrency=${args.concurrency})\n`
+    `\nRunning ${args.smoke ? 'SMOKE' : 'FULL'} eval: ${cells.length} cells × ${trialsPerCell} trials = ${totalJobs} generations (concurrency=${args.concurrency}${args.save ? ', SAVE ship-eligible to Firestore' : ''})\n`
   )
   process.stdout.write(`Judge model: ${JUDGE_MODEL_ID}\n\n`)
 
@@ -77,6 +85,7 @@ async function main(): Promise<void> {
     cells,
     trialsPerCell,
     concurrency: args.concurrency,
+    save: args.save,
     onProgress: (done, total, latest) => {
       const tag = formatProgressTag(latest)
       process.stdout.write(
@@ -86,6 +95,17 @@ async function main(): Promise<void> {
   })
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1)
   process.stdout.write(`\nFinished ${results.length} jobs in ${elapsedSec}s\n`)
+  if (args.save) {
+    const saved = results.filter(
+      (r) => r.outcome.kind === 'generated' && r.outcome.saved === true
+    ).length
+    const saveFails = results.filter(
+      (r) => r.outcome.kind === 'generated' && r.outcome.saveError
+    ).length
+    process.stdout.write(
+      `Saved ${saved} ship-eligible questions to Firestore${saveFails > 0 ? ` (${saveFails} save failures)` : ''}\n`
+    )
+  }
 
   const summary = summarize({
     results,
@@ -112,7 +132,13 @@ function formatProgressTag(r: TrialResult): string {
     return `${cell}  JUDGE-FAIL  ${truncate(r.outcome.error, 60)}`
   }
   const v = r.outcome.verdict
-  const ship = v.ship ? 'ship' : '----'
+  const ship = r.outcome.saved
+    ? 'SAVED'
+    : r.outcome.saveError
+      ? 'save-fail'
+      : v.ship
+        ? 'ship'
+        : '----'
   return `${cell}  f=${v.factual_score} d=${v.difficulty_score} c=${v.concision_score} ${ship}  "${truncate(r.outcome.question, 50)}"`
 }
 

@@ -1,0 +1,12 @@
+diff --git a/src/lib/trivia/factSources/perplexityFactSource.ts b/src/lib/trivia/factSources/perplexityFactSource.ts
+index 3b777b0..73d0aaf 100644
+--- a/src/lib/trivia/factSources/perplexityFactSource.ts
++++ b/src/lib/trivia/factSources/perplexityFactSource.ts
+@@ -129,6 +129,7 @@ Each fact must:
+ - Have the keyDetail appear verbatim inside the claim sentence.
+ - Match the difficulty above. At EASY, prefer common-knowledge subjects (famous people, iconic places, mainstream works); the surprise should be a small twist on something the player already recognizes, not an obscure deep cut. At HARD, deep cuts are welcome.
+ - Be DIRECTLY supported by one of the search results you retrieved. If you couldn't find a search result that supports the claim, do not include it.
++- GROUNDING: the claim must be a direct quote or close paraphrase of a SINGLE search-result snippet. Do NOT synthesize across multiple sources, do NOT infer claims from indirect evidence, do NOT generalize beyond what one search result actually says. Concrete failure mode to avoid: if results contain "X happened in 1982" in one source and "Y won an award" in another, do NOT combine them into "X won the award in 1982" unless one search result actually states that combined claim. When in doubt about whether a claim is supported by a single snippet, skip the fact.
+ - Set sourceUrl to the single most-authoritative search result URL that supports the claim.
+ 
+ Avoid duplicates: each of the ${count} facts should be about a different subject within ${subject}.`,
