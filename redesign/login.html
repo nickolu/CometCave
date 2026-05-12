@@ -1,0 +1,238 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Comet Cave - Initiate Sequence</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500&amp;family=Lexend:wght@700&amp;family=Plus+Jakarta+Sans:wght@800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-variant': '#2d3449',
+              'surface-dim': '#0b1326',
+              'secondary-container': '#14d1ff',
+              tertiary: '#fffeff',
+              'secondary-fixed': '#b7eaff',
+              'tertiary-container': '#ffdda4',
+              'on-tertiary': '#412d00',
+              'primary-fixed-dim': '#00e1ab',
+              'surface-container': '#171f33',
+              'on-error': '#690005',
+              'primary-container': '#00ffc2',
+              'on-error-container': '#ffdad6',
+              'surface-container-highest': '#2d3449',
+              'on-surface-variant': '#b9cbc1',
+              error: '#ffb4ab',
+              'tertiary-fixed': '#ffdea8',
+              secondary: '#a6e6ff',
+              'inverse-surface': '#dae2fd',
+              'on-secondary': '#003543',
+              'surface-bright': '#31394d',
+              'outline-variant': '#3a4a43',
+              'on-primary-fixed-variant': '#00513c',
+              'surface-container-lowest': '#060e20',
+              'on-tertiary-fixed': '#271900',
+              surface: '#0b1326',
+              'surface-container-low': '#131b2e',
+              'surface-tint': '#00e1ab',
+              'inverse-primary': '#006c50',
+              outline: '#83958c',
+              'secondary-fixed-dim': '#4cd6ff',
+              'on-tertiary-fixed-variant': '#5e4200',
+              'on-tertiary-container': '#835d00',
+              background: '#0b1326',
+              'inverse-on-surface': '#283044',
+              'error-container': '#93000a',
+              'on-secondary-container': '#00566b',
+              'primary-fixed': '#36ffc4',
+              'on-primary-fixed': '#002116',
+              'on-primary': '#003828',
+              primary: '#fbfffa',
+              'tertiary-fixed-dim': '#ffba20',
+              'on-background': '#dae2fd',
+              'on-primary-container': '#007255',
+              'on-surface': '#dae2fd',
+              'on-secondary-fixed-variant': '#004e60',
+              'surface-container-high': '#222a3d',
+              'on-secondary-fixed': '#001f28',
+            },
+            borderRadius: {
+              DEFAULT: '1rem',
+              lg: '2rem',
+              xl: '3rem',
+              full: '9999px',
+            },
+            spacing: {
+              unit: '8px',
+              gutter: '24px',
+              margin: '32px',
+              'stack-gap': '16px',
+              'component-padding-x': '24px',
+              'component-padding-y': '16px',
+            },
+            fontFamily: {
+              'body-md': ['Be Vietnam Pro'],
+              'headline-lg': ['Plus Jakarta Sans'],
+              'body-lg': ['Be Vietnam Pro'],
+              'label-caps': ['Lexend'],
+              'headline-md': ['Plus Jakarta Sans'],
+            },
+            fontSize: {
+              'body-md': ['16px', { lineHeight: '1.6', fontWeight: '400' }],
+              'headline-lg': [
+                '40px',
+                { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' },
+              ],
+              'body-lg': ['18px', { lineHeight: '1.6', fontWeight: '500' }],
+              'label-caps': [
+                '14px',
+                { lineHeight: '1.0', letterSpacing: '0.05em', fontWeight: '700' },
+              ],
+              'headline-md': ['32px', { lineHeight: '1.2', fontWeight: '800' }],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body
+    class="bg-background min-h-screen flex items-center justify-center relative overflow-hidden font-body-md text-body-md text-on-background selection:bg-primary-container selection:text-on-primary-container"
+  >
+    <!-- Atmospheric Background -->
+    <div
+      class="absolute inset-0 z-0 scale-105 opacity-60 blur-[4px] bg-cover bg-center"
+      data-alt="Out of focus view of a deep cavern glowing with ethereal bioluminescent blue and teal light, soft mysterious atmosphere"
+      style="
+        background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDscxR06_a8sfnmwkpcoU3_ukkekE7pjWpP0k9n_uZ1rfdkZtPttzzs0wmfZUiLNnJ9LR1Hi5CvnIisCYuijH-bmMKdFnF9xXVlx59LI4fsJhnFT_91A3ci7v8IHpEz-l8HoH9Ep0yhGoIKHriTIqmTgvJntsLxpgMnZHJgEyCoRdZy3j6mXYuc4tWcEg9oeybqZ8uU9EnGC8TZe1lSpALSMKz9oD4ydV_7mqJMPzGTYPrlOBqqE_4zqYEI5lcGbmXxUwrqubKFoPo');
+      "
+    ></div>
+    <!-- Bioluminescent Ambient Orbs -->
+    <div
+      class="absolute top-0 left-1/4 w-[40vw] h-[40vw] bg-primary-container/20 rounded-full blur-[120px] pointer-events-none z-0"
+    ></div>
+    <div
+      class="absolute bottom-0 right-1/4 w-[30vw] h-[30vw] bg-secondary-container/20 rounded-full blur-[100px] pointer-events-none z-0"
+    ></div>
+    <!-- Login Canvas (Nav suppressed due to transactional nature) -->
+    <main class="relative z-10 w-full max-w-md px-gutter">
+      <!-- Terminal Container -->
+      <div
+        class="bg-surface/80 backdrop-blur-2xl border-[6px] border-surface-container-high rounded-xl p-8 sm:p-10 shadow-[0_16px_0_0_theme(colors.surface-container-lowest)] flex flex-col gap-8 relative"
+      >
+        <!-- Inset Highlight (Rim Light) -->
+        <div class="absolute inset-0 rounded-xl border-t border-white/5 pointer-events-none"></div>
+        <!-- Header -->
+        <div class="flex flex-col items-center text-center gap-2">
+          <div
+            class="w-20 h-20 rounded-full bg-surface-container-lowest border-4 border-surface-container flex items-center justify-center mb-2 shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)]"
+          >
+            <span
+              class="material-symbols-outlined text-5xl text-primary-container drop-shadow-[0_0_12px_rgba(0,255,194,0.6)]"
+              style="font-variation-settings: 'FILL' 1"
+            >
+              fingerprint
+            </span>
+          </div>
+          <h1 class="font-headline-md text-headline-md text-primary tracking-tight drop-shadow-md">
+            Trainer ID
+          </h1>
+          <p class="font-body-md text-body-md text-secondary-container opacity-80">
+            Secure Connection Established
+          </p>
+        </div>
+        <!-- Input Form -->
+        <form class="flex flex-col gap-6 w-full">
+          <!-- Pilot ID Field -->
+          <div class="flex flex-col gap-2">
+            <label
+              class="font-label-caps text-label-caps text-on-surface-variant ml-4 tracking-wider"
+              for="pilot-id"
+              >Pilot ID</label
+            >
+            <div class="relative group">
+              <span
+                class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary-container transition-colors"
+                style="font-variation-settings: 'FILL' 1"
+              >
+                badge
+              </span>
+              <input
+                class="w-full bg-surface-container-lowest border-4 border-surface-container rounded-full py-4 pl-14 pr-6 font-body-lg text-body-lg text-primary placeholder:text-outline focus:outline-none focus:border-primary-container focus:bg-surface-container-lowest transition-all shadow-[inset_0_2px_8px_rgba(0,0,0,0.4)]"
+                id="pilot-id"
+                placeholder="Enter ID string..."
+                type="text"
+              />
+            </div>
+          </div>
+          <!-- Passcode Field -->
+          <div class="flex flex-col gap-2">
+            <label
+              class="font-label-caps text-label-caps text-on-surface-variant ml-4 tracking-wider"
+              for="passcode"
+              >Passcode</label
+            >
+            <div class="relative group">
+              <span
+                class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-secondary-container transition-colors"
+                style="font-variation-settings: 'FILL' 1"
+              >
+                lock
+              </span>
+              <input
+                class="w-full bg-surface-container-lowest border-4 border-surface-container rounded-full py-4 pl-14 pr-6 font-body-lg text-body-lg text-primary placeholder:text-outline focus:outline-none focus:border-secondary-container focus:bg-surface-container-lowest transition-all shadow-[inset_0_2px_8px_rgba(0,0,0,0.4)]"
+                id="passcode"
+                placeholder="••••••••"
+                type="password"
+              />
+            </div>
+          </div>
+          <!-- Action Button -->
+          <button
+            class="mt-4 w-full bg-primary-container text-on-primary-container font-label-caps text-label-caps text-lg py-5 px-6 rounded-full border-b-[6px] border-[#00c797] hover:brightness-110 active:border-b-0 active:translate-y-[6px] transition-all shadow-[0_0_24px_rgba(0,255,194,0.3)] flex items-center justify-center gap-3 group"
+            type="button"
+          >
+            INITIATE SEQUENCE
+            <span
+              class="material-symbols-outlined group-hover:translate-x-1 transition-transform"
+              style="font-variation-settings: 'FILL' 1"
+            >
+              arrow_forward_ios
+            </span>
+          </button>
+        </form>
+        <!-- Footer Links -->
+        <div class="flex justify-center gap-6 mt-2">
+          <a
+            class="font-body-md text-sm text-outline hover:text-secondary-container transition-colors"
+            href="#"
+            >Request Access</a
+          >
+          <span class="text-surface-container-highest">•</span>
+          <a
+            class="font-body-md text-sm text-outline hover:text-secondary-container transition-colors"
+            href="#"
+            >Emergency Override</a
+          >
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

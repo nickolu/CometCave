@@ -1,0 +1,324 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Comet Cave - Active Trivia</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&amp;family=Lexend:wght@700&amp;family=Plus+Jakarta+Sans:wght@500;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <!-- Material Symbols -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 1,
+          'wght' 600,
+          'GRAD' 0,
+          'opsz' 24;
+      }
+      /* Custom scrollbar for webkit */
+      ::-webkit-scrollbar {
+        width: 12px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0b1326;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #2d3449;
+        border-radius: 9999px;
+        border: 3px solid #0b1326;
+      }
+    </style>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-variant': '#2d3449',
+              'surface-dim': '#0b1326',
+              'secondary-container': '#14d1ff',
+              tertiary: '#fffeff',
+              'secondary-fixed': '#b7eaff',
+              'tertiary-container': '#ffdda4',
+              'on-tertiary': '#412d00',
+              'primary-fixed-dim': '#00e1ab',
+              'surface-container': '#171f33',
+              'on-error': '#690005',
+              'primary-container': '#00ffc2',
+              'on-error-container': '#ffdad6',
+              'surface-container-highest': '#2d3449',
+              'on-surface-variant': '#b9cbc1',
+              error: '#ffb4ab',
+              'tertiary-fixed': '#ffdea8',
+              secondary: '#a6e6ff',
+              'inverse-surface': '#dae2fd',
+              'on-secondary': '#003543',
+              'surface-bright': '#31394d',
+              'outline-variant': '#3a4a43',
+              'on-primary-fixed-variant': '#00513c',
+              'surface-container-lowest': '#060e20',
+              'on-tertiary-fixed': '#271900',
+              surface: '#0b1326',
+              'surface-container-low': '#131b2e',
+              'surface-tint': '#00e1ab',
+              'inverse-primary': '#006c50',
+              outline: '#83958c',
+              'secondary-fixed-dim': '#4cd6ff',
+              'on-tertiary-fixed-variant': '#5e4200',
+              'on-tertiary-container': '#835d00',
+              background: '#0b1326',
+              'inverse-on-surface': '#283044',
+              'error-container': '#93000a',
+              'on-secondary-container': '#00566b',
+              'primary-fixed': '#36ffc4',
+              'on-primary-fixed': '#002116',
+              'on-primary': '#003828',
+              primary: '#fbfffa',
+              'tertiary-fixed-dim': '#ffba20',
+              'on-background': '#dae2fd',
+              'on-primary-container': '#007255',
+              'on-surface': '#dae2fd',
+              'on-secondary-fixed-variant': '#004e60',
+              'surface-container-high': '#222a3d',
+              'on-secondary-fixed': '#001f28',
+            },
+            borderRadius: {
+              DEFAULT: '1rem',
+              lg: '2rem',
+              xl: '3rem',
+              full: '9999px',
+            },
+            spacing: {
+              unit: '8px',
+              gutter: '24px',
+              margin: '32px',
+              'stack-gap': '16px',
+              'component-padding-x': '24px',
+              'component-padding-y': '16px',
+            },
+            fontFamily: {
+              'body-md': ['Be Vietnam Pro'],
+              'headline-lg': ['Plus Jakarta Sans'],
+              'body-lg': ['Be Vietnam Pro'],
+              'label-caps': ['Lexend'],
+              'headline-md': ['Plus Jakarta Sans'],
+            },
+            fontSize: {
+              'body-md': ['16px', { lineHeight: '1.6', fontWeight: '400' }],
+              'headline-lg': [
+                '40px',
+                { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' },
+              ],
+              'body-lg': ['18px', { lineHeight: '1.6', fontWeight: '500' }],
+              'label-caps': [
+                '14px',
+                { lineHeight: '1.0', letterSpacing: '0.05em', fontWeight: '700' },
+              ],
+              'headline-md': ['32px', { lineHeight: '1.2', fontWeight: '800' }],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body
+    class="bg-background text-on-background min-h-screen flex flex-col font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container"
+  >
+    <!-- Ambient Background Glows -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div
+        class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary-container opacity-5 rounded-full blur-[120px]"
+      ></div>
+      <div
+        class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-secondary-container opacity-5 rounded-full blur-[150px]"
+      ></div>
+    </div>
+    <!-- Top Game HUD (Transactional Header - No Nav Shells) -->
+    <header class="w-full flex items-center justify-between px-gutter py-unit z-10">
+      <!-- Quit Button -->
+      <button
+        class="flex items-center gap-2 bg-surface-container-high hover:bg-surface-variant text-on-surface rounded-full py-3 px-5 border-b-4 border-[#05080F] active:border-b-0 active:translate-y-1 transition-all"
+      >
+        <span class="material-symbols-outlined text-error">close</span>
+        <span class="font-label-caps text-label-caps text-error hidden sm:block pt-1">Flee</span>
+      </button>
+      <!-- Score / Multiplier Pill -->
+      <div
+        class="flex items-center bg-surface-container-high rounded-full p-1 border-2 border-surface-variant shadow-[0_4px_0_0_#05080F]"
+      >
+        <div
+          class="bg-primary-container text-on-primary-container rounded-full h-10 w-10 flex items-center justify-center font-label-caps text-label-caps shadow-inner"
+        >
+          x2
+        </div>
+        <div class="px-4 font-headline-md text-headline-md text-primary-container !text-[24px]">
+          1,420
+        </div>
+      </div>
+    </header>
+    <!-- Progress Bar (Energy Vials) -->
+    <div class="w-full max-w-4xl mx-auto px-gutter mt-unit z-10 flex flex-col items-center gap-3">
+      <span
+        class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest opacity-80"
+        >Chamber Depth 3/5</span
+      >
+      <div
+        class="w-full bg-surface-container-highest rounded-full p-2 flex gap-2 shadow-[inset_0_4px_8px_rgba(0,0,0,0.5)] border-t border-white/5"
+      >
+        <!-- Filled Segment -->
+        <div
+          class="flex-1 h-5 rounded-full bg-gradient-to-r from-primary-container to-secondary-container shadow-[0_0_15px_rgba(0,255,194,0.4)] border-t-2 border-white/40 relative overflow-hidden"
+        >
+          <div class="absolute inset-0 bg-white/20 w-1/2 skew-x-[-20deg] -translate-x-full"></div>
+        </div>
+        <!-- Filled Segment -->
+        <div
+          class="flex-1 h-5 rounded-full bg-gradient-to-r from-secondary-container to-[#00bfff] shadow-[0_0_15px_rgba(20,209,255,0.4)] border-t-2 border-white/40"
+        ></div>
+        <!-- Current Active Segment (Pulsing visually via glow) -->
+        <div
+          class="flex-1 h-5 rounded-full bg-gradient-to-r from-surface-variant to-primary-container/50 border-2 border-primary-container shadow-[0_0_20px_rgba(0,255,194,0.6),inset_0_0_10px_rgba(0,255,194,0.5)]"
+        ></div>
+        <!-- Empty Segment -->
+        <div
+          class="flex-1 h-5 rounded-full bg-surface-container shadow-[inset_0_4px_6px_rgba(0,0,0,0.6)] border-b border-white/5"
+        ></div>
+        <!-- Empty Segment -->
+        <div
+          class="flex-1 h-5 rounded-full bg-surface-container shadow-[inset_0_4px_6px_rgba(0,0,0,0.6)] border-b border-white/5"
+        ></div>
+      </div>
+    </div>
+    <!-- Main Game Canvas -->
+    <main
+      class="flex-1 flex flex-col items-center justify-center px-gutter py-8 w-full max-w-5xl mx-auto z-10"
+    >
+      <!-- Assistant & Question Area Composite -->
+      <div class="relative w-full flex flex-col items-center mt-12">
+        <!-- Cute Creature Assistant (Floating slightly above the card) -->
+        <div class="absolute -top-24 z-20 flex flex-col items-center">
+          <div
+            class="w-32 h-32 rounded-full border-4 border-surface-variant bg-surface overflow-hidden shadow-[0_8px_16px_#05080F,0_0_40px_rgba(0,255,194,0.3)] relative"
+          >
+            <img
+              alt="Robot assistant"
+              class="w-full h-full object-cover scale-110"
+              data-alt="cute spherical robot creature with glowing cyan eyes and mint green accents floating in deep blue cavern environment soft stylized 3d render"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9J-T5JXdgO7bKzycbSmk4lgEGFzJCSCeGCgdNl4uDjD0YXG5_QGf8D58QWCrBAC7BHq0zbimsgcqvgvBQ8_2_BQodM-YggDmibJ2RQ1Ku4Z-0w3pLabYR_Kih3xE9J02AgA3FqOZvB0FP2-MDMo194GVg7vBHoP9lnwUiK3km3DObiE3EumjU5cH2_P1BM4yPwBgIE7z3UaiPN8BgSUR1S7AlYbNpBxnZtaOVWGb16x63Ke63h9WJEO8k0OgXPthztw8CM5aUFIE"
+            />
+            <div
+              class="absolute inset-0 shadow-[inset_0_4px_8px_rgba(255,255,255,0.3)] rounded-full pointer-events-none"
+            ></div>
+          </div>
+          <!-- Chat Bubble Tail pointing to card -->
+          <div
+            class="w-6 h-6 bg-surface-variant rotate-45 -mt-3 border-r border-b border-surface/50 shadow-[4px_4px_4px_#05080F]"
+          ></div>
+        </div>
+        <!-- The Question Card (Chunky Chamber Style) -->
+        <div
+          class="w-full bg-surface-variant rounded-xl px-8 pt-16 pb-12 text-center border-t-2 border-white/10 shadow-[0_16px_0_0_#05080F,0_0_30px_rgba(0,0,0,0.5)] relative"
+        >
+          <!-- Inner rim light effect -->
+          <div
+            class="absolute inset-0 rounded-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.05)] pointer-events-none"
+          ></div>
+          <h2
+            class="font-headline-lg text-headline-lg text-tertiary max-w-3xl mx-auto leading-tight drop-shadow-md"
+          >
+            Which rare mineral is responsible for the bioluminescence found in the Deep Echo
+            Caverns?
+          </h2>
+        </div>
+      </div>
+      <!-- Multiple Choice Answers Grid -->
+      <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-stack-gap mt-12 mb-8">
+        <!-- Answer A (Neutral State) -->
+        <button
+          class="group relative w-full bg-surface-container-high rounded-lg min-h-[88px] flex items-center p-4 pr-6 border-4 border-surface-container-highest shadow-[0_8px_0_0_#05080F] hover:border-primary-container/50 hover:-translate-y-1 hover:shadow-[0_12px_0_0_#05080F,0_0_20px_rgba(0,255,194,0.15)] active:translate-y-2 active:shadow-[0_0px_0_0_#05080F] transition-all duration-200 ease-out text-left"
+        >
+          <div
+            class="w-12 h-12 shrink-0 rounded-full bg-surface-variant border-2 border-surface-container-highest flex items-center justify-center mr-4 group-hover:bg-primary-container/10 group-hover:border-primary-container/50 transition-colors"
+          >
+            <span
+              class="font-headline-md text-headline-md text-on-surface-variant !text-[20px] group-hover:text-primary-container"
+              >A</span
+            >
+          </div>
+          <span class="font-body-lg text-body-lg text-on-surface group-hover:text-tertiary"
+            >Luminite Quartz</span
+          >
+        </button>
+        <!-- Answer B (Hover/Focused State Simulation) -->
+        <button
+          class="group relative w-full bg-surface-container-high rounded-lg min-h-[88px] flex items-center p-4 pr-6 border-4 border-primary-container shadow-[0_8px_0_0_#05080F,0_0_20px_rgba(0,255,194,0.2)] -translate-y-1 active:translate-y-2 active:shadow-[0_0px_0_0_#05080F] transition-all duration-200 ease-out text-left"
+        >
+          <div
+            class="w-12 h-12 shrink-0 rounded-full bg-primary-container/20 border-2 border-primary-container flex items-center justify-center mr-4"
+          >
+            <span
+              class="font-headline-md text-headline-md text-primary-container !text-[20px] drop-shadow-[0_0_8px_rgba(0,255,194,0.8)]"
+              >B</span
+            >
+          </div>
+          <span class="font-body-lg text-body-lg text-tertiary">Aetherium Shards</span>
+        </button>
+        <!-- Answer C (Neutral State) -->
+        <button
+          class="group relative w-full bg-surface-container-high rounded-lg min-h-[88px] flex items-center p-4 pr-6 border-4 border-surface-container-highest shadow-[0_8px_0_0_#05080F] hover:border-primary-container/50 hover:-translate-y-1 hover:shadow-[0_12px_0_0_#05080F,0_0_20px_rgba(0,255,194,0.15)] active:translate-y-2 active:shadow-[0_0px_0_0_#05080F] transition-all duration-200 ease-out text-left"
+        >
+          <div
+            class="w-12 h-12 shrink-0 rounded-full bg-surface-variant border-2 border-surface-container-highest flex items-center justify-center mr-4 group-hover:bg-primary-container/10 group-hover:border-primary-container/50 transition-colors"
+          >
+            <span
+              class="font-headline-md text-headline-md text-on-surface-variant !text-[20px] group-hover:text-primary-container"
+              >C</span
+            >
+          </div>
+          <span class="font-body-lg text-body-lg text-on-surface group-hover:text-tertiary"
+            >Cobalt Geodes</span
+          >
+        </button>
+        <!-- Answer D (Neutral State) -->
+        <button
+          class="group relative w-full bg-surface-container-high rounded-lg min-h-[88px] flex items-center p-4 pr-6 border-4 border-surface-container-highest shadow-[0_8px_0_0_#05080F] hover:border-primary-container/50 hover:-translate-y-1 hover:shadow-[0_12px_0_0_#05080F,0_0_20px_rgba(0,255,194,0.15)] active:translate-y-2 active:shadow-[0_0px_0_0_#05080F] transition-all duration-200 ease-out text-left"
+        >
+          <div
+            class="w-12 h-12 shrink-0 rounded-full bg-surface-variant border-2 border-surface-container-highest flex items-center justify-center mr-4 group-hover:bg-primary-container/10 group-hover:border-primary-container/50 transition-colors"
+          >
+            <span
+              class="font-headline-md text-headline-md text-on-surface-variant !text-[20px] group-hover:text-primary-container"
+              >D</span
+            >
+          </div>
+          <span class="font-body-lg text-body-lg text-on-surface group-hover:text-tertiary"
+            >Phosphor Moss</span
+          >
+        </button>
+      </div>
+      <!-- Utility Action (Use Hint) -->
+      <button
+        class="mt-4 flex items-center gap-2 bg-secondary-container/10 hover:bg-secondary-container/20 border-2 border-secondary-container/30 text-secondary-container rounded-full py-3 px-6 font-label-caps text-label-caps transition-all active:scale-95 shadow-[0_0_15px_rgba(20,209,255,0.1)] hover:shadow-[0_0_25px_rgba(20,209,255,0.2)]"
+      >
+        <span class="material-symbols-outlined text-[20px]">lightbulb</span>
+        <span class="pt-1">Use Oracle Hint (Cost: 50)</span>
+      </button>
+    </main>
+  </body>
+</html>
