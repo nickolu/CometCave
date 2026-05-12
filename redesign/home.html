@@ -1,0 +1,330 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Comet Cave Arcade</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500&amp;family=Lexend:wght@700&amp;family=Plus+Jakarta+Sans:wght@500;800;900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 1;
+      }
+    </style>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-variant': '#2d3449',
+              'surface-dim': '#0b1326',
+              'secondary-container': '#14d1ff',
+              tertiary: '#fffeff',
+              'secondary-fixed': '#b7eaff',
+              'tertiary-container': '#ffdda4',
+              'on-tertiary': '#412d00',
+              'primary-fixed-dim': '#00e1ab',
+              'surface-container': '#171f33',
+              'on-error': '#690005',
+              'primary-container': '#00ffc2',
+              'on-error-container': '#ffdad6',
+              'surface-container-highest': '#2d3449',
+              'on-surface-variant': '#b9cbc1',
+              error: '#ffb4ab',
+              'tertiary-fixed': '#ffdea8',
+              secondary: '#a6e6ff',
+              'inverse-surface': '#dae2fd',
+              'on-secondary': '#003543',
+              'surface-bright': '#31394d',
+              'outline-variant': '#3a4a43',
+              'on-primary-fixed-variant': '#00513c',
+              'surface-container-lowest': '#060e20',
+              'on-tertiary-fixed': '#271900',
+              surface: '#0b1326',
+              'surface-container-low': '#131b2e',
+              'surface-tint': '#00e1ab',
+              'inverse-primary': '#006c50',
+              outline: '#83958c',
+              'secondary-fixed-dim': '#4cd6ff',
+              'on-tertiary-fixed-variant': '#5e4200',
+              'on-tertiary-container': '#835d00',
+              background: '#0b1326',
+              'inverse-on-surface': '#283044',
+              'error-container': '#93000a',
+              'on-secondary-container': '#00566b',
+              'primary-fixed': '#36ffc4',
+              'on-primary-fixed': '#002116',
+              'on-primary': '#003828',
+              primary: '#fbfffa',
+              'tertiary-fixed-dim': '#ffba20',
+              'on-background': '#dae2fd',
+              'on-primary-container': '#007255',
+              'on-surface': '#dae2fd',
+              'on-secondary-fixed-variant': '#004e60',
+              'surface-container-high': '#222a3d',
+              'on-secondary-fixed': '#001f28',
+            },
+            borderRadius: {
+              DEFAULT: '1rem',
+              lg: '2rem',
+              xl: '3rem',
+              full: '9999px',
+            },
+            spacing: {
+              unit: '8px',
+              gutter: '24px',
+              margin: '32px',
+              'stack-gap': '16px',
+              'component-padding-x': '24px',
+              'component-padding-y': '16px',
+            },
+            fontFamily: {
+              'body-md': ['Be Vietnam Pro'],
+              'headline-lg': ['Plus Jakarta Sans'],
+              'body-lg': ['Be Vietnam Pro'],
+              'label-caps': ['Lexend'],
+              'headline-md': ['Plus Jakarta Sans'],
+            },
+            fontSize: {
+              'body-md': ['16px', { lineHeight: '1.6', fontWeight: '400' }],
+              'headline-lg': [
+                '40px',
+                { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' },
+              ],
+              'body-lg': ['18px', { lineHeight: '1.6', fontWeight: '500' }],
+              'label-caps': [
+                '14px',
+                { lineHeight: '1.0', letterSpacing: '0.05em', fontWeight: '700' },
+              ],
+              'headline-md': ['32px', { lineHeight: '1.2', fontWeight: '800' }],
+            },
+          },
+        },
+      }
+    </script>
+  </head>
+  <body
+    class="bg-background text-on-background min-h-screen flex flex-col font-body-md text-body-md relative overflow-x-hidden"
+  >
+    <!-- Decorative Cave Background Elements -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div
+        class="absolute top-[-10%] left-[-10%] w-1/2 h-1/2 bg-surface-container-highest rounded-full blur-[120px] opacity-30"
+      ></div>
+      <div
+        class="absolute bottom-[-10%] right-[-10%] w-1/2 h-1/2 bg-primary-container rounded-full blur-[150px] opacity-10"
+      ></div>
+      <div
+        class="absolute top-[40%] right-[10%] w-[300px] h-[300px] bg-secondary-container rounded-full blur-[100px] opacity-10"
+      ></div>
+    </div>
+    <!-- TopNavBar Shared Component -->
+    <nav
+      class="bg-slate-950/90 font-['Plus_Jakarta_Sans'] font-bold tracking-tight rounded-full mt-4 mx-4 border-4 border-slate-900 shadow-[0_6px_0_0_#05080F] sticky top-0 z-50 flex justify-between items-center px-8 py-3 w-auto md:w-full md:max-w-7xl md:mx-auto md:mt-4"
+    >
+      <div class="text-2xl font-black text-[#00FFC2] drop-shadow-[0_2px_0_#05080F]">COMET CAVE</div>
+      <div class="hidden md:flex items-center gap-8">
+        <a
+          class="text-slate-400 hover:scale-105 hover:text-[#00FFC2] transition-transform active:translate-y-1 active:shadow-none transition-all"
+          href="#"
+          >Explore</a
+        >
+        <a
+          class="text-[#00FFC2] border-b-4 border-[#00FFC2] pb-1 hover:scale-105 hover:text-[#00FFC2] transition-transform active:translate-y-1 active:shadow-none transition-all"
+          href="#"
+          >Games</a
+        >
+        <a
+          class="text-slate-400 hover:scale-105 hover:text-[#00FFC2] transition-transform active:translate-y-1 active:shadow-none transition-all"
+          href="#"
+          >Shop</a
+        >
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="text-slate-400 hover:text-[#00FFC2] transition-colors">
+          <span class="material-symbols-outlined" data-icon="search">search</span>
+        </button>
+        <button
+          class="bg-[#00FFC2] text-slate-950 px-6 py-2 rounded-full font-bold shadow-[0_4px_0_0_#007255] hover:scale-105 transition-transform active:translate-y-1 active:shadow-none"
+        >
+          Play Now
+        </button>
+      </div>
+    </nav>
+    <!-- Main Content Canvas -->
+    <main
+      class="flex-grow z-10 w-full max-w-7xl mx-auto px-gutter py-margin flex flex-col gap-margin"
+    >
+      <!-- Hero Section: Nebula Knights -->
+      <section
+        class="bg-surface-container border-[6px] border-surface-container-lowest rounded-xl shadow-[0_12px_0_0_rgba(6,14,32,1)] relative overflow-hidden flex flex-col md:flex-row items-center p-gutter md:p-margin gap-gutter group border-t-white/5 border-t-[2px]"
+      >
+        <!-- Subtle inner glow -->
+        <div
+          class="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-primary-container/10 to-transparent pointer-events-none"
+        ></div>
+        <div class="flex-1 flex flex-col items-start gap-stack-gap relative z-10">
+          <div
+            class="bg-secondary-container text-on-secondary-container font-label-caps text-label-caps px-4 py-1 rounded-full border-2 border-on-secondary-container/20 flex items-center gap-2 shadow-[0_3px_0_0_rgba(0,86,107,1)]"
+          >
+            <span class="material-symbols-outlined text-[16px]" data-icon="swords">swords</span>
+            NEW RELEASE
+          </div>
+          <h1
+            class="font-headline-lg text-headline-lg text-primary drop-shadow-[0_4px_0_rgba(6,14,32,1)]"
+          >
+            Nebula Knights
+          </h1>
+          <p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">
+            Gear up your bubbly heroes! Defend the crystal caves from the invading dust mites in
+            this chunky, squishy action RPG.
+          </p>
+          <button
+            class="mt-4 bg-primary-container text-on-primary-container font-label-caps text-label-caps py-4 px-8 rounded-full border-[3px] border-surface-container-lowest shadow-[0_6px_0_0_rgba(0,114,85,1)] hover:brightness-110 active:translate-y-[6px] active:shadow-none transition-all flex items-center gap-2"
+          >
+            START QUESTING
+            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+          </button>
+        </div>
+        <div
+          class="flex-1 w-full relative min-h-[300px] rounded-lg border-4 border-surface-container-lowest shadow-[inset_0_4px_20px_rgba(0,255,194,0.2)] overflow-hidden bg-surface-dim"
+        >
+          <img
+            alt="Nebula Knights Character"
+            class="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-screen hover:scale-105 transition-transform duration-700"
+            data-alt="cute bubbly 3d character wearing a glowing cyan knight helmet floating in a bioluminescent mint green crystal cave environment soft lighting cartoon style"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcIyllWSi4dJlB7I4cA2xopjmnfbJzDurh0FClaVXYNOgYvcEgYF4rtQnG3YT9w4Pbv6wz6ZeyVVRCxSrJEMPSUETyEU1BrsVCzFShhnIDh5Z_ZVwpPyGVy9MqdgjQSAOXiB4L2N_nlAQ4S4752FSLz5giHxBilmJeRzodzoUp83u6_RFItUgCi5r9KlGGDuc0D2GxXnXEOgsH2LUJZkp8RNhP2SvDeBC2R8EuTg9BSMp4O73zMTy4lbN9aIKMtksNtFxbHBr725M"
+          />
+        </div>
+      </section>
+      <!-- Arcade Floor Grid -->
+      <section class="flex flex-col gap-stack-gap">
+        <h2 class="font-headline-md text-headline-md text-primary flex items-center gap-3">
+          <span
+            class="material-symbols-outlined text-secondary-container"
+            data-icon="stadia_controller"
+            data-weight="fill"
+            >stadia_controller</span
+          >
+          Arcade Floor
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+          <!-- Game Card 1: Daily Trivia -->
+          <article
+            class="bg-surface-variant border-[4px] border-surface-container-lowest rounded-lg shadow-[0_8px_0_0_rgba(6,14,32,1)] p-component-padding-x py-component-padding-y flex flex-col gap-stack-gap relative overflow-hidden group hover:-translate-y-2 transition-transform cursor-pointer border-t-white/5 border-t-[1px]"
+          >
+            <div
+              class="absolute -right-8 -top-8 w-32 h-32 bg-error/10 rounded-full blur-2xl group-hover:bg-error/20 transition-colors pointer-events-none"
+            ></div>
+            <div class="flex justify-between items-start">
+              <div
+                class="w-14 h-14 bg-surface text-error rounded-full flex items-center justify-center border-[3px] border-surface-container-lowest shadow-[0_4px_0_0_rgba(6,14,32,1)]"
+              >
+                <span
+                  class="material-symbols-outlined text-[28px]"
+                  data-icon="quiz"
+                  data-weight="fill"
+                  >quiz</span
+                >
+              </div>
+              <div
+                class="bg-error text-on-error font-label-caps text-[12px] px-3 py-1 rounded-full border-2 border-on-error/20 shadow-[0_2px_0_0_rgba(105,0,5,1)] animate-pulse"
+              >
+                HOT!
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 mt-2">
+              <h3 class="font-headline-md text-[24px] leading-tight text-primary">Daily Trivia</h3>
+              <p class="font-body-md text-body-md text-on-surface-variant">
+                Test your cave knowledge! Fresh questions mined daily.
+              </p>
+            </div>
+          </article>
+          <!-- Game Card 2: I-Ching Oracle -->
+          <article
+            class="bg-surface-variant border-[4px] border-surface-container-lowest rounded-lg shadow-[0_8px_0_0_rgba(6,14,32,1)] p-component-padding-x py-component-padding-y flex flex-col gap-stack-gap relative overflow-hidden group hover:-translate-y-2 transition-transform cursor-pointer border-t-white/5 border-t-[1px]"
+          >
+            <div
+              class="absolute -right-8 -top-8 w-32 h-32 bg-secondary-container/10 rounded-full blur-2xl group-hover:bg-secondary-container/20 transition-colors pointer-events-none"
+            ></div>
+            <div class="flex justify-between items-start">
+              <div
+                class="w-14 h-14 bg-surface text-secondary-container rounded-full flex items-center justify-center border-[3px] border-surface-container-lowest shadow-[0_4px_0_0_rgba(6,14,32,1)]"
+              >
+                <span
+                  class="material-symbols-outlined text-[28px]"
+                  data-icon="auto_awesome"
+                  data-weight="fill"
+                  >auto_awesome</span
+                >
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 mt-2">
+              <h3 class="font-headline-md text-[24px] leading-tight text-primary">
+                I-Ching Oracle
+              </h3>
+              <p class="font-body-md text-body-md text-on-surface-variant">
+                Consult the glowing crystals for guidance on your next quest.
+              </p>
+            </div>
+          </article>
+          <!-- Game Card 3: Tap Tap Adventure -->
+          <article
+            class="bg-surface-variant border-[4px] border-surface-container-lowest rounded-lg shadow-[0_8px_0_0_rgba(6,14,32,1)] p-component-padding-x py-component-padding-y flex flex-col gap-stack-gap relative overflow-hidden group hover:-translate-y-2 transition-transform cursor-pointer border-t-white/5 border-t-[1px]"
+          >
+            <div
+              class="absolute -right-8 -top-8 w-32 h-32 bg-primary-container/10 rounded-full blur-2xl group-hover:bg-primary-container/20 transition-colors pointer-events-none"
+            ></div>
+            <div class="flex justify-between items-start">
+              <div
+                class="w-14 h-14 bg-surface text-primary-container rounded-full flex items-center justify-center border-[3px] border-surface-container-lowest shadow-[0_4px_0_0_rgba(6,14,32,1)]"
+              >
+                <span
+                  class="material-symbols-outlined text-[28px]"
+                  data-icon="touch_app"
+                  data-weight="fill"
+                  >touch_app</span
+                >
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 mt-2">
+              <h3 class="font-headline-md text-[24px] leading-tight text-primary">
+                Tap Tap Adventure
+              </h3>
+              <p class="font-body-md text-body-md text-on-surface-variant">
+                Squish the invading slimes before they reach the core!
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <!-- Footer Shared Component -->
+    <footer
+      class="bg-slate-950 font-['Plus_Jakarta_Sans'] text-sm rounded-t-[3rem] border-t-8 border-slate-900 w-full py-12 px-8 flex flex-col items-center gap-6 mt-auto z-10 relative"
+    >
+      <div class="text-lg font-bold text-[#00FFC2]">COMET CAVE</div>
+      <div class="flex gap-6">
+        <a class="text-slate-500 hover:text-[#00FFC2] transition-colors" href="#">Privacy</a>
+        <a class="text-slate-500 hover:text-[#00FFC2] transition-colors" href="#">Safety Guide</a>
+        <a class="text-slate-500 hover:text-[#00FFC2] transition-colors" href="#">Support</a>
+      </div>
+      <div class="text-slate-500 opacity-100">© 2024 COMET CAVE ARCHIVE</div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,337 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Trivia Hub - Daily Trivia</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500&amp;family=Lexend:wght@700&amp;family=Plus+Jakarta+Sans:wght@800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'surface-variant': '#2d3449',
+              'surface-dim': '#0b1326',
+              'secondary-container': '#14d1ff',
+              tertiary: '#fffeff',
+              'secondary-fixed': '#b7eaff',
+              'tertiary-container': '#ffdda4',
+              'on-tertiary': '#412d00',
+              'primary-fixed-dim': '#00e1ab',
+              'surface-container': '#171f33',
+              'on-error': '#690005',
+              'primary-container': '#00ffc2',
+              'on-error-container': '#ffdad6',
+              'surface-container-highest': '#2d3449',
+              'on-surface-variant': '#b9cbc1',
+              error: '#ffb4ab',
+              'tertiary-fixed': '#ffdea8',
+              secondary: '#a6e6ff',
+              'inverse-surface': '#dae2fd',
+              'on-secondary': '#003543',
+              'surface-bright': '#31394d',
+              'outline-variant': '#3a4a43',
+              'on-primary-fixed-variant': '#00513c',
+              'surface-container-lowest': '#060e20',
+              'on-tertiary-fixed': '#271900',
+              surface: '#0b1326',
+              'surface-container-low': '#131b2e',
+              'surface-tint': '#00e1ab',
+              'inverse-primary': '#006c50',
+              outline: '#83958c',
+              'secondary-fixed-dim': '#4cd6ff',
+              'on-tertiary-fixed-variant': '#5e4200',
+              'on-tertiary-container': '#835d00',
+              background: '#0b1326',
+              'inverse-on-surface': '#283044',
+              'error-container': '#93000a',
+              'on-secondary-container': '#00566b',
+              'primary-fixed': '#36ffc4',
+              'on-primary-fixed': '#002116',
+              'on-primary': '#003828',
+              primary: '#fbfffa',
+              'tertiary-fixed-dim': '#ffba20',
+              'on-background': '#dae2fd',
+              'on-primary-container': '#007255',
+              'on-surface': '#dae2fd',
+              'on-secondary-fixed-variant': '#004e60',
+              'surface-container-high': '#222a3d',
+              'on-secondary-fixed': '#001f28',
+            },
+            borderRadius: {
+              DEFAULT: '1rem',
+              lg: '2rem',
+              xl: '3rem',
+              full: '9999px',
+            },
+            spacing: {
+              unit: '8px',
+              gutter: '24px',
+              margin: '32px',
+              'stack-gap': '16px',
+              'component-padding-x': '24px',
+              'component-padding-y': '16px',
+            },
+            fontFamily: {
+              'body-md': ['Be Vietnam Pro'],
+              'headline-lg': ['Plus Jakarta Sans'],
+              'body-lg': ['Be Vietnam Pro'],
+              'label-caps': ['Lexend'],
+              'headline-md': ['Plus Jakarta Sans'],
+            },
+            fontSize: {
+              'body-md': ['16px', { lineHeight: '1.6', fontWeight: '400' }],
+              'headline-lg': [
+                '40px',
+                { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' },
+              ],
+              'body-lg': ['18px', { lineHeight: '1.6', fontWeight: '500' }],
+              'label-caps': [
+                '14px',
+                { lineHeight: '1.0', letterSpacing: '0.05em', fontWeight: '700' },
+              ],
+              'headline-md': ['32px', { lineHeight: '1.2', fontWeight: '800' }],
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+      }
+      .material-symbols-outlined.fill {
+        font-variation-settings: 'FILL' 1;
+      }
+    </style>
+  </head>
+  <body class="bg-surface text-on-surface font-body-md overflow-x-hidden">
+    <!-- TopNavBar (Mobile Only) -->
+    <nav
+      class="md:hidden sticky top-0 z-50 flex justify-between items-center px-8 py-3 w-full bg-slate-950/90 font-['Plus_Jakarta_Sans'] font-bold tracking-tight rounded-full mt-4 mx-4 border-4 border-slate-900 shadow-[0_6px_0_0_#05080F]"
+    >
+      <div class="text-2xl font-black text-[#00FFC2] drop-shadow-[0_2px_0_#05080F]">COMET CAVE</div>
+      <div class="flex gap-4">
+        <a
+          class="text-slate-400 hover:scale-105 hover:text-[#00FFC2] transition-transform active:translate-y-1 active:shadow-none transition-all"
+          href="#"
+          >Explore</a
+        >
+        <a
+          class="text-slate-400 hover:scale-105 hover:text-[#00FFC2] transition-transform active:translate-y-1 active:shadow-none transition-all"
+          href="#"
+          >Games</a
+        >
+        <a
+          class="text-slate-400 hover:scale-105 hover:text-[#00FFC2] transition-transform active:translate-y-1 active:shadow-none transition-all"
+          href="#"
+          >Shop</a
+        >
+      </div>
+    </nav>
+    <div class="flex min-h-screen">
+      <!-- SideNavBar (Web Only) -->
+      <aside
+        class="hidden md:flex fixed left-0 top-0 w-72 flex-col p-6 z-40 bg-slate-900 rounded-r-[3rem] h-[calc(100vh-2rem)] my-4 border-r-8 border-slate-950 shadow-[8px_0_0_0_#05080F] font-['Plus_Jakarta_Sans'] font-medium"
+      >
+        <div class="flex items-center gap-4 mb-12 px-4">
+          <div
+            class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border-2 border-[#00FFC2]"
+          >
+            <img
+              alt="Cute bioluminescent cave creature avatar"
+              class="w-full h-full object-cover"
+              data-alt="Cute bioluminescent cave creature, glowing cyan eyes, dark stone background, 3d render style"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVfhknHW5r7xJcrj9uNQp_0RKsK65GDvQquPzp2zU-5iOjH-fQvxcd2sbjEhAWuCfsFM13vy1aP6MFNIhOqc7z938Y8UYGVpcXHDyjJVaEzfcYUnpjCtyI6hEmAbsXAw_WbOWXDHUU0EhFb3G5XLZ9fhaMg8OxFkT-xcxjNiYFtgeyl53K_CjMl0Qtj7yn1l_2YHQfsa1ZcwPSmUW839pEhZoZOd2-jgE7Z2SkIWzuIkC_4-umaDzrqKP9PFo0qshTvqePxCrYxOY"
+            />
+          </div>
+          <div>
+            <div class="text-xl font-black text-[#00FFC2]">Explorer</div>
+            <div class="text-sm text-slate-400">Level 42</div>
+          </div>
+        </div>
+        <nav class="flex flex-col gap-2 flex-1">
+          <a
+            class="flex items-center gap-4 px-6 py-4 text-slate-400 hover:bg-slate-800 rounded-full hover:translate-x-2 transition-transform active:scale-95 transition-all"
+            href="#"
+          >
+            <span class="material-symbols-outlined text-2xl" data-icon="home">home</span>
+            <span class="text-lg">Home</span>
+          </a>
+          <!-- Active Nav Item -->
+          <a
+            class="flex items-center gap-4 px-6 py-4 bg-[#00FFC2] text-slate-950 rounded-full font-bold shadow-[0_0_20px_rgba(0,255,194,0.4)] hover:translate-x-2 transition-transform active:scale-95 transition-all"
+            href="#"
+          >
+            <span
+              class="material-symbols-outlined text-2xl fill"
+              data-icon="quiz"
+              data-weight="fill"
+              >quiz</span
+            >
+            <span class="text-lg">Trivia</span>
+          </a>
+          <a
+            class="flex items-center gap-4 px-6 py-4 text-slate-400 hover:bg-slate-800 rounded-full hover:translate-x-2 transition-transform active:scale-95 transition-all"
+            href="#"
+          >
+            <span class="material-symbols-outlined text-2xl" data-icon="auto_awesome"
+              >auto_awesome</span
+            >
+            <span class="text-lg">Oracle</span>
+          </a>
+          <a
+            class="flex items-center gap-4 px-6 py-4 text-slate-400 hover:bg-slate-800 rounded-full hover:translate-x-2 transition-transform active:scale-95 transition-all"
+            href="#"
+          >
+            <span class="material-symbols-outlined text-2xl" data-icon="leaderboard"
+              >leaderboard</span
+            >
+            <span class="text-lg">Leaderboards</span>
+          </a>
+        </nav>
+        <button
+          class="mt-auto w-full py-4 rounded-full bg-surface-variant text-[#00FFC2] border-4 border-slate-950 shadow-[0_4px_0_0_#05080F] font-bold tracking-wide hover:translate-x-2 transition-transform active:scale-95 active:translate-y-1 active:shadow-none transition-all"
+        >
+          Join Raid
+        </button>
+      </aside>
+      <!-- Main Content Canvas -->
+      <main
+        class="flex-1 md:ml-[320px] relative min-h-screen flex items-center justify-center p-gutter md:p-margin"
+      >
+        <!-- Whimsical Cave Background -->
+        <div
+          class="absolute inset-0 z-0 bg-cover bg-center opacity-40"
+          data-alt="whimsical deep cave interior with glowing mint green and bright cyan crystals protruding from dark chunky rocks, soft magical bioluminescent lighting, mysterious and playful atmosphere"
+          style="
+            background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCw7aRmtPHkglDULxKDpRd5nEfnLzIQnvqFnAJCLRwiksTeqQ0NJQruEa_c4nVj8J5xWaMrKG8H3kRABzL1eV7ge9LYmUR4RpBZtRGvs4t0LgE5fmkNLoCzwh6fPYVz0UPG8wE4nCDfrAyDE2hI-mqjMEBumUq-iCCFpSM6IYKxBvzVF-qEDCY8SwI8gH4EfdaIOTE2YybS0qjReEEPWd9YD79ud5CKzsmou61HZP7ft-CkzGi18BltUfuNPB9b-NquUaA8tfxsJsU');
+          "
+        ></div>
+        <!-- Radial Gradient Overlay for depth -->
+        <div
+          class="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-surface/20 via-surface/80 to-surface"
+        ></div>
+        <!-- Content Container -->
+        <div class="relative z-10 w-full max-w-5xl flex flex-col items-center gap-16">
+          <!-- Hero Header -->
+          <div class="text-center flex flex-col items-center gap-4">
+            <div
+              class="inline-flex items-center justify-center p-4 bg-surface-variant rounded-full border-2 border-primary-container/30 shadow-[0_0_15px_rgba(0,255,194,0.1)] mb-4"
+            >
+              <span
+                class="material-symbols-outlined text-primary-container text-4xl fill"
+                data-icon="diamond"
+                data-weight="fill"
+                >diamond</span
+              >
+            </div>
+            <h1
+              class="font-headline-lg text-headline-lg text-primary drop-shadow-[0_4px_0_#05080F]"
+            >
+              Daily Trivia
+            </h1>
+            <p
+              class="font-body-lg text-body-lg text-secondary-fixed max-w-lg text-center opacity-90"
+            >
+              Test your knowledge of the deep caverns and earn glowing crystals!
+            </p>
+          </div>
+          <!-- Bento Grid Stats -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-stack-gap w-full max-w-3xl">
+            <!-- Daily Rank Card -->
+            <div
+              class="bg-surface-variant rounded-xl p-8 border-4 border-surface-container shadow-[0_8px_0_0_#060e20] border-t-white/10 flex flex-col items-center justify-center gap-4 relative overflow-hidden group"
+            >
+              <div
+                class="absolute -top-10 -right-10 w-32 h-32 bg-primary-container/5 rounded-full blur-2xl group-hover:bg-primary-container/10 transition-colors"
+              ></div>
+              <div class="text-secondary-container">
+                <span
+                  class="material-symbols-outlined text-5xl fill"
+                  data-icon="military_tech"
+                  data-weight="fill"
+                  >military_tech</span
+                >
+              </div>
+              <div class="flex flex-col items-center">
+                <span
+                  class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-1"
+                  >Daily Rank</span
+                >
+                <span
+                  class="font-headline-md text-headline-md text-primary drop-shadow-[0_2px_0_#05080F]"
+                  >#42</span
+                >
+              </div>
+            </div>
+            <!-- Streak Card -->
+            <div
+              class="bg-surface-variant rounded-xl p-8 border-4 border-surface-container shadow-[0_8px_0_0_#060e20] border-t-white/10 flex flex-col items-center justify-center gap-4 relative overflow-hidden group"
+            >
+              <div
+                class="absolute -bottom-10 -left-10 w-32 h-32 bg-secondary/5 rounded-full blur-2xl group-hover:bg-secondary/10 transition-colors"
+              ></div>
+              <div class="text-tertiary-fixed-dim">
+                <span
+                  class="material-symbols-outlined text-5xl fill"
+                  data-icon="local_fire_department"
+                  data-weight="fill"
+                  >local_fire_department</span
+                >
+              </div>
+              <div class="flex flex-col items-center">
+                <span
+                  class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-1"
+                  >Current Streak</span
+                >
+                <div class="flex items-baseline gap-2">
+                  <span
+                    class="font-headline-md text-headline-md text-primary drop-shadow-[0_2px_0_#05080F]"
+                    >7</span
+                  >
+                  <span class="font-body-md text-body-md text-tertiary-fixed-dim font-bold"
+                    >Days</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Primary Action -->
+          <div class="pt-8">
+            <button
+              class="group relative inline-flex items-center justify-center gap-4 px-16 py-6 bg-primary-container text-on-primary-container rounded-full font-headline-md text-headline-md border-4 border-primary-fixed-dim shadow-[0_12px_0_0_#00513c] hover:shadow-[0_12px_0_0_#00513c,0_0_40px_rgba(0,255,194,0.4)] active:translate-y-3 active:shadow-[0_0px_0_0_#00513c,0_0_20px_rgba(0,255,194,0.4)] transition-all duration-150 ease-out"
+            >
+              <span>PLAY NOW</span>
+              <span
+                class="material-symbols-outlined text-4xl group-hover:translate-x-2 transition-transform"
+                data-icon="play_circle"
+                >play_circle</span
+              >
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
