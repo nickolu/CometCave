@@ -21,6 +21,7 @@ export type GenerationStage =
   | 'repair'
   | 'review'
   | 'judge'
+  | 'easySpecialistCheck'
 
 export interface UsageEvent {
   stage: GenerationStage

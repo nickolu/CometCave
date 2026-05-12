@@ -1,0 +1,410 @@
+{
+  "timestamp": "2026-05-07T15:18:20.196Z",
+  "appVersion": "235241b56de3b390d7a56b6404590e785d91c204",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 254,
+    "generationFailed": 1,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.639095500000006,
+    "perTrialUsd": 0.022114100000000022,
+    "byStage": {
+      "facts": 0.33324099999999984,
+      "factPicker": 0.11694600000000005,
+      "construct": 2.6307600000000013,
+      "review": 0.6642910000000006,
+      "judge": 1.1275824999999977,
+      "repair": 0.766275
+    },
+    "byModel": {
+      "sonar": 0.33324099999999984,
+      "claude-haiku-4-5-20251001": 0.7812370000000006,
+      "claude-sonnet-4-6": 3.3970350000000016,
+      "gpt-4o": 1.1275824999999977
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 254,
+    "score3": 628,
+    "score2": 28,
+    "score1": 106,
+    "shipPct": 64.1732283464567,
+    "factualMean": 2.767716535433071,
+    "difficultyMean": 2.7716535433070866,
+    "concisionMean": 2.515748031496063
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 85,
+      "score3": 192,
+      "score2": 13,
+      "score1": 50,
+      "shipPct": 54.11764705882353,
+      "factualMean": 2.8588235294117648,
+      "difficultyMean": 2.4235294117647057,
+      "concisionMean": 2.388235294117647
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 225,
+      "score2": 10,
+      "score1": 20,
+      "shipPct": 77.6470588235294,
+      "factualMean": 2.7058823529411766,
+      "difficultyMean": 2.9647058823529413,
+      "concisionMean": 2.7411764705882353
+    },
+    "hard": {
+      "total": 85,
+      "scored": 84,
+      "score3": 211,
+      "score2": 5,
+      "score1": 36,
+      "shipPct": 60.714285714285715,
+      "factualMean": 2.738095238095238,
+      "difficultyMean": 2.9285714285714284,
+      "concisionMean": 2.4166666666666665
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 2,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.533333333333333
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 3,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 0,
+      "score1": 4,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.6
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.3333333333333335
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 2,
+      "score1": 8,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 2.533333333333333,
+      "concisionMean": 2.6
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 0,
+      "score1": 11,
+      "shipPct": 26.666666666666668,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 1.6666666666666667
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 33,
+      "score2": 2,
+      "score1": 10,
+      "shipPct": 60,
+      "factualMean": 2.3333333333333335,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.466666666666667
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.3333333333333335
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8666666666666667
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 31,
+      "score2": 2,
+      "score1": 12,
+      "shipPct": 40,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6,
+      "concisionMean": 1.9333333333333333
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 2,
+      "score1": 9,
+      "shipPct": 46.666666666666664,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.466666666666667,
+      "concisionMean": 2.466666666666667
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 1,
+      "score1": 6,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 0,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 5,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 0,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 14,
+      "score3": 37,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 85.71428571428571,
+      "factualMean": 2.857142857142857,
+      "difficultyMean": 2.7857142857142856,
+      "concisionMean": 2.7857142857142856
+    }
+  },
+  "worst": [
+    {
+      "category": "Video Games",
+      "difficulty": "easy",
+      "question": "Which legendary arcade gamer won a Pac-Man speedrun tournament in 1982, later becoming one of the most iconic figures in classic gaming history?",
+      "correctAnswer": "Billy Mitchell",
+      "factualScore": 1,
+      "factualRationale": "There is no record of Billy Mitchell winning a Pac-Man speedrun tournament in 1982; he is known for achieving a perfect Pac-Man score in 1999.",
+      "difficultyScore": 1,
+      "difficultyRationale": "Billy Mitchell is not a household name for most people, making this question too difficult for the easy tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, as either the Pac-Man tournament win or being an iconic figure in classic gaming history would independently lead to Billy Mitchell.",
+      "sourceUrl": "https://speedrun.video/article/The_history_of_speedrunning_How_did_it_all_start.html"
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "question": "Which jumping insect, known for its chirping song, has existed for over 250 million years — making it older than dinosaurs?",
+      "correctAnswer": "Grasshopper",
+      "factualScore": 1,
+      "factualRationale": "Grasshoppers are not known to have existed for over 250 million years; crickets, another Orthoptera member, are more commonly associated with ancient chirping insects.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The correct answer 'Grasshopper' is incorrect for the description given, as the insect known for its chirping song and ancient existence is the 'cricket,' making this question mismatched for the easy tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'jumping insect,' 'chirping song,' and 'older than dinosaurs,' any of which could independently lead to the answer.",
+      "sourceUrl": "https://www.youtube.com/watch?v=8564KS1A8WU"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "easy",
+      "question": "In the 2025 entry of which turn-based 4X strategy franchise, known for titles like \"Beyond Earth\" and \"Brave New World,\" did developers break tradition by allowing players to pair any leader with any in-game society, regardless of historical ties?",
+      "correctAnswer": "Civilization",
+      "factualScore": 1,
+      "factualRationale": "As of October 2023, there is no official release or announcement of 'Sid Meier's Civilization 7' or its features, making the stated correct answer speculative and unverified.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While 'Civilization' is a well-known franchise, the specific details about the 2025 entry may not be common knowledge for those without a casual interest in video games.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as mentioning 'Beyond Earth,' 'Brave New World,' and the unique gameplay change all independently identify the Civilization franchise.",
+      "sourceUrl": "https://www.youtube.com/watch?v=7SdpamLYb0M"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "question": "Which British Army major became infamous for being the third contestant to win £1 million on Who Wants to Be a Millionaire?",
+      "correctAnswer": "Charles Ingram",
+      "factualScore": 3,
+      "factualRationale": "Charles Ingram is indeed the British Army major who became infamous for winning £1 million on Who Wants to Be a Millionaire and was later convicted of cheating.",
+      "difficultyScore": 1,
+      "difficultyRationale": "Charles Ingram is not a household name and the question requires specific knowledge of a particular event, making it unsuitable for the easy tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: being a British Army major, infamous status, and being the third contestant to win £1 million, all of which independently identify Charles Ingram.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Charles_Ingram"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "question": "Which U.S. city in Arizona ranks as the fifth most populous in the country?",
+      "correctAnswer": "Phoenix",
+      "factualScore": 1,
+      "factualRationale": "Phoenix is not the fifth most populous city in the United States; it ranks as the fifth most populous city in the U.S. as of the latest data, but not specifically in Arizona, which is misleading.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Phoenix is a well-known city and commonly recognized as a major U.S. city, fitting the easy difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks clues by specifying both the state (Arizona) and the population rank, either of which alone would likely lead to the answer.",
+      "sourceUrl": "https://www.visitphoenix.com/about-us/phoenix-facts/"
+    },
+    {
+      "category": "Music",
+      "difficulty": "medium",
+      "question": "Released on July 21, 2025, what is the name of Tyler, the Creator's ninth studio album?",
+      "correctAnswer": "Don't Tap The Glass",
+      "factualScore": 1,
+      "factualRationale": "The release date and album title are speculative as they refer to a future event beyond the current date of October 2023.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is about a future event, making it impossible for anyone to know the answer, thus it cannot fit the medium difficulty tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, clear clue (the release date) without redundant identifiers, maintaining concision.",
+      "sourceUrl": "https://tylerthecreator.fandom.com/wiki/Tyler,_the_Creator"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "hard",
+      "question": "Intelligent Systems, the developer known for Fire Emblem and Advance Wars, made a lesser-known contribution to which iconic NES action-adventure franchise set on the planet Zebes?",
+      "correctAnswer": "Metroid",
+      "factualScore": 1,
+      "factualRationale": "Intelligent Systems did not co-develop the original NES Metroid; it was developed by Nintendo R&D1 and programmed by Intelligent Systems, making the stated correct answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about a lesser-known contribution by Intelligent Systems to the Metroid franchise, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning both the developer and the planet Zebes, either of which alone would lead to the answer.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Intelligent_Systems"
+    },
+    {
+      "category": "Books",
+      "difficulty": "easy",
+      "question": "Which F. Scott Fitzgerald novel, published in 1925, was banned from high schools in an Alaska school district as recently as 2020?",
+      "correctAnswer": "The Great Gatsby",
+      "factualScore": 1,
+      "factualRationale": "There is no verifiable evidence that 'The Great Gatsby' was banned in an Alaska school district in 2020.",
+      "difficultyScore": 3,
+      "difficultyRationale": "'The Great Gatsby' is a well-known novel and fits the easy difficulty as it is a household name.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the author, publication year, and recent banning, any of which alone could lead to the answer.",
+      "sourceUrl": "https://www.foghornnews.com/2023/09/banned-books-become-major-films/"
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "question": "In Andy Weir's novel *The Martian*, stranded astronaut Mark Watney humorously claims to have \"colonized\" Mars by growing crops — directing his triumphant \"in your face\" taunt at the first person to walk on the Moon. Who is that person?",
+      "correctAnswer": "Neil Armstrong",
+      "factualScore": 3,
+      "factualRationale": "Neil Armstrong is indeed the first person to walk on the Moon, making the stated correct answer accurate.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as 'Neil Armstrong' is a household name and fits the 'easy' difficulty tier, not 'hard'.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'first person to walk on the Moon' and 'in your face taunt,' both of which independently identify Neil Armstrong.",
+      "sourceUrl": "https://www.bustle.com/articles/114396-7-martian-quotes-from-the-book-that-luckily-made-it-into-the-movie"
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "question": "In Andy Weir's novel *The Martian*, which astronaut is left stranded on Mars after a sudden storm cuts short his crew's planned 31-day NASA surface mission?",
+      "correctAnswer": "Mark Watney",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer, Mark Watney, is indeed the astronaut left stranded on Mars in Andy Weir's novel *The Martian*.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The character Mark Watney from *The Martian* is widely known due to the popularity of both the book and the film adaptation, making this question more suitable for an easy or medium difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning both the novel's title and the specific plot event, either of which alone identifies the answer.",
+      "sourceUrl": "https://literaryelephant.wordpress.com/2020/01/30/review-the-martian/"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: The expected answer \"Golden Age of animation background art\" does not directly answer the question, which asks for a specific era name — the answer provided is a descriptive phrase rather than a recognized historical period designation."
+    }
+  ]
+}

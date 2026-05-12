@@ -1,0 +1,5 @@
+# Persisted DB-eval runs. Per-row payloads are large (one row per
+# judged aiQuestion) and not useful in version control, so the whole
+# directory is local-only. Re-run scripts/eval-existing-questions.ts
+# to regenerate.
+*.json

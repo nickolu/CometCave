@@ -186,6 +186,8 @@ Rules:
 - The question must ask specifically for the keyDetail (or your repointed answer).
 - The question must NOT contain the answer or a synonym/translation of it.
 - The correct_answer must equal the keyDetail or a clear variant. EXCEPTION: for EASY difficulty, if the keyDetail is a specialist label, you MAY repoint to a more universally recognizable element of the same fact (see EASY-DIFFICULTY REPOINT below).
+- CONCISION: include only the MINIMUM disambiguating clues needed to make the answer unambiguous. Do NOT stack multiple clues that would each independently identify the answer — that trivializes the question. The disambiguation rule above tells you to ADD identifying details when multiple answers fit; the concision rule tells you to STOP adding details once the answer is uniquely pinned. Apply both: add enough to disambiguate, no more.
+  Concision test: for each non-trivial clue in your question, ask "could a casual player guess the answer from THIS clue alone?" If yes for two or more clues, you are stacking — drop the redundant ones.
 - The explanation may elaborate beyond the fact (2-3 sentences).
 - Stay in the "${ctx.categoryName}" category. Do not drift.
 - Free-text answer; this is NOT a multiple-choice question.
@@ -216,6 +218,11 @@ AMBIGUITY BAD: same fact, keyDetail="2017 Australian Open"
 LEAK BAD: same fact, keyDetail="2017 Australian Open"
   Question: "When did Serena Williams win at the 2017 Australian Open?"
   → the keyDetail "2017 Australian Open" is right there in the question. Players answering this question would just type the words they already see.
+
+CONCISION BAD: fact="Christopher Nolan's 2008 film The Dark Knight was one of the first to feature IMAX-shot sequences." keyDetail="The Dark Knight"
+  Question: "Which 2008 Christopher Nolan superhero film was one of the first to feature sequences shot on IMAX cameras?" → "The Dark Knight"
+  → year + director + genre + IMAX innovation each pin the answer alone. The IMAX detail is enough; drop the rest.
+  Better: "Which film was among the first major releases to feature sequences shot on IMAX cameras?" → "The Dark Knight"
 
 LEAK BAD: fact="The Pythagorean theorem states that a² + b² = c² for any right triangle." keyDetail="Pythagorean theorem"
   Question: "What is the Pythagorean theorem?"
@@ -482,6 +489,72 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
   }
 }
 
+// For EASY drafts, ask Haiku whether the chosen correct_answer is a
+// string a casual party-trivia player would naturally produce. Returns
+// `true` when the answer fails the easy bar (specialist label, regnal
+// form, fragile multi-word string, deep-cut name) — caller should
+// trigger a repair pass with the easy-specialist reason. Falls back to
+// `false` (treat as fine) on any LLM/network error so a transient
+// failure can't block the pipeline.
+//
+// Only invoke when difficulty === 'easy'. Cost: one Haiku call per
+// easy trial ≈ $0.0001.
+async function detectEasySpecialistAnswer(
+  apiKey: string,
+  question: string,
+  correctAnswer: string,
+  categoryName: string
+): Promise<boolean> {
+  const CheckSchema = z.object({
+    isCasuallyProducible: z
+      .boolean()
+      .describe(
+        'true if 70%+ of casual party-trivia players (no special interest in this category) would naturally type the exact correct_answer string from this question; false otherwise.'
+      ),
+  })
+
+  try {
+    const anthropicClient = createAnthropic({ apiKey })
+    const result = await generateObject({
+      model: anthropicClient(REVIEW_MODEL),
+      schema: CheckSchema,
+      system:
+        'You judge whether a trivia answer is the natural string a casual party-trivia player would type. You are NOT judging factual correctness or whether the question is well-written. You are only judging answer recognizability for the EASY tier.',
+      prompt: `Category: ${categoryName}
+Question: ${question}
+Stated correct answer: ${correctAnswer}
+
+Test: would 70%+ of casual party-trivia players (no special interest in this category) produce the EXACT correct_answer string from this question?
+
+Examples that FAIL the test (isCasuallyProducible=false):
+- Specialist labels for famous things: "Atomic Bomb Dome" (when "Hiroshima" is what casual players would type), "modal interchange" for the music idea, "Genbaku Dome", "Lifetime Achievement Grammy Award" (when most would type "Lifetime Achievement Award").
+- Regnal / full forms where the casual form is dominant: "Constantine the Great" (casual: "Constantine"), "Catherine the Great" is fine because that IS the casual form.
+- Deep-cut historical figures, scientific terms, building/work names that require category expertise.
+- Production company names, technical jargon, obscure pen names.
+
+Examples that PASS (isCasuallyProducible=true):
+- Household-name people, places, mainstream works, dominant pop-culture references.
+- Short common answers a casual player would type without overthinking.
+
+Set isCasuallyProducible accordingly.`,
+      temperature: 0,
+      maxTokens: 50,
+    })
+    recordUsage({
+      stage: 'easySpecialistCheck',
+      model: REVIEW_MODEL,
+      inputTokens: result.usage?.promptTokens ?? 0,
+      outputTokens: result.usage?.completionTokens ?? 0,
+    })
+    return result.object.isCasuallyProducible === false
+  } catch (err) {
+    console.warn('[detectEasySpecialistAnswer] failed, treating as fine', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+    return false
+  }
+}
+
 // For EASY generations, rank the candidate facts by how recognizable
 // their keyDetail would be to a casual trivia player and pick the
 // most-recognizable one. The seed picker (B) does most of this work
@@ -719,6 +792,45 @@ export async function generateInfiniteQuestion(
           continue
         }
         break
+      }
+
+      // Haiku-backed easy-specialist check. Catches drafts whose
+      // correct_answer is a string a casual party-trivia player would
+      // not naturally produce (specialist labels, regnal forms,
+      // jargon). Only runs when difficulty === 'easy' since medium /
+      // hard tiers legitimately accept harder answer strings.
+      if (difficulty === 'easy') {
+        const isSpecialist = await detectEasySpecialistAnswer(
+          apiKey,
+          draft.question,
+          draft.correct_answer,
+          categoryName
+        )
+        if (isSpecialist) {
+          const reason = `The current answer "${draft.correct_answer}" is a string a casual party-trivia player would NOT naturally produce — too specialist for the EASY tier. Either repoint the question to ask about a more universally recognizable element of the same source fact (a household-name city, person, work, era) and set correct_answer to that, or skip this fact. Put the specialist string into the explanation if relevant, not as the answer.`
+          lastReason = `easy-specialist guard: ${reason}`
+          models.easySpecialistCheck = REVIEW_MODEL
+          console.warn('[generateInfiniteQuestion] draft rejected (easy-specialist)', {
+            attempt,
+            repair,
+            category: categoryName,
+            correctAnswer: draft.correct_answer,
+            question: draft.question,
+          })
+          if (repair < MAX_REPAIRS_PER_DRAFT) {
+            try {
+              draft = await repairDraft(apiKey, draft, reason)
+              models.repair = REPAIR_MODEL
+            } catch (err) {
+              lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
+              console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
+              break
+            }
+            continue
+          }
+          break
+        }
+        models.easySpecialistCheck = REVIEW_MODEL
       }
 
       const review = await reviewQuestion(apiKey, draft)

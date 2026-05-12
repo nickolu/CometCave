@@ -1,0 +1,12 @@
+diff --git a/src/lib/trivia/generateQuestion.ts b/src/lib/trivia/generateQuestion.ts
+index 32c9fbc..1561db1 100644
+--- a/src/lib/trivia/generateQuestion.ts
++++ b/src/lib/trivia/generateQuestion.ts
+@@ -445,6 +445,7 @@ Reject the question ONLY if one of these is true:
+ - The question is nonsensical, broken, or self-contradicting.
+ - The "expected answer" doesn't actually answer the question.
+ - The question doesn't belong to category "${draft.categoryName}" — pick the best fit from: ${KNOWN_CATEGORIES.join(', ')}
++- REDUNDANT CLUE STACKING: the question contains multiple independent identifying clues, any one of which alone would let a casual player guess the answer. Test: for each non-trivial clue in the question, ask "could a casual player guess the answer from THIS clue alone?" If yes for two or more clues, the question is over-specified — reject with reason "concision: clue stacking — <which clues are redundant>". Example that fails: "Which 2008 Christopher Nolan superhero film was one of the first to feature IMAX sequences?" — year, director, genre, and IMAX detail each pin "The Dark Knight" independently. The fix is to keep ONE disambiguator and drop the rest. Note: this is NOT about adding context for fairness; it is about removing clues that make the question too easy.
+ ${draft.difficulty === 'easy' ? `- DIFFICULTY MISFIT (EASY ONLY): The "Expected answer" is a string a casual party-trivia player would NOT naturally produce from this question. Examples that fail this check:
+     · Specialist labels for famous things ("Atomic Bomb Dome" instead of "Hiroshima"; "modal interchange" for the music idea; "Genbaku Dome").
+     · Regnal/full forms when a casual player would type the short form ("Constantine the Great" → most would type "Constantine"; "Pope John Paul II" is fine because that IS the casual form).

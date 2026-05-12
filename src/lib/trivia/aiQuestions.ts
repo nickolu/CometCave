@@ -12,6 +12,7 @@ export interface QuestionGenerationModels {
   question?: string
   repair?: string
   review?: string
+  easySpecialistCheck?: string
 }
 
 export interface AIQuestion {

@@ -1,0 +1,410 @@
+{
+  "timestamp": "2026-05-07T14:09:31.599Z",
+  "appVersion": "235241b56de3b390d7a56b6404590e785d91c204",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 4,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 254,
+    "generationFailed": 1,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.1639155000000025,
+    "perTrialUsd": 0.020250649019607853,
+    "byStage": {
+      "facts": 0.32377800000000007,
+      "factPicker": 0.12141300000000002,
+      "construct": 2.588478000000001,
+      "review": 0.5537399999999995,
+      "judge": 1.1297824999999992,
+      "repair": 0.4467240000000001
+    },
+    "byModel": {
+      "sonar": 0.32377800000000007,
+      "claude-haiku-4-5-20251001": 0.6751529999999999,
+      "claude-sonnet-4-6": 3.035202000000002,
+      "gpt-4o": 1.1297824999999992
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 254,
+    "score3": 609,
+    "score2": 35,
+    "score1": 118,
+    "shipPct": 57.48031496062992,
+    "factualMean": 2.767716535433071,
+    "difficultyMean": 2.7598425196850394,
+    "concisionMean": 2.405511811023622
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 85,
+      "score3": 181,
+      "score2": 23,
+      "score1": 51,
+      "shipPct": 43.529411764705884,
+      "factualMean": 2.8941176470588235,
+      "difficultyMean": 2.3411764705882354,
+      "concisionMean": 2.2941176470588234
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 216,
+      "score2": 7,
+      "score1": 32,
+      "shipPct": 64.70588235294117,
+      "factualMean": 2.7176470588235295,
+      "difficultyMean": 2.9411764705882355,
+      "concisionMean": 2.5058823529411764
+    },
+    "hard": {
+      "total": 85,
+      "scored": 84,
+      "score3": 212,
+      "score2": 5,
+      "score1": 35,
+      "shipPct": 64.28571428571429,
+      "factualMean": 2.6904761904761907,
+      "difficultyMean": 3,
+      "concisionMean": 2.4166666666666665
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.466666666666667
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 5,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.3333333333333335
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 1,
+      "score1": 9,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.3333333333333335
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 3,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.6,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.4
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 0,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.466666666666667,
+      "concisionMean": 2.7333333333333334
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 33,
+      "score2": 2,
+      "score1": 10,
+      "shipPct": 33.333333333333336,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 1.8666666666666667
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 33,
+      "score2": 3,
+      "score1": 9,
+      "shipPct": 33.333333333333336,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 1,
+      "score1": 10,
+      "shipPct": 46.666666666666664,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.466666666666667
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 3,
+      "concisionMean": 2.2
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 3,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.4
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 5,
+      "score1": 4,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.466666666666667
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 14,
+      "score3": 32,
+      "score2": 1,
+      "score1": 9,
+      "shipPct": 35.714285714285715,
+      "factualMean": 2.7142857142857144,
+      "difficultyMean": 2.4285714285714284,
+      "concisionMean": 2.5
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 2,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 3,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.2666666666666666
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.7333333333333334
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 1,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.533333333333333
+    }
+  },
+  "worst": [
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "question": "What U.S. capital city, located between Maryland and Virginia, shares its name with the first President of the United States?",
+      "correctAnswer": "George Washington",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer 'George Washington' is incorrect; the correct answer should be 'Washington, D.C.'",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched because the correct answer should be 'Washington, D.C.' rather than 'George Washington,' which does not fit the easy tier as it is not the name of a U.S. capital city.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as either the location between Maryland and Virginia or sharing the name with the first President would independently identify Washington, D.C.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Washington,_D.C."
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "easy",
+      "question": "Which entry in the long-running EA Sports football franchise is considered one of the best-selling sports video games of all time, with its 2006 release featuring cover athlete LaDainian Tomlinson?",
+      "correctAnswer": "Madden NFL 07",
+      "factualScore": 1,
+      "factualRationale": "LaDainian Tomlinson was not the cover athlete for Madden NFL 07; Shaun Alexander was.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The answer 'Madden NFL 07' is a specific entry in a series and not a household name, making it too specialized for an easy difficulty.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the EA Sports franchise, the 2006 release, and the cover athlete LaDainian Tomlinson, all of which independently lead to the answer.",
+      "sourceUrl": "https://vgsales.fandom.com/wiki/Best-selling_sports_games"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "hard",
+      "question": "Which Edgar Allan Poe poem, featuring a lamenting narrator visited by a mysterious bird, is predominantly composed in trochaic octameter?",
+      "correctAnswer": "The Raven",
+      "factualScore": 1,
+      "factualRationale": "'The Raven' is predominantly composed in trochaic octameter, not trochaic octameter.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of both the poem's meter and its content, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The mention of both 'Edgar Allan Poe' and 'a mysterious bird' are redundant clues that make the answer obvious, as either clue alone would suffice.",
+      "sourceUrl": "https://www.poetryfoundation.org/education/glossary/trochee"
+    },
+    {
+      "category": "Film",
+      "difficulty": "hard",
+      "question": "Which actress, known for her roles in Pitch Perfect and Up in the Air, appeared in two mumblecore films — Drinking Buddies and Happy Christmas — as the genre transitioned toward using major Hollywood stars?",
+      "correctAnswer": "Anna Kendrick",
+      "factualScore": 1,
+      "factualRationale": "Anna Kendrick did not appear in 'Drinking Buddies'; the correct actress is Anna Kendrick's co-star, Olivia Wilde.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard because it requires specific knowledge of Anna Kendrick's involvement in lesser-known mumblecore films, which is not common knowledge.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple identifying clues by mentioning both 'Pitch Perfect' and 'Up in the Air,' which are well-known roles of Anna Kendrick, making the answer trivial.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Mumblecore"
+    },
+    {
+      "category": "Science & Nature",
+      "difficulty": "easy",
+      "question": "What type of galaxy is our home galaxy, characterized by a central bar-shaped structure of stars from which spiral arms extend?",
+      "correctAnswer": "barred spiral galaxy",
+      "factualScore": 3,
+      "factualRationale": "The Milky Way is indeed classified as a barred spiral galaxy, making the stated correct answer accurate.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The term 'barred spiral galaxy' is a specialist label not commonly known by the general public, making it unsuitable for an easy difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues by describing both the bar-shaped structure and the spiral arms, each of which independently identifies a barred spiral galaxy.",
+      "sourceUrl": "https://www.space.com/19915-milky-way-galaxy.html"
+    },
+    {
+      "category": "Science & Nature",
+      "difficulty": "hard",
+      "question": "Which statistician and Northwestern University professor famously characterized the replication crisis as an 'existential crisis' for science, citing flawed replication practices as the root cause?",
+      "correctAnswer": "Larry Hedges",
+      "factualScore": 1,
+      "factualRationale": "There is no widely available evidence that Larry Hedges specifically characterized the replication crisis as an 'existential crisis' for science.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard because it requires specific knowledge of a particular statistician's views on the replication crisis, which is not common knowledge.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: being a statistician, a Northwestern University professor, and the specific quote about the replication crisis, any of which could independently lead to the answer.",
+      "sourceUrl": "https://www.ipr.northwestern.edu/news/2024/an-existential-crisis-for-science.html"
+    },
+    {
+      "category": "Sports",
+      "difficulty": "medium",
+      "question": "Which Orioles player hit a walk-off home run against the Yankees on July 28, 2023, helping Baltimore tie the Seattle Mariners for the most 1-0 wins in that MLB season?",
+      "correctAnswer": "Anthony Santander",
+      "factualScore": 1,
+      "factualRationale": "There is no record of Anthony Santander hitting a walk-off home run against the Yankees on July 28, 2023.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because it requires knowledge of a specific event in the 2023 MLB season, which is accessible to casual sports followers but not common knowledge.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the specific date, the opponent team, and the unique game outcome, all of which independently identify the event and player.",
+      "sourceUrl": "https://www.masnsports.com/blog/entry/looking-back-on-2023-season-filled-with-orioles-surprises-and-achievements/"
+    },
+    {
+      "category": "Sports",
+      "difficulty": "hard",
+      "question": "Which VAR official was responsible for failing to draw offside lines, incorrectly allowing Ivan Toney's goal to stand in the 2023 Arsenal vs. Brentford match that ended 1-1?",
+      "correctAnswer": "Jarred Gillet",
+      "factualScore": 1,
+      "factualRationale": "The VAR official responsible for the error in the 2023 Arsenal vs. Brentford match was Lee Mason, not Jarred Gillet.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a particular VAR official's mistake in a specific match, which is a deep cut fitting the hard difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the VAR official, the specific match, the teams involved, and the match outcome, all of which together trivialize the answer.",
+      "sourceUrl": "https://www.givemesport.com/worst-var-decisions-football-history-ranked/"
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "question": "Which South African diplomat, serving as his country's representative during the drafting of the Universal Declaration of Human Rights, lobbied to have the word 'dignity' removed from the document out of concern it would undermine the newly introduced apartheid system?",
+      "correctAnswer": "Charles Theodore Te Water",
+      "factualScore": 1,
+      "factualRationale": "Charles Theodore Te Water was not involved in the drafting of the Universal Declaration of Human Rights, and the claim about lobbying to remove 'dignity' is not supported by historical records.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard because it requires specific historical knowledge about a lesser-known South African diplomat and his role in the drafting of the Universal Declaration of Human Rights.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by including both the diplomat's role in the Universal Declaration of Human Rights and his stance on apartheid, either of which alone could identify him.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Universal_Declaration_of_Human_Rights"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "question": "What battery technology, developed by BYD, is used to power Tesla Model Y vehicles built at the Berlin Gigafactory?",
+      "correctAnswer": "Blade Battery",
+      "factualScore": 1,
+      "factualRationale": "As of October 2023, there is no verified information confirming that Tesla uses BYD's Blade Battery in Model Y vehicles produced at the Berlin Gigafactory.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium difficulty, as it requires knowledge of specific battery technology and recent developments in the automotive industry, which is beyond common knowledge but accessible to those who follow vehicle news casually.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, as either 'developed by BYD' or 'used in Tesla Model Y at Berlin Gigafactory' alone could lead to the answer.",
+      "sourceUrl": "https://www.youtube.com/watch?v=vuG32iU1oUk"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) returned 0 facts"
+    }
+  ]
+}
