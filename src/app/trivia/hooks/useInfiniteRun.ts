@@ -314,10 +314,7 @@ export function useInfiniteRun() {
     try {
       const fetchStartedAt = Date.now()
 
-      // Fast path: the background prefetch already finished. Consume the
-      // value synchronously — never `await` a prefetch Promise, since a
-      // hung server call (e.g. stuck on AI generation) would otherwise
-      // wedge the click handler with no way to recover.
+      // Fast path: the background prefetch already finished.
       const cachedPrefetch = prefetchedQuestionRef.current
       if (cachedPrefetch) {
         cancelPrefetch()
@@ -325,9 +322,31 @@ export function useInfiniteRun() {
         return
       }
 
-      // Prefetch isn't ready (still in flight, never started, or failed).
-      // Abort it and fetch fresh — letting a slow prefetch stack on top of
-      // the player's explicit click is what stranded the original bug.
+      // Prefetch is in-flight but not done yet. Give it a short window to
+      // finish rather than aborting and starting a duplicate request — the
+      // server may be almost done, and a second /next would double the load.
+      if (prefetchAbortRef.current && !prefetchAbortRef.current.signal.aborted) {
+        const settled = await Promise.race([
+          new Promise<InfiniteQuestion | null>((resolve) => {
+            const check = () => {
+              if (prefetchedQuestionRef.current) {
+                resolve(prefetchedQuestionRef.current)
+              } else {
+                requestAnimationFrame(check)
+              }
+            }
+            check()
+          }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        ])
+        if (settled) {
+          cancelPrefetch()
+          applyQuestion(settled, Date.now() - fetchStartedAt)
+          return
+        }
+      }
+
+      // Prefetch timed out or was never started. Abort and fetch fresh.
       cancelPrefetch()
 
       try {

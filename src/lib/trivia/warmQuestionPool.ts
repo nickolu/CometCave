@@ -7,7 +7,7 @@ import { readTriviaState } from '@/lib/trivia/triviaState'
 // have available before they hit the on-demand generation path.
 // Background warming kicks in when their (approximate) unanswered count
 // drops below this threshold.
-const TARGET_UNANSWERED = 10
+const TARGET_UNANSWERED = 25
 
 // Module-memory cache for the active-question count. The number changes
 // only when admins flag/remove docs or the warmer itself adds one — both
@@ -55,22 +55,35 @@ export async function warmQuestionPoolForUser(uid: string): Promise<void> {
       return
     }
 
+    const gap = TARGET_UNANSWERED - approxUnanswered
+    // Generate up to BATCH_SIZE questions in parallel when pool is low.
+    const BATCH_SIZE = 3
+    const toGenerate = Math.min(gap, BATCH_SIZE)
+
     console.info('[warmQuestionPool] generating', {
       uid,
       approxUnanswered,
       activeCount,
       seenCount,
       target: TARGET_UNANSWERED,
+      toGenerate,
     })
 
-    const generated = await generateInfiniteQuestion({})
-    await saveAIQuestion({ ...generated, createdBy: uid })
+    const results = await Promise.allSettled(
+      Array.from({ length: toGenerate }, () =>
+        generateInfiniteQuestion({}).then((generated) =>
+          saveAIQuestion({ ...generated, createdBy: uid })
+        )
+      )
+    )
 
-    // The pool just grew. Bust the cache so the next call sees the new
-    // total instead of waiting for TTL.
+    const saved = results.filter((r) => r.status === 'fulfilled').length
+    const failed = results.filter((r) => r.status === 'rejected').length
+
+    // Bust the cache so the next call sees the new total.
     activeCountCache = null
 
-    console.info('[warmQuestionPool] saved', { uid, questionId: generated.id, category: generated.category })
+    console.info('[warmQuestionPool] batch done', { uid, saved, failed })
   } catch (err) {
     console.warn('[warmQuestionPool] failed', {
       uid,

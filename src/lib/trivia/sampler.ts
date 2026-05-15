@@ -20,7 +20,7 @@ export interface SamplerOptions {
 // difficulty bucketing + freshness bias still produces a reasonable
 // distribution; small enough that reads-per-/next stays in low double
 // digits. Tunable; bump if buckets routinely come back thin.
-const CANDIDATE_WINDOW = 50
+const CANDIDATE_WINDOW = 100
 
 /**
  * Difficulty mix for the sampler. Fixed 4:2:1 (easy:medium:hard) —
