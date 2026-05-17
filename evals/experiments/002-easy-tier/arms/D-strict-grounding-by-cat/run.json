@@ -1,0 +1,920 @@
+{
+  "timestamp": "2026-05-12T22:35:19.297Z",
+  "appVersion": "85b0d5c2c84b291f7ce31774585bbdeea34a2175",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 152,
+    "generationFailed": 103,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 3.435081999999994,
+    "perTrialUsd": 0.013470909803921545,
+    "byStage": {
+      "facts": 0.31315299999999996,
+      "factPicker": 0.07675900000000001,
+      "construct": 1.7080619999999993,
+      "review": 0.32697299999999985,
+      "judge": 0.6674749999999998,
+      "repair": 0.34265999999999996
+    },
+    "byModel": {
+      "sonar": 0.31315299999999996,
+      "claude-haiku-4-5-20251001": 0.4037320000000001,
+      "claude-sonnet-4-6": 2.0507219999999995,
+      "gpt-4o": 0.6674749999999998
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 152,
+    "score3": 365,
+    "score2": 27,
+    "score1": 64,
+    "shipPct": 62.5,
+    "factualMean": 2.664473684210526,
+    "difficultyMean": 2.7960526315789473,
+    "concisionMean": 2.5197368421052633
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 52,
+      "score3": 120,
+      "score2": 15,
+      "score1": 21,
+      "shipPct": 59.61538461538461,
+      "factualMean": 2.8653846153846154,
+      "difficultyMean": 2.576923076923077,
+      "concisionMean": 2.4615384615384617
+    },
+    "medium": {
+      "total": 85,
+      "scored": 50,
+      "score3": 123,
+      "score2": 6,
+      "score1": 21,
+      "shipPct": 70,
+      "factualMean": 2.64,
+      "difficultyMean": 2.84,
+      "concisionMean": 2.56
+    },
+    "hard": {
+      "total": 85,
+      "scored": 50,
+      "score3": 122,
+      "score2": 6,
+      "score1": 22,
+      "shipPct": 58,
+      "factualMean": 2.48,
+      "difficultyMean": 2.98,
+      "concisionMean": 2.54
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 4,
+      "score1": 2,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.7333333333333334
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 2,
+      "score1": 8,
+      "shipPct": 46.666666666666664,
+      "factualMean": 2.6,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.466666666666667
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.2666666666666666
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 33,
+      "score2": 4,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.3333333333333335,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6666666666666665
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 0,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 2,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.6
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 5,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.466666666666667
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 31,
+      "score2": 3,
+      "score1": 11,
+      "shipPct": 46.666666666666664,
+      "factualMean": 2.2666666666666666,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.2666666666666666
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.466666666666667
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 3,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.6
+    },
+    "Books": {
+      "total": 15,
+      "scored": 2,
+      "score3": 4,
+      "score2": 0,
+      "score1": 2,
+      "shipPct": 50,
+      "factualMean": 2,
+      "difficultyMean": 2,
+      "concisionMean": 3
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 0,
+      "score3": 0,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 0,
+      "factualMean": 0,
+      "difficultyMean": 0,
+      "concisionMean": 0
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 0,
+      "score3": 0,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 0,
+      "factualMean": 0,
+      "difficultyMean": 0,
+      "concisionMean": 0
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 0,
+      "score3": 0,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 0,
+      "factualMean": 0,
+      "difficultyMean": 0,
+      "concisionMean": 0
+    },
+    "Art": {
+      "total": 15,
+      "scored": 0,
+      "score3": 0,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 0,
+      "factualMean": 0,
+      "difficultyMean": 0,
+      "concisionMean": 0
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 0,
+      "score3": 0,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 0,
+      "factualMean": 0,
+      "difficultyMean": 0,
+      "concisionMean": 0
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 0,
+      "score3": 0,
+      "score2": 0,
+      "score1": 0,
+      "shipPct": 0,
+      "factualMean": 0,
+      "difficultyMean": 0,
+      "concisionMean": 0
+    }
+  },
+  "worst": [
+    {
+      "category": "Video Games",
+      "difficulty": "medium",
+      "question": "Which 1996 Sega Saturn remake of a classic Sega CD RPG expanded the original 1992 title with updated graphics, full voice acting, and additional story content, and is widely considered the definitive version of its source game?",
+      "correctAnswer": "Lunar: Silver Star Story Complete",
+      "factualScore": 1,
+      "factualRationale": "The correct answer should be 'Lunar: Silver Star Story Complete' was released for PlayStation, not Sega Saturn; the Sega Saturn version was 'Lunar: Silver Star Story'.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is a deep cut, as it requires specific knowledge of a less mainstream game and its remake, making it more suitable for a hard difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues such as the year, platform, and specific enhancements that make the answer obvious to anyone familiar with the game.",
+      "sourceUrl": "https://www.youtube.com/watch?v=WHkxtEZjogc"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "question": "Which Cenomanian-Turonian geological formation forms the limestone cap of the Acropolis?",
+      "correctAnswer": "Tourkovounia Formation",
+      "factualScore": 1,
+      "factualRationale": "The correct geological formation for the limestone cap of the Acropolis is the Athens Schist and the overlying Plaka Limestone, not the Tourkovounia Formation.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is clearly mismatched as 'Tourkovounia Formation' is a specialist term not within reach for someone who follows geography casually, making it more suitable for a hard difficulty tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing only the necessary geological and locational context to identify the formation without redundant clues.",
+      "sourceUrl": "https://mountainbeltway.all-geo.org/2015/01/17/geology-acropolis/"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "question": "Which Swedish engineer designed Tallinn's secret underground network of passageways built in the seventeenth century to defend the city against artillery fire?",
+      "correctAnswer": "Erik Dahlbergh",
+      "factualScore": 1,
+      "factualRationale": "There is no historical evidence that Erik Dahlbergh designed an underground network of passageways in Tallinn; the tunnels were primarily built by local authorities and not attributed to him.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is a deep cut requiring specific historical knowledge, making it more suitable for a hard difficulty tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, specific context without redundant clues, focusing on the unique historical project associated with Erik Dahlbergh.",
+      "sourceUrl": "https://bestregardsfromfar.com/2022/01/12/12-fun-interesting-facts-about-tallinn-estonia/"
+    },
+    {
+      "category": "Television",
+      "difficulty": "medium",
+      "question": "In which 2024 Netflix special did Ellen DeGeneres claim she got kicked out of show business for being mean?",
+      "correctAnswer": "For Your Approval",
+      "factualScore": 1,
+      "factualRationale": "There is no record of a 2024 Netflix special by Ellen DeGeneres titled 'For Your Approval.'",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as it refers to a future event in 2024, making it impossible for anyone to know the answer, thus not fitting the medium difficulty tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, clear route to the answer without redundant clues.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Ellen_DeGeneres"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "hard",
+      "question": "Which Nintendo development group, also known as Nintendo EPD Tokyo, is the internal team responsible for the 3D Mario franchise?",
+      "correctAnswer": "Nintendo EPD-8",
+      "factualScore": 1,
+      "factualRationale": "Nintendo EPD-8 is not a recognized designation for the team responsible for 3D Mario games; the correct team is Nintendo EPD Tokyo.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of Nintendo's internal development teams, which is a deep cut suitable for a hard difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by naming both 'Nintendo EPD Tokyo' and '3D Mario franchise,' either of which alone could lead to the answer.",
+      "sourceUrl": "https://www.youtube.com/watch?v=SyuWqi7mGNw"
+    },
+    {
+      "category": "Sports",
+      "difficulty": "medium",
+      "question": "Which veteran NBA guard, best known for winning five championships with the Los Angeles Lakers, later had a troubled stint with the New York Knicks that included an arrest and legal controversies?",
+      "correctAnswer": "Derek Fisher",
+      "factualScore": 1,
+      "factualRationale": "Derek Fisher was not involved in legal controversies or arrests during his time with the New York Knicks; the stated correct answer is factually incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Derek Fisher is a well-known figure in NBA history, but his stint with the Knicks and associated controversies are not common knowledge, making this a well-calibrated medium question.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: winning five championships with the Lakers and a troubled stint with the Knicks, either of which could independently lead to the answer.",
+      "sourceUrl": "https://1045theteam.com/ten-ny-knicks-players-who-got-in-trouble-with-the-law-and-why/"
+    },
+    {
+      "category": "Books",
+      "difficulty": "easy",
+      "question": "A science fiction book reviewer for which famous newspaper — better known for covering finance and business — boldly declared that space opera is dead?",
+      "correctAnswer": "Wall Street Journal",
+      "factualScore": 1,
+      "factualRationale": "The source URL does not confirm that a Wall Street Journal reviewer declared space opera is dead, making the stated correct answer unverified.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The Wall Street Journal is not commonly associated with book reviews, making this question too specific for the easy tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question cleanly frames the answer by specifying a newspaper known for finance and business, which is a necessary and sufficient clue to identify the Wall Street Journal.",
+      "sourceUrl": "https://madgeniusclub.com/2019/04/14/space-opera-is-dead-well-maybe-not/"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "question": "Which gorge, carved by the Danube River along the border between Serbia and Romania, holds the distinction of being the largest in Europe?",
+      "correctAnswer": "Derdap Gorge",
+      "factualScore": 2,
+      "factualRationale": "The Derdap Gorge is indeed a significant gorge along the Danube, but it is not definitively the largest in Europe, as other gorges like the Tara River Canyon are also contenders.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Derdap Gorge is a specific geographical feature that requires specialized knowledge, fitting the hard difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the Danube River, the Serbia-Romania border, and being the largest gorge in Europe, all of which independently lead to Derdap Gorge.",
+      "sourceUrl": "https://www.twinkl.com/homework-help/world-geography-homework-help/europe-facts/serbia-facts-for-kids"
+    },
+    {
+      "category": "Sports",
+      "difficulty": "hard",
+      "question": "The Oakland Athletics' revolutionary use of sabermetrics to build a competitive team on a limited budget was dramatized in a 2011 film that earned six Academy Award nominations, including Best Picture — what is the name of the real-life general manager whose statistical approach to roster-building inspired that film?",
+      "correctAnswer": "Billy Beane",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer, Billy Beane, is accurate as he was the general manager whose use of sabermetrics inspired the 2011 film 'Moneyball,' which received six Academy Award nominations.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While Billy Beane is a well-known figure in sports circles, the question may be too accessible for a 'hard' tier as it relates to a popular film, making it borderline between medium and hard.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the Oakland Athletics, sabermetrics, a 2011 film, and six Academy Award nominations, all of which independently lead to Billy Beane.",
+      "sourceUrl": "https://whatculture.com/film/20-things-you-didn-t-know-about-moneyball"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "question": "Which river, stretching over 4,000 miles, is the longest in the world?",
+      "correctAnswer": "Nile River",
+      "factualScore": 2,
+      "factualRationale": "The Nile River's status as the longest river is disputed, with some sources considering the Amazon River longer.",
+      "difficultyScore": 2,
+      "difficultyRationale": "The Nile River is a well-known answer, but there is common confusion with the Amazon River, making it borderline for an easy tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing only the necessary information about the river's length to identify it as the longest in the world.",
+      "sourceUrl": "https://www.britannica.com/science/worlds-longest-rivers-2225894"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Books",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Animals",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+    }
+  ]
+}

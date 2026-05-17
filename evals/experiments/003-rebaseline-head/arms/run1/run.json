@@ -1,0 +1,456 @@
+{
+  "timestamp": "2026-05-13T01:47:49.362Z",
+  "appVersion": "85b0d5c2c84b291f7ce31774585bbdeea34a2175",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 245,
+    "generationFailed": 10,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.440444500000002,
+    "perTrialUsd": 0.021335076470588243,
+    "byStage": {
+      "facts": 0.31991199999999986,
+      "factPicker": 0.11910800000000002,
+      "construct": 2.705144999999999,
+      "easySpecialistCheck": 0.14295500000000008,
+      "review": 0.502381,
+      "judge": 1.0826325000000008,
+      "repair": 0.5683109999999999
+    },
+    "byModel": {
+      "sonar": 0.31991199999999986,
+      "claude-haiku-4-5-20251001": 0.7644439999999998,
+      "claude-sonnet-4-6": 3.273456,
+      "gpt-4o": 1.0826325000000008
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 245,
+    "score3": 611,
+    "score2": 35,
+    "score1": 89,
+    "shipPct": 65.3061224489796,
+    "factualMean": 2.8,
+    "difficultyMean": 2.820408163265306,
+    "concisionMean": 2.510204081632653
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 81,
+      "score3": 179,
+      "score2": 25,
+      "score1": 39,
+      "shipPct": 50.617283950617285,
+      "factualMean": 2.9382716049382718,
+      "difficultyMean": 2.5185185185185186,
+      "concisionMean": 2.271604938271605
+    },
+    "medium": {
+      "total": 85,
+      "scored": 81,
+      "score3": 215,
+      "score2": 6,
+      "score1": 22,
+      "shipPct": 75.30864197530865,
+      "factualMean": 2.7160493827160495,
+      "difficultyMean": 2.962962962962963,
+      "concisionMean": 2.7037037037037037
+    },
+    "hard": {
+      "total": 85,
+      "scored": 83,
+      "score3": 217,
+      "score2": 4,
+      "score1": 28,
+      "shipPct": 69.87951807228916,
+      "factualMean": 2.746987951807229,
+      "difficultyMean": 2.9759036144578315,
+      "concisionMean": 2.5542168674698793
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 3,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 2,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 3,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.4
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 0,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.7333333333333334
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.7333333333333334
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 4,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.7333333333333334
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 3,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6666666666666665
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 32,
+      "score2": 2,
+      "score1": 11,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.3333333333333335,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.2666666666666666
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 2,
+      "score1": 8,
+      "shipPct": 40,
+      "factualMean": 2.6,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.2666666666666666
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 3,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 3,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.2666666666666666
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 60,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.3333333333333335
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 1,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.466666666666667,
+      "concisionMean": 2.8
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 6,
+      "score1": 4,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.6
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 4,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Art": {
+      "total": 15,
+      "scored": 14,
+      "score3": 37,
+      "score2": 0,
+      "score1": 5,
+      "shipPct": 64.28571428571429,
+      "factualMean": 3,
+      "difficultyMean": 3,
+      "concisionMean": 2.2857142857142856
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 1,
+      "score1": 9,
+      "shipPct": 40,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.2
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 6,
+      "score3": 16,
+      "score2": 1,
+      "score1": 1,
+      "shipPct": 83.33333333333333,
+      "factualMean": 2.8333333333333335,
+      "difficultyMean": 3,
+      "concisionMean": 2.6666666666666665
+    }
+  },
+  "worst": [
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "question": "Vatican City is often described as sitting on terrain that is only slightly above sea level — but what general term describes this type of flat, minimally elevated landscape?",
+      "correctAnswer": "low-lying land",
+      "factualScore": 1,
+      "factualRationale": "The premise is incorrect as Vatican City is not characterized as low-lying land; it is situated on Vatican Hill, which is part of the higher terrain in Rome.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The term 'low-lying land' is common and not a deep cut, making it more suitable for an easy or medium difficulty level.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, clear clue about the landscape type without redundant identifiers.",
+      "sourceUrl": "https://www.youtube.com/watch?v=ANlO-5oMhJ0"
+    },
+    {
+      "category": "Television",
+      "difficulty": "easy",
+      "question": "Which cable TV network made its debut broadcast with an NHL hockey game in 1972?",
+      "correctAnswer": "HBO",
+      "factualScore": 1,
+      "factualRationale": "HBO's debut broadcast was a movie, not an NHL hockey game.",
+      "difficultyScore": 1,
+      "difficultyRationale": "HBO is not commonly associated with sports broadcasts, making it a poor fit for an 'easy' difficulty question.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, specific clue about the debut broadcast event, which is necessary to identify the network without redundancy.",
+      "sourceUrl": "https://www.euronews.com/culture/2022/11/12/50-years-of-hbo-a-history-of-historic-television"
+    },
+    {
+      "category": "Television",
+      "difficulty": "medium",
+      "question": "In the TV series \"Grimm,\" the mill featured in the show's first episode is named after a pair of brothers who published children's books between 1828 and 1920 — but what is the full name given to that mill, including the word that reflects the fairy-tale genre of their publications?",
+      "correctAnswer": "McLinn Brothers Fairy",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer 'McLinn Brothers Fairy' is incorrect; the mill in 'Grimm' is named 'Grimm Brothers Mill,' not 'McLinn Brothers Fairy.'",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a detail from the TV series 'Grimm,' which fits the medium difficulty as it is beyond common knowledge but accessible to casual fans of the show.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning both the brothers' publication period and the fairy-tale genre, making it trivial to identify the Brothers Grimm.",
+      "sourceUrl": "https://www.youtube.com/watch?v=LW0v6ye7xgo"
+    },
+    {
+      "category": "Television",
+      "difficulty": "hard",
+      "question": "Which Chilean actress, sharing a real-life Latina background with her character, plays Ruby — Ava's ex-girlfriend — in the HBO Max comedy series Hacks?",
+      "correctAnswer": "Lorenza Izzo",
+      "factualScore": 1,
+      "factualRationale": "Lorenza Izzo does not play Ruby in Hacks; the role is played by Lorenza Izzo's character is not Ruby, making the stated correct answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Lorenza Izzo is not a widely recognized name, making this a genuine deep cut suitable for a hard difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: Chilean actress, Latina background, character name Ruby, and show Hacks, any of which could independently lead to the answer.",
+      "sourceUrl": "https://tvtropes.org/pmwiki/pmwiki.php/Trivia/Hacks"
+    },
+    {
+      "category": "Television",
+      "difficulty": "hard",
+      "question": "Which actress, who shares a Latina heritage with the character she portrays, plays Ruby in the television series \"The White Lotus\"?",
+      "correctAnswer": "Lorenza Izzo",
+      "factualScore": 1,
+      "factualRationale": "Lorenza Izzo does not play a character named Ruby in 'The White Lotus'; there is no character by that name in the series.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Lorenza Izzo is not a widely recognized name, making this a genuine deep cut suitable for a hard difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks redundant clues by specifying both the character's name and the shared Latina heritage, which together trivialize the answer.",
+      "sourceUrl": "https://tvtropes.org/pmwiki/pmwiki.php/Trivia/Hacks"
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "question": "Author Julian Barnes avoids word processors, preferring to type his manuscripts on which specific typewriter model?",
+      "correctAnswer": "IBM 196c",
+      "factualScore": 1,
+      "factualRationale": "There is no widely known or verified information that Julian Barnes uses an IBM 196c typewriter, making the stated correct answer factually incorrect.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The specific typewriter model 'IBM 196c' is a deep cut and not within reach for someone who follows the category casually, making it more suited for a hard difficulty level.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing only the necessary context about Julian Barnes' preference for a specific typewriter model without redundant clues.",
+      "sourceUrl": "https://thejohnfox.com/2016/06/50-writing-tips-famous-authors/"
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "question": "What operating system, whose name is a pun on \"Multics,\" was coined as a play on \"UNiplexed Information and Computing Service\"?",
+      "correctAnswer": "UNIX",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer 'UNIX' is accurate as it was indeed coined as a pun on 'Multics' and stands for 'UNiplexed Information and Computing Service.'",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question involves specific historical knowledge about the origin of the UNIX name, which is not common knowledge for a typical adult without a special interest in computers.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as either the pun on 'Multics' or the acronym explanation alone would lead to the answer 'UNIX.'",
+      "sourceUrl": "https://www.unix.org/fun_facts.html"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "question": "The engineering firm Skidmore, Owings & Merrill used an innovative \"buttressed core\" design to build the world's tallest building — what is the name of that skyscraper?",
+      "correctAnswer": "Burj Khalifa",
+      "factualScore": 3,
+      "factualRationale": "The Burj Khalifa is indeed the world's tallest building and was designed by Skidmore, Owings & Merrill using a buttressed core design.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While the Burj Khalifa is a well-known landmark, the specific architectural detail of the 'buttressed core' design may not be common knowledge, making it borderline between easy and medium.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning both the 'buttressed core' design and 'world's tallest building,' either of which alone would lead to the Burj Khalifa.",
+      "sourceUrl": "https://www.youtube.com/watch?v=el1K-xILtwo"
+    },
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "question": "In an early version of which Pixar film's opening montage, titled \"Married Life,\" were the characters Carl and Ellie scripted to complete each other's sentences?",
+      "correctAnswer": "Up",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer 'Up' is accurate as the question correctly references the film's opening montage 'Married Life' featuring Carl and Ellie.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While 'Up' is a well-known Pixar film, the specific detail about the opening montage is not common knowledge, making it borderline between easy and medium.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'Pixar film,' 'opening montage,' 'Married Life,' and 'characters Carl and Ellie,' all of which independently point to 'Up,' making it overly easy.",
+      "sourceUrl": "https://www.mentalfloss.com/article/70909/15-adventurous-facts-about"
+    },
+    {
+      "category": "History",
+      "difficulty": "medium",
+      "question": "While Reconstruction is criticized for failing to prevent violence, corruption, starvation, and disease, some historians credit it with restoring the federal Union and laying the constitutional and legislative groundwork that would later anchor the Civil Rights Movement — what do scholars call this foundational structure of laws and amendments aimed at guaranteeing equal rights regardless of race?",
+      "correctAnswer": "legal framework for racial equality",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer accurately describes the constitutional amendments from the Reconstruction era that laid the groundwork for racial equality.",
+      "difficultyScore": 2,
+      "difficultyRationale": "The answer 'legal framework for racial equality' is somewhat broad and may not be specific enough for a medium difficulty, as it could be interpreted in various ways.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, such as Reconstruction's impact on the Civil Rights Movement and the focus on laws and amendments, which together trivialize the answer.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Reconstruction_era"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) returned 0 facts"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "medium",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) failed: Connection error."
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) returned 0 facts"
+    }
+  ]
+}

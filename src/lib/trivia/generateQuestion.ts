@@ -489,72 +489,6 @@ Set accept=true if all checks pass. If you reject, give a one-sentence rejection
   }
 }
 
-// For EASY drafts, ask Haiku whether the chosen correct_answer is a
-// string a casual party-trivia player would naturally produce. Returns
-// `true` when the answer fails the easy bar (specialist label, regnal
-// form, fragile multi-word string, deep-cut name) — caller should
-// trigger a repair pass with the easy-specialist reason. Falls back to
-// `false` (treat as fine) on any LLM/network error so a transient
-// failure can't block the pipeline.
-//
-// Only invoke when difficulty === 'easy'. Cost: one Haiku call per
-// easy trial ≈ $0.0001.
-async function detectEasySpecialistAnswer(
-  apiKey: string,
-  question: string,
-  correctAnswer: string,
-  categoryName: string
-): Promise<boolean> {
-  const CheckSchema = z.object({
-    isCasuallyProducible: z
-      .boolean()
-      .describe(
-        'true if 70%+ of casual party-trivia players (no special interest in this category) would naturally type the exact correct_answer string from this question; false otherwise.'
-      ),
-  })
-
-  try {
-    const anthropicClient = createAnthropic({ apiKey })
-    const result = await generateObject({
-      model: anthropicClient(REVIEW_MODEL),
-      schema: CheckSchema,
-      system:
-        'You judge whether a trivia answer is the natural string a casual party-trivia player would type. You are NOT judging factual correctness or whether the question is well-written. You are only judging answer recognizability for the EASY tier.',
-      prompt: `Category: ${categoryName}
-Question: ${question}
-Stated correct answer: ${correctAnswer}
-
-Test: would 70%+ of casual party-trivia players (no special interest in this category) produce the EXACT correct_answer string from this question?
-
-Examples that FAIL the test (isCasuallyProducible=false):
-- Specialist labels for famous things: "Atomic Bomb Dome" (when "Hiroshima" is what casual players would type), "modal interchange" for the music idea, "Genbaku Dome", "Lifetime Achievement Grammy Award" (when most would type "Lifetime Achievement Award").
-- Regnal / full forms where the casual form is dominant: "Constantine the Great" (casual: "Constantine"), "Catherine the Great" is fine because that IS the casual form.
-- Deep-cut historical figures, scientific terms, building/work names that require category expertise.
-- Production company names, technical jargon, obscure pen names.
-
-Examples that PASS (isCasuallyProducible=true):
-- Household-name people, places, mainstream works, dominant pop-culture references.
-- Short common answers a casual player would type without overthinking.
-
-Set isCasuallyProducible accordingly.`,
-      temperature: 0,
-      maxTokens: 50,
-    })
-    recordUsage({
-      stage: 'easySpecialistCheck',
-      model: REVIEW_MODEL,
-      inputTokens: result.usage?.promptTokens ?? 0,
-      outputTokens: result.usage?.completionTokens ?? 0,
-    })
-    return result.object.isCasuallyProducible === false
-  } catch (err) {
-    console.warn('[detectEasySpecialistAnswer] failed, treating as fine', {
-      error: err instanceof Error ? err.message : String(err),
-    })
-    return false
-  }
-}
-
 // For EASY generations, rank the candidate facts by how recognizable
 // their keyDetail would be to a casual trivia player and pick the
 // most-recognizable one. The seed picker (B) does most of this work
@@ -792,45 +726,6 @@ export async function generateInfiniteQuestion(
           continue
         }
         break
-      }
-
-      // Haiku-backed easy-specialist check. Catches drafts whose
-      // correct_answer is a string a casual party-trivia player would
-      // not naturally produce (specialist labels, regnal forms,
-      // jargon). Only runs when difficulty === 'easy' since medium /
-      // hard tiers legitimately accept harder answer strings.
-      if (difficulty === 'easy') {
-        const isSpecialist = await detectEasySpecialistAnswer(
-          apiKey,
-          draft.question,
-          draft.correct_answer,
-          categoryName
-        )
-        if (isSpecialist) {
-          const reason = `The current answer "${draft.correct_answer}" is a string a casual party-trivia player would NOT naturally produce — too specialist for the EASY tier. Either repoint the question to ask about a more universally recognizable element of the same source fact (a household-name city, person, work, era) and set correct_answer to that, or skip this fact. Put the specialist string into the explanation if relevant, not as the answer.`
-          lastReason = `easy-specialist guard: ${reason}`
-          models.easySpecialistCheck = REVIEW_MODEL
-          console.warn('[generateInfiniteQuestion] draft rejected (easy-specialist)', {
-            attempt,
-            repair,
-            category: categoryName,
-            correctAnswer: draft.correct_answer,
-            question: draft.question,
-          })
-          if (repair < MAX_REPAIRS_PER_DRAFT) {
-            try {
-              draft = await repairDraft(apiKey, draft, reason)
-              models.repair = REPAIR_MODEL
-            } catch (err) {
-              lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
-              console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
-              break
-            }
-            continue
-          }
-          break
-        }
-        models.easySpecialistCheck = REVIEW_MODEL
       }
 
       const review = await reviewQuestion(apiKey, draft)
