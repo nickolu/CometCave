@@ -7,6 +7,7 @@ import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
 import type { TriviaQuestion, TriviaQuestionWithAnswer } from '@/app/trivia/models/questions'
 import { getTodayPST } from '@/lib/dates'
+import { getDailyQuestions, setDailyQuestions } from '@/lib/trivia/dailyQuestionsDb'
 
 import type { NextRequest } from 'next/server'
 
@@ -268,7 +269,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ date: targetDate, questions })
     }
 
-    // PREFERRED: Load pre-generated questions from disk (static JSON files)
+    // PREFERRED: Load from Firestore
+    const firestoreDoc = await getDailyQuestions(targetDate)
+    if (firestoreDoc && firestoreDoc.questions.length > 0) {
+      dailyCache.set(targetDate, firestoreDoc.questions)
+      const questions: TriviaQuestion[] = firestoreDoc.questions.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        ({ correctAnswer, explanation, ...q }) => q
+      )
+      return NextResponse.json({ date: targetDate, questions })
+    }
+
+    // LEGACY FALLBACK: Load pre-generated questions from disk (static JSON files)
     const preGenerated = loadDailyQuestionsFromDisk(targetDate)
     if (preGenerated && preGenerated.length > 0) {
       dailyCache.set(targetDate, preGenerated)
@@ -322,6 +334,20 @@ export async function GET(request: NextRequest) {
 
     // Cache the full questions (with answers) server-side
     dailyCache.set(targetDate, allQuestions)
+
+    // Persist to Firestore so future requests (and other instances) skip generation
+    const days = daysSinceEpoch(targetDate)
+    const categoryId = 9 + (days % 24)
+    try {
+      await setDailyQuestions(targetDate, {
+        date: targetDate,
+        categoryId,
+        categoryName: allQuestions[0]?.category || 'General Knowledge',
+        questions: allQuestions,
+      })
+    } catch (err) {
+      console.error('Failed to persist generated daily trivia to Firestore:', err)
+    }
 
     // Return questions WITHOUT answers
     const questions: TriviaQuestion[] = allQuestions.map(

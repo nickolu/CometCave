@@ -23,7 +23,7 @@ export interface SamplerOptions {
 // difficulty bucketing + freshness bias still produces a reasonable
 // distribution; small enough that reads-per-/next stays in low double
 // digits. Tunable; bump if buckets routinely come back thin.
-const CANDIDATE_WINDOW = 50
+const CANDIDATE_WINDOW = 100
 
 // Single-category runs use a larger one-shot fetch instead of the random
 // window. For categories with <= this many active docs the fetch is
