@@ -1,0 +1,420 @@
+{
+  "timestamp": "2026-05-12T22:12:15.236Z",
+  "appVersion": "85b0d5c2c84b291f7ce31774585bbdeea34a2175",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 252,
+    "generationFailed": 3,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.649735500000007,
+    "perTrialUsd": 0.022155825490196106,
+    "byStage": {
+      "facts": 0.36106699999999975,
+      "factPicker": 0.12991,
+      "construct": 2.8764779999999988,
+      "review": 0.5803299999999995,
+      "judge": 1.1071975,
+      "repair": 0.594753
+    },
+    "byModel": {
+      "sonar": 0.36106699999999975,
+      "claude-haiku-4-5-20251001": 0.7102400000000005,
+      "claude-sonnet-4-6": 3.471231,
+      "gpt-4o": 1.1071975
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 252,
+    "score3": 610,
+    "score2": 41,
+    "score1": 105,
+    "shipPct": 60.714285714285715,
+    "factualMean": 2.6666666666666665,
+    "difficultyMean": 2.7738095238095237,
+    "concisionMean": 2.5634920634920637
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 84,
+      "score3": 187,
+      "score2": 24,
+      "score1": 41,
+      "shipPct": 51.19047619047619,
+      "factualMean": 2.892857142857143,
+      "difficultyMean": 2.4166666666666665,
+      "concisionMean": 2.4285714285714284
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 212,
+      "score2": 13,
+      "score1": 30,
+      "shipPct": 65.88235294117646,
+      "factualMean": 2.541176470588235,
+      "difficultyMean": 2.929411764705882,
+      "concisionMean": 2.6705882352941175
+    },
+    "hard": {
+      "total": 85,
+      "scored": 83,
+      "score3": 211,
+      "score2": 4,
+      "score1": 34,
+      "shipPct": 65.06024096385542,
+      "factualMean": 2.566265060240964,
+      "difficultyMean": 2.9759036144578315,
+      "concisionMean": 2.5903614457831323
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 2,
+      "score1": 1,
+      "shipPct": 93.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.8666666666666667
+    },
+    "Film": {
+      "total": 15,
+      "scored": 14,
+      "score3": 30,
+      "score2": 4,
+      "score1": 8,
+      "shipPct": 35.714285714285715,
+      "factualMean": 2.5,
+      "difficultyMean": 2.7142857142857144,
+      "concisionMean": 2.357142857142857
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.533333333333333,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.6
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.6,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8666666666666667
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 3,
+      "score1": 3,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8666666666666667
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 6,
+      "score1": 3,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 2,
+      "score1": 7,
+      "shipPct": 60,
+      "factualMean": 2.3333333333333335,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.7333333333333334
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 32,
+      "score2": 2,
+      "score1": 11,
+      "shipPct": 33.333333333333336,
+      "factualMean": 2.6,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.2
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 2,
+      "score1": 9,
+      "shipPct": 40,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.3333333333333335
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.533333333333333,
+      "concisionMean": 2.7333333333333334
+    },
+    "Books": {
+      "total": 15,
+      "scored": 14,
+      "score3": 33,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 42.857142857142854,
+      "factualMean": 2.857142857142857,
+      "difficultyMean": 2.857142857142857,
+      "concisionMean": 2.0714285714285716
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 3,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.6
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 0,
+      "score1": 4,
+      "shipPct": 80,
+      "factualMean": 3,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.466666666666667
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.466666666666667
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 3,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.4,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.7333333333333334
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 14,
+      "score3": 31,
+      "score2": 5,
+      "score1": 6,
+      "shipPct": 57.142857142857146,
+      "factualMean": 2.7857142857142856,
+      "difficultyMean": 2.857142857142857,
+      "concisionMean": 2.142857142857143
+    }
+  },
+  "worst": [
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "question": "Produced from 2000 to 2006, which generation of the BMW M3 is the only one in the model's history to have been equipped with a V8 engine?",
+      "correctAnswer": "E46 generation",
+      "factualScore": 1,
+      "factualRationale": "The E46 generation of the BMW M3 was equipped with an inline-six engine, not a V8; the E90/E92/E93 generation had the V8 engine.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as the E46 generation is not the correct answer for the V8 engine, making it misleading and not fitting the medium difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the production years and the unique V8 engine, either of which alone could lead to the answer.",
+      "sourceUrl": "https://www.bmw-m.com/en/topics/magazine-article-pool/bmw-m3-generationen.html"
+    },
+    {
+      "category": "Science & Nature",
+      "difficulty": "hard",
+      "question": "Which serendipitous 1987 astrophysical event, detected by a cosmic-ray experiment, provided the first observational evidence that neutrinos have mass?",
+      "correctAnswer": "1987 Milky Way supernova neutrino detection",
+      "factualScore": 1,
+      "factualRationale": "The 1987 supernova neutrino detection did not provide evidence that neutrinos have mass; it was significant for confirming the existence of neutrinos from supernovae.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a particular astrophysical event and its significance, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the year 1987, the cosmic-ray experiment, and the neutrino mass evidence, all of which independently point to the same event.",
+      "sourceUrl": "https://news.uchicago.edu/story/scholars-and-scientists-explore-factors-underlying-serendipitous-discoveries"
+    },
+    {
+      "category": "Science & Nature",
+      "difficulty": "hard",
+      "question": "In 1922, Alexander Fleming accidentally dropped what type of bodily fluid into a petri dish, observing that it dissolved bacteria — a memory he recalled six years later to conclude that Penicillium mould was killing Staphylococcus bacteria?",
+      "correctAnswer": "tear",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer is wrong; Fleming's discovery of lysozyme involved nasal mucus, not a tear.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific historical and scientific knowledge about Alexander Fleming's experiments, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the year, the person, and the specific event, making it overly easy to identify the answer.",
+      "sourceUrl": "https://www.irishtimes.com/news/science/serendipity-has-played-a-prominent-part-in-many-scientific-discoveries-1.4130996"
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "question": "The volume of water in the largest of the Great Lakes by surface area could cover the entire land mass of which two continents to a depth of 30 centimetres?",
+      "correctAnswer": "North and South America",
+      "factualScore": 1,
+      "factualRationale": "The volume of Lake Superior is not sufficient to cover the entire land mass of both North and South America to a depth of 30 centimetres.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question requires specific knowledge about the volume of the Great Lakes and its relation to the land mass of continents, which is not common knowledge for an easy tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing a single route to the answer without redundant clues.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Superior"
+    },
+    {
+      "category": "Television",
+      "difficulty": "hard",
+      "question": "Which HBO Max comedy series about a veteran stand-up comedian and her young writer debuted its fifth and final season on April 9, 2026?",
+      "correctAnswer": "Hacks",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer is incorrect because 'Hacks' has not been confirmed to have a fifth season, let alone one debuting in 2026.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about a particular season of a TV series, which fits the 'hard' difficulty tier as it demands deep knowledge of television programming.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the network, the genre, the character roles, and the specific season and date, all of which independently identify the show.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Hacks"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "hard",
+      "question": "Which 1996 PlayStation platformer, developed by Eidetic (later renamed Bend Studio), was notable for its higher resolution and increased draw distances compared to most PS1 titles of its era?",
+      "correctAnswer": "Bubsy 3D",
+      "factualScore": 1,
+      "factualRationale": "Bubsy 3D was developed by Eidetic, but it was not notable for higher resolution or increased draw distances compared to most PS1 titles.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as 'Bubsy 3D' is a deep cut in video game history, known primarily to enthusiasts familiar with lesser-known PlayStation titles.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the developer's name, the year, and specific technical features, all of which independently point to the answer.",
+      "sourceUrl": "https://www.bendstudio.com/blog/history-of-bend-studio/"
+    },
+    {
+      "category": "Mythology",
+      "difficulty": "easy",
+      "question": "In Hindu mythology, what is the name of the divine trio made up of Brahma the creator, Vishnu the preserver, and Shiva the destroyer?",
+      "correctAnswer": "Trimurti",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer 'Trimurti' accurately refers to the divine trio of Brahma, Vishnu, and Shiva in Hindu mythology.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The term 'Trimurti' is a specialist label not commonly known by those without a specific interest in Hindu mythology, making it unsuitable for an easy difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues by naming all three deities and their roles, which trivializes the answer.",
+      "sourceUrl": "https://www.britannica.com/topic/Shiva"
+    },
+    {
+      "category": "Animals",
+      "difficulty": "easy",
+      "question": "What was the name of the first Seeing Eye dog in the United States, a German Shepherd who helped establish the service dog movement in 1928?",
+      "correctAnswer": "Buddy",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer 'Buddy' is accurate, as Buddy was indeed the first Seeing Eye dog in the United States, paired with Morris Frank in 1928.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The name of the first Seeing Eye dog, Buddy, is not common knowledge for a typical adult, making it unsuitable for the easy tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the dog's name, breed, role in the service dog movement, and the year, making it overly easy to identify.",
+      "sourceUrl": "https://www.akc.org/expert-advice/lifestyle/fun-facts-german-shepherd/"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "question": "What is the name of the recall — involving over 67 million vehicles across 34 car brands — that is considered the largest automotive recall in history?",
+      "correctAnswer": "Takata airbag recall",
+      "factualScore": 3,
+      "factualRationale": "The Takata airbag recall is indeed the largest automotive recall in history, affecting over 67 million vehicles, making the stated correct answer accurate.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The Takata airbag recall is not a household name for most people, making it unsuitable for the easy difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as either the scale of the recall or the fact that it is the largest in history would independently lead to the Takata airbag recall.",
+      "sourceUrl": "https://carbuzz.com/biggest-recalls-in-automotive-history/"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "question": "In traditional animation production, inbetweeners are responsible for 16½ of the 22 actual minutes of content in which type of TV program format?",
+      "correctAnswer": "half-hour television cartoon",
+      "factualScore": 1,
+      "factualRationale": "The claim that inbetweeners are responsible for 16½ of the 22 minutes of content in a half-hour television cartoon is not substantiated and seems exaggerated, as inbetweeners typically work on frames between key poses, not the majority of the runtime.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about animation production roles and TV formats, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning both '16½ of the 22 actual minutes' and 'half-hour television,' which together make the answer trivial.",
+      "sourceUrl": "https://www.brianlemay.com/Pages/animationschool/animation/inbetweening.html"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: duplicate answer: \"Academy Awards\" already exists as active question ai-infinite-1778134406156-qq60jpfc"
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) returned 0 facts"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) returned 0 facts"
+    }
+  ]
+}

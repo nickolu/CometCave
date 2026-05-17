@@ -1,0 +1,411 @@
+{
+  "timestamp": "2026-05-12T21:37:47.776Z",
+  "appVersion": "4e89bf85c8320ed8733317c24b097548ccd31ccd",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 254,
+    "generationFailed": 1,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.589893,
+    "perTrialUsd": 0.021921149019607844,
+    "byStage": {
+      "facts": 0.32415000000000016,
+      "factPicker": 0.12153600000000003,
+      "construct": 2.769963000000003,
+      "easySpecialistCheck": 0.1595320000000001,
+      "review": 0.527373,
+      "judge": 1.1185599999999984,
+      "repair": 0.568779
+    },
+    "byModel": {
+      "sonar": 0.32415000000000016,
+      "claude-haiku-4-5-20251001": 0.8084409999999993,
+      "claude-sonnet-4-6": 3.338742000000002,
+      "gpt-4o": 1.1185599999999984
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 254,
+    "score3": 629,
+    "score2": 39,
+    "score1": 94,
+    "shipPct": 66.53543307086615,
+    "factualMean": 2.716535433070866,
+    "difficultyMean": 2.8149606299212597,
+    "concisionMean": 2.574803149606299
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 84,
+      "score3": 195,
+      "score2": 24,
+      "score1": 33,
+      "shipPct": 64.28571428571429,
+      "factualMean": 2.9166666666666665,
+      "difficultyMean": 2.5357142857142856,
+      "concisionMean": 2.4761904761904763
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 221,
+      "score2": 9,
+      "score1": 25,
+      "shipPct": 74.11764705882354,
+      "factualMean": 2.6470588235294117,
+      "difficultyMean": 2.9647058823529413,
+      "concisionMean": 2.6941176470588237
+    },
+    "hard": {
+      "total": 85,
+      "scored": 85,
+      "score3": 213,
+      "score2": 6,
+      "score1": 36,
+      "shipPct": 61.1764705882353,
+      "factualMean": 2.588235294117647,
+      "difficultyMean": 2.9411764705882355,
+      "concisionMean": 2.552941176470588
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 4,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.8666666666666667
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 3,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.3333333333333335
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 0,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 3,
+      "concisionMean": 2.466666666666667
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 2,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.8666666666666667
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 2,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 3,
+      "concisionMean": 2.6
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 2,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.533333333333333
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 32,
+      "score2": 5,
+      "score1": 8,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.466666666666667
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 32,
+      "score2": 4,
+      "score1": 9,
+      "shipPct": 60,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.3333333333333335
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 5,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 2,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8666666666666667
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 2,
+      "score1": 9,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.4
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.4
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 2,
+      "score1": 7,
+      "shipPct": 60,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.7333333333333334
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.466666666666667
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 0,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 3,
+      "difficultyMean": 3,
+      "concisionMean": 2.3333333333333335
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 1,
+      "score1": 7,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 14,
+      "score3": 39,
+      "score2": 1,
+      "score1": 2,
+      "shipPct": 85.71428571428571,
+      "factualMean": 2.857142857142857,
+      "difficultyMean": 3,
+      "concisionMean": 2.7857142857142856
+    }
+  },
+  "worst": [
+    {
+      "category": "Television",
+      "difficulty": "easy",
+      "question": "Which quirky singer famously married Miss Vicki live on The Tonight Show in 1969, drawing 45 million viewers?",
+      "correctAnswer": "Tiny Tim",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer is accurate as Tiny Tim did marry Miss Vicki on The Tonight Show in 1969, drawing 45 million viewers.",
+      "difficultyScore": 1,
+      "difficultyRationale": "Tiny Tim is not a household name for most people today, making this question too obscure for the easy difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'quirky singer,' 'married Miss Vicki,' 'live on The Tonight Show,' and '1969,' any of which could independently lead to the answer.",
+      "sourceUrl": "https://www.saturdayeveningpost.com/2025/11/johnny-carsons-centennial-inspires-a-list-of-100-classic-tonight-show-moments/"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "easy",
+      "question": "Which gaming console was Final Fantasy VII originally being developed for before it switched platforms?",
+      "correctAnswer": "Super Nintendo Entertainment System",
+      "factualScore": 1,
+      "factualRationale": "Final Fantasy VII was originally developed for the Nintendo 64, not the Super Nintendo Entertainment System.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The answer 'Super Nintendo Entertainment System' is not common knowledge for a typical adult without a special interest in video games, making it unsuitable for an easy difficulty level.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise and provides only the necessary information to identify the answer without redundant clues.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Final_Fantasy_VII"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "medium",
+      "question": "In the 2018 indie platformer developed by Nomada Studio, the teal-haired female protagonist loses her voice after the death of her mother and embarks on a journey to regain her ability to sing — what is the name of that deceased mother?",
+      "correctAnswer": "Mae",
+      "factualScore": 1,
+      "factualRationale": "The game 'Gris' does not name the protagonist's mother, making the stated answer 'Mae' incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because it requires specific knowledge of the game 'Gris,' which is beyond common knowledge but accessible to casual video game enthusiasts.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning the 2018 indie platformer, Nomada Studio, and the teal-haired protagonist, all of which independently identify the game 'Gris,' making the question trivial.",
+      "sourceUrl": "https://gris.fandom.com/wiki/Gris_(protagonist)"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "hard",
+      "question": "Which SNES RPG, later ported to PlayStation, was developed by Chunsoft on behalf of Enix before the two companies merged?",
+      "correctAnswer": "Star Ocean",
+      "factualScore": 1,
+      "factualRationale": "Star Ocean was developed by tri-Ace, not Chunsoft, making the stated correct answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a lesser-known SNES RPG and its development history, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: SNES RPG, ported to PlayStation, developed by Chunsoft for Enix, which trivializes the answer.",
+      "sourceUrl": "https://www.kh13.com/forums/topic/103331-fun-facts-about-square-enix/"
+    },
+    {
+      "category": "Books",
+      "difficulty": "medium",
+      "question": "Alan Dean Foster's 1979 novelization of *Alien* faithfully adapts the iconic scene in which a facehugger bursts from a prop that, in the original film, required hydraulics, Ridley Scott's gloved hand shadows, and cow intestines to bring to life. What is that prop, which also lends its name to a chapter in the book?",
+      "correctAnswer": "the alien egg",
+      "factualScore": 1,
+      "factualRationale": "The facehugger does not burst from the alien egg; it emerges from the egg, making the stated correct answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires knowledge of both the novelization and the film's production details, fitting the medium difficulty tier for someone casually interested in books or films.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues about the prop's construction and its role in the book, making the answer trivial.",
+      "sourceUrl": "https://www.mentalfloss.com/article/81139/15-chest-bursting-facts-about-alien"
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "question": "After Andy Weir's novel about an astronaut stranded on Mars was published, which NASA rover made the real-world discovery that Martian soil contains up to 35 liters of liquid water per cubic meter — lending surprising scientific credibility to the book's survival premise?",
+      "correctAnswer": "Curiosity rover",
+      "factualScore": 1,
+      "factualRationale": "The Curiosity rover did not discover liquid water in Martian soil; it found evidence of water molecules, but not in liquid form.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about a NASA rover's scientific discovery related to a novel, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the novel's premise, the specific discovery, and the NASA rover, all of which independently point to the Curiosity rover.",
+      "sourceUrl": "https://tvtropes.org/pmwiki/pmwiki.php/Trivia/TheMartian"
+    },
+    {
+      "category": "Animals",
+      "difficulty": "medium",
+      "question": "Which Indo-Pacific fish species has become invasive in the Gulf of Mexico, suspected to have spread via international oil rigs or aquarium dumping?",
+      "correctAnswer": "regal damselfish",
+      "factualScore": 1,
+      "factualRationale": "The correct invasive species in the Gulf of Mexico is the lionfish, not the regal damselfish.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The regal damselfish is not commonly known as an invasive species in the Gulf of Mexico, making this question more suited to a hard difficulty tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, clear route to the answer without redundant clues, focusing on the fish's invasive status and suspected spread methods.",
+      "sourceUrl": "https://oceanconservancy.org/blog/2022/10/27/dont-mess-with-damselfish/"
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "question": "Which world leader is widely identified by political analysts as the central architect of Russia's transformation into a kleptocratic state, ruling through a network of loyal oligarchic cronies?",
+      "correctAnswer": "Vladimir Putin",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer is accurate as Vladimir Putin is widely recognized as the central figure in Russia's transformation into a kleptocratic state.",
+      "difficultyScore": 1,
+      "difficultyRationale": "Vladimir Putin is a well-known global figure, making this question more suitable for an easy or medium difficulty level rather than hard.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as both 'Russia's transformation into a kleptocratic state' and 'ruling through a network of loyal oligarchic cronies' independently point directly to Vladimir Putin.",
+      "sourceUrl": "https://www.csce.gov/wp-content/uploads/2017/09/Kleptocrats.pdf"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "question": "Which American industrialist is credited with coining the term \"pickup\" for trucks?",
+      "correctAnswer": "Henry Ford",
+      "factualScore": 1,
+      "factualRationale": "Henry Ford did not coin the term 'pickup' for trucks; the term evolved over time and was not attributed to a single individual.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as 'Henry Ford' is not commonly associated with coining the term 'pickup,' making it too obscure for an easy difficulty.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing only the necessary clue about coining the term 'pickup' without additional redundant identifiers.",
+      "sourceUrl": "https://www.caranddriver.com/features/g15379238/an-illustrated-history-of-the-pickup-truck/"
+    },
+    {
+      "category": "Film",
+      "difficulty": "hard",
+      "question": "Which 1982 Ridley Scott sci-fi film is widely cited as a defining example of neo-noir cinema for its rain-soaked, gritty urban streets?",
+      "correctAnswer": "Blade Runner",
+      "factualScore": 3,
+      "factualRationale": "Blade Runner is indeed a 1982 Ridley Scott film that is widely recognized as a defining example of neo-noir cinema.",
+      "difficultyScore": 2,
+      "difficultyRationale": "'Blade Runner' is a well-known film among sci-fi enthusiasts, making it more medium than hard for those familiar with the genre.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: the year, director, genre, and specific setting, any of which alone could lead to the answer.",
+      "sourceUrl": "https://unimatrixz.com/topics/style-aesthetic/flux-schnell/flux-schnell-style-aesthetic-film-noir/"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: duplicate answer: \"Walt Disney\" already exists as active question ai-infinite-1777874124583-64h648yr"
+    }
+  ]
+}

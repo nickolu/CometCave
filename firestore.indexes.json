@@ -45,6 +45,25 @@
       ]
     },
     {
+      "collectionGroup": "aiQuestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "random", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "aiQuestions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "random", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "triviaInfinite",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

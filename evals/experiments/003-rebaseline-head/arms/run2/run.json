@@ -1,0 +1,416 @@
+{
+  "timestamp": "2026-05-13T02:19:51.903Z",
+  "appVersion": "85b0d5c2c84b291f7ce31774585bbdeea34a2175",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 253,
+    "generationFailed": 2,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.722589999999988,
+    "perTrialUsd": 0.02244152941176466,
+    "byStage": {
+      "facts": 0.33554700000000015,
+      "factPicker": 0.13007699999999994,
+      "construct": 2.8454100000000033,
+      "easySpecialistCheck": 0.15552900000000008,
+      "review": 0.5570340000000004,
+      "judge": 1.1145899999999993,
+      "repair": 0.5844029999999999
+    },
+    "byModel": {
+      "sonar": 0.33554700000000015,
+      "claude-haiku-4-5-20251001": 0.8426399999999986,
+      "claude-sonnet-4-6": 3.429813000000004,
+      "gpt-4o": 1.1145899999999993
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 253,
+    "score3": 623,
+    "score2": 36,
+    "score1": 100,
+    "shipPct": 64.03162055335969,
+    "factualMean": 2.7470355731225298,
+    "difficultyMean": 2.794466403162055,
+    "concisionMean": 2.525691699604743
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 84,
+      "score3": 193,
+      "score2": 22,
+      "score1": 37,
+      "shipPct": 57.142857142857146,
+      "factualMean": 2.9642857142857144,
+      "difficultyMean": 2.5,
+      "concisionMean": 2.392857142857143
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 222,
+      "score2": 6,
+      "score1": 27,
+      "shipPct": 72.94117647058823,
+      "factualMean": 2.7176470588235295,
+      "difficultyMean": 2.929411764705882,
+      "concisionMean": 2.6470588235294117
+    },
+    "hard": {
+      "total": 85,
+      "scored": 84,
+      "score3": 208,
+      "score2": 8,
+      "score1": 36,
+      "shipPct": 61.904761904761905,
+      "factualMean": 2.5595238095238093,
+      "difficultyMean": 2.9523809523809526,
+      "concisionMean": 2.5357142857142856
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.8666666666666667
+    },
+    "Film": {
+      "total": 15,
+      "scored": 14,
+      "score3": 32,
+      "score2": 2,
+      "score1": 8,
+      "shipPct": 42.857142857142854,
+      "factualMean": 2.642857142857143,
+      "difficultyMean": 2.7857142857142856,
+      "concisionMean": 2.2857142857142856
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.533333333333333
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 2,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.6666666666666665
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 1,
+      "score1": 3,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.8
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 4,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.6
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.466666666666667
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 2,
+      "score1": 7,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.6666666666666665
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 32,
+      "score2": 3,
+      "score1": 10,
+      "shipPct": 46.666666666666664,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 1.9333333333333333
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.533333333333333
+    },
+    "Books": {
+      "total": 15,
+      "scored": 14,
+      "score3": 35,
+      "score2": 2,
+      "score1": 5,
+      "shipPct": 64.28571428571429,
+      "factualMean": 3,
+      "difficultyMean": 2.857142857142857,
+      "concisionMean": 2.2857142857142856
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 35,
+      "score2": 2,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.466666666666667
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 3,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.8666666666666667
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 3,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.6,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.7333333333333334
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.466666666666667
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 3,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.6666666666666665
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 15,
+      "score3": 34,
+      "score2": 0,
+      "score1": 11,
+      "shipPct": 26.666666666666668,
+      "factualMean": 2.6,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.066666666666667
+    }
+  },
+  "worst": [
+    {
+      "category": "Sports",
+      "difficulty": "medium",
+      "question": "Which school became the first since 2007 to have its conference win titles in both football and women's basketball in the same year, after claiming the football national title?",
+      "correctAnswer": "Indiana University",
+      "factualScore": 1,
+      "factualRationale": "Indiana University has never won a national title in football, making the stated correct answer factually incorrect.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as 'Indiana University' is not a well-known answer for this sports achievement, making it more suited for a hard difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues by specifying both the sports involved and the year, making it overly easy to identify the school.",
+      "sourceUrl": "https://www.morningstar.com/news/marketwatch/20260411185/the-7-billion-reason-the-big-ten-is-dominating-college-sports"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "hard",
+      "question": "Which playwright and poet is most credited with popularizing iambic pentameter in the English language through his prolific use of the meter in his sixteenth-century works?",
+      "correctAnswer": "Shakespeare",
+      "factualScore": 3,
+      "factualRationale": "Shakespeare is widely credited with popularizing iambic pentameter in English literature, making the stated answer correct.",
+      "difficultyScore": 1,
+      "difficultyRationale": "Shakespeare is a household name and widely known for his use of iambic pentameter, making this question more suitable for an easy difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies with both 'iambic pentameter' and 'sixteenth-century works,' either of which alone would likely lead to Shakespeare.",
+      "sourceUrl": "https://www.grammarly.com/blog/creative-writing/iambic-pentameter/"
+    },
+    {
+      "category": "History",
+      "difficulty": "easy",
+      "question": "While working as an editor for which Bolshevik newspaper did Joseph Stalin adopt the pseudonym meaning 'man of steel'?",
+      "correctAnswer": "Pravda",
+      "factualScore": 1,
+      "factualRationale": "Stalin adopted the pseudonym 'Koba' before 'Pravda' was established, and 'man of steel' is not directly linked to his work at Pravda.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched for the easy tier as it requires specific historical knowledge about Stalin's early career and his pseudonym, which is not common knowledge for a typical adult.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, as it provides a single, necessary clue about Stalin's pseudonym without redundant identifiers.",
+      "sourceUrl": "https://www.britannica.com/biography/Joseph-Stalin"
+    },
+    {
+      "category": "Television",
+      "difficulty": "hard",
+      "question": "In which episode of PEN15 do Anna and Maya collectively grapple with death, diagnosis, coercion, love, and heartbreak?",
+      "correctAnswer": "PEN15 finale",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer 'PEN15 finale' is incorrect as the series finale does not specifically focus on all the themes mentioned in the question.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge of a particular episode of a TV series, which fits the 'hard' difficulty tier as it demands deep familiarity with the show.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues (death, diagnosis, coercion, love, heartbreak) that collectively trivialize the answer by pointing directly to a series finale.",
+      "sourceUrl": "https://readcopy.co/Our-Thoughts-On-The-PEN15-Finale"
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "question": "Which UK-based application delivery and load balancing company, whose name literally reflects its core networking function, celebrated its first 15 years in business alongside advancements in artificial intelligence and cloud technology?",
+      "correctAnswer": "Loadbalancer.org",
+      "factualScore": 3,
+      "factualRationale": "Loadbalancer.org is indeed a UK-based company specializing in load balancing, and the information about its 15th anniversary aligns with the source provided.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The company Loadbalancer.org is not widely known even among casual followers of computer technology, making this question more suited to a hard difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question redundantly specifies the answer by mentioning the UK-based origin, the literal name reflecting its function, and the 15-year milestone, all of which independently lead to Loadbalancer.org.",
+      "sourceUrl": "https://www.loadbalancer.org/blog/thank-you-for-the-last-15-years/"
+    },
+    {
+      "category": "Computers",
+      "difficulty": "medium",
+      "question": "Which computer scientist, who also happens to be the father of World Wide Web inventor Tim Berners-Lee, is credited alongside David Wheeler for first using the binary search tree algorithm to store labeled data on magnetic tapes?",
+      "correctAnswer": "Conway Berners-Lee",
+      "factualScore": 1,
+      "factualRationale": "Conway Berners-Lee is not credited with the development of the binary search tree algorithm; this is incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because it requires knowledge beyond common trivia, appealing to those with a casual interest in computer science history.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as being the father of Tim Berners-Lee alone is sufficient to identify Conway Berners-Lee.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Binary_search_tree"
+    },
+    {
+      "category": "Art",
+      "difficulty": "hard",
+      "question": "Which Renaissance painting, depicting a young Florentine banker, is considered a prime example of Leonardo da Vinci's sfumato technique?",
+      "correctAnswer": "Portrait of Bindo Altoviti",
+      "factualScore": 1,
+      "factualRationale": "The Portrait of Bindo Altoviti was painted by Raphael, not Leonardo da Vinci, making the stated correct answer incorrect for the question posed.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard because it requires specific knowledge of a lesser-known painting and art technique.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'Renaissance painting,' 'young Florentine banker,' and 'Leonardo da Vinci's sfumato technique,' any of which could independently lead to the answer.",
+      "sourceUrl": "https://simplykalaa.com/sfumato/"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "question": "What is the nickname of the B-52 Stratofortress bomber, an acronym standing for \"Big Ugly Fat Fellow\"?",
+      "correctAnswer": "BUFF",
+      "factualScore": 3,
+      "factualRationale": "The nickname 'BUFF' for the B-52 Stratofortress, standing for 'Big Ugly Fat Fellow,' is correct and widely recognized.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The acronym 'BUFF' for the B-52 Stratofortress is a specialist label not commonly known to the general public, making it unsuitable for an easy difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question provides both the nickname and the acronym meaning, either of which alone would lead directly to the answer.",
+      "sourceUrl": "https://www.uso.org/stories/2391-10-need-to-know-facts-about-the-b-52-bomber"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "hard",
+      "question": "The Boeing 787-8 Dreamliner with tail number N947BA, the 17th off the assembly line in 2010, was scrapped around March 2024 in which New Mexico city — also famous for its UFO lore?",
+      "correctAnswer": "Roswell",
+      "factualScore": 1,
+      "factualRationale": "There is no verifiable information available about the scrapping of a Boeing 787-8 Dreamliner with tail number N947BA in Roswell, New Mexico around March 2024.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about a particular aircraft and its scrapping location, which is a deep cut fitting the hard difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, as either the UFO lore or the New Mexico location alone would likely lead to Roswell.",
+      "sourceUrl": "https://www.youtube.com/watch?v=zIH1HlaSX5Y"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "easy",
+      "question": "Which Sony home console is regarded as having been defined by the Kingdom Hearts and God of War series?",
+      "correctAnswer": "PlayStation 2",
+      "factualScore": 3,
+      "factualRationale": "The PlayStation 2 is indeed regarded as having been defined by the Kingdom Hearts and God of War series, making the stated correct answer accurate.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While the PlayStation 2 is a well-known console, associating it specifically with the Kingdom Hearts and God of War series may not be common knowledge for those without a casual interest in video games.",
+      "concisionScore": 1,
+      "concisionRationale": "Both the Kingdom Hearts and God of War series are independently strong identifiers for the PlayStation 2, making the question over-specified.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Jak_and_Daxter"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: factSource(perplexity:sonar) returned 0 facts"
+    },
+    {
+      "category": "Books",
+      "difficulty": "hard",
+      "error": "Generation failed quality gate after 3 attempts: The question is primarily about the film adaptation and the actor's directorial choices rather than about Andy Weir's book, making it better suited to the Film category than Entertainment: Books."
+    }
+  ]
+}

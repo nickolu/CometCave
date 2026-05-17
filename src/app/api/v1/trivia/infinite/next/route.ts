@@ -108,9 +108,13 @@ export async function GET(request: NextRequest) {
     const { correctAnswer, seed, ...safeQuestion }: AIQuestion = question!
 
     // Background top-up: keep the player ahead of pool exhaustion by
-    // pre-generating one question per /next when their unanswered
-    // pool drops below the target. Runs after the response is sent.
-    after(() => warmQuestionPoolForUser(auth.claims.uid))
+    // pre-generating questions when their unanswered pool drops below
+    // the target. Runs after the response is sent. Skipped for
+    // customCategory runs since there's no shared bank for arbitrary
+    // topics — warming has no value there.
+    if (!customCategory) {
+      after(() => warmQuestionPoolForUser(auth.claims.uid))
+    }
 
     return NextResponse.json(safeQuestion)
   } catch (err) {

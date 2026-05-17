@@ -89,11 +89,16 @@ export function useInfiniteRun() {
   const startTimeRef = useRef<number>(0)
   const prefetchAbortRef = useRef<AbortController | null>(null)
   // Resolved prefetch value, written by the in-flight prefetch IIFE when it
-  // succeeds. nextQuestion reads this synchronously — it never `await`s the
-  // prefetch Promise. A hung prefetch (e.g. server stuck on AI generation)
-  // would otherwise wedge nextQuestion mid-await, leaving the in-flight
-  // guard latched true and silently ignoring every subsequent click.
+  // succeeds. nextQuestion checks this first for the synchronous fast path.
   const prefetchedQuestionRef = useRef<InfiniteQuestion | null>(null)
+  // Promise handle for the in-flight prefetch. nextQuestion awaits this
+  // (with a bounded timeout) when the prefetch hasn't resolved yet, instead
+  // of cancelling it and firing a redundant /next — generation that's
+  // already on the server keeps running, and the player avoids paying a
+  // second round-trip + a second generation budget on top of the first.
+  // The timeout exists because a stuck server call would otherwise wedge
+  // the click handler indefinitely (the latched-in-flight bug).
+  const prefetchPromiseRef = useRef<Promise<InfiniteQuestion | null> | null>(null)
   // Guards against a second nextQuestion firing while the first is still
   // running (a stray re-tap would otherwise kick off a parallel fetch whose
   // late-arriving response clobbers the question the player is already
@@ -115,13 +120,26 @@ export function useInfiniteRun() {
       prefetchAbortRef.current = null
     }
     prefetchedQuestionRef.current = null
+    prefetchPromiseRef.current = null
+  }, [])
+
+  // Detach the in-flight prefetch refs WITHOUT aborting the request. Used
+  // when nextQuestion has decided to fall through to a fresh fetch after
+  // a prefetch timed out — we let the server-side call finish so the
+  // generated question still lands in the bank for someone (rather than
+  // burning the generation budget on nothing), but stop the IIFE from
+  // writing into our refs after we've moved on.
+  const detachPrefetch = useCallback(() => {
+    prefetchAbortRef.current = null
+    prefetchedQuestionRef.current = null
+    prefetchPromiseRef.current = null
   }, [])
 
   const startPrefetch = useCallback((streak: number, categoryIds: number[], customCategory: string | null) => {
     cancelPrefetch()
     const controller = new AbortController()
     prefetchAbortRef.current = controller
-    void (async () => {
+    const promise = (async (): Promise<InfiniteQuestion | null> => {
       try {
         const headers = await getAuthHeaders()
         const params = new URLSearchParams({ streak: String(streak) })
@@ -134,7 +152,7 @@ export function useInfiniteRun() {
           headers,
           signal: controller.signal,
         })
-        if (qRes.status === 204 || !qRes.ok) return
+        if (qRes.status === 204 || !qRes.ok) return null
         const question = (await qRes.json()) as InfiniteQuestion
         // Only stash if this prefetch is still the active one — a
         // newer cancelPrefetch/startPrefetch may have superseded us
@@ -142,10 +160,12 @@ export function useInfiniteRun() {
         if (prefetchAbortRef.current === controller) {
           prefetchedQuestionRef.current = question
         }
+        return question
       } catch {
-        // Ignore; nextQuestion will fall through to a fresh fetch.
+        return null
       }
     })()
+    prefetchPromiseRef.current = promise
   }, [cancelPrefetch, getAuthHeaders])
 
   const startRun = useCallback(async (mode: InfiniteMode = 'scored', categoryIds: number[] = [], customCategory: string | null = null) => {
@@ -311,10 +331,18 @@ export function useInfiniteRun() {
     // instant the player taps Next Question.
     setState(s => (s.phase === 'answered' ? { ...s, phase: 'loading' } : s))
 
+    // Upper bound on how long we'll wait for an in-flight prefetch before
+    // falling through to a fresh fetch. Tuned to cover the AI-generation
+    // path on cache-miss (~3-8s) without letting a stuck server call wedge
+    // the click handler — the prefetch IIFE is detached past this point,
+    // and a fresh /next is fired so the player isn't stranded.
+    const PREFETCH_WAIT_BUDGET_MS = 8000
+
     try {
       const fetchStartedAt = Date.now()
 
-      // Fast path: the background prefetch already finished.
+      // Fast path: the background prefetch already resolved. Use it
+      // synchronously.
       const cachedPrefetch = prefetchedQuestionRef.current
       if (cachedPrefetch) {
         cancelPrefetch()
@@ -322,32 +350,26 @@ export function useInfiniteRun() {
         return
       }
 
-      // Prefetch is in-flight but not done yet. Give it a short window to
-      // finish rather than aborting and starting a duplicate request — the
-      // server may be almost done, and a second /next would double the load.
-      if (prefetchAbortRef.current && !prefetchAbortRef.current.signal.aborted) {
-        const settled = await Promise.race([
-          new Promise<InfiniteQuestion | null>((resolve) => {
-            const check = () => {
-              if (prefetchedQuestionRef.current) {
-                resolve(prefetchedQuestionRef.current)
-              } else {
-                requestAnimationFrame(check)
-              }
-            }
-            check()
-          }),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
-        ])
-        if (settled) {
+      // Prefetch is still in flight. Wait for it with a bounded timeout
+      // instead of cancelling and re-issuing — the in-flight request will
+      // almost always beat a fresh round trip, and aborting would force the
+      // player to pay a second generation budget on cache-miss /next calls.
+      const inflight = prefetchPromiseRef.current
+      if (inflight) {
+        const timeout = new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), PREFETCH_WAIT_BUDGET_MS)
+        })
+        const resolved = await Promise.race([inflight, timeout])
+        if (resolved) {
           cancelPrefetch()
-          applyQuestion(settled, Date.now() - fetchStartedAt)
+          applyQuestion(resolved, Date.now() - fetchStartedAt)
           return
         }
+        // Wait budget exhausted. Detach (don't abort) so the in-flight
+        // call still benefits the bank if it eventually completes server-
+        // side, then fall through to a fresh fetch.
+        detachPrefetch()
       }
-
-      // Prefetch timed out or was never started. Abort and fetch fresh.
-      cancelPrefetch()
 
       try {
         const headers = await getAuthHeaders()
@@ -377,7 +399,7 @@ export function useInfiniteRun() {
     } finally {
       nextQuestionInFlightRef.current = false
     }
-  }, [state.phase, state.runId, state.currentStreak, state.categoryIds, state.customCategory, getAuthHeaders, cancelPrefetch])
+  }, [state.phase, state.runId, state.currentStreak, state.categoryIds, state.customCategory, getAuthHeaders, cancelPrefetch, detachPrefetch])
 
   // Player clicked "Ready" on the gated loading screen — start the
   // per-question timer now and reveal the question.

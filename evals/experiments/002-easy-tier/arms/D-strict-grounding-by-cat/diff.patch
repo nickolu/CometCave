@@ -1,0 +1,43 @@
+--- /tmp/cometcave-arm-snapshots/r002/perplexityFactSource.baseline.ts	2026-05-12 14:03:58
++++ src/lib/trivia/factSources/perplexityFactSource.ts	2026-05-12 15:13:43
+@@ -33,6 +33,13 @@
+     .describe('The list of distinct, surprising, well-grounded facts about the topic.'),
+ })
+ 
++// OpenTDB category IDs that have shown elevated factual-error rates in
++// eval runs (Video Games, Computers). For these categories we tighten
++// the Perplexity prompt with a single-snippet grounding rule so Sonar
++// is less inclined to synthesize across multiple sources or infer
++// claims that no single search result actually states.
++const STRICT_FACTUAL_CATEGORY_IDS = new Set<number>([15, 18])
++
+ const DIFFICULTY_GUIDANCE: Record<'easy' | 'medium' | 'hard', string> = {
+   easy: 'Facts must be COMMON KNOWLEDGE — about subjects a typical adult would recognize from popular culture, school, or daily life. Famous people, iconic places, well-known works, mainstream events. Do NOT reach for surprising / obscure / deep-cut framings; an "easy" fact is one that confirms something a player likely already knows.',
+   medium:
+@@ -73,11 +80,17 @@
+   }
+ 
+   async fetchFacts({
++    categoryId,
+     category,
+     seed,
+     difficulty,
+     count,
+   }: FetchFactsOptions): Promise<Fact[]> {
++    const strictFactual =
++      categoryId != null && STRICT_FACTUAL_CATEGORY_IDS.has(categoryId)
++    const strictFactualRule = strictFactual
++      ? `\n\nEXTRA RIGOR for this category (it has shown elevated factual-error rates in audits): each claim MUST be a direct quote or close paraphrase of a SINGLE search-result snippet. Do NOT synthesize across multiple sources, do NOT infer dates / version numbers / developer attributions / chronology / company-of-origin that aren't explicit in one snippet. When two search results give conflicting information (e.g. two different release dates), drop the fact. Prefer fewer well-grounded facts over more facts with weaker grounding.`
++      : ''
+     // Seed format from the generator is "${seedWord} :: ${modifier}".
+     // We parse it back out so the prompt can make seedWord the primary
+     // search subject (binding) and modifier the framing (decorative).
+@@ -131,7 +144,7 @@
+ - Be DIRECTLY supported by one of the search results you retrieved. If you couldn't find a search result that supports the claim, do not include it.
+ - Set sourceUrl to the single most-authoritative search result URL that supports the claim.
+ 
+-Avoid duplicates: each of the ${count} facts should be about a different subject within ${subject}.`,
++Avoid duplicates: each of the ${count} facts should be about a different subject within ${subject}.${strictFactualRule}`,
+         },
+       ],
+       response_format: {
