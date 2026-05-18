@@ -19,11 +19,16 @@ export interface SamplerOptions {
   categoryIds?: number[]
 }
 
-// Number of candidates to fetch around a random cursor. Large enough that
-// difficulty bucketing + freshness bias still produces a reasonable
-// distribution; small enough that reads-per-/next stays in low double
-// digits. Tunable; bump if buckets routinely come back thin.
-const CANDIDATE_WINDOW = 100
+// Number of candidates to fetch around a random cursor on the all-
+// category / multi-category rebuild path. Power users with large seen
+// sets (e.g. seenCount > activeCount after flagging churn) exhaust a
+// small window almost entirely — a 100-doc window can easily land
+// fully inside the seen set even when a handful of unseen exist in the
+// global pool. We pay 500 reads once per rebuild and the result lands
+// in the per-player pool cache, so subsequent /next calls don't repeat
+// the cost. Matches POOL_CACHE_SIZE so we cap reads at exactly what we
+// can fit in the cache.
+const CANDIDATE_WINDOW = 500
 
 // Single-category runs use a larger one-shot fetch instead of the random
 // window. For categories with <= this many active docs the fetch is

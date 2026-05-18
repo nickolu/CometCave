@@ -109,11 +109,19 @@ export async function GET(request: NextRequest) {
 
     // Background top-up: keep the player ahead of pool exhaustion by
     // pre-generating questions when their unanswered pool drops below
-    // the target. Runs after the response is sent. Skipped for
-    // customCategory runs since there's no shared bank for arbitrary
-    // topics — warming has no value there.
+    // the target. Runs after the response is sent.
+    //
+    // Pass the active categoryIds so the warmer scopes its count and
+    // generation to one of the categories the player is actually
+    // running. A global warmer is a no-op for niche / exhausted
+    // single-category runs because it refills some other category and
+    // the player stays exhausted in the one they're playing.
+    //
+    // Skipped entirely for customCategory runs — no shared bank for
+    // arbitrary topics, so pre-generating ahead of the player has no
+    // value.
     if (!customCategory) {
-      after(() => warmQuestionPoolForUser(auth.claims.uid))
+      after(() => warmQuestionPoolForUser(auth.claims.uid, categoryIds))
     }
 
     return NextResponse.json(safeQuestion)
