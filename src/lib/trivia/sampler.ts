@@ -1,3 +1,4 @@
+import { getOpenTDBCategoryName } from '@/app/trivia/data/seeds/categoryNames'
 import { getFirestoreDb } from '@/lib/firebase/server'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
 import { CATEGORY_META } from '@/lib/trivia/categories'
@@ -102,13 +103,17 @@ function buildCandidateQuery(
     .where('status', '==', 'active')
     .where('type', '==', type)
 
-  // Resolve the optional category filter to category-name strings (the
-  // shape stored on aiQuestions docs). Firestore `in` clause caps at 30
-  // values, which is comfortably more than our 24 categories.
+  // Resolve the optional category filter to category-name strings.
+  // Questions are stored with the OpenTDB-prefixed name (e.g.
+  // "Entertainment: Film", not "Film") — see the note in
+  // categories.ts about the two naming conventions. CATEGORY_META is
+  // for UI display; getOpenTDBCategoryName is the storage format.
+  // Firestore `in` clause caps at 30 values, comfortably more than our
+  // 24 categories.
   if (categoryIds && categoryIds.length > 0) {
     const names = categoryIds
-      .map((id) => CATEGORY_META[id]?.name)
-      .filter((name): name is string => !!name)
+      .filter((id) => CATEGORY_META[id] !== undefined)
+      .map((id) => getOpenTDBCategoryName(id))
     if (names.length === 1) {
       query = query.where('category', '==', names[0])
     } else if (names.length > 1) {

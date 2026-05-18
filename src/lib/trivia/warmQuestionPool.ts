@@ -1,3 +1,4 @@
+import { getOpenTDBCategoryName } from '@/app/trivia/data/seeds/categoryNames'
 import { getFirestoreDb } from '@/lib/firebase/server'
 import { saveAIQuestion } from '@/lib/trivia/aiQuestions'
 import { CATEGORY_META } from '@/lib/trivia/categories'
@@ -30,9 +31,12 @@ async function getActiveCount(
   }
   let q: FirebaseFirestore.Query = db.collection('aiQuestions').where('status', '==', 'active')
   if (scope !== 'all') {
-    const name = CATEGORY_META[scope]?.name
-    if (!name) return 0
-    q = q.where('category', '==', name)
+    // Questions are stored under the OpenTDB-prefixed name (e.g.
+    // "Entertainment: Film"), not CATEGORY_META's short form. Filter
+    // out unknown ids via CATEGORY_META, then resolve the storage
+    // name via getOpenTDBCategoryName.
+    if (CATEGORY_META[scope] === undefined) return 0
+    q = q.where('category', '==', getOpenTDBCategoryName(scope))
   }
   const agg = await q.count().get()
   const value = agg.data().count
