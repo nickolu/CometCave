@@ -605,7 +605,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
                         turnCount: combatState.turnNumber,
                         partyAlive: (combatState.partyMemberStates ?? []).filter(m => !m.isKnockedOut).length,
                         partyTotal: (combatState.partyMemberStates ?? []).length,
-                        enemyLevel: combatState.enemy.level,
+                        enemyLevel: (combatState.enemies[combatState.targetIndex ?? 0] ?? combatState.enemies[0])?.level,
                         playerLevel: character.level,
                         currentWeather: character.currentWeather,
                       }

@@ -846,14 +846,24 @@ export function processPlayerAction(
   action: CombatActionRequest,
   character: FantasyCharacter
 ): { combatState: CombatState; consumedItemId?: string; mountDied?: boolean; mercenaryDied?: boolean } {
-  let { enemy, playerState, turnNumber, combatLog, status, enemyTelegraph, isBoss } = structuredClone(combatState)
+  let { enemies, targetIndex, playerState, turnNumber, combatLog, status, enemyTelegraph, isBoss } = structuredClone(combatState)
+  if (!enemies) {
+    enemies = []
+    if ((combatState as any).enemy) {
+      enemies.push((combatState as any).enemy)
+    }
+    if ((combatState as any).additionalEnemies) {
+      enemies.push(...(combatState as any).additionalEnemies)
+    }
+  }
+  if (targetIndex === undefined) targetIndex = 0
+  let enemy = enemies[targetIndex]
   const newLogs: CombatLogEntry[] = []
   let consumedItemId: string | undefined
   let mountDied = false
   const bossAlreadyPhased = isBoss && !combatState.isFinalBoss ? enemy.name.includes('(Enraged)') : false
   let combatDistance: CombatDistance = combatState.combatDistance ?? 'mid'
   let partyMemberStates = combatState.partyMemberStates ? combatState.partyMemberStates.map(m => ({ ...m })) : undefined
-  let additionalEnemies = combatState.additionalEnemies ? combatState.additionalEnemies.map(e => ({ ...e })) : undefined
   // Only propagate combatDistance in returns if the original state had it set
   // This ensures backward compatibility with combat states created before range was added
   let rangeSystemActive = combatState.combatDistance !== undefined
@@ -873,13 +883,12 @@ export function processPlayerAction(
     playerState.turnActions = []
   }
 
-  // Switch target is free (0 AP) — just swap primary and additional enemy
-  if (action.action === 'switch_target' && action.itemId !== undefined && additionalEnemies?.length) {
+  // Switch target is free (0 AP) — just update targetIndex
+  if (action.action === 'switch_target' && action.itemId !== undefined) {
     const targetIdx = parseInt(action.itemId, 10)
-    if (targetIdx >= 0 && targetIdx < additionalEnemies.length && additionalEnemies[targetIdx].hp > 0) {
-      const old = enemy
-      enemy = additionalEnemies[targetIdx]
-      additionalEnemies[targetIdx] = old
+    if (targetIdx >= 0 && targetIdx < enemies.length && enemies[targetIdx].hp > 0) {
+      targetIndex = targetIdx
+      enemy = enemies[targetIndex]
       newLogs.push({
         turn: turnNumber,
         actor: 'player' as const,
@@ -889,12 +898,12 @@ export function processPlayerAction(
       return {
         combatState: {
           ...combatState,
-          enemy,
+          enemies,
+          targetIndex,
           playerState,
           combatLog: [...combatLog, ...newLogs],
           turnPhase: 'player',
           partyMemberStates,
-          additionalEnemies,
         },
       }
     }
@@ -914,12 +923,13 @@ export function processPlayerAction(
     return {
       combatState: {
         ...combatState,
+        enemies,
+        targetIndex,
         playerState,
         combatLog: [...combatLog, ...newLogs],
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
         partyMemberStates,
-        additionalEnemies,
       },
     }
   }
@@ -969,7 +979,8 @@ export function processPlayerAction(
         return {
           combatState: {
             ...combatState,
-            enemy,
+            enemies,
+            targetIndex,
             playerState,
             turnNumber,
             combatLog: [...combatLog, ...newLogs],
@@ -979,7 +990,6 @@ export function processPlayerAction(
             ...(rangeSystemActive ? { combatDistance } : {}),
             turnPhase: 'player',
             partyMemberStates,
-            additionalEnemies,
           },
           consumedItemId,
         }
@@ -1169,7 +1179,7 @@ export function processPlayerAction(
           return {
             combatState: {
               ...combatState,
-              enemy,
+              enemies,
               playerState,
               turnNumber,
               combatLog: [...combatLog, ...newLogs],
@@ -1177,7 +1187,6 @@ export function processPlayerAction(
               enemyTelegraph: null,
               ...(rangeSystemActive ? { combatDistance } : {}),
               turnPhase: 'enemy_done',
-              additionalEnemies,
             },
           }
         }
@@ -1411,6 +1420,9 @@ export function processPlayerAction(
     }
   }
 
+  // Write changes to active enemy back to enemies array
+  enemies[targetIndex] = enemy
+
   // Check victory
   if (enemy.hp <= 0) {
     const defeatedName = enemy.name
@@ -1420,22 +1432,23 @@ export function processPlayerAction(
       action: 'victory',
       description: `You defeated ${defeatedName}!`,
     })
-    // If additional enemies remain alive, auto-switch to next target
-    if (additionalEnemies?.some(e => e.hp > 0)) {
-      const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
-      const nextEnemy = additionalEnemies[nextIdx]
-      const remainingAdditional = additionalEnemies.filter((_, i) => i !== nextIdx)
+    // If other enemies remain alive, auto-switch to next target
+    const nextIdx = enemies.findIndex(e => e.hp > 0)
+    if (nextIdx !== -1) {
+      targetIndex = nextIdx
+      enemy = enemies[targetIndex]
       newLogs.push({
         turn: turnNumber,
         actor: 'player' as const,
         action: 'switch_target',
-        description: `${defeatedName} is defeated! You focus on ${nextEnemy.name}!`,
+        description: `${defeatedName} is defeated! You focus on ${enemy.name}!`,
       })
-      const nextTelegraph = generateEnemyTelegraph(nextEnemy, turnNumber, !!isBoss)
+      const nextTelegraph = generateEnemyTelegraph(enemy, turnNumber, !!isBoss)
       return {
         combatState: {
           ...combatState,
-          enemy: nextEnemy,
+          enemies,
+          targetIndex,
           playerState: tickBuffs(playerState),
           turnNumber,
           combatLog: [...combatLog, ...newLogs],
@@ -1445,7 +1458,6 @@ export function processPlayerAction(
           ...(rangeSystemActive ? { combatDistance } : {}),
           turnPhase: 'enemy_done',
           partyMemberStates,
-          additionalEnemies: remainingAdditional.length > 0 ? remainingAdditional : undefined,
         },
         consumedItemId,
       }
@@ -1454,7 +1466,8 @@ export function processPlayerAction(
     return {
       combatState: {
         ...combatState,
-        enemy,
+        enemies,
+        targetIndex,
         playerState: tickBuffs(playerState),
         turnNumber,
         combatLog: [...combatLog, ...newLogs],
@@ -1462,7 +1475,6 @@ export function processPlayerAction(
         enemyTelegraph: null,
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'enemy_done',
-        additionalEnemies: undefined,
       },
       consumedItemId,
     }
@@ -1473,7 +1485,8 @@ export function processPlayerAction(
     return {
       combatState: {
         ...combatState,
-        enemy,
+        enemies,
+        targetIndex,
         playerState,
         turnNumber,
         combatLog: [...combatLog, ...newLogs],
@@ -1483,7 +1496,6 @@ export function processPlayerAction(
         ...(rangeSystemActive ? { combatDistance } : {}),
         turnPhase: 'player',
         partyMemberStates,
-        additionalEnemies,
       },
       consumedItemId,
     }
@@ -1872,15 +1884,16 @@ export function processPlayerAction(
   if (status === 'active' && partyMemberStates?.length) {
     const partyResult = applyPartyMemberAttacks(partyMemberStates, enemy, turnNumber)
     enemy = partyResult.enemy
+    enemies[targetIndex] = enemy
     partyMemberStates = partyResult.partyStates
     newLogs.push(...partyResult.logs)
     if (partyResult.killedEnemy) {
-      // If additional enemies remain, auto-switch target instead of declaring victory
-      if (additionalEnemies?.some(e => e.hp > 0)) {
+      // If other enemies remain, auto-switch target instead of declaring victory
+      const nextIdx = enemies.findIndex(e => e.hp > 0)
+      if (nextIdx !== -1) {
         const defeatedName = enemy.name
-        const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
-        enemy = additionalEnemies[nextIdx]
-        additionalEnemies = additionalEnemies.filter((_, i) => i !== nextIdx)
+        targetIndex = nextIdx
+        enemy = enemies[targetIndex]
         newLogs.push({
           turn: turnNumber, actor: 'party_member' as const, action: 'switch_target',
           description: `${defeatedName} is defeated! ${enemy.name} remains!`,
@@ -1891,34 +1904,36 @@ export function processPlayerAction(
     }
   }
 
-  // Party members also strike additional enemies (round-robin assignment)
-  if (status === 'active' && additionalEnemies?.length && partyMemberStates?.length) {
+  // Party members also strike other enemies (round-robin assignment)
+  if (status === 'active' && enemies.length > 1 && partyMemberStates?.length) {
     const aliveParty = partyMemberStates.filter(m => !m.isKnockedOut)
-    for (let i = 0; i < additionalEnemies.length; i++) {
-      if (additionalEnemies[i].hp <= 0) continue
+    for (let i = 0; i < enemies.length; i++) {
+      if (i === targetIndex) continue
+      if (enemies[i].hp <= 0) continue
       const assignedMember = aliveParty[i % aliveParty.length]
       if (!assignedMember) continue
       const baseDmg = assignedMember.attack
-      const raw = baseDmg - additionalEnemies[i].defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
+      const raw = baseDmg - enemies[i].defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
       const damage = Math.max(1, Math.round(raw))
-      additionalEnemies[i] = { ...additionalEnemies[i], hp: Math.max(0, additionalEnemies[i].hp - damage) }
+      enemies[i] = { ...enemies[i], hp: Math.max(0, enemies[i].hp - damage) }
       newLogs.push({
         turn: turnNumber, actor: 'party_member' as const, action: 'attack', damage,
-        description: `${assignedMember.icon} ${assignedMember.name} attacks ${additionalEnemies[i].name} for ${damage} damage!`,
+        description: `${assignedMember.icon} ${assignedMember.name} attacks ${enemies[i].name} for ${damage} damage!`,
       })
-      if (additionalEnemies[i].hp <= 0) {
+      if (enemies[i].hp <= 0) {
         newLogs.push({
           turn: turnNumber, actor: 'party_member' as const, action: 'victory',
-          description: `${assignedMember.name} defeats ${additionalEnemies[i].name}!`,
+          description: `${assignedMember.name} defeats ${enemies[i].name}!`,
         })
       }
     }
   }
 
-  // Additional enemies auto-attack player/party at end of turn
-  if (status === 'active' && additionalEnemies?.length) {
-    for (let i = 0; i < additionalEnemies.length; i++) {
-      const addEnemy = additionalEnemies[i]
+  // Other enemies auto-attack player/party at end of turn
+  if (status === 'active' && enemies.length > 1) {
+    for (let i = 0; i < enemies.length; i++) {
+      if (i === targetIndex) continue
+      const addEnemy = enemies[i]
       if (addEnemy.hp <= 0) continue
 
       // 40% chance to target a party member, 60% player
@@ -1951,6 +1966,7 @@ export function processPlayerAction(
             turn: turnNumber, actor: 'enemy' as const, action: 'defeat',
             description: `You have been defeated by ${addEnemy.name}...`,
           })
+          break
         }
       }
     }
@@ -2030,17 +2046,22 @@ export function processPlayerAction(
     }
   }
 
-  // If primary enemy was defeated (e.g. by status effects) but additional enemies remain, auto-switch
-  if (status === 'victory' && additionalEnemies?.some(e => e.hp > 0)) {
-    const defeatedName = enemy.name
-    const nextIdx = additionalEnemies.findIndex(e => e.hp > 0)
-    enemy = additionalEnemies[nextIdx]
-    additionalEnemies = additionalEnemies.filter((_, i) => i !== nextIdx)
-    status = 'active'
-    newLogs.push({
-      turn: turnNumber, actor: 'player' as const, action: 'switch_target',
-      description: `${defeatedName} is defeated! ${enemy.name} remains!`,
-    })
+  // If primary enemy or other enemies were defeated, write changes and check victory / target switch
+  enemies[targetIndex] = enemy
+  if (enemies.every(e => e.hp <= 0)) {
+    status = 'victory'
+  } else if (enemies[targetIndex].hp <= 0) {
+    const nextIdx = enemies.findIndex(e => e.hp > 0)
+    if (nextIdx !== -1) {
+      const defeatedName = enemy.name
+      targetIndex = nextIdx
+      enemy = enemies[targetIndex]
+      status = 'active'
+      newLogs.push({
+        turn: turnNumber, actor: 'player' as const, action: 'switch_target',
+        description: `${defeatedName} is defeated! ${enemy.name} remains!`,
+      })
+    }
   }
 
   // Generate telegraph for enemy's NEXT action
@@ -2051,7 +2072,8 @@ export function processPlayerAction(
   return {
     combatState: {
       ...combatState,
-      enemy,
+      enemies,
+      targetIndex,
       playerState,
       turnNumber,
       combatLog: [...combatLog, ...newLogs],
@@ -2061,7 +2083,6 @@ export function processPlayerAction(
       ...(rangeSystemActive ? { combatDistance } : {}),
       turnPhase: 'enemy_done',
       partyMemberStates,
-      additionalEnemies: additionalEnemies && additionalEnemies.length > 0 ? additionalEnemies : undefined,
     },
     consumedItemId,
     mountDied,
@@ -2080,31 +2101,40 @@ export function getCombatRewards(
   character: FantasyCharacter,
   regionMultiplier?: number
 ): CombatRewards {
-  const { enemy } = combatState
+  let { enemies, targetIndex } = combatState
+  if (targetIndex === undefined) targetIndex = 0
+  if (!enemies) {
+    enemies = []
+    if ((combatState as any).enemy) {
+      enemies.push((combatState as any).enemy)
+    }
+    if ((combatState as any).additionalEnemies) {
+      enemies.push(...(combatState as any).additionalEnemies)
+    }
+  }
   const skills = resolveSkills(character)
   const goldBonus = getSkillBonus(skills, 'gold_bonus')
   const lootBonus = getSkillBonus(skills, 'loot_chance')
   const diffMods = getDifficultyModifiers(character.difficultyMode)
   const regionMult = regionMultiplier ?? 1
-  let gold = Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
-
-  // Add gold from defeated additional enemies
-  if (combatState.additionalEnemies?.length) {
-    for (const addEnemy of combatState.additionalEnemies) {
-      if (addEnemy.hp <= 0) {
-        gold += Math.round(addEnemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
-      }
-    }
-  }
-
+  
+  let gold = 0
   const loot: Item[] = []
-  if (enemy.lootTable) {
-    for (const item of enemy.lootTable) {
-      // Secret bosses guarantee 100% item drop; regular bosses also guarantee; others use luck-based chance
-      const baseDropChance = (combatState.isBoss || combatState.isSecretBoss) ? 1.0 : 0.3 + character.luck * 0.03
-      const dropChance = Math.min(1, (baseDropChance + lootBonus.percentage / 100) * diffMods.lootChanceMultiplier)
-      if (Math.random() < dropChance) {
-        loot.push(item)
+
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i]
+    if (i === targetIndex || enemy.hp <= 0) {
+      gold += Math.round(enemy.goldReward * (1 + goldBonus.percentage / 100) * diffMods.goldMultiplier * regionMult)
+
+      if (enemy.lootTable) {
+        for (const item of enemy.lootTable) {
+          // Secret bosses guarantee 100% item drop; regular bosses also guarantee; others use luck-based chance
+          const baseDropChance = (combatState.isBoss || combatState.isSecretBoss) ? 1.0 : 0.3 + character.luck * 0.03
+          const dropChance = Math.min(1, (baseDropChance + lootBonus.percentage / 100) * diffMods.lootChanceMultiplier)
+          if (Math.random() < dropChance) {
+            loot.push(item)
+          }
+        }
       }
     }
   }

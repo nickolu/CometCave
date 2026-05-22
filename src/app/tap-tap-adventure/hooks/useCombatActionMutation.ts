@@ -157,7 +157,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
         setCombatState(data.combatState)
       } else {
         // Combat ended
-        const enemy = combatState.enemy
+        const enemy = combatState.enemies[combatState.targetIndex ?? 0] ?? combatState.enemies[0]
 
         if (data.combatState.status === 'victory' && data.rewards) {
           soundEngine.playVictory()

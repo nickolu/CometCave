@@ -166,7 +166,8 @@ export function CombatUI({ combatState }: CombatUIProps) {
   const [effectivenessFlash, setEffectivenessFlash] = useState<'super' | 'resisted' | null>(null)
 
   const character = getSelectedCharacter()
-  const { enemy, playerState, combatLog, scenario, status } = combatState
+  const { enemies, targetIndex = 0, playerState, combatLog, scenario, status } = combatState
+  const enemy = enemies[targetIndex] ?? enemies[0]
 
   // Detect new combat log entries and create floating damage events
   useEffect(() => {
@@ -448,9 +449,10 @@ export function CombatUI({ combatState }: CombatUIProps) {
       </div>
 
       {/* Additional enemies */}
-      {combatState.additionalEnemies?.map((addEnemy, idx) => (
-        addEnemy.hp > 0 ? (
-          <div key={addEnemy.id} className="bg-red-900/10 border border-red-900/30 rounded-lg p-2 space-y-1">
+      {enemies.map((addEnemy, idx) => {
+        if (idx === targetIndex) return null
+        return addEnemy.hp > 0 ? (
+          <div key={addEnemy.id || idx} className="bg-red-900/10 border border-red-900/30 rounded-lg p-2 space-y-1">
             <div className="flex justify-between items-center">
               <span className="text-sm font-semibold text-red-300">{addEnemy.name}</span>
               <span className="text-[10px] text-slate-400">Lv {addEnemy.level}</span>
@@ -464,11 +466,11 @@ export function CombatUI({ combatState }: CombatUIProps) {
             </button>
           </div>
         ) : (
-          <div key={addEnemy.id} className="bg-slate-900/30 border border-slate-800 rounded-lg p-2">
+          <div key={addEnemy.id || idx} className="bg-slate-900/30 border border-slate-800 rounded-lg p-2">
             <span className="text-xs text-slate-600 line-through">{addEnemy.name} — Defeated</span>
           </div>
         )
-      ))}
+      })}
 
       {/* Enemy telegraph warning */}
       {combatState.enemyTelegraph && (
@@ -925,7 +927,8 @@ interface CombatResultProps {
 }
 
 export function CombatResult({ combatState, onContinue }: CombatResultProps) {
-  const { status, enemy } = combatState
+  const { status, enemies, targetIndex = 0 } = combatState
+  const enemy = enemies[targetIndex] ?? enemies[0]
   const { getSelectedCharacter } = useGameStore()
   const character = getSelectedCharacter()
 

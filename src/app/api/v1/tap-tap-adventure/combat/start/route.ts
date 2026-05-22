@@ -83,14 +83,12 @@ export async function POST(req: NextRequest) {
     // Generate a stable combat ID first so we can use it for seeding
     const combatId = `combat-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
-    // Generate additional enemies for non-boss fights with party members
-    let additionalEnemies: CombatEnemy[] | undefined
+    // Generate enemies list (including additional variants for party fights)
+    const enemies: CombatEnemy[] = [finalEnemy]
     if (!isBossEncounter && partySize > 0) {
-      const count = getEnemyCount(partySize, false) - 1 // -1 because primary enemy counts
-      if (count > 0) {
-        additionalEnemies = Array.from({ length: count }, (_, i) =>
-          generateEnemyVariant(finalEnemy, i, combatId)
-        )
+      const count = getEnemyCount(partySize, false) - 1 // -1 because primary enemy is already added
+      for (let i = 0; i < count; i++) {
+        enemies.push(generateEnemyVariant(finalEnemy, i, combatId))
       }
     }
 
@@ -102,7 +100,8 @@ export async function POST(req: NextRequest) {
     const combatState: CombatState = {
       id: combatId,
       eventId: `event-combat-${Date.now()}`,
-      enemy: finalEnemy,
+      enemies,
+      targetIndex: 0,
       playerState,
       turnNumber: 0,
       combatLog: [],
@@ -115,7 +114,6 @@ export async function POST(req: NextRequest) {
       combatDistance: region.startingCombatDistance ?? 'mid',
       ...(pendingRegionId ? { pendingRegionId } : {}),
       partyMemberStates: partyMemberStates.length > 0 ? partyMemberStates : undefined,
-      additionalEnemies,
     }
 
     return NextResponse.json({ combatState, updatedCharacter: character.explorationShield ? updatedCharacter : undefined })

@@ -162,7 +162,8 @@ export type CombatDistance = z.infer<typeof CombatDistanceSchema>
 export const CombatStateSchema = z.object({
   id: z.string(),
   eventId: z.string(),
-  enemy: CombatEnemySchema,
+  enemies: z.array(CombatEnemySchema),
+  targetIndex: z.number().default(0),
   playerState: CombatPlayerStateSchema,
   turnNumber: z.number(),
   combatLog: z.array(CombatLogEntrySchema),
@@ -177,6 +178,5 @@ export const CombatStateSchema = z.object({
   turnPhase: TurnPhaseSchema.optional(),
   pendingRegionId: z.string().optional(),
   partyMemberStates: z.array(PartyMemberCombatStateSchema).optional(),
-  additionalEnemies: z.array(CombatEnemySchema).optional(),
 })
 export type CombatState = z.infer<typeof CombatStateSchema>
