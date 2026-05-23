@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 
+import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { getHand } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { cardValuePriority } from '@/app/comet-cards/domain/hand/constants'
@@ -12,12 +13,15 @@ import { useGameState } from '@/app/comet-cards/useGameState'
 
 import { PlayingCard } from './playing-card'
 
-const CARD_W = 92
-const OVERLAP = 48
-
 export type HandSortKey = 'value' | 'suit'
 
 export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
+  const isLandscape = useLandscapeMobile()
+  const CARD_W = isLandscape ? 58 : 92
+  const OVERLAP = isLandscape ? 32 : 48
+  const containerHeight = isLandscape ? 100 : 160
+  const cardLift = isLandscape ? '-100px' : '-160px'
+
   const { game } = useGameState()
   const { gamePlayState } = game
   const { selectedCardIds } = gamePlayState
@@ -84,11 +88,11 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
       style={
         {
           width: fanWidth,
-          height: 160,
+          height: containerHeight,
           perspective: 1200,
           paddingTop: 14,
           // Selected cards lift fully above the resting row instead of overlapping.
-          ['--cc-card-lift' as string]: '-160px',
+          ['--cc-card-lift' as string]: cardLift,
         } as React.CSSProperties
       }
     >
@@ -118,6 +122,7 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
               playingCard={card}
               isSelected={isSelected}
               debuffed={debuffedIds.has(card.id)}
+              size={isLandscape ? 'xs' : 'md'}
               onClick={(wasSelected, id) => {
                 if (wasSelected) {
                   eventEmitter.emit({ type: 'CARD_DESELECTED', id })

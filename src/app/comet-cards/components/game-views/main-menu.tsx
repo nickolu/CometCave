@@ -5,6 +5,7 @@ import {
   PrimaryButton,
 } from '@/app/comet-cards/components/cosmic/buttons'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
+import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 
 const REFERENCE_BUTTONS = [
   { event: 'DISPLAY_JOKERS', label: 'Jokers' },
@@ -17,12 +18,13 @@ const REFERENCE_BUTTONS = [
 ] as const
 
 export function MainMenuView() {
+  const isLandscape = useLandscapeMobile()
   return (
     <div
       className="relative mx-auto flex flex-col items-center"
       style={{
-        padding: '64px 24px',
-        gap: 28,
+        padding: isLandscape ? '16px 16px' : '64px 24px',
+        gap: isLandscape ? 12 : 28,
         maxWidth: 720,
         textAlign: 'center',
       }}
@@ -41,7 +43,7 @@ export function MainMenuView() {
       </div>
       <h1
         style={{
-          fontSize: 48,
+          fontSize: isLandscape ? 28 : 48,
           fontWeight: 200,
           letterSpacing: -1.5,
           lineHeight: 1.05,
@@ -74,8 +76,8 @@ export function MainMenuView() {
       <div
         className="w-full"
         style={{
-          marginTop: 8,
-          paddingTop: 24,
+          marginTop: isLandscape ? 4 : 8,
+          paddingTop: isLandscape ? 8 : 24,
           borderTop: '1px solid var(--cc-panel-divider)',
         }}
       >

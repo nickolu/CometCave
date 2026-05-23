@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { useGameState } from '@/app/comet-cards/useGameState'
+import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 
 import { ViewTemplate } from './view-template'
 
@@ -62,17 +63,18 @@ export function GameOverView() {
     }
   }, [shareText])
 
+  const isLandscape = useLandscapeMobile()
   const accent = didWin ? 'var(--cc-mint)' : 'var(--cc-pink)'
   const eyebrow = didWin ? 'Victory' : 'Run Ended'
   const headline = didWin ? 'The cave aligns.' : 'The cave goes quiet.'
 
   return (
     <ViewTemplate>
-      <div className="mx-auto" style={{ maxWidth: 520, padding: '32px 0' }}>
+      <div className="mx-auto" style={{ maxWidth: 520, padding: isLandscape ? '8px 0' : '32px 0' }}>
         <Panel title={eyebrow}>
           <div
             className="flex flex-col items-center text-center"
-            style={{ padding: '28px 24px', gap: 16 }}
+            style={{ padding: isLandscape ? '12px 16px' : '28px 24px', gap: 16 }}
           >
             <div
               className="uppercase"
@@ -111,7 +113,7 @@ export function GameOverView() {
             </div>
             <div
               style={{
-                fontSize: 44,
+                fontSize: isLandscape ? 28 : 44,
                 fontWeight: 200,
                 letterSpacing: -1.5,
                 lineHeight: 1,
