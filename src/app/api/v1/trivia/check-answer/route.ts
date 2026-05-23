@@ -3,7 +3,6 @@ import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
 import { getTodayPST } from '@/lib/dates'
 import { getDailyQuestions } from '@/lib/trivia/dailyQuestionsDb'
@@ -28,20 +27,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Look up the question in the shared cache, Firestore, or disk
+    // Look up the question in the shared cache or Firestore
     let cachedQuestions = dailyCache.get(date)
     if (!cachedQuestions) {
       const firestoreDoc = await getDailyQuestions(date)
       if (firestoreDoc && firestoreDoc.questions.length > 0) {
         dailyCache.set(date, firestoreDoc.questions)
         cachedQuestions = firestoreDoc.questions
-      }
-    }
-    if (!cachedQuestions) {
-      const fromDisk = loadDailyQuestionsFromDisk(date)
-      if (fromDisk && fromDisk.length > 0) {
-        dailyCache.set(date, fromDisk)
-        cachedQuestions = fromDisk
       }
     }
 
