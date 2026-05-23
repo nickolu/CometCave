@@ -11,6 +11,7 @@ import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { implementedTags as tags } from '@/app/comet-cards/domain/tag/tags'
 import { useGameState } from '@/app/comet-cards/useGameState'
+import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 
 const monoLabel = {
   fontFamily: 'var(--cc-font-mono)',
@@ -55,6 +56,7 @@ export function ViewTemplate({
   sidebarContentBottom?: React.ReactNode
   children: React.ReactNode
 }) {
+  const isLandscape = useLandscapeMobile()
   const { game } = useGameState()
   const currentBlind = getInProgressBlind(game)
   const [showHands, setShowHands] = useState(false)
@@ -73,7 +75,7 @@ export function ViewTemplate({
       <div
         className="relative z-10 flex flex-wrap items-center justify-between gap-4"
         style={{
-          padding: '12px 22px',
+          padding: isLandscape ? '8px 12px' : '12px 22px',
           borderBottom: '1px solid var(--cc-panel-divider)',
         }}
       >
@@ -105,14 +107,14 @@ export function ViewTemplate({
       <div
         className="grid"
         style={{
-          gridTemplateColumns: 'minmax(240px, 280px) minmax(0, 1fr)',
+          gridTemplateColumns: isLandscape ? '1fr' : 'minmax(240px, 280px) minmax(0, 1fr)',
           gap: 18,
-          padding: '14px 22px 22px',
+          padding: isLandscape ? '8px 12px' : '14px 22px 22px',
           alignItems: 'start',
         }}
       >
         {/* Sidebar */}
-        <aside id="game-sidebar" className="flex flex-col gap-4">
+        <aside id="game-sidebar" className="flex flex-col gap-4" style={{ display: isLandscape ? 'none' : undefined }}>
           {sidebarContentTop}
 
           <Panel title="Run Stats">

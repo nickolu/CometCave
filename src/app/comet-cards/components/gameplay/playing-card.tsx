@@ -6,11 +6,13 @@ export const PlayingCard = ({
   isSelected,
   onClick,
   debuffed,
+  size = 'md',
 }: {
   playingCard: PlayingCardState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
   debuffed?: boolean
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }) => {
-  return <BrandCard card={playingCard} selected={isSelected} onClick={onClick} size="md" debuffed={debuffed} />
+  return <BrandCard card={playingCard} selected={isSelected} onClick={onClick} size={size} debuffed={debuffed} />
 }

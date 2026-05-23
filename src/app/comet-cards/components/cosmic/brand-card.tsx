@@ -14,6 +14,7 @@ const SUIT_GLYPH: Record<string, string> = {
 }
 
 const SIZES = {
+  xs: { w: 58, h: 82, fs: 14, pip: 26 },
   sm: { w: 72, h: 102, fs: 18, pip: 32 },
   md: { w: 92, h: 132, fs: 22, pip: 42 },
   lg: { w: 116, h: 168, fs: 28, pip: 56 },
