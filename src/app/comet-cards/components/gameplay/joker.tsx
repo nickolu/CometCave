@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { TokenCard } from '@/app/comet-cards/components/cosmic/token-card'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
+import { buildSeedString, getRandomNumbersWithSeed } from '@/app/comet-cards/domain/randomness'
 
 const RARITY_ACCENT: Record<string, string> = {
   common: 'var(--cc-mint)',
@@ -37,16 +38,22 @@ const POKER_HAND_LABELS = [
   '5 of a Kind', 'Flush Five',
 ] as const
 
+const CASTLE_SUITS = ['\u2665', '\u2666', '\u2663', '\u2660'] as const
+
 export const Joker = ({
   joker,
   isSelected,
   onClick,
   ownedCardCount,
+  gameSeed,
+  roundIndex,
 }: {
   joker: JokerState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
   ownedCardCount?: number
+  gameSeed?: string
+  roundIndex?: number
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
@@ -120,6 +127,16 @@ export const Joker = ({
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
         +{joker.counter}
+      </span>
+    )
+  } else if (joker.jokerId === 'castle' && gameSeed != null && roundIndex != null) {
+    const seed = buildSeedString([gameSeed, roundIndex.toString(), 'castle', 'suit'])
+    const roll = getRandomNumbersWithSeed({ seed, min: 0, max: 3, numberOfNumbers: 1 })
+    const castleSuit = CASTLE_SUITS[roll[0]] ?? '?'
+    const suitColor = IDOL_SUIT_COLORS[castleSuit] ?? 'var(--cc-text-default)'
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: suitColor }}>
+        {castleSuit}{joker.counter > 0 ? ` +${joker.counter}` : ''}
       </span>
     )
   } else if (joker.jokerId === 'theIdol') {
