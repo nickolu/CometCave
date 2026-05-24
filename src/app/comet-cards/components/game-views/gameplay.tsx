@@ -275,6 +275,19 @@ export function GamePlayView() {
                 {score.mult > 0 ? <TickingNumber value={score.mult} /> : displayHandMult}
               </span>
             </span>
+            {hasSelectedHand && displayHandDefinition && (
+              <span style={{
+                padding: '2px 6px',
+                borderRadius: 3,
+                background: 'rgba(94,234,212,0.08)',
+                color: 'var(--cc-mint)',
+                fontWeight: 600,
+                fontSize: 10,
+                letterSpacing: 0.5,
+              }}>
+                {displayHandDefinition.name} Lv.{displayHandState.level}
+              </span>
+            )}
           </div>
 
           {/* Score display */}
@@ -409,7 +422,111 @@ export function GamePlayView() {
                 </button>
               )
             })}
+            <div style={{ width: 1, height: 16, background: 'rgba(94,234,212,0.15)', flexShrink: 0 }} />
+            <button
+              type="button"
+              onClick={() => setShowDeck(true)}
+              style={{
+                flexShrink: 0,
+                padding: '3px 8px',
+                borderRadius: 4,
+                border: '1px solid rgba(94,234,212,0.15)',
+                background: 'transparent',
+                color: 'var(--cc-text-default)',
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                cursor: 'pointer',
+                opacity: 0.6,
+              }}
+            >
+              Deck
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowHands(true)}
+              style={{
+                flexShrink: 0,
+                padding: '3px 8px',
+                borderRadius: 4,
+                border: '1px solid rgba(94,234,212,0.15)',
+                background: 'transparent',
+                color: 'var(--cc-text-default)',
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                cursor: 'pointer',
+                opacity: 0.6,
+              }}
+            >
+              Hands
+            </button>
+            {game.vouchers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowVouchers(true)}
+                style={{
+                  flexShrink: 0,
+                  padding: '3px 8px',
+                  borderRadius: 4,
+                  border: '1px solid rgba(94,234,212,0.15)',
+                  background: 'transparent',
+                  color: 'var(--cc-text-default)',
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  opacity: 0.6,
+                }}
+              >
+                Vouchers
+              </button>
+            )}
           </div>
+          {/* Selected item actions */}
+          {(selectedJoker || selectedConsumable) && (
+            <div
+              className="flex items-center justify-center gap-3"
+              style={{
+                padding: '4px 12px',
+                borderTop: '1px solid var(--cc-panel-divider)',
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+              }}
+            >
+              {selectedJoker && selectedJokerDefinition && (
+                <>
+                  <span style={{ color: RARITY_ACCENT[selectedJokerDefinition.rarity] ?? 'var(--cc-mint)', fontWeight: 600 }}>
+                    {selectedJokerDefinition.name}
+                  </span>
+                  <span style={{ opacity: 0.5, fontSize: 9 }}>{selectedJokerDefinition.description}</span>
+                  <DangerButton onClick={() => eventEmitter.emit({ type: 'JOKER_SOLD' })}>
+                    Sell ${selectedJokerDefinition.price}
+                  </DangerButton>
+                </>
+              )}
+              {selectedConsumable && selectedConsumableDefinition && (
+                <>
+                  <span style={{ color: selectedConsumable.consumableType === 'tarotCard' ? 'var(--cc-pink)' : 'var(--cc-gold)', fontWeight: 600 }}>
+                    {selectedConsumableDefinition.name}
+                  </span>
+                  <span style={{ opacity: 0.5, fontSize: 9 }}>{selectedConsumableDefinition.description}</span>
+                  <PrimaryButton
+                    disabled={!selectedConsumableDefinition.isPlayable(game)}
+                    onClick={() => {
+                      if (selectedConsumable.consumableType === 'tarotCard') {
+                        eventEmitter.emit({ type: 'TAROT_CARD_USED' })
+                      } else {
+                        eventEmitter.emit({ type: 'CELESTIAL_CARD_USED' })
+                      }
+                    }}
+                  >
+                    Use
+                  </PrimaryButton>
+                  <DangerButton onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}>
+                    Sell
+                  </DangerButton>
+                </>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         /* ── DESKTOP: 3-column grid (unchanged) ── */
