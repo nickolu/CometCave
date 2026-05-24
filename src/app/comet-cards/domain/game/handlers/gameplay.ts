@@ -366,6 +366,7 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   draft.gamePlayState.handTypesPlayedThisRound = []
 
   // Reset shop state for the new shop session
+  draft.shopState.isOpen = false
   draft.shopState.cardsForSale = []
   draft.shopState.freeRerolls = 0
   draft.shopState.packsForSale = []
