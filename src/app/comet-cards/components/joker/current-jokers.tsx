@@ -18,6 +18,8 @@ export const CurrentJokers = () => {
             joker={joker}
             isSelected={game.gamePlayState.selectedJokerId === joker.id}
             ownedCardCount={game.ownedCardIds.length}
+            gameSeed={game.gameSeed}
+            roundIndex={game.roundIndex}
             onClick={(isSelected, id) => {
               if (isSelected) {
                 eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
