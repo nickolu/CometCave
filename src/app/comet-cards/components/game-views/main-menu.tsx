@@ -21,12 +21,14 @@ export function MainMenuView() {
   const isLandscape = useLandscapeMobile()
   return (
     <div
-      className="relative mx-auto flex flex-col items-center"
+      className="cc-scroll relative mx-auto flex flex-col items-center"
       style={{
         padding: isLandscape ? '16px 16px' : '64px 24px',
         gap: isLandscape ? 12 : 28,
         maxWidth: 720,
         textAlign: 'center',
+        height: '100%',
+        overflowY: 'auto',
       }}
     >
       <div

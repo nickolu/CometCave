@@ -358,6 +358,26 @@ body {
   transform: translateY(var(--cc-card-lift, -16px));
 }
 
+/* Comet Cards — thin internal scrollbar utility */
+.cc-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(94, 234, 212, 0.2) transparent;
+}
+
+.cc-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cc-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cc-scroll::-webkit-scrollbar-thumb {
+  background: rgba(94, 234, 212, 0.2);
+  border-radius: 4px;
+}
+
 /* When game is active on mobile, hide site chrome and fix scrolling */
 @media (max-width: 767px) {
   body.game-active header,
