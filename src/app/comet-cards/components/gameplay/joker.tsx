@@ -10,6 +10,15 @@ const RARITY_ACCENT: Record<string, string> = {
   legendary: 'var(--cc-gold)',
 }
 
+const COUNTER_XMULT_DIVISOR: Record<string, number> = {
+  vampire: 10,
+  hitTheRoad: 2,
+  campfire: 4,
+  obelisk: 5,
+  luckyCat: 4,
+  ramen: 100,
+}
+
 export const Joker = ({
   joker,
   isSelected,
@@ -26,6 +35,8 @@ export const Joker = ({
   const handSizeBonus = joker.metadata?.handSizeBonus as number | undefined
   const xMult = joker.metadata?.xMult as number | undefined
   const payout = joker.metadata?.payout as number | undefined
+
+  const xMultDivisor = COUNTER_XMULT_DIVISOR[joker.jokerId]
 
   let badge: ReactNode = undefined
   if (multBonus != null && multBonus > 0) {
@@ -56,6 +67,33 @@ export const Joker = ({
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-gold)' }}>
         ${payout}
+      </span>
+    )
+  } else if (xMultDivisor != null && joker.counter > 0) {
+    const computed = joker.counter / xMultDivisor
+    if (computed > 1) {
+      badge = (
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
+          ×{computed % 1 === 0 ? computed.toString() : computed.toFixed(1)}
+        </span>
+      )
+    }
+  } else if (joker.jokerId === 'iceCream' && joker.counter > 0) {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-mint)' }}>
+        +{joker.counter}
+      </span>
+    )
+  } else if (joker.jokerId === 'popcorn' && joker.counter > 0) {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
+        +{joker.counter}
+      </span>
+    )
+  } else if (joker.jokerId === 'invisibleJoker') {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-text-default)', opacity: 0.7 }}>
+        {joker.counter}/2
       </span>
     )
   } else if (joker.counter > 0) {
