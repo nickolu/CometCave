@@ -13,6 +13,7 @@ import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { Hand, type HandSortKey } from '@/app/comet-cards/components/gameplay/hand'
 import { Deck } from '@/app/comet-cards/components/global/deck'
 import { Hands } from '@/app/comet-cards/components/hands/hands'
+import { TickingNumber } from '@/app/comet-cards/components/animations/ticking-number'
 import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { Vouchers } from '@/app/comet-cards/components/voucher/vouchers'
 import { getConsumableDefinition } from '@/app/comet-cards/domain/consumable/utils'
@@ -204,7 +205,7 @@ export function GamePlayView() {
                   marginRight: 4,
                 }}
               >
-                {score.chips || displayHandChips}
+                {score.chips > 0 ? <TickingNumber value={score.chips} /> : displayHandChips}
               </span>
               ×
               <span
@@ -216,7 +217,7 @@ export function GamePlayView() {
                   marginLeft: 4,
                 }}
               >
-                {score.mult || displayHandMult}
+                {score.mult > 0 ? <TickingNumber value={score.mult} /> : displayHandMult}
               </span>
             </span>
           </div>
@@ -484,7 +485,7 @@ export function GamePlayView() {
                       opacity: hasSelectedHand || score.chips > 0 ? 1 : 0.45,
                     }}
                   >
-                    {score.chips || displayHandChips}
+                    {score.chips > 0 ? <TickingNumber value={score.chips} /> : displayHandChips}
                   </span>
                   <span style={{ opacity: 0.4 }}>×</span>
                   <span
@@ -498,7 +499,7 @@ export function GamePlayView() {
                       opacity: hasSelectedHand || score.mult > 0 ? 1 : 0.45,
                     }}
                   >
-                    {score.mult || displayHandMult}
+                    {score.mult > 0 ? <TickingNumber value={score.mult} /> : displayHandMult}
                   </span>
                   <span
                     style={{
@@ -510,7 +511,7 @@ export function GamePlayView() {
                       visibility: score.chips > 0 || score.mult > 0 ? 'visible' : 'hidden',
                     }}
                   >
-                    = {(score.chips * score.mult).toLocaleString()}
+                    = <TickingNumber value={score.chips * score.mult} />
                   </span>
                 </div>
                 <div
