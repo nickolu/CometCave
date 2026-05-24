@@ -21,6 +21,7 @@ export function TokenCard({
   onClick,
   footer,
   typeLabel,
+  edition,
 }: {
   title: string
   description?: string
@@ -33,6 +34,7 @@ export function TokenCard({
   onClick?: () => void
   footer?: ReactNode
   typeLabel?: string
+  edition?: string
 }) {
   const dims = SIZES[size]
   const isInteractive = !!onClick && !disabled
@@ -73,6 +75,10 @@ export function TokenCard({
           pointerEvents: 'none',
         }}
       />
+      {/* Edition shimmer overlay */}
+      {edition && edition !== 'normal' && (
+        <div className={`edition-${edition}`} />
+      )}
       {/* Inner border */}
       <div
         aria-hidden
