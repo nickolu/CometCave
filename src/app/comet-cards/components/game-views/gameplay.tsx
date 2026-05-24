@@ -86,6 +86,17 @@ export function GamePlayView() {
     return Math.min(100, Math.max(0, (numerator / denom) * 100))
   }, [currentBlind, targetScore])
 
+  const activatedJokerNames = useMemo(() => {
+    if (!isScoring) return new Set<string>()
+    const names = new Set<string>()
+    for (const evt of gamePlayState.scoringEvents) {
+      if ('source' in evt && evt.source) {
+        names.add(evt.source)
+      }
+    }
+    return names
+  }, [isScoring, gamePlayState.scoringEvents])
+
   const prevProgressRef = useRef(0)
   const [blindMet, setBlindMet] = useState(false)
 
@@ -328,6 +339,7 @@ export function GamePlayView() {
                 <button
                   key={joker.id}
                   type="button"
+                  className={activatedJokerNames.has(def.name) ? 'joker-activated' : undefined}
                   onClick={() => {
                     if (gamePlayState.selectedJokerId === joker.id) {
                       eventEmitter.emit({ type: 'JOKER_DESELECTED', id: joker.id })
@@ -345,6 +357,7 @@ export function GamePlayView() {
                     fontFamily: 'var(--cc-font-mono)',
                     fontSize: 10,
                     cursor: 'pointer',
+                    boxShadow: activatedJokerNames.has(def.name) ? `0 0 10px ${RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)'}` : undefined,
                   }}
                 >
                   ✺ {def.name}
@@ -757,6 +770,7 @@ export function GamePlayView() {
                     ownedCardCount={game.ownedCardIds.length}
                     gameSeed={game.gameSeed}
                     roundIndex={game.roundIndex}
+                    activated={activatedJokerNames.has(jokerDefinitions[joker.jokerId]?.name ?? '')}
                     onClick={(isSelected, id) => {
                       if (isSelected) {
                         eventEmitter.emit({ type: 'JOKER_DESELECTED', id })

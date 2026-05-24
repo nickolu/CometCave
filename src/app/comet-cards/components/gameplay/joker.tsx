@@ -47,6 +47,7 @@ export const Joker = ({
   ownedCardCount,
   gameSeed,
   roundIndex,
+  activated,
 }: {
   joker: JokerState
   isSelected?: boolean
@@ -54,6 +55,7 @@ export const Joker = ({
   ownedCardCount?: number
   gameSeed?: string
   roundIndex?: number
+  activated?: boolean
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
@@ -200,17 +202,19 @@ export const Joker = ({
   }
 
   return (
-    <TokenCard
-      title={def?.name ?? 'Unknown'}
-      description={def?.description}
-      glyph="✺"
-      accent={accent}
-      selected={isSelected}
-      size="sm"
-      badge={badge}
-      typeLabel="Joker"
-      edition={joker.edition}
-      onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
-    />
+    <div className={activated ? 'joker-activated' : undefined}>
+      <TokenCard
+        title={def?.name ?? 'Unknown'}
+        description={def?.description}
+        glyph="✺"
+        accent={accent}
+        selected={isSelected}
+        size="sm"
+        badge={badge}
+        typeLabel="Joker"
+        edition={joker.edition}
+        onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
+      />
+    </div>
   )
 }
