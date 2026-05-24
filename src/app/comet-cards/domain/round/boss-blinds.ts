@@ -708,7 +708,8 @@ frameless]	Violet Vessel	Very large blind	8	6x base	$8	✗ No
 
 export const getRandomBossBlind = (ante: number, seed: string): BossBlindDefinition => {
   const bossBlindsForAnte = bossBlinds.filter(blind => blind.minimumAnte <= ante)
-  const randomIndex = getRandomNumberWithSeed(seed, 0, bossBlindsForAnte.length - 1)
+  const roundSeed = buildSeedString([seed, ante.toString(), 'boss-blind'])
+  const randomIndex = getRandomNumberWithSeed(roundSeed, 0, bossBlindsForAnte.length - 1)
 
   if (bossBlindsForAnte.length === 0) {
     throw new Error(`No boss blind found for ante ${ante}`)
