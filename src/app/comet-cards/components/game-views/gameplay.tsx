@@ -100,6 +100,7 @@ export function GamePlayView() {
   const [showDeck, setShowDeck] = useState(false)
   const [showHands, setShowHands] = useState(false)
   const [showVouchers, setShowVouchers] = useState(false)
+  const [showScoringFeed, setShowScoringFeed] = useState(false)
   const [sortKey, setSortKey] = useState<HandSortKey>('value')
 
   const { scoreHand } = useScoreHand()
@@ -117,8 +118,6 @@ export function GamePlayView() {
   const selectedJokerDefinition = selectedJoker
     ? jokerDefinitions[selectedJoker.jokerId]
     : undefined
-
-  const recentScoringEvents = gamePlayState.scoringEvents.slice(-6)
 
   return (
     <div className="relative w-full">
@@ -578,40 +577,10 @@ export function GamePlayView() {
               </div>
             </Panel>
 
-            {recentScoringEvents.length > 0 && (
-              <Panel title="Scoring Feed">
-                <div
-                  className="flex flex-col gap-1"
-                  style={{
-                    padding: '10px 14px',
-                    fontFamily: 'var(--cc-font-mono)',
-                    fontSize: 11,
-                    maxHeight: 180,
-                    overflowY: 'auto',
-                  }}
-                >
-                  {recentScoringEvents.map(event => {
-                    if (isCustomScoringEvent(event)) {
-                      return (
-                        <div key={event.id} style={{ opacity: 0.75 }}>
-                          {event.message}
-                        </div>
-                      )
-                    }
-                    const sign = event.operator ?? '+'
-                    const isMult = event.type === 'mult'
-                    return (
-                      <div key={event.id} className="flex items-center justify-between gap-2">
-                        <span style={{ opacity: 0.6 }}>{event.source}</span>
-                        <span style={{ color: isMult ? 'var(--cc-pink)' : 'var(--cc-mint)' }}>
-                          {sign}
-                          {event.value} {isMult ? 'mult' : 'chips'}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </Panel>
+            {gamePlayState.scoringEvents.length > 0 && (
+              <GhostButton onClick={() => setShowScoringFeed(true)}>
+                Scoring Feed ({gamePlayState.scoringEvents.length})
+              </GhostButton>
             )}
           </div>
 
@@ -727,6 +696,9 @@ export function GamePlayView() {
               <GhostButton onClick={() => setShowHands(true)}>Show Hands</GhostButton>
               {game.vouchers.length > 0 && (
                 <GhostButton onClick={() => setShowVouchers(true)}>Show Vouchers</GhostButton>
+              )}
+              {gamePlayState.scoringEvents.length > 0 && (
+                <GhostButton onClick={() => setShowScoringFeed(true)}>Scoring Feed</GhostButton>
               )}
             </div>
           </div>
@@ -846,6 +818,63 @@ export function GamePlayView() {
       {showVouchers && (
         <Modal eyebrow="Show Vouchers" title="Active Vouchers" onClose={() => setShowVouchers(false)}>
           <Vouchers vouchers={game.vouchers.map(voucher => voucher.type)} />
+        </Modal>
+      )}
+      {showScoringFeed && (
+        <Modal eyebrow="Scoring" title="Scoring Feed" onClose={() => setShowScoringFeed(false)}>
+          <div
+            className="flex flex-col gap-1"
+            style={{
+              padding: '12px 16px',
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 12,
+            }}
+          >
+            {gamePlayState.scoringEvents.length === 0 ? (
+              <div style={{ opacity: 0.5, textAlign: 'center', padding: 16 }}>
+                No scoring events yet
+              </div>
+            ) : (
+              <>
+                {/* Summary row */}
+                <div
+                  className="flex items-center justify-between gap-4"
+                  style={{
+                    padding: '8px 0 12px',
+                    borderBottom: '1px solid var(--cc-panel-divider)',
+                    marginBottom: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>Hand Score</span>
+                  <span style={{ fontSize: 16, fontWeight: 700 }}>
+                    <span style={{ color: 'var(--cc-mint)' }}>{gamePlayState.score.chips}</span>
+                    <span style={{ opacity: 0.4, margin: '0 6px' }}>×</span>
+                    <span style={{ color: 'var(--cc-pink)' }}>{gamePlayState.score.mult}</span>
+                  </span>
+                </div>
+                {/* Event list */}
+                {gamePlayState.scoringEvents.map(event => {
+                  if (isCustomScoringEvent(event)) {
+                    return (
+                      <div key={event.id} style={{ opacity: 0.75, padding: '2px 0' }}>
+                        {event.message}
+                      </div>
+                    )
+                  }
+                  const sign = event.operator ?? '+'
+                  const isMult = event.type === 'mult'
+                  return (
+                    <div key={event.id} className="flex items-center justify-between gap-2" style={{ padding: '2px 0' }}>
+                      <span style={{ opacity: 0.6 }}>{event.source}</span>
+                      <span style={{ color: isMult ? 'var(--cc-pink)' : 'var(--cc-mint)', fontWeight: 600 }}>
+                        {sign}{event.value} {isMult ? 'mult' : 'chips'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </>
+            )}
+          </div>
         </Modal>
       )}
     </div>
