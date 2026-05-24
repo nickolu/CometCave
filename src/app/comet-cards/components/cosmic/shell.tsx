@@ -10,7 +10,7 @@ export function CosmicShell({ children }: { children: ReactNode }) {
     <div
       className="cosmic-cards relative w-full overflow-hidden"
       style={{
-        minHeight: '100vh',
+        height: '100vh',
         background:
           'radial-gradient(ellipse at 15% 15%, var(--cc-bg-grad-1) 0%, var(--cc-bg-grad-2) 40%, var(--cc-bg-grad-3) 100%)',
         color: 'var(--cc-text-default)',
@@ -39,7 +39,7 @@ export function CosmicShell({ children }: { children: ReactNode }) {
       >
         ✕
       </Link>
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>{children}</div>
     </div>
   )
 }

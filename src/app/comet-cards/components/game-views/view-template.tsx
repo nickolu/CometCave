@@ -70,7 +70,7 @@ export function ViewTemplate({
     : 0n
 
   return (
-    <div className="relative">
+    <div className="relative" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Top stat strip — keeps every view aligned with gameplay */}
       <div
         className="relative z-10 flex flex-wrap items-center justify-between gap-4"
@@ -111,10 +111,13 @@ export function ViewTemplate({
           gap: 18,
           padding: isLandscape ? '8px 12px' : '14px 22px 22px',
           alignItems: 'start',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {/* Sidebar */}
-        <aside id="game-sidebar" className="flex flex-col gap-4" style={{ display: isLandscape ? 'none' : undefined }}>
+        <aside id="game-sidebar" className="cc-scroll flex flex-col gap-4" style={{ display: isLandscape ? 'none' : undefined, overflowY: 'auto', minHeight: 0 }}>
           {sidebarContentTop}
 
           <Panel title="Run Stats">
@@ -220,7 +223,7 @@ export function ViewTemplate({
         </aside>
 
         {/* Main */}
-        <main id="game-content" className="min-w-0">
+        <main id="game-content" className="cc-scroll min-w-0" style={{ overflowY: 'auto', minHeight: 0 }}>
           {children}
         </main>
       </div>
