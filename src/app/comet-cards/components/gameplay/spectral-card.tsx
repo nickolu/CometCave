@@ -32,6 +32,7 @@ export const SpectralCard = ({
       accent="var(--cc-rarity-uncommon)"
       selected={isSelected}
       size="sm"
+      typeLabel="Spectral"
       onClick={onClick ? () => onClick(isSelected ?? false, spectralCard.id) : undefined}
     />
   )
