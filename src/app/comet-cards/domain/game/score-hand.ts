@@ -53,6 +53,12 @@ export async function scoreHand({ getGameState }: ScoreHandOptions): Promise<voi
     // Brief pause before finalization
     await sleep(250)
     eventEmitter.emit({ type: 'HAND_SCORING_FINALIZE' })
+
+    // Let the player savor the result before transitioning
+    const finalState = getGameState()
+    if (finalState.gamePhase !== 'gameplay') {
+      await sleep(1500)
+    }
   } finally {
     isScoringInProgress = false
   }
