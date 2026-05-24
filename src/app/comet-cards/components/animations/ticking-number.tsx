@@ -4,50 +4,34 @@ import { useEffect, useRef, useState } from 'react'
 
 export function TickingNumber({
   value,
-  duration = 300,
+  duration = 200,
+  format,
 }: {
   value: number
   duration?: number
+  format?: (n: number) => string
 }) {
-  const [displayed, setDisplayed] = useState(value)
-  const startRef = useRef(value)
-  const endRef = useRef(value)
-  const startTimeRef = useRef<number | null>(null)
-  const rafRef = useRef<number | null>(null)
+  const [display, setDisplay] = useState(value)
+  const prev = useRef(value)
+  const raf = useRef<number | undefined>(undefined)
 
   useEffect(() => {
-    if (value === endRef.current) return
+    const from = prev.current
+    const to = value
+    prev.current = value
 
-    startRef.current = displayed
-    endRef.current = value
-    startTimeRef.current = null
+    if (from === to) return
 
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current)
+    const start = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1)
+      const eased = 1 - (1 - t) * (1 - t) // ease-out quad
+      setDisplay(Math.round(from + (to - from) * eased))
+      if (t < 1) raf.current = requestAnimationFrame(tick)
     }
-
-    function tick(now: number) {
-      if (startTimeRef.current === null) {
-        startTimeRef.current = now
-      }
-      const elapsed = now - startTimeRef.current
-      const progress = Math.min(elapsed / duration, 1)
-      const current = Math.round(startRef.current + (endRef.current - startRef.current) * progress)
-      setDisplayed(current)
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick)
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(tick)
-
-    return () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    raf.current = requestAnimationFrame(tick)
+    return () => { if (raf.current) cancelAnimationFrame(raf.current) }
   }, [value, duration])
 
-  return <>{displayed}</>
+  return <>{format ? format(display) : display.toLocaleString()}</>
 }
