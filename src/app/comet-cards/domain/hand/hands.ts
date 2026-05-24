@@ -198,6 +198,7 @@ export const checkHandForStraight: HandCheckFunction<[StaticRulesState]> = (card
 }
 
 export const checkHandForFlush: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
+  if (cards.length === 0) return [false, []]
   const rankedCards = rankCardsByValueAndSuit(cards)
   const firstSuit = playingCards[rankedCards[0].playingCardId].suit
   const flush = rankedCards.filter(card =>
