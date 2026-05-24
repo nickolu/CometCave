@@ -19,6 +19,12 @@ const COUNTER_XMULT_DIVISOR: Record<string, number> = {
   ramen: 100,
 }
 
+const IDOL_VALUES = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'] as const
+const IDOL_SUITS = ['\u2665','\u2666','\u2663','\u2660'] as const
+const IDOL_SUIT_COLORS: Record<string, string> = { '\u2665': 'var(--cc-pink)', '\u2666': 'var(--cc-pink)', '\u2663': 'var(--cc-text-default)', '\u2660': 'var(--cc-text-default)' }
+
+const TRIGGERED_JOKERS = new Set(['photograph', 'hangingChad', 'burntJoker', 'tradingCard'])
+
 export const Joker = ({
   joker,
   isSelected,
@@ -57,6 +63,18 @@ export const Joker = ({
         +{handSizeBonus}
       </span>
     )
+  } else if (joker.jokerId === 'yorick') {
+    const yXMult = (xMult ?? 100) / 100
+    const countdown = joker.counter || 23
+    badge = yXMult > 1 ? (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
+        ×{yXMult % 1 === 0 ? yXMult.toString() : yXMult.toFixed(1)} <span style={{ opacity: 0.7 }}>⌛{countdown}</span>
+      </span>
+    ) : (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-text-default)', opacity: 0.7 }}>
+        ⌛{countdown}
+      </span>
+    )
   } else if (xMult != null && xMult > 100) {
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
@@ -88,6 +106,33 @@ export const Joker = ({
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
         +{joker.counter}
+      </span>
+    )
+  } else if (joker.jokerId === 'theIdol') {
+    const valueIdx = Math.floor(joker.counter / 4)
+    const suitIdx = joker.counter % 4
+    const value = IDOL_VALUES[valueIdx] ?? '?'
+    const suit = IDOL_SUITS[suitIdx] ?? '?'
+    const suitColor = IDOL_SUIT_COLORS[suit] ?? 'var(--cc-text-default)'
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: suitColor }}>
+        {value}{suit}
+      </span>
+    )
+  } else if (joker.jokerId === 'vagabond') {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-gold)' }}>
+        ≤$4
+      </span>
+    )
+  } else if (TRIGGERED_JOKERS.has(joker.jokerId)) {
+    badge = joker.counter === 1 ? (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-mint)', opacity: 0.7 }}>
+        ✓
+      </span>
+    ) : (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-text-default)', opacity: 0.5 }}>
+        ○
       </span>
     )
   } else if (joker.jokerId === 'invisibleJoker') {
