@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { TokenCard } from '@/app/comet-cards/components/cosmic/token-card'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
@@ -20,6 +21,24 @@ export const Joker = ({
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
+  const multBonus = joker.metadata?.multBonus as number | undefined
+  const chipsBonus = joker.metadata?.chipsBonus as number | undefined
+
+  let badge: ReactNode = undefined
+  if (multBonus != null && multBonus > 0) {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
+        +{multBonus}
+      </span>
+    )
+  } else if (chipsBonus != null && chipsBonus > 0) {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-mint)' }}>
+        +{chipsBonus}
+      </span>
+    )
+  }
+
   return (
     <TokenCard
       title={def?.name ?? 'Unknown'}
@@ -28,6 +47,7 @@ export const Joker = ({
       accent={accent}
       selected={isSelected}
       size="sm"
+      badge={badge}
       onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
     />
   )

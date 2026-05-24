@@ -1154,6 +1154,15 @@ export const spareTrousersJoker: JokerDefinition = {
         const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
         if (!st || !st.metadata) return
 
+        // Check if hand contains Two Pair and gain +2
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handsContainingTwoPair = ['twoPair', 'fullHouse', 'flushHouse']
+        if (handsContainingTwoPair.includes(handId)) {
+          st.metadata.multBonus += 2
+        }
+
         // Apply accumulated mult bonus
         if (st.metadata.multBonus > 0) {
           ctx.game.gamePlayState.scoringEvents.push({
@@ -1163,15 +1172,6 @@ export const spareTrousersJoker: JokerDefinition = {
             source: 'Spare Trousers',
           })
           ctx.game.gamePlayState.score.mult += st.metadata.multBonus
-        }
-
-        // Check if hand contains Two Pair and gain +2
-        const selectedHand = ctx.game.gamePlayState.selectedHand
-        if (!selectedHand) return
-        const handId = selectedHand[0]
-        const handsContainingTwoPair = ['twoPair', 'fullHouse', 'flushHouse']
-        if (handsContainingTwoPair.includes(handId)) {
-          st.metadata.multBonus += 2
         }
       },
     },
