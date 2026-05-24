@@ -21,6 +21,7 @@ export function TokenCard({
   onClick,
   footer,
   typeLabel,
+  edition,
 }: {
   title: string
   description?: string
