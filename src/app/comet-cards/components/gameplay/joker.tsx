@@ -17,7 +17,13 @@ const COUNTER_XMULT_DIVISOR: Record<string, number> = {
   obelisk: 5,
   luckyCat: 4,
   ramen: 100,
+  madness: 2,
+  throwback: 4,
+  constellation: 10,
 }
+
+const COUNTER_CHIPS_JOKERS = new Set(['runner', 'squareJoker', 'iceCream'])
+const COUNTER_MULT_JOKERS = new Set(['greenJoker', 'redCard', 'rideTheBus', 'ceremonialDagger', 'popcorn'])
 
 const IDOL_VALUES = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'] as const
 const IDOL_SUITS = ['\u2665','\u2666','\u2663','\u2660'] as const
@@ -104,13 +110,13 @@ export const Joker = ({
         </span>
       )
     }
-  } else if (joker.jokerId === 'iceCream' && joker.counter > 0) {
+  } else if (COUNTER_CHIPS_JOKERS.has(joker.jokerId) && joker.counter > 0) {
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-mint)' }}>
         +{joker.counter}
       </span>
     )
-  } else if (joker.jokerId === 'popcorn' && joker.counter > 0) {
+  } else if (COUNTER_MULT_JOKERS.has(joker.jokerId) && joker.counter > 0) {
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
         +{joker.counter}
