@@ -286,6 +286,11 @@ export function BrandCard({
         </div>
       )}
 
+      {/* Edition shimmer overlay */}
+      {card.flags.edition !== 'normal' && (
+        <div className={`edition-${card.flags.edition}`} />
+      )}
+
       {/* Edition label */}
       {card.flags.edition !== 'normal' && (
         <div

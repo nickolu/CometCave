@@ -209,6 +209,7 @@ export const Joker = ({
       size="sm"
       badge={badge}
       typeLabel="Joker"
+      edition={joker.edition}
       onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
     />
   )
