@@ -2,6 +2,7 @@ import { Plus_Jakarta_Sans, Be_Vietnam_Pro, Lexend } from 'next/font/google'
 
 import { AmbientOrbs } from '@/components/ambient-orbs'
 import { Footer } from '@/components/footer'
+import { LayoutShell } from '@/components/layout-shell'
 import { TopNavBar } from '@/components/top-nav-bar'
 
 import './globals.css'
@@ -57,9 +58,9 @@ export default function RootLayout({
         <body className={`${plusJakartaSans.variable} ${beVietnamPro.variable} ${lexend.variable} ${beVietnamPro.className}`}>
           <div id="site-wrapper" className="min-h-screen flex flex-col bg-surface-dim text-on-surface relative overflow-hidden">
             <AmbientOrbs palette={['primary', 'secondary', 'tertiary']} intensity="medium" />
-            <TopNavBar />
-            <main className="flex-1 container mx-auto p-4 z-20 relative">{children}</main>
-            <Footer />
+            <LayoutShell nav={<TopNavBar />} footer={<Footer />}>
+              {children}
+            </LayoutShell>
           </div>
         </body>
       </html>
