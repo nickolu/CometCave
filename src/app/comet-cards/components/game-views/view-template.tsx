@@ -234,6 +234,13 @@ export function ViewTemplate({
         </main>
       </div>
 
+      {/* In landscape mode the sidebar is hidden, so render its bottom actions here */}
+      {isLandscape && sidebarContentBottom && (
+        <div style={{ padding: '6px 12px', borderTop: '1px solid var(--cc-panel-divider)', flexShrink: 0 }}>
+          {sidebarContentBottom}
+        </div>
+      )}
+
       {showHands && (
         <Modal eyebrow="Show Hands" title="Poker Hands" onClose={() => setShowHands(false)}>
           <Hands pokerHandsState={game.pokerHands} />
