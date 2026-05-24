@@ -10,6 +10,7 @@ import { Vouchers } from '@/app/comet-cards/components/voucher/vouchers'
 import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { implementedTags as tags } from '@/app/comet-cards/domain/tag/tags'
+import { AnimatedMoney } from '@/app/comet-cards/components/animations/animated-money'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 
@@ -99,7 +100,12 @@ export function ViewTemplate({
           }}
         >
           <Stat label="Round" value={`${game.roundIndex + 1}/${game.rounds.length}`} />
-          <Stat label="Money" value={`$${game.money}`} accent="var(--cc-gold)" />
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            <div style={{ opacity: 0.45, fontSize: 10 }}>Money</div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>
+              <AnimatedMoney value={game.money} />
+            </div>
+          </div>
           <Stat label="Hands" value={String(game.handsPlayed)} />
         </div>
       </div>
