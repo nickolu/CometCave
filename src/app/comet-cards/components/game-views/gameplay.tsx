@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   DangerButton,
@@ -85,6 +85,18 @@ export function GamePlayView() {
     if (!Number.isFinite(numerator) || !Number.isFinite(denom) || denom === 0) return 0
     return Math.min(100, Math.max(0, (numerator / denom) * 100))
   }, [currentBlind, targetScore])
+
+  const prevProgressRef = useRef(0)
+  const [blindMet, setBlindMet] = useState(false)
+
+  useEffect(() => {
+    if (blindProgressPct >= 100 && prevProgressRef.current < 100) {
+      setBlindMet(true)
+      const timer = setTimeout(() => setBlindMet(false), 1200)
+      return () => clearTimeout(timer)
+    }
+    prevProgressRef.current = blindProgressPct
+  }, [blindProgressPct])
 
   const selectedHandState =
     selectedHand?.[0] !== undefined ? game.pokerHands[selectedHand[0]] : undefined
@@ -192,6 +204,28 @@ export function GamePlayView() {
                 <span style={{ color: 'var(--cc-pink)' }}>
                   {currentBlind.score.toString()} / {targetScore.toString()}
                 </span>
+                <div
+                  style={{
+                    width: 60,
+                    height: 3,
+                    background: 'rgba(94,234,212,0.15)',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                  }}
+                  className={blindMet ? 'blind-met-celebration' : undefined}
+                >
+                  <div
+                    className="blind-progress-fill"
+                    style={{
+                      height: '100%',
+                      width: `${blindProgressPct}%`,
+                      background: blindProgressPct >= 90
+                        ? 'linear-gradient(90deg, var(--cc-mint), var(--cc-gold, #ffd166))'
+                        : 'linear-gradient(90deg, var(--cc-mint), var(--cc-mint-hi))',
+                      transition: 'width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s',
+                    }}
+                  />
+                </div>
                 <span style={{ opacity: 0.6 }}>Hands <span style={{ color: 'var(--cc-mint)' }}>{remainingHands}</span></span>
                 <span style={{ opacity: 0.6 }}>Discards <span style={{ color: 'var(--cc-pink)' }}>{remainingDiscards}</span></span>
               </>
@@ -405,20 +439,26 @@ export function GamePlayView() {
                   <div
                     style={{
                       marginTop: 16,
-                      height: 4,
+                      height: 6,
                       background: 'rgba(94,234,212,0.1)',
-                      borderRadius: 2,
+                      borderRadius: 3,
                       overflow: 'hidden',
+                      position: 'relative',
                     }}
+                    className={blindMet ? 'blind-met-celebration' : undefined}
                   >
                     <div
+                      className="blind-progress-fill"
                       style={{
                         height: '100%',
                         width: `${blindProgressPct}%`,
-                        background:
-                          'linear-gradient(90deg, var(--cc-mint), var(--cc-mint-hi))',
-                        boxShadow: '0 0 12px rgba(94,234,212,0.6)',
-                        transition: 'width 0.3s',
+                        background: blindProgressPct >= 90
+                          ? 'linear-gradient(90deg, var(--cc-mint), var(--cc-gold, #ffd166))'
+                          : 'linear-gradient(90deg, var(--cc-mint), var(--cc-mint-hi))',
+                        boxShadow: blindProgressPct >= 90
+                          ? '0 0 16px rgba(255,209,102,0.7)'
+                          : `0 0 ${8 + blindProgressPct * 0.08}px rgba(94,234,212,${0.3 + blindProgressPct * 0.004})`,
+                        transition: 'width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s, box-shadow 0.4s',
                       }}
                     />
                   </div>
