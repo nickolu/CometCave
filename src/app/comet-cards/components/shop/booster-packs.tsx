@@ -1,3 +1,7 @@
+'use client'
+
+import { motion } from 'framer-motion'
+
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { TokenCard } from '@/app/comet-cards/components/cosmic/token-card'
 import { getPackDefinition } from '@/app/comet-cards/domain/booster-pack/utils'
@@ -68,8 +72,19 @@ export function BoosterPacksForSale() {
   if (boosterPacks.length === 0) return null
   return (
     <div className="flex flex-wrap items-stretch gap-3">
-      {boosterPacks.map(pack => (
-        <BoosterPackForSale key={pack.id} pack={pack} />
+      {boosterPacks.map((pack, i) => (
+        <motion.div
+          key={pack.id}
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            duration: 0.3,
+            delay: 0.15 + i * 0.08,
+            ease: [0.2, 0.9, 0.3, 1],
+          }}
+        >
+          <BoosterPackForSale pack={pack} />
+        </motion.div>
       ))}
     </div>
   )

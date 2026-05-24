@@ -132,7 +132,16 @@ export function ShopView() {
               <div className="flex flex-col" style={{ gap: 18 }}>
                 {game.shopState.voucher && (
                   <SectionHeader label="Voucher">
-                    <div className="flex flex-wrap items-center gap-3">
+                    <motion.div
+                      className="flex flex-wrap items-center gap-3"
+                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{
+                        duration: 0.3,
+                        delay: 0.1,
+                        ease: [0.2, 0.9, 0.3, 1],
+                      }}
+                    >
                       <Voucher voucher={game.shopState.voucher} />
                       <PrimaryButton
                         disabled={!canAffordVoucher}
@@ -145,7 +154,7 @@ export function ShopView() {
                       >
                         Buy · ${VOUCHER_PRICE}
                       </PrimaryButton>
-                    </div>
+                    </motion.div>
                   </SectionHeader>
                 )}
 
