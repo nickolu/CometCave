@@ -20,6 +20,7 @@ export function TokenCard({
   badge,
   onClick,
   footer,
+  typeLabel,
 }: {
   title: string
   description?: string
@@ -31,6 +32,7 @@ export function TokenCard({
   badge?: ReactNode
   onClick?: () => void
   footer?: ReactNode
+  typeLabel?: string
 }) {
   const dims = SIZES[size]
   const isInteractive = !!onClick && !disabled
@@ -94,6 +96,25 @@ export function TokenCard({
           }}
         >
           {badge}
+        </div>
+      )}
+
+      {typeLabel && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: 10,
+            zIndex: 2,
+            fontSize: 8,
+            fontWeight: 600,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            color: accent,
+            opacity: 0.4,
+          }}
+        >
+          {typeLabel}
         </div>
       )}
 

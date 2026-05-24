@@ -20,6 +20,7 @@ export const TarotCard = ({
       accent="var(--cc-pink)"
       selected={isSelected}
       size="sm"
+      typeLabel="Tarot"
       onClick={onClick ? () => onClick(isSelected ?? false, tarotCard.id) : undefined}
     />
   )

@@ -20,6 +20,7 @@ export const CelestialCard = ({
       accent="var(--cc-gold)"
       selected={isSelected}
       size="sm"
+      typeLabel="Celestial"
       onClick={onClick ? () => onClick(isSelected ?? false, celestialCard.id) : undefined}
     />
   )

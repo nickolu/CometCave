@@ -11,6 +11,7 @@ export function Voucher({ voucher }: { voucher: VoucherType }) {
       glyph="❖"
       accent="var(--cc-gold)"
       size="sm"
+      typeLabel="Voucher"
     />
   )
 }

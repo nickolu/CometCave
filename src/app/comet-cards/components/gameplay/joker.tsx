@@ -48,6 +48,7 @@ export const Joker = ({
       selected={isSelected}
       size="sm"
       badge={badge}
+      typeLabel="Joker"
       onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
     />
   )
