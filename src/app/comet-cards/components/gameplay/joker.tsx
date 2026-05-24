@@ -25,6 +25,12 @@ const IDOL_SUIT_COLORS: Record<string, string> = { '\u2665': 'var(--cc-pink)', '
 
 const TRIGGERED_JOKERS = new Set(['photograph', 'hangingChad', 'burntJoker', 'tradingCard'])
 
+const POKER_HAND_LABELS = [
+  'High Card', 'Pair', 'Two Pair', '3 of a Kind', 'Straight',
+  'Flush', 'Full House', '4 of a Kind', 'Str. Flush', 'Flush House',
+  '5 of a Kind', 'Flush Five',
+] as const
+
 export const Joker = ({
   joker,
   isSelected,
@@ -117,6 +123,13 @@ export const Joker = ({
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: suitColor }}>
         {value}{suit}
+      </span>
+    )
+  } else if (joker.jokerId === 'toDoList') {
+    const handLabel = POKER_HAND_LABELS[joker.counter] ?? '?'
+    badge = (
+      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cc-gold)' }}>
+        {handLabel}
       </span>
     )
   } else if (joker.jokerId === 'vagabond') {
