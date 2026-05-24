@@ -230,6 +230,22 @@ body {
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   Reduced motion — disable CSS animations and transitions for users
+   who prefer reduced motion. Framer Motion handles this automatically.
+   ─────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
    Cosmic Cards palette — scoped to .cosmic-cards (daily card game)
    Hand-crafted, surreal, cosmic. Mint accent + cosmic-glowing suits.
    ─────────────────────────────────────────────────────────────────── */
