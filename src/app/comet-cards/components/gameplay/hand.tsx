@@ -107,6 +107,7 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
           return (
             <motion.div
               key={card.id}
+              layoutId={`playing-card-${card.id}`}
               layout
               initial={{ opacity: 0, y: 60, scale: 0.8 }}
               animate={{

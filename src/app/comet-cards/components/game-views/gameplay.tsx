@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { LayoutGroup } from 'framer-motion'
+
 import {
   DangerButton,
   GhostButton,
@@ -11,6 +13,7 @@ import {
 import { EmptySlot, ItemRow } from '@/app/comet-cards/components/cosmic/item-row'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { Hand, type HandSortKey } from '@/app/comet-cards/components/gameplay/hand'
+import { PlayArea } from '@/app/comet-cards/components/gameplay/play-area'
 import { Joker } from '@/app/comet-cards/components/gameplay/joker'
 import { Deck } from '@/app/comet-cards/components/global/deck'
 import { Hands } from '@/app/comet-cards/components/hands/hands'
@@ -24,6 +27,7 @@ import { isCustomScoringEvent } from '@/app/comet-cards/domain/game/types'
 import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
 import { pokerHands } from '@/app/comet-cards/domain/hand/hands'
 import { jokers as jokerDefinitions } from '@/app/comet-cards/domain/joker/jokers'
+import { getScoringCards } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { useCometCardsStore } from '@/app/comet-cards/store'
 import { useGameState } from '@/app/comet-cards/useGameState'
@@ -77,6 +81,11 @@ export function GamePlayView() {
   const targetScore = currentBlind
     ? calculateAnte(currentRound.baseAnte, blindDefinition?.anteMultiplier ?? 1)
     : 0n
+
+  const playedCards = useMemo(() => {
+    if (!isScoring) return []
+    return getScoringCards(game)
+  }, [isScoring, game])
 
   const blindProgressPct = useMemo(() => {
     if (!currentBlind) return 0
@@ -288,10 +297,13 @@ export function GamePlayView() {
             )}
           </div>
 
-          {/* Hand */}
-          <div className="flex items-end justify-center" style={{ paddingBottom: 4, paddingTop: 4 }}>
-            <Hand sortKey={sortKey} />
-          </div>
+          {/* Play area + Hand */}
+          <LayoutGroup>
+            <PlayArea cards={playedCards} visible={isScoring} />
+            <div className="flex items-end justify-center" style={{ paddingBottom: 4, paddingTop: 4 }}>
+              <Hand sortKey={sortKey} />
+            </div>
+          </LayoutGroup>
 
           {/* Action bar */}
           <div
@@ -700,12 +712,15 @@ export function GamePlayView() {
               </div>
             </div>
 
-            <div
-              className="flex flex-1 items-end justify-center"
-              style={{ paddingBottom: 8, paddingTop: 12 }}
-            >
-              <Hand sortKey={sortKey} />
-            </div>
+            <LayoutGroup>
+              <PlayArea cards={playedCards} visible={isScoring} />
+              <div
+                className="flex flex-1 items-end justify-center"
+                style={{ paddingBottom: 8, paddingTop: 12 }}
+              >
+                <Hand sortKey={sortKey} />
+              </div>
+            </LayoutGroup>
 
             {/* Action bar */}
             <div
