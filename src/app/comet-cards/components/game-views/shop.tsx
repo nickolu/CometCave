@@ -77,67 +77,83 @@ export function ShopView() {
               </SectionHeader>
             )}
 
-            <SectionHeader label="Cards for Sale">
-              <div className="flex flex-wrap items-stretch gap-3">
-                {game.shopState.cardsForSale.map((buyableCard, i) => (
-                  <motion.div
-                    key={buyableCard.card.id}
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{
-                      duration: 0.3,
-                      delay: i * 0.08,
-                      ease: [0.2, 0.9, 0.3, 1],
-                    }}
-                  >
-                    <BuyableCard
-                      buyableCard={buyableCard}
-                      isSelected={game.shopState.selectedCardId === buyableCard.card.id}
-                    />
-                  </motion.div>
-                ))}
+            {/* Two-column grid: Cards for Sale (left) | Voucher + Booster Packs (right) */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 18,
+              }}
+              className="shop-two-col"
+            >
+              {/* Left column: Cards for Sale */}
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                <SectionHeader label="Cards for Sale">
+                  <div className="flex flex-wrap items-stretch gap-3">
+                    {game.shopState.cardsForSale.map((buyableCard, i) => (
+                      <motion.div
+                        key={buyableCard.card.id}
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: i * 0.08,
+                          ease: [0.2, 0.9, 0.3, 1],
+                        }}
+                      >
+                        <BuyableCard
+                          buyableCard={buyableCard}
+                          isSelected={game.shopState.selectedCardId === buyableCard.card.id}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                </SectionHeader>
+
+                {selectedCard && (
+                  <div className="flex flex-wrap gap-2">
+                    <PrimaryButton
+                      disabled={!canAffordSelectedCard || !isRoomForSelectedCard}
+                      onClick={() => eventEmitter.emit({ type: 'SHOP_BUY_CARD' })}
+                    >
+                      Buy · ${Math.floor(selectedCard.price * game.shopState.priceMultiplier)}
+                    </PrimaryButton>
+                    <GhostButton
+                      disabled={!canAffordSelectedCard || !isSelectedCardPlayable}
+                      onClick={() => eventEmitter.emit({ type: 'SHOP_BUY_AND_USE_CARD' })}
+                    >
+                      Buy &amp; Use · ${Math.floor(selectedCard.price * game.shopState.priceMultiplier)}
+                    </GhostButton>
+                  </div>
+                )}
               </div>
-            </SectionHeader>
 
-            {selectedCard && (
-              <div className="flex flex-wrap gap-2">
-                <PrimaryButton
-                  disabled={!canAffordSelectedCard || !isRoomForSelectedCard}
-                  onClick={() => eventEmitter.emit({ type: 'SHOP_BUY_CARD' })}
-                >
-                  Buy · ${Math.floor(selectedCard.price * game.shopState.priceMultiplier)}
-                </PrimaryButton>
-                <GhostButton
-                  disabled={!canAffordSelectedCard || !isSelectedCardPlayable}
-                  onClick={() => eventEmitter.emit({ type: 'SHOP_BUY_AND_USE_CARD' })}
-                >
-                  Buy &amp; Use · ${Math.floor(selectedCard.price * game.shopState.priceMultiplier)}
-                </GhostButton>
+              {/* Right column: Voucher + Booster Packs */}
+              <div className="flex flex-col" style={{ gap: 18 }}>
+                {game.shopState.voucher && (
+                  <SectionHeader label="Voucher">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Voucher voucher={game.shopState.voucher} />
+                      <PrimaryButton
+                        disabled={!canAffordVoucher}
+                        onClick={() =>
+                          eventEmitter.emit({
+                            type: 'SHOP_BUY_VOUCHER',
+                            id: game.shopState.voucher!,
+                          })
+                        }
+                      >
+                        Buy · ${VOUCHER_PRICE}
+                      </PrimaryButton>
+                    </div>
+                  </SectionHeader>
+                )}
+
+                <SectionHeader label="Booster Packs">
+                  <BoosterPacksForSale />
+                </SectionHeader>
               </div>
-            )}
-
-            {game.shopState.voucher && (
-              <SectionHeader label="Voucher">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Voucher voucher={game.shopState.voucher} />
-                  <PrimaryButton
-                    disabled={!canAffordVoucher}
-                    onClick={() =>
-                      eventEmitter.emit({
-                        type: 'SHOP_BUY_VOUCHER',
-                        id: game.shopState.voucher!,
-                      })
-                    }
-                  >
-                    Buy · ${VOUCHER_PRICE}
-                  </PrimaryButton>
-                </div>
-              </SectionHeader>
-            )}
-
-            <SectionHeader label="Booster Packs">
-              <BoosterPacksForSale />
-            </SectionHeader>
+            </div>
 
             {game.consumables.length > 0 && (
               <SectionHeader label="Your Consumables">

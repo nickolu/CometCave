@@ -16,6 +16,13 @@ body {
   }
 }
 
+/* Shop two-column grid — collapses to single column on narrow viewports */
+@media (max-width: 560px) {
+  .shop-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
