@@ -110,7 +110,7 @@ export function ViewTemplate({
           gridTemplateColumns: isLandscape ? '1fr' : 'minmax(240px, 280px) minmax(0, 1fr)',
           gap: 18,
           padding: isLandscape ? '8px 12px' : '14px 22px 22px',
-          alignItems: 'start',
+          alignItems: 'stretch',
           flex: 1,
           minHeight: 0,
           overflow: 'hidden',
