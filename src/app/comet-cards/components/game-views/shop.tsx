@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 
+import { motion } from 'framer-motion'
+
 import { CurrentConsumables } from '@/app/comet-cards/components/consumables/current-consumables'
 import {
   DangerButton,
@@ -77,12 +79,22 @@ export function ShopView() {
 
             <SectionHeader label="Cards for Sale">
               <div className="flex flex-wrap items-stretch gap-3">
-                {game.shopState.cardsForSale.map(buyableCard => (
-                  <BuyableCard
+                {game.shopState.cardsForSale.map((buyableCard, i) => (
+                  <motion.div
                     key={buyableCard.card.id}
-                    buyableCard={buyableCard}
-                    isSelected={game.shopState.selectedCardId === buyableCard.card.id}
-                  />
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: i * 0.08,
+                      ease: [0.2, 0.9, 0.3, 1],
+                    }}
+                  >
+                    <BuyableCard
+                      buyableCard={buyableCard}
+                      isSelected={game.shopState.selectedCardId === buyableCard.card.id}
+                    />
+                  </motion.div>
                 ))}
               </div>
             </SectionHeader>
