@@ -11,6 +11,7 @@ import {
 import { EmptySlot, ItemRow } from '@/app/comet-cards/components/cosmic/item-row'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { Hand, type HandSortKey } from '@/app/comet-cards/components/gameplay/hand'
+import { Joker } from '@/app/comet-cards/components/gameplay/joker'
 import { Deck } from '@/app/comet-cards/components/global/deck'
 import { Hands } from '@/app/comet-cards/components/hands/hands'
 import { TickingNumber } from '@/app/comet-cards/components/animations/ticking-number'
@@ -707,27 +708,24 @@ export function GamePlayView() {
           {/* RIGHT rail */}
           <div className="flex flex-col gap-4">
             <Panel title="Jokers" subtitle={`${game.jokers.length} / ${game.maxJokers} slots`}>
-              <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {game.jokers.map(joker => {
-                  const def = jokerDefinitions[joker.jokerId]
-                  return (
-                    <ItemRow
-                      key={joker.id}
-                      name={def.name}
-                      description={def.description}
-                      accent={RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)'}
-                      glyph="✺"
-                      selected={gamePlayState.selectedJokerId === joker.id}
-                      onClick={() => {
-                        if (gamePlayState.selectedJokerId === joker.id) {
-                          eventEmitter.emit({ type: 'JOKER_DESELECTED', id: joker.id })
-                        } else {
-                          eventEmitter.emit({ type: 'JOKER_SELECTED', id: joker.id })
-                        }
-                      }}
-                    />
-                  )
-                })}
+              <div style={{ padding: 14, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {game.jokers.map(joker => (
+                  <Joker
+                    key={joker.id}
+                    joker={joker}
+                    isSelected={gamePlayState.selectedJokerId === joker.id}
+                    ownedCardCount={game.ownedCardIds.length}
+                    gameSeed={game.gameSeed}
+                    roundIndex={game.roundIndex}
+                    onClick={(isSelected, id) => {
+                      if (isSelected) {
+                        eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
+                      } else {
+                        eventEmitter.emit({ type: 'JOKER_SELECTED', id })
+                      }
+                    }}
+                  />
+                ))}
                 {Array.from({ length: Math.max(0, game.maxJokers - game.jokers.length) }).map(
                   (_, i) => (
                     <EmptySlot key={`joker-empty-${i}`} />
