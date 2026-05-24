@@ -491,24 +491,29 @@ export const turtleBeanJoker: JokerDefinition = {
     {
       event: { type: 'GAME_START' },
       priority: 1,
+      // Called once per instance by the effect system. Apply bonus for exactly one uninitialized instance.
       apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
-        if (tb) {
-          if (!tb.metadata?.handSizeBonus) {
-            tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
-          }
-          const bonus = tb.metadata?.handSizeBonus ?? 5
-          ctx.game.handSizeModifier += bonus
+        const tb = ctx.game.jokers.find(
+          j => j.jokerId === 'turtleBeanJoker' && !(j.metadata as Record<string, unknown>)?.__gameStartApplied
+        )
+        if (!tb) return
+        if (!tb.metadata?.handSizeBonus) {
+          tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
         }
+        const bonus = tb.metadata?.handSizeBonus ?? 5
+        ctx.game.handSizeModifier += bonus
+        ;(tb.metadata as Record<string, unknown>).__gameStartApplied = true
       },
     },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
-        if (tb) {
-          tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
+        const newTb = ctx.game.jokers.find(
+          j => j.jokerId === 'turtleBeanJoker' && (!j.metadata || j.metadata.handSizeBonus === undefined)
+        )
+        if (newTb) {
+          newTb.metadata = { ...newTb.metadata, handSizeBonus: 5 }
           ctx.game.handSizeModifier += 5
         }
       },
@@ -516,16 +521,30 @@ export const turtleBeanJoker: JokerDefinition = {
     {
       event: { type: 'ROUND_END' },
       priority: 1,
+      // Called once per instance by the effect system. Use a per-dispatch marker to ensure each
+      // bean is decremented exactly once per ROUND_END dispatch, even with multiple instances.
       apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
+        const allBeans = ctx.game.jokers.filter(j => j.jokerId === 'turtleBeanJoker')
+        // On the first invocation of this dispatch, none will have __roundEndInProgress.
+        // On subsequent invocations, processed beans will have it set.
+        // If ALL beans already have the marker, this is a new dispatch — clear markers first.
+        const allMarked = allBeans.length > 0 && allBeans.every(j => (j.metadata as Record<string, unknown>)?.__roundEndInProgress)
+        if (allMarked) {
+          for (const b of allBeans) {
+            delete (b.metadata as Record<string, unknown>).__roundEndInProgress
+          }
+        }
+        const tb = ctx.game.jokers.find(
+          j => j.jokerId === 'turtleBeanJoker' && j.metadata && !(j.metadata as Record<string, unknown>).__roundEndInProgress
+        )
         if (!tb || !tb.metadata) return
-
         ctx.game.handSizeModifier -= 1
         tb.metadata.handSizeBonus -= 1
-
-        if (tb.metadata.handSizeBonus <= 0) {
-          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== tb.id)
-        }
+        ;(tb.metadata as Record<string, unknown>).__roundEndInProgress = true
+        // Remove instances that reached 0
+        ctx.game.jokers = ctx.game.jokers.filter(
+          j => j.jokerId !== 'turtleBeanJoker' || (j.metadata?.handSizeBonus ?? 0) > 0
+        ) as typeof ctx.game.jokers
       },
     },
     {

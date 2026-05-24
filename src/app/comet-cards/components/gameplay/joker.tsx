@@ -23,6 +23,7 @@ export const Joker = ({
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
   const multBonus = joker.metadata?.multBonus as number | undefined
   const chipsBonus = joker.metadata?.chipsBonus as number | undefined
+  const handSizeBonus = joker.metadata?.handSizeBonus as number | undefined
 
   let badge: ReactNode = undefined
   if (multBonus != null && multBonus > 0) {
@@ -35,6 +36,12 @@ export const Joker = ({
     badge = (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-mint)' }}>
         +{chipsBonus}
+      </span>
+    )
+  } else if (handSizeBonus != null && handSizeBonus > 0) {
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-gold)' }}>
+        +{handSizeBonus}
       </span>
     )
   }
