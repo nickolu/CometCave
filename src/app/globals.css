@@ -485,6 +485,50 @@ body {
   border-radius: 4px;
 }
 
+/* Blind progress bar animations */
+@keyframes blind-celebration-burst {
+  0% { box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.6); }
+  40% { box-shadow: 0 0 20px 6px rgba(255, 209, 102, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 209, 102, 0); }
+}
+
+@keyframes blind-celebration-flash {
+  0% { opacity: 0; }
+  20% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+
+.blind-met-celebration {
+  animation: blind-celebration-burst 1.2s ease-out;
+  position: relative;
+}
+
+.blind-met-celebration::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255, 209, 102, 0.3), rgba(94, 234, 212, 0.3));
+  animation: blind-celebration-flash 1.2s ease-out;
+  pointer-events: none;
+}
+
+.blind-progress-fill {
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blind-progress-fill {
+    transition: none !important;
+  }
+  .blind-met-celebration {
+    animation: none;
+  }
+  .blind-met-celebration::after {
+    animation: none;
+  }
+}
+
 /* When game is active on mobile, hide site chrome and fix scrolling */
 @media (max-width: 767px) {
   body.game-active header,
