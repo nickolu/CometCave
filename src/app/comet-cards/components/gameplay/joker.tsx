@@ -35,10 +35,12 @@ export const Joker = ({
   joker,
   isSelected,
   onClick,
+  ownedCardCount,
 }: {
   joker: JokerState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
+  ownedCardCount?: number
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
@@ -146,6 +148,18 @@ export const Joker = ({
     ) : (
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-text-default)', opacity: 0.5 }}>
         ○
+      </span>
+    )
+  } else if (joker.jokerId === 'hologram' && ownedCardCount != null && joker.counter > 0) {
+    const cardsAdded = Math.max(0, ownedCardCount - joker.counter)
+    const holoXMult = 1 + cardsAdded * 0.25
+    badge = holoXMult > 1 ? (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-pink)' }}>
+        ×{holoXMult % 1 === 0 ? holoXMult.toString() : holoXMult.toFixed(2)}
+      </span>
+    ) : (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-text-default)', opacity: 0.7 }}>
+        ×1
       </span>
     )
   } else if (joker.jokerId === 'invisibleJoker') {
