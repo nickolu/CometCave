@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react'
 
+import { AnimatePresence, motion } from 'framer-motion'
+
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { getHand } from '@/app/comet-cards/domain/game/card-registry-utils'
@@ -96,44 +98,59 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
         } as React.CSSProperties
       }
     >
-      {sortedCards.map((card, i) => {
-        const isSelected = selectedCardIds.includes(card.id)
-        const offsetFromCenter = i - half + 0.5
-        const arcY = Math.abs(offsetFromCenter) * 3
-        const rotation = offsetFromCenter * 2
-        return (
-          <div
-            key={card.id}
-            style={{
-              position: 'absolute',
-              left: i * (CARD_W - OVERLAP),
-              top: 14 + arcY,
-              transform: `rotateZ(${rotation}deg)`,
-              transition: 'transform 300ms, top 300ms',
-              zIndex: isSelected ? 20 : i,
-              // Wrapper doesn't capture clicks — the inner BrandCard button
-              // does, at its translated position. Without this, a selected
-              // card's wrapper stays in the original layout slot and shadows
-              // its neighbour.
-              pointerEvents: 'none',
-            }}
-          >
-            <PlayingCard
-              playingCard={card}
-              isSelected={isSelected}
-              debuffed={debuffedIds.has(card.id)}
-              size={isLandscape ? 'xs' : 'md'}
-              onClick={(wasSelected, id) => {
-                if (wasSelected) {
-                  eventEmitter.emit({ type: 'CARD_DESELECTED', id })
-                } else {
-                  eventEmitter.emit({ type: 'CARD_SELECTED', id })
-                }
+      <AnimatePresence>
+        {sortedCards.map((card, i) => {
+          const isSelected = selectedCardIds.includes(card.id)
+          const offsetFromCenter = i - half + 0.5
+          const arcY = Math.abs(offsetFromCenter) * 3
+          const rotation = offsetFromCenter * 2
+          return (
+            <motion.div
+              key={card.id}
+              layout
+              initial={{ opacity: 0, y: 60, scale: 0.8 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
               }}
-            />
-          </div>
-        )
-      })}
+              exit={{ opacity: 0, y: -30, scale: 0.9 }}
+              transition={{
+                duration: 0.3,
+                delay: i * 0.05,
+                ease: [0.2, 0.9, 0.3, 1],
+                layout: { duration: 0.3 },
+              }}
+              style={{
+                position: 'absolute',
+                left: i * (CARD_W - OVERLAP),
+                top: 14 + arcY,
+                transform: `rotateZ(${rotation}deg)`,
+                zIndex: isSelected ? 20 : i,
+                // Wrapper doesn't capture clicks — the inner BrandCard button
+                // does, at its translated position. Without this, a selected
+                // card's wrapper stays in the original layout slot and shadows
+                // its neighbour.
+                pointerEvents: 'none',
+              }}
+            >
+              <PlayingCard
+                playingCard={card}
+                isSelected={isSelected}
+                debuffed={debuffedIds.has(card.id)}
+                size={isLandscape ? 'xs' : 'md'}
+                onClick={(wasSelected, id) => {
+                  if (wasSelected) {
+                    eventEmitter.emit({ type: 'CARD_DESELECTED', id })
+                  } else {
+                    eventEmitter.emit({ type: 'CARD_SELECTED', id })
+                  }
+                }}
+              />
+            </motion.div>
+          )
+        })}
+      </AnimatePresence>
     </div>
   )
 }
