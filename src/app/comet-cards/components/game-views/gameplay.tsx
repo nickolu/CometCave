@@ -237,7 +237,7 @@ export function GamePlayView() {
                   transform: isScoring ? 'scale(1.04)' : 'scale(1)',
                 }}
               >
-                {currentBlind.score.toString()}
+                <TickingNumber value={Number(currentBlind.score)} duration={400} />
               </div>
             )}
           </div>
@@ -617,7 +617,7 @@ export function GamePlayView() {
                       transform: isScoring ? 'scale(1.04)' : 'scale(1)',
                     }}
                   >
-                    {currentBlind.score.toString()}
+                    <TickingNumber value={Number(currentBlind.score)} duration={400} />
                     <span
                       style={{
                         fontSize: 20,
@@ -642,7 +642,7 @@ export function GamePlayView() {
                 }}
               >
                 <span>Total</span>
-                <span style={{ marginLeft: 6 }}>{totalScore.toString()}</span>
+                <span style={{ marginLeft: 6 }}><TickingNumber value={Number(totalScore)} duration={400} /></span>
               </div>
             </div>
 
