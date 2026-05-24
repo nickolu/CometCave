@@ -26,6 +26,7 @@ import {
 } from '@/app/comet-cards/domain/randomness'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { getRandomTarotCards } from '@/app/comet-cards/domain/shop/utils'
+import { initializeTag } from '@/app/comet-cards/domain/tag/utils'
 import { getRandomVoucherType } from '@/app/comet-cards/domain/voucher/utils'
 
 export function handleCardSelected(draft: GameState, event: CardSelectedEvent) {
@@ -359,6 +360,9 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   draft.gamePlayState.remainingHands = draft.maxHands
   if (currentBlind.type === 'bossBlind') {
     draft.gamePlayState.cardIdsPlayedThisAnte = []
+    if (draft.selectedDeck === 'anaglyphDeck') {
+      draft.tags.push(initializeTag('double'))
+    }
     draft.roundIndex += 1
   }
   draft.gamePlayState.scoringEvents = []
