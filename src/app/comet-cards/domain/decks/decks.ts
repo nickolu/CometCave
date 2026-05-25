@@ -2,6 +2,7 @@ import { GameState } from '@/app/comet-cards/domain/game/types'
 import { PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
 import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
 
+import { anaglyphDeck } from './anaglyph-deck'
 import { abandonedDeck } from './abandoned-deck'
 import { blackDeck } from './black-deck'
 import { blueDeck } from './blue-deck'
@@ -35,6 +36,7 @@ export const decks: Record<string, DeckDefinition> = {
   magicDeck: magicDeck,
   zodiacDeck: zodiacDeck,
   ghostDeck: ghostDeck,
+  anaglyphDeck: anaglyphDeck,
 }
 
 export const initialDeckStates = (game: GameState): Record<string, PlayingCardState[]> => {
