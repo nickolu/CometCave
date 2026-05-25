@@ -32,13 +32,19 @@ const baseMage: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
   mana: 100,
   maxMana: 100,
   spellbook: [],
   discoveredCombos: [],
 }
 
-function makePlayerState(overrides: Partial<CombatPlayerState> = {}): CombatPlayerState {
+function makePlayerState(overrides: Partial<CombatPlayerState> = {}) {
   return {
     hp: 50,
     maxHp: 50,
@@ -55,8 +61,11 @@ function makePlayerState(overrides: Partial<CombatPlayerState> = {}): CombatPlay
     activeSpellEffects: [],
     spellTagsUsed: [],
     shield: 0,
+    luck: 0,
+    stamina: 6,
+    maxStamina: 6,
     ...overrides,
-  }
+  } as CombatPlayerState
 }
 
 function makeEnemy(overrides = {}) {
@@ -367,7 +376,7 @@ describe('discoveredCombos field on character', () => {
     // A character without the field (undefined) should also be valid
     const { discoveredCombos: _removed, ...charNoCombos } = baseMage
     expect((_removed as unknown[]) ?? undefined).toBeDefined() // baseMage has it as []
-    expect(charNoCombos.discoveredCombos).toBeUndefined()
+    expect((charNoCombos as { discoveredCombos?: unknown[] }).discoveredCombos).toBeUndefined()
   })
 
   it('combo ID format matches the pattern used in useCombatActionMutation', () => {

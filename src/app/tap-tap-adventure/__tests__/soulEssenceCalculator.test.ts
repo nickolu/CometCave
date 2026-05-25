@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
-function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharacter {
+function makeCharacter(overrides: Partial<FantasyCharacter> = {}) {
   return {
     id: 'test-id',
     playerId: 'test-player',
@@ -31,8 +31,14 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     spellbook: [],
     activeMount: null,
     difficultyMode: 'normal',
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
     ...overrides,
-  }
+  } as FantasyCharacter
 }
 
 describe('calculateSoulEssence', () => {

@@ -27,6 +27,12 @@ const baseChar: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
   inventory: [
     { id: 'item-1', name: 'Healing Potion', description: 'Heals', quantity: 2 },
   ],

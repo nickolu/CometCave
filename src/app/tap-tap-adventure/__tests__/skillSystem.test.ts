@@ -34,6 +34,12 @@ const baseChar: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
   mana: 20,
   maxMana: 20,
   spellbook: [],
@@ -232,7 +238,7 @@ describe('HP/Mana Bonus Calculations', () => {
 
 describe('Flee Chance Bonus', () => {
   it('should apply Quick Reflexes +10% flee chance', () => {
-    const enemy = { name: 'Goblin', level: 1, hp: 10, maxHp: 10, attack: 3, defense: 1, goldReward: 5, statusEffects: [] }
+    const enemy = { id: 'goblin-1', description: 'A goblin', name: 'Goblin', level: 1, hp: 10, maxHp: 10, attack: 3, defense: 1, goldReward: 5, statusEffects: [] }
     const charWithout = { ...baseChar }
     const charWith = { ...baseChar, unlockedSkills: ['quick_reflexes'] }
     const chanceWithout = calculateFleeChance(charWithout, enemy)
@@ -244,10 +250,13 @@ describe('Flee Chance Bonus', () => {
 describe('Combat Rewards Bonuses', () => {
   it('should apply Gold Finder +25% gold bonus', () => {
     const enemy = {
-      name: 'Goblin', level: 1, hp: 0, maxHp: 10, attack: 3, defense: 1,
+      id: 'goblin-1', description: 'A goblin', name: 'Goblin', level: 1, hp: 0, maxHp: 10, attack: 3, defense: 1,
       goldReward: 100, statusEffects: [],
     }
     const combatState = {
+      id: 'combat-1',
+      eventId: 'event-1',
+      scenario: 'A goblin appears!',
       enemy,
       playerState: initializePlayerCombatState(baseChar),
       turnNumber: 1,
@@ -264,10 +273,13 @@ describe('Combat Rewards Bonuses', () => {
 
   it('should not modify gold without Gold Finder skill', () => {
     const enemy = {
-      name: 'Goblin', level: 1, hp: 0, maxHp: 10, attack: 3, defense: 1,
+      id: 'goblin-1', description: 'A goblin', name: 'Goblin', level: 1, hp: 0, maxHp: 10, attack: 3, defense: 1,
       goldReward: 100, statusEffects: [],
     }
     const combatState = {
+      id: 'combat-1',
+      eventId: 'event-1',
+      scenario: 'A goblin appears!',
       enemy,
       playerState: initializePlayerCombatState(baseChar),
       turnNumber: 1,

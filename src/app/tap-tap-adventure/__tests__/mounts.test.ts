@@ -15,7 +15,7 @@ import { MountSchema } from '@/app/tap-tap-adventure/models/mount'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { CombatState } from '@/app/tap-tap-adventure/models/combat'
 
-function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharacter {
+function makeCharacter(overrides: Partial<FantasyCharacter> = {}) {
   return {
     id: 'test-char',
     playerId: 'p1',
@@ -44,8 +44,14 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     spellbook: [],
     classData: undefined,
     activeMount: null,
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
     ...overrides,
-  }
+  } as FantasyCharacter
 }
 
 describe('Mount Definitions', () => {
@@ -113,7 +119,7 @@ describe('Mount Combat Bonuses', () => {
     })
 
     const state = initializePlayerCombatState(mountedChar)
-    const luckBuffs = state.activeBuffs.filter(b => b.stat === 'attack' && b.turnsRemaining === 999)
+    const luckBuffs = (state.activeBuffs ?? []).filter(b => b.stat === 'attack' && b.turnsRemaining === 999)
     expect(luckBuffs.length).toBeGreaterThan(0)
     expect(luckBuffs.some(b => b.value === 2)).toBe(true)
   })
@@ -129,7 +135,7 @@ describe('Mount Combat Bonuses', () => {
 
     expect(dragonState.attack).toBe(baseState.attack + 3)
     expect(dragonState.defense).toBe(baseState.defense + 1)
-    const luckBuffs = dragonState.activeBuffs.filter(b => b.stat === 'attack' && b.turnsRemaining === 999)
+    const luckBuffs = (dragonState.activeBuffs ?? []).filter(b => b.stat === 'attack' && b.turnsRemaining === 999)
     expect(luckBuffs.some(b => b.value === 1)).toBe(true)
   })
 
@@ -345,7 +351,12 @@ describe('Mount Boss Drops', () => {
 
     const char = makeCharacter({ luck: 10 })
     const combatState: CombatState = {
+      id: 'combat-1',
+      eventId: 'event-1',
+      scenario: 'A boss appears!',
       enemy: {
+        id: 'boss-1',
+        description: 'A powerful boss',
         name: 'Test Boss',
         hp: 0,
         maxHp: 100,
@@ -373,7 +384,12 @@ describe('Mount Boss Drops', () => {
   it('non-boss combat should not drop mounts', () => {
     const char = makeCharacter()
     const combatState: CombatState = {
+      id: 'combat-1',
+      eventId: 'event-1',
+      scenario: 'An enemy appears!',
       enemy: {
+        id: 'enemy-1',
+        description: 'A regular enemy',
         name: 'Test Enemy',
         hp: 0,
         maxHp: 50,

@@ -14,7 +14,16 @@ const basePlayerState: CombatPlayerState = {
   defense: 10,
   isDefending: false,
   activeBuffs: [],
-}
+  comboCount: 0,
+  abilityCooldown: 0,
+  enemyStunned: false,
+  shield: 0,
+  luck: 0,
+  mana: 0,
+  maxMana: 0,
+  stamina: 6,
+  maxStamina: 6,
+} as unknown as CombatPlayerState
 
 describe('combatItemEffects', () => {
   describe('isUsableInCombat', () => {
