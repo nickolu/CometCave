@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { GameState, ScoringEvent } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
@@ -27,8 +27,8 @@ describe('Hack joker', () => {
     )
     expect(hackEvents).toHaveLength(1)
     // 3 baseChips = 3
-    expect(hackEvents[0].value).toBe(3)
-    expect(hackEvents[0].type).toBe('chips')
+    expect((hackEvents[0] as ScoringEvent).value).toBe(3)
+    expect((hackEvents[0] as ScoringEvent).type).toBe('chips')
   })
 
   it('card with value K does NOT get retriggered', () => {

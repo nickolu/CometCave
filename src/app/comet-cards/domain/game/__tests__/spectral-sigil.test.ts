@@ -10,7 +10,7 @@ describe('Sigil spectral card', () => {
     game.gamePlayState.handIds = game.ownedCardIds.slice(0, 5)
     game.shopState.openPackState = {
       id: 'test-pack',
-      cards: [{ card: { id: 'sigil-1', spectralType: 'sigil' } as any, type: 'spectralCard', cardType: 'spectralCard', price: 0 }],
+      cards: [{ card: { id: 'sigil-1', spectralType: 'sigil' } as any, type: 'spectralCard', price: 0 }],
       rarity: 'normal',
       remainingCardsToSelect: 1,
     }

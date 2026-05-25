@@ -13,7 +13,6 @@ describe('Wraith spectral card', () => {
         {
           card: { id: 'wraith-1', spectralType: 'wraith' } as any,
           type: 'spectralCard',
-          cardType: 'spectralCard',
           price: 0,
         },
       ],

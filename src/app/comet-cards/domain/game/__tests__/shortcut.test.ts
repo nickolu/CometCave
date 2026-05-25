@@ -113,6 +113,7 @@ describe('Shortcut Joker', () => {
       probabilityMultiplier: 1,
       smearedSuits: false,
       allowStraightGaps: true,
+      bossBlindDisabled: false,
     })
     expect(isStraightWithGaps).toBe(true)
 
@@ -128,6 +129,7 @@ describe('Shortcut Joker', () => {
       probabilityMultiplier: 1,
       smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isStraightWithoutGaps).toBe(false)
   })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { GameState, ScoringEvent } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
@@ -33,8 +33,8 @@ describe('Dusk joker', () => {
     )
     expect(duskEvents).toHaveLength(1)
     // Ace baseChips = 11
-    expect(duskEvents[0].value).toBe(11)
-    expect(duskEvents[0].type).toBe('chips')
+    expect((duskEvents[0] as ScoringEvent).value).toBe(11)
+    expect((duskEvents[0] as ScoringEvent).type).toBe('chips')
   })
 
   it('does NOT retrigger when remainingHands is 1 (not final hand)', () => {
