@@ -63,6 +63,7 @@ export function handleCardDeselected(draft: GameState, event: CardDeselectedEven
 
 export function handleDiscardSelectedCards(draft: GameState, event: GameEvent) {
   const gamePlayState = draft.gamePlayState
+  gamePlayState.isDiscarding = true
 
   // Find discarded cards before we clear selection
   const discardedCards = getCards(draft as unknown as GameState, gamePlayState.selectedCardIds)
@@ -274,6 +275,7 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
 
 export function handleHandScoringStart(draft: GameState, event: GameEvent) {
   const gamePlayState = draft.gamePlayState
+  gamePlayState.isDiscarding = false
   const selectedCards = getSelectedCards(draft as unknown as GameState)
   const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
     selectedCards,

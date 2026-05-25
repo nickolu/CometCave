@@ -96,6 +96,7 @@ export interface GamePlayState {
   // Track which hand types have been played this round (resets between blinds)
   handTypesPlayedThisRound: string[]
 
+  isDiscarding: boolean
   isScoring: boolean
   playedCardIds: string[]
   remainingDiscards: number

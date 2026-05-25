@@ -120,6 +120,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       case 'HAND_DEALT': {
         if (draft.gamePlayState.handIds.length) return
         dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
+        draft.gamePlayState.isDiscarding = false
         return
       }
       case 'CARD_SELECTED': {
