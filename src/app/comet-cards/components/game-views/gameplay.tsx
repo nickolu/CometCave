@@ -206,7 +206,7 @@ export function GamePlayView() {
 
       {isLandscape ? (
         /* ── LANDSCAPE MOBILE: single-column flex ── */
-        <div className="relative z-10 flex flex-col" style={{ gap: 0 }}>
+        <div className="relative z-10 flex flex-col flex-1" style={{ gap: 0 }}>
           {/* Compact info bar */}
           <div
             className="flex flex-wrap items-center justify-between"
@@ -311,12 +311,14 @@ export function GamePlayView() {
           </div>
 
           {/* Play area + Hand */}
-          <LayoutGroup>
-            <PlayArea cards={playedCards} visible={isScoring} />
-            <div className="flex items-end justify-center" style={{ paddingBottom: 4, paddingTop: 4 }}>
-              <Hand sortKey={sortKey} />
-            </div>
-          </LayoutGroup>
+          <div className="flex-1 flex flex-col justify-end">
+            <LayoutGroup>
+              <PlayArea cards={playedCards} visible={isScoring} />
+              <div className="flex items-end justify-center" style={{ paddingBottom: 4, paddingTop: 4 }}>
+                <Hand sortKey={sortKey} />
+              </div>
+            </LayoutGroup>
+          </div>
 
           {/* Action bar */}
           <div
