@@ -41,6 +41,12 @@ const baseChar: FantasyCharacter = {
   maxMana: 20,
   spellbook: [],
   classData: undefined,
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
 }
 
 function makeState(dailyReward: GameState['dailyReward'] = null): GameState {
@@ -62,6 +68,8 @@ function makeState(dailyReward: GameState['dailyReward'] = null): GameState {
     runHistory: [],
     dailyReward,
     dailyChallenges: null,
+    pendingLootCelebration: null,
+    newItemIds: [],
   }
 }
 

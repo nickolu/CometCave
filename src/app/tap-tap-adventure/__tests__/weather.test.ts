@@ -37,6 +37,12 @@ const baseChar: FantasyCharacter = {
   currentWeather: 'clear',
   visitedRegions: ['green_meadows', 'frozen_peaks'],
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
 }
 
 describe('Weather Config', () => {
@@ -139,7 +145,7 @@ describe('buildStoryContext weather injection', () => {
   })
 
   it('does not include weather line when currentWeather is undefined (defaults to clear)', () => {
-    const char: FantasyCharacter = { ...baseChar, currentWeather: undefined }
+    const char = { ...baseChar, currentWeather: undefined } as unknown as FantasyCharacter
     const ctx = buildStoryContext(char, [])
     expect(ctx).not.toContain('Weather:')
   })

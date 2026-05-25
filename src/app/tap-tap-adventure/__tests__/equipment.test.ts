@@ -40,6 +40,12 @@ const baseChar: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
   equipment: { weapon: null, armor: null, accessory: null },
 }
 
@@ -126,13 +132,13 @@ describe('Equipment effects in combat', () => {
     const without = initializePlayerCombatState(baseChar)
 
     // Accessory adds a passive buff
-    expect(withAccessory.activeBuffs.length).toBe(1)
-    expect(withAccessory.activeBuffs[0].stat).toBe('attack')
-    expect(withAccessory.activeBuffs[0].value).toBe(2)
-    expect(withAccessory.activeBuffs[0].turnsRemaining).toBe(999)
+    expect((withAccessory.activeBuffs ?? []).length).toBe(1)
+    expect((withAccessory.activeBuffs ?? [])[0].stat).toBe('attack')
+    expect((withAccessory.activeBuffs ?? [])[0].value).toBe(2)
+    expect((withAccessory.activeBuffs ?? [])[0].turnsRemaining).toBe(999)
 
     // Without accessory, no buffs
-    expect(without.activeBuffs.length).toBe(0)
+    expect((without.activeBuffs ?? []).length).toBe(0)
   })
 
   it('handles no equipment gracefully', () => {
@@ -159,7 +165,7 @@ describe('Equipment effects in combat', () => {
 
     expect(state.attack).toBe(base.attack + 2 * 2) // weapon strength * 2
     expect(state.defense).toBe(base.defense + 3) // armor intelligence
-    expect(state.activeBuffs.length).toBe(1) // accessory luck buff
+    expect((state.activeBuffs ?? []).length).toBe(1) // accessory luck buff
   })
 })
 

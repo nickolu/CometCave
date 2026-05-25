@@ -118,6 +118,12 @@ function makeChar(level: number, str: number = 5, int: number = 5, lck: number =
     currentRegion: 'green_meadows',
     currentWeather: 'clear',
     factionReputations: {},
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
   }
   const maxHp = calculateMaxHp(char)
   return { ...char, hp: maxHp, maxHp }

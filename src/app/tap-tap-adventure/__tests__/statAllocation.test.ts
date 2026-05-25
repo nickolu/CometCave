@@ -8,7 +8,7 @@ import {
 } from '@/app/tap-tap-adventure/lib/leveling'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
-function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharacter {
+function makeCharacter(overrides: Partial<FantasyCharacter> = {}) {
   return {
     id: 'test-char',
     playerId: 'player-1',
@@ -32,8 +32,14 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     equipment: { weapon: null, armor: null, accessory: null },
     deathCount: 0,
     pendingStatPoints: 0,
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
     ...overrides,
-  }
+  } as FantasyCharacter
 }
 
 describe('Stat Allocation on Level Up', () => {

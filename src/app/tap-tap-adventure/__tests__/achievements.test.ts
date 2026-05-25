@@ -40,6 +40,8 @@ const baseChar: FantasyCharacter = {
   bounty: 0,
   mountRoster: [],
   mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
   party: [],
 }
 

@@ -30,7 +30,7 @@ function makeEffect(overrides: Partial<StatusEffect> = {}): StatusEffect {
   }
 }
 
-function makePlayerState(overrides: Partial<CombatPlayerState> = {}): CombatPlayerState {
+function makePlayerState(overrides: Partial<CombatPlayerState> = {}) {
   return {
     hp: 100,
     maxHp: 100,
@@ -43,9 +43,12 @@ function makePlayerState(overrides: Partial<CombatPlayerState> = {}): CombatPlay
     mana: 50,
     maxMana: 50,
     shield: 0,
+    luck: 0,
+    stamina: 6,
+    maxStamina: 6,
     statusEffects: [],
     ...overrides,
-  }
+  } as CombatPlayerState
 }
 
 function makeEnemy(overrides: Partial<CombatEnemy> = {}): CombatEnemy {

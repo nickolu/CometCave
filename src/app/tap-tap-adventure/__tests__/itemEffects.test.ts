@@ -30,6 +30,12 @@ const baseChar: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
 }
 
 function makeConsumable(overrides: Partial<Item> = {}): Item {
