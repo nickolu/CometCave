@@ -5055,6 +5055,48 @@ export const pareidoliaJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const mimeJoker: JokerDefinition = {
+  id: 'mime',
+  name: 'Mime',
+  description: 'Retrigger all card held in hand abilities',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 2,
+      apply: (ctx: EffectContext) => {
+        // Get held cards (in hand but not played)
+        const heldCardIds = ctx.game.gamePlayState.handIds.filter(
+          id => !ctx.game.gamePlayState.playedCardIds.includes(id)
+        )
+
+        for (const cardId of heldCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+
+          // Retrigger Steel enchantment (x1.5 Mult per held steel card)
+          if (cardState.flags.enchantment === 'steel') {
+            ctx.game.gamePlayState.scoringEvents.push({
+              id: uuid(),
+              type: 'mult',
+              operator: 'x',
+              value: 1.5,
+              source: 'Mime (Steel retrigger)',
+            })
+            ctx.game.gamePlayState.score.mult *= 1.5
+          }
+
+          // Retrigger Gold enchantment ($3 per gold held card)
+          if (cardState.flags.enchantment === 'gold') {
+            ctx.game.money += 3
+          }
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5203,6 +5245,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   shortcut,
   luchador,
   pareidolia: pareidoliaJoker,
+  mime: mimeJoker,
 }
 
 /***
