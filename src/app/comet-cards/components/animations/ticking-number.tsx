@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useReducedMotion } from 'framer-motion'
 
 export function TickingNumber({
   value,
@@ -11,6 +12,7 @@ export function TickingNumber({
   duration?: number
   format?: (n: number) => string
 }) {
+  const reducedMotion = useReducedMotion()
   const [display, setDisplay] = useState(value)
   const prev = useRef(value)
   const raf = useRef<number | undefined>(undefined)
@@ -20,7 +22,10 @@ export function TickingNumber({
     const to = value
     prev.current = value
 
-    if (from === to) return
+    if (from === to || reducedMotion) {
+      setDisplay(to)
+      return
+    }
 
     const start = performance.now()
     const tick = (now: number) => {
@@ -31,7 +36,7 @@ export function TickingNumber({
     }
     raf.current = requestAnimationFrame(tick)
     return () => { if (raf.current) cancelAnimationFrame(raf.current) }
-  }, [value, duration])
+  }, [value, duration, reducedMotion])
 
   return <>{format ? format(display) : display.toLocaleString()}</>
 }
