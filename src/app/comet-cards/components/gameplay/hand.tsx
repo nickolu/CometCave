@@ -27,6 +27,7 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
   const { game } = useGameState()
   const { gamePlayState } = game
   const { selectedCardIds } = gamePlayState
+  const isDiscarding = gamePlayState.isDiscarding
   const dealtCards = getHand(game)
 
   const sortedCards: PlayingCardState[] = useMemo(() => {
@@ -115,7 +116,10 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
                 y: 0,
                 scale: 1,
               }}
-              exit={{ opacity: 0, y: -30, scale: 0.9 }}
+              exit={isDiscarding
+                ? { opacity: 0, y: 80, scale: 0.6, rotate: (i - half) * 8 }
+                : { opacity: 0, y: -30, scale: 0.9 }
+              }
               transition={{
                 duration: 0.3,
                 delay: i * 0.05,

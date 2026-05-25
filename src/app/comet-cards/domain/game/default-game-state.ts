@@ -40,6 +40,7 @@ const gameState: GameState = {
     drawPileIds: [],
     handIds: [],
     handTypesPlayedThisRound: [],
+    isDiscarding: false,
     isScoring: false,
     playedCardIds: [],
     remainingHands: 4,
