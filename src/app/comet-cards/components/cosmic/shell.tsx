@@ -1,12 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { MotionConfig } from 'framer-motion'
 import { AmbientBG } from './ambient-bg'
 
 import type { ReactNode } from 'react'
 
 export function CosmicShell({ children }: { children: ReactNode }) {
   return (
+    <MotionConfig reducedMotion="user">
     <div
       className="cosmic-cards relative w-full overflow-hidden"
       style={{
@@ -41,5 +43,6 @@ export function CosmicShell({ children }: { children: ReactNode }) {
       </Link>
       <div className="relative z-10" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>{children}</div>
     </div>
+    </MotionConfig>
   )
 }
