@@ -1,3 +1,4 @@
+import { decks } from '@/app/comet-cards/domain/decks/decks'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type { Effect, EffectContext, GameEvent } from '@/app/comet-cards/domain/events/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
@@ -59,6 +60,11 @@ export function collectEffects(game: GameState): Effect[] {
   effects.push(...game.vouchers.flatMap(v => vouchers[v.type]?.effects || []))
 
   effects.push(...game.tags.flatMap(t => tags[t.tagType]?.effects || []))
+
+  const deckDef = decks[game.selectedDeck]
+  if (deckDef?.effects) {
+    effects.push(...deckDef.effects)
+  }
 
   return effects
 }
