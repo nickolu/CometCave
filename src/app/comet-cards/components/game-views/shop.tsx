@@ -22,11 +22,13 @@ import {
   getIsSelectedCardPlayable,
 } from '@/app/comet-cards/domain/shop/utils'
 import { VOUCHER_PRICE } from '@/app/comet-cards/domain/voucher/constants'
+import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
 import { ViewTemplate } from './view-template'
 
 export function ShopView() {
+  const isLandscape = useLandscapeMobile()
   const { game } = useGameState()
   useEffect(() => {
     if (!game.shopState.isOpen) {
@@ -46,23 +48,39 @@ export function ShopView() {
   return (
     <ViewTemplate
       sidebarContentBottom={
-        <Panel title="Shop Actions">
-          <div className="flex flex-col" style={{ gap: 8, padding: '12px 16px' }}>
+        isLandscape ? (
+          <div className="flex items-center justify-center" style={{ gap: 8 }}>
             <PrimaryButton
-              style={{ width: '100%' }}
               onClick={() => eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })}
             >
               Continue → Blind
             </PrimaryButton>
             <DangerButton
-              style={{ width: '100%' }}
               disabled={game.money < rerollPrice}
               onClick={() => eventEmitter.emit({ type: 'SHOP_REROLL' })}
             >
               Reroll · ${rerollPrice}
             </DangerButton>
           </div>
-        </Panel>
+        ) : (
+          <Panel title="Shop Actions">
+            <div className="flex flex-col" style={{ gap: 8, padding: '12px 16px' }}>
+              <PrimaryButton
+                style={{ width: '100%' }}
+                onClick={() => eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })}
+              >
+                Continue → Blind
+              </PrimaryButton>
+              <DangerButton
+                style={{ width: '100%' }}
+                disabled={game.money < rerollPrice}
+                onClick={() => eventEmitter.emit({ type: 'SHOP_REROLL' })}
+              >
+                Reroll · ${rerollPrice}
+              </DangerButton>
+            </div>
+          </Panel>
+        )
       }
     >
       <div className="flex flex-col" style={{ gap: 18 }}>
