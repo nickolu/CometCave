@@ -5112,6 +5112,24 @@ export const mimeJoker: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const blueprintJoker: JokerDefinition = {
+  id: 'blueprint',
+  name: 'Blueprint',
+  description: 'Copies ability of Joker to the right',
+  price: 10,
+  effects: [],
+  rarity: 'rare',
+}
+
+export const brainstormJoker: JokerDefinition = {
+  id: 'brainstorm',
+  name: 'Brainstorm',
+  description: 'Copies the ability of leftmost Joker',
+  price: 10,
+  effects: [],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5261,6 +5279,8 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   luchador,
   pareidolia: pareidoliaJoker,
   mime: mimeJoker,
+  blueprint: blueprintJoker,
+  brainstorm: brainstormJoker,
 }
 
 /***
