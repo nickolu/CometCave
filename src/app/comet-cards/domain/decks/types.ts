@@ -1,4 +1,5 @@
 import { TarotCardDefinition } from '@/app/comet-cards/domain/consumable/types'
+import { Effect } from '@/app/comet-cards/domain/events/types'
 import { PlayingCardDefinition } from '@/app/comet-cards/domain/playing-card/types'
 import { VoucherType } from '@/app/comet-cards/domain/voucher/types'
 
@@ -8,6 +9,7 @@ export interface DeckDefinition {
   description: string
   cards: PlayingCardDefinition[]
   modifiers: DeckModifiers
+  effects?: Effect[]
 }
 
 export interface DeckModifiers {
