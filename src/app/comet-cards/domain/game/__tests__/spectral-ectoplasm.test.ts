@@ -17,7 +17,6 @@ describe('Ectoplasm spectral card', () => {
         {
           card: { id: 'ecto-1', spectralType: 'ectoplasm' } as any,
           type: 'spectralCard',
-          cardType: 'spectralCard',
           price: 0,
         },
       ],

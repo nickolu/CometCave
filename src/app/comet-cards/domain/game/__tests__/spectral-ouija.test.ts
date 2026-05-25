@@ -11,7 +11,7 @@ describe('Ouija spectral card', () => {
     const initialHandSize = game.handSizeModifier
     game.shopState.openPackState = {
       id: 'test-pack',
-      cards: [{ card: { id: 'ouija-1', spectralType: 'ouija' } as any, type: 'spectralCard', cardType: 'spectralCard', price: 0 }],
+      cards: [{ card: { id: 'ouija-1', spectralType: 'ouija' } as any, type: 'spectralCard', price: 0 }],
       rarity: 'normal',
       remainingCardsToSelect: 1,
     }

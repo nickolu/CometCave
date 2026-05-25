@@ -10,7 +10,7 @@ describe('Incantation spectral card', () => {
     const initialOwned = game.ownedCardIds.length
     game.shopState.openPackState = {
       id: 'test-pack',
-      cards: [{ card: { id: 'inc-1', spectralType: 'incantation' } as any, type: 'spectralCard', cardType: 'spectralCard', price: 0 }],
+      cards: [{ card: { id: 'inc-1', spectralType: 'incantation' } as any, type: 'spectralCard', price: 0 }],
       rarity: 'normal',
       remainingCardsToSelect: 1,
     }

@@ -49,7 +49,7 @@ describe('Luchador joker', () => {
   it('bossBlindDisabled resets to false when small blind is selected', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.staticRules.bossBlindDisabled = true
-    game.rounds[game.roundIndex].smallBlind.status = 'pending'
+    game.rounds[game.roundIndex].smallBlind.status = 'notStarted'
 
     const after = reduceGame(game, { type: 'SMALL_BLIND_SELECTED' })
 
@@ -59,7 +59,7 @@ describe('Luchador joker', () => {
   it('bossBlindDisabled resets to false when big blind is selected', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.staticRules.bossBlindDisabled = true
-    game.rounds[game.roundIndex].bigBlind.status = 'pending'
+    game.rounds[game.roundIndex].bigBlind.status = 'notStarted'
 
     const after = reduceGame(game, { type: 'BIG_BLIND_SELECTED' })
 
@@ -69,7 +69,7 @@ describe('Luchador joker', () => {
   it('bossBlindDisabled resets to false when boss blind is selected', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.staticRules.bossBlindDisabled = true
-    game.rounds[game.roundIndex].bossBlind.status = 'pending'
+    game.rounds[game.roundIndex].bossBlind.status = 'notStarted'
 
     const after = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
 
