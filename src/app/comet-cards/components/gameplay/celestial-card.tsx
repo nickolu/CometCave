@@ -21,6 +21,7 @@ export const CelestialCard = ({
       selected={isSelected}
       size="sm"
       typeLabel="Celestial"
+      edition={celestialCard.edition}
       onClick={onClick ? () => onClick(isSelected ?? false, celestialCard.id) : undefined}
     />
   )

@@ -21,6 +21,7 @@ export const TarotCard = ({
       selected={isSelected}
       size="sm"
       typeLabel="Tarot"
+      edition={tarotCard.edition}
       onClick={onClick ? () => onClick(isSelected ?? false, tarotCard.id) : undefined}
     />
   )
