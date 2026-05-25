@@ -4637,32 +4637,47 @@ export const sixthSense: JokerDefinition = {
   rarity: 'uncommon',
 }
 
-export const dna: JokerDefinition = {
+const dnaBlindReset = {
+  priority: 1,
+  apply: (ctx: EffectContext) => {
+    const d = ctx.game.jokers.find(j => j.jokerId === 'dna')
+    if (d) d.counter = 0
+  },
+}
+
+export const dnaJoker: JokerDefinition = {
   id: 'dna',
   name: 'DNA',
   description: 'If first hand of round has only 1 card, add a permanent copy to deck and draw it to hand',
   price: 8,
   effects: [
+    { event: { type: 'SMALL_BLIND_SELECTED' }, ...dnaBlindReset },
+    { event: { type: 'BIG_BLIND_SELECTED' }, ...dnaBlindReset },
+    { event: { type: 'BOSS_BLIND_SELECTED' }, ...dnaBlindReset },
     {
       event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        if (ctx.game.handsPlayed !== 0) return
-        const selectedHand = ctx.game.gamePlayState.selectedHand
-        if (!selectedHand) return
-        const handCards = selectedHand[1]
-        if (!handCards || handCards.length !== 1) return
-        const originalCard = handCards[0]
-        const cardDef = playingCards[originalCard.playingCardId]
-        if (!cardDef) return
-        // Create a copy of the card
-        const newCard = initializePlayingCard(cardDef)
-        // Copy the original card's enchantment/edition/seal
-        newCard.flags = { ...originalCard.flags }
-        newCard.bonusChips = originalCard.bonusChips
-        addOwnedCard(ctx.game, newCard)
-        // Draw it to hand
-        ctx.game.gamePlayState.handIds.push(newCard.id)
+        const d = ctx.game.jokers.find(j => j.jokerId === 'dna')
+        if (!d || d.counter !== 0) return
+        d.counter = 1
+
+        if (ctx.game.gamePlayState.playedCardIds.length !== 1) return
+
+        const cardId = ctx.game.gamePlayState.playedCardIds[0]
+        const originalCard = ctx.game.cards[cardId]
+        if (!originalCard) return
+
+        const copyState: PlayingCardState = {
+          id: uuid(),
+          playingCardId: originalCard.playingCardId,
+          bonusChips: originalCard.bonusChips,
+          flags: { ...originalCard.flags },
+          isFaceUp: true,
+        }
+
+        addOwnedCard(ctx.game, copyState)
+        ctx.game.gamePlayState.handIds.push(copyState.id)
       },
     },
   ],
@@ -5232,7 +5247,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   tradingCard,
   seance,
   sixthSense,
-  dna,
+  dna: dnaJoker,
   theIdol,
   mrBones,
   oopsAll6s,
