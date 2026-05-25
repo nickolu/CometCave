@@ -12,6 +12,7 @@ import {
   isCelestialCardDefinition,
   isCelestialCardState,
   isTarotCardDefinition,
+  countConsumableSlots,
   isTarotCardState,
 } from '@/app/comet-cards/domain/consumable/utils'
 import { GameState } from '@/app/comet-cards/domain/game/types'
@@ -284,7 +285,7 @@ export function getIsRoomForSelectedCard(
     isCelestialCardDefinition(selectedCardDefinition) ||
     isTarotCardDefinition(selectedCardDefinition)
   ) {
-    return game.consumables.length < game.maxConsumables
+    return countConsumableSlots(game.consumables) < game.maxConsumables
   }
 
   return isPlayingCardDefinition(selectedCardDefinition)

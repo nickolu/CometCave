@@ -1,5 +1,5 @@
 import { celestialCards } from '@/app/comet-cards/domain/consumable/celestial-cards'
-import { initializeCelestialCard } from '@/app/comet-cards/domain/consumable/utils'
+import { countConsumableSlots, initializeCelestialCard } from '@/app/comet-cards/domain/consumable/utils'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/comet-cards/domain/events/types'
 import { uuid } from '@/app/comet-cards/domain/randomness'
@@ -140,7 +140,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     const cardsInHandWithBlueSeal = cardsInHand.filter(card => card.flags.seal === 'blue')
     if (playedHand) {
       for (let i = 0; i < cardsInHandWithBlueSeal.length; i++) {
-        if (draft.consumables.length < draft.maxConsumables) {
+        if (countConsumableSlots(draft.consumables) < draft.maxConsumables) {
           draft.consumables.push(initializeCelestialCard(celestialCards[playedHand]))
         }
       }

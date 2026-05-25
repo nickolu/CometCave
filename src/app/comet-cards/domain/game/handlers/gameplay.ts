@@ -1,4 +1,4 @@
-import { initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
+import { countConsumableSlots, initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type {
   CardDeselectedEvent,
@@ -103,7 +103,7 @@ export function handleDiscardSelectedCards(draft: GameState, event: GameEvent) {
   // Purple seal: add a tarot card for each discarded card with purple seal
   const purpleSealCount = discardedCards.filter(card => card.flags.seal === 'purple').length
   for (let i = 0; i < purpleSealCount; i++) {
-    if (draft.consumables.length < draft.maxConsumables) {
+    if (countConsumableSlots(draft.consumables) < draft.maxConsumables) {
       const randomTarotCardsSeed = buildSeedString([
         draft.gameSeed,
         draft.roundIndex.toString(),

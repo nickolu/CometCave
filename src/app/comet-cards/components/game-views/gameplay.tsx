@@ -20,7 +20,7 @@ import { Hands } from '@/app/comet-cards/components/hands/hands'
 import { TickingNumber } from '@/app/comet-cards/components/animations/ticking-number'
 import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { Vouchers } from '@/app/comet-cards/components/voucher/vouchers'
-import { getConsumableDefinition } from '@/app/comet-cards/domain/consumable/utils'
+import { countConsumableSlots, getConsumableDefinition } from '@/app/comet-cards/domain/consumable/utils'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { scoreHand as domainScoreHand } from '@/app/comet-cards/domain/game/score-hand'
 import { isCustomScoringEvent } from '@/app/comet-cards/domain/game/types'
@@ -930,7 +930,7 @@ export function GamePlayView() {
 
             <Panel
               title="Consumables"
-              subtitle={`${game.consumables.length} / ${game.maxConsumables} slots`}
+              subtitle={`${countConsumableSlots(game.consumables)} / ${game.maxConsumables} slots`}
             >
               <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {game.consumables.map(consumable => {

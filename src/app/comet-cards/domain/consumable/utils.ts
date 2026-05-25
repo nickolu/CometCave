@@ -5,6 +5,8 @@ import { tarotCards } from './tarot-cards'
 import {
   CelestialCardDefinition,
   CelestialCardState,
+  ConsumableEdition,
+  ConsumableState,
   TarotCardDefinition,
   TarotCardState,
 } from './types'
@@ -28,18 +30,29 @@ export const findLastTarotOrCelestialCard = (
 }
 
 export const initializeCelestialCard = (
-  consumable: CelestialCardDefinition
+  consumable: CelestialCardDefinition,
+  edition?: ConsumableEdition
 ): CelestialCardState => ({
   id: uuid(),
   consumableType: 'celestialCard',
   handId: consumable.handId,
+  ...(edition && { edition }),
 })
 
-export const initializeTarotCard = (consumable: TarotCardDefinition): TarotCardState => ({
+export const initializeTarotCard = (
+  consumable: TarotCardDefinition,
+  edition?: ConsumableEdition
+): TarotCardState => ({
   id: uuid(),
   consumableType: 'tarotCard',
   tarotType: consumable.tarotType,
+  ...(edition && { edition }),
 })
+
+/** Count consumables that occupy a slot (excludes Negative edition) */
+export function countConsumableSlots(consumables: ConsumableState[]): number {
+  return consumables.filter(c => c.edition !== 'negative').length
+}
 
 export const isCelestialCardState = (card: unknown): card is CelestialCardState => {
   return (
