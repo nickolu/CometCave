@@ -79,6 +79,13 @@ export async function moveForwardService(
       }
     })
 
+    // Spawn at the gate the player entered through (the exit leading back to their previous region)
+    const previousRegionId = existingLandmarkState?.regionId
+    const entryExit = previousRegionId
+      ? exitPositions.find(ep => ep.regionId === previousRegionId)
+      : undefined
+    const startPosition = entryExit?.position ?? { x: Math.round(regionSize / 2), y: Math.round(regionSize / 2) }
+
     const initializedCharacter: FantasyCharacter = {
       ...updatedCharacter,
       landmarkState: {
@@ -91,7 +98,7 @@ export async function moveForwardService(
         positionInRegion: 0,
         activeTargetIndex: 0,
         regionLength,
-        position: { x: Math.round(regionSize / 2), y: Math.round(regionSize / 2) },
+        position: startPosition,
         exitPosition: exitPositions[0]?.position ?? { x: Math.round(regionSize * 0.98), y: Math.round(regionSize / 2) },
         exitPositions,
         regionBounds: { width: regionSize, height: regionSize },
