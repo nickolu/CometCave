@@ -10,6 +10,7 @@ import { getHand } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { cardValuePriority } from '@/app/comet-cards/domain/hand/constants'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 import { PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
+import { isFaceCard } from '@/app/comet-cards/domain/playing-card/utils'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
@@ -63,7 +64,7 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
 
       const suit = def.suit
       const value = def.value
-      const isFace = value === 'J' || value === 'Q' || value === 'K'
+      const isFace = isFaceCard(value, game)
 
       if (
         (bossName === 'The Club' && suit === 'clubs') ||

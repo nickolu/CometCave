@@ -21,7 +21,7 @@ import { getRandomTarotCards, getRandomSpectralCards } from '@/app/comet-cards/d
 import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 
 import { addOwnedCard, removeOwnedCard } from '@/app/comet-cards/domain/game/card-registry-utils'
-import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
+import { initializePlayingCard, isFaceCard } from '@/app/comet-cards/domain/playing-card/utils'
 import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { JokerDefinition, JokerState } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
@@ -698,8 +698,7 @@ export const midasMaskJoker: JokerDefinition = {
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
         if (!cardDef) return
-        const faceValues = ['J', 'Q', 'K']
-        if (!faceValues.includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
 
         // Convert to Gold enchantment permanently
         const cardState = ctx.game.cards[scoredCard.id]
@@ -1916,8 +1915,7 @@ export const smileyFaceJoker: JokerDefinition = {
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
         if (!cardDef) return
-        const faceValues = ['J', 'Q', 'K']
-        if (faceValues.includes(cardDef.value)) {
+        if (isFaceCard(cardDef.value, ctx.game)) {
           ctx.game.gamePlayState.scoringEvents.push({
             id: uuid(),
             type: 'mult',
@@ -2071,7 +2069,7 @@ export const scaryFaceJoker: JokerDefinition = {
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
         if (!cardDef) return
-        if (['J', 'Q', 'K'].includes(cardDef.value)) {
+        if (isFaceCard(cardDef.value, ctx.game)) {
           ctx.game.gamePlayState.scoringEvents.push({
             id: uuid(),
             type: 'chips',
@@ -2224,7 +2222,7 @@ export const businessCard: JokerDefinition = {
         const scoredCard = ctx.scoredCards?.[0]
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
-        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
 
         const seed = buildSeedString([
           ctx.game.gameSeed,
@@ -2718,7 +2716,7 @@ export const photograph: JokerDefinition = {
         const scoredCard = ctx.scoredCards?.[0]
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
-        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
         pj.counter = 1
         ctx.game.gamePlayState.scoringEvents.push({
           id: uuid(),
@@ -2943,10 +2941,9 @@ export const rideTheBus: JokerDefinition = {
         const selectedHand = ctx.game.gamePlayState.selectedHand
         if (!selectedHand) return
         const scoringCards = selectedHand[1]
-        const faceValues = ['J', 'Q', 'K']
         const hasFaceCard = scoringCards.some(card => {
           const cardDef = playingCards[card.playingCardId]
-          return faceValues.includes(cardDef.value)
+          return isFaceCard(cardDef.value, ctx.game)
         })
         if (hasFaceCard) {
           rtb.counter = 0
@@ -2978,13 +2975,12 @@ export const facelessJoker: JokerDefinition = {
       event: { type: 'DISCARD_SELECTED_CARDS' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const faceValues = ['J', 'Q', 'K']
         let faceCardCount = 0
         for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
           const cardState = ctx.game.cards[cardId]
           if (!cardState) continue
           const cardDef = playingCards[cardState.playingCardId]
-          if (faceValues.includes(cardDef.value)) {
+          if (isFaceCard(cardDef.value, ctx.game)) {
             faceCardCount++
           }
         }
@@ -3030,13 +3026,12 @@ export const reservedParking: JokerDefinition = {
         const heldCardIds = ctx.game.gamePlayState.handIds.filter(
           id => !ctx.game.gamePlayState.playedCardIds.includes(id)
         )
-        const faceValues = ['J', 'Q', 'K']
         let moneyEarned = 0
         for (const cardId of heldCardIds) {
           const cardState = ctx.game.cards[cardId]
           if (!cardState) continue
           const cardDef = playingCards[cardState.playingCardId]
-          if (!faceValues.includes(cardDef.value)) continue
+          if (!isFaceCard(cardDef.value, ctx.game)) continue
           const seed = buildSeedString([
             ctx.game.gameSeed,
             ctx.game.roundIndex.toString(),
@@ -4224,8 +4219,7 @@ export const canio: JokerDefinition = {
         if (!cardState) return
         const cardDef = playingCards[cardState.playingCardId]
         if (!cardDef) return
-        const faceValues = ['J', 'Q', 'K']
-        if (!faceValues.includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
         c.metadata.xMult += 100
       },
     },
@@ -4881,7 +4875,7 @@ export const sockAndBuskin: JokerDefinition = {
         const scoredCard = ctx.scoredCards?.[0]
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
-        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
         ctx.game.gamePlayState.scoringEvents.push({
           id: uuid(),
           type: 'chips',
@@ -5022,6 +5016,39 @@ export const luchador: JokerDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.staticRules.bossBlindDisabled = true
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+export const pareidoliaJoker: JokerDefinition = {
+  id: 'pareidolia',
+  name: 'Pareidolia',
+  description: 'All cards are considered face cards',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.areAllCardsFaceCards = true
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.areAllCardsFaceCards = true
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(joker => joker.jokerId === 'pareidolia')) {
+          ctx.game.staticRules.areAllCardsFaceCards = false
+        }
       },
     },
   ],
@@ -5175,6 +5202,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hologram,
   shortcut,
   luchador,
+  pareidolia: pareidoliaJoker,
 }
 
 /***

@@ -10,6 +10,11 @@ import {
 import { playingCards } from './playing-cards'
 import { CardValue, PlayingCardDefinition, PlayingCardState } from './types'
 
+export function isFaceCard(value: string, game: GameState): boolean {
+  if (game.staticRules.areAllCardsFaceCards) return true
+  return value === 'J' || value === 'Q' || value === 'K'
+}
+
 export function isPlayingCardState(card: unknown): card is PlayingCardState {
   return typeof card === 'object' && card !== null && 'playingCardId' in card
 }

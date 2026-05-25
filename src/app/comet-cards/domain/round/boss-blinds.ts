@@ -1,6 +1,7 @@
 import type { EffectContext } from '@/app/comet-cards/domain/events/types'
 import { getMostPlayedHand } from '@/app/comet-cards/domain/hand/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
+import { isFaceCard } from '@/app/comet-cards/domain/playing-card/utils'
 import { buildSeedString, getRandomNumberWithSeed } from '@/app/comet-cards/domain/randomness'
 import type { BossBlindDefinition } from '@/app/comet-cards/domain/round/types'
 
@@ -129,7 +130,7 @@ const thePlant: BossBlindDefinition = {
       condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
       apply: (ctx: EffectContext) => {
         ctx.game.gamePlayState.cardsToScore = ctx.game.gamePlayState.cardsToScore.filter(
-          card => !['J', 'Q', 'K'].includes(playingCards[card.playingCardId].value)
+          card => !isFaceCard(playingCards[card.playingCardId].value, ctx.game)
         )
       },
     },
@@ -197,7 +198,7 @@ const theMark: BossBlindDefinition = {
         // Flip all face cards in the entire deck face down
         for (const cardId of Object.keys(ctx.game.cards)) {
           const card = ctx.game.cards[cardId]
-          if (['J', 'Q', 'K'].includes(playingCards[card.playingCardId].value)) {
+          if (isFaceCard(playingCards[card.playingCardId].value, ctx.game)) {
             card.isFaceUp = false
           }
         }
