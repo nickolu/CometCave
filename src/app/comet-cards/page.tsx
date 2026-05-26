@@ -1,5 +1,5 @@
 'use client'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { CosmicShell } from './components/cosmic/shell'
 import { BlindRewardsView } from './components/game-views/blind-rewards'
 import { BlindSelectionView } from './components/game-views/blind-selection'
@@ -18,19 +18,25 @@ import { VouchersView } from './components/game-views/vouchers'
 import { useGameEvents } from './useGameEvents'
 import { useGameState } from './useGameState'
 
-const phaseVariants = {
+const richPhaseVariants = {
+  initial: { opacity: 0, y: 12, scale: 0.97 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -8, scale: 1.01 },
+}
+
+const reducedPhaseVariants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
   exit: { opacity: 0 },
 }
 
-const phaseTransition = {
-  duration: 0.15,
-  ease: [0.2, 0.9, 0.3, 1] as const,
-}
-
 function PhaseView() {
   const { game } = useGameState()
+  const reducedMotion = useReducedMotion()
+  const phaseVariants = reducedMotion ? reducedPhaseVariants : richPhaseVariants
+  const phaseTransition = reducedMotion
+    ? { duration: 0.15, ease: [0.2, 0.9, 0.3, 1] as const }
+    : { duration: 0.3, ease: [0.2, 0.9, 0.3, 1] as const }
 
   let view: React.ReactNode
   switch (game.gamePhase) {
