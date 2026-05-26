@@ -209,7 +209,11 @@ export function GameOverView() {
                   fontWeight: 600,
                 }}
               >
-                Try again tomorrow for a new game.
+                {didWin
+                  ? 'The cave aligns. Return tomorrow to test your fortune again.'
+                  : roundsCompleted >= 4
+                    ? 'So close. Can you thread the needle tomorrow?'
+                    : 'The cave awaits your return. Tomorrow brings fresh cards.'}
               </div>
             </FadeUp>
           </div>
