@@ -146,8 +146,8 @@ export function getRandomPlayingCards(
   return randomCardIndices.map(index => allPlayingCards[index])
 }
 
-export function getRandomJokers(numberOfCards: number, seed: string): JokerDefinition[] {
-  const allJokers = Object.values(jokers)
+export function getRandomJokers(numberOfCards: number, seed: string, excludeIds: string[] = []): JokerDefinition[] {
+  const allJokers = Object.values(jokers).filter(joker => !excludeIds.includes(joker.id))
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,

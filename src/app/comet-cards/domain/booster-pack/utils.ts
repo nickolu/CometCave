@@ -5,7 +5,8 @@ import {
   initializeTarotCard,
 } from '@/app/comet-cards/domain/consumable/utils'
 import { GameState } from '@/app/comet-cards/domain/game/types'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+import { initializeJoker, isJokerState } from '@/app/comet-cards/domain/joker/utils'
+import { JokerState } from '@/app/comet-cards/domain/joker/types'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
 import {
@@ -94,11 +95,16 @@ export const initializePackState = (game: GameState, packDefinition: PackDefinit
   }
   if (packDefinition.cardType === 'jokerCard') {
     const randomJokersSeed = seedStringBuilder('jokers')
+    const ownedJokerIds = game.jokers.map(j => j.jokerId)
+    const shopJokerIds = game.shopState.cardsForSale
+      .filter(c => c.type === 'jokerCard' && isJokerState(c.card))
+      .map(c => (c.card as JokerState).jokerId)
+    const excludeIds = [...ownedJokerIds, ...shopJokerIds]
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomJokers(packDefinition.numberOfCardsPerPack, randomJokersSeed).map(joker => ({
+      cards: getRandomJokers(packDefinition.numberOfCardsPerPack, randomJokersSeed, excludeIds).map(joker => ({
         type: 'jokerCard',
         card: initializeJoker(joker, game),
         price: joker.price,

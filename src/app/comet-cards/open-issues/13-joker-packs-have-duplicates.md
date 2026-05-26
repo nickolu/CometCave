@@ -15,8 +15,9 @@ The pack may contain jokers the user owns or in the shop
 
 ### Issue status
 
-not started
+Fixed - Modified `getRandomJokers` in `shop/utils.ts` to accept an `excludeIds` parameter. Updated `initializePackState` in `booster-pack/utils.ts` to pass owned joker IDs and shop joker IDs as exclusions when generating joker pack contents.
 
 ### Fix details
 
-n/a
+- `shop/utils.ts`: `getRandomJokers()` now filters the joker pool by `excludeIds` before random selection
+- `booster-pack/utils.ts`: Collects owned joker IDs (`game.jokers`) and shop joker IDs (`game.shopState.cardsForSale`) and passes them to `getRandomJokers`
