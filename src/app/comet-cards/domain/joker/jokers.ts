@@ -18,6 +18,7 @@ import {
 import type { CelestialCardState } from '@/app/comet-cards/domain/consumable/types'
 import { initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
 import { getRandomTarotCards, getRandomSpectralCards } from '@/app/comet-cards/domain/shop/utils'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 
 import { addOwnedCard, removeOwnedCard } from '@/app/comet-cards/domain/game/card-registry-utils'
@@ -1848,7 +1849,7 @@ export const swashbucklerJoker: JokerDefinition = {
           if (jokerState.jokerId === 'swashbucklerJoker') continue
           const jokerDef = jokers[jokerState.jokerId]
           if (jokerDef) {
-            totalSellValue += Math.floor(jokerDef.price / 2)
+            totalSellValue += getJokerSellValue(jokerDef, jokerState)
           }
         }
         const multBonus = Math.max(1, totalSellValue)
@@ -3427,7 +3428,7 @@ function applyCeremonialDagger(ctx: EffectContext) {
   if (!rightJoker) return
   const rightJokerDef = jokers[rightJoker.jokerId]
   if (!rightJokerDef) return
-  const sellValue = rightJokerDef.price + rightJoker.bonusSellValue
+  const sellValue = getJokerSellValue(rightJokerDef, rightJoker)
   ctx.game.jokers[daggerIndex].counter += sellValue * 2
   ctx.game.jokers.splice(daggerIndex + 1, 1)
 }

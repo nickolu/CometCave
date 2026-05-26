@@ -8,6 +8,7 @@ import {
   buildSeedString,
   getRandomNumbersWithSeed,
 } from '@/app/comet-cards/domain/randomness'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
 import { celestialCards } from './celestial-cards'
 import { initializeCelestialCard, initializeTarotCard } from './utils'
@@ -116,7 +117,7 @@ const temperance: TarotCardDefinition = {
         const totalSellValue = ctx.game.jokers.reduce((sum, jokerState) => {
           const jokerDef = jokers[jokerState.jokerId]
           if (!jokerDef) return sum
-          return sum + jokerDef.price + jokerState.bonusSellValue
+          return sum + getJokerSellValue(jokerDef, jokerState)
         }, 0)
         const gain = Math.min(totalSellValue, 50)
         ctx.game.money += gain

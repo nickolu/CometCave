@@ -53,8 +53,8 @@ describe('Gift Card joker', () => {
     }
 
     const afterSale = reduceGame(selected, { type: 'JOKER_SOLD' })
-    // Gift Card price is $6, bonusSellValue after 2 rounds is $2, total = $8
-    expect(afterSale.money).toBe(moneyBeforeSale + jokers.giftCard.price + 2)
+    // Gift Card price is $6, sell = floor(6/2)=3, bonusSellValue after 2 rounds is $2, total = $5
+    expect(afterSale.money).toBe(moneyBeforeSale + Math.floor(jokers.giftCard.price / 2) + 2)
     expect(afterSale.jokers.some(j => j.jokerId === 'giftCard')).toBe(false)
   })
 })

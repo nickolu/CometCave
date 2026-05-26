@@ -15,7 +15,7 @@ describe('Ceremonial Dagger joker', () => {
     const game = setupGame()
     const dagger = initializeJoker(jokers.ceremonialDagger, game)
     const rightJoker = initializeJoker(jokers.jokerJoker, game)
-    // jokerJoker price is 2, bonusSellValue is 0, so sell value = 2, double = 4
+    // jokerJoker price is 2, bonusSellValue is 0, so sell value = floor(2/2) = 1, double = 2
     game.jokers = [dagger, rightJoker]
 
     const after = reduceGame(game, { type: 'SMALL_BLIND_SELECTED' })
@@ -24,9 +24,9 @@ describe('Ceremonial Dagger joker', () => {
     expect(after.jokers.length).toBe(1)
     expect(after.jokers[0].jokerId).toBe('ceremonialDagger')
 
-    // Counter should be double the sell value (2 * 2 = 4)
+    // Counter should be double the sell value (2 * 1 = 2)
     const daggerAfter = after.jokers.find(j => j.jokerId === 'ceremonialDagger')
-    expect(daggerAfter?.counter).toBe(4)
+    expect(daggerAfter?.counter).toBe(2)
   })
 
   it('destroys joker to the right and gains double its sell value on BIG_BLIND_SELECTED', () => {
@@ -39,7 +39,7 @@ describe('Ceremonial Dagger joker', () => {
 
     expect(after.jokers.length).toBe(1)
     const daggerAfter = after.jokers.find(j => j.jokerId === 'ceremonialDagger')
-    expect(daggerAfter?.counter).toBe(4)
+    expect(daggerAfter?.counter).toBe(2)
   })
 
   it('destroys joker to the right and gains double its sell value on BOSS_BLIND_SELECTED', () => {
@@ -52,7 +52,7 @@ describe('Ceremonial Dagger joker', () => {
 
     expect(after.jokers.length).toBe(1)
     const daggerAfter = after.jokers.find(j => j.jokerId === 'ceremonialDagger')
-    expect(daggerAfter?.counter).toBe(4)
+    expect(daggerAfter?.counter).toBe(2)
   })
 
   it('includes bonusSellValue in the sell value calculation', () => {
@@ -60,13 +60,13 @@ describe('Ceremonial Dagger joker', () => {
     const dagger = initializeJoker(jokers.ceremonialDagger, game)
     const rightJoker = initializeJoker(jokers.jokerJoker, game)
     rightJoker.bonusSellValue = 3
-    // jokerJoker price is 2, bonusSellValue is 3, so sell value = 5, double = 10
+    // jokerJoker price is 2, bonusSellValue is 3, so sell value = floor(2/2)+3 = 4, double = 8
     game.jokers = [dagger, rightJoker]
 
     const after = reduceGame(game, { type: 'SMALL_BLIND_SELECTED' })
 
     const daggerAfter = after.jokers.find(j => j.jokerId === 'ceremonialDagger')
-    expect(daggerAfter?.counter).toBe(10)
+    expect(daggerAfter?.counter).toBe(8)
   })
 
   it('does nothing if no joker to the right', () => {

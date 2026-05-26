@@ -6,6 +6,7 @@ import { CelestialCard } from '@/app/comet-cards/components/gameplay/celestial-c
 import { TarotCard } from '@/app/comet-cards/components/gameplay/tarot-card'
 import { getConsumableDefinition } from '@/app/comet-cards/domain/consumable/utils'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
+import { getConsumableSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
 export const CurrentConsumables = () => {
@@ -65,7 +66,7 @@ export const CurrentConsumables = () => {
             Use
           </PrimaryButton>
           <DangerButton onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}>
-            Sell · ${selectedConsumableDefinition?.price}
+            Sell · ${selectedConsumableDefinition ? getConsumableSellValue(selectedConsumableDefinition) : 0}
           </DangerButton>
         </div>
       )}

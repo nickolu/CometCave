@@ -21,6 +21,7 @@ import { TickingNumber } from '@/app/comet-cards/components/animations/ticking-n
 import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { Vouchers } from '@/app/comet-cards/components/voucher/vouchers'
 import { countConsumableSlots, getConsumableDefinition } from '@/app/comet-cards/domain/consumable/utils'
+import { getJokerSellValue, getConsumableSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { scoreHand as domainScoreHand } from '@/app/comet-cards/domain/game/score-hand'
 import { isCustomScoringEvent } from '@/app/comet-cards/domain/game/types'
@@ -500,7 +501,7 @@ export function GamePlayView() {
                   </span>
                   <span style={{ opacity: 0.5, fontSize: 9 }}>{selectedJokerDefinition.description}</span>
                   <DangerButton onClick={() => eventEmitter.emit({ type: 'JOKER_SOLD' })}>
-                    Sell ${selectedJokerDefinition.price}
+                    Sell ${getJokerSellValue(selectedJokerDefinition, selectedJoker)}
                   </DangerButton>
                 </>
               )}
@@ -523,7 +524,7 @@ export function GamePlayView() {
                     Use
                   </PrimaryButton>
                   <DangerButton onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}>
-                    Sell
+                    Sell ${getConsumableSellValue(selectedConsumableDefinition)}
                   </DangerButton>
                 </>
               )}
@@ -919,12 +920,12 @@ export function GamePlayView() {
                     <EmptySlot key={`joker-empty-${i}`} />
                   )
                 )}
-                {selectedJokerDefinition && (
+                {selectedJoker && selectedJokerDefinition && (
                   <DangerButton
                     className="self-start"
                     onClick={() => eventEmitter.emit({ type: 'JOKER_SOLD' })}
                   >
-                    Sell (${selectedJokerDefinition.price})
+                    Sell (${getJokerSellValue(selectedJokerDefinition, selectedJoker)})
                   </DangerButton>
                 )}
               </div>
@@ -981,7 +982,7 @@ export function GamePlayView() {
                     <DangerButton
                       onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}
                     >
-                      Sell (${selectedConsumableDefinition.price})
+                      Sell (${getConsumableSellValue(selectedConsumableDefinition)})
                     </DangerButton>
                   </div>
                 )}
