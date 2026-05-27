@@ -169,8 +169,8 @@ export function calculateInterest(draft: GameState): number {
 }
 
 export function populateTags(draft: GameState): void {
-  const bigBlindTag = getRandomTag(draft)
-  const smallBlindTag = getRandomTag(draft)
+  const bigBlindTag = getRandomTag(draft, 'bigBlind')
+  const smallBlindTag = getRandomTag(draft, 'smallBlind')
   draft.rounds[draft.roundIndex].bigBlind.tag = bigBlindTag
   draft.rounds[draft.roundIndex].smallBlind.tag = smallBlindTag
 }
