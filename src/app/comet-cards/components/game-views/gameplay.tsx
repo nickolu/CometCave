@@ -25,6 +25,7 @@ import { getJokerSellValue, getConsumableSellValue } from '@/app/comet-cards/dom
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { scoreHand as domainScoreHand } from '@/app/comet-cards/domain/game/score-hand'
 import { isCustomScoringEvent } from '@/app/comet-cards/domain/game/types'
+import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
 import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
 import { pokerHands } from '@/app/comet-cards/domain/hand/hands'
 import { jokers as jokerDefinitions } from '@/app/comet-cards/domain/joker/jokers'
@@ -290,6 +291,17 @@ export function GamePlayView() {
               </span>
             )}
           </div>
+
+          {gamePlayState.handResults.length > 0 && (
+            <div
+              style={{
+                padding: '4px 12px',
+                borderBottom: '1px solid var(--cc-panel-divider)',
+              }}
+            >
+              <MiniScoringLog handResults={gamePlayState.handResults} />
+            </div>
+          )}
 
           {/* Score display */}
           <div className="flex flex-col items-center" style={{ paddingTop: 4 }}>
@@ -784,7 +796,19 @@ export function GamePlayView() {
               </div>
             </Panel>
 
-            {gamePlayState.scoringEvents.length > 0 && (
+            {gamePlayState.handResults.length > 0 && (
+              <Panel title="Scoring Log">
+                <div style={{ padding: '8px 16px' }}>
+                  <MiniScoringLog handResults={gamePlayState.handResults} />
+                </div>
+                <div style={{ padding: '4px 16px 8px' }}>
+                  <GhostButton onClick={() => setShowScoringFeed(true)} style={{ fontSize: 10, opacity: 0.6 }}>
+                    Full breakdown →
+                  </GhostButton>
+                </div>
+              </Panel>
+            )}
+            {gamePlayState.scoringEvents.length > 0 && gamePlayState.handResults.length === 0 && (
               <GhostButton onClick={() => setShowScoringFeed(true)}>
                 Scoring Feed ({gamePlayState.scoringEvents.length})
               </GhostButton>

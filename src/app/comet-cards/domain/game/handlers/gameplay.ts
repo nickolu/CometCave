@@ -370,6 +370,7 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   draft.gamePlayState.scoringEvents = []
   draft.gamePlayState.remainingDiscards = draft.maxDiscards
   draft.gamePlayState.handTypesPlayedThisRound = []
+  draft.gamePlayState.handResults = []
 
   // Reset shop state for the new shop session
   draft.shopState.isOpen = false

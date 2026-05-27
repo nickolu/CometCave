@@ -96,6 +96,8 @@ export interface GamePlayState {
   // Track which hand types have been played this round (resets between blinds)
   handTypesPlayedThisRound: string[]
 
+  handResults: HandResult[]
+
   handDealt: boolean
   isDiscarding: boolean
   isScoring: boolean
@@ -132,6 +134,13 @@ export function isCustomScoringEvent(
 export interface ScoreState {
   chips: number
   mult: number
+}
+
+export interface HandResult {
+  handType: string  // e.g., 'pair', 'flush' — the PokerHandDefinition id
+  chips: number
+  mult: number
+  score: number  // chips * mult
 }
 
 export interface Stake {
