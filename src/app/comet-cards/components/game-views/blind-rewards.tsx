@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { ViewTemplate } from '@/app/comet-cards/components/game-views/view-template'
+import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
@@ -110,6 +111,29 @@ export function BlindRewardsView() {
             >
               Cash Out
             </PrimaryButton>
+
+            {game.gamePlayState.handResults.length > 0 && (
+              <div
+                style={{
+                  borderTop: '1px solid var(--cc-panel-divider)',
+                  paddingTop: 14,
+                }}
+              >
+                <div
+                  className="uppercase"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    opacity: 0.55,
+                    marginBottom: 8,
+                  }}
+                >
+                  Hands Played
+                </div>
+                <MiniScoringLog handResults={game.gamePlayState.handResults} />
+              </div>
+            )}
           </div>
         </Panel>
       </div>
