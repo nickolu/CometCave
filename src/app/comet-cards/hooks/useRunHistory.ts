@@ -21,21 +21,35 @@ export interface RunHistory {
 
 const STORAGE_KEY = 'comet-cards-run-history'
 const MAX_RUNS = 50
+const EMPTY_HISTORY: RunHistory = { runs: [], bestScore: '0', wins: 0, losses: 0 }
 
-function getRunHistory(): RunHistory {
-  if (typeof window === 'undefined') return { runs: [], bestScore: '0', wins: 0, losses: 0 }
+function readFromStorage(): RunHistory {
+  if (typeof window === 'undefined') return EMPTY_HISTORY
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { runs: [], bestScore: '0', wins: 0, losses: 0 }
+    if (!raw) return EMPTY_HISTORY
     return JSON.parse(raw) as RunHistory
   } catch {
-    return { runs: [], bestScore: '0', wins: 0, losses: 0 }
+    return EMPTY_HISTORY
   }
 }
 
-function saveRunHistory(history: RunHistory): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
+// Cached snapshot — useSyncExternalStore requires referentially stable
+// return values from getSnapshot. Without caching, JSON.parse creates
+// a new object each call, causing infinite re-render loops.
+let cachedSnapshot: RunHistory = EMPTY_HISTORY
+let snapshotInitialized = false
+
+function getSnapshot(): RunHistory {
+  if (!snapshotInitialized && typeof window !== 'undefined') {
+    cachedSnapshot = readFromStorage()
+    snapshotInitialized = true
+  }
+  return cachedSnapshot
+}
+
+function getServerSnapshot(): RunHistory {
+  return EMPTY_HISTORY
 }
 
 // Simple external store for useSyncExternalStore
@@ -45,17 +59,18 @@ function subscribe(listener: () => void) {
   return () => { listeners = listeners.filter(l => l !== listener) }
 }
 function emitChange() {
+  cachedSnapshot = readFromStorage()
   listeners.forEach(l => l())
 }
 
 export function useRunHistory() {
-  const history = useSyncExternalStore(subscribe, getRunHistory, () => ({ runs: [], bestScore: '0', wins: 0, losses: 0 }))
+  const history = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   const today = typeof window !== 'undefined' ? new Date().toISOString().split('T')[0] : ''
   const todayRun = history.runs.find(r => r.date === today) ?? null
 
   const addRun = useCallback((run: RunSummary) => {
-    const current = getRunHistory()
+    const current = readFromStorage()
     const newRuns = [run, ...current.runs].slice(0, MAX_RUNS)
     const currentBest = BigInt(current.bestScore)
     const runScore = BigInt(run.totalScore)
@@ -66,7 +81,8 @@ export function useRunHistory() {
       wins: current.wins + (run.won ? 1 : 0),
       losses: current.losses + (run.won ? 0 : 1),
     }
-    saveRunHistory(newHistory)
+    if (typeof window === 'undefined') return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory))
     emitChange()
   }, [])
 
