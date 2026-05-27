@@ -46,15 +46,16 @@ async function copyToClipboard(text: string) {
 export function GameOverView() {
   const { game } = useGameState()
   const [hasCopied, setHasCopied] = useState(false)
-  const { addRun } = useRunHistory()
+  const { addRun, todayRun } = useRunHistory()
 
   const totalRounds = 8
   const roundsCompleted = Math.max(0, Math.min(totalRounds, game.roundIndex - 1))
   const didWin = roundsCompleted >= totalRounds
+  const isPractice = todayRun !== null
 
   const hasSaved = useRef(false)
   useEffect(() => {
-    if (hasSaved.current) return
+    if (hasSaved.current || isPractice) return
     hasSaved.current = true
     addRun({
       seed: game.gameSeed,
@@ -96,7 +97,7 @@ export function GameOverView() {
 
   const isLandscape = useLandscapeMobile()
   const accent = didWin ? 'var(--cc-mint)' : 'var(--cc-pink)'
-  const eyebrow = didWin ? 'Victory' : 'Run Ended'
+  const eyebrow = isPractice ? 'Practice Run' : didWin ? 'Victory' : 'Run Ended'
   const headline = didWin ? 'The cave aligns.' : 'The cave goes quiet.'
 
   return (

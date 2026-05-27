@@ -70,7 +70,7 @@ export function MainMenuView() {
               fontStyle: 'italic',
             }}
           >
-            You've already walked today's path. Return tomorrow for a new run.
+            Today's path is walked. Play again to practice — your recorded score won't change.
           </p>
           <div
             className="flex flex-col items-center"
@@ -105,6 +105,24 @@ export function MainMenuView() {
             <div style={{ fontSize: 11, opacity: 0.5 }}>
               {todayRun.won ? 'Victory' : 'Defeated'} · {todayRun.roundsCompleted}/{todayRun.totalRounds} rounds · {todayRun.handsPlayed} hands
             </div>
+          </div>
+          <GhostButton
+            style={{ padding: '10px 24px', fontSize: 12, letterSpacing: 2 }}
+            onClick={() => eventEmitter.emit({ type: 'GAME_START' })}
+          >
+            Play Again
+          </GhostButton>
+          <div
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              opacity: 0.35,
+              marginTop: -12,
+            }}
+          >
+            Practice run — score won't be recorded
           </div>
         </>
       ) : (
