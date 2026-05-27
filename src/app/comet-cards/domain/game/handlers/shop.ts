@@ -49,7 +49,11 @@ import { vouchers } from '@/app/comet-cards/domain/voucher/vouchers'
 export function handleShopOpen(draft: GameState, event: GameEvent) {
   draft.shopState.isOpen = true
   draft.shopState.cardsForSale = []
-  // dispatch first to use any tag effects
+  draft.shopState.packsForSale = getRandomPacks(draft, 2)
+
+  // Dispatch tag/voucher/joker effects after initializing packs so effects
+  // that add packs (Meteor, Buffoon tags) or guaranteed cards can append
+  // without being overwritten.
   const ctx = getEffectContext(draft, event)
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 
@@ -76,7 +80,6 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
     )
     draft.shopState.cardsForSale.push(...additionalCards)
   }
-  draft.shopState.packsForSale = getRandomPacks(draft, 2)
 
   // Coupon tag: make all initial items free
   const couponTag = draft.tags.find(t => t.tagType === 'coupon')
