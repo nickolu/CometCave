@@ -4,8 +4,25 @@ import { BuyableCard } from '@/app/comet-cards/components/shop/buyable-card'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { Button } from '@/components/ui/button'
+import { motion, useReducedMotion } from 'framer-motion'
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 24, scale: 0.85 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.2, 0.9, 0.3, 1] },
+  },
+}
 
 export function PlayingCardOpenBoosterPack() {
+  const reducedMotion = useReducedMotion()
   const { game } = useGameState()
   if (!game.shopState.openPackState) return <div>No pack open</div>
   const cardsForSale = game.shopState.openPackState.cards
@@ -15,9 +32,14 @@ export function PlayingCardOpenBoosterPack() {
       <h2 className="text-xl font-bold">
         Choose {game.shopState.openPackState.remainingCardsToSelect} cards
       </h2>
-      <div className="flex flex-wrap gap-2">
+      <motion.div
+        className="flex flex-wrap gap-2"
+        variants={containerVariants}
+        initial={reducedMotion ? false : 'hidden'}
+        animate="visible"
+      >
         {cardsForSale.map(buyableCard => (
-          <div key={buyableCard.card.id} className="flex flex-col gap-2">
+          <motion.div key={buyableCard.card.id} variants={itemVariants} className="flex flex-col gap-2">
             <BuyableCard
               key={buyableCard.card.id}
               buyableCard={buyableCard}
@@ -35,9 +57,9 @@ export function PlayingCardOpenBoosterPack() {
                 Select
               </Button>
             )}
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   )
 }
