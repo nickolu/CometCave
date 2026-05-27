@@ -20,7 +20,7 @@ const REFERENCE_BUTTONS = [
 
 export function MainMenuView() {
   const isLandscape = useLandscapeMobile()
-  const { history } = useRunHistory()
+  const { history, todayRun } = useRunHistory()
   return (
     <div
       className="cc-scroll relative mx-auto flex flex-col items-center"
@@ -58,24 +58,76 @@ export function MainMenuView() {
       >
         Daily Cards
       </h1>
-      <p
-        style={{
-          fontSize: 14,
-          opacity: 0.65,
-          maxWidth: 460,
-          lineHeight: 1.55,
-          margin: 0,
-        }}
-      >
-        A new run, every day. Stack chips, multiply, and bend the rules with jokers.
-      </p>
-
-      <PrimaryButton
-        style={{ padding: '14px 32px', fontSize: 13, letterSpacing: 3 }}
-        onClick={() => eventEmitter.emit({ type: 'GAME_START' })}
-      >
-        Start Run
-      </PrimaryButton>
+      {todayRun ? (
+        <>
+          <p
+            style={{
+              fontSize: 14,
+              opacity: 0.65,
+              maxWidth: 460,
+              lineHeight: 1.55,
+              margin: 0,
+              fontStyle: 'italic',
+            }}
+          >
+            You've already walked today's path. Return tomorrow for a new run.
+          </p>
+          <div
+            className="flex flex-col items-center"
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              gap: 6,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+                opacity: 0.45,
+              }}
+            >
+              Today's Score
+            </div>
+            <div
+              style={{
+                fontSize: 32,
+                fontWeight: 200,
+                letterSpacing: -1,
+                color: todayRun.won ? 'var(--cc-mint)' : 'var(--cc-pink)',
+                textShadow: todayRun.won
+                  ? '0 0 40px rgba(94,234,212,0.3)'
+                  : '0 0 40px rgba(255,107,157,0.3)',
+              }}
+            >
+              {todayRun.totalScore}
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.5 }}>
+              {todayRun.won ? 'Victory' : 'Defeated'} · {todayRun.roundsCompleted}/{todayRun.totalRounds} rounds · {todayRun.handsPlayed} hands
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <p
+            style={{
+              fontSize: 14,
+              opacity: 0.65,
+              maxWidth: 460,
+              lineHeight: 1.55,
+              margin: 0,
+            }}
+          >
+            A new run, every day. Stack chips, multiply, and bend the rules with jokers.
+          </p>
+          <PrimaryButton
+            style={{ padding: '14px 32px', fontSize: 13, letterSpacing: 3 }}
+            onClick={() => eventEmitter.emit({ type: 'GAME_START' })}
+          >
+            Start Run
+          </PrimaryButton>
+        </>
+      )}
 
       {history.runs.length > 0 && (
         <div

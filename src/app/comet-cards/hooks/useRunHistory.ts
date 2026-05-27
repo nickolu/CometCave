@@ -51,6 +51,9 @@ function emitChange() {
 export function useRunHistory() {
   const history = useSyncExternalStore(subscribe, getRunHistory, () => ({ runs: [], bestScore: '0', wins: 0, losses: 0 }))
 
+  const today = typeof window !== 'undefined' ? new Date().toISOString().split('T')[0] : ''
+  const todayRun = history.runs.find(r => r.date === today) ?? null
+
   const addRun = useCallback((run: RunSummary) => {
     const current = getRunHistory()
     const newRuns = [run, ...current.runs].slice(0, MAX_RUNS)
@@ -67,5 +70,5 @@ export function useRunHistory() {
     emitChange()
   }, [])
 
-  return { history, addRun }
+  return { history, todayRun, addRun }
 }
