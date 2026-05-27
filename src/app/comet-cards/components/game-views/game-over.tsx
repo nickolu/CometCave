@@ -54,17 +54,18 @@ export function GameOverView() {
     const link = 'https://cometcave.com/comet-cards'
     const progressBar =
       '🟩 '.repeat(roundsCompleted) + '🟥 '.repeat(Math.max(0, totalRounds - roundsCompleted))
-    return [
+    const lines = [
       didWin ? 'Comet Cards — You Win!' : 'Comet Cards — Game Over',
       '',
       `Final Score: ${game.totalScore.toString()}`,
       `Hands Played: ${game.handsPlayed}`,
       `Rounds Completed:`,
       progressBar,
-      '',
-      `Play: ${link}`,
-    ].join('\n')
-  }, [didWin, game.handsPlayed, game.totalScore, roundsCompleted, totalRounds])
+    ]
+    if (game.gameSeed) lines.push('', `Seed: ${game.gameSeed}`)
+    lines.push('', `Play: ${link}`)
+    return lines.join('\n')
+  }, [didWin, game.handsPlayed, game.gameSeed, game.totalScore, roundsCompleted, totalRounds])
 
   const onShare = useCallback(async () => {
     try {
@@ -194,6 +195,19 @@ export function GameOverView() {
                 <div style={{ fontSize: 12, opacity: 0.7 }}>
                   Hands Played: <strong>{game.handsPlayed}</strong>
                 </div>
+                {game.gameSeed && (
+                  <div
+                    style={{
+                      fontFamily: 'var(--cc-font-mono)',
+                      fontSize: 10,
+                      letterSpacing: 1,
+                      opacity: 0.4,
+                      marginTop: 4,
+                    }}
+                  >
+                    Seed: {game.gameSeed}
+                  </div>
+                )}
               </div>
             </FadeUp>
             <FadeUp delay={0.9}>
