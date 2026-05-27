@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 import { CurrentConsumables } from '@/app/comet-cards/components/consumables/current-consumables'
 import {
@@ -30,6 +30,7 @@ import { ViewTemplate } from './view-template'
 export function ShopView() {
   const isLandscape = useLandscapeMobile()
   const { game } = useGameState()
+  const reducedMotion = useReducedMotion()
   useEffect(() => {
     if (!game.shopState.isOpen) {
       eventEmitter.emit({ type: 'SHOP_OPEN' })
@@ -111,7 +112,7 @@ export function ShopView() {
                     {game.shopState.cardsForSale.map((buyableCard, i) => (
                       <motion.div
                         key={buyableCard.card.id}
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        initial={reducedMotion ? false : { opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{
                           duration: 0.3,
@@ -152,7 +153,7 @@ export function ShopView() {
                   <SectionHeader label="Voucher">
                     <motion.div
                       className="flex flex-wrap items-center gap-3"
-                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                      initial={reducedMotion ? false : { opacity: 0, y: 20, scale: 0.9 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{
                         duration: 0.3,

@@ -45,8 +45,8 @@ describe('Egg joker', () => {
     }
 
     const afterSale = reduceGame(selected, { type: 'JOKER_SOLD' })
-    // Egg price is $4, bonusSellValue after 2 rounds is $6, total = $10
-    expect(afterSale.money).toBe(moneyBeforeSale + jokers.egg.price + 6)
+    // Egg price is $4, sell = floor(4/2)=2, bonusSellValue after 2 rounds is $6, total = $8
+    expect(afterSale.money).toBe(moneyBeforeSale + Math.floor(jokers.egg.price / 2) + 6)
     expect(afterSale.jokers.some(j => j.jokerId === 'egg')).toBe(false)
   })
 })

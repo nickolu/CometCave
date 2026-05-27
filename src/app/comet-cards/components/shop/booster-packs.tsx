@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { TokenCard } from '@/app/comet-cards/components/cosmic/token-card'
@@ -68,6 +68,7 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
 
 export function BoosterPacksForSale() {
   const { game } = useGameState()
+  const reducedMotion = useReducedMotion()
   const boosterPacks = game.shopState.packsForSale
   if (boosterPacks.length === 0) return null
   return (
@@ -75,7 +76,7 @@ export function BoosterPacksForSale() {
       {boosterPacks.map((pack, i) => (
         <motion.div
           key={pack.id}
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 20, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{
             duration: 0.3,

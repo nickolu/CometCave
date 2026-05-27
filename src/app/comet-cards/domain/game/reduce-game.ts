@@ -4,6 +4,7 @@ import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effect
 import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 import { dealCardsFromDrawPile } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
 import { HAND_SIZE } from './constants'
 import { handleHandScoringEnd } from './handlers'
@@ -313,7 +314,7 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
           joker => joker.id === draft.gamePlayState.selectedJokerId
         )
         if (!selectedJoker) return
-        draft.money += jokers[selectedJoker.jokerId].price + (selectedJoker.bonusSellValue ?? 0)
+        draft.money += getJokerSellValue(jokers[selectedJoker.jokerId], { bonusSellValue: selectedJoker.bonusSellValue ?? 0 })
         removeJoker(draft, event, selectedJoker)
         return
       }

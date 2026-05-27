@@ -15,8 +15,8 @@ A new card appears in the shop as if the overstock joker was purchased
 
 ### Issue status
 
-not started
+Fixed - Updated `dispatchEffects` in `events/dispatch-effects.ts` to match on both event `type` and `id` fields. Previously only `type` was checked, so buying any voucher would re-trigger ALL voucher effects (e.g., overstock adding extra shop cards).
 
 ### Fix details
 
-n/a
+- `dispatch-effects.ts`: Filter now checks `id` equality when both the effect's event and the dispatched event have an `id` field
