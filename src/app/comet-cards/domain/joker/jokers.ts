@@ -2189,7 +2189,7 @@ export const hallucination: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'SHOP_OPEN_PACK', id: '' },
+      event: { type: 'SHOP_OPEN_PACK' } as any,
       priority: 1,
       apply: (ctx: EffectContext) => {
         if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
