@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
+import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
@@ -228,7 +229,33 @@ export function GameOverView() {
                 )}
               </div>
             </FadeUp>
-            <FadeUp delay={0.9}>
+            {game.gamePlayState.handResults.length > 0 && (
+              <FadeUp delay={0.8}>
+                <div
+                  style={{
+                    width: '100%',
+                    borderTop: '1px solid var(--cc-panel-divider)',
+                    paddingTop: 14,
+                    textAlign: 'left',
+                  }}
+                >
+                  <div
+                    className="uppercase"
+                    style={{
+                      fontFamily: 'var(--cc-font-mono)',
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      opacity: 0.55,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Final Hands
+                  </div>
+                  <MiniScoringLog handResults={game.gamePlayState.handResults} />
+                </div>
+              </FadeUp>
+            )}
+            <FadeUp delay={1.0}>
               <PrimaryButton style={{ marginTop: 12 }} onClick={onShare}>
                 {hasCopied ? 'Copied' : 'Share Score'}
               </PrimaryButton>
