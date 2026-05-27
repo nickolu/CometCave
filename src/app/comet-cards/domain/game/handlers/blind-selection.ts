@@ -25,6 +25,7 @@ export function handleSmallBlindSelected(draft: GameState) {
   draft.gamePlayState.handIds = []
   draft.gamePlayState.handDealt = false
   draft.gamePlayState.discardPileIds = []
+  draft.gamePlayState.handResults = []
 }
 
 export function handleBigBlindSelected(draft: GameState) {
@@ -46,6 +47,7 @@ export function handleBigBlindSelected(draft: GameState) {
   draft.gamePlayState.handIds = []
   draft.gamePlayState.handDealt = false
   draft.gamePlayState.discardPileIds = []
+  draft.gamePlayState.handResults = []
 }
 
 export function handleBossBlindSelected(draft: GameState) {
@@ -67,6 +69,7 @@ export function handleBossBlindSelected(draft: GameState) {
   draft.gamePlayState.handIds = []
   draft.gamePlayState.handDealt = false
   draft.gamePlayState.discardPileIds = []
+  draft.gamePlayState.handResults = []
 }
 
 export function handleBlindSkipped(draft: GameState, event: GameEvent) {

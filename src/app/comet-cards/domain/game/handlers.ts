@@ -76,8 +76,14 @@ function decideHandEndOutcome(args: {
   return 'continue'
 }
 
-function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>) {
+function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>, handType?: string) {
   gamePlayState.isScoring = false
+  gamePlayState.handResults.push({
+    handType: handType ?? 'unknown',
+    chips: gamePlayState.score.chips,
+    mult: gamePlayState.score.mult,
+    score: Math.floor(gamePlayState.score.chips * gamePlayState.score.mult),
+  })
   gamePlayState.scoringEvents.push({
     id: uuid(),
     message: `Hand Score: ${gamePlayState.score.chips} x ${gamePlayState.score.mult}`,
@@ -124,7 +130,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     const hasMrBones = draft.jokers.some(j => j.jokerId === 'mrBones')
     if (hasMrBones && blindScore * 4n >= ante) {
       draft.jokers = draft.jokers.filter(j => j.jokerId !== 'mrBones') as typeof draft.jokers
-      resetScoreForNextHand(draft.gamePlayState)
+      resetScoreForNextHand(draft.gamePlayState, playedHand)
       return
     }
     draft.gamePhase = 'gameOver'
@@ -167,7 +173,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
       currentBlind.additionalRewards.push(['Interest', interest])
     }
 
-    resetScoreForNextHand(draft.gamePlayState)
+    resetScoreForNextHand(draft.gamePlayState, playedHand)
 
     return
   }
@@ -178,5 +184,5 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   const cardsNeeded = isSerpent ? 3 : HAND_SIZE + draft.handSizeModifier - draft.gamePlayState.handIds.length
   dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
   draft.gamePhase = 'gameplay'
-  resetScoreForNextHand(draft.gamePlayState)
+  resetScoreForNextHand(draft.gamePlayState, playedHand)
 }
