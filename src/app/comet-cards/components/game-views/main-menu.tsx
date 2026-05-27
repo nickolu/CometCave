@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import {
   GhostButton,
   PrimaryButton,
 } from '@/app/comet-cards/components/cosmic/buttons'
+import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
@@ -21,6 +23,7 @@ const REFERENCE_BUTTONS = [
 export function MainMenuView() {
   const isLandscape = useLandscapeMobile()
   const { history, todayRun } = useRunHistory()
+  const [showHistory, setShowHistory] = useState(false)
   return (
     <div
       className="cc-scroll relative mx-auto flex flex-col items-center"
@@ -180,6 +183,15 @@ export function MainMenuView() {
         </div>
       )}
 
+      {history.runs.length > 0 && (
+        <GhostButton
+          onClick={() => setShowHistory(true)}
+          style={{ fontSize: 10, opacity: 0.6 }}
+        >
+          Run History
+        </GhostButton>
+      )}
+
       <div
         className="w-full"
         style={{
@@ -211,6 +223,67 @@ export function MainMenuView() {
           ))}
         </div>
       </div>
+      {showHistory && (
+        <Modal eyebrow="Stats" title="Run History" onClose={() => setShowHistory(false)}>
+          <div
+            className="cc-scroll flex flex-col"
+            style={{
+              padding: '12px 16px',
+              maxHeight: '60vh',
+              overflowY: 'auto',
+              gap: 2,
+            }}
+          >
+            {history.runs.map((run, i) => (
+              <div
+                key={`${run.date}-${i}`}
+                className="flex items-center justify-between"
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 11,
+                  gap: 12,
+                }}
+              >
+                <div className="flex items-center" style={{ gap: 10 }}>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      background: run.won ? 'rgba(94,234,212,0.15)' : 'rgba(255,107,157,0.15)',
+                      color: run.won ? 'var(--cc-mint)' : 'var(--cc-pink)',
+                      textTransform: 'uppercase',
+                      letterSpacing: 1,
+                    }}
+                  >
+                    {run.won ? 'W' : 'L'}
+                  </span>
+                  <span style={{ opacity: 0.5 }}>{run.date}</span>
+                </div>
+                <div className="flex items-center" style={{ gap: 10 }}>
+                  <span style={{ opacity: 0.5 }}>
+                    {run.roundsCompleted}/{run.totalRounds}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: run.won ? 'var(--cc-mint)' : 'var(--cc-text-default)',
+                      minWidth: 60,
+                      textAlign: 'right',
+                    }}
+                  >
+                    {run.totalScore}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
