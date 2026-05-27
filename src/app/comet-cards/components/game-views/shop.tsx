@@ -112,6 +112,8 @@ export function ShopView() {
                     {game.shopState.cardsForSale.map((buyableCard, i) => (
                       <motion.div
                         key={buyableCard.card.id}
+                        className="flex flex-col items-center"
+                        style={{ gap: 4 }}
                         initial={reducedMotion ? false : { opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         transition={{
@@ -124,6 +126,21 @@ export function ShopView() {
                           buyableCard={buyableCard}
                           isSelected={game.shopState.selectedCardId === buyableCard.card.id}
                         />
+                        <span
+                          style={{
+                            fontFamily: 'var(--cc-font-mono)',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: canAffordToBuy(Math.floor(buyableCard.price * game.shopState.priceMultiplier), game)
+                              ? 'var(--cc-gold)'
+                              : 'var(--cc-text-default)',
+                            opacity: canAffordToBuy(Math.floor(buyableCard.price * game.shopState.priceMultiplier), game)
+                              ? 1
+                              : 0.4,
+                          }}
+                        >
+                          ${Math.floor(buyableCard.price * game.shopState.priceMultiplier)}
+                        </span>
                       </motion.div>
                     ))}
                   </div>
