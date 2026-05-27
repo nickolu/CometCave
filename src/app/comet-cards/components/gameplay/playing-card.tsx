@@ -7,12 +7,14 @@ export const PlayingCard = ({
   onClick,
   debuffed,
   size = 'md',
+  tabIndex,
 }: {
   playingCard: PlayingCardState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
   debuffed?: boolean
   size?: 'xs' | 'sm' | 'md' | 'lg'
+  tabIndex?: number
 }) => {
-  return <BrandCard card={playingCard} selected={isSelected} onClick={onClick} size={size} debuffed={debuffed} />
+  return <BrandCard card={playingCard} selected={isSelected} onClick={onClick} size={size} debuffed={debuffed} tabIndex={tabIndex} />
 }
