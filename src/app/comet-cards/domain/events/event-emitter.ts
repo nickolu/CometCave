@@ -45,6 +45,7 @@ class EventEmitter {
     SHOP_USE_CELESTIAL_CARD_FROM_PACK: [],
     SHOP_USE_SPECTRAL_CARD_FROM_PACK: [],
     PACK_OPEN_SKIP: [],
+    GIVE_UP: [],
     SHOP_BUY_AND_USE_CARD: [],
     SHOP_BUY_VOUCHER: [],
     SHOP_END: [],

@@ -34,6 +34,7 @@ import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { useCometCardsStore } from '@/app/comet-cards/store'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
+import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 
 const RARITY_ACCENT: Record<string, string> = {
   common: 'var(--cc-mint)',
@@ -137,7 +138,10 @@ export function GamePlayView() {
   const [showHands, setShowHands] = useState(false)
   const [showVouchers, setShowVouchers] = useState(false)
   const [showScoringFeed, setShowScoringFeed] = useState(false)
+  const [showGiveUpModal, setShowGiveUpModal] = useState(false)
   const [sortKey, setSortKey] = useState<HandSortKey>('value')
+  const { todayRun } = useRunHistory()
+  const isPractice = todayRun !== null
 
   const { scoreHand } = useScoreHand()
 
@@ -203,6 +207,9 @@ export function GamePlayView() {
           />
           <TopBarStat label="Money" value={`$${game.money}`} accent="var(--cc-gold)" />
           <TopBarStat label="Hands" value={String(game.handsPlayed)} />
+          <GhostButton onClick={() => setShowGiveUpModal(true)} style={{ fontSize: 10, opacity: 0.6 }}>
+            {isPractice ? 'Restart' : 'Give Up'}
+          </GhostButton>
         </div>
       </div>
 
@@ -1106,6 +1113,33 @@ export function GamePlayView() {
                 })}
               </>
             )}
+          </div>
+        </Modal>
+      )}
+      {showGiveUpModal && (
+        <Modal
+          eyebrow={isPractice ? 'Practice Run' : 'End Run'}
+          title={isPractice ? 'Restart?' : 'Give up?'}
+          onClose={() => setShowGiveUpModal(false)}
+        >
+          <div style={{ padding: '16px 20px', fontFamily: 'var(--cc-font-mono)', fontSize: 12 }}>
+            <p style={{ opacity: 0.7, marginBottom: 16 }}>
+              {isPractice
+                ? "Start over from round 1. Practice runs don't record scores."
+                : `Your current score of ${totalScore.toString()} will be your final score for today.`}
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <GhostButton onClick={() => setShowGiveUpModal(false)}>Cancel</GhostButton>
+              {isPractice ? (
+                <PrimaryButton onClick={() => eventEmitter.emit({ type: 'GAME_START' })}>
+                  Restart
+                </PrimaryButton>
+              ) : (
+                <DangerButton onClick={() => eventEmitter.emit({ type: 'GIVE_UP' })}>
+                  Give Up
+                </DangerButton>
+              )}
+            </div>
           </div>
         </Modal>
       )}

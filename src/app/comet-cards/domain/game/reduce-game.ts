@@ -61,6 +61,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePhase = 'mainMenu'
         return
       }
+      case 'GIVE_UP': {
+        draft.gamePhase = 'gameOver'
+        return
+      }
       case 'DISPLAY_JOKERS': {
         draft.gamePhase = 'jokers'
         return
