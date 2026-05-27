@@ -894,9 +894,9 @@ export function GamePlayView() {
           </div>
 
           {/* RIGHT rail */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 50px)', overflow: 'hidden' }}>
             <Panel title="Jokers" subtitle={`${game.jokers.length} / ${game.maxJokers} slots`}>
-              <div style={{ padding: 14, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              <div className="cc-scroll" style={{ padding: 14, display: 'flex', flexWrap: 'wrap', gap: 10, maxHeight: '45vh', overflowY: 'auto' }}>
                 {game.jokers.map(joker => (
                   <Joker
                     key={joker.id}
@@ -935,7 +935,7 @@ export function GamePlayView() {
               title="Consumables"
               subtitle={`${countConsumableSlots(game.consumables)} / ${game.maxConsumables} slots`}
             >
-              <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="cc-scroll" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '35vh', overflowY: 'auto' }}>
                 {game.consumables.map(consumable => {
                   const def = getConsumableDefinition(consumable)
                   const isTarot = consumable.consumableType === 'tarotCard'
