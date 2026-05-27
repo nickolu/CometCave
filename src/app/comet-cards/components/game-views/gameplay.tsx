@@ -482,6 +482,26 @@ export function GamePlayView() {
                 Vouchers
               </button>
             )}
+            {gamePlayState.scoringEvents.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowScoringFeed(true)}
+                style={{
+                  flexShrink: 0,
+                  padding: '3px 8px',
+                  borderRadius: 4,
+                  border: '1px solid rgba(94,234,212,0.15)',
+                  background: 'transparent',
+                  color: 'var(--cc-text-default)',
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  opacity: 0.6,
+                }}
+              >
+                Score Log ({gamePlayState.scoringEvents.length})
+              </button>
+            )}
           </div>
           {/* Selected item actions */}
           {(selectedJoker || selectedConsumable) && (
