@@ -68,10 +68,20 @@ export function BrandCard({
 
   const borderColor = selected ? 'var(--cc-suit-color)' : 'var(--cc-card-border)'
 
+  const label = [
+    `${definition?.value ?? '?'} of ${suit}`,
+    debuffed && 'debuffed',
+    card.flags.enchantment !== 'none' && card.flags.enchantment,
+    card.flags.edition !== 'normal' && card.flags.edition,
+    card.flags.seal !== 'none' && `${card.flags.seal} seal`,
+  ].filter(Boolean).join(', ')
+
   if (isFaceDown) {
     return (
       <button
         type="button"
+        aria-label="Face-down card"
+        aria-pressed={selected}
         onClick={() => onClick?.(selected, card.id)}
         className="bc-card"
         data-selected={selected ? 'true' : 'false'}
@@ -129,6 +139,8 @@ export function BrandCard({
   return (
     <button
       type="button"
+      aria-label={label}
+      aria-pressed={selected}
       onClick={() => onClick?.(selected, card.id)}
       className="bc-card"
       data-selected={selected ? 'true' : 'false'}

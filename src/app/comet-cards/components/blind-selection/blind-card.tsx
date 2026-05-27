@@ -33,7 +33,14 @@ export function BlindCard({
   const accent = BLIND_ACCENT[selectEventName] ?? 'var(--cc-mint)'
   const eyebrow = selectEventName === 'BOSS_BLIND_SELECTED' ? 'Boss Blind' : 'Blind'
 
+  const containerLabel = [
+    name,
+    `reward $${reward}`,
+    minimumScore !== undefined && `minimum score ${minimumScore.toString()}`,
+  ].filter(Boolean).join(', ')
+
   return (
+    <div role="region" aria-label={containerLabel}>
     <Panel className="flex w-full flex-col" title={eyebrow}>
       <div
         className="flex flex-col"
@@ -145,6 +152,7 @@ export function BlindCard({
         <PrimaryButton
           className="w-full"
           style={{ width: '100%' }}
+          aria-label={`Select ${name}`}
           disabled={disabled}
           onClick={() => eventEmitter.emit({ type: selectEventName })}
         >
@@ -154,6 +162,7 @@ export function BlindCard({
           <>
             <GhostButton
               style={{ width: '100%' }}
+              aria-label={`Skip ${name}, get ${tags[tag]?.name} tag`}
               disabled={disabled}
               onClick={() => eventEmitter.emit({ type: 'BLIND_SKIPPED' })}
             >
@@ -173,5 +182,6 @@ export function BlindCard({
         )}
       </div>
     </Panel>
+    </div>
   )
 }
