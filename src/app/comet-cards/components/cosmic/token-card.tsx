@@ -41,6 +41,9 @@ export function TokenCard({
   return (
     <button
       type="button"
+      aria-label={title}
+      aria-pressed={selected || undefined}
+      aria-disabled={disabled}
       onClick={onClick}
       disabled={disabled}
       className="bc-card flex flex-col"
