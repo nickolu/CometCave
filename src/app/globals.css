@@ -465,6 +465,11 @@ body {
   transform: translateY(var(--cc-card-lift, -16px));
 }
 
+.cosmic-cards .bc-card:focus-visible {
+  outline: 2px solid var(--cc-mint);
+  outline-offset: 2px;
+}
+
 /* Comet Cards — thin internal scrollbar utility */
 .cc-scroll {
   overflow-y: auto;

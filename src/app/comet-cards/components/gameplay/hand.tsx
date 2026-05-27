@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -81,6 +81,22 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
     return ids
   }, [game, dealtCards])
 
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const container = containerRef.current
+    if (!container) return
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button.bc-card'))
+    const currentIndex = buttons.indexOf(e.target as HTMLButtonElement)
+    if (currentIndex === -1) return
+    e.preventDefault()
+    const nextIndex = e.key === 'ArrowRight'
+      ? Math.min(currentIndex + 1, buttons.length - 1)
+      : Math.max(currentIndex - 1, 0)
+    buttons[nextIndex]?.focus()
+  }, [])
+
   const fanWidth = sortedCards.length
     ? CARD_W + (sortedCards.length - 1) * (CARD_W - OVERLAP)
     : CARD_W
@@ -88,6 +104,10 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
 
   return (
     <div
+      ref={containerRef}
+      role="toolbar"
+      aria-label="Cards in hand"
+      onKeyDown={handleKeyDown}
       className="relative mx-auto"
       style={
         {
