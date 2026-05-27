@@ -3214,6 +3214,7 @@ function applyRiffRaff(ctx: EffectContext) {
   const seed = buildSeedString([
     ctx.game.gameSeed,
     ctx.game.roundIndex.toString(),
+    ctx.event.type,
     'riffRaff',
   ])
   const indices = getRandomNumbersWithSeed({
@@ -3352,7 +3353,7 @@ export const riffRaff: JokerDefinition = {
 
 function applyCartomancer(ctx: EffectContext) {
   if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
-  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'cartomancer'])
+  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), ctx.event.type, 'cartomancer'])
   const tarotCard = getRandomTarotCards(1, seed)[0]
   ctx.game.consumables.push(initializeTarotCard(tarotCard))
 }
