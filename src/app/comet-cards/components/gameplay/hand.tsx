@@ -82,6 +82,11 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
   }, [game, dealtCards])
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const focusedIndexRef = useRef(0)
+
+  if (focusedIndexRef.current >= sortedCards.length) {
+    focusedIndexRef.current = Math.max(0, sortedCards.length - 1)
+  }
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
@@ -94,6 +99,7 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
     const nextIndex = e.key === 'ArrowRight'
       ? Math.min(currentIndex + 1, buttons.length - 1)
       : Math.max(currentIndex - 1, 0)
+    focusedIndexRef.current = nextIndex
     buttons[nextIndex]?.focus()
   }, [])
 
@@ -165,6 +171,7 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
                 isSelected={isSelected}
                 debuffed={debuffedIds.has(card.id)}
                 size={isLandscape ? 'xs' : 'md'}
+                tabIndex={i === focusedIndexRef.current ? 0 : -1}
                 onClick={(wasSelected, id) => {
                   if (wasSelected) {
                     eventEmitter.emit({ type: 'CARD_DESELECTED', id })

@@ -47,6 +47,7 @@ export function BrandCard({
   onClick,
   faceDown,
   debuffed,
+  tabIndex,
 }: {
   card: PlayingCardState
   selected?: boolean
@@ -54,6 +55,7 @@ export function BrandCard({
   onClick?: (isSelected: boolean, id: string) => void
   faceDown?: boolean
   debuffed?: boolean
+  tabIndex?: number
 }) {
   const dims = SIZES[size]
   const definition = playingCards[card.playingCardId]
@@ -86,6 +88,7 @@ export function BrandCard({
         className="bc-card"
         data-selected={selected ? 'true' : 'false'}
         data-suit={suit}
+        tabIndex={tabIndex}
         style={{
           width: dims.w,
           height: dims.h,
@@ -145,6 +148,7 @@ export function BrandCard({
       className="bc-card"
       data-selected={selected ? 'true' : 'false'}
       data-suit={suit}
+      tabIndex={tabIndex}
       style={{
         width: dims.w,
         height: dims.h,
