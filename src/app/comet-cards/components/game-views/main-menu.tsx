@@ -6,6 +6,7 @@ import {
 } from '@/app/comet-cards/components/cosmic/buttons'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
+import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 
 const REFERENCE_BUTTONS = [
   { event: 'DISPLAY_JOKERS', label: 'Jokers' },
@@ -19,6 +20,7 @@ const REFERENCE_BUTTONS = [
 
 export function MainMenuView() {
   const isLandscape = useLandscapeMobile()
+  const { history } = useRunHistory()
   return (
     <div
       className="cc-scroll relative mx-auto flex flex-col items-center"
@@ -74,6 +76,39 @@ export function MainMenuView() {
       >
         Start Run
       </PrimaryButton>
+
+      {history.runs.length > 0 && (
+        <div
+          className="flex items-center justify-center gap-6"
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 11,
+            opacity: 0.55,
+            letterSpacing: 1,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 200, opacity: 1, color: 'var(--cc-mint)', letterSpacing: -0.5 }}>
+              {history.bestScore}
+            </div>
+            <div style={{ marginTop: 2 }}>Best Score</div>
+          </div>
+          <div style={{ width: 1, height: 28, background: 'var(--cc-panel-divider)' }} />
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 200, opacity: 1, color: 'var(--cc-text-default)', letterSpacing: -0.5 }}>
+              {history.wins}–{history.losses}
+            </div>
+            <div style={{ marginTop: 2 }}>Record</div>
+          </div>
+          <div style={{ width: 1, height: 28, background: 'var(--cc-panel-divider)' }} />
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 200, opacity: 1, color: 'var(--cc-text-default)', letterSpacing: -0.5 }}>
+              {history.runs.length}
+            </div>
+            <div style={{ marginTop: 2 }}>Runs</div>
+          </div>
+        </div>
+      )}
 
       <div
         className="w-full"

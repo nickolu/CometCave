@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
+import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 
 import { ViewTemplate } from './view-template'
 
@@ -45,10 +46,26 @@ async function copyToClipboard(text: string) {
 export function GameOverView() {
   const { game } = useGameState()
   const [hasCopied, setHasCopied] = useState(false)
+  const { addRun } = useRunHistory()
 
   const totalRounds = 8
   const roundsCompleted = Math.max(0, Math.min(totalRounds, game.roundIndex - 1))
   const didWin = roundsCompleted >= totalRounds
+
+  const hasSaved = useRef(false)
+  useEffect(() => {
+    if (hasSaved.current) return
+    hasSaved.current = true
+    addRun({
+      seed: game.gameSeed,
+      date: new Date().toISOString().split('T')[0],
+      totalScore: game.totalScore.toString(),
+      handsPlayed: game.handsPlayed,
+      roundsCompleted: Math.max(0, Math.min(totalRounds, game.roundIndex - 1)),
+      totalRounds,
+      won: didWin,
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const shareText = useMemo(() => {
     const link = 'https://cometcave.com/comet-cards'
