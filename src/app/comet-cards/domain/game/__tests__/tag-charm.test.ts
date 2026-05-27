@@ -4,13 +4,14 @@ import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 
 describe('Charm tag', () => {
-  it('adds a Mega Arcana Pack to packsForSale on SHOP_OPEN', () => {
+  it('immediately opens a Mega Arcana Pack on SHOP_OPEN', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.tags = [{ id: 'tag-1', tagType: 'charm' } as any]
 
     const after = reduceGame(game, { type: 'SHOP_OPEN' })
-    const megaPacks = after.shopState.packsForSale.filter(p => p.rarity === 'mega')
-    expect(megaPacks.length).toBeGreaterThanOrEqual(1)
+    expect(after.shopState.openPackState).not.toBeNull()
+    expect(after.shopState.openPackState?.rarity).toBe('mega')
+    expect(after.gamePhase).toBe('packOpening')
   })
 
   it('removes the Charm tag after use', () => {

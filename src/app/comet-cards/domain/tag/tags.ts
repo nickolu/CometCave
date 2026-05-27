@@ -258,7 +258,8 @@ const standard: TagDefinition = {
       apply: (ctx: EffectContext) => {
         const packDef = getPackDefinition('playingCard', 'mega')
         const pack = initializePackState(ctx.game, packDef)
-        ctx.game.shopState.packsForSale.push(pack)
+        ctx.game.shopState.openPackState = pack
+        ctx.game.gamePhase = 'packOpening'
         const tag = ctx.game.tags.find(t => t.tagType === 'standard')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
@@ -278,7 +279,8 @@ const charm: TagDefinition = {
       apply: (ctx: EffectContext) => {
         const packDef = getPackDefinition('tarotCard', 'mega')
         const pack = initializePackState(ctx.game, packDef)
-        ctx.game.shopState.packsForSale.push(pack)
+        ctx.game.shopState.openPackState = pack
+        ctx.game.gamePhase = 'packOpening'
         const tag = ctx.game.tags.find(t => t.tagType === 'charm')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
@@ -298,7 +300,8 @@ const meteor: TagDefinition = {
       apply: (ctx: EffectContext) => {
         const packDef = getPackDefinition('celestialCard', 'mega')
         const pack = initializePackState(ctx.game, packDef)
-        ctx.game.shopState.packsForSale.push(pack)
+        ctx.game.shopState.openPackState = pack
+        ctx.game.gamePhase = 'packOpening'
         const tag = ctx.game.tags.find(t => t.tagType === 'meteor')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
@@ -318,7 +321,8 @@ const buffoon: TagDefinition = {
       apply: (ctx: EffectContext) => {
         const packDef = getPackDefinition('jokerCard', 'mega')
         const pack = initializePackState(ctx.game, packDef)
-        ctx.game.shopState.packsForSale.push(pack)
+        ctx.game.shopState.openPackState = pack
+        ctx.game.gamePhase = 'packOpening'
         const tag = ctx.game.tags.find(t => t.tagType === 'buffoon')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
@@ -378,7 +382,8 @@ const ethereal: TagDefinition = {
       apply: (ctx: EffectContext) => {
         const packDef = getPackDefinition('spectralCard', 'normal')
         const pack = initializePackState(ctx.game, packDef)
-        ctx.game.shopState.packsForSale.push(pack)
+        ctx.game.shopState.openPackState = pack
+        ctx.game.gamePhase = 'packOpening'
         const tag = ctx.game.tags.find(t => t.tagType === 'ethereal')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
