@@ -189,23 +189,9 @@ const getRandomPack = (game: GameState, packIndex: number): PackState => {
 export const getRandomPacks = (game: GameState, numberOfPacks = 2): PackState[] => {
   const packs = Array.from({ length: numberOfPacks }, (_, index) => getRandomPack(game, index))
 
-  // First shop of the run: guarantee at least one joker pack
-  if (game.roundIndex === 1 && !packs.some(p => p.cards[0]?.type === 'jokerCard')) {
-    // Replace the first pack with a joker pack
-    const seed = buildSeedString([
-      game.gameSeed,
-      game.roundIndex.toString(),
-      game.shopState.rerollsUsed.toString(),
-      '0',
-      'packRarity',
-    ])
-    const rarityWeights = packRarityWeightsByType.jokerCard
-    const randomRarity =
-      getRandomWeightedChoiceWithSeed({
-        seed,
-        weightedOptions: rarityWeights,
-      }) ?? 'normal'
-    packs[0] = initializePackState(game, getPackDefinition('jokerCard', randomRarity))
+  // First shop of the run: guarantee a basic (normal-rarity) joker pack
+  if (game.roundIndex === 1 && !packs.some(p => p.cards[0]?.type === 'jokerCard' && p.rarity === 'normal')) {
+    packs[0] = initializePackState(game, getPackDefinition('jokerCard', 'normal'))
   }
 
   return packs
