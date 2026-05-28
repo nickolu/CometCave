@@ -33,14 +33,21 @@ export function JokerCardOpenBoosterPack() {
 
   return (
     <div className="flex flex-col gap-2">
-      {game.jokers.length > 0 && (
-        <div className="mt-4">
-          <h3 className="mb-2">Current Jokers</h3>
-          <div className="flex flex-wrap">
-            <CurrentJokers />
-          </div>
+      <div className="mt-4">
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 10,
+            letterSpacing: 2,
+            opacity: 0.55,
+            marginBottom: 8,
+          }}
+        >
+          Your Jokers
         </div>
-      )}
+        <CurrentJokers />
+      </div>
 
       <div className="flex">
         <div className="flex flex-col gap-2 w-3/4">
