@@ -4,6 +4,7 @@ import { CurrentConsumables } from '@/app/comet-cards/components/consumables/cur
 import { CurrentJokers } from '@/app/comet-cards/components/joker/current-jokers'
 import { BuyableCard } from '@/app/comet-cards/components/shop/buyable-card'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
+import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { Button } from '@/components/ui/button'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -26,6 +27,7 @@ const itemVariants = {
 export function JokerCardOpenBoosterPack() {
   const reducedMotion = useReducedMotion()
   const { game } = useGameState()
+  const { containerRef, handleKeyDown } = useGridKeyboardNav()
   if (!game.shopState.openPackState) return <div>No pack open</div>
   const cardsForSale = game.shopState.openPackState.cards
 
@@ -47,10 +49,14 @@ export function JokerCardOpenBoosterPack() {
             {game.shopState.openPackState.remainingCardsToSelect > 1 ? 's' : ''}
           </h2>
           <motion.div
+            ref={containerRef}
+            role="toolbar"
+            aria-label="Joker cards"
             className="flex flex-wrap gap-2"
             variants={containerVariants}
             initial={reducedMotion ? false : 'hidden'}
             animate="visible"
+            onKeyDown={handleKeyDown}
           >
             {cardsForSale.map(buyableCard => (
               <motion.div key={buyableCard.card.id} variants={itemVariants} className="flex flex-col gap-2">

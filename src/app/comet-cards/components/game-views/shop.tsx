@@ -22,6 +22,8 @@ import {
   getIsSelectedCardPlayable,
 } from '@/app/comet-cards/domain/shop/utils'
 import { VOUCHER_PRICE } from '@/app/comet-cards/domain/voucher/constants'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
+import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
@@ -31,6 +33,8 @@ export function ShopView() {
   const isLandscape = useLandscapeMobile()
   const { game } = useGameState()
   const reducedMotion = useReducedMotion()
+  const autoFocusRef = useAutoFocus()
+  const { containerRef: cardsForSaleRef, handleKeyDown: handleCardsKeyDown } = useGridKeyboardNav()
   useEffect(() => {
     if (!game.shopState.isOpen) {
       eventEmitter.emit({ type: 'SHOP_OPEN' })
@@ -84,7 +88,7 @@ export function ShopView() {
         )
       }
     >
-      <div className="flex flex-col" style={{ gap: 18 }}>
+      <div className="flex flex-col" ref={autoFocusRef} style={{ gap: 18 }}>
         <Panel
           title="Shop"
           subtitle={`$${game.money} on hand`}
@@ -106,7 +110,13 @@ export function ShopView() {
               {/* Left column: Cards for Sale */}
               <div className="flex flex-col" style={{ gap: 12 }}>
                 <SectionHeader label="Cards for Sale">
-                  <div className="flex flex-wrap items-stretch gap-3">
+                  <div
+                    ref={cardsForSaleRef}
+                    role="toolbar"
+                    aria-label="Cards for sale"
+                    className="flex flex-wrap items-stretch gap-3"
+                    onKeyDown={handleCardsKeyDown}
+                  >
                     {game.shopState.cardsForSale.map((buyableCard, i) => (
                       <motion.div
                         key={buyableCard.card.id}
