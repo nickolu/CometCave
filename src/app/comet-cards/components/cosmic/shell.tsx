@@ -37,7 +37,7 @@ export function CosmicShell({ children }: { children: ReactNode }) {
           borderRadius: 6,
           transition: 'color 0.15s',
         }}
-        className="hover:!text-white"
+        className="cc-btn hover:!text-white"
       >
         ✕
       </Link>
