@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
@@ -13,11 +13,12 @@ import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 import { ViewTemplate } from './view-template'
 
 function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const reducedMotion = useReducedMotion()
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: [0.2, 0.9, 0.3, 1] }}
+      transition={reducedMotion ? { duration: 0 } : { duration: 0.4, delay, ease: [0.2, 0.9, 0.3, 1] }}
     >
       {children}
     </motion.div>
@@ -48,6 +49,7 @@ export function GameOverView() {
   const { game } = useGameState()
   const [hasCopied, setHasCopied] = useState(false)
   const { addRun, todayRun } = useRunHistory()
+  const reducedMotion = useReducedMotion()
 
   const totalRounds = 8
   const roundsCompleted = Math.max(0, Math.min(totalRounds, game.roundIndex - 1))
@@ -151,9 +153,9 @@ export function GameOverView() {
               </div>
             </FadeUp>
             <motion.div
-              initial={{ opacity: 0, y: 16, scale: 0.8 }}
+              initial={reducedMotion ? false : { opacity: 0, y: 16, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.45, ease: [0.2, 0.9, 0.3, 1] }}
+              transition={reducedMotion ? { duration: 0 } : { duration: 0.5, delay: 0.45, ease: [0.2, 0.9, 0.3, 1] }}
             >
               <div
                 style={{
