@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 
 import { BlindCard } from '@/app/comet-cards/components/blind-selection/blind-card'
 import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
 import { ViewTemplate } from './view-template'
@@ -26,6 +27,7 @@ const itemVariants = {
 export function BlindSelectionView() {
   const { game } = useGameState()
   const reducedMotion = useReducedMotion()
+  const autoFocusRef = useAutoFocus()
   const currentRound = game.rounds[game.roundIndex]
   const blindsInCurrentRound = [
     currentRound.smallBlind,
@@ -48,6 +50,7 @@ export function BlindSelectionView() {
 
   return (
     <ViewTemplate>
+      <div ref={autoFocusRef}>
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-3 items-stretch gap-4"
         variants={containerVariants}
@@ -94,6 +97,7 @@ export function BlindSelectionView() {
           />
         </motion.div>
       </motion.div>
+      </div>
     </ViewTemplate>
   )
 }
