@@ -550,6 +550,11 @@ body {
   100% { opacity: 0.4; }
 }
 
+.joker-muted {
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .blind-progress-fill {
     transition: none !important;
@@ -565,6 +570,9 @@ body {
   }
   .joker-activated::after {
     animation: none;
+  }
+  .joker-muted {
+    transition: none;
   }
 }
 

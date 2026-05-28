@@ -203,8 +203,13 @@ export const Joker = ({
     )
   }
 
+  const wrapperClass = [
+    activated ? 'joker-activated' : undefined,
+    muted ? 'joker-muted' : undefined,
+  ].filter(Boolean).join(' ') || undefined
+
   return (
-    <div className={activated ? 'joker-activated' : undefined}>
+    <div className={wrapperClass}>
       <TokenCard
         title={def?.name ?? 'Unknown'}
         description={def?.description}
