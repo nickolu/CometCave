@@ -8,6 +8,7 @@ import { ROUTE_CONSTANTS } from './route-constants'
 
 const games: readonly { title: string; icon: string; href: string; description: string; hot?: boolean }[] = [
   { title: 'Daily Trivia', icon: 'quiz', href: ROUTE_CONSTANTS.TRIVIA, description: 'Test your knowledge with daily AI-curated questions', hot: true },
+  { title: 'Comet Cards', icon: 'style', href: ROUTE_CONSTANTS.COMET_CARDS, description: 'Daily Cards — Stack chips, multiply, and bend the rules with jokers' },
   { title: 'I-Ching Oracle', icon: 'auto_awesome', href: ROUTE_CONSTANTS.ORACLE, description: 'Seek wisdom and guidance from the ancient I-Ching' },
   { title: 'Tap Tap Adventure', icon: 'swords', href: ROUTE_CONSTANTS.TAP_TAP_ADVENTURE, description: 'Tap to travel, fight monsters, and collect loot' },
   { title: 'Secret Word', icon: 'lock', href: ROUTE_CONSTANTS.SECRET_WORD, description: 'Guess the secret word!' },
