@@ -136,6 +136,27 @@ export function TriviaStats() {
     return { gamesPlayed: history.length, daysAvailable, rate }
   }, [history])
 
+  const longestAbsence = useMemo(() => {
+    if (history.length < 2) return null
+    const dates = [...history].reverse().map(g => new Date(g.date + 'T12:00:00').getTime())
+    let maxGap = 0
+    for (let i = 1; i < dates.length; i++) {
+      const gap = Math.round((dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24))
+      if (gap > maxGap) maxGap = gap
+    }
+    return maxGap > 1 ? maxGap : null
+  }, [history])
+
+  const sparklineData = useMemo(() => {
+    if (history.length < 3) return null
+    const recent = [...history].reverse().slice(-14)
+    const scores = recent.map(g => g.score)
+    const min = Math.min(...scores)
+    const max = Math.max(...scores)
+    if (max === min) return null
+    return { scores, min, max }
+  }, [history])
+
   // Category performance
   const categoryStats = useMemo(() => {
     const cats = new Map<string, { name: string; icon: string; correct: number; total: number }>()
@@ -367,6 +388,12 @@ export function TriviaStats() {
               />
             </div>
             <div className="text-on-surface/40 text-xs mt-2">Days played since your first game</div>
+            {longestAbsence && (
+              <div className="flex justify-between items-center mt-3 pt-3" style={{ borderTop: '1px solid var(--outline-variant)' }}>
+                <span className="text-on-surface/60 text-sm">Longest absence</span>
+                <span className="text-on-surface font-bold">{longestAbsence} days</span>
+              </div>
+            )}
           </ChunkyCardContent>
         </ChunkyCard>
       )}
@@ -395,6 +422,44 @@ export function TriviaStats() {
                 <div className="text-2xl font-bold text-ds-tertiary">{scoreTrend.recentAvg.toLocaleString()}</div>
                 <div className="text-on-surface/40 text-xs">Last 7 avg</div>
               </div>
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {sparklineData && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Score Arc
+            </h3>
+            <div className="w-full" style={{ height: 48 }}>
+              <svg
+                viewBox={`0 0 ${(sparklineData.scores.length - 1) * 20} 40`}
+                className="w-full h-full"
+                preserveAspectRatio="none"
+                aria-label={`Score trend over last ${sparklineData.scores.length} games`}
+                role="img"
+              >
+                <polyline
+                  fill="none"
+                  stroke="var(--ds-tertiary)"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  points={sparklineData.scores
+                    .map((s, i) => {
+                      const x = i * 20
+                      const y = 40 - ((s - sparklineData.min) / (sparklineData.max - sparklineData.min)) * 36 - 2
+                      return `${x},${y}`
+                    })
+                    .join(' ')}
+                />
+              </svg>
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-on-surface/30 text-[10px]">{sparklineData.scores.length} games ago</span>
+              <span className="text-on-surface/30 text-[10px]">Latest</span>
             </div>
           </ChunkyCardContent>
         </ChunkyCard>
