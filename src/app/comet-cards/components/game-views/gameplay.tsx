@@ -15,6 +15,7 @@ import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { Hand, type HandSortKey } from '@/app/comet-cards/components/gameplay/hand'
 import { PlayArea } from '@/app/comet-cards/components/gameplay/play-area'
 import { Joker } from '@/app/comet-cards/components/gameplay/joker'
+import { JokerActivationLabel } from '@/app/comet-cards/components/gameplay/joker-activation-label'
 import { Deck } from '@/app/comet-cards/components/global/deck'
 import { Hands } from '@/app/comet-cards/components/hands/hands'
 import { TickingNumber } from '@/app/comet-cards/components/animations/ticking-number'
@@ -35,6 +36,7 @@ import { useCometCardsStore } from '@/app/comet-cards/store'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
+import { useJokerActivationSequence } from '@/app/comet-cards/hooks/useJokerActivationSequence'
 
 const RARITY_ACCENT: Record<string, string> = {
   common: 'var(--cc-mint)',
@@ -98,16 +100,12 @@ export function GamePlayView() {
     return Math.min(100, Math.max(0, (numerator / denom) * 100))
   }, [currentBlind, targetScore])
 
-  const activatedJokerNames = useMemo(() => {
-    if (!isScoring) return new Set<string>()
-    const names = new Set<string>()
-    for (const evt of gamePlayState.scoringEvents) {
-      if ('source' in evt && evt.source) {
-        names.add(evt.source)
-      }
-    }
-    return names
-  }, [isScoring, gamePlayState.scoringEvents])
+  const {
+    activeJokerName,
+    activeJokerLabel,
+    firedJokerNames,
+    activationKey,
+  } = useJokerActivationSequence()
 
   const prevProgressRef = useRef(0)
   const [blindMet, setBlindMet] = useState(false)
@@ -382,11 +380,13 @@ export function GamePlayView() {
           >
             {game.jokers.map(joker => {
               const def = jokerDefinitions[joker.jokerId]
+              const isJokerActive = activeJokerName === def.name
+              const isJokerMuted = isScoring && firedJokerNames.size > 0 && !firedJokerNames.has(def.name) && activeJokerName !== def.name
               return (
                 <button
                   key={joker.id}
                   type="button"
-                  className={activatedJokerNames.has(def.name) ? 'joker-activated' : undefined}
+                  className={isJokerActive ? 'joker-activated' : undefined}
                   onClick={() => {
                     if (gamePlayState.selectedJokerId === joker.id) {
                       eventEmitter.emit({ type: 'JOKER_DESELECTED', id: joker.id })
@@ -395,6 +395,7 @@ export function GamePlayView() {
                     }
                   }}
                   style={{
+                    position: 'relative',
                     flexShrink: 0,
                     padding: '3px 8px',
                     borderRadius: 4,
@@ -404,10 +405,18 @@ export function GamePlayView() {
                     fontFamily: 'var(--cc-font-mono)',
                     fontSize: 10,
                     cursor: 'pointer',
-                    boxShadow: activatedJokerNames.has(def.name) ? `0 0 10px ${RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)'}` : undefined,
+                    boxShadow: isJokerActive ? `0 0 10px ${RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)'}` : undefined,
+                    opacity: isJokerMuted ? 0.35 : 1,
+                    transition: 'opacity 0.2s',
                   }}
                 >
                   ✺ {def.name}
+                  {isJokerActive && activeJokerLabel && (
+                    <JokerActivationLabel
+                      label={activeJokerLabel}
+                      activationKey={activationKey}
+                    />
+                  )}
                 </button>
               )
             })}
@@ -948,24 +957,41 @@ export function GamePlayView() {
           <div className="flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 50px)', overflow: 'hidden' }}>
             <Panel title="Jokers" subtitle={`${game.jokers.length} / ${game.maxJokers} slots`}>
               <div className="cc-scroll" style={{ padding: 14, display: 'flex', flexWrap: 'wrap', gap: 10, maxHeight: '45vh', overflowY: 'auto' }}>
-                {game.jokers.map(joker => (
-                  <Joker
-                    key={joker.id}
-                    joker={joker}
-                    isSelected={gamePlayState.selectedJokerId === joker.id}
-                    ownedCardCount={game.ownedCardIds.length}
-                    gameSeed={game.gameSeed}
-                    roundIndex={game.roundIndex}
-                    activated={activatedJokerNames.has(jokerDefinitions[joker.jokerId]?.name ?? '')}
-                    onClick={(isSelected, id) => {
-                      if (isSelected) {
-                        eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
-                      } else {
-                        eventEmitter.emit({ type: 'JOKER_SELECTED', id })
-                      }
-                    }}
-                  />
-                ))}
+                {game.jokers.map(joker => {
+                  const def = jokerDefinitions[joker.jokerId]
+                  const jokerName = def?.name ?? ''
+                  const isJokerActive = activeJokerName === jokerName
+                  const isJokerMuted = isScoring && firedJokerNames.size > 0 && !firedJokerNames.has(jokerName) && activeJokerName !== jokerName
+                  return (
+                    <div
+                      key={isJokerActive ? `${joker.id}-${activationKey}` : joker.id}
+                      style={{ position: 'relative' }}
+                    >
+                      <Joker
+                        joker={joker}
+                        isSelected={gamePlayState.selectedJokerId === joker.id}
+                        ownedCardCount={game.ownedCardIds.length}
+                        gameSeed={game.gameSeed}
+                        roundIndex={game.roundIndex}
+                        activated={isJokerActive}
+                        muted={isJokerMuted}
+                        onClick={(isSelected, id) => {
+                          if (isSelected) {
+                            eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
+                          } else {
+                            eventEmitter.emit({ type: 'JOKER_SELECTED', id })
+                          }
+                        }}
+                      />
+                      {isJokerActive && activeJokerLabel && (
+                        <JokerActivationLabel
+                          label={activeJokerLabel}
+                          activationKey={activationKey}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
                 {Array.from({ length: Math.max(0, game.maxJokers - game.jokers.length) }).map(
                   (_, i) => (
                     <EmptySlot key={`joker-empty-${i}`} />
