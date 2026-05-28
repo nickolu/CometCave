@@ -16,7 +16,6 @@ export function TokenCard({
   accent = 'var(--cc-mint)',
   selected = false,
   disabled = false,
-  muted = false,
   size = 'md',
   badge,
   onClick,
@@ -30,7 +29,6 @@ export function TokenCard({
   accent?: string
   selected?: boolean
   disabled?: boolean
-  muted?: boolean
   size?: TokenCardSize
   badge?: ReactNode
   onClick?: () => void
@@ -45,15 +43,7 @@ export function TokenCard({
   let boxShadow: string
   let opacity: number
 
-  if (muted && selected) {
-    border = `1px solid color-mix(in srgb, ${accent} 50%, transparent)`
-    boxShadow = `0 0 0 2px color-mix(in srgb, ${accent} 20%, transparent), var(--cc-card-shadow-base)`
-    opacity = 0.9
-  } else if (muted) {
-    border = `1px solid color-mix(in srgb, ${accent} 25%, transparent)`
-    boxShadow = 'var(--cc-card-shadow-base)'
-    opacity = 0.8
-  } else if (selected) {
+  if (selected) {
     border = `1px solid ${accent}`
     boxShadow = `0 0 0 2px color-mix(in srgb, ${accent} 33%, transparent), 0 0 28px ${accent}, var(--cc-card-shadow-selected-tail)`
     opacity = disabled ? 0.55 : 1

@@ -95,7 +95,7 @@ export function ShopView() {
         >
           <div className="flex flex-col" style={{ padding: 16, gap: 18 }}>
             <SectionHeader label="Your Jokers">
-              <CurrentJokers muted />
+              <CurrentJokers />
             </SectionHeader>
 
             {/* Two-column grid: Cards for Sale (left) | Voucher + Booster Packs (right) */}

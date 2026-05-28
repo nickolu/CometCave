@@ -965,7 +965,7 @@ export function GamePlayView() {
                   return (
                     <div
                       key={isJokerActive ? `${joker.id}-${activationKey}` : joker.id}
-                      style={{ position: 'relative' }}
+                      style={{ position: 'relative', opacity: isJokerMuted ? 0.35 : 1, transition: 'opacity 0.2s' }}
                     >
                       <Joker
                         joker={joker}
@@ -974,7 +974,6 @@ export function GamePlayView() {
                         gameSeed={game.gameSeed}
                         roundIndex={game.roundIndex}
                         activated={isJokerActive}
-                        muted={isJokerMuted}
                         onClick={(isSelected, id) => {
                           if (isSelected) {
                             eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
