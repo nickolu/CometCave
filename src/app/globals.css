@@ -465,7 +465,8 @@ body {
   transform: translateY(var(--cc-card-lift, -16px));
 }
 
-.cosmic-cards .bc-card:focus-visible {
+.cosmic-cards .bc-card:focus-visible,
+.cosmic-cards .cc-btn:focus-visible {
   outline: 2px solid var(--cc-mint);
   outline-offset: 2px;
 }
