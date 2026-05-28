@@ -16,6 +16,7 @@ export function TokenCard({
   accent = 'var(--cc-mint)',
   selected = false,
   disabled = false,
+  muted = false,
   size = 'md',
   badge,
   onClick,
@@ -29,6 +30,7 @@ export function TokenCard({
   accent?: string
   selected?: boolean
   disabled?: boolean
+  muted?: boolean
   size?: TokenCardSize
   badge?: ReactNode
   onClick?: () => void
@@ -38,6 +40,29 @@ export function TokenCard({
 }) {
   const dims = SIZES[size]
   const isInteractive = !!onClick && !disabled
+
+  let border: string
+  let boxShadow: string
+  let opacity: number
+
+  if (muted && selected) {
+    border = `1px solid color-mix(in srgb, ${accent} 50%, transparent)`
+    boxShadow = `0 0 0 2px color-mix(in srgb, ${accent} 20%, transparent), var(--cc-card-shadow-base)`
+    opacity = 0.9
+  } else if (muted) {
+    border = `1px solid color-mix(in srgb, ${accent} 25%, transparent)`
+    boxShadow = 'var(--cc-card-shadow-base)'
+    opacity = 0.8
+  } else if (selected) {
+    border = `1px solid ${accent}`
+    boxShadow = `0 0 0 2px color-mix(in srgb, ${accent} 33%, transparent), 0 0 28px ${accent}, var(--cc-card-shadow-selected-tail)`
+    opacity = disabled ? 0.55 : 1
+  } else {
+    border = '1px solid var(--cc-card-border)'
+    boxShadow = `0 0 12px color-mix(in srgb, ${accent} 10%, transparent), var(--cc-card-shadow-base)`
+    opacity = disabled ? 0.55 : 1
+  }
+
   return (
     <button
       type="button"
@@ -55,12 +80,10 @@ export function TokenCard({
         textAlign: 'left',
         background: 'var(--cc-card-bg)',
         borderRadius: 12,
-        border: `1px solid ${selected ? accent : 'var(--cc-card-border)'}`,
-        boxShadow: selected
-          ? `0 0 0 2px color-mix(in srgb, ${accent} 33%, transparent), 0 0 28px ${accent}, var(--cc-card-shadow-selected-tail)`
-          : `0 0 12px color-mix(in srgb, ${accent} 10%, transparent), var(--cc-card-shadow-base)`,
+        border,
+        boxShadow,
         cursor: isInteractive ? 'pointer' : disabled ? 'not-allowed' : 'default',
-        opacity: disabled ? 0.55 : 1,
+        opacity,
         overflow: 'hidden',
         flex: 'none',
         padding: 0,

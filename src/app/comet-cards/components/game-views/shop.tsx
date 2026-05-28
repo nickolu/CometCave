@@ -90,11 +90,9 @@ export function ShopView() {
           subtitle={`$${game.money} on hand`}
         >
           <div className="flex flex-col" style={{ padding: 16, gap: 18 }}>
-            {game.jokers.length > 0 && (
-              <SectionHeader label="Jokers in Play">
-                <CurrentJokers />
-              </SectionHeader>
-            )}
+            <SectionHeader label="Your Jokers">
+              <CurrentJokers muted />
+            </SectionHeader>
 
             {/* Two-column grid: Cards for Sale (left) | Voucher + Booster Packs (right) */}
             <div
