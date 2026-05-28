@@ -48,6 +48,7 @@ export const Joker = ({
   gameSeed,
   roundIndex,
   activated,
+  muted,
 }: {
   joker: JokerState
   isSelected?: boolean
@@ -56,6 +57,7 @@ export const Joker = ({
   gameSeed?: string
   roundIndex?: number
   activated?: boolean
+  muted?: boolean
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
@@ -209,6 +211,7 @@ export const Joker = ({
         glyph="✺"
         accent={accent}
         selected={isSelected}
+        muted={muted}
         size="sm"
         badge={badge}
         typeLabel="Joker"

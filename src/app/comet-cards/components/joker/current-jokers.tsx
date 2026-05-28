@@ -4,7 +4,7 @@ import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
-export const CurrentJokers = () => {
+export const CurrentJokers = ({ muted }: { muted?: boolean }) => {
   const { game } = useGameState()
   const selectedJoker = game.jokers.find(joker => joker.id === game.gamePlayState.selectedJokerId)
   const selectedJokerDefinition = selectedJoker ? jokers[selectedJoker.jokerId] : undefined
@@ -12,23 +12,37 @@ export const CurrentJokers = () => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-3">
-        {game.jokers.map(joker => (
-          <Joker
-            key={joker.id}
-            joker={joker}
-            isSelected={game.gamePlayState.selectedJokerId === joker.id}
-            ownedCardCount={game.ownedCardIds.length}
-            gameSeed={game.gameSeed}
-            roundIndex={game.roundIndex}
-            onClick={(isSelected, id) => {
-              if (isSelected) {
-                eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
-              } else {
-                eventEmitter.emit({ type: 'JOKER_SELECTED', id })
-              }
+        {game.jokers.length === 0 ? (
+          <div
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 11,
+              opacity: 0.45,
+              letterSpacing: 0.5,
             }}
-          />
-        ))}
+          >
+            No jokers yet — buy one from the shop below
+          </div>
+        ) : (
+          game.jokers.map(joker => (
+            <Joker
+              key={joker.id}
+              joker={joker}
+              muted={muted}
+              isSelected={game.gamePlayState.selectedJokerId === joker.id}
+              ownedCardCount={game.ownedCardIds.length}
+              gameSeed={game.gameSeed}
+              roundIndex={game.roundIndex}
+              onClick={(isSelected, id) => {
+                if (isSelected) {
+                  eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
+                } else {
+                  eventEmitter.emit({ type: 'JOKER_SELECTED', id })
+                }
+              }}
+            />
+          ))
+        )}
       </div>
       {selectedJokerDefinition && (
         <div>
