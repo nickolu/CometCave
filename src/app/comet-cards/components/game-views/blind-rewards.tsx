@@ -29,6 +29,7 @@ export function BlindRewardsView() {
   const [hasCashedOut, setHasCashedOut] = useState(false)
   useEffect(() => {
     eventEmitter.emit({ type: 'BLIND_REWARDS_START' })
+    eventEmitter.emit({ type: 'ROUND_END' })
   }, [])
 
   const currentBlind = getInProgressBlind(game)
@@ -37,8 +38,14 @@ export function BlindRewardsView() {
       .baseReward ?? 0
   const additionalRewards = currentBlind?.additionalRewards ?? []
 
+  const jokerPayoutTotal = game.gamePlayState.jokerPayouts.reduce(
+    (acc, p) => acc + p.amount,
+    0
+  )
   const totalReward =
-    baseReward + additionalRewards.reduce((acc, [, amount]) => acc + amount, 0)
+    baseReward +
+    additionalRewards.reduce((acc, [, amount]) => acc + amount, 0) +
+    jokerPayoutTotal
 
   return (
     <ViewTemplate>
@@ -85,6 +92,9 @@ export function BlindRewardsView() {
                 {additionalRewards.map(([rewardName, rewardAmount]) => (
                   <RewardRow key={rewardName} label={rewardName} amount={rewardAmount} />
                 ))}
+                {game.gamePlayState.jokerPayouts.map((payout, i) => (
+                  <RewardRow key={`joker-${i}`} label={payout.name} amount={payout.amount} />
+                ))}
               </div>
             </FadeUp>
 
@@ -126,7 +136,6 @@ export function BlindRewardsView() {
                 disabled={hasCashedOut}
                 onClick={() => {
                   setHasCashedOut(true)
-                  eventEmitter.emit({ type: 'ROUND_END' })
                   eventEmitter.emit({ type: 'BLIND_REWARDS_END' })
                 }}
               >

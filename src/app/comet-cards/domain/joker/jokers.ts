@@ -668,6 +668,7 @@ export const rocketJoker: JokerDefinition = {
 
         // Pay out current amount
         ctx.game.money += rk.metadata.payout
+        ctx.game.gamePlayState.jokerPayouts.push({ name: 'Rocket', amount: rk.metadata.payout })
 
         // Check if boss blind was defeated this round
         const round = ctx.game.rounds[ctx.game.roundIndex]
@@ -755,6 +756,7 @@ export const cloud9Joker: JokerDefinition = {
         }
         if (nineCount > 0) {
           ctx.game.money += nineCount
+          ctx.game.gamePlayState.jokerPayouts.push({ name: 'Cloud 9', amount: nineCount })
         }
       },
     },
@@ -1682,6 +1684,7 @@ export const goldenJokerJoker: JokerDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.money += 4
+        ctx.game.gamePlayState.jokerPayouts.push({ name: 'Golden Joker', amount: 4 })
       },
     },
   ],
@@ -2420,6 +2423,7 @@ export const delayedGratification: JokerDefinition = {
         if (ctx.game.discardsPlayed === 0) {
           const payout = 2 * ctx.game.maxDiscards
           ctx.game.money += payout
+          ctx.game.gamePlayState.jokerPayouts.push({ name: 'Delayed Gratification', amount: payout })
         }
       },
     },
@@ -3762,6 +3766,7 @@ export const satellite: JokerDefinition = {
         const payout = uniquePlanets.size
         if (payout > 0) {
           ctx.game.money += payout
+          ctx.game.gamePlayState.jokerPayouts.push({ name: 'Satellite', amount: payout })
         }
       },
     },
