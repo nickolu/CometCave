@@ -44,7 +44,7 @@ export function JokerCardOpenBoosterPack() {
             marginBottom: 8,
           }}
         >
-          Your Jokers
+          Your Jokers ({game.jokers.length}/{game.maxJokers})
         </div>
         <CurrentJokers />
       </div>
