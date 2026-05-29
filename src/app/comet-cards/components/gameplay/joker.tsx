@@ -49,6 +49,7 @@ export const Joker = ({
   gameSeed,
   roundIndex,
   activated,
+  tabIndex,
 }: {
   joker: JokerState
   isSelected?: boolean
@@ -58,6 +59,7 @@ export const Joker = ({
   gameSeed?: string
   roundIndex?: number
   activated?: boolean
+  tabIndex?: number
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
@@ -227,6 +229,7 @@ export const Joker = ({
         typeLabel="Joker"
         edition={joker.edition}
         onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
+        tabIndex={tabIndex}
       />
     </div>
   )
