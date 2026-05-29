@@ -27,6 +27,7 @@ import {
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { getRandomTarotCards } from '@/app/comet-cards/domain/shop/utils'
 import { initializeTag } from '@/app/comet-cards/domain/tag/utils'
+import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { getRandomVoucherType } from '@/app/comet-cards/domain/voucher/utils'
 
 export function handleCardSelected(draft: GameState, event: CardSelectedEvent) {
@@ -361,6 +362,12 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   draft.gamePlayState.drawPileIds = draft.ownedCardIds
   draft.gamePlayState.remainingHands = draft.maxHands
   if (currentBlind.type === 'bossBlind') {
+    // Run boss blind cleanup to reverse any persistent effects applied on BOSS_BLIND_SELECTED
+    const bossBlindName = draft.rounds[draft.roundIndex].bossBlindName
+    const bossBlindDef = bossBlinds.find(b => b.name === bossBlindName)
+    if (bossBlindDef?.onCleanup) {
+      bossBlindDef.onCleanup(draft)
+    }
     draft.gamePlayState.cardIdsPlayedThisAnte = []
     if (draft.selectedDeck === 'anaglyphDeck') {
       draft.tags.push(initializeTag('double'))

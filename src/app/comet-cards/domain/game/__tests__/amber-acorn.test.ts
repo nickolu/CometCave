@@ -47,4 +47,18 @@ describe('Amber Acorn showdown boss blind', () => {
     const after2 = reduceGame(game2, { type: 'BOSS_BLIND_SELECTED' })
     expect(after1.jokers.map(j => j.id)).toEqual(after2.jokers.map(j => j.id))
   })
+
+  it('restores all jokers to face up when boss blind is cleared', () => {
+    const game = setupGame()
+    game.jokers = [
+      { id: 'j1', jokerId: 'joker', isFaceUp: true } as any,
+      { id: 'j2', jokerId: 'jolly', isFaceUp: true } as any,
+    ]
+
+    const afterSelect = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
+    expect(afterSelect.jokers.every(j => j.isFaceUp === false)).toBe(true)
+
+    const afterClear = reduceGame(afterSelect, { type: 'BLIND_REWARDS_END' })
+    expect(afterClear.jokers.every(j => j.isFaceUp === true)).toBe(true)
+  })
 })

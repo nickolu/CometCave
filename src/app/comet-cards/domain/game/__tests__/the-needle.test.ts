@@ -21,4 +21,22 @@ describe('The Needle boss blind', () => {
     const after = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
     expect(after.gamePlayState.remainingHands).toBe(1)
   })
+
+  it('restores maxHands to original value when boss blind is cleared', () => {
+    const game = setupGame()
+    const originalMaxHands = game.maxHands // default is 4
+    const afterSelect = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
+    expect(afterSelect.maxHands).toBe(1)
+    const afterClear = reduceGame(afterSelect, { type: 'BLIND_REWARDS_END' })
+    expect(afterClear.maxHands).toBe(originalMaxHands)
+  })
+
+  it('restores a non-default maxHands value when boss blind is cleared', () => {
+    const game = setupGame()
+    game.maxHands = 6 // simulate voucher or joker having increased maxHands
+    const afterSelect = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
+    expect(afterSelect.maxHands).toBe(1)
+    const afterClear = reduceGame(afterSelect, { type: 'BLIND_REWARDS_END' })
+    expect(afterClear.maxHands).toBe(6)
+  })
 })

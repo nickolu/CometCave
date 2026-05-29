@@ -7,6 +7,7 @@ export interface BlindState {
   additionalRewards: [string, number][] // [rewardName, rewardAmount]
   score: bigint
   tag: TagType | null
+  savedState?: Record<string, unknown> // scratch space for boss blind save/restore
 }
 
 export interface BlindDefinition {
@@ -34,6 +35,8 @@ export interface BossBlindDefinition extends BlindDefinition {
   type: 'bossBlind'
   status: 'completed' | 'notStarted' | 'inProgress' // boss blind cannot be skipped
   anteMultiplier: 1 | 2 | 4 | 6
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onCleanup?: (game: any) => void
   name:
     | 'The Hook'
     | 'The Ox'
