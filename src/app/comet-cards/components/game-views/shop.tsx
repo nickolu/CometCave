@@ -94,7 +94,7 @@ export function ShopView() {
           subtitle={`$${game.money} on hand`}
         >
           <div className="flex flex-col" style={{ padding: 16, gap: 18 }}>
-            <SectionHeader label="Your Jokers">
+            <SectionHeader label={`Your Jokers (${game.jokers.length}/${game.maxJokers})`}>
               <CurrentJokers />
             </SectionHeader>
 
