@@ -227,7 +227,12 @@ export function GamePlayView() {
           >
             {currentBlind && blindDefinition && (
               <>
-                <span style={{ color: 'var(--cc-mint)', fontWeight: 700 }}>{blindDefinition.name}</span>
+                <div>
+                  <span style={{ color: 'var(--cc-mint)', fontWeight: 700 }}>{blindDefinition.name}</span>
+                  {currentBlind.type === 'bossBlind' && blindDefinition.description && (
+                    <span style={{ fontSize: 9, opacity: 0.6, marginLeft: 8 }}>{blindDefinition.description}</span>
+                  )}
+                </div>
                 <span style={{ color: 'var(--cc-pink)' }}>
                   {currentBlind.score.toString()} / {targetScore.toString()}
                 </span>
@@ -616,6 +621,17 @@ export function GamePlayView() {
                   >
                     {blindDefinition.name}
                   </div>
+                  {currentBlind?.type === 'bossBlind' && blindDefinition?.description && (
+                    <div style={{
+                      fontFamily: 'var(--cc-font-mono)',
+                      fontSize: 9,
+                      opacity: 0.55,
+                      marginTop: 2,
+                      marginBottom: 12,
+                    }}>
+                      {blindDefinition.description}
+                    </div>
+                  )}
                   <div
                     className="uppercase"
                     style={{
@@ -861,6 +877,16 @@ export function GamePlayView() {
                   >
                     {blindDefinition.name}
                   </div>
+                  {currentBlind.type === 'bossBlind' && blindDefinition.description && (
+                    <div style={{
+                      fontFamily: 'var(--cc-font-mono)',
+                      fontSize: 9,
+                      opacity: 0.5,
+                      marginTop: 3,
+                    }}>
+                      {blindDefinition.description}
+                    </div>
+                  )}
                   <div
                     style={{
                       fontSize: 44,
