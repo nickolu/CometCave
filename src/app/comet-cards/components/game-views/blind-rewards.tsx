@@ -126,6 +126,7 @@ export function BlindRewardsView() {
                 disabled={hasCashedOut}
                 onClick={() => {
                   setHasCashedOut(true)
+                  eventEmitter.emit({ type: 'ROUND_END' })
                   eventEmitter.emit({ type: 'BLIND_REWARDS_END' })
                 }}
               >
