@@ -109,11 +109,8 @@ export function handleShopSelectPlayingCardFromPack(
   if (!draft.shopState.openPackState) return
 
   draft.shopState.openPackState.remainingCardsToSelect -= 1
-
-  if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-  }
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopSelectJokerFromPack(
@@ -137,10 +134,8 @@ export function handleShopSelectJokerFromPack(
   const ctx = getEffectContext(draft, event)
   dispatchEffects(jokerAddedEvent, ctx, collectEffects(ctx.game))
 
-  if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-  }
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopUseTarotCardFromPack(
@@ -161,8 +156,6 @@ export function handleShopUseTarotCardFromPack(
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
 
-  const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
-
   // Create effect context for dispatching effects
   const tarotCardUsedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
   const ctx = getEffectContext(draft, event)
@@ -175,10 +168,8 @@ export function handleShopUseTarotCardFromPack(
 
   // Clean up after effects have been applied
   draft.gamePlayState.selectedCardIds = []
-  if (isLastCardToSelect) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-  }
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopUseCelestialCardFromPack(
@@ -198,8 +189,6 @@ export function handleShopUseCelestialCardFromPack(
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
 
-  const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
-
   // Create effect context for dispatching effects
   const celestialCardUsedEvent: GameEvent = { type: 'CELESTIAL_CARD_USED' }
   const ctx = getEffectContext(draft, event)
@@ -211,11 +200,9 @@ export function handleShopUseCelestialCardFromPack(
   dispatchEffects(celestialCardUsedEvent, ctx, collectEffects(ctx.game))
 
   // Clean up after effects have been applied
-  if (isLastCardToSelect) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-    draft.gamePlayState.selectedCardIds = []
-  }
+  draft.gamePlayState.selectedCardIds = []
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopUseSpectralCardFromPack(
@@ -232,8 +219,6 @@ export function handleShopUseSpectralCardFromPack(
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
 
-  const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
-
   // Create effect context for dispatching effects
   const spectralCardUsedEvent: GameEvent = { type: 'SPECTRAL_CARD_USED' }
   const ctx = getEffectContext(draft, event)
@@ -248,11 +233,9 @@ export function handleShopUseSpectralCardFromPack(
   dispatchEffects(spectralCardUsedEvent, ctx, collectEffects(ctx.game))
 
   // Clean up after effects have been applied
-  if (isLastCardToSelect) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-    draft.gamePlayState.selectedCardIds = []
-  }
+  draft.gamePlayState.selectedCardIds = []
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopBuyCard(draft: GameState, event: ShopBuyCardEvent) {
