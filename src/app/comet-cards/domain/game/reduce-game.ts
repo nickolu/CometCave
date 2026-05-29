@@ -314,6 +314,17 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.selectedJokerId = undefined
         return
       }
+      case 'JOKER_SWAP': {
+        const fromIdx = draft.jokers.findIndex(j => j.id === event.fromId)
+        const toIdx = draft.jokers.findIndex(j => j.id === event.toId)
+        if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+          const temp = draft.jokers[fromIdx]
+          draft.jokers[fromIdx] = draft.jokers[toIdx]
+          draft.jokers[toIdx] = temp
+        }
+        draft.gamePlayState.selectedJokerId = undefined
+        return
+      }
       case 'JOKER_SOLD': {
         const selectedJoker = draft.jokers.find(
           joker => joker.id === draft.gamePlayState.selectedJokerId

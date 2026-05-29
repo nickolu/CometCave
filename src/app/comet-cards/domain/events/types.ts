@@ -32,6 +32,7 @@ export type GameEvent =
   | JokerSelectedEvent
   | JokerDeselectedEvent
   | JokerSoldEvent
+  | JokerSwapEvent
   | RoundEndEvent
   | RoundStartEvent
   | ShopSelectBlindEvent
@@ -176,6 +177,11 @@ export type JokerDeselectedEvent = {
 }
 export type JokerSoldEvent = {
   type: 'JOKER_SOLD'
+}
+export type JokerSwapEvent = {
+  type: 'JOKER_SWAP'
+  fromId: string
+  toId: string
 }
 export type RoundEndEvent = {
   type: 'ROUND_END'

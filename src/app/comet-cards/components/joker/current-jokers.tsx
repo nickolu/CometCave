@@ -37,12 +37,15 @@ export const CurrentJokers = () => {
                 key={joker.id}
                 joker={joker}
                 isSelected={game.gamePlayState.selectedJokerId === joker.id}
+                isSwapTarget={!!game.gamePlayState.selectedJokerId && game.gamePlayState.selectedJokerId !== joker.id}
                 ownedCardCount={game.ownedCardIds.length}
                 gameSeed={game.gameSeed}
                 roundIndex={game.roundIndex}
                 onClick={(isSelected, id) => {
                   if (isSelected) {
                     eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
+                  } else if (game.gamePlayState.selectedJokerId) {
+                    eventEmitter.emit({ type: 'JOKER_SWAP', fromId: game.gamePlayState.selectedJokerId, toId: id })
                   } else {
                     eventEmitter.emit({ type: 'JOKER_SELECTED', id })
                   }
