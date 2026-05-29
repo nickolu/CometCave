@@ -141,6 +141,7 @@ export interface HandResult {
   chips: number
   mult: number
   score: number  // chips * mult
+  scoringEventLog: ScoringEvent[]  // joker activations for this hand
 }
 
 export interface Stake {

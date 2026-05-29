@@ -10,7 +10,7 @@ import { dealCardsFromDrawPile, getHand } from './card-registry-utils'
 import { HAND_SIZE } from './constants'
 import { calculateAnte, calculateInterest, collectEffects, getBlindDefinition } from './utils'
 
-import type { GamePlayState, GameState } from './types'
+import type { GamePlayState, GameState, ScoringEvent } from './types'
 import type { Draft } from 'immer'
 
 type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
@@ -78,11 +78,18 @@ function decideHandEndOutcome(args: {
 
 function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>, handType?: string) {
   gamePlayState.isScoring = false
+
+  // Capture scoring events that are ScoringEvents (have 'source'), not CustomScoringEvents
+  const scoringEventLog = gamePlayState.scoringEvents.filter(
+    (e): e is ScoringEvent => 'source' in e
+  )
+
   gamePlayState.handResults.push({
     handType: handType ?? 'unknown',
     chips: gamePlayState.score.chips,
     mult: gamePlayState.score.mult,
     score: Math.floor(gamePlayState.score.chips * gamePlayState.score.mult),
+    scoringEventLog: scoringEventLog.map(e => ({ ...e })),
   })
   gamePlayState.scoringEvents.push({
     id: uuid(),
