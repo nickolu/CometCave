@@ -213,7 +213,7 @@ export function GamePlayView() {
 
       {isLandscape ? (
         /* ── LANDSCAPE MOBILE: single-column flex ── */
-        <div className="relative z-10 flex flex-col flex-1" style={{ gap: 0 }}>
+        <div className="relative z-10 flex flex-col flex-1" style={{ gap: 0, overflow: 'hidden' }}>
           {/* Compact info bar */}
           <div
             className="flex flex-wrap items-center justify-between"
@@ -329,7 +329,7 @@ export function GamePlayView() {
           </div>
 
           {/* Play area + Hand */}
-          <div className="flex-1 flex flex-col justify-end">
+          <div className="flex-1 flex flex-col justify-end" style={{ overflowY: 'auto' }}>
             <LayoutGroup>
               <PlayArea cards={playedCards} visible={isScoring} />
               <div className="flex items-end justify-center" style={{ paddingBottom: 4, paddingTop: 4 }}>
@@ -540,6 +540,11 @@ export function GamePlayView() {
                 borderTop: '1px solid var(--cc-panel-divider)',
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 10,
+                position: 'sticky',
+                bottom: 0,
+                background: 'var(--cc-bg, #0a0a0f)',
+                zIndex: 20,
+                flexShrink: 0,
               }}
             >
               {selectedJoker && selectedJokerDefinition && (
