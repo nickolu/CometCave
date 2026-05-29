@@ -84,6 +84,9 @@ export interface GamePlayState {
   // Track card IDs played across blinds in current ante (for The Pillar)
   cardIdsPlayedThisAnte: string[]
 
+  // Joker payouts recorded during ROUND_END (shown in blind rewards view)
+  jokerPayouts: { name: string; amount: number }[]
+
   // Discard pile for current blind (card IDs)
   discardPileIds: string[]
 

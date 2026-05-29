@@ -375,6 +375,7 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
     draft.roundIndex += 1
   }
   draft.gamePlayState.scoringEvents = []
+  draft.gamePlayState.jokerPayouts = []
   draft.gamePlayState.remainingDiscards = draft.maxDiscards
   draft.gamePlayState.handTypesPlayedThisRound = []
   draft.gamePlayState.handResults = []

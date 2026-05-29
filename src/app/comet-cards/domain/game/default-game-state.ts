@@ -36,6 +36,7 @@ const gameState: GameState = {
   gamePlayState: {
     cardsToScore: [],
     cardIdsPlayedThisAnte: [],
+    jokerPayouts: [],
     discardPileIds: [],
     drawPileIds: [],
     handIds: [],
