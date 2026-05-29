@@ -76,7 +76,7 @@ export function ViewTemplate({
       <div
         className="relative z-10 flex flex-wrap items-center justify-between gap-4"
         style={{
-          padding: isLandscape ? '8px 12px' : '12px 22px',
+          padding: isLandscape ? '8px 12px 8px 40px' : '12px 22px 12px 40px',
           borderBottom: '1px solid var(--cc-panel-divider)',
         }}
       >
