@@ -984,7 +984,7 @@ export const weeJokerJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
         if (wj) {
-          wj.metadata = { ...wj.metadata, chipsBonus: 0 }
+          wj.metadata = { ...wj.metadata, chipsBonus: wj.metadata?.chipsBonus ?? 0 }
         }
       },
     },
@@ -1162,7 +1162,7 @@ export const spareTrousersJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
         if (st) {
-          st.metadata = { ...st.metadata, multBonus: 0 }
+          st.metadata = { ...st.metadata, multBonus: st.metadata?.multBonus ?? 0 }
         }
       },
     },
@@ -1430,7 +1430,7 @@ export const flashCardJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
         if (fc) {
-          fc.metadata = { ...fc.metadata, multBonus: 0 }
+          fc.metadata = { ...fc.metadata, multBonus: fc.metadata?.multBonus ?? 0 }
         }
       },
     },

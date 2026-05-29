@@ -4,6 +4,7 @@ import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+import type { BuyableCard } from '@/app/comet-cards/domain/shop/types'
 
 describe('Spare Trousers joker', () => {
   it('gains +2 Mult and applies it on first Two Pair hand', () => {
@@ -62,5 +63,30 @@ describe('Spare Trousers joker', () => {
     )
     expect(spareEvent).toBeDefined()
     expect((spareEvent as { value: number }).value).toBe(4)
+  })
+
+  it('does not reset accumulated multBonus when another joker is purchased (JOKER_ADDED)', () => {
+    const game: GameState = structuredClone(defaultGameState)
+    const spareTrousersInstance = initializeJoker(jokers.spareTrousersJoker, game)
+    // Simulate accumulated bonus from playing Two Pair hands
+    spareTrousersInstance.metadata = { multBonus: 6 }
+    game.jokers = [spareTrousersInstance]
+    game.rounds[game.roundIndex].smallBlind.status = 'inProgress'
+    game.gamePhase = 'gameplay'
+
+    // Buy a second joker — this triggers JOKER_ADDED which previously wiped the bonus
+    const abstractJokerInstance = initializeJoker(jokers.abstractJokerJoker, game)
+    const buyable: BuyableCard = {
+      type: 'jokerCard',
+      card: abstractJokerInstance,
+      price: jokers.abstractJokerJoker.price,
+    }
+    game.money = 999
+    game.shopState.cardsForSale = [buyable]
+    game.shopState.selectedCardId = abstractJokerInstance.id
+
+    const afterPurchase = reduceGame(game, { type: 'SHOP_BUY_CARD' })
+    const st = afterPurchase.jokers.find(j => j.jokerId === 'spareTrousersJoker')
+    expect(st?.metadata?.multBonus).toBe(6)
   })
 })
