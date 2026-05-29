@@ -28,6 +28,7 @@ class EventEmitter {
     JOKER_SELECTED: [],
     JOKER_DESELECTED: [],
     JOKER_SOLD: [],
+    JOKER_SWAP: [],
     ROUND_END: [],
     SHOP_OPEN: [],
     SHOP_SELECT_CARD: [],

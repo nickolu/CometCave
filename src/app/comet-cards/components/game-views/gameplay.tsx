@@ -390,6 +390,8 @@ export function GamePlayView() {
                   onClick={() => {
                     if (gamePlayState.selectedJokerId === joker.id) {
                       eventEmitter.emit({ type: 'JOKER_DESELECTED', id: joker.id })
+                    } else if (gamePlayState.selectedJokerId) {
+                      eventEmitter.emit({ type: 'JOKER_SWAP', fromId: gamePlayState.selectedJokerId, toId: joker.id })
                     } else {
                       eventEmitter.emit({ type: 'JOKER_SELECTED', id: joker.id })
                     }
@@ -399,7 +401,11 @@ export function GamePlayView() {
                     flexShrink: 0,
                     padding: '3px 8px',
                     borderRadius: 4,
-                    border: `1px solid ${gamePlayState.selectedJokerId === joker.id ? RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)' : 'rgba(94,234,212,0.2)'}`,
+                    border: gamePlayState.selectedJokerId === joker.id
+                      ? `1px solid ${RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)'}`
+                      : gamePlayState.selectedJokerId
+                        ? '1px dashed rgba(94,234,212,0.45)'
+                        : '1px solid rgba(94,234,212,0.2)',
                     background: gamePlayState.selectedJokerId === joker.id ? 'rgba(94,234,212,0.1)' : 'transparent',
                     color: RARITY_ACCENT[def.rarity] ?? 'var(--cc-mint)',
                     fontFamily: 'var(--cc-font-mono)',
@@ -975,6 +981,7 @@ export function GamePlayView() {
                       <Joker
                         joker={joker}
                         isSelected={gamePlayState.selectedJokerId === joker.id}
+                        isSwapTarget={!!gamePlayState.selectedJokerId && gamePlayState.selectedJokerId !== joker.id}
                         ownedCardCount={game.ownedCardIds.length}
                         gameSeed={game.gameSeed}
                         roundIndex={game.roundIndex}
@@ -982,6 +989,8 @@ export function GamePlayView() {
                         onClick={(isSelected, id) => {
                           if (isSelected) {
                             eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
+                          } else if (gamePlayState.selectedJokerId) {
+                            eventEmitter.emit({ type: 'JOKER_SWAP', fromId: gamePlayState.selectedJokerId, toId: id })
                           } else {
                             eventEmitter.emit({ type: 'JOKER_SELECTED', id })
                           }

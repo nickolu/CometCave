@@ -43,6 +43,7 @@ const CASTLE_SUITS = ['\u2665', '\u2666', '\u2663', '\u2660'] as const
 export const Joker = ({
   joker,
   isSelected,
+  isSwapTarget,
   onClick,
   ownedCardCount,
   gameSeed,
@@ -51,6 +52,7 @@ export const Joker = ({
 }: {
   joker: JokerState
   isSelected?: boolean
+  isSwapTarget?: boolean
   onClick?: (isSelected: boolean, id: string) => void
   ownedCardCount?: number
   gameSeed?: string
@@ -206,7 +208,14 @@ export const Joker = ({
   ].filter(Boolean).join(' ') || undefined
 
   return (
-    <div className={wrapperClass}>
+    <div
+      className={wrapperClass}
+      style={isSwapTarget ? {
+        borderRadius: 14,
+        outline: '2px dashed rgba(94,234,212,0.5)',
+        outlineOffset: 2,
+      } : undefined}
+    >
       <TokenCard
         title={def?.name ?? 'Unknown'}
         description={def?.description}
