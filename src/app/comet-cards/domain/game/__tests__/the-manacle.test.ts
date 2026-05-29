@@ -23,4 +23,22 @@ describe('The Manacle boss blind', () => {
     const after = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
     expect(after.handSizeModifier).toBe(1)
   })
+
+  it('restores handSizeModifier when boss blind is cleared', () => {
+    const game = setupGame()
+    game.handSizeModifier = 0
+    const afterSelect = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
+    expect(afterSelect.handSizeModifier).toBe(-1)
+    const afterClear = reduceGame(afterSelect, { type: 'BLIND_REWARDS_END' })
+    expect(afterClear.handSizeModifier).toBe(0)
+  })
+
+  it('restores handSizeModifier with non-zero base when boss blind is cleared', () => {
+    const game = setupGame()
+    game.handSizeModifier = 2
+    const afterSelect = reduceGame(game, { type: 'BOSS_BLIND_SELECTED' })
+    expect(afterSelect.handSizeModifier).toBe(1)
+    const afterClear = reduceGame(afterSelect, { type: 'BLIND_REWARDS_END' })
+    expect(afterClear.handSizeModifier).toBe(2)
+  })
 })

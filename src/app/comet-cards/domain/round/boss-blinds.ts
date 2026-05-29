@@ -71,11 +71,22 @@ const theNeedle: BossBlindDefinition = {
       priority: 1,
       condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
       apply: (ctx: EffectContext) => {
+        // Save original maxHands before overwriting so we can restore it on cleanup
+        if (ctx.bossBlind) {
+          if (!ctx.bossBlind.savedState) ctx.bossBlind.savedState = {}
+          ctx.bossBlind.savedState.maxHands = ctx.game.maxHands
+        }
         ctx.game.maxHands = 1
         ctx.game.gamePlayState.remainingHands = 1
       },
     },
   ],
+  onCleanup: (game) => {
+    const savedMaxHands = game.rounds[game.roundIndex]?.bossBlind?.savedState?.maxHands
+    if (typeof savedMaxHands === 'number') {
+      game.maxHands = savedMaxHands
+    }
+  },
 }
 
 const thePillar: BossBlindDefinition = {
@@ -282,6 +293,9 @@ const theManacle: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    game.handSizeModifier += 1
+  },
 }
 
 const theWater: BossBlindDefinition = {
@@ -577,6 +591,12 @@ const amberAcorn: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    // Restore all jokers to face up after the blind is cleared
+    for (const joker of game.jokers) {
+      joker.isFaceUp = true
+    }
+  },
 }
 
 const crimsonHeart: BossBlindDefinition = {
