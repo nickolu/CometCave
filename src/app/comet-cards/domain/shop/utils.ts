@@ -117,6 +117,7 @@ export function getRandomCelestialCards(
     min: 0,
     max: allCelestialCards.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allCelestialCards[index])
 }
@@ -128,6 +129,7 @@ export function getRandomTarotCards(numberOfCards: number, seed: string): TarotC
     min: 0,
     max: allTarotCards.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allTarotCards[index])
 }
@@ -142,6 +144,7 @@ export function getRandomPlayingCards(
     min: 0,
     max: allPlayingCards.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allPlayingCards[index])
 }
@@ -153,6 +156,7 @@ export function getRandomJokers(numberOfCards: number, seed: string, excludeIds:
     min: 0,
     max: allJokers.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allJokers[index])
 }
