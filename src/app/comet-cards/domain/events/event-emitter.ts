@@ -47,6 +47,7 @@ class EventEmitter {
     SHOP_USE_SPECTRAL_CARD_FROM_PACK: [],
     PACK_OPEN_SKIP: [],
     GIVE_UP: [],
+    SHOP_CLOSE_PACK: [],
     SHOP_BUY_AND_USE_CARD: [],
     SHOP_BUY_VOUCHER: [],
     SHOP_END: [],

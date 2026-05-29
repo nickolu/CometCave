@@ -62,6 +62,7 @@ export type GameEvent =
   | ShopUseSpectralCardFromPackEvent
   | PackOpenSkipEvent
   | GiveUpEvent
+  | ShopClosePackEvent
 
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
@@ -91,6 +92,9 @@ export type PackOpenSkipEvent = {
 }
 export type GiveUpEvent = {
   type: 'GIVE_UP'
+}
+export type ShopClosePackEvent = {
+  type: 'SHOP_CLOSE_PACK'
 }
 export type ShopBuyAndUseCardEvent = {
   type: 'SHOP_BUY_AND_USE_CARD'

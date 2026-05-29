@@ -10,6 +10,7 @@ import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { Button } from '@/components/ui/button'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useEffect } from 'react'
 
 const containerVariants = {
   hidden: {},
@@ -30,6 +31,18 @@ export function SpectralCardOpenBoosterPack() {
   const reducedMotion = useReducedMotion()
   const { game } = useGameState()
   const { containerRef, handleKeyDown } = useGridKeyboardNav()
+
+  const remainingCardsToSelect = game.shopState.openPackState?.remainingCardsToSelect
+
+  useEffect(() => {
+    if (remainingCardsToSelect === 0) {
+      const timer = setTimeout(() => {
+        eventEmitter.emit({ type: 'SHOP_CLOSE_PACK' })
+      }, 1200)
+      return () => clearTimeout(timer)
+    }
+  }, [remainingCardsToSelect])
+
   if (!game.shopState.openPackState) return <div>No pack open</div>
   const cardsForSale = game.shopState.openPackState.cards
 

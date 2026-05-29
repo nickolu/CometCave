@@ -253,6 +253,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, packSkipCtx, collectEffects(packSkipCtx.game))
         return
       }
+      case 'SHOP_CLOSE_PACK': {
+        draft.gamePhase = 'shop'
+        draft.shopState.openPackState = null
+        return
+      }
 
       /*
        * CONSUMABLE EVENTS
