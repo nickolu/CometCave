@@ -52,15 +52,28 @@ export function getRandomNumbersWithSeed({
   min,
   max,
   numberOfNumbers,
+  unique = false,
 }: {
   seed: string
   min: number
   max: number
   numberOfNumbers: number
+  unique?: boolean
 }) {
   const seedFn = xmur3(seed)
   const rng = mulberry32(seedFn())
-  return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
+  if (!unique) {
+    return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
+  }
+  // Unique selection: Fisher-Yates partial shuffle
+  const range = max - min + 1
+  const count = Math.min(numberOfNumbers, range)
+  const pool = Array.from({ length: range }, (_, i) => i + min)
+  for (let i = 0; i < count; i++) {
+    const j = i + Math.floor(rng() * (range - i))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, count)
 }
 
 export function getRandomWeightedNumberWithSeed({
