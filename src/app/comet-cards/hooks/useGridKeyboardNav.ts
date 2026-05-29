@@ -10,6 +10,7 @@ import { useCallback, useRef } from 'react'
  */
 export function useGridKeyboardNav(selector = 'button.bc-card') {
   const containerRef = useRef<HTMLDivElement>(null)
+  const focusedIndexRef = useRef(0)
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -43,10 +44,11 @@ export function useGridKeyboardNav(selector = 'button.bc-card') {
         }
       }
 
+      focusedIndexRef.current = nextIndex
       buttons[nextIndex]?.focus()
     },
     [selector]
   )
 
-  return { containerRef, handleKeyDown }
+  return { containerRef, handleKeyDown, focusedIndexRef }
 }

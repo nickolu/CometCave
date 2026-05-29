@@ -22,6 +22,7 @@ export function TokenCard({
   footer,
   typeLabel,
   edition,
+  tabIndex,
 }: {
   title: string
   description?: string
@@ -35,6 +36,7 @@ export function TokenCard({
   footer?: ReactNode
   typeLabel?: string
   edition?: string
+  tabIndex?: number
 }) {
   const dims = SIZES[size]
   const isInteractive = !!onClick && !disabled
@@ -61,6 +63,7 @@ export function TokenCard({
       aria-disabled={disabled}
       onClick={onClick}
       disabled={disabled}
+      tabIndex={tabIndex}
       className="bc-card flex flex-col"
       data-selected={selected ? 'true' : 'false'}
       style={{
