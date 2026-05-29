@@ -655,7 +655,7 @@ export const rocketJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const rk = ctx.game.jokers.find(j => j.jokerId === 'rocketJoker')
         if (rk) {
-          rk.metadata = { ...rk.metadata, payout: 1, lastBossRound: -1 }
+          rk.metadata = { ...rk.metadata, payout: rk.metadata?.payout ?? 1, lastBossRound: rk.metadata?.lastBossRound ?? -1 }
         }
       },
     },
@@ -673,7 +673,7 @@ export const rocketJoker: JokerDefinition = {
         const round = ctx.game.rounds[ctx.game.roundIndex]
         if (
           round &&
-          round.bossBlind.status === 'completed' &&
+          round.bossBlind.status === 'inProgress' &&
           rk.metadata.lastBossRound !== ctx.game.roundIndex
         ) {
           rk.metadata.payout += 2

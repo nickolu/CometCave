@@ -38,7 +38,7 @@ describe('Rocket joker', () => {
       ...started,
       rounds: started.rounds.map((round, i) =>
         i === started.roundIndex
-          ? { ...round, bossBlind: { ...round.bossBlind, status: 'completed' as const } }
+          ? { ...round, bossBlind: { ...round.bossBlind, status: 'inProgress' as const } }
           : round
       ),
     }
