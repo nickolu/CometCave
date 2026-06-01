@@ -37,6 +37,7 @@ import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 import { useJokerActivationSequence } from '@/app/comet-cards/hooks/useJokerActivationSequence'
+import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 
 const RARITY_ACCENT: Record<string, string> = {
   common: 'var(--cc-mint)',
@@ -142,6 +143,17 @@ export function GamePlayView() {
   const isPractice = todayRun !== null
 
   const { scoreHand } = useScoreHand()
+
+  const {
+    containerRef: jokerContainerRef,
+    handleKeyDown: jokerHandleKeyDown,
+    focusedIndexRef: jokerFocusedIndexRef,
+  } = useGridKeyboardNav()
+
+  const {
+    containerRef: mobileJokerContainerRef,
+    handleKeyDown: mobileJokerHandleKeyDown,
+  } = useGridKeyboardNav('button')
 
   useEffect(() => {
     eventEmitter.emit({ type: 'HAND_DEALT' })
@@ -375,6 +387,10 @@ export function GamePlayView() {
 
           {/* Compact jokers + consumables row */}
           <div
+            ref={mobileJokerContainerRef}
+            role="toolbar"
+            aria-label="Jokers"
+            onKeyDown={mobileJokerHandleKeyDown}
             style={{
               display: 'flex',
               overflowX: 'auto',
@@ -993,8 +1009,15 @@ export function GamePlayView() {
           {/* RIGHT rail */}
           <div className="flex flex-col gap-4" style={{ maxHeight: 'calc(100vh - 50px)', overflow: 'hidden' }}>
             <Panel title="Jokers" subtitle={`${game.jokers.length} / ${game.maxJokers} slots`}>
-              <div className="cc-scroll" style={{ padding: 14, display: 'flex', flexWrap: 'wrap', gap: 10, maxHeight: '45vh', overflowY: 'auto' }}>
-                {game.jokers.map(joker => {
+              <div
+                ref={jokerContainerRef}
+                role="toolbar"
+                aria-label="Jokers"
+                onKeyDown={jokerHandleKeyDown}
+                className="cc-scroll"
+                style={{ padding: 14, display: 'flex', flexWrap: 'wrap', gap: 10, maxHeight: '45vh', overflowY: 'auto' }}
+              >
+                {game.jokers.map((joker, i) => {
                   const def = jokerDefinitions[joker.jokerId]
                   const jokerName = def?.name ?? ''
                   const isJokerActive = activeJokerName === jokerName
@@ -1012,6 +1035,7 @@ export function GamePlayView() {
                         gameSeed={game.gameSeed}
                         roundIndex={game.roundIndex}
                         activated={isJokerActive}
+                        tabIndex={i === jokerFocusedIndexRef.current ? 0 : -1}
                         onClick={(isSelected, id) => {
                           if (isSelected) {
                             eventEmitter.emit({ type: 'JOKER_DESELECTED', id })

@@ -2,12 +2,19 @@ import { DangerButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Joker } from '@/app/comet-cards/components/gameplay/joker'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
+import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
 export const CurrentJokers = () => {
   const { game } = useGameState()
   const selectedJoker = game.jokers.find(joker => joker.id === game.gamePlayState.selectedJokerId)
   const selectedJokerDefinition = selectedJoker ? jokers[selectedJoker.jokerId] : undefined
+
+  const {
+    containerRef: jokerContainerRef,
+    handleKeyDown: jokerHandleKeyDown,
+    focusedIndexRef: jokerFocusedIndexRef,
+  } = useGridKeyboardNav()
 
   return (
     <div
@@ -19,7 +26,13 @@ export const CurrentJokers = () => {
       }}
     >
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-3">
+        <div
+          ref={jokerContainerRef}
+          role="toolbar"
+          aria-label="Jokers"
+          onKeyDown={jokerHandleKeyDown}
+          className="flex flex-wrap gap-3"
+        >
           {game.jokers.length === 0 ? (
             <div
               style={{
@@ -32,7 +45,7 @@ export const CurrentJokers = () => {
               Your joker slots are empty
             </div>
           ) : (
-            game.jokers.map(joker => (
+            game.jokers.map((joker, i) => (
               <Joker
                 key={joker.id}
                 joker={joker}
@@ -41,6 +54,7 @@ export const CurrentJokers = () => {
                 ownedCardCount={game.ownedCardIds.length}
                 gameSeed={game.gameSeed}
                 roundIndex={game.roundIndex}
+                tabIndex={i === jokerFocusedIndexRef.current ? 0 : -1}
                 onClick={(isSelected, id) => {
                   if (isSelected) {
                     eventEmitter.emit({ type: 'JOKER_DESELECTED', id })
