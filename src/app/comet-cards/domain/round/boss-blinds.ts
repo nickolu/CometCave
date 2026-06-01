@@ -216,6 +216,11 @@ const theMark: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const theMouth: BossBlindDefinition = {
@@ -393,6 +398,11 @@ const theWheel: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const theHead: BossBlindDefinition = {
@@ -520,6 +530,11 @@ const theHouse: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const theFish: BossBlindDefinition = {
@@ -545,6 +560,11 @@ const theFish: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const violetVessel: BossBlindDefinition = {
