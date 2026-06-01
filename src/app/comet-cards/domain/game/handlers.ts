@@ -62,6 +62,25 @@ function applyHandScoringEndEffects(
     vouchers: draft.vouchers,
     tags: draft.tags,
   }
+  // Steel enchantment: X1.5 Mult for each Steel card held in hand (not played)
+  const heldCardIds = draft.gamePlayState.handIds.filter(
+    id => !draft.gamePlayState.playedCardIds.includes(id)
+  )
+  for (const cardId of heldCardIds) {
+    const cardState = draft.cards[cardId]
+    if (!cardState) continue
+    if (cardState.flags.enchantment === 'steel') {
+      draft.gamePlayState.score.mult *= 1.5
+      draft.gamePlayState.scoringEvents.push({
+        id: uuid(),
+        type: 'mult',
+        operator: 'x',
+        value: 1.5,
+        source: 'Steel',
+      })
+    }
+  }
+
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
 
