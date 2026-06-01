@@ -4439,19 +4439,7 @@ export const astronomer: JokerDefinition = {
   name: 'Astronomer',
   description: 'All Planet cards and Celestial Packs in the shop are free',
   price: 8,
-  effects: [
-    {
-      event: { type: 'SHOP_OPEN' },
-      priority: 2,
-      apply: (ctx: EffectContext) => {
-        for (const card of ctx.game.shopState.cardsForSale) {
-          if (card.type === 'celestialCard') {
-            card.price = 0
-          }
-        }
-      },
-    },
-  ],
+  effects: [],
   rarity: 'uncommon',
 }
 
