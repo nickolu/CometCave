@@ -38,10 +38,13 @@ export function handleCardSelected(draft: GameState, event: CardSelectedEvent) {
 
   const selectedCardIds = [...gamePlayState.selectedCardIds, id]
   const selectedCards = getCards(draft as unknown as GameState, selectedCardIds)
-  const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
+  const visibleCards = selectedCards.filter(c => c.isFaceUp)
+  const selectedHandId = visibleCards.length > 0
+    ? findHighestPriorityHand(visibleCards, draft.staticRules).hand
+    : undefined
 
   gamePlayState.selectedCardIds = selectedCardIds
-  gamePlayState.selectedHand = [selectedHandId, selectedCards]
+  gamePlayState.selectedHand = selectedHandId ? [selectedHandId, selectedCards] : undefined
 }
 
 export function handleCardDeselected(draft: GameState, event: CardDeselectedEvent) {
@@ -54,8 +57,11 @@ export function handleCardDeselected(draft: GameState, event: CardDeselectedEven
 
   let selectedHand: [PokerHandDefinition['id'], PlayingCardState[]] | undefined = undefined
   if (selectedCards.length > 0) {
-    const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
-    selectedHand = [selectedHandId, selectedCards]
+    const visibleCards = selectedCards.filter(c => c.isFaceUp)
+    if (visibleCards.length > 0) {
+      const selectedHandId = findHighestPriorityHand(visibleCards, draft.staticRules).hand
+      selectedHand = [selectedHandId, selectedCards]
+    }
   }
 
   gamePlayState.selectedCardIds = selectedCardIds
