@@ -145,6 +145,15 @@ export const Joker = ({
         {castleSuit}{joker.counter > 0 ? ` +${joker.counter}` : ''}
       </span>
     )
+  } else if (joker.jokerId === 'mailInRebate' && gameSeed != null && roundIndex != null) {
+    const seed = buildSeedString([gameSeed, roundIndex.toString(), 'mailInRebate', 'target'])
+    const roll = getRandomNumbersWithSeed({ seed, min: 0, max: 12, numberOfNumbers: 1 })
+    const targetRank = IDOL_VALUES[roll[0]] ?? '?'
+    badge = (
+      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cc-gold)' }}>
+        {targetRank}
+      </span>
+    )
   } else if (joker.jokerId === 'theIdol') {
     const valueIdx = Math.floor(joker.counter / 4)
     const suitIdx = joker.counter % 4
