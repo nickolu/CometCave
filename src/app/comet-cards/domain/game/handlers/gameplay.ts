@@ -285,6 +285,13 @@ export function handleHandScoringStart(draft: GameState, event: GameEvent) {
   gamePlayState.cardsToScore = cardsToScore
   gamePlayState.playedCardIds = gamePlayState.selectedCardIds
 
+  // Reveal face-down cards when played
+  for (const cardId of gamePlayState.playedCardIds) {
+    if (draft.cards[cardId] && !draft.cards[cardId].isFaceUp) {
+      draft.cards[cardId].isFaceUp = true
+    }
+  }
+
   // Accumulate cards played this ante only during small/big blinds (for The Pillar)
   const currentBlindForTracking = getInProgressBlind(draft as unknown as GameState)
   if (currentBlindForTracking && currentBlindForTracking.type !== 'bossBlind') {
