@@ -44,7 +44,12 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
   const { game } = useGameState()
   const cardType = pack.cards[0].type
   const packDefinition = getPackDefinition(cardType, pack.rarity)
-  const discountedPrice = Math.floor(packDefinition.price * game.shopState.priceMultiplier)
+  const isCelestialPack = packDefinition.cardType === 'celestialCard'
+  const hasAstronomer = game.jokers.some(j => j.jokerId === 'astronomer')
+  const discountedPrice =
+    isCelestialPack && hasAstronomer
+      ? 0
+      : Math.floor(packDefinition.price * game.shopState.priceMultiplier)
   const canAffordPack = canAffordToBuy(discountedPrice, game)
   return (
     <div className="flex flex-col items-stretch gap-2">

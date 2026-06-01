@@ -81,6 +81,16 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
     draft.shopState.cardsForSale.push(...additionalCards)
   }
 
+  // Astronomer joker: make all celestial cards free
+  const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
+  if (hasAstronomer) {
+    for (const card of draft.shopState.cardsForSale) {
+      if (card.type === 'celestialCard') {
+        card.price = 0
+      }
+    }
+  }
+
   // Coupon tag: make all initial items free
   const couponTag = draft.tags.find(t => t.tagType === 'coupon')
   if (couponTag) {
@@ -304,6 +314,15 @@ export function handleShopReroll(draft: GameState) {
     draft.shopState.maxCardsForSale,
     randomBuyableCardsSeed
   )
+  // Astronomer joker: make all celestial cards free after reroll
+  const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
+  if (hasAstronomer) {
+    for (const card of draft.shopState.cardsForSale) {
+      if (card.type === 'celestialCard') {
+        card.price = 0
+      }
+    }
+  }
   if (draft.shopState.freeRerolls > 0) {
     draft.shopState.freeRerolls -= 1
   } else {
@@ -317,7 +336,12 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
   if (!pack) return
   const packDefinition = getPackDefinition(pack.cards[0].type, pack.rarity)
   if (!pack) return
-  draft.money -= Math.floor(packDefinition.price * draft.shopState.priceMultiplier)
+  // Astronomer joker: celestial packs are free
+  const isCelestialPack = packDefinition.cardType === 'celestialCard'
+  const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
+  if (!(isCelestialPack && hasAstronomer)) {
+    draft.money -= Math.floor(packDefinition.price * draft.shopState.priceMultiplier)
+  }
   draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
   draft.gamePhase = 'packOpening'
   draft.shopState.openPackState = pack
