@@ -1,10 +1,56 @@
 'use client'
 
+import * as Tooltip from '@radix-ui/react-tooltip'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 import type {
   PlayingCardFlags,
   PlayingCardState,
 } from '@/app/comet-cards/domain/playing-card/types'
+
+function getCardTooltipLines(card: PlayingCardState): string[] {
+  const lines: string[] = []
+  const def = playingCards[card.playingCardId]
+  if (def) lines.push(`${def.baseChips} chips`)
+
+  const enchantmentInfo: Record<string, string> = {
+    bonus: 'Bonus: +30 chips',
+    mult: 'Mult: +5 mult',
+    gold: 'Gold: +$3 held in hand',
+    glass: 'Glass: X2 mult, may shatter',
+    lucky: 'Lucky: 1/5 for +20 mult, 1/15 for +$20',
+    steel: 'Steel: X1.5 mult held in hand',
+    stone: 'Stone: +50 chips, no rank',
+    wild: 'Wild: counts as any suit',
+  }
+  if (card.flags.enchantment !== 'none' && enchantmentInfo[card.flags.enchantment]) {
+    lines.push(enchantmentInfo[card.flags.enchantment])
+  }
+
+  const editionInfo: Record<string, string> = {
+    foil: 'Foil: +50 chips',
+    holographic: 'Holographic: +10 mult',
+    polychrome: 'Polychrome: X1.5 mult',
+  }
+  if (card.flags.edition !== 'normal' && editionInfo[card.flags.edition]) {
+    lines.push(editionInfo[card.flags.edition])
+  }
+
+  const sealInfo: Record<string, string> = {
+    gold: 'Gold Seal: +$3 when scored',
+    red: 'Red Seal: retrigger this card',
+    blue: 'Blue Seal: planet card on win',
+    purple: 'Purple Seal: tarot card on discard',
+  }
+  if (card.flags.seal !== 'none' && sealInfo[card.flags.seal]) {
+    lines.push(sealInfo[card.flags.seal])
+  }
+
+  if (card.bonusChips > 0) {
+    lines.push(`+${card.bonusChips} bonus chips`)
+  }
+
+  return lines
+}
 
 const SUIT_GLYPH: Record<string, string> = {
   hearts: '♥',
@@ -139,7 +185,10 @@ export function BrandCard({
     )
   }
 
-  return (
+  const tooltipLines = getCardTooltipLines(card)
+  const hasModifiers = tooltipLines.length > 1
+
+  const cardButton = (
     <button
       type="button"
       aria-label={label}
@@ -330,4 +379,42 @@ export function BrandCard({
       )}
     </button>
   )
+
+  if (hasModifiers) {
+    return (
+      <Tooltip.Provider delayDuration={200}>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            {cardButton}
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              side="top"
+              sideOffset={8}
+              style={{
+                background: 'var(--cc-card-bg, #1a1a2e)',
+                border: '1px solid var(--cc-card-border, #2a2a4a)',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: 11,
+                fontFamily: 'var(--cc-font-mono)',
+                color: 'var(--cc-text-default, #e0e0e0)',
+                maxWidth: 200,
+                zIndex: 9999,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                lineHeight: 1.5,
+              }}
+            >
+              {tooltipLines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+              <Tooltip.Arrow style={{ fill: 'var(--cc-card-bg, #1a1a2e)' }} />
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
+    )
+  }
+
+  return cardButton
 }
