@@ -30,6 +30,7 @@ import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
 import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
 import { pokerHands } from '@/app/comet-cards/domain/hand/hands'
 import { jokers as jokerDefinitions } from '@/app/comet-cards/domain/joker/jokers'
+import { getCopyJokerDescription } from '@/app/comet-cards/domain/joker/copy-joker-description'
 import { getScoringCards } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { useCometCardsStore } from '@/app/comet-cards/store'
@@ -1029,6 +1030,7 @@ export function GamePlayView() {
                     >
                       <Joker
                         joker={joker}
+                        description={getCopyJokerDescription(joker.jokerId, i, game.jokers)}
                         isSelected={gamePlayState.selectedJokerId === joker.id}
                         isSwapTarget={!!gamePlayState.selectedJokerId && gamePlayState.selectedJokerId !== joker.id}
                         ownedCardCount={game.ownedCardIds.length}

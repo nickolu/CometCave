@@ -50,6 +50,7 @@ export const Joker = ({
   roundIndex,
   activated,
   tabIndex,
+  description,
 }: {
   joker: JokerState
   isSelected?: boolean
@@ -60,6 +61,7 @@ export const Joker = ({
   roundIndex?: number
   activated?: boolean
   tabIndex?: number
+  description?: string
 }) => {
   const def = jokers[joker.jokerId]
   const accent = RARITY_ACCENT[def?.rarity ?? 'common'] ?? 'var(--cc-mint)'
@@ -229,7 +231,7 @@ export const Joker = ({
     >
       <TokenCard
         title={def?.name ?? 'Unknown'}
-        description={def?.description}
+        description={description ?? def?.description}
         glyph="✺"
         accent={accent}
         selected={isSelected}
