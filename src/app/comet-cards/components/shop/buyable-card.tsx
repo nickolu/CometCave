@@ -24,9 +24,11 @@ function handleCardSelection(isSelected: boolean, id: string) {
 export function BuyableCard({
   buyableCard,
   isSelected,
+  tabIndex,
 }: {
   buyableCard: BuyableCard
   isSelected: boolean
+  tabIndex?: number
 }) {
   if (isCelestialCardState(buyableCard.card)) {
     return (
@@ -34,6 +36,7 @@ export function BuyableCard({
         celestialCard={buyableCard.card}
         isSelected={isSelected}
         onClick={handleCardSelection}
+        tabIndex={tabIndex}
       />
     )
   }
@@ -43,11 +46,12 @@ export function BuyableCard({
         tarotCard={buyableCard.card}
         isSelected={isSelected}
         onClick={handleCardSelection}
+        tabIndex={tabIndex}
       />
     )
   }
   if (isJokerState(buyableCard.card)) {
-    return <Joker joker={buyableCard.card} isSelected={isSelected} onClick={handleCardSelection} />
+    return <Joker joker={buyableCard.card} isSelected={isSelected} onClick={handleCardSelection} tabIndex={tabIndex} />
   }
   if (isPlayingCardState(buyableCard.card)) {
     return (
@@ -55,6 +59,7 @@ export function BuyableCard({
         playingCard={buyableCard.card}
         isSelected={isSelected}
         onClick={handleCardSelection}
+        tabIndex={tabIndex}
       />
     )
   }
@@ -64,6 +69,7 @@ export function BuyableCard({
         spectralCard={buyableCard.card}
         isSelected={isSelected}
         onClick={handleCardSelection}
+        tabIndex={tabIndex}
       />
     )
   }

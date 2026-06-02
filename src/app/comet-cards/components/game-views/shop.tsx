@@ -34,7 +34,7 @@ export function ShopView() {
   const { game } = useGameState()
   const reducedMotion = useReducedMotion()
   const autoFocusRef = useAutoFocus()
-  const { containerRef: cardsForSaleRef, handleKeyDown: handleCardsKeyDown } = useGridKeyboardNav()
+  const { containerRef: cardsForSaleRef, handleKeyDown: handleCardsKeyDown, focusedIndexRef: cardsFocusedRef } = useGridKeyboardNav()
   useEffect(() => {
     if (!game.shopState.isOpen) {
       eventEmitter.emit({ type: 'SHOP_OPEN' })
@@ -133,6 +133,7 @@ export function ShopView() {
                         <BuyableCard
                           buyableCard={buyableCard}
                           isSelected={game.shopState.selectedCardId === buyableCard.card.id}
+                          tabIndex={i === cardsFocusedRef.current ? 0 : -1}
                         />
                         <span
                           style={{
