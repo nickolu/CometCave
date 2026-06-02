@@ -4,6 +4,7 @@ import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useGameState } from '@/app/comet-cards/useGameState'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
 export const CurrentJokers = () => {
   const { game } = useGameState()
@@ -71,7 +72,7 @@ export const CurrentJokers = () => {
         {selectedJokerDefinition && (
           <div>
             <DangerButton onClick={() => eventEmitter.emit({ type: 'JOKER_SOLD' })}>
-              Sell · ${selectedJokerDefinition.price}
+              Sell · ${getJokerSellValue(selectedJokerDefinition, selectedJoker!)}
             </DangerButton>
           </div>
         )}
