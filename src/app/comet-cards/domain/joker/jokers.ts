@@ -723,7 +723,7 @@ export const dietColaJoker: JokerDefinition = {
       event: { type: 'JOKER_SOLD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        if (!ctx.game.jokers.some(j => j.jokerId === 'dietColaJoker')) {
+        if (ctx.removedJoker?.jokerId === 'dietColaJoker') {
           ctx.game.tags.push({
             id: uuid(),
             tagType: 'double',
