@@ -260,6 +260,7 @@ export interface EffectContext {
   scoredCards?: PlayingCardState[]
   tarotCards?: TarotCardState[]
   vouchers: VoucherState[]
+  removedJoker?: JokerState
 }
 
 export interface Effect {

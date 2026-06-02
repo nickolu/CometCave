@@ -152,6 +152,7 @@ export function removeJoker(draft: GameState, event: GameEvent, selectedJoker: J
     vouchers: draft.vouchers,
     tags: draft.tags,
   }
+  ctx.removedJoker = selectedJoker
   // Collect effects *before* removing the joker so "on sold/removed" effects that live on the
   // removed joker itself still get a chance to run. Then dispatch *after* removal so effects
   // can observe the post-removal game state.
