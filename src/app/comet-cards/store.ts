@@ -5,10 +5,25 @@ import { persist } from 'zustand/middleware'
 
 import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 import type { GamePhase, GameState } from '@/app/comet-cards/domain/game/types'
-import { getCurrentDayAsSeedString } from '@/app/comet-cards/domain/randomness'
+import { getCurrentDayAsSeedStringPST } from '@/app/comet-cards/domain/randomness'
 
 import { defaultGameState } from './domain/game/default-game-state'
 import { reduceGame } from './domain/game/reduce-game'
+
+interface StaleSessionData {
+  gameSeed: string
+  totalScore: bigint
+  handsPlayed: number
+  roundIndex: number
+}
+
+let _pendingStaleSession: StaleSessionData | null = null
+
+export function consumePendingStaleSession(): StaleSessionData | null {
+  const data = _pendingStaleSession
+  _pendingStaleSession = null
+  return data
+}
 
 export interface CometCardsStore {
   game: GameState
@@ -80,9 +95,19 @@ export const useCometCardsStore = create<CometCardsStore>()(
         const persistedState = persisted as { game?: GameState }
         if (!persistedState.game) return current
 
-        // If the persisted seed doesn't match today, start fresh
-        const todaySeed = getCurrentDayAsSeedString()
+        // If the persisted seed doesn't match today (PST), the session is stale
+        const todaySeed = getCurrentDayAsSeedStringPST()
         if (persistedState.game.gameSeed !== todaySeed) {
+          // If the player was mid-game, capture the session for score recording
+          const phase = persistedState.game.gamePhase
+          if (phase !== 'mainMenu' && phase !== 'gameOver') {
+            _pendingStaleSession = {
+              gameSeed: persistedState.game.gameSeed,
+              totalScore: persistedState.game.totalScore,
+              handsPlayed: persistedState.game.handsPlayed,
+              roundIndex: persistedState.game.roundIndex,
+            }
+          }
           return current
         }
 

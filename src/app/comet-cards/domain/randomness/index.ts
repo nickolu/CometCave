@@ -125,6 +125,16 @@ export function getCurrentDayAsSeedString() {
   return new Date().toISOString().split('T')[0]
 }
 
+export function getCurrentDayAsSeedStringPST() {
+  const now = new Date()
+  const pstString = now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })
+  const pstDate = new Date(pstString)
+  const y = pstDate.getFullYear()
+  const m = String(pstDate.getMonth() + 1).padStart(2, '0')
+  const d = String(pstDate.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export function buildSeedString(strings: string[]) {
   return strings.join('-')
 }

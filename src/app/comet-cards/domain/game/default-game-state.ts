@@ -17,14 +17,14 @@ import {
   twoPairHand,
 } from '@/app/comet-cards/domain/hand/hands'
 import { initializeHand } from '@/app/comet-cards/domain/hand/utils'
-import { getCurrentDayAsSeedString } from '@/app/comet-cards/domain/randomness'
+import { getCurrentDayAsSeedStringPST } from '@/app/comet-cards/domain/randomness'
 import { initializeRounds } from '@/app/comet-cards/domain/round/rounds'
 import { generateStartingTarotCards } from '@/app/comet-cards/domain/decks/deck-consumables'
 import { applyStartingVouchers } from '@/app/comet-cards/domain/voucher/deck-vouchers'
 
 import { GameState } from './types'
 
-const gameSeed = getCurrentDayAsSeedString()
+const gameSeed = getCurrentDayAsSeedStringPST()
 
 const gameState: GameState = {
   allowedJokerFlags: [],

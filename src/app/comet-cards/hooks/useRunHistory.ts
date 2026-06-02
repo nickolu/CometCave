@@ -2,6 +2,8 @@
 
 import { useCallback, useSyncExternalStore } from 'react'
 
+import { getTodayPST } from '@/lib/dates'
+
 export interface RunSummary {
   seed: string
   date: string           // ISO date string (YYYY-MM-DD)
@@ -66,7 +68,7 @@ function emitChange() {
 export function useRunHistory() {
   const history = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
-  const today = typeof window !== 'undefined' ? new Date().toISOString().split('T')[0] : ''
+  const today = typeof window !== 'undefined' ? getTodayPST() : ''
   const todayRun = history.runs.find(r => r.date === today) ?? null
 
   const addRun = useCallback((run: RunSummary) => {
