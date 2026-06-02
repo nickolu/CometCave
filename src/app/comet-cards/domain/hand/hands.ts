@@ -110,9 +110,9 @@ export const fiveOfAKindHand: PokerHandDefinition = {
   id: 'fiveOfAKind',
   baseChips: 120,
   baseMult: 12,
-  chipIncreasePerLevel: 40, // TODO: Add correct value
+  chipIncreasePerLevel: 35,
   isSecret: true,
-  multIncreasePerLevel: 3, // TODO: Add correct value
+  multIncreasePerLevel: 3,
   name: 'Five of a Kind',
 }
 
