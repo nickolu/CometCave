@@ -2,6 +2,7 @@ import { DangerButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Joker } from '@/app/comet-cards/components/gameplay/joker'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
+import { getCopyJokerDescription } from '@/app/comet-cards/domain/joker/copy-joker-description'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
@@ -50,6 +51,7 @@ export const CurrentJokers = () => {
               <Joker
                 key={joker.id}
                 joker={joker}
+                description={getCopyJokerDescription(joker.jokerId, i, game.jokers)}
                 isSelected={game.gamePlayState.selectedJokerId === joker.id}
                 isSwapTarget={!!game.gamePlayState.selectedJokerId && game.gamePlayState.selectedJokerId !== joker.id}
                 ownedCardCount={game.ownedCardIds.length}
