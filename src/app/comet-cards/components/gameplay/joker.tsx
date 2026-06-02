@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { TokenCard } from '@/app/comet-cards/components/cosmic/token-card'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
+import { JOKER_EFFECT_TYPES } from '@/app/comet-cards/domain/joker/joker-effect-types'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
 import { buildSeedString, getRandomNumbersWithSeed } from '@/app/comet-cards/domain/randomness'
 
@@ -31,6 +32,13 @@ const IDOL_SUITS = ['\u2665','\u2666','\u2663','\u2660'] as const
 const IDOL_SUIT_COLORS: Record<string, string> = { '\u2665': 'var(--cc-pink)', '\u2666': 'var(--cc-pink)', '\u2663': 'var(--cc-text-default)', '\u2660': 'var(--cc-text-default)' }
 
 const TRIGGERED_JOKERS = new Set(['photograph', 'hangingChad', 'burntJoker', 'tradingCard'])
+
+const EFFECT_BADGE_CONFIG: Record<string, { label: string; color: string }> = {
+  additiveMult: { label: '+M', color: 'var(--cc-pink)' },
+  additiveChips: { label: '+C', color: 'var(--cc-mint)' },
+  multiplicativeMult: { label: '×M', color: 'var(--cc-gold)' },
+  retrigger: { label: '⟲', color: '#b388ff' },
+}
 
 const POKER_HAND_LABELS = [
   'High Card', 'Pair', 'Two Pair', '3 of a Kind', 'Straight',
@@ -216,6 +224,20 @@ export const Joker = ({
     )
   }
 
+  const effectType = JOKER_EFFECT_TYPES[joker.jokerId]
+  const effectConfig = effectType ? EFFECT_BADGE_CONFIG[effectType] : undefined
+  const typeBadge = effectConfig ? (
+    <span style={{
+      fontSize: 8,
+      fontWeight: 700,
+      letterSpacing: 0.5,
+      color: effectConfig.color,
+      opacity: 0.6,
+    }}>
+      {effectConfig.label}
+    </span>
+  ) : undefined
+
   const wrapperClass = [
     activated ? 'joker-activated' : undefined,
   ].filter(Boolean).join(' ') || undefined
@@ -241,6 +263,7 @@ export const Joker = ({
         edition={joker.edition}
         onClick={onClick ? () => onClick(isSelected ?? false, joker.id) : undefined}
         tabIndex={tabIndex}
+        typeBadge={typeBadge}
       />
     </div>
   )
