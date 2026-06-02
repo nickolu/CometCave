@@ -30,7 +30,7 @@ const itemVariants = {
 export function TarotCardOpenBoosterPack() {
   const reducedMotion = useReducedMotion()
   const { game } = useGameState()
-  const { containerRef, handleKeyDown } = useGridKeyboardNav()
+  const { containerRef, handleKeyDown, focusedIndexRef } = useGridKeyboardNav()
 
   const remainingCardsToSelect = game.shopState.openPackState?.remainingCardsToSelect
 
@@ -72,12 +72,13 @@ export function TarotCardOpenBoosterPack() {
             animate="visible"
             onKeyDown={handleKeyDown}
           >
-            {cardsForSale.map(buyableCard => (
+            {cardsForSale.map((buyableCard, i) => (
               <motion.div key={buyableCard.card.id} variants={itemVariants} className="flex flex-col gap-2">
                 <BuyableCard
                   key={buyableCard.card.id}
                   buyableCard={buyableCard}
                   isSelected={game.shopState.selectedCardId === buyableCard.card.id}
+                  tabIndex={i === focusedIndexRef.current ? 0 : -1}
                 />
                 {game.shopState.selectedCardId === buyableCard.card.id && (
                   <Button

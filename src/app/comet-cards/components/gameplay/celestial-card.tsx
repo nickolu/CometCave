@@ -6,10 +6,12 @@ export const CelestialCard = ({
   celestialCard,
   isSelected,
   onClick,
+  tabIndex,
 }: {
   celestialCard: CelestialCardState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
+  tabIndex?: number
 }) => {
   const def = celestialCards[celestialCard.handId]
   return (
@@ -23,6 +25,7 @@ export const CelestialCard = ({
       typeLabel="Celestial"
       edition={celestialCard.edition}
       onClick={onClick ? () => onClick(isSelected ?? false, celestialCard.id) : undefined}
+      tabIndex={tabIndex}
     />
   )
 }

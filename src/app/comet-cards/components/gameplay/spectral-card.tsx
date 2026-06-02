@@ -6,10 +6,12 @@ export const SpectralCard = ({
   spectralCard,
   isSelected,
   onClick,
+  tabIndex,
 }: {
   spectralCard: SpectralCardState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
+  tabIndex?: number
 }) => {
   const def = spectralCards[spectralCard.spectralType]
   if (!def) {
@@ -21,6 +23,7 @@ export const SpectralCard = ({
         accent="var(--cc-mint)"
         size="sm"
         disabled
+        tabIndex={tabIndex}
       />
     )
   }
@@ -34,6 +37,7 @@ export const SpectralCard = ({
       size="sm"
       typeLabel="Spectral"
       onClick={onClick ? () => onClick(isSelected ?? false, spectralCard.id) : undefined}
+      tabIndex={tabIndex}
     />
   )
 }

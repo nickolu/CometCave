@@ -6,10 +6,12 @@ export const TarotCard = ({
   tarotCard,
   isSelected,
   onClick,
+  tabIndex,
 }: {
   tarotCard: TarotCardState
   isSelected?: boolean
   onClick?: (isSelected: boolean, id: string) => void
+  tabIndex?: number
 }) => {
   const def = tarotCards[tarotCard.tarotType]
   return (
@@ -23,6 +25,7 @@ export const TarotCard = ({
       typeLabel="Tarot"
       edition={tarotCard.edition}
       onClick={onClick ? () => onClick(isSelected ?? false, tarotCard.id) : undefined}
+      tabIndex={tabIndex}
     />
   )
 }
