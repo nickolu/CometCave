@@ -23,6 +23,7 @@ export function TokenCard({
   typeLabel,
   edition,
   tabIndex,
+  typeBadge,
 }: {
   title: string
   description?: string
@@ -37,6 +38,7 @@ export function TokenCard({
   typeLabel?: string
   edition?: string
   tabIndex?: number
+  typeBadge?: ReactNode
 }) {
   const dims = SIZES[size]
   const isInteractive = !!onClick && !disabled
@@ -140,6 +142,20 @@ export function TokenCard({
           }}
         >
           {typeLabel}
+        </div>
+      )}
+
+      {typeBadge && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            bottom: 6,
+            left: 8,
+            zIndex: 2,
+          }}
+        >
+          {typeBadge}
         </div>
       )}
 
