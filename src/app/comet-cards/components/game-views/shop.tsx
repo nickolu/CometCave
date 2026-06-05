@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { motion, useReducedMotion } from 'framer-motion'
 
@@ -25,7 +25,10 @@ import { VOUCHER_PRICE } from '@/app/comet-cards/domain/voucher/constants'
 import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
+import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 import { useGameState } from '@/app/comet-cards/useGameState'
+
+import { Modal } from '@/app/comet-cards/components/ui/modal'
 
 import { ViewTemplate } from './view-template'
 
@@ -35,6 +38,9 @@ export function ShopView() {
   const reducedMotion = useReducedMotion()
   const autoFocusRef = useAutoFocus()
   const { containerRef: cardsForSaleRef, handleKeyDown: handleCardsKeyDown, focusedIndexRef: cardsFocusedRef } = useGridKeyboardNav()
+  const [showGiveUpModal, setShowGiveUpModal] = useState(false)
+  const { todayRun } = useRunHistory()
+  const isPractice = todayRun !== null
   useEffect(() => {
     if (!game.shopState.isOpen) {
       eventEmitter.emit({ type: 'SHOP_OPEN' })
@@ -51,7 +57,13 @@ export function ShopView() {
   const rerollPrice = game.shopState.baseRerollPrice + game.shopState.rerollsUsed
 
   return (
+    <>
     <ViewTemplate
+      topBarAction={
+        <GhostButton onClick={() => setShowGiveUpModal(true)} style={{ fontSize: 10, opacity: 0.6 }}>
+          {isPractice ? 'Restart' : 'Give Up'}
+        </GhostButton>
+      }
       sidebarContentBottom={
         isLandscape ? (
           <div className="flex items-center justify-center" style={{ gap: 8 }}>
@@ -218,6 +230,34 @@ export function ShopView() {
         </Panel>
       </div>
     </ViewTemplate>
+    {showGiveUpModal && (
+      <Modal
+        eyebrow={isPractice ? 'Practice Run' : 'End Run'}
+        title={isPractice ? 'Restart?' : 'Give up?'}
+        onClose={() => setShowGiveUpModal(false)}
+      >
+        <div style={{ padding: '16px 20px', fontFamily: 'var(--cc-font-mono)', fontSize: 12 }}>
+          <p style={{ opacity: 0.7, marginBottom: 16 }}>
+            {isPractice
+              ? "Start over from round 1. Practice runs don't record scores."
+              : `Your current score of ${game.totalScore.toString()} will be your final score for today.`}
+          </p>
+          <div className="flex items-center justify-end gap-3">
+            <GhostButton onClick={() => setShowGiveUpModal(false)}>Cancel</GhostButton>
+            {isPractice ? (
+              <PrimaryButton onClick={() => eventEmitter.emit({ type: 'GAME_START' })}>
+                Restart
+              </PrimaryButton>
+            ) : (
+              <DangerButton onClick={() => eventEmitter.emit({ type: 'GIVE_UP' })}>
+                Give Up
+              </DangerButton>
+            )}
+          </div>
+        </div>
+      </Modal>
+    )}
+    </>
   )
 }
 
