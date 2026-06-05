@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 
 import { CurrentConsumables } from '@/app/comet-cards/components/consumables/current-consumables'
+import { Tag } from '@/app/comet-cards/components/gameplay/tag'
 import {
   DangerButton,
   GhostButton,
@@ -212,6 +213,16 @@ export function ShopView() {
             {game.consumables.length > 0 && (
               <SectionHeader label="Your Consumables">
                 <CurrentConsumables />
+              </SectionHeader>
+            )}
+
+            {game.tags.length > 0 && (
+              <SectionHeader label={`Active Tags (${game.tags.length})`}>
+                <div className="flex flex-wrap" style={{ gap: 8 }}>
+                  {game.tags.map(tag => (
+                    <Tag key={tag.id} tag={tag} />
+                  ))}
+                </div>
               </SectionHeader>
             )}
           </div>
