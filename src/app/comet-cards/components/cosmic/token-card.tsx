@@ -159,6 +159,33 @@ export function TokenCard({
         </div>
       )}
 
+      {edition && edition !== 'normal' && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            textAlign: 'center',
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 9,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            background: 'rgba(0,0,0,0.45)',
+            color: edition === 'negative' ? '#b0b0c0' :
+                   edition === 'foil' ? '#c8dcff' :
+                   edition === 'holographic' ? '#ffaaff' :
+                   edition === 'polychrome' ? '#aaffcc' :
+                   'var(--cc-text-default)',
+            padding: '3px 0',
+            zIndex: 3,
+            borderRadius: '0 0 11px 11px',
+          }}
+        >
+          {edition}
+        </div>
+      )}
+
       <div
         className="flex items-center justify-center"
         style={{
