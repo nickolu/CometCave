@@ -4276,6 +4276,8 @@ export const invisibleJoker: JokerDefinition = {
         // This effect fires after Invisible Joker is removed from the array.
         // If it's gone, it was the one sold. Duplicate a random other joker.
         if (ctx.game.jokers.some(j => j.jokerId === 'invisibleJoker')) return
+        // Only duplicate after charging for 2 rounds
+        if (!ctx.removedJoker || ctx.removedJoker.counter < 2) return
         if (ctx.game.jokers.length === 0) return
         if (ctx.game.jokers.length >= ctx.game.maxJokers) return
         const seed = buildSeedString([
