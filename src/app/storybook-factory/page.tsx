@@ -62,9 +62,20 @@ export default function StorybookFactory() {
             isGenerating={state.isGenerating}
             generationError={state.generationError}
             generateStory={state.generateStory}
+            illustrationUrls={state.illustrationUrls}
+            isGeneratingIllustrations={state.isGeneratingIllustrations}
+            illustrationProgress={state.illustrationProgress}
+            illustrationError={state.illustrationError}
+            generateIllustrations={state.generateIllustrations}
           />
         )}
-        {currentStep === 3 && <Step04ReviewAndRevise onPrevious={previousStep} />}
+        {currentStep === 3 && (
+          <Step04ReviewAndRevise
+            onPrevious={previousStep}
+            generatedStory={state.generatedStory}
+            illustrationUrls={state.illustrationUrls}
+          />
+        )}
       </div>
     </div>
   )

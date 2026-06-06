@@ -54,6 +54,13 @@ export interface StorybookFactoryState {
   isGenerating: boolean
   generationError: string | null
   generateStory: () => Promise<void>
+
+  // Illustration generation
+  illustrationUrls: Record<string, string> // key: "page-{pageNum}-panel-{panelIdx}", value: URL
+  isGeneratingIllustrations: boolean
+  illustrationProgress: { completed: number; total: number }
+  illustrationError: string | null
+  generateIllustrations: () => Promise<void>
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -95,6 +102,12 @@ export function useStorybookFactoryState(): StorybookFactoryState {
   const [generatedStory, setGeneratedStory] = useState<GeneratedStory | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
+
+  // Illustration generation state
+  const [illustrationUrls, setIllustrationUrls] = useState<Record<string, string>>({})
+  const [isGeneratingIllustrations, setIsGeneratingIllustrations] = useState(false)
+  const [illustrationProgress, setIllustrationProgress] = useState({ completed: 0, total: 0 })
+  const [illustrationError, setIllustrationError] = useState<string | null>(null)
 
   const setImage1 = (file: File) => {
     const validationError = validateImageFile(file)
@@ -222,6 +235,58 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     }
   }
 
+  const generateIllustrations = async () => {
+    if (!generatedStory) return
+
+    const illustrationPanels: Array<{ key: string; prompt: string }> = []
+    for (const page of generatedStory.layout.pages) {
+      page.panels.forEach((panel, panelIdx) => {
+        if (panel.type === 'illustration') {
+          illustrationPanels.push({
+            key: `page-${page.pageNumber}-panel-${panelIdx}`,
+            prompt: panel.content,
+          })
+        }
+      })
+    }
+
+    if (illustrationPanels.length === 0) return
+
+    setIsGeneratingIllustrations(true)
+    setIllustrationError(null)
+    setIllustrationProgress({ completed: 0, total: illustrationPanels.length })
+
+    const storyContext = `A ${generatedStory.layout.type} story called "${generatedStory.layout.title}"`
+
+    for (const { key, prompt } of illustrationPanels) {
+      try {
+        const response = await fetch('/api/v1/storybook-factory/generate-illustration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            artStyle: storyConfig.artStyle,
+            storyContext,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setIllustrationUrls(prev => ({ ...prev, [key]: data.imageUrl }))
+        } else {
+          console.error(`Failed to generate illustration for ${key}: HTTP ${response.status}`)
+        }
+      } catch (err) {
+        console.error(`Failed to generate illustration for ${key}:`, err)
+        // Continue with remaining panels even on individual failure
+      }
+
+      setIllustrationProgress(prev => ({ ...prev, completed: prev.completed + 1 }))
+    }
+
+    setIsGeneratingIllustrations(false)
+  }
+
   const canProceedFromUpload = image1Base64 !== null && image2Base64 !== null
 
   return {
@@ -251,5 +316,10 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     isGenerating,
     generationError,
     generateStory,
+    illustrationUrls,
+    isGeneratingIllustrations,
+    illustrationProgress,
+    illustrationError,
+    generateIllustrations,
   }
 }

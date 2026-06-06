@@ -4,6 +4,15 @@ import { useEffect, useRef, useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import type { GeneratedStory } from '../types'
 
+const ILLUSTRATION_STATUS_MESSAGES = [
+  'Painting the scenes...',
+  'Bringing characters to life...',
+  'Adding colors and shadows...',
+  'Sketching the backgrounds...',
+  'Polishing the artwork...',
+  'Making it magical...',
+]
+
 const STATUS_MESSAGES = [
   'Writing the plot...',
   'Designing the layouts...',
@@ -57,11 +66,75 @@ function GeneratingAnimation() {
   )
 }
 
+function IllustrationGeneratingAnimation({
+  progress,
+}: {
+  progress: { completed: number; total: number }
+}) {
+  const [messageIndex, setMessageIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex(prev => (prev + 1) % ILLUSTRATION_STATUS_MESSAGES.length)
+    }, 2200)
+    return () => clearInterval(interval)
+  }, [])
+
+  const percent = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-8">
+      <div className="relative flex items-center justify-center w-20 h-20">
+        <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
+        <span
+          className="material-symbols-outlined text-[32px] text-primary"
+          style={{ fontVariationSettings: "'FILL' 1" }}
+        >
+          palette
+        </span>
+      </div>
+
+      <div className="text-center space-y-2">
+        <h3 className="font-headline text-xl text-on-surface">Generating Illustrations...</h3>
+        <p className="font-body text-body-md text-on-surface-variant">
+          {progress.completed} of {progress.total} illustrations complete
+        </p>
+      </div>
+
+      <div className="w-full max-w-xs">
+        <div className="h-2 bg-surface-container-high rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <p className="font-body text-body-xs text-on-surface-variant text-center mt-1">
+          {percent}%
+        </p>
+      </div>
+
+      <div className="bg-surface-container-high rounded-full px-5 py-2 min-w-[260px] text-center">
+        <p
+          key={messageIndex}
+          className="font-body text-body-sm text-on-surface-variant animate-pulse"
+        >
+          {ILLUSTRATION_STATUS_MESSAGES[messageIndex]}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function SuccessView({
   generatedStory,
+  illustrationUrls,
+  illustrationError,
   onNext,
 }: {
   generatedStory: GeneratedStory
+  illustrationUrls: Record<string, string>
+  illustrationError: string | null
   onNext: () => void
 }) {
   const { layout } = generatedStory
@@ -69,6 +142,7 @@ function SuccessView({
   const illustrationCount = layout.pages
     .flatMap(p => p.panels)
     .filter(panel => panel.type === 'illustration').length
+  const completedIllustrations = Object.keys(illustrationUrls).length
 
   return (
     <div className="flex flex-col items-center gap-6 py-6 text-center">
@@ -85,21 +159,43 @@ function SuccessView({
         <h3 className="font-headline text-2xl text-on-surface">{layout.title}</h3>
         <p className="font-body text-body-md text-on-surface-variant capitalize">
           {layout.type} &middot; {pageCount} {pageCount === 1 ? 'page' : 'pages'} &middot;{' '}
-          {illustrationCount} illustrations
+          {completedIllustrations} of {illustrationCount} illustrations
         </p>
       </div>
 
+      {illustrationError && (
+        <p className="font-body text-body-sm text-error">
+          Some illustrations could not be generated, but your story is ready.
+        </p>
+      )}
+
       <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
-        {[...Array(Math.min(pageCount, 6))].map((_, i) => (
-          <div
-            key={i}
-            className="aspect-[3/4] rounded bg-surface-container-high flex items-center justify-center"
-          >
-            <span className="font-headline text-xs text-on-surface-variant">
-              {i + 1}
-            </span>
-          </div>
-        ))}
+        {layout.pages.slice(0, 6).map((page, i) => {
+          const firstIllustrationIdx = page.panels.findIndex(p => p.type === 'illustration')
+          const thumbKey =
+            firstIllustrationIdx >= 0
+              ? `page-${page.pageNumber}-panel-${firstIllustrationIdx}`
+              : null
+          const thumbUrl = thumbKey ? illustrationUrls[thumbKey] : null
+
+          return (
+            <div
+              key={i}
+              className="aspect-[3/4] rounded bg-surface-container-high flex items-center justify-center overflow-hidden"
+            >
+              {thumbUrl && !thumbUrl.startsWith('/placeholder') ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumbUrl}
+                  alt={`Page ${page.pageNumber}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-headline text-xs text-on-surface-variant">{i + 1}</span>
+              )}
+            </div>
+          )
+        })}
         {pageCount > 6 && (
           <div className="aspect-[3/4] rounded bg-surface-container-high flex items-center justify-center">
             <span className="font-body text-body-xs text-on-surface-variant">
@@ -129,6 +225,11 @@ export function Step03Generation({
   isGenerating,
   generationError,
   generateStory,
+  illustrationUrls,
+  isGeneratingIllustrations,
+  illustrationProgress,
+  illustrationError,
+  generateIllustrations,
 }: {
   onNext: () => void
   onPrevious: () => void
@@ -136,15 +237,38 @@ export function Step03Generation({
   isGenerating: boolean
   generationError: string | null
   generateStory: () => Promise<void>
+  illustrationUrls: Record<string, string>
+  isGeneratingIllustrations: boolean
+  illustrationProgress: { completed: number; total: number }
+  illustrationError: string | null
+  generateIllustrations: () => Promise<void>
 }) {
   const hasFiredRef = useRef(false)
+  const illustrationFiredRef = useRef(false)
 
+  // Auto-fire story generation on mount
   useEffect(() => {
     if (!hasFiredRef.current && !generatedStory && !isGenerating) {
       hasFiredRef.current = true
       generateStory()
     }
   }, [generatedStory, isGenerating, generateStory])
+
+  // Auto-fire illustration generation once story is ready
+  useEffect(() => {
+    if (
+      generatedStory &&
+      !isGenerating &&
+      !illustrationFiredRef.current &&
+      !isGeneratingIllustrations
+    ) {
+      illustrationFiredRef.current = true
+      generateIllustrations()
+    }
+  }, [generatedStory, isGenerating, isGeneratingIllustrations, generateIllustrations])
+
+  const isStoryDone = !isGenerating && !generationError && generatedStory
+  const isIllustrationDone = isStoryDone && !isGeneratingIllustrations
 
   return (
     <div className="space-y-6 mt-6">
@@ -182,11 +306,20 @@ export function Step03Generation({
           </div>
         )}
 
-        {!isGenerating && !generationError && generatedStory && (
-          <SuccessView generatedStory={generatedStory} onNext={onNext} />
+        {isGeneratingIllustrations && (
+          <IllustrationGeneratingAnimation progress={illustrationProgress} />
         )}
 
-        {!isGenerating && !generationError && !generatedStory && (
+        {isIllustrationDone && generatedStory && (
+          <SuccessView
+            generatedStory={generatedStory}
+            illustrationUrls={illustrationUrls}
+            illustrationError={illustrationError}
+            onNext={onNext}
+          />
+        )}
+
+        {!isGenerating && !generationError && !generatedStory && !isGeneratingIllustrations && (
           <div className="flex flex-col items-center gap-4 py-6 text-center">
             <span
               className="material-symbols-outlined text-[48px] text-on-surface-variant"
@@ -202,11 +335,15 @@ export function Step03Generation({
       </div>
 
       <div className="flex justify-between">
-        <ChunkyButton variant="secondary" onClick={onPrevious} disabled={isGenerating}>
+        <ChunkyButton
+          variant="secondary"
+          onClick={onPrevious}
+          disabled={isGenerating || isGeneratingIllustrations}
+        >
           <span className="material-symbols-outlined mr-2">arrow_back</span>
           Back
         </ChunkyButton>
-        {generatedStory && !isGenerating && (
+        {isIllustrationDone && generatedStory && (
           <ChunkyButton variant="primary" onClick={onNext}>
             Next
             <span className="material-symbols-outlined ml-2">arrow_forward</span>
