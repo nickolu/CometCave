@@ -74,6 +74,16 @@ export default function StorybookFactory() {
             onPrevious={previousStep}
             generatedStory={state.generatedStory}
             illustrationUrls={state.illustrationUrls}
+            editingPanel={state.editingPanel}
+            setEditingPanel={state.setEditingPanel}
+            updatePanelContent={state.updatePanelContent}
+            revisionPrompt={state.revisionPrompt}
+            setRevisionPrompt={state.setRevisionPrompt}
+            isRevising={state.isRevising}
+            revisionError={state.revisionError}
+            reviseStory={state.reviseStory}
+            regenerateStory={state.regenerateStory}
+            regenerateIllustration={state.regenerateIllustration}
           />
         )}
       </div>

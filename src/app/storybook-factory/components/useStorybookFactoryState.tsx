@@ -61,6 +61,18 @@ export interface StorybookFactoryState {
   illustrationProgress: { completed: number; total: number }
   illustrationError: string | null
   generateIllustrations: () => Promise<void>
+  regenerateIllustration: (pageNumber: number, panelIndex: number, prompt: string) => Promise<void>
+
+  // Inline editing & revision
+  editingPanel: { pageIndex: number; panelIndex: number } | null
+  setEditingPanel: (panel: { pageIndex: number; panelIndex: number } | null) => void
+  updatePanelContent: (pageIndex: number, panelIndex: number, content: string) => void
+  revisionPrompt: string
+  setRevisionPrompt: (prompt: string) => void
+  isRevising: boolean
+  revisionError: string | null
+  reviseStory: () => Promise<void>
+  regenerateStory: () => Promise<void>
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -108,6 +120,12 @@ export function useStorybookFactoryState(): StorybookFactoryState {
   const [isGeneratingIllustrations, setIsGeneratingIllustrations] = useState(false)
   const [illustrationProgress, setIllustrationProgress] = useState({ completed: 0, total: 0 })
   const [illustrationError, setIllustrationError] = useState<string | null>(null)
+
+  // Inline editing & revision state
+  const [editingPanel, setEditingPanel] = useState<{ pageIndex: number; panelIndex: number } | null>(null)
+  const [revisionPrompt, setRevisionPromptState] = useState('')
+  const [isRevising, setIsRevising] = useState(false)
+  const [revisionError, setRevisionError] = useState<string | null>(null)
 
   const setImage1 = (file: File) => {
     const validationError = validateImageFile(file)
@@ -287,6 +305,79 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     setIsGeneratingIllustrations(false)
   }
 
+  const updatePanelContent = (pageIndex: number, panelIndex: number, content: string) => {
+    setGeneratedStory(prev => {
+      if (!prev) return prev
+      const newLayout = JSON.parse(JSON.stringify(prev.layout)) // deep copy
+      if (newLayout.pages[pageIndex]?.panels[panelIndex]) {
+        newLayout.pages[pageIndex].panels[panelIndex].content = content
+      }
+      return { ...prev, layout: newLayout }
+    })
+  }
+
+  const reviseStory = async () => {
+    if (!generatedStory || !revisionPrompt.trim()) return
+    setIsRevising(true)
+    setRevisionError(null)
+    try {
+      const response = await fetch('/api/v1/storybook-factory/revise-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          revisionPrompt: revisionPrompt.trim(),
+          currentLayout: generatedStory.layout,
+          storyConfig,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to revise story')
+      }
+
+      const data = await response.json()
+      setGeneratedStory({
+        layout: data.layout,
+        generatedAt: data.generatedAt,
+      })
+      setRevisionPromptState('')
+    } catch {
+      setRevisionError('Something went wrong revising your story. Please try again.')
+    } finally {
+      setIsRevising(false)
+    }
+  }
+
+  const regenerateStory = async () => {
+    setGeneratedStory(null)
+    setIllustrationUrls({})
+    await generateStory()
+  }
+
+  const regenerateIllustration = async (pageNumber: number, panelIndex: number, prompt: string) => {
+    const key = `page-${pageNumber}-panel-${panelIndex}`
+    const storyContext = generatedStory
+      ? `A ${generatedStory.layout.type} story called "${generatedStory.layout.title}"`
+      : ''
+    try {
+      const response = await fetch('/api/v1/storybook-factory/generate-illustration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          artStyle: storyConfig.artStyle,
+          storyContext,
+        }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setIllustrationUrls(prev => ({ ...prev, [key]: data.imageUrl }))
+      }
+    } catch (err) {
+      console.error(`Failed to regenerate illustration for ${key}:`, err)
+    }
+  }
+
   const canProceedFromUpload = image1Base64 !== null && image2Base64 !== null
 
   return {
@@ -321,5 +412,15 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     illustrationProgress,
     illustrationError,
     generateIllustrations,
+    regenerateIllustration,
+    editingPanel,
+    setEditingPanel,
+    updatePanelContent,
+    revisionPrompt,
+    setRevisionPrompt: setRevisionPromptState,
+    isRevising,
+    revisionError,
+    reviseStory,
+    regenerateStory,
   }
 }
