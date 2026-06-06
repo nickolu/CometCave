@@ -657,3 +657,32 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  /* Page break control */
+  .break-after-page {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  /* Clean print styling */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove visual noise */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure images print well */
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
