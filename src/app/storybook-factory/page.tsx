@@ -43,7 +43,16 @@ export default function StorybookFactory() {
           />
         )}
         {currentStep === 1 && (
-          <Step02StoryConfiguration onNext={nextStep} onPrevious={previousStep} />
+          <Step02StoryConfiguration
+            onNext={nextStep}
+            onPrevious={previousStep}
+            storyConfig={state.storyConfig}
+            setStoryConfig={state.setStoryConfig}
+            isSuggestionsLoading={state.isSuggestionsLoading}
+            suggestionsError={state.suggestionsError}
+            fetchSuggestions={state.fetchSuggestions}
+            suggestionReasoning={state.suggestionReasoning}
+          />
         )}
         {currentStep === 2 && <Step03Generation onNext={nextStep} onPrevious={previousStep} />}
         {currentStep === 3 && <Step04ReviewAndRevise onPrevious={previousStep} />}

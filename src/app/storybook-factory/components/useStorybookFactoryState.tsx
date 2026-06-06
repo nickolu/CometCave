@@ -2,6 +2,26 @@
 
 import { useState } from 'react'
 
+export interface StoryConfiguration {
+  storyType: 'comic' | 'storybook' | 'fairy-tale' | 'adventure'
+  artStyle: 'cartoon' | 'anime' | 'watercolor' | 'pixel-art' | 'realistic'
+  pageCount: number
+  tone: 'funny' | 'dramatic' | 'scary' | 'heartwarming'
+  panelsPerPage: number
+  dialogueStyle: 'speech-bubbles' | 'narration-boxes' | 'mixed'
+  additionalNotes: string
+}
+
+const DEFAULT_STORY_CONFIG: StoryConfiguration = {
+  storyType: 'comic',
+  artStyle: 'cartoon',
+  pageCount: 8,
+  tone: 'funny',
+  panelsPerPage: 4,
+  dialogueStyle: 'speech-bubbles',
+  additionalNotes: '',
+}
+
 export interface StorybookFactoryState {
   image1Base64: string | null
   image2Base64: string | null
@@ -19,6 +39,14 @@ export interface StorybookFactoryState {
   setStoryDirectionPrompt: (text: string) => void
   clearError: () => void
   canProceedFromUpload: boolean
+
+  // Story configuration
+  storyConfig: StoryConfiguration
+  setStoryConfig: (updates: Partial<StoryConfiguration>) => void
+  isSuggestionsLoading: boolean
+  suggestionsError: string | null
+  fetchSuggestions: () => Promise<void>
+  suggestionReasoning: string | null
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -49,6 +77,12 @@ export function useStorybookFactoryState(): StorybookFactoryState {
   const [storyDirectionPrompt, setStoryDirectionPromptState] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Story configuration state
+  const [storyConfig, setStoryConfigState] = useState<StoryConfiguration>(DEFAULT_STORY_CONFIG)
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null)
+  const [suggestionReasoning, setSuggestionReasoning] = useState<string | null>(null)
 
   const setImage1 = (file: File) => {
     const validationError = validateImageFile(file)
@@ -100,6 +134,51 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     setCaption2State('')
   }
 
+  const setStoryConfig = (updates: Partial<StoryConfiguration>) => {
+    setStoryConfigState(prev => ({ ...prev, ...updates }))
+  }
+
+  const fetchSuggestions = async () => {
+    setIsSuggestionsLoading(true)
+    setSuggestionsError(null)
+    try {
+      const response = await fetch('/api/v1/storybook-factory/suggest-configuration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caption1,
+          caption2,
+          storyDirectionPrompt,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch suggestions')
+      }
+
+      const data = await response.json()
+
+      // Merge suggestions into config (graceful: only update known fields)
+      const updates: Partial<StoryConfiguration> = {}
+      if (data.storyType) updates.storyType = data.storyType
+      if (data.artStyle) updates.artStyle = data.artStyle
+      if (data.pageCount) updates.pageCount = data.pageCount
+      if (data.tone) updates.tone = data.tone
+      if (data.panelsPerPage) updates.panelsPerPage = data.panelsPerPage
+      if (data.dialogueStyle) updates.dialogueStyle = data.dialogueStyle
+      setStoryConfigState(prev => ({ ...prev, ...updates }))
+
+      if (data.reasoning) {
+        setSuggestionReasoning(data.reasoning)
+      }
+    } catch {
+      // Graceful degradation: keep defaults, show no error to avoid blocking the user
+      setSuggestionsError('Could not load AI suggestions. Using defaults — feel free to customize.')
+    } finally {
+      setIsSuggestionsLoading(false)
+    }
+  }
+
   const canProceedFromUpload = image1Base64 !== null && image2Base64 !== null
 
   return {
@@ -119,5 +198,11 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     setStoryDirectionPrompt: setStoryDirectionPromptState,
     clearError: () => setError(null),
     canProceedFromUpload,
+    storyConfig,
+    setStoryConfig,
+    isSuggestionsLoading,
+    suggestionsError,
+    fetchSuggestions,
+    suggestionReasoning,
   }
 }
