@@ -680,147 +680,290 @@ export function Step04ReviewAndRevise({
               {layout.type} &middot; {totalPages} {totalPages === 1 ? 'page' : 'pages'}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            {/* Print button */}
+            <button
+              onClick={() => window.print()}
+              className="bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl px-4 py-2 flex items-center gap-2 print:hidden"
+              title="Print story"
+            >
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 0" }}>
+                print
+              </span>
+              <span className="hidden sm:inline text-sm">Print</span>
+            </button>
+            <ChunkyButton
+              variant="secondary"
+              size="sm"
+              onClick={handleRegenerateAll}
+              disabled={isRegeneratingAll || isRevising}
+              title="Regenerate the entire story from scratch"
+            >
+              <span
+                className={`material-symbols-outlined text-[16px] ${isRegeneratingAll ? 'animate-spin' : ''}`}
+                style={{ fontVariationSettings: "'FILL' 0" }}
+              >
+                autorenew
+              </span>
+              <span className="hidden sm:inline">Regenerate All</span>
+            </ChunkyButton>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive view — hidden when printing */}
+      <div className="print:hidden">
+        {/* Page navigation header */}
+        <div className="flex items-center justify-between gap-4 px-1">
           <ChunkyButton
             variant="secondary"
-            size="sm"
-            onClick={handleRegenerateAll}
-            disabled={isRegeneratingAll || isRevising}
-            title="Regenerate the entire story from scratch"
+            onClick={goToPrevPage}
+            disabled={currentPageIndex === 0}
+            aria-label="Previous page"
           >
-            <span
-              className={`material-symbols-outlined text-[16px] ${isRegeneratingAll ? 'animate-spin' : ''}`}
-              style={{ fontVariationSettings: "'FILL' 0" }}
+            <span className="material-symbols-outlined">chevron_left</span>
+            <span className="hidden sm:inline ml-1">Previous</span>
+          </ChunkyButton>
+
+          <span className="font-body text-body-md text-on-surface-variant whitespace-nowrap">
+            Page {currentPageIndex + 1} of {totalPages}
+          </span>
+
+          <ChunkyButton
+            variant="secondary"
+            onClick={goToNextPage}
+            disabled={currentPageIndex === totalPages - 1}
+            aria-label="Next page"
+          >
+            <span className="hidden sm:inline mr-1">Next</span>
+            <span className="material-symbols-outlined">chevron_right</span>
+          </ChunkyButton>
+        </div>
+
+        {/* Page canvas */}
+        <div className="max-w-2xl mx-auto w-full mt-6">
+          <StoryPageRenderer
+            page={currentPage}
+            pageIndex={currentPageIndex}
+            illustrationUrls={illustrationUrls}
+            isComicStyle={isComicStyle}
+            editingPanel={editingPanel}
+            regeneratingPanels={regeneratingPanels}
+            onEditPanel={handleEditPanel}
+            onSavePanel={handleSavePanel}
+            onCancelEdit={() => setEditingPanel(null)}
+            onRegenerateIllustration={handleRegenerateIllustration}
+          />
+        </div>
+
+        {/* Revision prompt bar */}
+        <div className="max-w-2xl mx-auto w-full bg-surface-container-high p-4 rounded-xl space-y-3 mt-6">
+          <p className="font-body text-body-sm text-on-surface-variant">
+            Describe a revision to apply to the whole story (e.g., &ldquo;make it funnier&rdquo;, &ldquo;add a dragon to page 3&rdquo;):
+          </p>
+          <form onSubmit={handleReviseSubmit} className="flex gap-2">
+            <Input
+              value={revisionPrompt}
+              onChange={e => setRevisionPrompt(e.target.value)}
+              placeholder="e.g., make the ending more dramatic…"
+              disabled={isRevising}
+              className="flex-1"
+            />
+            <ChunkyButton
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={isRevising || !revisionPrompt.trim()}
             >
-              autorenew
-            </span>
-            <span className="hidden sm:inline">Regenerate All</span>
+              {isRevising ? (
+                <>
+                  <span
+                    className="material-symbols-outlined text-[16px] animate-spin"
+                    style={{ fontVariationSettings: "'FILL' 0" }}
+                  >
+                    refresh
+                  </span>
+                  <span className="hidden sm:inline">Revising…</span>
+                </>
+              ) : (
+                <>
+                  <span
+                    className="material-symbols-outlined text-[16px]"
+                    style={{ fontVariationSettings: "'FILL' 0" }}
+                  >
+                    auto_fix_high
+                  </span>
+                  <span className="hidden sm:inline">Revise</span>
+                </>
+              )}
+            </ChunkyButton>
+          </form>
+          {revisionError && (
+            <p className="font-body text-body-sm text-ds-error">{revisionError}</p>
+          )}
+        </div>
+
+        {/* Bottom navigation */}
+        <div className="flex items-center justify-between gap-4 px-1 mt-6">
+          <ChunkyButton
+            variant="secondary"
+            onClick={goToPrevPage}
+            disabled={currentPageIndex === 0}
+            aria-label="Previous page"
+          >
+            <span className="material-symbols-outlined">chevron_left</span>
+            <span className="hidden sm:inline ml-1">Previous</span>
+          </ChunkyButton>
+
+          <span className="font-body text-body-sm text-on-surface-variant whitespace-nowrap">
+            Page {currentPageIndex + 1} of {totalPages}
+          </span>
+
+          <ChunkyButton
+            variant="secondary"
+            onClick={goToNextPage}
+            disabled={currentPageIndex === totalPages - 1}
+            aria-label="Next page"
+          >
+            <span className="hidden sm:inline mr-1">Next</span>
+            <span className="material-symbols-outlined">chevron_right</span>
+          </ChunkyButton>
+        </div>
+
+        {/* Back to start */}
+        <div className="flex justify-start pb-8 mt-6">
+          <ChunkyButton variant="secondary" onClick={onPrevious}>
+            <span className="material-symbols-outlined mr-2">arrow_back</span>
+            Back to Generation
           </ChunkyButton>
         </div>
       </div>
 
-      {/* Page navigation header */}
-      <div className="flex items-center justify-between gap-4 px-1">
-        <ChunkyButton
-          variant="secondary"
-          onClick={goToPrevPage}
-          disabled={currentPageIndex === 0}
-          aria-label="Previous page"
-        >
-          <span className="material-symbols-outlined">chevron_left</span>
-          <span className="hidden sm:inline ml-1">Previous</span>
-        </ChunkyButton>
+      {/* Print-only: all pages rendered for printing */}
+      <div className="hidden print:block">
+        {/* Title page */}
+        <div className="text-center py-8 break-after-page">
+          <h1 className="text-4xl font-headline font-bold text-black">{layout.title}</h1>
+          <p className="text-xl mt-4 capitalize text-black">{layout.type}</p>
+        </div>
 
-        <span className="font-body text-body-md text-on-surface-variant whitespace-nowrap">
-          Page {currentPageIndex + 1} of {totalPages}
-        </span>
+        {/* All story pages */}
+        {pages.map((page, pageIndex) => {
+          const pageStyle: React.CSSProperties = {
+            backgroundColor: page.backgroundColor || (isComicStyle ? '#ffffff' : '#faf7f2'),
+          }
+          const pageBorderClass =
+            page.layout === 'comic-grid'
+              ? 'border-[4px] border-black'
+              : isComicStyle
+                ? 'border-[3px] border-black'
+                : 'border border-black/10'
 
-        <ChunkyButton
-          variant="secondary"
-          onClick={goToNextPage}
-          disabled={currentPageIndex === totalPages - 1}
-          aria-label="Next page"
-        >
-          <span className="hidden sm:inline mr-1">Next</span>
-          <span className="material-symbols-outlined">chevron_right</span>
-        </ChunkyButton>
-      </div>
+          return (
+            <div key={pageIndex} className="break-after-page">
+              <div
+                className={`relative w-full aspect-[3/4] mx-auto overflow-hidden ${pageBorderClass}`}
+                style={pageStyle}
+              >
+                {page.panels.map((panel, panelIndex) => {
+                  const imageKey = `page-${page.pageNumber}-panel-${panelIndex}`
+                  const imageUrl = illustrationUrls[imageKey]
+                  const positionStyle: React.CSSProperties = {
+                    left: `${panel.position.x}%`,
+                    top: `${panel.position.y}%`,
+                    width: `${panel.position.width}%`,
+                    height: `${panel.position.height}%`,
+                  }
 
-      {/* Page canvas */}
-      <div className="max-w-2xl mx-auto w-full">
-        <StoryPageRenderer
-          page={currentPage}
-          pageIndex={currentPageIndex}
-          illustrationUrls={illustrationUrls}
-          isComicStyle={isComicStyle}
-          editingPanel={editingPanel}
-          regeneratingPanels={regeneratingPanels}
-          onEditPanel={handleEditPanel}
-          onSavePanel={handleSavePanel}
-          onCancelEdit={() => setEditingPanel(null)}
-          onRegenerateIllustration={handleRegenerateIllustration}
-        />
-      </div>
-
-      {/* Revision prompt bar */}
-      <div className="max-w-2xl mx-auto w-full bg-surface-container-high p-4 rounded-xl space-y-3">
-        <p className="font-body text-body-sm text-on-surface-variant">
-          Describe a revision to apply to the whole story (e.g., &ldquo;make it funnier&rdquo;, &ldquo;add a dragon to page 3&rdquo;):
-        </p>
-        <form onSubmit={handleReviseSubmit} className="flex gap-2">
-          <Input
-            value={revisionPrompt}
-            onChange={e => setRevisionPrompt(e.target.value)}
-            placeholder="e.g., make the ending more dramatic…"
-            disabled={isRevising}
-            className="flex-1"
-          />
-          <ChunkyButton
-            type="submit"
-            variant="primary"
-            size="md"
-            disabled={isRevising || !revisionPrompt.trim()}
-          >
-            {isRevising ? (
-              <>
-                <span
-                  className="material-symbols-outlined text-[16px] animate-spin"
-                  style={{ fontVariationSettings: "'FILL' 0" }}
-                >
-                  refresh
-                </span>
-                <span className="hidden sm:inline">Revising…</span>
-              </>
-            ) : (
-              <>
-                <span
-                  className="material-symbols-outlined text-[16px]"
-                  style={{ fontVariationSettings: "'FILL' 0" }}
-                >
-                  auto_fix_high
-                </span>
-                <span className="hidden sm:inline">Revise</span>
-              </>
-            )}
-          </ChunkyButton>
-        </form>
-        {revisionError && (
-          <p className="font-body text-body-sm text-ds-error">{revisionError}</p>
-        )}
-      </div>
-
-      {/* Bottom navigation */}
-      <div className="flex items-center justify-between gap-4 px-1">
-        <ChunkyButton
-          variant="secondary"
-          onClick={goToPrevPage}
-          disabled={currentPageIndex === 0}
-          aria-label="Previous page"
-        >
-          <span className="material-symbols-outlined">chevron_left</span>
-          <span className="hidden sm:inline ml-1">Previous</span>
-        </ChunkyButton>
-
-        <span className="font-body text-body-sm text-on-surface-variant whitespace-nowrap">
-          Page {currentPageIndex + 1} of {totalPages}
-        </span>
-
-        <ChunkyButton
-          variant="secondary"
-          onClick={goToNextPage}
-          disabled={currentPageIndex === totalPages - 1}
-          aria-label="Next page"
-        >
-          <span className="hidden sm:inline mr-1">Next</span>
-          <span className="material-symbols-outlined">chevron_right</span>
-        </ChunkyButton>
-      </div>
-
-      {/* Back to start */}
-      <div className="flex justify-start pb-8">
-        <ChunkyButton variant="secondary" onClick={onPrevious}>
-          <span className="material-symbols-outlined mr-2">arrow_back</span>
-          Back to Generation
-        </ChunkyButton>
+                  return (
+                    <div key={panelIndex} className="absolute" style={positionStyle}>
+                      {panel.type === 'illustration' && (
+                        imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={panel.content}
+                            className={`w-full h-full object-cover ${isComicStyle ? 'border-[3px] border-black' : 'border border-black/10'}`}
+                            draggable={false}
+                          />
+                        ) : (
+                          <div
+                            className={`w-full h-full flex flex-col items-center justify-center gap-2 bg-neutral-100 ${isComicStyle ? 'border-[3px] border-black' : 'border border-black/10'}`}
+                          >
+                            <p className="font-body text-[10px] text-neutral-500 text-center px-2 leading-tight">
+                              {panel.content}
+                            </p>
+                          </div>
+                        )
+                      )}
+                      {panel.type === 'text' && (
+                        <div
+                          className={`w-full h-full flex items-center justify-center p-2 overflow-hidden ${isComicStyle ? 'bg-white border-[3px] border-black' : 'bg-white/80 rounded-xl shadow-sm'}`}
+                        >
+                          <p className={`font-body text-center ${isComicStyle ? 'text-xs text-black leading-snug' : 'text-sm text-black leading-relaxed'}`}>
+                            {panel.content}
+                          </p>
+                        </div>
+                      )}
+                      {panel.type === 'speech-bubble' && (
+                        <div
+                          className={`w-full h-full flex flex-col p-2 overflow-hidden relative ${isComicStyle ? 'bg-white border-[2px] border-black rounded-2xl' : 'bg-white/90 border border-black/20 rounded-2xl shadow-md'}`}
+                        >
+                          {panel.character && (
+                            <p className="font-body font-bold text-[10px] uppercase tracking-wide mb-1 text-black">
+                              {panel.character}:
+                            </p>
+                          )}
+                          <p className="font-body text-xs leading-snug text-black flex-1 overflow-hidden">
+                            {panel.content}
+                          </p>
+                          {/* Speech tail */}
+                          <div
+                            className="absolute bottom-[-10px] left-4 w-0 h-0"
+                            style={{
+                              borderLeft: '8px solid transparent',
+                              borderRight: '4px solid transparent',
+                              borderTop: isComicStyle ? '10px solid black' : '10px solid rgba(0,0,0,0.15)',
+                            }}
+                          />
+                          <div
+                            className="absolute bottom-[-7px] left-[18px] w-0 h-0"
+                            style={{
+                              borderLeft: '5px solid transparent',
+                              borderRight: '3px solid transparent',
+                              borderTop: '7px solid white',
+                            }}
+                          />
+                        </div>
+                      )}
+                      {panel.type === 'narration-box' && (
+                        <div
+                          className={`w-full h-full flex items-center justify-center p-2 overflow-hidden ${isComicStyle ? 'bg-amber-50 border-[2px] border-amber-800' : 'bg-amber-50/90 border border-amber-200 rounded-lg shadow-sm'}`}
+                        >
+                          <p className={`font-body text-xs italic leading-snug text-center ${isComicStyle ? 'text-amber-900' : 'text-amber-800'}`}>
+                            {panel.content}
+                          </p>
+                        </div>
+                      )}
+                      {panel.type === 'sound-effect' && (
+                        <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                          <p
+                            className="text-red-500 font-bold text-2xl uppercase tracking-wider"
+                            style={{
+                              transform: 'rotate(-5deg)',
+                              textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000',
+                            }}
+                          >
+                            {panel.content}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
