@@ -657,3 +657,38 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  /* Clean backgrounds */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Story page breaks */
+  .print-story-page {
+    break-after: page;
+    page-break-after: always;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Avoid orphaned panels within a page */
+  .print-story-page:last-child {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Remove shadows, transitions, animations */
+  * {
+    box-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure images print correctly */
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+  }
+}
