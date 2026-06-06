@@ -6,6 +6,7 @@ import { dealCardsFromDrawPile } from '@/app/comet-cards/domain/game/card-regist
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
+import { createGameStateWithDeck } from './default-game-state'
 import { HAND_SIZE } from './constants'
 import { handleHandScoringEnd } from './handlers'
 import {
@@ -54,6 +55,8 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'GAME_START': {
+        const freshState = createGameStateWithDeck(draft.selectedDeck)
+        Object.assign(draft, structuredClone(freshState))
         handleGameStart(draft, event)
         return
       }
