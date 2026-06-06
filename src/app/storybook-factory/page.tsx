@@ -54,7 +54,16 @@ export default function StorybookFactory() {
             suggestionReasoning={state.suggestionReasoning}
           />
         )}
-        {currentStep === 2 && <Step03Generation onNext={nextStep} onPrevious={previousStep} />}
+        {currentStep === 2 && (
+          <Step03Generation
+            onNext={nextStep}
+            onPrevious={previousStep}
+            generatedStory={state.generatedStory}
+            isGenerating={state.isGenerating}
+            generationError={state.generationError}
+            generateStory={state.generateStory}
+          />
+        )}
         {currentStep === 3 && <Step04ReviewAndRevise onPrevious={previousStep} />}
       </div>
     </div>

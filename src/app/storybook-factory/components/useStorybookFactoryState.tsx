@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { GeneratedStory } from '../types'
 
 export interface StoryConfiguration {
   storyType: 'comic' | 'storybook' | 'fairy-tale' | 'adventure'
@@ -47,6 +48,12 @@ export interface StorybookFactoryState {
   suggestionsError: string | null
   fetchSuggestions: () => Promise<void>
   suggestionReasoning: string | null
+
+  // Story generation
+  generatedStory: GeneratedStory | null
+  isGenerating: boolean
+  generationError: string | null
+  generateStory: () => Promise<void>
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -83,6 +90,11 @@ export function useStorybookFactoryState(): StorybookFactoryState {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false)
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null)
   const [suggestionReasoning, setSuggestionReasoning] = useState<string | null>(null)
+
+  // Story generation state
+  const [generatedStory, setGeneratedStory] = useState<GeneratedStory | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   const setImage1 = (file: File) => {
     const validationError = validateImageFile(file)
@@ -179,6 +191,37 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     }
   }
 
+  const generateStory = async () => {
+    setIsGenerating(true)
+    setGenerationError(null)
+    try {
+      const response = await fetch('/api/v1/storybook-factory/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caption1,
+          caption2,
+          storyDirectionPrompt,
+          storyConfig,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate story')
+      }
+
+      const data = await response.json()
+      setGeneratedStory({
+        layout: data.layout,
+        generatedAt: data.generatedAt,
+      })
+    } catch {
+      setGenerationError('Something went wrong generating your story. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   const canProceedFromUpload = image1Base64 !== null && image2Base64 !== null
 
   return {
@@ -204,5 +247,9 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     suggestionsError,
     fetchSuggestions,
     suggestionReasoning,
+    generatedStory,
+    isGenerating,
+    generationError,
+    generateStory,
   }
 }
