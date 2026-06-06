@@ -9,7 +9,7 @@ import { useWorkflow } from './components/useWorkflow'
 
 export default function StorybookFactory() {
   const { currentStep, nextStep, previousStep } = useWorkflow()
-  const _state = useStorybookFactoryState()
+  const state = useStorybookFactoryState()
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -21,7 +21,27 @@ export default function StorybookFactory() {
           Create illustrated stories from your pictures
         </p>
 
-        {currentStep === 0 && <Step01UploadAndDescribe onNext={nextStep} />}
+        {currentStep === 0 && (
+          <Step01UploadAndDescribe
+            onNext={nextStep}
+            image1Base64={state.image1Base64}
+            image2Base64={state.image2Base64}
+            caption1={state.caption1}
+            caption2={state.caption2}
+            storyDirectionPrompt={state.storyDirectionPrompt}
+            isLoading={state.isLoading}
+            error={state.error}
+            setImage1={state.setImage1}
+            setImage2={state.setImage2}
+            clearImage1={state.clearImage1}
+            clearImage2={state.clearImage2}
+            setCaption1={state.setCaption1}
+            setCaption2={state.setCaption2}
+            setStoryDirectionPrompt={state.setStoryDirectionPrompt}
+            clearError={state.clearError}
+            canProceedFromUpload={state.canProceedFromUpload}
+          />
+        )}
         {currentStep === 1 && (
           <Step02StoryConfiguration onNext={nextStep} onPrevious={previousStep} />
         )}
