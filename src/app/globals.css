@@ -308,9 +308,10 @@ body {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.22);
   mix-blend-mode: multiply;
-  border: 1px solid rgba(100, 100, 120, 0.3);
+  border: 1px solid rgba(100, 100, 120, 0.4);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
 }
 
 /* ───────────────────────────────────────────────────────────────────
