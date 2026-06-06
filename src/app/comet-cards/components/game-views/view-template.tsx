@@ -51,10 +51,12 @@ function StatRow({
 export function ViewTemplate({
   sidebarContentTop,
   sidebarContentBottom,
+  topBarAction,
   children,
 }: {
   sidebarContentTop?: React.ReactNode
   sidebarContentBottom?: React.ReactNode
+  topBarAction?: React.ReactNode
   children: React.ReactNode
 }) {
   const isLandscape = useLandscapeMobile()
@@ -107,6 +109,7 @@ export function ViewTemplate({
             </div>
           </div>
           <Stat label="Hands" value={String(game.handsPlayed)} />
+          {topBarAction}
         </div>
       </div>
 
