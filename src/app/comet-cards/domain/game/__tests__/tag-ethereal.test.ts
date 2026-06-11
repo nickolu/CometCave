@@ -20,4 +20,12 @@ describe('Ethereal tag', () => {
     const after = reduceGame(game, { type: 'SHOP_OPEN' })
     expect(after.tags.find(t => t.tagType === 'ethereal')).toBeUndefined()
   })
+
+  it('deals cards to the hand for spectral card targeting', () => {
+    const game: GameState = structuredClone(defaultGameState)
+    game.tags = [{ id: 'tag-1', tagType: 'ethereal' } as any]
+
+    const after = reduceGame(game, { type: 'SHOP_OPEN' })
+    expect(after.gamePlayState.handIds.length).toBeGreaterThan(0)
+  })
 })

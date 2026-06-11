@@ -1,8 +1,12 @@
 import type { EffectContext } from '@/app/comet-cards/domain/events/types'
 import { getPackDefinition, initializePackState } from '@/app/comet-cards/domain/booster-pack/utils'
+import { dealCardsFromDrawPile } from '@/app/comet-cards/domain/game/card-registry-utils'
+import { HAND_SIZE } from '@/app/comet-cards/domain/game/constants'
+import { shuffleCardIds } from '@/app/comet-cards/domain/game/utils'
 import { getRandomCommonJoker, getRandomRareJoker, getRandomUncommonJoker, initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { buildSeedString, getRandomNumberWithSeed, uuid } from '@/app/comet-cards/domain/randomness'
 import { getRandomBossBlind } from '@/app/comet-cards/domain/round/boss-blinds'
+import { blindIndices, getNextBlind } from '@/app/comet-cards/domain/round/blinds'
 
 import { TagDefinition, TagType } from './types'
 
@@ -281,6 +285,19 @@ const charm: TagDefinition = {
         const pack = initializePackState(ctx.game, packDef)
         ctx.game.shopState.openPackState = pack
         ctx.game.gamePhase = 'packOpening'
+        const nextBlind = getNextBlind(ctx.game)
+        ctx.game.gamePlayState.drawPileIds = shuffleCardIds({
+          cardIds: ctx.game.ownedCardIds,
+          seed: buildSeedString([
+            ctx.game.gameSeed,
+            ctx.game.roundIndex.toString(),
+            ctx.game.shopState.rerollsUsed.toString(),
+            nextBlind?.type.toString() ?? '0',
+            'tarotCardOpenPack',
+          ]),
+          iteration: ctx.game.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
+        })
+        dealCardsFromDrawPile(ctx.game, HAND_SIZE + ctx.game.handSizeModifier)
         const tag = ctx.game.tags.find(t => t.tagType === 'charm')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
@@ -384,6 +401,19 @@ const ethereal: TagDefinition = {
         const pack = initializePackState(ctx.game, packDef)
         ctx.game.shopState.openPackState = pack
         ctx.game.gamePhase = 'packOpening'
+        const nextBlind = getNextBlind(ctx.game)
+        ctx.game.gamePlayState.drawPileIds = shuffleCardIds({
+          cardIds: ctx.game.ownedCardIds,
+          seed: buildSeedString([
+            ctx.game.gameSeed,
+            ctx.game.roundIndex.toString(),
+            ctx.game.shopState.rerollsUsed.toString(),
+            nextBlind?.type.toString() ?? '0',
+            'spectralCardOpenPack',
+          ]),
+          iteration: ctx.game.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
+        })
+        dealCardsFromDrawPile(ctx.game, HAND_SIZE + ctx.game.handSizeModifier)
         const tag = ctx.game.tags.find(t => t.tagType === 'ethereal')
         if (tag) ctx.game.tags = ctx.game.tags.filter(t => t.id !== tag.id)
       },
