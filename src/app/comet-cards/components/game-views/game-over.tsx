@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 
-import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
+import { GhostButton, PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
+import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 
 import { ViewTemplate } from './view-template'
 
@@ -275,6 +276,14 @@ export function GameOverView() {
                   : roundsCompleted >= 4
                     ? 'So close. Can you thread the needle tomorrow?'
                     : 'The cave awaits your return. Tomorrow brings fresh cards.'}
+              </div>
+              <div className="flex items-center justify-center" style={{ gap: 12, marginTop: 16 }}>
+                <PrimaryButton onClick={() => eventEmitter.emit({ type: 'GAME_START' })}>
+                  Try Again
+                </PrimaryButton>
+                <GhostButton onClick={() => eventEmitter.emit({ type: 'BACK_TO_MAIN_MENU' })}>
+                  Go Back
+                </GhostButton>
               </div>
             </FadeUp>
           </div>
