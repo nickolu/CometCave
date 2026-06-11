@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { ViewTemplate } from '@/app/comet-cards/components/game-views/view-template'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
@@ -27,6 +28,7 @@ function FadeUp({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 export function BlindRewardsView() {
   const { game } = useGameState()
   const [hasCashedOut, setHasCashedOut] = useState(false)
+  const autoFocusRef = useAutoFocus()
   useEffect(() => {
     eventEmitter.emit({ type: 'BLIND_REWARDS_START' })
     eventEmitter.emit({ type: 'ROUND_END' })
@@ -49,7 +51,7 @@ export function BlindRewardsView() {
 
   return (
     <ViewTemplate>
-      <div className="mx-auto" style={{ maxWidth: 520, padding: '32px 0' }}>
+      <div ref={autoFocusRef} className="mx-auto" style={{ maxWidth: 520, padding: '32px 0' }}>
         <Panel title="Blind Cleared">
           <div className="flex flex-col" style={{ padding: '20px 18px', gap: 14 }}>
             <FadeUp delay={0}>

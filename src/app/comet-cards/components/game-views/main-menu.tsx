@@ -5,6 +5,7 @@ import {
   GhostButton,
   PrimaryButton,
 } from '@/app/comet-cards/components/cosmic/buttons'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
@@ -24,8 +25,10 @@ export function MainMenuView() {
   const isLandscape = useLandscapeMobile()
   const { history, todayRun } = useRunHistory()
   const [showHistory, setShowHistory] = useState(false)
+  const autoFocusRef = useAutoFocus()
   return (
     <div
+      ref={autoFocusRef}
       className="cc-scroll relative mx-auto flex flex-col items-center"
       style={{
         padding: isLandscape ? '16px 16px' : '64px 24px',

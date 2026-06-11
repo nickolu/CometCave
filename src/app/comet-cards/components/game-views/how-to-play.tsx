@@ -3,6 +3,7 @@
 import { GhostButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { pokerHands } from '@/app/comet-cards/domain/hand/hands'
 
 const RULES_SECTIONS = [
@@ -52,8 +53,10 @@ const HAND_ORDER: Array<keyof typeof pokerHands> = [
 ]
 
 export function HowToPlayView() {
+  const autoFocusRef = useAutoFocus()
   return (
     <div
+      ref={autoFocusRef}
       className="cc-scroll mx-auto flex flex-col"
       style={{
         maxWidth: 820,

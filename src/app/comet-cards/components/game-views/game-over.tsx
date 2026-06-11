@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { GhostButton, PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { MiniScoringLog } from '@/app/comet-cards/components/mini-scoring-log'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
@@ -99,6 +100,7 @@ export function GameOverView() {
     }
   }, [shareText])
 
+  const autoFocusRef = useAutoFocus()
   const isLandscape = useLandscapeMobile()
   const accent = didWin ? 'var(--cc-mint)' : 'var(--cc-pink)'
   const eyebrow = isPractice ? 'Practice Run' : didWin ? 'Victory' : 'Run Ended'
@@ -106,7 +108,7 @@ export function GameOverView() {
 
   return (
     <ViewTemplate>
-      <div className="mx-auto" style={{ maxWidth: 520, padding: isLandscape ? '8px 0' : '32px 0' }}>
+      <div ref={autoFocusRef} className="mx-auto" style={{ maxWidth: 520, padding: isLandscape ? '8px 0' : '32px 0' }}>
         <Panel title={eyebrow}>
           <div
             className="flex flex-col items-center text-center"
