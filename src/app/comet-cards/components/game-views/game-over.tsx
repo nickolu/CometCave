@@ -90,6 +90,14 @@ export function GameOverView() {
   }, [didWin, game.handsPlayed, game.gameSeed, game.totalScore, roundsCompleted, totalRounds])
 
   const onShare = useCallback(async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareText })
+        return
+      } catch {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
     try {
       await copyToClipboard(shareText)
       setHasCopied(true)
