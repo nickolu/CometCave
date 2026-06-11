@@ -17,6 +17,7 @@ class EventEmitter {
     CARD_DESELECTED: [],
     CELESTIAL_CARD_USED: [],
     DISCARD_SELECTED_CARDS: [],
+    DISPLAY_HOW_TO_PLAY: [],
     DISPLAY_JOKERS: [],
     GAME_START: [],
     HAND_DEALT: [],

@@ -192,6 +192,13 @@ export function MainMenuView() {
         </GhostButton>
       )}
 
+      <GhostButton
+        onClick={() => eventEmitter.emit({ type: 'DISPLAY_HOW_TO_PLAY' })}
+        style={{ fontSize: 12, letterSpacing: 1.5 }}
+      >
+        How to Play
+      </GhostButton>
+
       <div
         className="w-full"
         style={{
