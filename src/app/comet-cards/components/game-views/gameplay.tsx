@@ -38,6 +38,7 @@ import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 import { useJokerActivationSequence } from '@/app/comet-cards/hooks/useJokerActivationSequence'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 
 const RARITY_ACCENT: Record<string, string> = {
@@ -145,6 +146,8 @@ export function GamePlayView() {
 
   const { scoreHand } = useScoreHand()
 
+  const autoFocusRef = useAutoFocus()
+
   const {
     containerRef: jokerContainerRef,
     handleKeyDown: jokerHandleKeyDown,
@@ -171,7 +174,7 @@ export function GamePlayView() {
     : undefined
 
   return (
-    <div className="relative w-full">
+    <div ref={autoFocusRef} className="relative w-full">
       {/* Top stat strip */}
       <div
         className="relative z-10 flex flex-wrap items-center justify-between gap-4"
