@@ -69,6 +69,7 @@ export function CelestialCardOpenBoosterPack() {
             initial={reducedMotion ? false : 'hidden'}
             animate="visible"
             onKeyDown={handleKeyDown}
+            style={{ pointerEvents: remainingCardsToSelect === 0 ? 'none' : 'auto' }}
           >
             {cardsForSale.map((buyableCard, i) => (
               <motion.div key={buyableCard.card.id} variants={itemVariants} className="flex flex-col gap-2">
