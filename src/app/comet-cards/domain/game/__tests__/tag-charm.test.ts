@@ -21,4 +21,12 @@ describe('Charm tag', () => {
     const after = reduceGame(game, { type: 'SHOP_OPEN' })
     expect(after.tags.find(t => t.tagType === 'charm')).toBeUndefined()
   })
+
+  it('deals cards to the hand for tarot card targeting', () => {
+    const game: GameState = structuredClone(defaultGameState)
+    game.tags = [{ id: 'tag-1', tagType: 'charm' } as any]
+
+    const after = reduceGame(game, { type: 'SHOP_OPEN' })
+    expect(after.gamePlayState.handIds.length).toBeGreaterThan(0)
+  })
 })
