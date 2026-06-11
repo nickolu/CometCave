@@ -22,6 +22,7 @@ export type GameEvent =
   | ConsumableSelectedEvent
   | ConsumableSoldEvent
   | DiscardSelectedCardsEvent
+  | DisplayHowToPlayEvent
   | DisplayJokersEvent
   | HandDealtEvent
   | HandScoringDoneCardScoringEvent
@@ -149,6 +150,9 @@ export type ConsumableSoldEvent = {
 }
 export type DiscardSelectedCardsEvent = {
   type: 'DISCARD_SELECTED_CARDS'
+}
+export type DisplayHowToPlayEvent = {
+  type: 'DISPLAY_HOW_TO_PLAY'
 }
 export type DisplayJokersEvent = {
   type: 'DISPLAY_JOKERS'

@@ -68,6 +68,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         draft.gamePhase = 'gameOver'
         return
       }
+      case 'DISPLAY_HOW_TO_PLAY': {
+        draft.gamePhase = 'howToPlay'
+        return
+      }
       case 'DISPLAY_JOKERS': {
         draft.gamePhase = 'jokers'
         return

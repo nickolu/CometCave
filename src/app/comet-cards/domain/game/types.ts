@@ -70,6 +70,7 @@ export type GamePhase =
   | 'celestialCards'
   | 'gameOver'
   | 'gameplay'
+  | 'howToPlay'
   | 'jokers'
   | 'mainMenu'
   | 'packOpening'

@@ -7,6 +7,7 @@ import { BossBlindsView } from './components/game-views/boss-blinds'
 import { CelestialsView } from './components/game-views/celestials'
 import { GameOverView } from './components/game-views/game-over'
 import { GamePlayView } from './components/game-views/gameplay'
+import { HowToPlayView } from './components/game-views/how-to-play'
 import { JokersView } from './components/game-views/jokers'
 import { MainMenuView } from './components/game-views/main-menu'
 import { PackOpenView } from './components/game-views/pack-open'
@@ -54,6 +55,8 @@ function PhaseView() {
       view = <GameOverView />; break
     case 'blindRewards':
       view = <BlindRewardsView />; break
+    case 'howToPlay':
+      view = <HowToPlayView />; break
     case 'jokers':
       view = <JokersView />; break
     case 'vouchers':
