@@ -111,6 +111,7 @@ export function handleShopSelectPlayingCardFromPack(
   draft: GameState,
   event: ShopSelectPlayingCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const card = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!card) return
@@ -127,6 +128,7 @@ export function handleShopSelectJokerFromPack(
   draft: GameState,
   event: ShopSelectJokerFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -152,6 +154,7 @@ export function handleShopUseTarotCardFromPack(
   draft: GameState,
   event: ShopUseTarotCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -186,6 +189,7 @@ export function handleShopUseCelestialCardFromPack(
   draft: GameState,
   event: ShopUseCelestialCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -219,6 +223,7 @@ export function handleShopUseSpectralCardFromPack(
   draft: GameState,
   event: ShopUseSpectralCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
