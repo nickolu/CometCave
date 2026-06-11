@@ -153,6 +153,21 @@ export function MainMenuView() {
         </>
       )}
 
+      {history.runs.length === 0 && (
+        <div
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 11,
+            opacity: 0.4,
+            letterSpacing: 1,
+            textAlign: 'center',
+            lineHeight: 1.6,
+          }}
+        >
+          Your first hand awaits. The cave remembers every run.
+        </div>
+      )}
+
       {history.runs.length > 0 && (
         <div
           className="flex items-center justify-center gap-6"
