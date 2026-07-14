@@ -1,0 +1,197 @@
+/* ---------------------------------------------------------------------------
+   Starmatch — star-chart discs & ceremony
+   Colors reference the CometCave design tokens (globals.css). Layout &
+   spacing live in the TSX via Tailwind; this module owns the round geometry
+   and the animations Tailwind can't express cleanly.
+   -------------------------------------------------------------------------- */
+
+.arena {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 4vw, 56px);
+  position: relative;
+}
+
+/* A single star chart: a deep-space disc ringed with neon, faint orbit lines. */
+.disc {
+  --d: min(42vw, 52vh, 460px);
+  --rim: var(--ds-primary);
+  position: relative;
+  width: var(--d);
+  height: var(--d);
+  flex: none;
+  border-radius: 50%;
+  background:
+    radial-gradient(120% 120% at 32% 26%, rgba(255, 255, 255, 0.06) 0%, transparent 42%),
+    radial-gradient(130% 130% at 50% 50%, #12142a 0%, #0b0c1c 58%, #070814 100%);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--rim) 55%, transparent),
+    0 0 34px -4px color-mix(in srgb, var(--rim) 60%, transparent),
+    0 26px 48px -18px rgba(0, 0, 0, 0.7),
+    inset 0 0 60px -20px color-mix(in srgb, var(--rim) 40%, transparent);
+  overflow: hidden;
+  animation: deal 0.45s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* concentric orbit rings + a faint hairline star grid */
+.disc::before {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--rim) 18%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--rim) 8%, transparent),
+    0 0 0 clamp(14px, 4%, 26px) color-mix(in srgb, var(--rim) 6%, transparent);
+  pointer-events: none;
+}
+.disc::after {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--rim) 14%, transparent);
+  pointer-events: none;
+}
+
+/* Glyph layer fills the disc; shake lives here so toggling it never disturbs
+   the disc's one-shot `deal` intro animation. */
+.glyphLayer {
+  position: absolute;
+  inset: 0;
+}
+.discShake {
+  animation: shake 0.35s ease;
+}
+
+.glyph {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  font-size: calc(var(--d) * 0.135);
+  line-height: 1;
+  transform: translate(-50%, -50%) rotate(var(--rot)) scale(var(--scale));
+  transition: transform 0.12s ease, filter 0.12s ease;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+  will-change: transform;
+  background: none;
+  border: 0;
+  padding: 0;
+  z-index: var(--z, 1);
+}
+.glyph:hover {
+  transform: translate(-50%, -50%) rotate(var(--rot)) scale(calc(var(--scale) * 1.16));
+}
+.glyph:focus-visible {
+  outline: 3px solid var(--ds-tertiary);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.glyphHit {
+  animation: pop 0.5s ease both;
+}
+.glyphHit::before {
+  content: '';
+  position: absolute;
+  inset: -24%;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px var(--ds-primary), 0 0 24px 2px color-mix(in srgb, var(--ds-primary) 70%, transparent);
+  animation: ring 0.5s ease both;
+}
+.glyphReveal::before {
+  content: '';
+  position: absolute;
+  inset: -24%;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--ds-tertiary), 0 0 20px 2px color-mix(in srgb, var(--ds-tertiary) 60%, transparent);
+  animation: pulse 1s ease infinite;
+}
+
+@keyframes deal {
+  from {
+    transform: scale(0.6) rotate(-8deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(9px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+@keyframes pop {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--rot)) scale(var(--scale));
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(var(--rot)) scale(calc(var(--scale) * 1.5));
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--rot)) scale(calc(var(--scale) * 1.25));
+  }
+}
+@keyframes ring {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* portrait / narrow: stack the charts */
+@media (orientation: portrait), (max-width: 760px) {
+  .arena {
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 20px);
+  }
+  .disc {
+    --d: min(78vw, 38vh, 420px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disc,
+  .discShake,
+  .glyphHit,
+  .glyphReveal::before,
+  .glyphHit::before {
+    animation: none !important;
+  }
+  .glyph {
+    transition: none !important;
+  }
+  .disc {
+    opacity: 1;
+  }
+}

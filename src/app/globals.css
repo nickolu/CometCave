@@ -111,6 +111,17 @@ body {
   --on-surface: #e4e1d6;             /* high-emphasis text */
   --on-surface-variant: #c4c5d0;     /* medium-emphasis text */
 
+  /* --- Starmatch player palette (neon voyager sigils) ------------- */
+  --sm-c0: #00ffc2;  /* mirrors primary */
+  --sm-c1: #14d1ff;  /* mirrors secondary */
+  --sm-c2: #ffba20;  /* mirrors tertiary */
+  --sm-c3: #ff6b9d;  /* pink */
+  --sm-c4: #c084fc;  /* purple */
+  --sm-c5: #ff5449;  /* coral */
+  --sm-c6: #63b3ff;  /* blue */
+  --sm-c7: #a3e635;  /* lime */
+  --sm-ink: #08111c; /* dark text on a bright sigil */
+
   /* --- Spacing ---------------------------------------------------- */
   --space-unit: 8px;
   --space-stack-gap: 16px;

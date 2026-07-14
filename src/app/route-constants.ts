@@ -9,4 +9,5 @@ export const ROUTE_CONSTANTS = {
   AVATAR_MAKER: '/avatar-maker',
   WHOWOULDWININATOR: '/whowouldwininator',
   TRIVIA: '/trivia',
+  STARMATCH: '/starmatch',
 }
