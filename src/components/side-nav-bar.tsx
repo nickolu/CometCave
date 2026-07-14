@@ -2,14 +2,15 @@
 
 import * as React from 'react'
 
+import { ROUTE_CONSTANTS } from '@/app/route-constants'
 import { BrandMark } from '@/components/brand-mark'
 import { NavPill } from '@/components/ui/nav-pill'
 
-import { ROUTE_CONSTANTS } from '@/app/route-constants'
 
 const gameNavItems: readonly { href: string; label: string; icon: string }[] = [
   { href: ROUTE_CONSTANTS.HOME, label: 'Home', icon: 'home' },
   { href: ROUTE_CONSTANTS.TRIVIA, label: 'Daily Trivia', icon: 'quiz' },
+  { href: ROUTE_CONSTANTS.STARMATCH, label: 'Starmatch', icon: 'hub' },
   { href: ROUTE_CONSTANTS.ORACLE, label: 'Oracle', icon: 'auto_awesome' },
   { href: ROUTE_CONSTANTS.TAP_TAP_ADVENTURE, label: 'Tap Tap', icon: 'swords' },
   { href: ROUTE_CONSTANTS.CHAT_ROOM, label: 'Chat Room', icon: 'chat' },
