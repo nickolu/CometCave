@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { GameState, ScoringEvent } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
@@ -34,8 +34,8 @@ describe('Seltzer joker', () => {
     )
     expect(seltzerEvents).toHaveLength(1)
     // Ace baseChips = 11
-    expect(seltzerEvents[0].value).toBe(11)
-    expect(seltzerEvents[0].type).toBe('chips')
+    expect((seltzerEvents[0] as ScoringEvent).value).toBe(11)
+    expect((seltzerEvents[0] as ScoringEvent).type).toBe('chips')
   })
 
   it('counter initializes to 10 and decrements by 1 on HAND_SCORING_FINALIZE', () => {

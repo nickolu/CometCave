@@ -1,4 +1,4 @@
-import { initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
+import { countConsumableSlots, initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type {
   CardDeselectedEvent,
@@ -26,6 +26,8 @@ import {
 } from '@/app/comet-cards/domain/randomness'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { getRandomTarotCards } from '@/app/comet-cards/domain/shop/utils'
+import { initializeTag } from '@/app/comet-cards/domain/tag/utils'
+import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { getRandomVoucherType } from '@/app/comet-cards/domain/voucher/utils'
 
 export function handleCardSelected(draft: GameState, event: CardSelectedEvent) {
@@ -36,10 +38,13 @@ export function handleCardSelected(draft: GameState, event: CardSelectedEvent) {
 
   const selectedCardIds = [...gamePlayState.selectedCardIds, id]
   const selectedCards = getCards(draft as unknown as GameState, selectedCardIds)
-  const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
+  const visibleCards = selectedCards.filter(c => c.isFaceUp)
+  const selectedHandId = visibleCards.length > 0
+    ? findHighestPriorityHand(visibleCards, draft.staticRules).hand
+    : undefined
 
   gamePlayState.selectedCardIds = selectedCardIds
-  gamePlayState.selectedHand = [selectedHandId, selectedCards]
+  gamePlayState.selectedHand = selectedHandId ? [selectedHandId, selectedCards] : undefined
 }
 
 export function handleCardDeselected(draft: GameState, event: CardDeselectedEvent) {
@@ -52,8 +57,11 @@ export function handleCardDeselected(draft: GameState, event: CardDeselectedEven
 
   let selectedHand: [PokerHandDefinition['id'], PlayingCardState[]] | undefined = undefined
   if (selectedCards.length > 0) {
-    const selectedHandId = findHighestPriorityHand(selectedCards, draft.staticRules).hand
-    selectedHand = [selectedHandId, selectedCards]
+    const visibleCards = selectedCards.filter(c => c.isFaceUp)
+    if (visibleCards.length > 0) {
+      const selectedHandId = findHighestPriorityHand(visibleCards, draft.staticRules).hand
+      selectedHand = [selectedHandId, selectedCards]
+    }
   }
 
   gamePlayState.selectedCardIds = selectedCardIds
@@ -62,6 +70,7 @@ export function handleCardDeselected(draft: GameState, event: CardDeselectedEven
 
 export function handleDiscardSelectedCards(draft: GameState, event: GameEvent) {
   const gamePlayState = draft.gamePlayState
+  gamePlayState.isDiscarding = true
 
   // Find discarded cards before we clear selection
   const discardedCards = getCards(draft as unknown as GameState, gamePlayState.selectedCardIds)
@@ -101,7 +110,7 @@ export function handleDiscardSelectedCards(draft: GameState, event: GameEvent) {
   // Purple seal: add a tarot card for each discarded card with purple seal
   const purpleSealCount = discardedCards.filter(card => card.flags.seal === 'purple').length
   for (let i = 0; i < purpleSealCount; i++) {
-    if (draft.consumables.length < draft.maxConsumables) {
+    if (countConsumableSlots(draft.consumables) < draft.maxConsumables) {
       const randomTarotCardsSeed = buildSeedString([
         draft.gameSeed,
         draft.roundIndex.toString(),
@@ -273,6 +282,7 @@ export function handleCardScored(draft: GameState, event: GameEvent) {
 
 export function handleHandScoringStart(draft: GameState, event: GameEvent) {
   const gamePlayState = draft.gamePlayState
+  gamePlayState.isDiscarding = false
   const selectedCards = getSelectedCards(draft as unknown as GameState)
   const { hand: playedHand, handCards: cardsToScore } = findHighestPriorityHand(
     selectedCards,
@@ -280,6 +290,13 @@ export function handleHandScoringStart(draft: GameState, event: GameEvent) {
   )
   gamePlayState.cardsToScore = cardsToScore
   gamePlayState.playedCardIds = gamePlayState.selectedCardIds
+
+  // Reveal face-down cards when played
+  for (const cardId of gamePlayState.playedCardIds) {
+    if (draft.cards[cardId] && !draft.cards[cardId].isFaceUp) {
+      draft.cards[cardId].isFaceUp = true
+    }
+  }
 
   // Accumulate cards played this ante only during small/big blinds (for The Pillar)
   const currentBlindForTracking = getInProgressBlind(draft as unknown as GameState)
@@ -358,14 +375,26 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
   draft.gamePlayState.drawPileIds = draft.ownedCardIds
   draft.gamePlayState.remainingHands = draft.maxHands
   if (currentBlind.type === 'bossBlind') {
+    // Run boss blind cleanup to reverse any persistent effects applied on BOSS_BLIND_SELECTED
+    const bossBlindName = draft.rounds[draft.roundIndex].bossBlindName
+    const bossBlindDef = bossBlinds.find(b => b.name === bossBlindName)
+    if (bossBlindDef?.onCleanup) {
+      bossBlindDef.onCleanup(draft)
+    }
     draft.gamePlayState.cardIdsPlayedThisAnte = []
+    if (draft.selectedDeck === 'anaglyphDeck') {
+      draft.tags.push(initializeTag('double'))
+    }
     draft.roundIndex += 1
   }
   draft.gamePlayState.scoringEvents = []
+  draft.gamePlayState.jokerPayouts = []
   draft.gamePlayState.remainingDiscards = draft.maxDiscards
   draft.gamePlayState.handTypesPlayedThisRound = []
+  draft.gamePlayState.handResults = []
 
   // Reset shop state for the new shop session
+  draft.shopState.isOpen = false
   draft.shopState.cardsForSale = []
   draft.shopState.freeRerolls = 0
   draft.shopState.packsForSale = []

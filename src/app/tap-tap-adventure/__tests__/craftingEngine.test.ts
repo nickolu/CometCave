@@ -31,6 +31,12 @@ const baseChar: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
 }
 
 function makeItem(overrides: Partial<Item> = {}): Item {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { GameState, ScoringEvent } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
@@ -74,6 +74,6 @@ describe('Fibonacci joker', () => {
       e => 'source' in e && e.source === 'Fibonacci'
     )
     expect(event).toBeDefined()
-    expect(event?.type).toBe('mult')
+    expect((event as ScoringEvent | undefined)?.type).toBe('mult')
   })
 })

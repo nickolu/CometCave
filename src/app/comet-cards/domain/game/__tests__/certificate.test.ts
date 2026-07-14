@@ -45,4 +45,14 @@ describe('Certificate joker', () => {
     expect(newCard).toBeDefined()
     expect(newCard.flags.seal).not.toBe('none')
   })
+
+  it('Certificate card coexists with dealt hand after HAND_DEALT', () => {
+    const game = setupGame()
+    const afterBlind = reduceGame(game, { type: 'SMALL_BLIND_SELECTED' })
+    // Certificate should have added 1 card
+    expect(afterBlind.gamePlayState.handIds.length).toBe(1)
+    // After dealing, hand should have dealt cards + certificate card
+    const afterDeal = reduceGame(afterBlind, { type: 'HAND_DEALT' })
+    expect(afterDeal.gamePlayState.handIds.length).toBeGreaterThan(1)
+  })
 })

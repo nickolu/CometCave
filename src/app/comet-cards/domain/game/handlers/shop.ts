@@ -49,7 +49,11 @@ import { vouchers } from '@/app/comet-cards/domain/voucher/vouchers'
 export function handleShopOpen(draft: GameState, event: GameEvent) {
   draft.shopState.isOpen = true
   draft.shopState.cardsForSale = []
-  // dispatch first to use any tag effects
+  draft.shopState.packsForSale = getRandomPacks(draft, 2)
+
+  // Dispatch tag/voucher/joker effects after initializing packs so effects
+  // that add packs (Meteor, Buffoon tags) or guaranteed cards can append
+  // without being overwritten.
   const ctx = getEffectContext(draft, event)
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 
@@ -76,7 +80,16 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
     )
     draft.shopState.cardsForSale.push(...additionalCards)
   }
-  draft.shopState.packsForSale = getRandomPacks(draft, 2)
+
+  // Astronomer joker: make all celestial cards free
+  const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
+  if (hasAstronomer) {
+    for (const card of draft.shopState.cardsForSale) {
+      if (card.type === 'celestialCard') {
+        card.price = 0
+      }
+    }
+  }
 
   // Coupon tag: make all initial items free
   const couponTag = draft.tags.find(t => t.tagType === 'coupon')
@@ -98,6 +111,7 @@ export function handleShopSelectPlayingCardFromPack(
   draft: GameState,
   event: ShopSelectPlayingCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const card = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!card) return
@@ -106,17 +120,15 @@ export function handleShopSelectPlayingCardFromPack(
   if (!draft.shopState.openPackState) return
 
   draft.shopState.openPackState.remainingCardsToSelect -= 1
-
-  if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-  }
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopSelectJokerFromPack(
   draft: GameState,
   event: ShopSelectJokerFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -134,16 +146,15 @@ export function handleShopSelectJokerFromPack(
   const ctx = getEffectContext(draft, event)
   dispatchEffects(jokerAddedEvent, ctx, collectEffects(ctx.game))
 
-  if (draft.shopState.openPackState.remainingCardsToSelect === 0) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-  }
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopUseTarotCardFromPack(
   draft: GameState,
   event: ShopUseTarotCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -158,8 +169,6 @@ export function handleShopUseTarotCardFromPack(
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
 
-  const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
-
   // Create effect context for dispatching effects
   const tarotCardUsedEvent: GameEvent = { type: 'TAROT_CARD_USED' }
   const ctx = getEffectContext(draft, event)
@@ -172,16 +181,15 @@ export function handleShopUseTarotCardFromPack(
 
   // Clean up after effects have been applied
   draft.gamePlayState.selectedCardIds = []
-  if (isLastCardToSelect) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-  }
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopUseCelestialCardFromPack(
   draft: GameState,
   event: ShopUseCelestialCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -195,8 +203,6 @@ export function handleShopUseCelestialCardFromPack(
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
 
-  const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
-
   // Create effect context for dispatching effects
   const celestialCardUsedEvent: GameEvent = { type: 'CELESTIAL_CARD_USED' }
   const ctx = getEffectContext(draft, event)
@@ -208,17 +214,16 @@ export function handleShopUseCelestialCardFromPack(
   dispatchEffects(celestialCardUsedEvent, ctx, collectEffects(ctx.game))
 
   // Clean up after effects have been applied
-  if (isLastCardToSelect) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-    draft.gamePlayState.selectedCardIds = []
-  }
+  draft.gamePlayState.selectedCardIds = []
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopUseSpectralCardFromPack(
   draft: GameState,
   event: ShopUseSpectralCardFromPackEvent
 ) {
+  if (!draft.shopState.openPackState || draft.shopState.openPackState.remainingCardsToSelect <= 0) return
   const id = event.id
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
@@ -228,8 +233,6 @@ export function handleShopUseSpectralCardFromPack(
   // Remove the card from the pack
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
-
-  const isLastCardToSelect = draft.shopState.openPackState.remainingCardsToSelect === 0
 
   // Create effect context for dispatching effects
   const spectralCardUsedEvent: GameEvent = { type: 'SPECTRAL_CARD_USED' }
@@ -245,11 +248,9 @@ export function handleShopUseSpectralCardFromPack(
   dispatchEffects(spectralCardUsedEvent, ctx, collectEffects(ctx.game))
 
   // Clean up after effects have been applied
-  if (isLastCardToSelect) {
-    draft.gamePhase = 'shop'
-    draft.shopState.openPackState = null
-    draft.gamePlayState.selectedCardIds = []
-  }
+  draft.gamePlayState.selectedCardIds = []
+  // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
+  // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
 
 export function handleShopBuyCard(draft: GameState, event: ShopBuyCardEvent) {
@@ -318,6 +319,15 @@ export function handleShopReroll(draft: GameState) {
     draft.shopState.maxCardsForSale,
     randomBuyableCardsSeed
   )
+  // Astronomer joker: make all celestial cards free after reroll
+  const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
+  if (hasAstronomer) {
+    for (const card of draft.shopState.cardsForSale) {
+      if (card.type === 'celestialCard') {
+        card.price = 0
+      }
+    }
+  }
   if (draft.shopState.freeRerolls > 0) {
     draft.shopState.freeRerolls -= 1
   } else {
@@ -331,7 +341,12 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
   if (!pack) return
   const packDefinition = getPackDefinition(pack.cards[0].type, pack.rarity)
   if (!pack) return
-  draft.money -= Math.floor(packDefinition.price * draft.shopState.priceMultiplier)
+  // Astronomer joker: celestial packs are free
+  const isCelestialPack = packDefinition.cardType === 'celestialCard'
+  const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
+  if (!(isCelestialPack && hasAstronomer)) {
+    draft.money -= Math.floor(packDefinition.price * draft.shopState.priceMultiplier)
+  }
   draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
   draft.gamePhase = 'packOpening'
   draft.shopState.openPackState = pack

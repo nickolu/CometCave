@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { PokerHandsState } from '@/app/comet-cards/domain/hand/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 
@@ -27,7 +28,7 @@ describe('To Do List joker', () => {
       ...started,
       gamePlayState: {
         ...started.gamePlayState,
-        selectedHand: [targetHandId, []],
+        selectedHand: [targetHandId as keyof PokerHandsState, []],
         score: { chips: 10, mult: 5 },
       },
     }
@@ -50,7 +51,7 @@ describe('To Do List joker', () => {
       ...started,
       gamePlayState: {
         ...started.gamePlayState,
-        selectedHand: [nonTargetHandId, []],
+        selectedHand: [nonTargetHandId as keyof PokerHandsState, []],
         score: { chips: 10, mult: 5 },
       },
     }

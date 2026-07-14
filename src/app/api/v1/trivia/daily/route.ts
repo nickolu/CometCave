@@ -3,7 +3,6 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { loadDailyQuestionsFromDisk } from '@/app/trivia/lib/loadDailyQuestions'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
 import type { TriviaQuestion, TriviaQuestionWithAnswer } from '@/app/trivia/models/questions'
 import { getTodayPST } from '@/lib/dates'
@@ -280,18 +279,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ date: targetDate, questions })
     }
 
-    // LEGACY FALLBACK: Load pre-generated questions from disk (static JSON files)
-    const preGenerated = loadDailyQuestionsFromDisk(targetDate)
-    if (preGenerated && preGenerated.length > 0) {
-      dailyCache.set(targetDate, preGenerated)
-      const questions: TriviaQuestion[] = preGenerated.map(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        ({ correctAnswer, explanation, ...q }) => q
-      )
-      return NextResponse.json({ date: targetDate, questions })
-    }
-
-    // FALLBACK: Generate questions on-the-fly if no pre-generated file exists
+    // FALLBACK: Generate questions on-the-fly if no Firestore doc exists
     console.warn(`No pre-generated questions for ${targetDate}, falling back to live generation`)
 
     // Resolve API key for AI question

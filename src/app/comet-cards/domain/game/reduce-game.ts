@@ -4,7 +4,9 @@ import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effect
 import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 import { dealCardsFromDrawPile } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
+import { createGameStateWithDeck } from './default-game-state'
 import { HAND_SIZE } from './constants'
 import { handleHandScoringEnd } from './handlers'
 import {
@@ -53,11 +55,21 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'GAME_START': {
+        const freshState = createGameStateWithDeck(draft.selectedDeck)
+        Object.assign(draft, structuredClone(freshState))
         handleGameStart(draft, event)
         return
       }
       case 'BACK_TO_MAIN_MENU': {
         draft.gamePhase = 'mainMenu'
+        return
+      }
+      case 'GIVE_UP': {
+        draft.gamePhase = 'gameOver'
+        return
+      }
+      case 'DISPLAY_HOW_TO_PLAY': {
+        draft.gamePhase = 'howToPlay'
         return
       }
       case 'DISPLAY_JOKERS': {
@@ -118,8 +130,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
        */
 
       case 'HAND_DEALT': {
-        if (draft.gamePlayState.handIds.length) return
+        if (draft.gamePlayState.handDealt) return
+        draft.gamePlayState.handDealt = true
         dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
+        draft.gamePlayState.isDiscarding = false
         return
       }
       case 'CARD_SELECTED': {
@@ -246,6 +260,11 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         dispatchEffects(event, packSkipCtx, collectEffects(packSkipCtx.game))
         return
       }
+      case 'SHOP_CLOSE_PACK': {
+        draft.gamePhase = 'shop'
+        draft.shopState.openPackState = null
+        return
+      }
 
       /*
        * CONSUMABLE EVENTS
@@ -307,12 +326,23 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         gamePlayState.selectedJokerId = undefined
         return
       }
+      case 'JOKER_SWAP': {
+        const fromIdx = draft.jokers.findIndex(j => j.id === event.fromId)
+        const toIdx = draft.jokers.findIndex(j => j.id === event.toId)
+        if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+          const temp = draft.jokers[fromIdx]
+          draft.jokers[fromIdx] = draft.jokers[toIdx]
+          draft.jokers[toIdx] = temp
+        }
+        draft.gamePlayState.selectedJokerId = undefined
+        return
+      }
       case 'JOKER_SOLD': {
         const selectedJoker = draft.jokers.find(
           joker => joker.id === draft.gamePlayState.selectedJokerId
         )
         if (!selectedJoker) return
-        draft.money += jokers[selectedJoker.jokerId].price + (selectedJoker.bonusSellValue ?? 0)
+        draft.money += getJokerSellValue(jokers[selectedJoker.jokerId], { bonusSellValue: selectedJoker.bonusSellValue ?? 0 })
         removeJoker(draft, event, selectedJoker)
         return
       }

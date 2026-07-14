@@ -12,6 +12,7 @@ import {
   isCelestialCardDefinition,
   isCelestialCardState,
   isTarotCardDefinition,
+  countConsumableSlots,
   isTarotCardState,
 } from '@/app/comet-cards/domain/consumable/utils'
 import { GameState } from '@/app/comet-cards/domain/game/types'
@@ -116,6 +117,7 @@ export function getRandomCelestialCards(
     min: 0,
     max: allCelestialCards.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allCelestialCards[index])
 }
@@ -127,6 +129,7 @@ export function getRandomTarotCards(numberOfCards: number, seed: string): TarotC
     min: 0,
     max: allTarotCards.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allTarotCards[index])
 }
@@ -141,17 +144,19 @@ export function getRandomPlayingCards(
     min: 0,
     max: allPlayingCards.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allPlayingCards[index])
 }
 
-export function getRandomJokers(numberOfCards: number, seed: string): JokerDefinition[] {
-  const allJokers = Object.values(jokers)
+export function getRandomJokers(numberOfCards: number, seed: string, excludeIds: string[] = []): JokerDefinition[] {
+  const allJokers = Object.values(jokers).filter(joker => !excludeIds.includes(joker.id))
   const randomCardIndices = getRandomNumbersWithSeed({
     seed,
     min: 0,
     max: allJokers.length - 1,
     numberOfNumbers: numberOfCards,
+    unique: true,
   })
   return randomCardIndices.map(index => allJokers[index])
 }
@@ -284,7 +289,7 @@ export function getIsRoomForSelectedCard(
     isCelestialCardDefinition(selectedCardDefinition) ||
     isTarotCardDefinition(selectedCardDefinition)
   ) {
-    return game.consumables.length < game.maxConsumables
+    return countConsumableSlots(game.consumables) < game.maxConsumables
   }
 
   return isPlayingCardDefinition(selectedCardDefinition)

@@ -1,5 +1,5 @@
 import { celestialCards } from '@/app/comet-cards/domain/consumable/celestial-cards'
-import { initializeCelestialCard } from '@/app/comet-cards/domain/consumable/utils'
+import { countConsumableSlots, initializeCelestialCard } from '@/app/comet-cards/domain/consumable/utils'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type { EffectContext, GameEvent } from '@/app/comet-cards/domain/events/types'
 import { uuid } from '@/app/comet-cards/domain/randomness'
@@ -10,7 +10,7 @@ import { dealCardsFromDrawPile, getHand } from './card-registry-utils'
 import { HAND_SIZE } from './constants'
 import { calculateAnte, calculateInterest, collectEffects, getBlindDefinition } from './utils'
 
-import type { GamePlayState, GameState } from './types'
+import type { GamePlayState, GameState, ScoringEvent } from './types'
 import type { Draft } from 'immer'
 
 type HandEndOutcome = 'gameOver' | 'blindRewards' | 'continue'
@@ -62,6 +62,25 @@ function applyHandScoringEndEffects(
     vouchers: draft.vouchers,
     tags: draft.tags,
   }
+  // Steel enchantment: X1.5 Mult for each Steel card held in hand (not played)
+  const heldCardIds = draft.gamePlayState.handIds.filter(
+    id => !draft.gamePlayState.playedCardIds.includes(id)
+  )
+  for (const cardId of heldCardIds) {
+    const cardState = draft.cards[cardId]
+    if (!cardState) continue
+    if (cardState.flags.enchantment === 'steel') {
+      draft.gamePlayState.score.mult *= 1.5
+      draft.gamePlayState.scoringEvents.push({
+        id: uuid(),
+        type: 'mult',
+        operator: 'x',
+        value: 1.5,
+        source: 'Steel',
+      })
+    }
+  }
+
   dispatchEffects(event, ctx, collectEffects(ctx.game))
 }
 
@@ -76,8 +95,21 @@ function decideHandEndOutcome(args: {
   return 'continue'
 }
 
-function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>) {
+function resetScoreForNextHand(gamePlayState: Draft<GamePlayState>, handType?: string) {
   gamePlayState.isScoring = false
+
+  // Capture scoring events that are ScoringEvents (have 'source'), not CustomScoringEvents
+  const scoringEventLog = gamePlayState.scoringEvents.filter(
+    (e): e is ScoringEvent => 'source' in e
+  )
+
+  gamePlayState.handResults.push({
+    handType: handType ?? 'unknown',
+    chips: gamePlayState.score.chips,
+    mult: gamePlayState.score.mult,
+    score: Math.floor(gamePlayState.score.chips * gamePlayState.score.mult),
+    scoringEventLog: scoringEventLog.map(e => ({ ...e })),
+  })
   gamePlayState.scoringEvents.push({
     id: uuid(),
     message: `Hand Score: ${gamePlayState.score.chips} x ${gamePlayState.score.mult}`,
@@ -124,7 +156,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     const hasMrBones = draft.jokers.some(j => j.jokerId === 'mrBones')
     if (hasMrBones && blindScore * 4n >= ante) {
       draft.jokers = draft.jokers.filter(j => j.jokerId !== 'mrBones') as typeof draft.jokers
-      resetScoreForNextHand(draft.gamePlayState)
+      resetScoreForNextHand(draft.gamePlayState, playedHand)
       return
     }
     draft.gamePhase = 'gameOver'
@@ -140,7 +172,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
     const cardsInHandWithBlueSeal = cardsInHand.filter(card => card.flags.seal === 'blue')
     if (playedHand) {
       for (let i = 0; i < cardsInHandWithBlueSeal.length; i++) {
-        if (draft.consumables.length < draft.maxConsumables) {
+        if (countConsumableSlots(draft.consumables) < draft.maxConsumables) {
           draft.consumables.push(initializeCelestialCard(celestialCards[playedHand]))
         }
       }
@@ -167,7 +199,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
       currentBlind.additionalRewards.push(['Interest', interest])
     }
 
-    resetScoreForNextHand(draft.gamePlayState)
+    resetScoreForNextHand(draft.gamePlayState, playedHand)
 
     return
   }
@@ -178,5 +210,5 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
   const cardsNeeded = isSerpent ? 3 : HAND_SIZE + draft.handSizeModifier - draft.gamePlayState.handIds.length
   dealCardsFromDrawPile(draft as unknown as GameState, cardsNeeded)
   draft.gamePhase = 'gameplay'
-  resetScoreForNextHand(draft.gamePlayState)
+  resetScoreForNextHand(draft.gamePlayState, playedHand)
 }

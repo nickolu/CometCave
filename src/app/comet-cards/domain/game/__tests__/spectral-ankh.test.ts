@@ -18,7 +18,6 @@ describe('Ankh spectral card', () => {
         {
           card: { id: 'ankh-1', spectralType: 'ankh' } as any,
           type: 'spectralCard',
-          cardType: 'spectralCard',
           price: 0,
         },
       ],

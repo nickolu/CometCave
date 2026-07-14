@@ -1,3 +1,7 @@
+'use client'
+
+import { motion, useReducedMotion } from 'framer-motion'
+
 import { PrimaryButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { TokenCard } from '@/app/comet-cards/components/cosmic/token-card'
 import { getPackDefinition } from '@/app/comet-cards/domain/booster-pack/utils'
@@ -40,7 +44,12 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
   const { game } = useGameState()
   const cardType = pack.cards[0].type
   const packDefinition = getPackDefinition(cardType, pack.rarity)
-  const discountedPrice = Math.floor(packDefinition.price * game.shopState.priceMultiplier)
+  const isCelestialPack = packDefinition.cardType === 'celestialCard'
+  const hasAstronomer = game.jokers.some(j => j.jokerId === 'astronomer')
+  const discountedPrice =
+    isCelestialPack && hasAstronomer
+      ? 0
+      : Math.floor(packDefinition.price * game.shopState.priceMultiplier)
   const canAffordPack = canAffordToBuy(discountedPrice, game)
   return (
     <div className="flex flex-col items-stretch gap-2">
@@ -64,12 +73,24 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
 
 export function BoosterPacksForSale() {
   const { game } = useGameState()
+  const reducedMotion = useReducedMotion()
   const boosterPacks = game.shopState.packsForSale
   if (boosterPacks.length === 0) return null
   return (
     <div className="flex flex-wrap items-stretch gap-3">
-      {boosterPacks.map(pack => (
-        <BoosterPackForSale key={pack.id} pack={pack} />
+      {boosterPacks.map((pack, i) => (
+        <motion.div
+          key={pack.id}
+          initial={reducedMotion ? false : { opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{
+            duration: 0.3,
+            delay: 0.15 + i * 0.08,
+            ease: [0.2, 0.9, 0.3, 1],
+          }}
+        >
+          <BoosterPackForSale pack={pack} />
+        </motion.div>
       ))}
     </div>
   )

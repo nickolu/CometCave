@@ -69,6 +69,94 @@ export function TriviaStats() {
     return days.map((label, i) => ({ label, count: counts[i], pct: Math.round((counts[i] / max) * 100) }))
   }, [history])
 
+  // Speed stats — computed from answer timeMs data
+  const speedStats = useMemo(() => {
+    const allAnswers = history.flatMap((g) => g.answers ?? [])
+    const withTime = allAnswers.filter((a) => (a.timeMs ?? 0) > 0)
+    if (withTime.length === 0) return null
+
+    const totalMs = withTime.reduce((s, a) => s + a.timeMs, 0)
+    const avgMs = totalMs / withTime.length
+
+    const correctAnswers = withTime.filter((a) => a.correct)
+    const incorrectAnswers = withTime.filter((a) => !a.correct)
+
+    const fastestCorrectMs = correctAnswers.length > 0
+      ? Math.min(...correctAnswers.map((a) => a.timeMs))
+      : null
+
+    const avgCorrectMs = correctAnswers.length > 0
+      ? correctAnswers.reduce((s, a) => s + a.timeMs, 0) / correctAnswers.length
+      : null
+
+    const avgIncorrectMs = incorrectAnswers.length > 0
+      ? incorrectAnswers.reduce((s, a) => s + a.timeMs, 0) / incorrectAnswers.length
+      : null
+
+    const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`
+
+    return {
+      avg: fmt(avgMs),
+      fastestCorrect: fastestCorrectMs !== null ? fmt(fastestCorrectMs) : null,
+      avgCorrect: avgCorrectMs !== null ? fmt(avgCorrectMs) : null,
+      avgIncorrect: avgIncorrectMs !== null ? fmt(avgIncorrectMs) : null,
+    }
+  }, [history])
+
+  // Score consistency — median and coefficient of variation
+  const consistencyStats = useMemo(() => {
+    if (history.length < 5) return null
+    const scores = [...history.map((g) => g.score)].sort((a, b) => a - b)
+    const mid = Math.floor(scores.length / 2)
+    const median = scores.length % 2 === 0
+      ? Math.round((scores[mid - 1] + scores[mid]) / 2)
+      : scores[mid]
+
+    const mean = scores.reduce((s, v) => s + v, 0) / scores.length
+    const variance = scores.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / scores.length
+    const stdDev = Math.sqrt(variance)
+    const cv = mean > 0 ? stdDev / mean : 0
+    const consistency = Math.max(0, Math.round((1 - cv) * 100))
+
+    return { median, consistency, avg: Math.round(mean) }
+  }, [history])
+
+  // Completion rate — games played vs days since first game
+  const completionStats = useMemo(() => {
+    if (history.length < 7) return null
+    // history is sorted desc; oldest is last
+    const oldest = history[history.length - 1]
+    if (!oldest) return null
+    const firstDate = new Date(oldest.date + 'T12:00:00')
+    const today = new Date()
+    today.setHours(12, 0, 0, 0)
+    const diffMs = today.getTime() - firstDate.getTime()
+    const daysAvailable = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1)
+    const rate = Math.min(100, Math.round((history.length / daysAvailable) * 100))
+    return { gamesPlayed: history.length, daysAvailable, rate }
+  }, [history])
+
+  const longestAbsence = useMemo(() => {
+    if (history.length < 2) return null
+    const dates = [...history].reverse().map(g => new Date(g.date + 'T12:00:00').getTime())
+    let maxGap = 0
+    for (let i = 1; i < dates.length; i++) {
+      const gap = Math.round((dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24))
+      if (gap > maxGap) maxGap = gap
+    }
+    return maxGap > 1 ? maxGap : null
+  }, [history])
+
+  const sparklineData = useMemo(() => {
+    if (history.length < 3) return null
+    const recent = [...history].reverse().slice(-14)
+    const scores = recent.map(g => g.score)
+    const min = Math.min(...scores)
+    const max = Math.max(...scores)
+    if (max === min) return null
+    return { scores, min, max }
+  }, [history])
+
   // Category performance
   const categoryStats = useMemo(() => {
     const cats = new Map<string, { name: string; icon: string; correct: number; total: number }>()
@@ -220,6 +308,96 @@ export function TriviaStats() {
         </ChunkyCardContent>
       </ChunkyCard>
 
+      {/* Your Pace — speed stats */}
+      {speedStats && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Your Pace
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-ds-tertiary">{speedStats.avg}</div>
+                <div className="text-on-surface/50 text-xs mt-1">Avg answer time</div>
+              </div>
+              {speedStats.fastestCorrect && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-ds-tertiary">{speedStats.fastestCorrect}</div>
+                  <div className="text-on-surface/50 text-xs mt-1">Fastest correct</div>
+                </div>
+              )}
+              {speedStats.avgCorrect && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-ds-primary">{speedStats.avgCorrect}</div>
+                  <div className="text-on-surface/50 text-xs mt-1">Avg time (correct)</div>
+                </div>
+              )}
+              {speedStats.avgIncorrect && (
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-ds-error">{speedStats.avgIncorrect}</div>
+                  <div className="text-on-surface/50 text-xs mt-1">Avg time (incorrect)</div>
+                </div>
+              )}
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {/* Your Rhythm — score consistency */}
+      {consistencyStats && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Your Rhythm
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-ds-tertiary">{consistencyStats.median.toLocaleString()}</div>
+                <div className="text-on-surface/50 text-xs mt-1">Median score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-on-surface">{consistencyStats.avg.toLocaleString()}</div>
+                <div className="text-on-surface/50 text-xs mt-1">Average score</div>
+              </div>
+              <div className="col-span-2 text-center mt-1">
+                <div className="text-2xl font-bold text-ds-tertiary">{consistencyStats.consistency}% consistent</div>
+                <div className="text-on-surface/50 text-xs mt-1">Higher means steadier performance</div>
+              </div>
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {/* Your Orbit — completion rate */}
+      {completionStats && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Your Orbit
+            </h3>
+            <div className="mb-2">
+              <div className="text-on-surface/70 text-sm">
+                {completionStats.gamesPlayed} of {completionStats.daysAvailable} days —{' '}
+                <span className="text-ds-tertiary font-bold">{completionStats.rate}%</span>
+              </div>
+            </div>
+            <div className="w-full h-2 bg-outline-variant rounded-full overflow-hidden">
+              <div
+                className="h-full bg-ds-tertiary rounded-full transition-all"
+                style={{ width: `${completionStats.rate}%` }}
+              />
+            </div>
+            <div className="text-on-surface/40 text-xs mt-2">Days played since your first game</div>
+            {longestAbsence && (
+              <div className="flex justify-between items-center mt-3 pt-3" style={{ borderTop: '1px solid var(--outline-variant)' }}>
+                <span className="text-on-surface/60 text-sm">Longest absence</span>
+                <span className="text-on-surface font-bold">{longestAbsence} days</span>
+              </div>
+            )}
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
       {/* Score trend */}
       {scoreTrend && (
         <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
@@ -244,6 +422,44 @@ export function TriviaStats() {
                 <div className="text-2xl font-bold text-ds-tertiary">{scoreTrend.recentAvg.toLocaleString()}</div>
                 <div className="text-on-surface/40 text-xs">Last 7 avg</div>
               </div>
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
+      )}
+
+      {sparklineData && (
+        <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5">
+            <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+              Score Arc
+            </h3>
+            <div className="w-full" style={{ height: 48 }}>
+              <svg
+                viewBox={`0 0 ${(sparklineData.scores.length - 1) * 20} 40`}
+                className="w-full h-full"
+                preserveAspectRatio="none"
+                aria-label={`Score trend over last ${sparklineData.scores.length} games`}
+                role="img"
+              >
+                <polyline
+                  fill="none"
+                  stroke="var(--ds-tertiary)"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  points={sparklineData.scores
+                    .map((s, i) => {
+                      const x = i * 20
+                      const y = 40 - ((s - sparklineData.min) / (sparklineData.max - sparklineData.min)) * 36 - 2
+                      return `${x},${y}`
+                    })
+                    .join(' ')}
+                />
+              </svg>
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-on-surface/30 text-[10px]">{sparklineData.scores.length} games ago</span>
+              <span className="text-on-surface/30 text-[10px]">Latest</span>
             </div>
           </ChunkyCardContent>
         </ChunkyCard>

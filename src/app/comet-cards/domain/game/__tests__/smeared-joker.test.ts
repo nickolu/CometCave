@@ -82,6 +82,7 @@ describe('Smeared Joker', () => {
       probabilityMultiplier: 1,
       smearedSuits: true,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     }
 
     const mixedRedCards = [
@@ -109,6 +110,7 @@ describe('Smeared Joker', () => {
       probabilityMultiplier: 1,
       smearedSuits: true,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     }
 
     const mixedBlackCards = [
@@ -136,6 +138,7 @@ describe('Smeared Joker', () => {
       probabilityMultiplier: 1,
       smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     }
 
     const mixedColorCards = [
@@ -163,6 +166,7 @@ describe('Smeared Joker', () => {
       probabilityMultiplier: 1,
       smearedSuits: true,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     }
 
     const mixedColorCards = [

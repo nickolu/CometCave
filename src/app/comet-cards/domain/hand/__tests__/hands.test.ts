@@ -130,7 +130,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
+      smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isStraight).toBe(true)
     // We return the straight cards in ascending value order.
@@ -142,6 +150,15 @@ describe('comet-cards hand checkers', () => {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
         allowDuplicateJokersInShop: false,
+        bossBlindRerolls: 0,
+        bossBlindRerollCost: 0,
+        telescopeActive: false,
+        observatoryActive: false,
+        spectralInArcanaPacks: false,
+        probabilityMultiplier: 1,
+        smearedSuits: false,
+        allowStraightGaps: false,
+        bossBlindDisabled: false,
       }
     )
     expect(isNotStraight).toBe(false)
@@ -169,6 +186,15 @@ describe('comet-cards hand checkers', () => {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
         allowDuplicateJokersInShop: false,
+        bossBlindRerolls: 0,
+        bossBlindRerollCost: 0,
+        telescopeActive: false,
+        observatoryActive: false,
+        spectralInArcanaPacks: false,
+        probabilityMultiplier: 1,
+        smearedSuits: false,
+        allowStraightGaps: false,
+        bossBlindDisabled: false,
       }
     )
     expect(isStraight).toBe(true)
@@ -196,6 +222,15 @@ describe('comet-cards hand checkers', () => {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
         allowDuplicateJokersInShop: false,
+        bossBlindRerolls: 0,
+        bossBlindRerollCost: 0,
+        telescopeActive: false,
+        observatoryActive: false,
+        spectralInArcanaPacks: false,
+        probabilityMultiplier: 1,
+        smearedSuits: false,
+        allowStraightGaps: false,
+        bossBlindDisabled: false,
       }
     )
     expect(isStraight).toBe(true)
@@ -209,7 +244,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 4,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
+      smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isFlush).toBe(true)
     expect(
@@ -225,6 +268,15 @@ describe('comet-cards hand checkers', () => {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
         allowDuplicateJokersInShop: false,
+        bossBlindRerolls: 0,
+        bossBlindRerollCost: 0,
+        telescopeActive: false,
+        observatoryActive: false,
+        spectralInArcanaPacks: false,
+        probabilityMultiplier: 1,
+        smearedSuits: false,
+        allowStraightGaps: false,
+        bossBlindDisabled: false,
       }
     )
     expect(isNotFlush).toBe(false)
@@ -280,7 +332,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
+      smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isStraightFlush).toBe(true)
     expect(straightFlushCards).toEqual(allSameSuitStraight)
@@ -298,7 +358,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
+      smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isFlushHouse).toBe(true)
     expect(flushHouseCards).toEqual(suitedStraight)
@@ -314,7 +382,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
+      smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isNotFlushHouse).toBe(false)
     expect(notFlushHouseCards).toEqual([])
@@ -326,7 +402,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
+      smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     })
     expect(isFive).toBe(true)
     expect(fiveCards).toEqual(fiveAces)
@@ -337,6 +421,15 @@ describe('comet-cards hand checkers', () => {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
         allowDuplicateJokersInShop: false,
+        bossBlindRerolls: 0,
+        bossBlindRerollCost: 0,
+        telescopeActive: false,
+        observatoryActive: false,
+        spectralInArcanaPacks: false,
+        probabilityMultiplier: 1,
+        smearedSuits: false,
+        allowStraightGaps: false,
+        bossBlindDisabled: false,
       }
     )
     expect(isNotFive).toBe(false)
@@ -348,6 +441,15 @@ describe('comet-cards hand checkers', () => {
         numberOfCardsRequiredForFlushAndStraight: 5,
         areAllCardsFaceCards: false,
         allowDuplicateJokersInShop: false,
+        bossBlindRerolls: 0,
+        bossBlindRerollCost: 0,
+        telescopeActive: false,
+        observatoryActive: false,
+        spectralInArcanaPacks: false,
+        probabilityMultiplier: 1,
+        smearedSuits: false,
+        allowStraightGaps: false,
+        bossBlindDisabled: false,
       }
     )
     expect(isNotExactlyFive).toBe(false)
@@ -359,8 +461,15 @@ describe('comet-cards hand checkers', () => {
       numberOfCardsRequiredForFlushAndStraight: 5,
       areAllCardsFaceCards: false,
       allowDuplicateJokersInShop: false,
+      bossBlindRerolls: 0,
+      bossBlindRerollCost: 0,
+      telescopeActive: false,
+      observatoryActive: false,
+      spectralInArcanaPacks: false,
+      probabilityMultiplier: 1,
       smearedSuits: false,
       allowStraightGaps: false,
+      bossBlindDisabled: false,
     }
     const flushFive = [c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts'), c('7_hearts')]
     const [isFlushFive, flushFiveCards] = checkHandForFlushFive(flushFive, staticRules)

@@ -47,6 +47,30 @@ describe('Turtle Bean joker', () => {
     expect(game.jokers.some(j => j.jokerId === 'turtleBeanJoker')).toBe(false)
   })
 
+  it('decrements each instance independently with multiple Turtle Beans', () => {
+    const game: GameState = structuredClone(defaultGameState)
+    const tb1 = initializeJoker(jokers.turtleBeanJoker, game)
+    tb1.metadata = { handSizeBonus: 5 }
+    const tb2 = initializeJoker(jokers.turtleBeanJoker, game)
+    tb2.metadata = { handSizeBonus: 5 }
+    game.jokers = [tb1, tb2]
+
+    const started = reduceGame(game, { type: 'GAME_START' })
+    expect(started.handSizeModifier).toBe(10)
+
+    const afterRound1 = reduceGame(started, { type: 'ROUND_END' })
+    expect(afterRound1.handSizeModifier).toBe(8) // each decremented by 1
+    expect(afterRound1.jokers.length).toBe(2)
+
+    // After 5 rounds both should be gone
+    let g = started
+    for (let i = 0; i < 5; i++) {
+      g = reduceGame(g, { type: 'ROUND_END' })
+    }
+    expect(g.handSizeModifier).toBe(0)
+    expect(g.jokers.some(j => j.jokerId === 'turtleBeanJoker')).toBe(false)
+  })
+
   it('reverts hand size modifier when sold', () => {
     const game = createGameWithTurtleBean()
     const started = reduceGame(game, { type: 'GAME_START' })

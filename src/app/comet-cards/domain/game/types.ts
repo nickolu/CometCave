@@ -70,6 +70,7 @@ export type GamePhase =
   | 'celestialCards'
   | 'gameOver'
   | 'gameplay'
+  | 'howToPlay'
   | 'jokers'
   | 'mainMenu'
   | 'packOpening'
@@ -84,6 +85,9 @@ export interface GamePlayState {
   // Track card IDs played across blinds in current ante (for The Pillar)
   cardIdsPlayedThisAnte: string[]
 
+  // Joker payouts recorded during ROUND_END (shown in blind rewards view)
+  jokerPayouts: { name: string; amount: number }[]
+
   // Discard pile for current blind (card IDs)
   discardPileIds: string[]
 
@@ -96,6 +100,10 @@ export interface GamePlayState {
   // Track which hand types have been played this round (resets between blinds)
   handTypesPlayedThisRound: string[]
 
+  handResults: HandResult[]
+
+  handDealt: boolean
+  isDiscarding: boolean
   isScoring: boolean
   playedCardIds: string[]
   remainingDiscards: number
@@ -130,6 +138,14 @@ export function isCustomScoringEvent(
 export interface ScoreState {
   chips: number
   mult: number
+}
+
+export interface HandResult {
+  handType: string  // e.g., 'pair', 'flush' — the PokerHandDefinition id
+  chips: number
+  mult: number
+  score: number  // chips * mult
+  scoringEventLog: ScoringEvent[]  // joker activations for this hand
 }
 
 export interface Stake {

@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { GhostButton } from '@/app/comet-cards/components/cosmic/buttons'
 import { Panel } from '@/app/comet-cards/components/cosmic/panel'
 import { CelestialCardOpenBoosterPack } from '@/app/comet-cards/components/pack-open/celestial-card-open-booster-pack'
@@ -9,6 +11,7 @@ import { SpectralCardOpenBoosterPack } from '@/app/comet-cards/components/pack-o
 import { TarotCardOpenBoosterPack } from '@/app/comet-cards/components/pack-open/tarot-card-open-booster-pack'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import type { BuyableCard as BuyableCardType } from '@/app/comet-cards/domain/shop/types'
+import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
 import { ViewTemplate } from './view-template'
@@ -24,6 +27,16 @@ function OpenBoosterPack({ cardType }: { cardType: BuyableCardType['type'] }) {
 
 export function PackOpenView() {
   const { game } = useGameState()
+  const autoFocusRef = useAutoFocus()
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') eventEmitter.emit({ type: 'PACK_OPEN_SKIP' })
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   if (!game.shopState.openPackState) {
     return (
       <ViewTemplate>
@@ -38,7 +51,7 @@ export function PackOpenView() {
   return (
     <ViewTemplate>
       <Panel title="Booster Pack">
-        <div className="flex flex-col" style={{ padding: 16, gap: 14 }}>
+        <div ref={autoFocusRef} className="flex flex-col" style={{ padding: 16, gap: 14 }}>
           <OpenBoosterPack cardType={game.shopState.openPackState.cards[0].type} />
           <div>
             <GhostButton onClick={() => eventEmitter.emit({ type: 'PACK_OPEN_SKIP' })}>

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { generateHeirloom } from '@/app/tap-tap-adventure/lib/heirloomGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
-function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharacter {
+function makeCharacter(overrides: Partial<FantasyCharacter> = {}) {
   return {
     id: 'test-char-1',
     playerId: 'player-1',
@@ -24,8 +24,14 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     inventory: [],
     deathCount: 0,
     pendingStatPoints: 0,
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
     ...overrides,
-  }
+  } as FantasyCharacter
 }
 
 describe('Heirloom Generator', () => {
@@ -70,14 +76,14 @@ describe('Heirloom Generator', () => {
 
     // If both are equipment, high level should have better stats
     if (lowHeirloom.type === 'equipment' && highHeirloom.type === 'equipment') {
-      const lowTotal = Object.values(lowHeirloom.effects ?? {}).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0
-      const highTotal = Object.values(highHeirloom.effects ?? {}).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0
+      const lowTotal = Object.values(lowHeirloom.effects ?? {}).reduce((a: number, b) => a + (typeof b === 'number' ? b : 0), 0)
+      const highTotal = Object.values(highHeirloom.effects ?? {}).reduce((a: number, b) => a + (typeof b === 'number' ? b : 0), 0)
       expect(highTotal).toBeGreaterThan(lowTotal)
     }
 
     // If both are consumable, high level should have better heal
     if (lowHeirloom.type === 'consumable' && highHeirloom.type === 'consumable') {
-      expect(highHeirloom.effects!.heal).toBeGreaterThan(lowHeirloom.effects!.heal!)
+      expect(highHeirloom.effects!.heal as number).toBeGreaterThan(lowHeirloom.effects!.heal as number)
     }
   })
 
@@ -164,8 +170,8 @@ describe('Heirloom Generator', () => {
 
     // For equipment type heirlooms, far traveler should have higher stat bonuses
     if (nearHeirloom.type === 'equipment' && farHeirloom.type === 'equipment') {
-      const nearTotal = Object.values(nearHeirloom.effects ?? {}).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0
-      const farTotal = Object.values(farHeirloom.effects ?? {}).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0
+      const nearTotal = Object.values(nearHeirloom.effects ?? {}).reduce((a: number, b) => a + (typeof b === 'number' ? b : 0), 0)
+      const farTotal = Object.values(farHeirloom.effects ?? {}).reduce((a: number, b) => a + (typeof b === 'number' ? b : 0), 0)
       expect(farTotal).toBeGreaterThanOrEqual(nearTotal)
     }
   })

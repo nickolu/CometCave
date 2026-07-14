@@ -10,7 +10,7 @@ describe('Grim spectral card', () => {
     const initialOwned = game.ownedCardIds.length
     game.shopState.openPackState = {
       id: 'test-pack',
-      cards: [{ card: { id: 'grim-1', spectralType: 'grim' } as any, type: 'spectralCard', cardType: 'spectralCard', price: 0 }],
+      cards: [{ card: { id: 'grim-1', spectralType: 'grim' } as any, type: 'spectralCard', price: 0 }],
       rarity: 'normal',
       remainingCardsToSelect: 1,
     }

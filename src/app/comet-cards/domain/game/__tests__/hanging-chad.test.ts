@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
+import type { GameState, ScoringEvent } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
@@ -27,8 +27,8 @@ describe('Hanging Chad joker', () => {
     )
     expect(hangingChadEvents).toHaveLength(2)
     // Ace baseChips = 11
-    expect(hangingChadEvents[0].value).toBe(11)
-    expect(hangingChadEvents[1].value).toBe(11)
+    expect((hangingChadEvents[0] as ScoringEvent).value).toBe(11)
+    expect((hangingChadEvents[1] as ScoringEvent).value).toBe(11)
   })
 
   it('second scored card does NOT get extra triggers', () => {

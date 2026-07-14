@@ -9,8 +9,8 @@ import { implementedTags as tags } from './tags'
 
 import type { TagState, TagType } from './types'
 
-export function getRandomTag(game: GameState): TagType {
-  const seed = buildSeedString([game.gameSeed, game.roundIndex.toString()])
+export function getRandomTag(game: GameState, blindType: string): TagType {
+  const seed = buildSeedString([game.gameSeed, game.roundIndex.toString(), blindType])
   const randomTagType = getRandomWeightedChoiceWithSeed({
     seed,
     weightedOptions: Object.values(tags).reduce(

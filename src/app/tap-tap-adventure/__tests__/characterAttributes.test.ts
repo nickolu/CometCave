@@ -27,6 +27,12 @@ describe('Character Attribute Management', () => {
       currentRegion: 'green_meadows',
       currentWeather: 'clear',
       factionReputations: {},
+      bounty: 0,
+      mountRoster: [],
+      mailbox: [],
+      pendingReplies: [],
+      visitedTowns: [],
+      party: [],
       inventory: [],
     }
     expect(char.strength).toBe(2)
@@ -59,6 +65,12 @@ describe('Character Attribute Management', () => {
       currentRegion: 'green_meadows',
       currentWeather: 'clear',
       factionReputations: {},
+      bounty: 0,
+      mountRoster: [],
+      mailbox: [],
+      pendingReplies: [],
+      visitedTowns: [],
+      party: [],
       inventory: [],
     }
     char = { ...char, strength: char.strength + 1 }

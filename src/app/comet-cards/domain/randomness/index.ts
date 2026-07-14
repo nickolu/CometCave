@@ -52,15 +52,28 @@ export function getRandomNumbersWithSeed({
   min,
   max,
   numberOfNumbers,
+  unique = false,
 }: {
   seed: string
   min: number
   max: number
   numberOfNumbers: number
+  unique?: boolean
 }) {
   const seedFn = xmur3(seed)
   const rng = mulberry32(seedFn())
-  return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
+  if (!unique) {
+    return Array.from({ length: numberOfNumbers }, () => Math.floor(rng() * (max - min + 1)) + min)
+  }
+  // Unique selection: Fisher-Yates partial shuffle
+  const range = max - min + 1
+  const count = Math.min(numberOfNumbers, range)
+  const pool = Array.from({ length: range }, (_, i) => i + min)
+  for (let i = 0; i < count; i++) {
+    const j = i + Math.floor(rng() * (range - i))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, count)
 }
 
 export function getRandomWeightedNumberWithSeed({
@@ -110,6 +123,16 @@ export function getRandomWeightedChoiceWithSeed<T extends string>({
 
 export function getCurrentDayAsSeedString() {
   return new Date().toISOString().split('T')[0]
+}
+
+export function getCurrentDayAsSeedStringPST() {
+  const now = new Date()
+  const pstString = now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })
+  const pstDate = new Date(pstString)
+  const y = pstDate.getFullYear()
+  const m = String(pstDate.getMonth() + 1).padStart(2, '0')
+  const d = String(pstDate.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 export function buildSeedString(strings: string[]) {

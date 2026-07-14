@@ -10,7 +10,9 @@ import { Vouchers } from '@/app/comet-cards/components/voucher/vouchers'
 import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
 import { implementedTags as tags } from '@/app/comet-cards/domain/tag/tags'
+import { AnimatedMoney } from '@/app/comet-cards/components/animations/animated-money'
 import { useGameState } from '@/app/comet-cards/useGameState'
+import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 
 const monoLabel = {
   fontFamily: 'var(--cc-font-mono)',
@@ -49,12 +51,15 @@ function StatRow({
 export function ViewTemplate({
   sidebarContentTop,
   sidebarContentBottom,
+  topBarAction,
   children,
 }: {
   sidebarContentTop?: React.ReactNode
   sidebarContentBottom?: React.ReactNode
+  topBarAction?: React.ReactNode
   children: React.ReactNode
 }) {
+  const isLandscape = useLandscapeMobile()
   const { game } = useGameState()
   const currentBlind = getInProgressBlind(game)
   const [showHands, setShowHands] = useState(false)
@@ -68,12 +73,12 @@ export function ViewTemplate({
     : 0n
 
   return (
-    <div className="relative">
+    <div className="relative" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Top stat strip — keeps every view aligned with gameplay */}
       <div
         className="relative z-10 flex flex-wrap items-center justify-between gap-4"
         style={{
-          padding: '12px 22px',
+          padding: isLandscape ? '8px 12px 8px 40px' : '12px 22px 12px 40px',
           borderBottom: '1px solid var(--cc-panel-divider)',
         }}
       >
@@ -97,22 +102,31 @@ export function ViewTemplate({
           }}
         >
           <Stat label="Round" value={`${game.roundIndex + 1}/${game.rounds.length}`} />
-          <Stat label="Money" value={`$${game.money}`} accent="var(--cc-gold)" />
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            <div style={{ opacity: 0.45, fontSize: 10 }}>Money</div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>
+              <AnimatedMoney value={game.money} />
+            </div>
+          </div>
           <Stat label="Hands" value={String(game.handsPlayed)} />
+          {topBarAction}
         </div>
       </div>
 
       <div
         className="grid"
         style={{
-          gridTemplateColumns: 'minmax(240px, 280px) minmax(0, 1fr)',
+          gridTemplateColumns: isLandscape ? '1fr' : 'minmax(240px, 280px) minmax(0, 1fr)',
           gap: 18,
-          padding: '14px 22px 22px',
-          alignItems: 'start',
+          padding: isLandscape ? '8px 12px' : '14px 22px 22px',
+          alignItems: 'stretch',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {/* Sidebar */}
-        <aside id="game-sidebar" className="flex flex-col gap-4">
+        <aside id="game-sidebar" className="cc-scroll flex flex-col gap-4" style={{ display: isLandscape ? 'none' : undefined, overflowY: 'auto', minHeight: 0 }}>
           {sidebarContentTop}
 
           <Panel title="Run Stats">
@@ -218,10 +232,17 @@ export function ViewTemplate({
         </aside>
 
         {/* Main */}
-        <main id="game-content" className="min-w-0">
+        <main id="game-content" className="cc-scroll min-w-0" style={{ overflowY: 'auto', minHeight: 0 }}>
           {children}
         </main>
       </div>
+
+      {/* In landscape mode the sidebar is hidden, so render its bottom actions here */}
+      {isLandscape && sidebarContentBottom && (
+        <div style={{ padding: '6px 12px', borderTop: '1px solid var(--cc-panel-divider)', flexShrink: 0 }}>
+          {sidebarContentBottom}
+        </div>
+      )}
 
       {showHands && (
         <Modal eyebrow="Show Hands" title="Poker Hands" onClose={() => setShowHands(false)}>

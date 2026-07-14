@@ -1,3 +1,4 @@
+import { decks } from '@/app/comet-cards/domain/decks/decks'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type { Effect, EffectContext, GameEvent } from '@/app/comet-cards/domain/events/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
@@ -45,6 +46,31 @@ export function getBlindDefinition(type: BlindState['type'], round: RoundState):
   throw new Error(`Unknown blind type: ${type}`)
 }
 
+function resolveJokerEffects(
+  jokerIndex: number,
+  jokerStates: JokerState[],
+  depth: number = 0
+): Effect[] {
+  if (depth > 10) return []
+  const joker = jokerStates[jokerIndex]
+  if (!joker) return []
+  const def = jokers[joker.jokerId]
+  if (!def) return []
+
+  if (def.id === 'blueprint') {
+    const rightIndex = jokerIndex + 1
+    if (rightIndex >= jokerStates.length) return []
+    return resolveJokerEffects(rightIndex, jokerStates, depth + 1)
+  }
+
+  if (def.id === 'brainstorm') {
+    if (jokerStates.length === 0) return []
+    return resolveJokerEffects(0, jokerStates, depth + 1)
+  }
+
+  return def.effects
+}
+
 export function collectEffects(game: GameState): Effect[] {
   const effects: Effect[] = []
 
@@ -54,11 +80,16 @@ export function collectEffects(game: GameState): Effect[] {
     effects.push(...getBlindDefinition(blind.type, game.rounds[game.roundIndex]).effects)
   }
 
-  effects.push(...game.jokers.flatMap(j => jokers[j.jokerId]?.effects || []))
+  effects.push(...game.jokers.flatMap((_, i) => resolveJokerEffects(i, game.jokers)))
 
   effects.push(...game.vouchers.flatMap(v => vouchers[v.type]?.effects || []))
 
   effects.push(...game.tags.flatMap(t => tags[t.tagType]?.effects || []))
+
+  const deckDef = decks[game.selectedDeck]
+  if (deckDef?.effects) {
+    effects.push(...deckDef.effects)
+  }
 
   return effects
 }
@@ -121,6 +152,7 @@ export function removeJoker(draft: GameState, event: GameEvent, selectedJoker: J
     vouchers: draft.vouchers,
     tags: draft.tags,
   }
+  ctx.removedJoker = selectedJoker
   // Collect effects *before* removing the joker so "on sold/removed" effects that live on the
   // removed joker itself still get a chance to run. Then dispatch *after* removal so effects
   // can observe the post-removal game state.
@@ -138,8 +170,8 @@ export function calculateInterest(draft: GameState): number {
 }
 
 export function populateTags(draft: GameState): void {
-  const bigBlindTag = getRandomTag(draft)
-  const smallBlindTag = getRandomTag(draft)
+  const bigBlindTag = getRandomTag(draft, 'bigBlind')
+  const smallBlindTag = getRandomTag(draft, 'smallBlind')
   draft.rounds[draft.roundIndex].bigBlind.tag = bigBlindTag
   draft.rounds[draft.roundIndex].smallBlind.tag = smallBlindTag
 }

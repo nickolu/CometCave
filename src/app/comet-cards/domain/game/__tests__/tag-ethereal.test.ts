@@ -4,13 +4,13 @@ import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 
 describe('Ethereal tag', () => {
-  it('adds a Spectral Pack to packsForSale on SHOP_OPEN', () => {
+  it('immediately opens a Spectral Pack on SHOP_OPEN', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.tags = [{ id: 'tag-1', tagType: 'ethereal' } as any]
-    const initialPacks = game.shopState.packsForSale.length
 
     const after = reduceGame(game, { type: 'SHOP_OPEN' })
-    expect(after.shopState.packsForSale.length).toBeGreaterThan(initialPacks)
+    expect(after.shopState.openPackState).not.toBeNull()
+    expect(after.gamePhase).toBe('packOpening')
   })
 
   it('removes the Ethereal tag after use', () => {
@@ -19,5 +19,13 @@ describe('Ethereal tag', () => {
 
     const after = reduceGame(game, { type: 'SHOP_OPEN' })
     expect(after.tags.find(t => t.tagType === 'ethereal')).toBeUndefined()
+  })
+
+  it('deals cards to the hand for spectral card targeting', () => {
+    const game: GameState = structuredClone(defaultGameState)
+    game.tags = [{ id: 'tag-1', tagType: 'ethereal' } as any]
+
+    const after = reduceGame(game, { type: 'SHOP_OPEN' })
+    expect(after.gamePlayState.handIds.length).toBeGreaterThan(0)
   })
 })

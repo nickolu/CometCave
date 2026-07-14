@@ -9,6 +9,7 @@ import {
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
+import { getConsumableSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
 export function handleUseConsumableTarotCard(draft: Draft<GameState>, event: GameEvent): void {
   const tarotCard = draft.gamePlayState.selectedConsumable
@@ -73,6 +74,6 @@ export function handleConsumableSold(draft: Draft<GameState>): void {
   draft.consumables = draft.consumables.filter(
     consumable => consumable.id !== selectedConsumable?.id
   )
-  draft.money += selectedConsumableDefinition.price
+  draft.money += getConsumableSellValue(selectedConsumableDefinition)
   draft.gamePlayState.selectedConsumable = undefined
 }

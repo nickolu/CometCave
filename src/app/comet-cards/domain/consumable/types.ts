@@ -46,9 +46,12 @@ export interface TarotCardDefinition extends ConsumableDefinition {
   effects: Effect[]
 }
 
+export type ConsumableEdition = 'holographic' | 'foil' | 'polychrome' | 'negative'
+
 export interface ConsumableState {
   id: string
   consumableType: ConsumableDefinition['type']
+  edition?: ConsumableEdition
 }
 
 export interface CelestialCardState extends ConsumableState {

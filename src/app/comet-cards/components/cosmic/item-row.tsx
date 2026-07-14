@@ -17,7 +17,8 @@ export function ItemRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-md p-2.5 text-left transition-colors"
+      aria-label={`${name}: ${description}`}
+      className="cc-btn flex w-full items-start gap-3 rounded-md p-2.5 text-left transition-colors"
       style={{
         background: selected
           ? `color-mix(in srgb, ${accent} 14%, transparent)`

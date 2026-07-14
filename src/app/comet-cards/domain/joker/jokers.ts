@@ -18,10 +18,11 @@ import {
 import type { CelestialCardState } from '@/app/comet-cards/domain/consumable/types'
 import { initializeTarotCard } from '@/app/comet-cards/domain/consumable/utils'
 import { getRandomTarotCards, getRandomSpectralCards } from '@/app/comet-cards/domain/shop/utils'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 
 import { addOwnedCard, removeOwnedCard } from '@/app/comet-cards/domain/game/card-registry-utils'
-import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
+import { initializePlayingCard, isFaceCard } from '@/app/comet-cards/domain/playing-card/utils'
 import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { JokerDefinition, JokerState } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
@@ -491,24 +492,29 @@ export const turtleBeanJoker: JokerDefinition = {
     {
       event: { type: 'GAME_START' },
       priority: 1,
+      // Called once per instance by the effect system. Apply bonus for exactly one uninitialized instance.
       apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
-        if (tb) {
-          if (!tb.metadata?.handSizeBonus) {
-            tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
-          }
-          const bonus = tb.metadata?.handSizeBonus ?? 5
-          ctx.game.handSizeModifier += bonus
+        const tb = ctx.game.jokers.find(
+          j => j.jokerId === 'turtleBeanJoker' && !(j.metadata as Record<string, unknown>)?.__gameStartApplied
+        )
+        if (!tb) return
+        if (!tb.metadata?.handSizeBonus) {
+          tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
         }
+        const bonus = tb.metadata?.handSizeBonus ?? 5
+        ctx.game.handSizeModifier += bonus
+        ;(tb.metadata as Record<string, unknown>).__gameStartApplied = true
       },
     },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
-        if (tb) {
-          tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
+        const newTb = ctx.game.jokers.find(
+          j => j.jokerId === 'turtleBeanJoker' && (!j.metadata || j.metadata.handSizeBonus === undefined)
+        )
+        if (newTb) {
+          newTb.metadata = { ...newTb.metadata, handSizeBonus: 5 }
           ctx.game.handSizeModifier += 5
         }
       },
@@ -516,16 +522,30 @@ export const turtleBeanJoker: JokerDefinition = {
     {
       event: { type: 'ROUND_END' },
       priority: 1,
+      // Called once per instance by the effect system. Use a per-dispatch marker to ensure each
+      // bean is decremented exactly once per ROUND_END dispatch, even with multiple instances.
       apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(j => j.jokerId === 'turtleBeanJoker')
+        const allBeans = ctx.game.jokers.filter(j => j.jokerId === 'turtleBeanJoker')
+        // On the first invocation of this dispatch, none will have __roundEndInProgress.
+        // On subsequent invocations, processed beans will have it set.
+        // If ALL beans already have the marker, this is a new dispatch — clear markers first.
+        const allMarked = allBeans.length > 0 && allBeans.every(j => (j.metadata as Record<string, unknown>)?.__roundEndInProgress)
+        if (allMarked) {
+          for (const b of allBeans) {
+            delete (b.metadata as Record<string, unknown>).__roundEndInProgress
+          }
+        }
+        const tb = ctx.game.jokers.find(
+          j => j.jokerId === 'turtleBeanJoker' && j.metadata && !(j.metadata as Record<string, unknown>).__roundEndInProgress
+        )
         if (!tb || !tb.metadata) return
-
         ctx.game.handSizeModifier -= 1
         tb.metadata.handSizeBonus -= 1
-
-        if (tb.metadata.handSizeBonus <= 0) {
-          ctx.game.jokers = ctx.game.jokers.filter(j => j.id !== tb.id)
-        }
+        ;(tb.metadata as Record<string, unknown>).__roundEndInProgress = true
+        // Remove instances that reached 0
+        ctx.game.jokers = ctx.game.jokers.filter(
+          j => j.jokerId !== 'turtleBeanJoker' || (j.metadata?.handSizeBonus ?? 0) > 0
+        ) as typeof ctx.game.jokers
       },
     },
     {
@@ -635,7 +655,7 @@ export const rocketJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const rk = ctx.game.jokers.find(j => j.jokerId === 'rocketJoker')
         if (rk) {
-          rk.metadata = { ...rk.metadata, payout: 1, lastBossRound: -1 }
+          rk.metadata = { ...rk.metadata, payout: rk.metadata?.payout ?? 1, lastBossRound: rk.metadata?.lastBossRound ?? -1 }
         }
       },
     },
@@ -648,12 +668,13 @@ export const rocketJoker: JokerDefinition = {
 
         // Pay out current amount
         ctx.game.money += rk.metadata.payout
+        ctx.game.gamePlayState.jokerPayouts.push({ name: 'Rocket', amount: rk.metadata.payout })
 
         // Check if boss blind was defeated this round
         const round = ctx.game.rounds[ctx.game.roundIndex]
         if (
           round &&
-          round.bossBlind.status === 'completed' &&
+          round.bossBlind.status === 'inProgress' &&
           rk.metadata.lastBossRound !== ctx.game.roundIndex
         ) {
           rk.metadata.payout += 2
@@ -679,8 +700,7 @@ export const midasMaskJoker: JokerDefinition = {
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
         if (!cardDef) return
-        const faceValues = ['J', 'Q', 'K']
-        if (!faceValues.includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
 
         // Convert to Gold enchantment permanently
         const cardState = ctx.game.cards[scoredCard.id]
@@ -703,7 +723,7 @@ export const dietColaJoker: JokerDefinition = {
       event: { type: 'JOKER_SOLD' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        if (!ctx.game.jokers.some(j => j.jokerId === 'dietColaJoker')) {
+        if (ctx.removedJoker?.jokerId === 'dietColaJoker') {
           ctx.game.tags.push({
             id: uuid(),
             tagType: 'double',
@@ -736,6 +756,7 @@ export const cloud9Joker: JokerDefinition = {
         }
         if (nineCount > 0) {
           ctx.game.money += nineCount
+          ctx.game.gamePlayState.jokerPayouts.push({ name: 'Cloud 9', amount: nineCount })
         }
       },
     },
@@ -965,7 +986,7 @@ export const weeJokerJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
         if (wj) {
-          wj.metadata = { ...wj.metadata, chipsBonus: 0 }
+          wj.metadata = { ...wj.metadata, chipsBonus: wj.metadata?.chipsBonus ?? 0 }
         }
       },
     },
@@ -1143,7 +1164,7 @@ export const spareTrousersJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
         if (st) {
-          st.metadata = { ...st.metadata, multBonus: 0 }
+          st.metadata = { ...st.metadata, multBonus: st.metadata?.multBonus ?? 0 }
         }
       },
     },
@@ -1154,6 +1175,15 @@ export const spareTrousersJoker: JokerDefinition = {
         const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
         if (!st || !st.metadata) return
 
+        // Check if hand contains Two Pair and gain +2
+        const selectedHand = ctx.game.gamePlayState.selectedHand
+        if (!selectedHand) return
+        const handId = selectedHand[0]
+        const handsContainingTwoPair = ['twoPair', 'fullHouse', 'flushHouse']
+        if (handsContainingTwoPair.includes(handId)) {
+          st.metadata.multBonus += 2
+        }
+
         // Apply accumulated mult bonus
         if (st.metadata.multBonus > 0) {
           ctx.game.gamePlayState.scoringEvents.push({
@@ -1163,15 +1193,6 @@ export const spareTrousersJoker: JokerDefinition = {
             source: 'Spare Trousers',
           })
           ctx.game.gamePlayState.score.mult += st.metadata.multBonus
-        }
-
-        // Check if hand contains Two Pair and gain +2
-        const selectedHand = ctx.game.gamePlayState.selectedHand
-        if (!selectedHand) return
-        const handId = selectedHand[0]
-        const handsContainingTwoPair = ['twoPair', 'fullHouse', 'flushHouse']
-        if (handsContainingTwoPair.includes(handId)) {
-          st.metadata.multBonus += 2
         }
       },
     },
@@ -1411,7 +1432,7 @@ export const flashCardJoker: JokerDefinition = {
       apply: (ctx: EffectContext) => {
         const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
         if (fc) {
-          fc.metadata = { ...fc.metadata, multBonus: 0 }
+          fc.metadata = { ...fc.metadata, multBonus: fc.metadata?.multBonus ?? 0 }
         }
       },
     },
@@ -1663,6 +1684,7 @@ export const goldenJokerJoker: JokerDefinition = {
       priority: 1,
       apply: (ctx: EffectContext) => {
         ctx.game.money += 4
+        ctx.game.gamePlayState.jokerPayouts.push({ name: 'Golden Joker', amount: 4 })
       },
     },
   ],
@@ -1830,7 +1852,7 @@ export const swashbucklerJoker: JokerDefinition = {
           if (jokerState.jokerId === 'swashbucklerJoker') continue
           const jokerDef = jokers[jokerState.jokerId]
           if (jokerDef) {
-            totalSellValue += Math.floor(jokerDef.price / 2)
+            totalSellValue += getJokerSellValue(jokerDef, jokerState)
           }
         }
         const multBonus = Math.max(1, totalSellValue)
@@ -1897,8 +1919,7 @@ export const smileyFaceJoker: JokerDefinition = {
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
         if (!cardDef) return
-        const faceValues = ['J', 'Q', 'K']
-        if (faceValues.includes(cardDef.value)) {
+        if (isFaceCard(cardDef.value, ctx.game)) {
           ctx.game.gamePlayState.scoringEvents.push({
             id: uuid(),
             type: 'mult',
@@ -2052,7 +2073,7 @@ export const scaryFaceJoker: JokerDefinition = {
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
         if (!cardDef) return
-        if (['J', 'Q', 'K'].includes(cardDef.value)) {
+        if (isFaceCard(cardDef.value, ctx.game)) {
           ctx.game.gamePlayState.scoringEvents.push({
             id: uuid(),
             type: 'chips',
@@ -2171,7 +2192,7 @@ export const hallucination: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'SHOP_OPEN_PACK', id: '' },
+      event: { type: 'SHOP_OPEN_PACK' } as any,
       priority: 1,
       apply: (ctx: EffectContext) => {
         if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
@@ -2205,7 +2226,7 @@ export const businessCard: JokerDefinition = {
         const scoredCard = ctx.scoredCards?.[0]
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
-        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
 
         const seed = buildSeedString([
           ctx.game.gameSeed,
@@ -2402,6 +2423,7 @@ export const delayedGratification: JokerDefinition = {
         if (ctx.game.discardsPlayed === 0) {
           const payout = 2 * ctx.game.maxDiscards
           ctx.game.money += payout
+          ctx.game.gamePlayState.jokerPayouts.push({ name: 'Delayed Gratification', amount: payout })
         }
       },
     },
@@ -2699,7 +2721,7 @@ export const photograph: JokerDefinition = {
         const scoredCard = ctx.scoredCards?.[0]
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
-        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
         pj.counter = 1
         ctx.game.gamePlayState.scoringEvents.push({
           id: uuid(),
@@ -2924,10 +2946,9 @@ export const rideTheBus: JokerDefinition = {
         const selectedHand = ctx.game.gamePlayState.selectedHand
         if (!selectedHand) return
         const scoringCards = selectedHand[1]
-        const faceValues = ['J', 'Q', 'K']
         const hasFaceCard = scoringCards.some(card => {
           const cardDef = playingCards[card.playingCardId]
-          return faceValues.includes(cardDef.value)
+          return isFaceCard(cardDef.value, ctx.game)
         })
         if (hasFaceCard) {
           rtb.counter = 0
@@ -2959,13 +2980,12 @@ export const facelessJoker: JokerDefinition = {
       event: { type: 'DISCARD_SELECTED_CARDS' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        const faceValues = ['J', 'Q', 'K']
         let faceCardCount = 0
         for (const cardId of ctx.game.gamePlayState.selectedCardIds) {
           const cardState = ctx.game.cards[cardId]
           if (!cardState) continue
           const cardDef = playingCards[cardState.playingCardId]
-          if (faceValues.includes(cardDef.value)) {
+          if (isFaceCard(cardDef.value, ctx.game)) {
             faceCardCount++
           }
         }
@@ -3011,13 +3031,12 @@ export const reservedParking: JokerDefinition = {
         const heldCardIds = ctx.game.gamePlayState.handIds.filter(
           id => !ctx.game.gamePlayState.playedCardIds.includes(id)
         )
-        const faceValues = ['J', 'Q', 'K']
         let moneyEarned = 0
         for (const cardId of heldCardIds) {
           const cardState = ctx.game.cards[cardId]
           if (!cardState) continue
           const cardDef = playingCards[cardState.playingCardId]
-          if (!faceValues.includes(cardDef.value)) continue
+          if (!isFaceCard(cardDef.value, ctx.game)) continue
           const seed = buildSeedString([
             ctx.game.gameSeed,
             ctx.game.roundIndex.toString(),
@@ -3199,6 +3218,7 @@ function applyRiffRaff(ctx: EffectContext) {
   const seed = buildSeedString([
     ctx.game.gameSeed,
     ctx.game.roundIndex.toString(),
+    ctx.event.type,
     'riffRaff',
   ])
   const indices = getRandomNumbersWithSeed({
@@ -3337,7 +3357,7 @@ export const riffRaff: JokerDefinition = {
 
 function applyCartomancer(ctx: EffectContext) {
   if (ctx.game.consumables.length >= ctx.game.maxConsumables) return
-  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), 'cartomancer'])
+  const seed = buildSeedString([ctx.game.gameSeed, ctx.game.roundIndex.toString(), ctx.event.type, 'cartomancer'])
   const tarotCard = getRandomTarotCards(1, seed)[0]
   ctx.game.consumables.push(initializeTarotCard(tarotCard))
 }
@@ -3413,7 +3433,7 @@ function applyCeremonialDagger(ctx: EffectContext) {
   if (!rightJoker) return
   const rightJokerDef = jokers[rightJoker.jokerId]
   if (!rightJokerDef) return
-  const sellValue = rightJokerDef.price + rightJoker.bonusSellValue
+  const sellValue = getJokerSellValue(rightJokerDef, rightJoker)
   ctx.game.jokers[daggerIndex].counter += sellValue * 2
   ctx.game.jokers.splice(daggerIndex + 1, 1)
 }
@@ -3746,6 +3766,7 @@ export const satellite: JokerDefinition = {
         const payout = uniquePlanets.size
         if (payout > 0) {
           ctx.game.money += payout
+          ctx.game.gamePlayState.jokerPayouts.push({ name: 'Satellite', amount: payout })
         }
       },
     },
@@ -4205,8 +4226,7 @@ export const canio: JokerDefinition = {
         if (!cardState) return
         const cardDef = playingCards[cardState.playingCardId]
         if (!cardDef) return
-        const faceValues = ['J', 'Q', 'K']
-        if (!faceValues.includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
         c.metadata.xMult += 100
       },
     },
@@ -4256,6 +4276,8 @@ export const invisibleJoker: JokerDefinition = {
         // This effect fires after Invisible Joker is removed from the array.
         // If it's gone, it was the one sold. Duplicate a random other joker.
         if (ctx.game.jokers.some(j => j.jokerId === 'invisibleJoker')) return
+        // Only duplicate after charging for 2 rounds
+        if (!ctx.removedJoker || ctx.removedJoker.counter < 2) return
         if (ctx.game.jokers.length === 0) return
         if (ctx.game.jokers.length >= ctx.game.maxJokers) return
         const seed = buildSeedString([
@@ -4419,19 +4441,7 @@ export const astronomer: JokerDefinition = {
   name: 'Astronomer',
   description: 'All Planet cards and Celestial Packs in the shop are free',
   price: 8,
-  effects: [
-    {
-      event: { type: 'SHOP_OPEN' },
-      priority: 2,
-      apply: (ctx: EffectContext) => {
-        for (const card of ctx.game.shopState.cardsForSale) {
-          if (card.type === 'celestialCard') {
-            card.price = 0
-          }
-        }
-      },
-    },
-  ],
+  effects: [],
   rarity: 'uncommon',
 }
 
@@ -4624,32 +4634,47 @@ export const sixthSense: JokerDefinition = {
   rarity: 'uncommon',
 }
 
-export const dna: JokerDefinition = {
+const dnaBlindReset = {
+  priority: 1,
+  apply: (ctx: EffectContext) => {
+    const d = ctx.game.jokers.find(j => j.jokerId === 'dna')
+    if (d) d.counter = 0
+  },
+}
+
+export const dnaJoker: JokerDefinition = {
   id: 'dna',
   name: 'DNA',
   description: 'If first hand of round has only 1 card, add a permanent copy to deck and draw it to hand',
   price: 8,
   effects: [
+    { event: { type: 'SMALL_BLIND_SELECTED' }, ...dnaBlindReset },
+    { event: { type: 'BIG_BLIND_SELECTED' }, ...dnaBlindReset },
+    { event: { type: 'BOSS_BLIND_SELECTED' }, ...dnaBlindReset },
     {
       event: { type: 'HAND_SCORING_FINALIZE' },
       priority: 1,
       apply: (ctx: EffectContext) => {
-        if (ctx.game.handsPlayed !== 0) return
-        const selectedHand = ctx.game.gamePlayState.selectedHand
-        if (!selectedHand) return
-        const handCards = selectedHand[1]
-        if (!handCards || handCards.length !== 1) return
-        const originalCard = handCards[0]
-        const cardDef = playingCards[originalCard.playingCardId]
-        if (!cardDef) return
-        // Create a copy of the card
-        const newCard = initializePlayingCard(cardDef)
-        // Copy the original card's enchantment/edition/seal
-        newCard.flags = { ...originalCard.flags }
-        newCard.bonusChips = originalCard.bonusChips
-        addOwnedCard(ctx.game, newCard)
-        // Draw it to hand
-        ctx.game.gamePlayState.handIds.push(newCard.id)
+        const d = ctx.game.jokers.find(j => j.jokerId === 'dna')
+        if (!d || d.counter !== 0) return
+        d.counter = 1
+
+        if (ctx.game.gamePlayState.playedCardIds.length !== 1) return
+
+        const cardId = ctx.game.gamePlayState.playedCardIds[0]
+        const originalCard = ctx.game.cards[cardId]
+        if (!originalCard) return
+
+        const copyState: PlayingCardState = {
+          id: uuid(),
+          playingCardId: originalCard.playingCardId,
+          bonusChips: originalCard.bonusChips,
+          flags: { ...originalCard.flags },
+          isFaceUp: true,
+        }
+
+        addOwnedCard(ctx.game, copyState)
+        ctx.game.gamePlayState.handIds.push(copyState.id)
       },
     },
   ],
@@ -4862,7 +4887,7 @@ export const sockAndBuskin: JokerDefinition = {
         const scoredCard = ctx.scoredCards?.[0]
         if (!scoredCard) return
         const cardDef = playingCards[scoredCard.playingCardId]
-        if (!['J', 'Q', 'K'].includes(cardDef.value)) return
+        if (!isFaceCard(cardDef.value, ctx.game)) return
         ctx.game.gamePlayState.scoringEvents.push({
           id: uuid(),
           type: 'chips',
@@ -5009,6 +5034,99 @@ export const luchador: JokerDefinition = {
   rarity: 'uncommon',
 }
 
+export const pareidoliaJoker: JokerDefinition = {
+  id: 'pareidolia',
+  name: 'Pareidolia',
+  description: 'All cards are considered face cards',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'GAME_START' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.areAllCardsFaceCards = true
+      },
+    },
+    {
+      event: { type: 'JOKER_ADDED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        ctx.game.staticRules.areAllCardsFaceCards = true
+      },
+    },
+    {
+      event: { type: 'JOKER_REMOVED' },
+      priority: 1,
+      apply: (ctx: EffectContext) => {
+        if (!ctx.game.jokers.some(joker => joker.jokerId === 'pareidolia')) {
+          ctx.game.staticRules.areAllCardsFaceCards = false
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+export const mimeJoker: JokerDefinition = {
+  id: 'mime',
+  name: 'Mime',
+  description: 'Retrigger all card held in hand abilities',
+  price: 5,
+  effects: [
+    {
+      event: { type: 'HAND_SCORING_FINALIZE' },
+      priority: 2,
+      apply: (ctx: EffectContext) => {
+        // Get held cards (in hand but not played)
+        const heldCardIds = ctx.game.gamePlayState.handIds.filter(
+          id => !ctx.game.gamePlayState.playedCardIds.includes(id)
+        )
+
+        for (const cardId of heldCardIds) {
+          const cardState = ctx.game.cards[cardId]
+          if (!cardState) continue
+
+          // Retrigger Steel enchantment (x1.5 Mult per held steel card)
+          if (cardState.flags.enchantment === 'steel') {
+            ctx.game.gamePlayState.scoringEvents.push({
+              id: uuid(),
+              type: 'mult',
+              operator: 'x',
+              value: 1.5,
+              source: 'Mime (Steel retrigger)',
+            })
+            ctx.game.gamePlayState.score.mult *= 1.5
+          }
+
+          // Retrigger Gold enchantment ($3 per gold held card)
+          if (cardState.flags.enchantment === 'gold') {
+            ctx.game.money += 3
+          }
+        }
+      },
+    },
+  ],
+  rarity: 'uncommon',
+}
+
+export const blueprintJoker: JokerDefinition = {
+  id: 'blueprint',
+  name: 'Blueprint',
+  description: 'Copies ability of Joker to the right',
+  price: 10,
+  effects: [],
+  rarity: 'rare',
+}
+
+export const brainstormJoker: JokerDefinition = {
+  id: 'brainstorm',
+  name: 'Brainstorm',
+  description: 'Copies the ability of leftmost Joker',
+  price: 10,
+  effects: [],
+  rarity: 'rare',
+}
+
 export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   swashbucklerJoker,
   walkieTalkieJoker,
@@ -5144,7 +5262,7 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   tradingCard,
   seance,
   sixthSense,
-  dna,
+  dna: dnaJoker,
   theIdol,
   mrBones,
   oopsAll6s,
@@ -5156,6 +5274,10 @@ export const jokers: Record<JokerDefinition['id'], JokerDefinition> = {
   hologram,
   shortcut,
   luchador,
+  pareidolia: pareidoliaJoker,
+  mime: mimeJoker,
+  blueprint: blueprintJoker,
+  brainstorm: brainstormJoker,
 }
 
 /***

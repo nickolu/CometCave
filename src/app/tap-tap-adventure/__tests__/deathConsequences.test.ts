@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { applyDeathPenalty } from '@/app/tap-tap-adventure/lib/deathPenalty'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 
-function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharacter {
+function makeCharacter(overrides: Partial<FantasyCharacter> = {}) {
   return {
     id: 'test-char',
     playerId: 'player-1',
@@ -23,8 +23,14 @@ function makeCharacter(overrides: Partial<FantasyCharacter> = {}): FantasyCharac
     charisma: 6,
     inventory: [],
     deathCount: 0,
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
     ...overrides,
-  }
+  } as FantasyCharacter
 }
 
 describe('Death Consequences - applyDeathPenalty', () => {

@@ -110,9 +110,9 @@ export const fiveOfAKindHand: PokerHandDefinition = {
   id: 'fiveOfAKind',
   baseChips: 120,
   baseMult: 12,
-  chipIncreasePerLevel: 40, // TODO: Add correct value
+  chipIncreasePerLevel: 35,
   isSecret: true,
-  multIncreasePerLevel: 3, // TODO: Add correct value
+  multIncreasePerLevel: 3,
   name: 'Five of a Kind',
 }
 
@@ -198,6 +198,7 @@ export const checkHandForStraight: HandCheckFunction<[StaticRulesState]> = (card
 }
 
 export const checkHandForFlush: HandCheckFunction<[StaticRulesState]> = (cards, staticRules) => {
+  if (cards.length === 0) return [false, []]
   const rankedCards = rankCardsByValueAndSuit(cards)
   const firstSuit = playingCards[rankedCards[0].playingCardId].suit
   const flush = rankedCards.filter(card =>

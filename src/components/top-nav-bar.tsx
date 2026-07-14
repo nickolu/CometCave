@@ -13,9 +13,9 @@ const navItems: readonly { href: string; label: string; exact?: boolean }[] = [
   { href: ROUTE_CONSTANTS.TRIVIA, label: 'TRIVIA' },
   { href: ROUTE_CONSTANTS.ORACLE, label: 'ORACLE' },
   { href: ROUTE_CONSTANTS.TAP_TAP_ADVENTURE, label: 'TAP TAP' },
-  { href: ROUTE_CONSTANTS.CHAT_ROOM, label: 'CHAT' },
-  { href: ROUTE_CONSTANTS.SECRET_WORD, label: 'SECRET WORD' },
+  { href: ROUTE_CONSTANTS.COMET_CARDS, label: 'COMET CARDS' },
   { href: ROUTE_CONSTANTS.VOTERS, label: 'VOTERS' },
+  { href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, label: 'STORYBOOK' },
 ]
 
 export function TopNavBar() {

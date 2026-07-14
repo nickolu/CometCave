@@ -40,6 +40,12 @@ const baseMage: FantasyCharacter = {
   currentRegion: 'green_meadows',
   currentWeather: 'clear',
   factionReputations: {},
+  bounty: 0,
+  mountRoster: [],
+  mailbox: [],
+  pendingReplies: [],
+  visitedTowns: [],
+  party: [],
   mana: 30,
   maxMana: 30,
   spellbook: [STARTING_SPELLS.mage],
@@ -55,7 +61,7 @@ const baseWarrior: FantasyCharacter = {
   spellbook: [STARTING_SPELLS.warrior],
 }
 
-function makePlayerState(overrides: Partial<CombatPlayerState> = {}): CombatPlayerState {
+function makePlayerState(overrides: Partial<CombatPlayerState> = {}) {
   return {
     hp: 50,
     maxHp: 50,
@@ -72,8 +78,11 @@ function makePlayerState(overrides: Partial<CombatPlayerState> = {}): CombatPlay
     activeSpellEffects: [],
     spellTagsUsed: [],
     shield: 0,
+    luck: 0,
+    stamina: 6,
+    maxStamina: 6,
     ...overrides,
-  }
+  } as CombatPlayerState
 }
 
 function makeEnemy(overrides = {}) {

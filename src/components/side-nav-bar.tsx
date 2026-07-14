@@ -16,6 +16,7 @@ const gameNavItems: readonly { href: string; label: string; icon: string }[] = [
   { href: ROUTE_CONSTANTS.CHAT_ROOM, label: 'Chat Room', icon: 'chat' },
   { href: ROUTE_CONSTANTS.SECRET_WORD, label: 'Secret Word', icon: 'lock' },
   { href: ROUTE_CONSTANTS.VOTERS, label: 'Voters', icon: 'how_to_vote' },
+  { href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, label: 'Storybook Factory', icon: 'auto_stories' },
 ]
 
 export function SideNavBar() {

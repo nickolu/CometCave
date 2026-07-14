@@ -31,19 +31,21 @@ function makeGameWithTemperance(jokerIds: string[], bonusSellValues: number[] = 
 describe('Temperance tarot card', () => {
   it('gains the total sell value of all jokers', () => {
     // jokerJoker has price 2, greedyJoker has price 5
+    // sell values: floor(2/2)=1, floor(5/2)=2, total=3
     const game = makeGameWithTemperance(['jokerJoker', 'greedyJoker'])
-    const jokerJokerPrice = jokers['jokerJoker'].price
-    const greedyJokerPrice = jokers['greedyJoker'].price
-    const expectedGain = jokerJokerPrice + greedyJokerPrice
+    const jokerJokerSell = Math.floor(jokers['jokerJoker'].price / 2)
+    const greedyJokerSell = Math.floor(jokers['greedyJoker'].price / 2)
+    const expectedGain = jokerJokerSell + greedyJokerSell
 
     const after = reduceGame(game, { type: 'TAROT_CARD_USED' })
     expect(after.money).toBe(expectedGain)
   })
 
   it('includes bonusSellValue in total', () => {
+    // jokerJoker price=2, sell=floor(2/2)=1, bonusSellValue=3, total=4
     const game = makeGameWithTemperance(['jokerJoker'], [3])
-    const jokerJokerPrice = jokers['jokerJoker'].price
-    const expectedGain = jokerJokerPrice + 3
+    const jokerJokerSell = Math.floor(jokers['jokerJoker'].price / 2)
+    const expectedGain = jokerJokerSell + 3
 
     const after = reduceGame(game, { type: 'TAROT_CARD_USED' })
     expect(after.money).toBe(expectedGain)
@@ -53,7 +55,7 @@ describe('Temperance tarot card', () => {
     // Use many jokers to exceed $50
     const manyJokers = Array(10).fill('jokerJoker')
     const game = makeGameWithTemperance(manyJokers, Array(10).fill(10))
-    // Each jokerJoker: price=2 + bonusSell=10 = 12, times 10 = 120 → capped at 50
+    // Each jokerJoker: sell=floor(2/2)=1 + bonusSell=10 = 11, times 10 = 110 → capped at 50
 
     const after = reduceGame(game, { type: 'TAROT_CARD_USED' })
     expect(after.money).toBe(50)

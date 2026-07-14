@@ -10,4 +10,6 @@ export const ROUTE_CONSTANTS = {
   WHOWOULDWININATOR: '/whowouldwininator',
   TRIVIA: '/trivia',
   STARMATCH: '/starmatch',
+  COMET_CARDS: '/comet-cards',
+  STORYBOOK_FACTORY: '/storybook-factory',
 }

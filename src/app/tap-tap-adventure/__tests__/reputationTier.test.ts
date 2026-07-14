@@ -87,6 +87,12 @@ describe('reputation modifier on probability', () => {
     currentRegion: 'green_meadows',
     currentWeather: 'clear',
     factionReputations: {},
+    bounty: 0,
+    mountRoster: [],
+    mailbox: [],
+    pendingReplies: [],
+    visitedTowns: [],
+    party: [],
     inventory: [],
   }
 
@@ -94,7 +100,7 @@ describe('reputation modifier on probability', () => {
     id: 'opt-1',
     text: 'Test option',
     successProbability: 0.5,
-    relevantAttributes: ['strength'],
+    relevantAttributes: ['strength'] as ('strength' | 'intelligence' | 'luck')[],
     attributeModifiers: { strength: 0.01 },
     successDescription: '',
     successEffects: {},

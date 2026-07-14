@@ -1,6 +1,7 @@
 import type { EffectContext } from '@/app/comet-cards/domain/events/types'
 import { getMostPlayedHand } from '@/app/comet-cards/domain/hand/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
+import { isFaceCard } from '@/app/comet-cards/domain/playing-card/utils'
 import { buildSeedString, getRandomNumberWithSeed } from '@/app/comet-cards/domain/randomness'
 import type { BossBlindDefinition } from '@/app/comet-cards/domain/round/types'
 
@@ -70,11 +71,22 @@ const theNeedle: BossBlindDefinition = {
       priority: 1,
       condition: (ctx: EffectContext) => ctx.event.type === 'BOSS_BLIND_SELECTED',
       apply: (ctx: EffectContext) => {
+        // Save original maxHands before overwriting so we can restore it on cleanup
+        if (ctx.bossBlind) {
+          if (!ctx.bossBlind.savedState) ctx.bossBlind.savedState = {}
+          ctx.bossBlind.savedState.maxHands = ctx.game.maxHands
+        }
         ctx.game.maxHands = 1
         ctx.game.gamePlayState.remainingHands = 1
       },
     },
   ],
+  onCleanup: (game) => {
+    const savedMaxHands = game.rounds[game.roundIndex]?.bossBlind?.savedState?.maxHands
+    if (typeof savedMaxHands === 'number') {
+      game.maxHands = savedMaxHands
+    }
+  },
 }
 
 const thePillar: BossBlindDefinition = {
@@ -129,7 +141,7 @@ const thePlant: BossBlindDefinition = {
       condition: (ctx: EffectContext) => ctx.event.type === 'HAND_SCORING_START',
       apply: (ctx: EffectContext) => {
         ctx.game.gamePlayState.cardsToScore = ctx.game.gamePlayState.cardsToScore.filter(
-          card => !['J', 'Q', 'K'].includes(playingCards[card.playingCardId].value)
+          card => !isFaceCard(playingCards[card.playingCardId].value, ctx.game)
         )
       },
     },
@@ -197,13 +209,18 @@ const theMark: BossBlindDefinition = {
         // Flip all face cards in the entire deck face down
         for (const cardId of Object.keys(ctx.game.cards)) {
           const card = ctx.game.cards[cardId]
-          if (['J', 'Q', 'K'].includes(playingCards[card.playingCardId].value)) {
+          if (isFaceCard(playingCards[card.playingCardId].value, ctx.game)) {
             card.isFaceUp = false
           }
         }
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const theMouth: BossBlindDefinition = {
@@ -281,6 +298,9 @@ const theManacle: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    game.handSizeModifier += 1
+  },
 }
 
 const theWater: BossBlindDefinition = {
@@ -378,6 +398,11 @@ const theWheel: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const theHead: BossBlindDefinition = {
@@ -505,6 +530,11 @@ const theHouse: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const theFish: BossBlindDefinition = {
@@ -530,6 +560,11 @@ const theFish: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    for (const cardId of Object.keys(game.cards)) {
+      game.cards[cardId].isFaceUp = true
+    }
+  },
 }
 
 const violetVessel: BossBlindDefinition = {
@@ -576,6 +611,12 @@ const amberAcorn: BossBlindDefinition = {
       },
     },
   ],
+  onCleanup: (game) => {
+    // Restore all jokers to face up after the blind is cleared
+    for (const joker of game.jokers) {
+      joker.isFaceUp = true
+    }
+  },
 }
 
 const crimsonHeart: BossBlindDefinition = {
@@ -708,7 +749,8 @@ frameless]	Violet Vessel	Very large blind	8	6x base	$8	✗ No
 
 export const getRandomBossBlind = (ante: number, seed: string): BossBlindDefinition => {
   const bossBlindsForAnte = bossBlinds.filter(blind => blind.minimumAnte <= ante)
-  const randomIndex = getRandomNumberWithSeed(seed, 0, bossBlindsForAnte.length - 1)
+  const roundSeed = buildSeedString([seed, ante.toString(), 'boss-blind'])
+  const randomIndex = getRandomNumberWithSeed(roundSeed, 0, bossBlindsForAnte.length - 1)
 
   if (bossBlindsForAnte.length === 0) {
     throw new Error(`No boss blind found for ante ${ante}`)

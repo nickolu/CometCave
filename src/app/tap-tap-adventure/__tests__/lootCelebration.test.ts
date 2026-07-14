@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
+import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { GameState } from '@/app/tap-tap-adventure/models/types'
 
@@ -132,8 +133,14 @@ describe('loot celebration state', () => {
       factionReputations: {},
       bestiary: [],
       npcEncounters: {},
+      bounty: 0,
+      mountRoster: [],
+      mailbox: [],
+      pendingReplies: [],
+      visitedTowns: [],
+      party: [],
     }
-    gameState.characters = [char]
+    gameState.characters = [char as unknown as FantasyCharacter]
     gameState.selectedCharacterId = 'char-1'
   })
 

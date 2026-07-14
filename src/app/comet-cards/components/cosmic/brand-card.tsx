@@ -1,10 +1,56 @@
 'use client'
 
+import * as Tooltip from '@radix-ui/react-tooltip'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 import type {
   PlayingCardFlags,
   PlayingCardState,
 } from '@/app/comet-cards/domain/playing-card/types'
+
+function getCardTooltipLines(card: PlayingCardState): string[] {
+  const lines: string[] = []
+  const def = playingCards[card.playingCardId]
+  if (def) lines.push(`${def.baseChips} chips`)
+
+  const enchantmentInfo: Record<string, string> = {
+    bonus: 'Bonus: +30 chips',
+    mult: 'Mult: +5 mult',
+    gold: 'Gold: +$3 held in hand',
+    glass: 'Glass: X2 mult, may shatter',
+    lucky: 'Lucky: 1/5 for +20 mult, 1/15 for +$20',
+    steel: 'Steel: X1.5 mult held in hand',
+    stone: 'Stone: +50 chips, no rank',
+    wild: 'Wild: counts as any suit',
+  }
+  if (card.flags.enchantment !== 'none' && enchantmentInfo[card.flags.enchantment]) {
+    lines.push(enchantmentInfo[card.flags.enchantment])
+  }
+
+  const editionInfo: Record<string, string> = {
+    foil: 'Foil: +50 chips',
+    holographic: 'Holographic: +10 mult',
+    polychrome: 'Polychrome: X1.5 mult',
+  }
+  if (card.flags.edition !== 'normal' && editionInfo[card.flags.edition]) {
+    lines.push(editionInfo[card.flags.edition])
+  }
+
+  const sealInfo: Record<string, string> = {
+    gold: 'Gold Seal: +$3 when scored',
+    red: 'Red Seal: retrigger this card',
+    blue: 'Blue Seal: planet card on win',
+    purple: 'Purple Seal: tarot card on discard',
+  }
+  if (card.flags.seal !== 'none' && sealInfo[card.flags.seal]) {
+    lines.push(sealInfo[card.flags.seal])
+  }
+
+  if (card.bonusChips > 0) {
+    lines.push(`+${card.bonusChips} bonus chips`)
+  }
+
+  return lines
+}
 
 const SUIT_GLYPH: Record<string, string> = {
   hearts: '♥',
@@ -14,6 +60,7 @@ const SUIT_GLYPH: Record<string, string> = {
 }
 
 const SIZES = {
+  xs: { w: 58, h: 82, fs: 14, pip: 26 },
   sm: { w: 72, h: 102, fs: 18, pip: 32 },
   md: { w: 92, h: 132, fs: 22, pip: 42 },
   lg: { w: 116, h: 168, fs: 28, pip: 56 },
@@ -46,6 +93,7 @@ export function BrandCard({
   onClick,
   faceDown,
   debuffed,
+  tabIndex,
 }: {
   card: PlayingCardState
   selected?: boolean
@@ -53,6 +101,7 @@ export function BrandCard({
   onClick?: (isSelected: boolean, id: string) => void
   faceDown?: boolean
   debuffed?: boolean
+  tabIndex?: number
 }) {
   const dims = SIZES[size]
   const definition = playingCards[card.playingCardId]
@@ -67,14 +116,25 @@ export function BrandCard({
 
   const borderColor = selected ? 'var(--cc-suit-color)' : 'var(--cc-card-border)'
 
+  const label = [
+    `${definition?.value ?? '?'} of ${suit}`,
+    debuffed && 'debuffed',
+    card.flags.enchantment !== 'none' && card.flags.enchantment,
+    card.flags.edition !== 'normal' && card.flags.edition,
+    card.flags.seal !== 'none' && `${card.flags.seal} seal`,
+  ].filter(Boolean).join(', ')
+
   if (isFaceDown) {
     return (
       <button
         type="button"
+        aria-label="Face-down card"
+        aria-pressed={selected}
         onClick={() => onClick?.(selected, card.id)}
         className="bc-card"
         data-selected={selected ? 'true' : 'false'}
         data-suit={suit}
+        tabIndex={tabIndex}
         style={{
           width: dims.w,
           height: dims.h,
@@ -125,13 +185,19 @@ export function BrandCard({
     )
   }
 
-  return (
+  const tooltipLines = getCardTooltipLines(card)
+  const hasModifiers = tooltipLines.length > 1
+
+  const cardButton = (
     <button
       type="button"
+      aria-label={label}
+      aria-pressed={selected}
       onClick={() => onClick?.(selected, card.id)}
       className="bc-card"
       data-selected={selected ? 'true' : 'false'}
       data-suit={suit}
+      tabIndex={tabIndex}
       style={{
         width: dims.w,
         height: dims.h,
@@ -285,6 +351,11 @@ export function BrandCard({
         </div>
       )}
 
+      {/* Edition shimmer overlay */}
+      {card.flags.edition !== 'normal' && (
+        <div className={`edition-${card.flags.edition}`} />
+      )}
+
       {/* Edition label */}
       {card.flags.edition !== 'normal' && (
         <div
@@ -308,4 +379,42 @@ export function BrandCard({
       )}
     </button>
   )
+
+  if (hasModifiers) {
+    return (
+      <Tooltip.Provider delayDuration={200}>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            {cardButton}
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              side="top"
+              sideOffset={8}
+              style={{
+                background: 'var(--cc-card-bg, #1a1a2e)',
+                border: '1px solid var(--cc-card-border, #2a2a4a)',
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: 11,
+                fontFamily: 'var(--cc-font-mono)',
+                color: 'var(--cc-text-default, #e0e0e0)',
+                maxWidth: 200,
+                zIndex: 9999,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                lineHeight: 1.5,
+              }}
+            >
+              {tooltipLines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+              <Tooltip.Arrow style={{ fill: 'var(--cc-card-bg, #1a1a2e)' }} />
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </Tooltip.Provider>
+    )
+  }
+
+  return cardButton
 }

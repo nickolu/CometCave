@@ -16,6 +16,13 @@ body {
   }
 }
 
+/* Shop two-column grid — collapses to single column on narrow viewports */
+@media (max-width: 560px) {
+  .shop-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -234,6 +241,107 @@ body {
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   Card edition shimmer effects — foil, holographic, polychrome
+   ─────────────────────────────────────────────────────────────────── */
+
+@keyframes foil-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes holo-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes poly-cycle {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.edition-foil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(200, 220, 255, 0.15) 45%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(200, 220, 255, 0.15) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: foil-sweep 3s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+.edition-holographic {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 0, 0, 0.08),
+    rgba(255, 165, 0, 0.08),
+    rgba(255, 255, 0, 0.08),
+    rgba(0, 255, 0, 0.08),
+    rgba(0, 100, 255, 0.08),
+    rgba(150, 0, 255, 0.08),
+    rgba(255, 0, 0, 0.08)
+  );
+  background-size: 300% 100%;
+  animation: holo-shift 4s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+.edition-polychrome {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 100, 150, 0.12),
+    rgba(100, 200, 255, 0.12),
+    rgba(150, 255, 150, 0.12),
+    rgba(255, 200, 100, 0.12)
+  );
+  animation: poly-cycle 6s linear infinite;
+  mix-blend-mode: screen;
+}
+
+.edition-negative {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.22);
+  mix-blend-mode: multiply;
+  border: 1px solid rgba(100, 100, 120, 0.4);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Reduced motion — disable CSS animations and transitions for users
+   who prefer reduced motion. Framer Motion handles this automatically.
+   ─────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
    Cosmic Cards palette — scoped to .cosmic-cards (daily card game)
    Hand-crafted, surreal, cosmic. Mint accent + cosmic-glowing suits.
    ─────────────────────────────────────────────────────────────────── */
@@ -369,6 +477,117 @@ body {
   transform: translateY(var(--cc-card-lift, -16px));
 }
 
+.cosmic-cards .bc-card:focus-visible,
+.cosmic-cards .cc-btn:focus-visible {
+  outline: 2px solid var(--cc-mint);
+  outline-offset: 2px;
+}
+
+/* Comet Cards — thin internal scrollbar utility */
+.cc-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(94, 234, 212, 0.2) transparent;
+}
+
+.cc-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cc-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cc-scroll::-webkit-scrollbar-thumb {
+  background: rgba(94, 234, 212, 0.2);
+  border-radius: 4px;
+}
+
+/* Blind progress bar animations */
+@keyframes blind-celebration-burst {
+  0% { box-shadow: 0 0 0 0 rgba(255, 209, 102, 0.6); }
+  40% { box-shadow: 0 0 20px 6px rgba(255, 209, 102, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 209, 102, 0); }
+}
+
+@keyframes blind-celebration-flash {
+  0% { opacity: 0; }
+  20% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+
+.blind-met-celebration {
+  animation: blind-celebration-burst 1.2s ease-out;
+  position: relative;
+}
+
+.blind-met-celebration::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255, 209, 102, 0.3), rgba(94, 234, 212, 0.3));
+  animation: blind-celebration-flash 1.2s ease-out;
+  pointer-events: none;
+}
+
+.blind-progress-fill {
+  border-radius: inherit;
+}
+
+/* Joker activation pulse */
+@keyframes joker-pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  35% { transform: scale(1.06); filter: brightness(1.2); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.joker-activated {
+  animation: joker-pulse 0.4s ease-out;
+  position: relative;
+}
+
+.joker-activated::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  box-shadow: 0 0 12px 2px rgba(94, 234, 212, 0.5);
+  pointer-events: none;
+  animation: joker-glow-fade 0.6s ease-out forwards;
+}
+
+@keyframes joker-glow-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.joker-muted {
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blind-progress-fill {
+    transition: none !important;
+  }
+  .blind-met-celebration {
+    animation: none;
+  }
+  .blind-met-celebration::after {
+    animation: none;
+  }
+  .joker-activated {
+    animation: none;
+  }
+  .joker-activated::after {
+    animation: none;
+  }
+  .joker-muted {
+    transition: none;
+  }
+}
+
 /* When game is active on mobile, hide site chrome and fix scrolling */
 @media (max-width: 767px) {
   body.game-active header,
@@ -447,5 +666,34 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media print {
+  /* Page break control */
+  .break-after-page {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  /* Clean print styling */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove visual noise */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure images print well */
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

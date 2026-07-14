@@ -5,7 +5,8 @@ import {
   initializeTarotCard,
 } from '@/app/comet-cards/domain/consumable/utils'
 import { GameState } from '@/app/comet-cards/domain/game/types'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+import { initializeJoker, isJokerState } from '@/app/comet-cards/domain/joker/utils'
+import { JokerState } from '@/app/comet-cards/domain/joker/types'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 import { initializePlayingCard } from '@/app/comet-cards/domain/playing-card/utils'
 import {
@@ -94,11 +95,16 @@ export const initializePackState = (game: GameState, packDefinition: PackDefinit
   }
   if (packDefinition.cardType === 'jokerCard') {
     const randomJokersSeed = seedStringBuilder('jokers')
+    const ownedJokerIds = game.jokers.map(j => j.jokerId)
+    const shopJokerIds = game.shopState.cardsForSale
+      .filter(c => c.type === 'jokerCard' && isJokerState(c.card))
+      .map(c => (c.card as JokerState).jokerId)
+    const excludeIds = [...ownedJokerIds, ...shopJokerIds]
     return {
       id,
       rarity,
       remainingCardsToSelect: numberOfCardsToSelect,
-      cards: getRandomJokers(packDefinition.numberOfCardsPerPack, randomJokersSeed).map(joker => ({
+      cards: getRandomJokers(packDefinition.numberOfCardsPerPack, randomJokersSeed, excludeIds).map(joker => ({
         type: 'jokerCard',
         card: initializeJoker(joker, game),
         price: joker.price,
@@ -181,7 +187,14 @@ const getRandomPack = (game: GameState, packIndex: number): PackState => {
 }
 
 export const getRandomPacks = (game: GameState, numberOfPacks = 2): PackState[] => {
-  return Array.from({ length: numberOfPacks }, (_, index) => getRandomPack(game, index))
+  const packs = Array.from({ length: numberOfPacks }, (_, index) => getRandomPack(game, index))
+
+  // First shop of the run: guarantee a basic (normal-rarity) joker pack
+  if (game.roundIndex === 1 && !packs.some(p => p.cards[0]?.type === 'jokerCard' && p.rarity === 'normal')) {
+    packs[0] = initializePackState(game, getPackDefinition('jokerCard', 'normal'))
+  }
+
+  return packs
 }
 
 export const removeCardFromPack = (pack: PackState, cardId: string): void => {

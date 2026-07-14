@@ -15,7 +15,7 @@ export function PrimaryButton({
   return (
     <button
       type="button"
-      className={`disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
+      className={`cc-btn disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
       style={{
         ...monoLabel,
         background: 'linear-gradient(180deg, var(--cc-mint), var(--cc-mint-hi))',
@@ -44,7 +44,7 @@ export function DangerButton({
   return (
     <button
       type="button"
-      className={`disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
+      className={`cc-btn disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
       style={{
         ...monoLabel,
         background: 'var(--cc-pink-bg)',
@@ -72,7 +72,7 @@ export function GhostButton({
   return (
     <button
       type="button"
-      className={`disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
+      className={`cc-btn disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
       style={{
         ...monoLabel,
         fontWeight: 600,
@@ -104,6 +104,7 @@ export function SortPill({
   return (
     <button
       type="button"
+      className="cc-btn"
       onClick={onClick}
       style={{
         background: 'transparent',

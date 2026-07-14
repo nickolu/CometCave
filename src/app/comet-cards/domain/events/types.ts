@@ -22,6 +22,7 @@ export type GameEvent =
   | ConsumableSelectedEvent
   | ConsumableSoldEvent
   | DiscardSelectedCardsEvent
+  | DisplayHowToPlayEvent
   | DisplayJokersEvent
   | HandDealtEvent
   | HandScoringDoneCardScoringEvent
@@ -32,6 +33,7 @@ export type GameEvent =
   | JokerSelectedEvent
   | JokerDeselectedEvent
   | JokerSoldEvent
+  | JokerSwapEvent
   | RoundEndEvent
   | RoundStartEvent
   | ShopSelectBlindEvent
@@ -60,6 +62,8 @@ export type GameEvent =
   | ShopUseCelestialCardFromPackEvent
   | ShopUseSpectralCardFromPackEvent
   | PackOpenSkipEvent
+  | GiveUpEvent
+  | ShopClosePackEvent
 
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
@@ -86,6 +90,12 @@ export type ShopUseSpectralCardFromPackEvent = {
 }
 export type PackOpenSkipEvent = {
   type: 'PACK_OPEN_SKIP'
+}
+export type GiveUpEvent = {
+  type: 'GIVE_UP'
+}
+export type ShopClosePackEvent = {
+  type: 'SHOP_CLOSE_PACK'
 }
 export type ShopBuyAndUseCardEvent = {
   type: 'SHOP_BUY_AND_USE_CARD'
@@ -141,6 +151,9 @@ export type ConsumableSoldEvent = {
 export type DiscardSelectedCardsEvent = {
   type: 'DISCARD_SELECTED_CARDS'
 }
+export type DisplayHowToPlayEvent = {
+  type: 'DISPLAY_HOW_TO_PLAY'
+}
 export type DisplayJokersEvent = {
   type: 'DISPLAY_JOKERS'
 }
@@ -172,6 +185,11 @@ export type JokerDeselectedEvent = {
 }
 export type JokerSoldEvent = {
   type: 'JOKER_SOLD'
+}
+export type JokerSwapEvent = {
+  type: 'JOKER_SWAP'
+  fromId: string
+  toId: string
 }
 export type RoundEndEvent = {
   type: 'ROUND_END'
@@ -246,6 +264,7 @@ export interface EffectContext {
   scoredCards?: PlayingCardState[]
   tarotCards?: TarotCardState[]
   vouchers: VoucherState[]
+  removedJoker?: JokerState
 }
 
 export interface Effect {

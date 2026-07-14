@@ -20,6 +20,10 @@ export function TokenCard({
   badge,
   onClick,
   footer,
+  typeLabel,
+  edition,
+  tabIndex,
+  typeBadge,
 }: {
   title: string
   description?: string
@@ -31,14 +35,37 @@ export function TokenCard({
   badge?: ReactNode
   onClick?: () => void
   footer?: ReactNode
+  typeLabel?: string
+  edition?: string
+  tabIndex?: number
+  typeBadge?: ReactNode
 }) {
   const dims = SIZES[size]
   const isInteractive = !!onClick && !disabled
+
+  let border: string
+  let boxShadow: string
+  let opacity: number
+
+  if (selected) {
+    border = `1px solid ${accent}`
+    boxShadow = `0 0 0 2px color-mix(in srgb, ${accent} 33%, transparent), 0 0 28px ${accent}, var(--cc-card-shadow-selected-tail)`
+    opacity = disabled ? 0.55 : 1
+  } else {
+    border = '1px solid var(--cc-card-border)'
+    boxShadow = `0 0 12px color-mix(in srgb, ${accent} 10%, transparent), var(--cc-card-shadow-base)`
+    opacity = disabled ? 0.55 : 1
+  }
+
   return (
     <button
       type="button"
+      aria-label={title}
+      aria-pressed={selected || undefined}
+      aria-disabled={disabled}
       onClick={onClick}
       disabled={disabled}
+      tabIndex={tabIndex}
       className="bc-card flex flex-col"
       data-selected={selected ? 'true' : 'false'}
       style={{
@@ -48,12 +75,10 @@ export function TokenCard({
         textAlign: 'left',
         background: 'var(--cc-card-bg)',
         borderRadius: 12,
-        border: `1px solid ${selected ? accent : 'var(--cc-card-border)'}`,
-        boxShadow: selected
-          ? `0 0 0 2px color-mix(in srgb, ${accent} 33%, transparent), 0 0 28px ${accent}, var(--cc-card-shadow-selected-tail)`
-          : `0 0 12px color-mix(in srgb, ${accent} 10%, transparent), var(--cc-card-shadow-base)`,
+        border,
+        boxShadow,
         cursor: isInteractive ? 'pointer' : disabled ? 'not-allowed' : 'default',
-        opacity: disabled ? 0.55 : 1,
+        opacity,
         overflow: 'hidden',
         flex: 'none',
         padding: 0,
@@ -71,6 +96,10 @@ export function TokenCard({
           pointerEvents: 'none',
         }}
       />
+      {/* Edition shimmer overlay */}
+      {edition && edition !== 'normal' && (
+        <div className={`edition-${edition}`} />
+      )}
       {/* Inner border */}
       <div
         aria-hidden
@@ -94,6 +123,66 @@ export function TokenCard({
           }}
         >
           {badge}
+        </div>
+      )}
+
+      {typeLabel && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            left: 10,
+            zIndex: 2,
+            fontSize: 8,
+            fontWeight: 600,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            color: accent,
+            opacity: 0.4,
+          }}
+        >
+          {typeLabel}
+        </div>
+      )}
+
+      {typeBadge && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            bottom: 6,
+            left: 8,
+            zIndex: 2,
+          }}
+        >
+          {typeBadge}
+        </div>
+      )}
+
+      {edition && edition !== 'normal' && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            textAlign: 'center',
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 9,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            background: 'rgba(0,0,0,0.45)',
+            color: edition === 'negative' ? '#b0b0c0' :
+                   edition === 'foil' ? '#c8dcff' :
+                   edition === 'holographic' ? '#ffaaff' :
+                   edition === 'polychrome' ? '#aaffcc' :
+                   'var(--cc-text-default)',
+            padding: '3px 0',
+            zIndex: 3,
+            borderRadius: '0 0 11px 11px',
+          }}
+        >
+          {edition}
         </div>
       )}
 

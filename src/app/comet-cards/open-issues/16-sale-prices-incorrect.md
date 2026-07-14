@@ -14,8 +14,8 @@ n/a
 
 ### Issue status
 
-not started
+Fixed
 
 ### Fix details
 
-n/a
+Extracted sell price logic into `sell-utils.ts` with `getJokerSellValue()` and `getConsumableSellValue()`. Both return `floor(price/2)` as the base sell value, ensuring sell price is always less than buy price. Jokers additionally include `bonusSellValue` from game effects (e.g., Gift Card joker), which is intentional Balatro behavior. See commit 78d0319.
