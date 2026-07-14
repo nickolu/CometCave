@@ -88,8 +88,8 @@ export function StarmatchWin({ state, onPlayAgain, onNewMatch }: WinProps) {
           New match
         </ChunkyButton>
         <Link href={ROUTE_CONSTANTS.HOME}>
-          <ChunkyButton variant="ghost" size="lg" asChild>
-            <span>Return to the cave</span>
+          <ChunkyButton variant="ghost" size="lg">
+            Return to the cave
           </ChunkyButton>
         </Link>
       </div>
