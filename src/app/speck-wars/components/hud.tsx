@@ -265,6 +265,7 @@ export function HUD() {
             <span>Drag — pan camera</span><span>H — heavy/basic mode</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
+            <span>Q — surge (2× spawn 8s)</span><span>Shift+drag — select specks</span>
             <span>Minimap — click to rally</span><span>? — this help</span>
           </div>
         </div>
@@ -622,6 +623,40 @@ export function HUD() {
           >
             ⚡ B
           </button>
+          {(() => {
+            const surgeActive = (hud?.surgeDuration ?? 0) > 0
+            const surgeCd = hud?.surgeCooldown ?? 0
+            const surgeReady = !surgeActive && surgeCd <= 0
+            return (
+              <button
+                onClick={() => { if (surgeReady) gameActions.surge?.() }}
+                title="[Q] Surge — 2× production for 8s (45s cooldown)"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: 11,
+                  cursor: surgeReady ? 'pointer' : 'default',
+                  background: surgeActive ? 'rgba(255,215,0,0.25)' : 'rgba(255,215,0,0.06)',
+                  border: surgeActive
+                    ? '1px solid rgba(255,215,0,0.9)'
+                    : surgeReady
+                      ? '1px solid rgba(255,215,0,0.4)'
+                      : '1px solid rgba(255,215,0,0.15)',
+                  borderRadius: 20,
+                  color: surgeActive ? '#ffd700' : surgeReady ? '#c8a800' : 'rgba(200,168,0,0.4)',
+                  letterSpacing: 1,
+                  minHeight: 44,
+                  fontFamily: 'monospace',
+                  opacity: surgeReady || surgeActive ? 1 : 0.6,
+                }}
+              >
+                {surgeActive
+                  ? `★ ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s`
+                  : surgeCd > 0
+                    ? `Q ${Math.ceil(surgeCd / 1000)}s`
+                    : '★ Q'}
+              </button>
+            )
+          })()}
           <button
             onClick={() => gameActions.clearRally?.()}
             title="[R] Clear rally"

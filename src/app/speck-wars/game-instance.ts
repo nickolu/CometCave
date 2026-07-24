@@ -96,12 +96,14 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
+      () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
+      surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -435,6 +437,10 @@ export class GameInstance {
 
   clearRally() {
     this.sim.rallyPoints['player'] = null
+  }
+
+  surge() {
+    this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
   }
 
   private notify(message: string, color: string) {

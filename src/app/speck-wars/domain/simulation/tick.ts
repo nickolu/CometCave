@@ -39,6 +39,10 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed + domination timer
   updateTripleOutpostBonus(sim, dt)
 
+  // 7d. Surge timers
+  if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
+  if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
+
   // 8. Check win/loss
   checkVictory(sim)
 
@@ -127,6 +131,12 @@ function consumeInputs(sim: SimulationState) {
       sim.selectedSpeckIds.clear()
       sim.rallyPoints['player-selected'] = null
     }
+    if (event.type === 'SURGE') {
+      if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
+        sim.surgeDuration = 8000
+        sim.surgeCooldown = 45000
+      }
+    }
   }
   sim.inputQueue = []
 }
@@ -176,5 +186,5 @@ function emitHudUpdate(sim: SimulationState) {
       : null
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown } })
 }

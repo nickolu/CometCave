@@ -57,6 +57,8 @@ export interface SimulationState {
   selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
   spatialGrid: SpatialGrid
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
+  surgeDuration: number      // ms remaining in active surge, 0 = inactive
+  surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
 }
 
 export type InputEvent =
@@ -66,6 +68,7 @@ export type InputEvent =
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
   | { type: 'CLEAR_SELECT'; ownerId: string }
+  | { type: 'SURGE'; ownerId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -87,4 +90,6 @@ export interface HudData {
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
   dominationProgress: number | null  // 0..1 fraction of DOMINATION_TIME elapsed; null if no triple holder
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
+  surgeDuration: number    // ms remaining in active surge
+  surgeCooldown: number    // ms remaining before surge can be used again
 }
