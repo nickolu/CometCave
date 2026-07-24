@@ -197,6 +197,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             NEW BEST TIME
           </div>
         )}
+        {won && winStreak >= 2 && (
+          <div style={{ color: '#ffd700', fontSize: 13, letterSpacing: 2 }}>
+            🔥 {winStreak}-WIN STREAK
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 24, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
           <span>⏱ {timeStr}</span>
