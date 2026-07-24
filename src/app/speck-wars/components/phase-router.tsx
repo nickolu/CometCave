@@ -340,6 +340,45 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           )
         })()}
 
+        {/* Contextual tactical tip */}
+        {(() => {
+          const eff = kills + losses > 0 ? kills / (kills + losses) : 0
+          const modifier = hud?.dailyModifier ?? 'standard'
+          let tip: string | null = null
+
+          if (won && elapsedMs < 180000) {
+            tip = difficulty === 'very-hard' ? '⚡ Incredible! That was master-level play.' : 'That was fast! Try a harder difficulty for more of a challenge.'
+          } else if (won && difficulty !== 'very-hard' && stars === 3) {
+            tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
+          } else if (!won && kills < 30) {
+            tip = 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
+          } else if (!won && eff < 0.4) {
+            tip = 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
+          } else if (!won && elapsedMs > 300000) {
+            tip = 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
+          } else if (!won) {
+            tip = 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
+          } else if (won && modifier === 'siege') {
+            tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
+          }
+
+          if (!tip) return null
+          return (
+            <div style={{
+              maxWidth: 340, textAlign: 'center',
+              fontSize: 11, letterSpacing: 0.5,
+              color: 'rgba(255,255,255,0.5)',
+              fontStyle: 'italic',
+              padding: '8px 16px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 6,
+              background: 'rgba(255,255,255,0.03)',
+            }}>
+              {tip}
+            </div>
+          )
+        })()}
+
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 12 }}>
           <button
