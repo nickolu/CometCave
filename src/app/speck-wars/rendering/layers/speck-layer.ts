@@ -58,6 +58,9 @@ export class SpeckLayer {
         const typeMeta = sim.speckMeta[i]
         const stype = typeMeta ? SPECK_TYPES[typeMeta.typeId] : null
         spriteList[j].scale.set(stype ? stype.size / 4 : 0.75)
+        // Fade speck as it takes damage — full HP = 1.0, near death = 0.35
+        const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
+        spriteList[j].alpha = 0.35 + 0.65 * hpFrac
       }
 
       // Hide excess sprites

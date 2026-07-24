@@ -1,6 +1,6 @@
 import { Graphics, Container } from 'pixi.js'
 
-interface Flash { x: number; y: number; life: number; maxLife: number }
+interface Flash { x: number; y: number; life: number; maxLife: number; color: number }
 interface Ping { x: number; y: number; life: number; maxLife: number }
 
 export class EffectsLayer {
@@ -15,8 +15,8 @@ export class EffectsLayer {
     this.stage.addChild(this.gfx)
   }
 
-  addDeathFlash(x: number, y: number) {
-    this.flashes.push({ x, y, life: 300, maxLife: 300 })
+  addDeathFlash(x: number, y: number, color = 0xffffff) {
+    this.flashes.push({ x, y, life: 300, maxLife: 300, color })
   }
 
   showRallyPing(x: number, y: number) {
@@ -41,7 +41,7 @@ export class EffectsLayer {
       f.life -= dt
       const alpha = f.life / f.maxLife
       const r = 3 + (1 - alpha) * 4
-      this.gfx.beginFill(0xffffff, alpha)
+      this.gfx.beginFill(f.color, alpha)
       this.gfx.drawCircle(f.x, f.y, r)
       this.gfx.endFill()
     }
