@@ -11,6 +11,7 @@ export class InputHandler {
   private onRecenterCamera?: () => void
   private onDefend?: () => void
   private onAdvance?: () => void
+  private onAdvanceOutpost?: () => void
   private onRush?: () => void
   private onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void
   private onClearSelect?: () => void
@@ -46,6 +47,7 @@ export class InputHandler {
     onRecenterCamera?: () => void,
     onDefend?: () => void,
     onAdvance?: () => void,
+    onAdvanceOutpost?: () => void,
     onRush?: () => void,
     onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void,
     onClearSelect?: () => void,
@@ -66,6 +68,7 @@ export class InputHandler {
     this.onRecenterCamera = onRecenterCamera
     this.onDefend = onDefend
     this.onAdvance = onAdvance
+    this.onAdvanceOutpost = onAdvanceOutpost
     this.onRush = onRush
     this.onBoxSelect = onBoxSelect
     this.onClearSelect = onClearSelect
@@ -282,6 +285,8 @@ export class InputHandler {
       this.onDefend?.()
     } else if (e.code === 'KeyA') {
       this.onAdvance?.()
+    } else if (e.code === 'KeyN') {
+      this.onAdvanceOutpost?.()
     } else if (e.code === 'KeyB') {
       this.onRush?.()
     } else if (e.code === 'KeyQ') {
