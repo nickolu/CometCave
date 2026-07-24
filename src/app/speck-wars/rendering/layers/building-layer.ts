@@ -127,7 +127,8 @@ export class BuildingLayer {
         if (progress > 0) {
           const startAngle = -Math.PI / 2
           const endAngle = startAngle + Math.PI * 2 * progress
-          this.gfx.lineStyle(2, 0xffffff, 0.5)
+          const arcColor = building.spawnTypeOverride === 'heavy' ? 0xffa032 : 0xffffff
+          this.gfx.lineStyle(2, arcColor, 0.5)
           this.gfx.moveTo(building.x + (r - 5) * Math.cos(startAngle), building.y + (r - 5) * Math.sin(startAngle))
           this.gfx.arc(building.x, building.y, r - 5, startAngle, endAngle)
           this.gfx.lineStyle(0)
