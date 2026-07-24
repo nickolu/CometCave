@@ -1,6 +1,8 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 
+const RALLY_ARRIVAL_THRESHOLD = 30 // px — how close before speck is considered "arrived"
+
 export function runSpeckAI(sim: SimulationState) {
   const { speckIds, speckX, speckY, speckMeta, buildings } = sim
 
@@ -14,6 +16,19 @@ export function runSpeckAI(sim: SimulationState) {
     // Clear dead or invalid targets
     if (meta.targetId && !buildings[meta.targetId]) {
       meta.targetId = null
+    }
+
+    // If owner has an active rally point and speck hasn't arrived, defer to rally
+    const rally = sim.rallyPoints[meta.ownerId]
+    if (rally) {
+      const dx = rally.x - speckX[i]
+      const dy = rally.y - speckY[i]
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > RALLY_ARRIVAL_THRESHOLD) {
+        meta.targetId = null  // clear any target — movement.ts will seek rally
+        meta.state = 'moving'
+        continue
+      }
     }
 
     if (meta.targetId) continue  // already has a valid target
