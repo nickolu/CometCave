@@ -58,6 +58,18 @@ export class GameInstance {
         if (!base) return
         this.rally(base.x, base.y)
       },
+      () => {                                              // A — advance to nearest non-player outpost
+        const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+        if (!playerBase) return
+        let best = null, bestD2 = Infinity
+        for (const b of Object.values(this.sim.buildings)) {
+          if (b.typeId !== 'outpost' || b.ownerId === 'player') continue
+          const dx = b.x - playerBase.x, dy = b.y - playerBase.y
+          const d2 = dx * dx + dy * dy
+          if (d2 < bestD2) { bestD2 = d2; best = b }
+        }
+        if (best) this.rally(best.x, best.y)
+      },
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
