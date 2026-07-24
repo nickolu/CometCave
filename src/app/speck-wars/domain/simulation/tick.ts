@@ -6,6 +6,7 @@ import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
+import { BUILDING_TYPES } from '../config/building-types'
 import { HUD_UPDATE_INTERVAL } from '../constants'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
@@ -32,6 +33,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
 
+  // 7b. HP regeneration for owned buildings when not under attack
+  regenBuildingHp(sim, dt)
+
   // 8. Check win/loss
   checkVictory(sim)
 
@@ -40,6 +44,19 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   if (sim.tick % HUD_UPDATE_INTERVAL === 0) emitHudUpdate(sim)
 
   return sim
+}
+
+function regenBuildingHp(sim: SimulationState, dt: number) {
+  const dtSec = dt / 1000
+  for (const building of Object.values(sim.buildings)) {
+    if (building.hp >= building.maxHp) continue
+    if (building.ownerId === 'neutral') continue
+    const btype = BUILDING_TYPES[building.typeId]
+    if (!btype?.hpRegen) continue
+    // No regen while actively being captured
+    if (building.captureProgress && building.captureProgress > 0) continue
+    building.hp = Math.min(building.maxHp, building.hp + btype.hpRegen * dtSec)
+  }
 }
 
 function consumeInputs(sim: SimulationState) {

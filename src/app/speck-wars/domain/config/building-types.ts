@@ -3,6 +3,7 @@ export interface BuildingTypeDefinition {
   maxHp: number; size: number
   spawnTypeId: string | null
   spawnInterval: number; spawnCount: number
+  hpRegen?: number   // HP per second, only when not under attack
   cost?: Array<{ typeId: string; count: number }>
 }
 
@@ -18,5 +19,6 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     maxHp: 50, size: 20,
     spawnTypeId: 'heavy',
     spawnInterval: 1800, spawnCount: 1,
+    hpRegen: 2,  // 2 HP/sec when not under attack
   },
 }
