@@ -4,6 +4,8 @@ import { BUILDING_TYPES } from '../config/building-types'
 
 const MORALE_RATIO = 2.0   // if your count > this × enemy count → morale bonus
 const MORALE_BONUS = 1.20  // 20% damage boost when morale is active
+const RAGE_HP_THRESHOLD = 0.15  // base HP fraction below which rage activates
+const RAGE_BONUS = 1.40         // 40% damage boost when base is critical
 
 export function resolveCombat(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckHp, speckMeta, buildings, spatialGrid } = sim
@@ -20,7 +22,13 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     for (const [id, n] of Object.entries(speckCountByOwner)) {
       if (id !== ownerId && id !== 'neutral' && n > maxEnemyCount) maxEnemyCount = n
     }
-    return (maxEnemyCount > 0 && myCount > MORALE_RATIO * maxEnemyCount) ? MORALE_BONUS : 1.0
+    const moraleBonus = (maxEnemyCount > 0 && myCount > MORALE_RATIO * maxEnemyCount) ? MORALE_BONUS : 1.0
+
+    // Rage: if this owner's base is at critical HP, deal 40% more damage (desperation)
+    const base = Object.values(buildings).find(b => b.ownerId === ownerId && b.typeId === 'base')
+    const rageBonus = (base && base.hp / base.maxHp < RAGE_HP_THRESHOLD) ? RAGE_BONUS : 1.0
+
+    return Math.max(moraleBonus, rageBonus)  // apply highest active bonus (don't stack)
   }
 
   // --- Speck vs Speck combat ---
