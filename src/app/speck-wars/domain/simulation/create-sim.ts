@@ -90,5 +90,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     selectedSpeckIds: new Set<string>(),
     spatialGrid: new SpatialGrid(),
     dominationTimer: 0,
+    surgeDuration: 0,
+    surgeCooldown: 0,
   }
 }
