@@ -24,6 +24,7 @@ export class GameInstance {
   private shakeMs = 0
   private shakeMaxMs = 300
   private shakeStrength = 0
+  private enemyBaseWarnedAt = -30000
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -166,6 +167,17 @@ export class GameInstance {
               color: playerGotIt ? '#4af7c4' : '#ff4f7b',
             })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1800)
+          }
+        }
+        if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-ai-base') {
+          const aiBase = this.sim.buildings['building-ai-base']
+          if (aiBase && event.hp / aiBase.maxHp < 0.2) {
+            const now = Date.now()
+            if (now - this.enemyBaseWarnedAt > 15000) {
+              this.enemyBaseWarnedAt = now
+              store.setNotification({ message: '⚔ ENEMY BASE CRITICAL!', color: '#ffd700' })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+            }
           }
         }
         if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-player-base') {
