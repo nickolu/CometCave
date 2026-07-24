@@ -45,7 +45,9 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const btype = BUILDING_TYPES[nearestBuilding.typeId]
         const bRadius = btype?.size ?? 20
         if (nearestDist2 <= bRadius * bRadius) {
-          meta.state = 'idle'
+          // Retreating specks: stop movement, let regenRetreatingSpecks handle idle transition
+          sim.speckVx[i] = 0
+          sim.speckVy[i] = 0
         } else {
           const dist = Math.sqrt(nearestDist2)
           const dx = nearestBuilding.x - speckX[i]
