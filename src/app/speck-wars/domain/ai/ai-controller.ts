@@ -10,6 +10,7 @@ export class AIController {
   private personality: AIPersonality
   private decisionCount: number = 0
   private spawnMode: 'basic' | 'heavy' | 'scout' = 'basic'
+  private lastStandTriggered = false
   private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
   private dominanceTimer: number = 0  // ms enemy has held a 3:1 count advantage
   private waveTimer: number  // ms until next wave
@@ -117,6 +118,21 @@ export class AIController {
 
     // Defensive rally: when AI base is low HP, sometimes pull back to defend
     const myBaseHpFrac = (myBase?.hp ?? 100) / (myBase?.maxHp ?? 100)
+
+    // Last stand: AI base below 20% — all-out desperate assault, ignoring personality
+    if (myBaseHpFrac < 0.2) {
+      if (!this.lastStandTriggered) {
+        this.lastStandTriggered = true
+        sim.events.push({ type: 'AI_LAST_STAND' })
+      }
+      const playerBase = Object.values(sim.buildings).find(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+      if (playerBase) {
+        sim.rallyPoints[this.playerId] = { x: playerBase.x, y: playerBase.y }
+        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'heavy' })
+      }
+      return
+    }
+
     if (!forceBaseRush && myBaseHpFrac < 0.6 && myBase) {
       const defendChance = this.personality === 'aggressive'
         ? (myBaseHpFrac < 0.3 ? 0.35 : 0.15)   // aggressive defends reluctantly

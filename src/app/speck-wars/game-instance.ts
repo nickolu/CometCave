@@ -460,6 +460,9 @@ export class GameInstance {
           store.setNotification({ message: `⚠ WAVE ${event.waveNumber} ASSAULT!`, color })
           setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
         }
+        if (event.type === 'AI_LAST_STAND') {
+          this.notify('⚠ ENEMY LAST STAND', '#ff4444')
+        }
       }
 
       // Retreat wave warning: 10+ player specks retreating = notify
