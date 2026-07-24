@@ -50,6 +50,32 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           ax += (dx / dist) * stype.speed
           ay += (dy / dist) * stype.speed
         }
+      } else {
+        // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
+        const AGGRO_RANGE = 150  // px
+        const aggroR2 = AGGRO_RANGE * AGGRO_RANGE
+        let closestDist2 = Infinity, closestX = 0, closestY = 0
+        const neighbors = spatialGrid.query(speckX[i], speckY[i])
+        for (const j of neighbors) {
+          if (i === j || !speckIds[j]) continue
+          const jMeta = speckMeta[j]
+          if (!jMeta || jMeta.ownerId === meta.ownerId) continue
+          const dx = speckX[j] - speckX[i]
+          const dy = speckY[j] - speckY[i]
+          const d2 = dx * dx + dy * dy
+          if (d2 < aggroR2 && d2 < closestDist2) {
+            closestDist2 = d2
+            closestX = speckX[j]
+            closestY = speckY[j]
+          }
+        }
+        if (closestDist2 < Infinity) {
+          const dist = Math.sqrt(closestDist2)
+          if (dist > stype.attackRange) {
+            ax += ((closestX - speckX[i]) / dist) * stype.speed
+            ay += ((closestY - speckY[i]) / dist) * stype.speed
+          }
+        }
       }
     }
 
