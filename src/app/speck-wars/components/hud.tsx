@@ -263,20 +263,20 @@ export function HUD() {
         </button>
         <button
           onClick={cycleSpawnMode}
-          title="H — toggle spawn mode"
+          title="H — cycle spawn mode (basic → heavy → scout)"
           style={{
             pointerEvents: 'auto',
             padding: '4px 14px',
             fontSize: 12,
             cursor: 'pointer',
-            background: spawnMode === 'heavy' ? 'rgba(255,160,50,0.15)' : 'rgba(0,0,0,0.5)',
-            border: `1px solid ${spawnMode === 'heavy' ? '#ffa032' : 'rgba(255,255,255,0.3)'}`,
+            background: spawnMode === 'heavy' ? 'rgba(255,160,50,0.15)' : spawnMode === 'scout' ? 'rgba(80,200,255,0.15)' : 'rgba(0,0,0,0.5)',
+            border: `1px solid ${spawnMode === 'heavy' ? '#ffa032' : spawnMode === 'scout' ? '#50c8ff' : 'rgba(255,255,255,0.3)'}`,
             borderRadius: 4,
-            color: spawnMode === 'heavy' ? '#ffa032' : '#fff',
+            color: spawnMode === 'heavy' ? '#ffa032' : spawnMode === 'scout' ? '#50c8ff' : '#fff',
             letterSpacing: 1,
           }}
         >
-          {spawnMode === 'heavy' ? '⬡ HEAVY' : '· BASIC'}
+          {spawnMode === 'heavy' ? '⬡ HEAVY' : spawnMode === 'scout' ? '→ SCOUT' : '· BASIC'}
         </button>
         <button
           onClick={() => setShowHelp(h => !h)}
@@ -320,7 +320,7 @@ export function HUD() {
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
-            <span>Drag — pan camera</span><span>H — heavy/basic mode</span>
+            <span>Drag — pan camera</span><span>H — cycle spawn (basic/heavy/scout)</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
             <span>Q — surge (2× spawn 8s)</span><span>Shift+drag — select specks</span>
@@ -577,13 +577,16 @@ export function HUD() {
             const fmtTypes = (t: Record<string, number>) => {
               const basic = t['basic'] ?? 0
               const heavy = t['heavy'] ?? 0
-              if (basic === 0 && heavy === 0) return '—'
-              if (heavy === 0) return `${basic}× basic`
-              if (basic === 0) return `${heavy}× heavy`
-              return `${basic}× basic, ${heavy}× heavy`
+              const scout = t['scout'] ?? 0
+              const parts: string[] = []
+              if (heavy > 0) parts.push(`${heavy}× heavy`)
+              if (basic > 0) parts.push(`${basic}× basic`)
+              if (scout > 0) parts.push(`${scout}× dart`)
+              if (parts.length === 0) return '—'
+              return parts.join(', ')
             }
             // Production rate estimate
-            const BASE_MS = spawnMode === 'heavy' ? 1800 : 800
+            const BASE_MS = spawnMode === 'heavy' ? 1800 : spawnMode === 'scout' ? 500 : 800
             const OUTPOST_MS = 1200
             const playerTriple = hud.tripleOutpostOwner === 'player'
             const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)

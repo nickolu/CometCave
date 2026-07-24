@@ -22,4 +22,11 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     size: 6, productionTime: 1800,
     abilities: [],
   },
+  scout: {
+    id: 'scout', name: 'Dart',
+    hp: 1, damage: 0.5, speed: 150,
+    attackRange: 4, attackCooldown: 600,
+    size: 2, productionTime: 500,
+    abilities: [],
+  },
 }

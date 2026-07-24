@@ -27,8 +27,8 @@ interface SpeckWarsStore {
   losses: number
   addKill: () => void
   addLoss: () => void
-  spawnMode: 'basic' | 'heavy'
-  cycleSpawnMode: () => 'basic' | 'heavy'
+  spawnMode: 'basic' | 'heavy' | 'scout'
+  cycleSpawnMode: () => 'basic' | 'heavy' | 'scout'
   isNewBest: boolean
   setIsNewBest: (v: boolean) => void
   gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null }
@@ -63,11 +63,11 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   losses: 0,
   addKill: () => set(s => ({ kills: s.kills + 1 })),
   addLoss: () => set(s => ({ losses: s.losses + 1 })),
-  spawnMode: 'basic' as 'basic' | 'heavy',
+  spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
   cycleSpawnMode: () => {
-    let next: 'basic' | 'heavy' = 'basic'
+    let next: 'basic' | 'heavy' | 'scout' = 'basic'
     set(s => {
-      next = s.spawnMode === 'basic' ? 'heavy' : 'basic'
+      next = s.spawnMode === 'basic' ? 'heavy' : s.spawnMode === 'heavy' ? 'scout' : 'basic'
       return { spawnMode: next }
     })
     return next
@@ -92,7 +92,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     notification: null,
     kills: 0,
     losses: 0,
-    spawnMode: 'basic' as 'basic' | 'heavy',
+    spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
     isNewBest: false,
     difficulty: s.difficulty,
   })),
