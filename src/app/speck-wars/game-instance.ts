@@ -38,6 +38,7 @@ export class GameInstance {
   private dominationWarned10 = false    // notified at 10s remaining
   private dominationWarned5 = false     // notified at 5s remaining
   private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
+  private rallyCryFired = false               // one-time Rally Cry notification per game
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -335,6 +336,17 @@ export class GameInstance {
             this.baseAttackWarnedAt = now
             store.setNotification({ message: '⚠ BASE UNDER ATTACK!', color: '#ff4f7b' })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          }
+          // Rally Cry: one-time notification when base drops to 25% HP
+          if (!this.rallyCryFired) {
+            const playerBase = this.sim.buildings['building-player-base']
+            if (playerBase && playerBase.hp / playerBase.maxHp < 0.25) {
+              this.rallyCryFired = true
+              setTimeout(() => {
+                useSpeckWarsStore.getState().setNotification({ message: '🔥 RALLY CRY! 1.5× PRODUCTION!', color: '#ff8844' })
+                setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+              }, 500)
+            }
           }
         }
         if (event.type === 'OUTPOST_CAPTURED') {

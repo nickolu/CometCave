@@ -21,6 +21,7 @@ export const CAPTURE_TIME = 5000             // ms to fully capture
 export const NEUTRAL_COLOR = 0x888888
 export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a friendly outpost move faster
 export const DOMINATION_TIME = 60000   // ms — hold all 3 outposts this long to win by domination
+export const RALLY_CRY_HP_THRESHOLD = 0.25  // base HP fraction below which Rally Cry activates (1.5× spawn)
 
 // Three map layouts — one is picked per game using the daily seed.
 // All layouts use the same outpost IDs so the rest of the codebase is layout-agnostic.
