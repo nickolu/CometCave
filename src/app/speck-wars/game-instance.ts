@@ -3,7 +3,9 @@ import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
 import { Renderer } from './rendering/renderer'
-import { WORLD_WIDTH, WORLD_HEIGHT } from './domain/constants'
+import { createCamera } from './rendering/camera'
+import { InputHandler } from './input/input-handler'
+import type { Camera } from './rendering/camera'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -11,22 +13,20 @@ export class GameInstance {
   private renderer: Renderer
   private rafId: number | null = null
   private lastTime: number = 0
-  private camera: { x: number; y: number; zoom: number }
+  private camera: Camera
+  private inputHandler!: InputHandler
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.sim = createSim()
     this.renderer = new Renderer()
-    this.camera = {
-      x: canvas.width / 2 - WORLD_WIDTH / 2,
-      y: canvas.height / 2 - WORLD_HEIGHT / 2,
-      zoom: 1,
-    }
+    this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
   }
 
   async start() {
     console.log('GameInstance started')
     await this.renderer.init(this.canvas)
+    this.inputHandler = new InputHandler(this.canvas, this.camera)
     this.lastTime = performance.now()
     this.loop(this.lastTime)
   }
@@ -52,6 +52,7 @@ export class GameInstance {
   destroy() {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId)
     this.renderer.destroy()
+    this.inputHandler?.destroy()
     console.log('GameInstance destroyed')
   }
 
@@ -63,7 +64,7 @@ export class GameInstance {
     return this.camera
   }
 
-  setCamera(camera: { x: number; y: number; zoom: number }) {
+  setCamera(camera: Camera) {
     this.camera = camera
   }
 }
