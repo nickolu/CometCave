@@ -118,6 +118,7 @@ export class GameInstance {
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
+      rally: (x: number, y: number) => this.rally(x, y),
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)

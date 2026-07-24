@@ -155,9 +155,19 @@ export function HUD() {
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 4,
             overflow: 'hidden',
-            pointerEvents: 'none',
+            cursor: 'crosshair',
           }}>
-            <svg width={120} height={120} style={{ display: 'block' }}>
+            <svg width={120} height={120} style={{ display: 'block' }}
+              onClick={(e) => {
+                if (!gameActions?.rally) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const px = e.clientX - rect.left
+                const py = e.clientY - rect.top
+                const worldX = (px / 120) * 3000
+                const worldY = (py / 120) * 3000
+                gameActions.rally(worldX, worldY)
+              }}
+            >
               {/* Speck dots */}
               {hud.minimap.specks.map((s, i) => (
                 <circle
