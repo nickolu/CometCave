@@ -8,6 +8,7 @@ export class InputHandler {
   private onTogglePause?: () => void
   private onClearRally?: () => void
   private onCycleSpawnMode?: () => void
+  private onRecenterCamera?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -23,6 +24,7 @@ export class InputHandler {
     onTogglePause?: () => void,
     onClearRally?: () => void,
     onCycleSpawnMode?: () => void,
+    onRecenterCamera?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -30,6 +32,7 @@ export class InputHandler {
     this.onTogglePause = onTogglePause
     this.onClearRally = onClearRally
     this.onCycleSpawnMode = onCycleSpawnMode
+    this.onRecenterCamera = onRecenterCamera
     this.attach()
   }
 
@@ -125,6 +128,8 @@ export class InputHandler {
       this.onClearRally?.()
     } else if (e.code === 'KeyH') {
       this.onCycleSpawnMode?.()
+    } else if (e.code === 'KeyC') {
+      this.onRecenterCamera?.()
     }
   }
 

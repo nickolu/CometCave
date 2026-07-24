@@ -62,6 +62,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>R — clear rally</span>
           <span>Drag — pan camera</span>
           <span>H — heavy/basic mode</span>
+          <span>C — center on base</span>
+          <span>Minimap — click to rally</span>
         </div>
       </div>
     )

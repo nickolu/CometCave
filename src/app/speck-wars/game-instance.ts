@@ -45,6 +45,12 @@ export class GameInstance {
         const next = useSpeckWarsStore.getState().cycleSpawnMode()
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
       },
+      () => {                                              // C — recenter camera on player base
+        const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+        if (!base) return
+        this.camera.x = this.canvas.clientWidth / 2 - base.x * this.camera.zoom
+        this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
+      },
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
