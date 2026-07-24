@@ -59,7 +59,7 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
-      () => { this.sim.rallyPoints['player'] = null },    // R — clear rally
+      () => this.clearRally(),                             // R — clear rally
       () => {                                              // H — cycle spawn mode
         const next = useSpeckWarsStore.getState().cycleSpawnMode()
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
@@ -70,27 +70,9 @@ export class GameInstance {
         this.camera.x = this.canvas.clientWidth / 2 - base.x * this.camera.zoom
         this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
       },
-      () => {                                              // D — defend (rally to player base)
-        const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-        if (!base) return
-        this.rally(base.x, base.y)
-      },
-      () => {                                              // A — advance to nearest non-player outpost
-        const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-        if (!playerBase) return
-        let best = null, bestD2 = Infinity
-        for (const b of Object.values(this.sim.buildings)) {
-          if (b.typeId !== 'outpost' || b.ownerId === 'player') continue
-          const dx = b.x - playerBase.x, dy = b.y - playerBase.y
-          const d2 = dx * dx + dy * dy
-          if (d2 < bestD2) { bestD2 = d2; best = b }
-        }
-        if (best) this.rally(best.x, best.y)
-      },
-      () => {                                              // B — rush enemy base
-        const enemyBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'ai' && b.typeId === 'base')
-        if (enemyBase) this.rally(enemyBase.x, enemyBase.y)
-      },
+      () => this.defend(),                                 // D — defend (rally to player base)
+      () => this.advance(),                                // A — advance to nearest non-player outpost
+      () => this.rush(),                                   // B — rush enemy base
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -239,6 +221,33 @@ export class GameInstance {
   rally(x: number, y: number) {
     this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x, y })
     this.renderer.showRallyPing(x, y)
+  }
+
+  defend() {
+    const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (base) this.rally(base.x, base.y)
+  }
+
+  advance() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (!playerBase) return
+    let best = null, bestD2 = Infinity
+    for (const b of Object.values(this.sim.buildings)) {
+      if (b.typeId !== 'outpost' || b.ownerId === 'player') continue
+      const dx = b.x - playerBase.x, dy = b.y - playerBase.y
+      const d2 = dx * dx + dy * dy
+      if (d2 < bestD2) { bestD2 = d2; best = b }
+    }
+    if (best) this.rally(best.x, best.y)
+  }
+
+  rush() {
+    const enemyBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'ai' && b.typeId === 'base')
+    if (enemyBase) this.rally(enemyBase.x, enemyBase.y)
+  }
+
+  clearRally() {
+    this.sim.rallyPoints['player'] = null
   }
 
   getSim(): SimulationState {

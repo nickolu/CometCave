@@ -25,6 +25,19 @@ function GameCanvas() {
     }
   }, [])
 
+  const btnStyle = {
+    pointerEvents: 'auto' as const,
+    padding: '10px 16px',
+    fontSize: 11,
+    cursor: 'pointer',
+    background: 'rgba(0,0,0,0.55)',
+    border: '1px solid rgba(255,255,255,0.25)',
+    borderRadius: 20,
+    color: 'rgba(255,255,255,0.8)',
+    letterSpacing: 1,
+    touchAction: 'manipulation' as const,
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <canvas
@@ -33,6 +46,17 @@ function GameCanvas() {
       />
       <HUD />
       <Minimap gameRef={gameRef} />
+      {/* Mobile action buttons */}
+      <div style={{
+        position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', gap: 8, pointerEvents: 'none',
+        marginRight: 180,  // avoid minimap overlap
+      }}>
+        <button style={btnStyle} onClick={() => gameRef.current?.defend()}>D: Defend</button>
+        <button style={btnStyle} onClick={() => gameRef.current?.advance()}>A: Advance</button>
+        <button style={btnStyle} onClick={() => gameRef.current?.rush()}>B: Rush</button>
+        <button style={btnStyle} onClick={() => gameRef.current?.clearRally()}>R: Clear</button>
+      </div>
     </div>
   )
 }
