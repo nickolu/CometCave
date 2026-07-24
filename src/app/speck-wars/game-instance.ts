@@ -31,8 +31,16 @@ export class GameInstance {
     this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, difficulty === 'hard' || difficulty === 'very-hard')
   }
 
+  private onVisibilityChange = () => {
+    if (document.hidden) {
+      const store = useSpeckWarsStore.getState()
+      if (store.phase === 'playing') store.togglePause()
+    }
+  }
+
   async start() {
     console.log('GameInstance started')
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
     await this.renderer.init(this.canvas)
     this.inputHandler = new InputHandler(
       this.canvas,
@@ -152,7 +160,8 @@ export class GameInstance {
           const isPlayerGain = event.newOwner === 'player'
           const isPlayerLoss = event.previousOwner === 'player'
           if (isPlayerGain || isPlayerLoss) {
-            const message = isPlayerGain ? '⬡ Outpost Captured!' : '⬡ Outpost Lost!'
+            const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
+            const message = isPlayerGain ? `⬡ ${outpostName} CAPTURED` : `⬡ ${outpostName} LOST`
             const color = isPlayerGain ? '#4af7c4' : '#ff4f7b'
             store.setNotification({ message, color })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
@@ -178,6 +187,7 @@ export class GameInstance {
 
   destroy() {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId)
+    document.removeEventListener('visibilitychange', this.onVisibilityChange)
     this.renderer.destroy()
     this.inputHandler?.destroy()
     console.log('GameInstance destroyed')
