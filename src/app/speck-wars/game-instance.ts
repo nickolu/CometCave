@@ -20,6 +20,7 @@ export class GameInstance {
   private aiController: AIController
   private elapsedMs = 0
   private firstBloodDone = false
+  private baseAttackWarnedAt = -30000  // allow warning immediately on first hit
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -158,6 +159,14 @@ export class GameInstance {
               color: playerGotIt ? '#4af7c4' : '#ff4f7b',
             })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1800)
+          }
+        }
+        if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-player-base') {
+          const now = Date.now()
+          if (now - this.baseAttackWarnedAt > 12000) {
+            this.baseAttackWarnedAt = now
+            store.setNotification({ message: '⚠ BASE UNDER ATTACK!', color: '#ff4f7b' })
+            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
         }
         if (event.type === 'OUTPOST_CAPTURED') {
