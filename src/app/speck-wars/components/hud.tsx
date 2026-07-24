@@ -40,6 +40,7 @@ export function HUD() {
   const cycleSpawnMode = useSpeckWarsStore(s => s.cycleSpawnMode)
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
+  const gameActions = useSpeckWarsStore(s => s.gameActions)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -512,6 +513,88 @@ export function HUD() {
             }}
           >
             Give Up
+          </button>
+        </div>
+      )}
+
+      {/* Mobile action buttons — bottom right */}
+      {phase === 'playing' && (
+        <div style={{
+          position: 'absolute', bottom: 16, right: 16,
+          display: 'flex', flexDirection: 'row', gap: 6,
+          pointerEvents: 'auto',
+        }}>
+          <button
+            onClick={() => gameActions.defend?.()}
+            title="[D] Defend — rally to your base"
+            style={{
+              padding: '6px 10px',
+              fontSize: 11,
+              cursor: 'pointer',
+              background: 'rgba(74,247,196,0.08)',
+              border: '1px solid rgba(74,247,196,0.4)',
+              borderRadius: 20,
+              color: '#4af7c4',
+              letterSpacing: 1,
+              minHeight: 44,
+              fontFamily: 'monospace',
+            }}
+          >
+            🛡 D
+          </button>
+          <button
+            onClick={() => gameActions.advance?.()}
+            title="[A] Advance — rally to nearest outpost"
+            style={{
+              padding: '6px 10px',
+              fontSize: 11,
+              cursor: 'pointer',
+              background: 'rgba(255,215,0,0.08)',
+              border: '1px solid rgba(255,215,0,0.4)',
+              borderRadius: 20,
+              color: '#ffd700',
+              letterSpacing: 1,
+              minHeight: 44,
+              fontFamily: 'monospace',
+            }}
+          >
+            → A
+          </button>
+          <button
+            onClick={() => gameActions.rush?.()}
+            title="[B] Rush — attack enemy base"
+            style={{
+              padding: '6px 10px',
+              fontSize: 11,
+              cursor: 'pointer',
+              background: 'rgba(255,79,123,0.08)',
+              border: '1px solid rgba(255,79,123,0.4)',
+              borderRadius: 20,
+              color: '#ff4f7b',
+              letterSpacing: 1,
+              minHeight: 44,
+              fontFamily: 'monospace',
+            }}
+          >
+            ⚡ B
+          </button>
+          <button
+            onClick={() => gameActions.clearRally?.()}
+            title="[R] Clear rally"
+            style={{
+              padding: '6px 10px',
+              fontSize: 11,
+              cursor: 'pointer',
+              background: 'rgba(0,0,0,0.4)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 20,
+              color: 'rgba(255,255,255,0.6)',
+              letterSpacing: 1,
+              minHeight: 44,
+              fontFamily: 'monospace',
+            }}
+          >
+            ✕ R
           </button>
         </div>
       )}

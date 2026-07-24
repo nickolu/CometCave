@@ -31,6 +31,8 @@ interface SpeckWarsStore {
   cycleSpawnMode: () => 'basic' | 'heavy'
   isNewBest: boolean
   setIsNewBest: (v: boolean) => void
+  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null }
+  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void } | null) => void
   surrender: () => void
   resetGame: () => void
 }
@@ -72,6 +74,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   },
   isNewBest: false,
   setIsNewBest: v => set({ isNewBest: v }),
+  gameActions: { defend: null, advance: null, rush: null, clearRally: null },
+  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null } }),
   surrender: () => {
     resetWinStreak()
     set({ phase: 'defeat', winnerId: 'ai', victoryType: 'destruction', isNewBest: false })
