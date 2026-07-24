@@ -39,6 +39,7 @@ export function HUD() {
   const speed = useSpeckWarsStore(s => s.speed)
   const cycleSpeed = useSpeckWarsStore(s => s.cycleSpeed)
   const notification = useSpeckWarsStore(s => s.notification)
+  const countdown = useSpeckWarsStore(s => s.countdown)
   const kills = useSpeckWarsStore(s => s.kills)
   const losses = useSpeckWarsStore(s => s.losses)
   const spawnMode = useSpeckWarsStore(s => s.spawnMode)
@@ -66,6 +67,10 @@ export function HUD() {
         @keyframes pulse-red {
           from { opacity: 0.5; }
           to { opacity: 1; }
+        }
+        @keyframes countdown-pop {
+          from { transform: scale(1.5); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
       `}</style>
       {hud?.baseUnderThreat && (
@@ -638,6 +643,31 @@ export function HUD() {
           </div>
         )
       })()}
+
+      {/* Cinematic countdown overlay */}
+      {countdown !== null && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none',
+          zIndex: 100,
+        }}>
+          <div
+            key={countdown}
+            style={{
+              fontSize: 120,
+              fontWeight: 'bold',
+              color: countdown === 1 ? '#ff4f7b' : countdown === 2 ? '#ffcc44' : '#4af7c4',
+              textShadow: `0 0 40px currentColor, 0 0 80px currentColor`,
+              letterSpacing: 8,
+              lineHeight: 1,
+              animation: 'countdown-pop 0.9s ease-out forwards',
+            }}
+          >
+            {countdown}
+          </div>
+        </div>
+      )}
 
       {/* Outpost capture/loss notification */}
       {notification && (
