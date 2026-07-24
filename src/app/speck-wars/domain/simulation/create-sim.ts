@@ -45,6 +45,7 @@ export function createSim(seed: number = Date.now()): SimulationState {
     speckMeta: [],
     inputQueue: [],
     events: [],
+    rallyPoints: { player: null, ai: null },
     spatialGrid: new SpatialGrid(),
   }
 }

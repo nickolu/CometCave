@@ -34,6 +34,17 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           ay += (dy / dist) * stype.speed
         }
       }
+    } else {
+      const rally = sim.rallyPoints[meta.ownerId]
+      if (rally) {
+        const dx = rally.x - speckX[i]
+        const dy = rally.y - speckY[i]
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist > stype.attackRange) {
+          ax += (dx / dist) * stype.speed
+          ay += (dy / dist) * stype.speed
+        }
+      }
     }
 
     // Separation from nearby specks (same owner to avoid interleaving)
