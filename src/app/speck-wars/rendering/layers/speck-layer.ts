@@ -1,4 +1,4 @@
-import { Container, Sprite } from 'pixi.js'
+import { Container, Sprite, Graphics } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { SPECK_TYPES } from '../../domain/config/speck-types'
@@ -11,6 +11,7 @@ export class SpeckLayer {
   private texture: Texture
   private playerColors: Record<string, number>
   private attackAnimByIndex: Map<number, number> = new Map()
+  private gfx: Graphics
   readonly stage: Container
 
   constructor(texture: Texture, playerColors: Record<string, number>) {
@@ -27,9 +28,14 @@ export class SpeckLayer {
       this.containers.set(playerId, container)
       this.sprites.set(playerId, [])
     }
+
+    this.gfx = new Graphics()
+    this.stage.addChild(this.gfx)
   }
 
   update(sim: SimulationState) {
+    this.gfx.clear()
+
     // Group live speck indices by owner
     const byOwner: Record<string, number[]> = {}
     for (let i = 0; i < sim.speckCount; i++) {
@@ -77,6 +83,23 @@ export class SpeckLayer {
         // Fade speck as it takes damage — full HP = 1.0, near death = 0.35
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
+
+        // Motion trail: 3 fading dots extrapolated backwards from velocity
+        const vx = sim.speckVx[i], vy = sim.speckVy[i]
+        if (vx * vx + vy * vy > 900) {  // only when moving faster than ~30 px/s
+          const color = this.playerColors[ownerId] ?? 0xffffff
+          const baseAlpha = spriteList[j].alpha
+          const trailAlphas = [0.18, 0.09, 0.04] as const
+          for (let t = 1; t <= 3; t++) {
+            this.gfx.beginFill(color, baseAlpha * trailAlphas[t - 1])
+            this.gfx.drawCircle(
+              sim.speckX[i] - vx * (t * 0.018),
+              sim.speckY[i] - vy * (t * 0.018),
+              1.2,
+            )
+            this.gfx.endFill()
+          }
+        }
       }
 
       // Hide excess sprites
