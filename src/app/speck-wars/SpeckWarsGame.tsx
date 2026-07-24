@@ -11,7 +11,7 @@ export function SpeckWarsGame() {
     if (!canvas) return
 
     const game = new GameInstance(canvas)
-    game.start()
+    game.start()  // fire-and-forget async (renderer inits then loop starts)
 
     return () => {
       game.destroy()
