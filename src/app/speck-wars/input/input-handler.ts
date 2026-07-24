@@ -15,6 +15,7 @@ export class InputHandler {
   private onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void
   private onClearSelect?: () => void
   private onSurge?: () => void
+  private onSnapToAction?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -43,6 +44,7 @@ export class InputHandler {
     onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void,
     onClearSelect?: () => void,
     onSurge?: () => void,
+    onSnapToAction?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -57,6 +59,7 @@ export class InputHandler {
     this.onBoxSelect = onBoxSelect
     this.onClearSelect = onClearSelect
     this.onSurge = onSurge
+    this.onSnapToAction = onSnapToAction
     this.attach()
   }
 
@@ -244,6 +247,8 @@ export class InputHandler {
       this.onRush?.()
     } else if (e.code === 'KeyQ') {
       this.onSurge?.()
+    } else if (e.code === 'KeyV') {
+      this.onSnapToAction?.()
     }
   }
 

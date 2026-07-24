@@ -29,6 +29,7 @@ export class GameInstance {
   private outpostHpWarnedAt: Record<string, number> = {}     // outpostId → timestamp (HP critical)
   private enemySurgeWarnedAt = -30000
   private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
+  private recentDeathPositions: { x: number; y: number; ts: number }[] = []
   private lastComboNotifiedAt = -5000
   private idleArmyTimer = 0              // ms with no rally point + specks available
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
@@ -109,6 +110,7 @@ export class GameInstance {
         this.sim.rallyPoints['player-selected'] = null
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
+      () => { this.snapToAction() },                                        // V — snap camera to battle
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -314,6 +316,9 @@ export class GameInstance {
             })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1800)
           }
+          this.recentDeathPositions.push({ x: event.x, y: event.y, ts: Date.now() })
+          // Keep only last 30 deaths
+          if (this.recentDeathPositions.length > 30) this.recentDeathPositions.shift()
         }
         if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-ai-base') {
           const aiBase = this.sim.buildings['building-ai-base']
@@ -492,6 +497,21 @@ export class GameInstance {
 
   surge() {
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
+  }
+
+  snapToAction() {
+    const now = Date.now()
+    // Use deaths from the last 5 seconds; fall back to all recent deaths
+    let positions = this.recentDeathPositions.filter(p => now - p.ts < 5000)
+    if (positions.length < 3) positions = this.recentDeathPositions
+    if (positions.length === 0) return
+    const cx = positions.reduce((s, p) => s + p.x, 0) / positions.length
+    const cy = positions.reduce((s, p) => s + p.y, 0) / positions.length
+    // Convert world centroid to camera position
+    const w = this.canvas.clientWidth
+    const h = this.canvas.clientHeight
+    this.camera.x = w / 2 - cx * this.camera.zoom
+    this.camera.y = h / 2 - cy * this.camera.zoom
   }
 
   private notify(message: string, color: string) {
