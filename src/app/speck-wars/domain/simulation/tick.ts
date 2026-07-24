@@ -27,6 +27,18 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 5. Deal damage, destroy buildings/specks
   resolveCombat(sim, dt)
 
+  // 5b. Mark low-HP specks as retreating
+  for (let i = 0; i < sim.speckCount; i++) {
+    const meta = sim.speckMeta[i]
+    if (!meta || sim.speckHp[i] <= 0) continue
+    if (meta.state === 'retreating') continue  // already retreating
+    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
+    if (sim.speckHp[i] / maxHp < 0.25) {
+      meta.state = 'retreating'
+      meta.targetId = null
+    }
+  }
+
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
 

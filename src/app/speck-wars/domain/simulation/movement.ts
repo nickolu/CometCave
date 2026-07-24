@@ -1,5 +1,6 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
+import { BUILDING_TYPES } from '../config/building-types'
 import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS } from '../constants'
 
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
@@ -25,6 +26,38 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     if (!meta) continue
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
+
+    // Retreating: flee to nearest friendly building
+    if (meta.state === 'retreating') {
+      let nearestBuilding = null
+      let nearestDist2 = Infinity
+      for (const b of Object.values(buildings)) {
+        if (b.ownerId !== meta.ownerId) continue
+        const dx = b.x - speckX[i]
+        const dy = b.y - speckY[i]
+        const d2 = dx * dx + dy * dy
+        if (d2 < nearestDist2) {
+          nearestDist2 = d2
+          nearestBuilding = b
+        }
+      }
+      if (nearestBuilding) {
+        const btype = BUILDING_TYPES[nearestBuilding.typeId]
+        const bRadius = btype?.size ?? 20
+        if (nearestDist2 <= bRadius * bRadius) {
+          meta.state = 'idle'
+        } else {
+          const dist = Math.sqrt(nearestDist2)
+          const dx = nearestBuilding.x - speckX[i]
+          const dy = nearestBuilding.y - speckY[i]
+          speckVx[i] = (dx / dist) * stype.speed
+          speckVy[i] = (dy / dist) * stype.speed
+          speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+          speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+        }
+      }
+      continue
+    }
 
     let ax = 0, ay = 0
 
