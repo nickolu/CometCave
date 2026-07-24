@@ -4,6 +4,10 @@ interface Flash { x: number; y: number; life: number; maxLife: number; color: nu
 interface Ping { x: number; y: number; life: number; maxLife: number }
 interface Ripple { x: number; y: number; life: number; maxLife: number; color: number }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: number }
+interface CombatZone { x: number; y: number; life: number; maxLife: number }
+
+const COMBAT_ZONE_LIFE = 3000   // ms a zone persists with no new kills
+const COMBAT_ZONE_MERGE_DIST = 60  // px — nearby kills refresh existing zone
 
 export class EffectsLayer {
   readonly stage: Container
@@ -12,6 +16,7 @@ export class EffectsLayer {
   private pings: Ping[] = []
   private ripples: Ripple[] = []
   private particles: Particle[] = []
+  private combatZones: CombatZone[] = []
 
   constructor() {
     this.stage = new Container()
@@ -48,6 +53,18 @@ export class EffectsLayer {
     for (let i = 0; i < 3; i++) {
       this.ripples.push({ x, y, life: 800 - i * 200, maxLife: 800 - i * 200, color })
     }
+  }
+
+  markCombatAt(x: number, y: number) {
+    // Refresh or create a combat zone near this position
+    const md2 = COMBAT_ZONE_MERGE_DIST * COMBAT_ZONE_MERGE_DIST
+    for (const z of this.combatZones) {
+      if ((z.x - x) ** 2 + (z.y - y) ** 2 < md2) {
+        z.life = COMBAT_ZONE_LIFE  // refresh
+        return
+      }
+    }
+    this.combatZones.push({ x, y, life: COMBAT_ZONE_LIFE, maxLife: COMBAT_ZONE_LIFE })
   }
 
   addDestructionBurst(x: number, y: number, color: number) {
@@ -109,6 +126,24 @@ export class EffectsLayer {
       this.gfx.lineStyle(2, r.color, alpha)
       this.gfx.drawCircle(r.x, r.y, radius)
       this.gfx.lineStyle(0)
+    }
+
+    // Combat zone hazes — faint pulsing orange rings where battles are happening
+    this.combatZones = this.combatZones.filter(z => z.life > 0)
+    const now = Date.now()
+    for (const z of this.combatZones) {
+      z.life -= dt
+      const ageFrac = z.life / z.maxLife          // 1.0 (fresh) → 0.0 (expired)
+      const pulse = 0.5 + 0.5 * Math.sin(now / 350)  // ~2.8Hz pulse
+      const alpha = ageFrac * 0.12 * pulse
+      if (alpha > 0.005) {
+        this.gfx.lineStyle(1.5, 0xff6620, alpha)
+        this.gfx.drawCircle(z.x, z.y, 28)
+        this.gfx.lineStyle(0)
+        this.gfx.beginFill(0xff4400, ageFrac * 0.03 * pulse)
+        this.gfx.drawCircle(z.x, z.y, 22)
+        this.gfx.endFill()
+      }
     }
   }
 
