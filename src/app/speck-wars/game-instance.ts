@@ -25,6 +25,7 @@ export class GameInstance {
   private shakeMaxMs = 300
   private shakeStrength = 0
   private enemyBaseWarnedAt = -30000
+  private outpostAttackWarnedAt: Record<string, number> = {}  // outpostId → timestamp
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -135,6 +136,25 @@ export class GameInstance {
         }
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
+          // Warn when an enemy starts capturing a player-owned outpost
+          const now = Date.now()
+          const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
+          for (const outpostId of event.data.attackedBuildingIds) {
+            if (!(outpostId in playerBuildingHp)) continue  // not player-owned
+            const lastWarn = this.outpostAttackWarnedAt[outpostId] ?? -Infinity
+            if (now - lastWarn > 8000) {
+              this.outpostAttackWarnedAt[outpostId] = now
+              const name = outpostId.replace('outpost-', '').toUpperCase()
+              store.setNotification({ message: `⬡ ${name} UNDER ATTACK!`, color: '#ff8c00' })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+            }
+          }
+          // Clear warnings for outposts that are no longer under attack
+          for (const id of Object.keys(this.outpostAttackWarnedAt)) {
+            if (!event.data.attackedBuildingIds.includes(id)) {
+              delete this.outpostAttackWarnedAt[id]
+            }
+          }
         }
         if (event.type === 'SPECK_DIED') {
           if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') {
