@@ -78,6 +78,10 @@ export class GameInstance {
         }
         if (best) this.rally(best.x, best.y)
       },
+      () => {                                              // B — rush enemy base
+        const enemyBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'ai' && b.typeId === 'base')
+        if (enemyBase) this.rally(enemyBase.x, enemyBase.y)
+      },
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
