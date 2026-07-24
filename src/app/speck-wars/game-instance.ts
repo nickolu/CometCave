@@ -7,6 +7,7 @@ import { createCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController } from './domain/ai/ai-controller'
+import { recordBestTime } from './lib/personal-best'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -70,7 +71,14 @@ export class GameInstance {
 
       for (const event of this.sim.events) {
         if (event.type === 'GAME_OVER') {
-          store.setPhase('victory')
+          if (event.winnerId === 'player') {
+            const isNew = recordBestTime(store.difficulty, this.elapsedMs)
+            store.setIsNewBest(isNew)
+            store.setPhase('victory')
+          } else {
+            store.setIsNewBest(false)
+            store.setPhase('defeat')
+          }
           store.setWinnerId(event.winnerId)
         }
         if (event.type === 'HUD_UPDATE') {

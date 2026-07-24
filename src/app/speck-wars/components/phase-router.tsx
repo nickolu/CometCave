@@ -1,10 +1,23 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
+import { getBestTime } from '../lib/personal-best'
+import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
+  const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
+
+  useEffect(() => {
+    if (phase === 'menu') {
+      setBestTimes({
+        easy: getBestTime('easy') ?? undefined,
+        medium: getBestTime('medium') ?? undefined,
+        hard: getBestTime('hard') ?? undefined,
+      })
+    }
+  }, [phase])
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
@@ -37,6 +50,20 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               {d.label}
             </button>
           ))}
+        </div>
+        {/* Best times per difficulty */}
+        <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+          {difficulties.map(d => {
+            const best = bestTimes[d.key]
+            if (!best) return null
+            const mm = String(Math.floor(Math.floor(best / 1000) / 60)).padStart(2, '0')
+            const ss = String(Math.floor(best / 1000) % 60).padStart(2, '0')
+            return (
+              <span key={d.key} style={{ color: d.color, opacity: 0.6 }}>
+                {d.label}: {mm}:{ss}
+              </span>
+            )
+          })}
         </div>
         <button
           onClick={() => setPhase('playing')}
@@ -110,6 +137,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         <h1 style={{ color: accentColor, fontSize: 64, margin: 0, letterSpacing: 4 }}>
           {won ? 'VICTORY' : 'DEFEATED'}
         </h1>
+        {won && isNewBest && (
+          <div style={{ color: '#ffd700', fontSize: 16, letterSpacing: 3, fontWeight: 'bold', textShadow: '0 0 16px #ffd700' }}>
+            ★ NEW BEST TIME ★
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 24, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
           <span>⏱ {timeStr}</span>
