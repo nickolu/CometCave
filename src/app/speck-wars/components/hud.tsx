@@ -1,6 +1,7 @@
 'use client'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
+import { getBestTime } from '../lib/personal-best'
 
 function colorHex(n: number) {
   return `#${n.toString(16).padStart(6, '0')}`
@@ -75,6 +76,20 @@ export function HUD() {
       }}>
         <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9 }}>
           {formatTime(elapsedMs)}
+          {(() => {
+            const pb = getBestTime(difficulty)
+            if (!pb) return null
+            const ahead = pb - elapsedMs
+            return (
+              <span style={{
+                fontSize: 10, letterSpacing: 1, marginLeft: 8,
+                color: ahead > 0 ? '#ffd700' : '#ff4f7b',
+                opacity: 0.7,
+              }}>
+                {ahead > 0 ? `−${formatTime(ahead)}` : `+${formatTime(-ahead)}`}
+              </span>
+            )
+          })()}
         </span>
         <button
           onClick={togglePause}
