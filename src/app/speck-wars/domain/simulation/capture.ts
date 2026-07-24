@@ -33,8 +33,9 @@ export function updateCapture(sim: SimulationState, dt: number) {
     }
 
     // Scale capture speed with speck count: 5 specks = 1×, capped at 3× (15 specks)
+    const captureTimeMs = sim.dailyModifier === 'siege' ? CAPTURE_TIME * 2 : CAPTURE_TIME
     const captureSpeed = Math.min(3, dominantCount / 5)
-    building.captureProgress = (building.captureProgress ?? 0) + (dt / CAPTURE_TIME) * captureSpeed
+    building.captureProgress = (building.captureProgress ?? 0) + (dt / captureTimeMs) * captureSpeed
     if ((building.captureProgress ?? 0) >= 1) {
       const previousOwner = building.ownerId
       building.ownerId = dominantOwner

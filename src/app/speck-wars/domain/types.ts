@@ -61,6 +61,7 @@ export interface SimulationState {
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
+  dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
 }
 
 export type InputEvent =
@@ -96,6 +97,7 @@ export interface HudData {
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
   spawnRates: Record<string, number>   // playerId → effective specks/min
+  dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]

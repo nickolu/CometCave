@@ -135,6 +135,11 @@ export function HUD() {
             <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 8, letterSpacing: 0.5 }}>
               DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
+            {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
+              <span style={{ color: '#ffd700', fontSize: 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
+                {hud.dailyModifier === 'bulwark' ? '⚔ BULWARK' : hud.dailyModifier === 'blitz' ? '⚡ BLITZ' : '🏰 SIEGE'}
+              </span>
+            )}
           </div>
         )
       })()}
@@ -325,6 +330,9 @@ export function HUD() {
             <span>B — rush enemy base</span><span>D — defend base</span>
             <span>Q — surge (2× spawn 8s)</span><span>Shift+drag — select specks</span>
             <span>Minimap — click to rally</span><span>? — this help</span>
+            <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
+              Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
+            </span>
           </div>
         </div>
       )}
