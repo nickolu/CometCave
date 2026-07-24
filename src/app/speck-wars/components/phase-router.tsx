@@ -142,8 +142,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const nextDiff = won ? nextDifficulty[difficulty] : null
 
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) + ' ' : ''
     const shareText = won
-      ? `I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks! 🎮 Daily map ${today} — can you beat my time?`
+      ? `${starStr}I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks! 🎮 Daily map ${today} — can you beat my time?`
       : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks. 🎮 Daily map ${today} — think you can do better?`
 
     const handleShare = async () => {
