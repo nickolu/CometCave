@@ -126,7 +126,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     if (dist <= attackDist) {
       // Outposts are captured, not destroyed — immune to direct combat damage
       if (building.typeId === 'outpost') continue
-      building.hp -= stype.damage * moraleMult(meta.ownerId)
+      const siegeBonus = meta.typeId === 'heavy' ? 1.5 : 1.0
+      building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 
