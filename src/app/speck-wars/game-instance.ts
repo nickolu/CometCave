@@ -7,7 +7,7 @@ import { createCamera, clampCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController } from './domain/ai/ai-controller'
-import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult } from './lib/personal-best'
+import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday } from './lib/personal-best'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -157,6 +157,7 @@ export class GameInstance {
               const isNew = recordBestTime(s.difficulty, elapsedAtEnd)
               incrementWinStreak()
               recordGameResult(s.difficulty, true, elapsedAtEnd, s.kills)
+              markWonToday(s.difficulty)
               s.setIsNewBest(isNew)
               s.setPhase('victory')
             } else {

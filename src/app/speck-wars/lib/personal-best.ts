@@ -69,3 +69,21 @@ export function markFirstGameDone() {
   if (typeof window === 'undefined') return
   localStorage.setItem(FIRST_GAME_KEY, '1')
 }
+
+// Daily win tracking: store the date (YYYYMMDD) when a player wins each difficulty
+const DAILY_WIN_KEY = (d: Difficulty) => `speck-wars-daily-win-${d}`
+
+function todayKey(): string {
+  const now = new Date()
+  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+}
+
+export function hasWonToday(difficulty: Difficulty): boolean {
+  if (typeof window === 'undefined') return false
+  return localStorage.getItem(DAILY_WIN_KEY(difficulty)) === todayKey()
+}
+
+export function markWonToday(difficulty: Difficulty) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(DAILY_WIN_KEY(difficulty), todayKey())
+}
