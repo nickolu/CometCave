@@ -89,6 +89,20 @@ export function HUD() {
           animation: 'pulse-red 0.6s ease-in-out infinite alternate',
         }}>⚠ BASE UNDER ATTACK</div>
       )}
+      {(() => {
+        const myCount = hud?.players?.player?.speckCount ?? 0
+        const aiCount = hud?.players?.ai?.speckCount ?? 0
+        const ratio = myCount > 0 ? aiCount / myCount : (aiCount > 0 ? 999 : 0)
+        if (ratio < 2.5) return null
+        return (
+          <div style={{
+            position: 'fixed', top: 44, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(200,100,0,0.9)', color: '#fff', fontWeight: 700,
+            padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
+            zIndex: 109, pointerEvents: 'none',
+          }}>OUTNUMBERED {Math.round(ratio)}:1</div>
+        )
+      })()}
       {isDanger && (
         <>
           <style>{`
@@ -404,11 +418,11 @@ export function HUD() {
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
-            <span>Drag — pan camera</span><span>1/2/3 or H — set/cycle spawn type</span>
+            <span>Drag — pan camera</span><span>1/2/3 — set spawn type</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-            <span>Shift+drag — select specks</span><span>Minimap — click to rally</span>
+            <span>H — snap to home base</span><span>Minimap — click to rally</span>
             <span>E — select all specks</span><span>X — cycle speed (1×/2×/4×)</span>
             <span>F — sacrifice 10 specks → +15 HP base</span><span>? — this help</span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
