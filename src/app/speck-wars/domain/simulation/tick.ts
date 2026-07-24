@@ -162,6 +162,13 @@ function consumeInputs(sim: SimulationState) {
       const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
       if (hasSelection) {
         sim.rallyPoints['player-selected'] = { x: event.x, y: event.y }
+        // Stamp individual rally on each selected speck — persists after deselection
+        for (let i = 0; i < sim.speckCount; i++) {
+          const meta = sim.speckMeta[i]
+          if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
+          meta.assignedRallyX = event.x
+          meta.assignedRallyY = event.y
+        }
       } else {
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
       }
