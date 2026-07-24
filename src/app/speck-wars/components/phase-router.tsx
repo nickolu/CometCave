@@ -110,7 +110,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>🖱 Click — rally specks</span>
           <span>Space — pause</span>
           <span>Scroll — zoom</span>
-          <span>R — clear rally</span>
+          <span>R / Right-click — clear rally</span>
           <span>Drag — pan camera</span>
           <span>H — heavy/basic mode</span>
           <span>A — advance to outpost</span>
