@@ -68,7 +68,8 @@ export class GameInstance {
       // very-hard: no balanced — pure pressure or macro domination
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality())
+    const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality(), adaptiveEnabled)
   }
 
   private onVisibilityChange = () => {

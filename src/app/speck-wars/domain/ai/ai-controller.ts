@@ -17,8 +17,10 @@ export class AIController {
   private waveRemainingMs = 0  // ms left in active wave (0 = not in wave)
   private waveNumber = 0       // which wave this is (1, 2, 3...)
   private waveEnabled: boolean  // only hard/very-hard get waves
+  private adaptiveDominanceDuration = 0  // ms player has dominated ≥3:1
+  private adaptiveBaseInterval: number | null = null  // captured baseline spawn interval
 
-  constructor(playerId: string, tickInterval: number = 30, personality: AIPersonality = 'balanced') {
+  constructor(playerId: string, tickInterval: number = 30, personality: AIPersonality = 'balanced', private readonly adaptiveEnabled: boolean = false) {
     this.playerId = playerId
     this.tickInterval = tickInterval
     this.baseTickInterval = tickInterval
@@ -151,6 +153,34 @@ export class AIController {
       if (enemyBase) {
         sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: enemyBase.x, y: enemyBase.y })
         return
+      }
+    }
+
+    // Adaptive difficulty: gradually speed up AI spawns when player dominates
+    if (this.adaptiveEnabled) {
+      let playerCount = 0, aiCount = 0
+      for (let i = 0; i < sim.speckCount; i++) {
+        const m = sim.speckMeta[i]
+        if (!m) continue
+        if (m.ownerId === 'player') playerCount++
+        else if (m.ownerId === 'ai') aiCount++
+      }
+      const ratio = aiCount > 0 ? playerCount / aiCount : (playerCount > 0 ? 9 : 1)
+      if (ratio >= 3.0) {
+        this.adaptiveDominanceDuration = Math.min(45_000, this.adaptiveDominanceDuration + dt)
+      } else {
+        this.adaptiveDominanceDuration = Math.max(0, this.adaptiveDominanceDuration - dt * 0.5)
+      }
+      const boostFraction = this.adaptiveDominanceDuration / 45_000  // 0 → 1 over 45s
+      if (boostFraction > 0) {
+        const aiBase = Object.values(sim.buildings).find(b => b.ownerId === 'ai' && b.typeId === 'base')
+        if (aiBase) {
+          if (this.adaptiveBaseInterval === null) {
+            this.adaptiveBaseInterval = aiBase.spawnIntervalOverride ?? 800
+          }
+          const speedMult = 1 + boostFraction * 0.3  // up to 30% faster
+          aiBase.spawnIntervalOverride = Math.max(400, this.adaptiveBaseInterval / speedMult)
+        }
       }
     }
 
