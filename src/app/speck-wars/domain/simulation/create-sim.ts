@@ -1,5 +1,5 @@
 import type { SimulationState, Player, BuildingEntity } from '../types'
-import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, OUTPOST_POSITIONS } from '../constants'
+import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, MAP_LAYOUTS } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty } from '../../store'
@@ -53,10 +53,13 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     color: NEUTRAL_COLOR, isAI: false, isDefeated: false, stockpile: {},
   }
 
-  const JITTER = 200  // ± px of positional variation per game
+  const JITTER = 150  // ± px of positional variation per game
   const rng = mulberry32(seed)  // seeded so same date+difficulty = same map
+  // Pick layout using first RNG call so same seed = same layout + same jitter
+  const layoutIndex = Math.floor(rng() * MAP_LAYOUTS.length)
+  const outpostPositions = MAP_LAYOUTS[layoutIndex]
   const outpostBuildings: Record<string, BuildingEntity> = {}
-  for (const pos of OUTPOST_POSITIONS) {
+  for (const pos of outpostPositions) {
     const jx = (rng() * 2 - 1) * JITTER
     const jy = (rng() * 2 - 1) * JITTER
     outpostBuildings[pos.id] = {
