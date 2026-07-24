@@ -193,7 +193,7 @@ export function HUD() {
             border: '1px solid rgba(255,255,255,0.15)',
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
-            <span>Scroll — zoom</span><span>R — clear rally</span>
+            <span>Scroll — zoom</span><span>R / Mid-click — clear rally</span>
             <span>Drag — pan camera</span><span>H — heavy/basic mode</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>

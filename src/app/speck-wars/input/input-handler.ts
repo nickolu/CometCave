@@ -69,6 +69,7 @@ export class InputHandler {
   private onMouseLeave = () => { this.mouseX = -1; this.mouseY = -1 }
 
   private onMouseDown = (e: MouseEvent) => {
+    if (e.button === 1) e.preventDefault()  // prevent middle-click scroll
     this.isDragging = true
     this.lastX = e.clientX
     this.lastY = e.clientY
@@ -88,6 +89,13 @@ export class InputHandler {
     const dx = e.clientX - this.mouseDownX
     const dy = e.clientY - this.mouseDownY
     const dist = Math.sqrt(dx * dx + dy * dy)
+
+    // Middle-click: clear rally
+    if (e.button === 1 && dist < 5) {
+      this.onClearRally?.()
+      this.isDragging = false
+      return
+    }
 
     if (dist < 5 && this.onRally) {
       const rect = this.canvas.getBoundingClientRect()
