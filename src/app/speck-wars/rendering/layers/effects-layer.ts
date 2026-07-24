@@ -24,7 +24,15 @@ export class EffectsLayer {
   }
 
   showRallyPing(x: number, y: number) {
-    this.pings.push({ x, y, life: 400, maxLife: 400 })
+    // Two rings: fast inner + slower outer
+    this.pings.push({ x, y, life: 320, maxLife: 320 })
+    this.pings.push({ x, y, life: 540, maxLife: 540 })
+    // 4 brief crosshair sparks
+    const S = 12
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]] as const
+    for (const [dx, dy] of dirs) {
+      this.particles.push({ x, y, vx: dx * S * 50, vy: dy * S * 50, life: 180, maxLife: 180, color: 0x4af7c4 })
+    }
   }
 
   addDeathParticles(x: number, y: number, color: number) {
@@ -62,10 +70,13 @@ export class EffectsLayer {
     for (const p of this.pings) {
       p.life -= dt
       const alpha = p.life / p.maxLife
-      const r = (1 - alpha) * 24 + 4   // expands from 4 to 28
-      this.gfx.lineStyle(2, 0x4af7c4, alpha * 0.8)
+      // Shorter-lived pings expand less; longer-lived ones expand further
+      const maxR = p.maxLife > 400 ? 44 : 26
+      const r = (1 - alpha) * maxR + 4
+      const thickness = p.maxLife > 400 ? 1.2 : 2
+      this.gfx.lineStyle(thickness, 0x4af7c4, alpha * 0.8)
       this.gfx.drawCircle(p.x, p.y, r)
-      this.gfx.lineStyle(0)  // reset
+      this.gfx.lineStyle(0)
     }
 
     this.flashes = this.flashes.filter(f => f.life > 0)
