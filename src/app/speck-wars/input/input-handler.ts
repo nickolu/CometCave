@@ -51,6 +51,7 @@ export class InputHandler {
     window.addEventListener('mousemove', this.onMouseMove)
     window.addEventListener('mouseup', this.onMouseUp)
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false })
+    this.canvas.addEventListener('contextmenu', this.onContextMenu)
     // Touch support
     this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true })
     window.addEventListener('touchmove', this.onTouchMove, { passive: false })
@@ -67,6 +68,11 @@ export class InputHandler {
   }
 
   private onMouseLeave = () => { this.mouseX = -1; this.mouseY = -1 }
+
+  private onContextMenu = (e: MouseEvent) => {
+    e.preventDefault()   // suppress browser context menu
+    this.onClearRally?.()
+  }
 
   private onMouseDown = (e: MouseEvent) => {
     if (e.button === 1) e.preventDefault()  // prevent middle-click scroll
@@ -97,7 +103,7 @@ export class InputHandler {
       return
     }
 
-    if (dist < 5 && this.onRally) {
+    if (e.button === 0 && dist < 5 && this.onRally) {
       const rect = this.canvas.getBoundingClientRect()
       const sx = e.clientX - rect.left
       const sy = e.clientY - rect.top
@@ -183,6 +189,7 @@ export class InputHandler {
     window.removeEventListener('mousemove', this.onMouseMove)
     window.removeEventListener('mouseup', this.onMouseUp)
     this.canvas.removeEventListener('wheel', this.onWheel)
+    this.canvas.removeEventListener('contextmenu', this.onContextMenu)
     this.canvas.removeEventListener('touchstart', this.onTouchStart)
     window.removeEventListener('touchmove', this.onTouchMove)
     window.removeEventListener('touchend', this.onTouchEnd)

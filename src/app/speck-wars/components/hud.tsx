@@ -93,9 +93,12 @@ export function HUD() {
         const diffColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
         const color = diffColors[difficulty] ?? '#ffffff'
         return (
-          <div style={{ position: 'absolute', top: 12, right: 16, fontSize: 10, letterSpacing: 1 }}>
+          <div style={{ position: 'absolute', top: 12, right: 16, fontSize: 10, letterSpacing: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
             <span style={{ color, opacity: 0.5, border: `1px solid ${color}`, borderRadius: 3, padding: '2px 6px' }}>
               {difficulty.toUpperCase()}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 8, letterSpacing: 0.5 }}>
+              DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
           </div>
         )
@@ -213,7 +216,7 @@ export function HUD() {
             border: '1px solid rgba(255,255,255,0.15)',
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
-            <span>Scroll — zoom</span><span>R / Mid-click — clear rally</span>
+            <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
             <span>Drag — pan camera</span><span>H — heavy/basic mode</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
