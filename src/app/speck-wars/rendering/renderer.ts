@@ -73,7 +73,8 @@ export class Renderer {
     // Process death flash events from this tick
     for (const event of sim.events) {
       if (event.type === 'SPECK_DIED') {
-        this.effectsLayer.addDeathFlash(event.x, event.y)
+        const flashColor = PLAYER_COLORS[event.killedOwnerId] ?? 0xffffff
+        this.effectsLayer.addDeathFlash(event.x, event.y, flashColor)
       }
     }
     this.effectsLayer.update(dt)
