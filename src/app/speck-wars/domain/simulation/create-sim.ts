@@ -1,6 +1,7 @@
 import type { SimulationState, Player, BuildingEntity } from '../types'
 import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, OUTPOST_POSITIONS } from '../constants'
 import { SpatialGrid } from './spatial-grid'
+import { mulberry32 } from './prng'
 import type { Difficulty } from '../../store'
 
 const aiSpawnInterval: Record<Difficulty, number> = {
@@ -53,10 +54,11 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   }
 
   const JITTER = 200  // ± px of positional variation per game
+  const rng = mulberry32(seed)  // seeded so same date+difficulty = same map
   const outpostBuildings: Record<string, BuildingEntity> = {}
   for (const pos of OUTPOST_POSITIONS) {
-    const jx = (Math.random() * 2 - 1) * JITTER
-    const jy = (Math.random() * 2 - 1) * JITTER
+    const jx = (rng() * 2 - 1) * JITTER
+    const jy = (rng() * 2 - 1) * JITTER
     outpostBuildings[pos.id] = {
       id: pos.id,
       typeId: 'outpost',
