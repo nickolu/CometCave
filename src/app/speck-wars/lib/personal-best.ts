@@ -37,6 +37,27 @@ export function resetWinStreak() {
   localStorage.setItem(STREAK_KEY, '0')
 }
 
+interface GameResult { won: boolean; timeMs: number; kills: number }
+const HISTORY_KEY = (d: Difficulty) => `speck-wars-history-${d}`
+const HISTORY_LIMIT = 5
+
+export function recordGameResult(difficulty: Difficulty, won: boolean, timeMs: number, kills: number) {
+  if (typeof window === 'undefined') return
+  const prev = getRecentResults(difficulty)
+  const next: GameResult[] = [{ won, timeMs, kills }, ...prev].slice(0, HISTORY_LIMIT)
+  localStorage.setItem(HISTORY_KEY(difficulty), JSON.stringify(next))
+}
+
+export function getRecentResults(difficulty: Difficulty): GameResult[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY(difficulty))
+    return raw ? (JSON.parse(raw) as GameResult[]) : []
+  } catch {
+    return []
+  }
+}
+
 const FIRST_GAME_KEY = 'speck-wars-first-game-done'
 
 export function isFirstGame(): boolean {
