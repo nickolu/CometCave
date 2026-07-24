@@ -138,6 +138,7 @@ export function HUD() {
           const color = isPlayerOwned ? '#4af7c4' : isAiOwned ? '#ff4f7b' : '#888888'
           return { color, isUnderAttack, isPlayerOwned }
         })
+        const playerCount = dots.filter(d => d.isPlayerOwned).length
         return (
           <>
             {dots.some(d => d.isUnderAttack && d.isPlayerOwned) && (
@@ -152,7 +153,9 @@ export function HUD() {
               position: 'absolute', top: 48, left: 0, right: 0,
               display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
             }}>
-              <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>OUTPOSTS</span>
+              <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>
+                OUTPOSTS {playerCount}/{OUTPOST_IDS.length}
+              </span>
               {dots.map(({ color, isUnderAttack, isPlayerOwned }, i) => (
                 <div key={i} style={{
                   width: 10, height: 10,
