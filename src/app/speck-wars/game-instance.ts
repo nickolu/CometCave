@@ -26,6 +26,7 @@ export class GameInstance {
   private shakeStrength = 0
   private enemyBaseWarnedAt = -30000
   private outpostAttackWarnedAt: Record<string, number> = {}  // outpostId → timestamp
+  private enemySurgeWarnedAt = -30000
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -155,6 +156,14 @@ export class GameInstance {
               delete this.outpostAttackWarnedAt[id]
             }
           }
+          // Enemy surge warning: AI has 2× the player's specks
+          const playerSpecks = event.data.players.player?.speckCount ?? 0
+          const aiSpecks = event.data.players.ai?.speckCount ?? 0
+          if (aiSpecks >= 2 * playerSpecks && playerSpecks > 5 && now - this.enemySurgeWarnedAt > 20000) {
+            this.enemySurgeWarnedAt = now
+            store.setNotification({ message: '⚠ ENEMY SURGE!', color: '#ff6b35' })
+            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          }
         }
         if (event.type === 'SPECK_DIED') {
           if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') {
@@ -206,10 +215,13 @@ export class GameInstance {
         if (event.type === 'OUTPOST_CAPTURED') {
           const isPlayerGain = event.newOwner === 'player'
           const isPlayerLoss = event.previousOwner === 'player'
+          const isRecapture = isPlayerGain && event.previousOwner === 'ai'
           if (isPlayerGain || isPlayerLoss) {
             const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
-            const message = isPlayerGain ? `⬡ ${outpostName} CAPTURED` : `⬡ ${outpostName} LOST`
-            const color = isPlayerGain ? '#4af7c4' : '#ff4f7b'
+            const message = isPlayerLoss ? `⬡ ${outpostName} LOST`
+              : isRecapture ? `⬡ ${outpostName} RECAPTURED!`
+              : `⬡ ${outpostName} CAPTURED`
+            const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
             store.setNotification({ message, color })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
