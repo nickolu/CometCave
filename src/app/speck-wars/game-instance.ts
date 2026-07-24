@@ -27,7 +27,7 @@ export class GameInstance {
     this.sim = createSim(Date.now(), difficulty)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
-    this.aiController = new AIController('ai', aiTickInterval[difficulty])
+    this.aiController = new AIController('ai', aiTickInterval[difficulty], difficulty === 'hard')
   }
 
   async start() {
