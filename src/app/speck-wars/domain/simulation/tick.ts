@@ -105,18 +105,23 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number> }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number> }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
+    const speckTypes: Record<string, number> = {}
     for (let i = 0; i < sim.speckCount; i++) {
       const m = sim.speckMeta[i]
-      if (m && m.ownerId === pid) liveCount++
+      if (m && m.ownerId === pid) {
+        liveCount++
+        speckTypes[m.typeId] = (speckTypes[m.typeId] ?? 0) + 1
+      }
     }
     data[pid] = {
       speckCount: liveCount,
       buildingCount: myBuildings.length,
       buildingHp: Object.fromEntries(myBuildings.map(b => [b.id, b.hp])),
+      speckTypes,
     }
   }
   // Buildings that are owned but actively being captured by the enemy

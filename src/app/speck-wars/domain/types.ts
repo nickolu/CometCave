@@ -78,6 +78,7 @@ export interface HudData {
     speckCount: number
     buildingCount: number
     buildingHp: Record<string, number>
+    speckTypes: Record<string, number>  // typeId → count
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null

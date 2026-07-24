@@ -388,6 +388,16 @@ export function HUD() {
             const playerOutpostCount = hud.players.player?.buildingCount
               ? hud.players.player.buildingCount - 1  // subtract base
               : 0
+            const playerTypes = hud.players.player?.speckTypes ?? {}
+            const aiTypes = hud.players.ai?.speckTypes ?? {}
+            const fmtTypes = (t: Record<string, number>) => {
+              const basic = t['basic'] ?? 0
+              const heavy = t['heavy'] ?? 0
+              if (basic === 0 && heavy === 0) return '—'
+              if (heavy === 0) return `${basic}× basic`
+              if (basic === 0) return `${heavy}× heavy`
+              return `${basic}× basic, ${heavy}× heavy`
+            }
             return (
               <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px',
@@ -399,6 +409,8 @@ export function HUD() {
                 <span style={{ color: colorHex(AI_COLOR), opacity: 0.8 }}>ENEMY ARMY</span>
                 <span>{playerSpecks} specks</span>
                 <span>{aiSpecks} specks</span>
+                <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(playerTypes)}</span>
+                <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(aiTypes)}</span>
                 <span>Base: {Math.round(playerBaseHpVal)}HP</span>
                 <span>Base: {Math.round(aiBaseHpVal)}HP</span>
                 <span>Outposts: {playerOutpostCount}</span>
