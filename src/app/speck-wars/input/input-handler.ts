@@ -1,16 +1,20 @@
 import type { Camera } from '../rendering/camera'
-import { zoomAt } from '../rendering/camera'
+import { zoomAt, screenToWorld } from '../rendering/camera'
 
 export class InputHandler {
   private canvas: HTMLCanvasElement
   private camera: Camera
+  private onRally?: (worldX: number, worldY: number) => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
+  private mouseDownX = 0
+  private mouseDownY = 0
 
-  constructor(canvas: HTMLCanvasElement, camera: Camera) {
+  constructor(canvas: HTMLCanvasElement, camera: Camera, onRally?: (worldX: number, worldY: number) => void) {
     this.canvas = canvas
     this.camera = camera
+    this.onRally = onRally
     this.attach()
   }
 
@@ -29,7 +33,10 @@ export class InputHandler {
     this.isDragging = true
     this.lastX = e.clientX
     this.lastY = e.clientY
+    this.mouseDownX = e.clientX
+    this.mouseDownY = e.clientY
   }
+
   private onMouseMove = (e: MouseEvent) => {
     if (!this.isDragging) return
     this.camera.x += e.clientX - this.lastX
@@ -37,7 +44,22 @@ export class InputHandler {
     this.lastX = e.clientX
     this.lastY = e.clientY
   }
-  private onMouseUp = () => { this.isDragging = false }
+
+  private onMouseUp = (e: MouseEvent) => {
+    const dx = e.clientX - this.mouseDownX
+    const dy = e.clientY - this.mouseDownY
+    const dist = Math.sqrt(dx * dx + dy * dy)
+
+    if (dist < 5 && this.onRally) {
+      const rect = this.canvas.getBoundingClientRect()
+      const sx = e.clientX - rect.left
+      const sy = e.clientY - rect.top
+      const world = screenToWorld(sx, sy, this.camera)
+      this.onRally(world.x, world.y)
+    }
+
+    this.isDragging = false
+  }
 
   private onWheel = (e: WheelEvent) => {
     e.preventDefault()
@@ -55,6 +77,7 @@ export class InputHandler {
       this.lastY = e.touches[0].clientY
     }
   }
+
   private onTouchMove = (e: TouchEvent) => {
     if (!this.isDragging || e.touches.length !== 1) return
     e.preventDefault()
@@ -63,6 +86,7 @@ export class InputHandler {
     this.lastX = e.touches[0].clientX
     this.lastY = e.touches[0].clientY
   }
+
   private onTouchEnd = () => { this.isDragging = false }
 
   destroy() {
