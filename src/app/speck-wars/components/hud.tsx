@@ -111,6 +111,15 @@ export function HUD() {
           zIndex: 108, pointerEvents: 'none',
         }}>ENEMY ADVANCING</div>
       )}
+      {hud?.rallyCryActive && !hud?.baseUnderThreat && (
+        <div style={{
+          position: 'fixed', top: 108, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(255,136,0,0.88)', color: '#fff', fontWeight: 700,
+          padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
+          zIndex: 107, pointerEvents: 'none',
+          animation: 'pulse-red 0.9s ease-in-out infinite alternate',
+        }}>★ RALLY CRY — 1.5× SPAWN</div>
+      )}
       {isDanger && (
         <>
           <style>{`
