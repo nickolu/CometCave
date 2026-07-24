@@ -137,6 +137,12 @@ export class GameInstance {
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
+      setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
+        useSpeckWarsStore.getState().setSpawnMode(typeId)
+        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
+        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+      },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
