@@ -29,6 +29,10 @@ interface SpeckWarsStore {
   addLoss: () => void
   spawnMode: 'basic' | 'heavy' | 'scout'
   cycleSpawnMode: () => 'basic' | 'heavy' | 'scout'
+  peakArmySize: number
+  setPeakArmySize: (n: number) => void
+  outpostsCaptured: number
+  addOutpostCaptured: () => void
   isNewBest: boolean
   setIsNewBest: (v: boolean) => void
   gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null }
@@ -72,6 +76,10 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     })
     return next
   },
+  peakArmySize: 0,
+  setPeakArmySize: n => set(s => ({ peakArmySize: Math.max(s.peakArmySize, n) })),
+  outpostsCaptured: 0,
+  addOutpostCaptured: () => set(s => ({ outpostsCaptured: s.outpostsCaptured + 1 })),
   isNewBest: false,
   setIsNewBest: v => set({ isNewBest: v }),
   gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null },
@@ -94,6 +102,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     losses: 0,
     spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
     isNewBest: false,
+    peakArmySize: 0,
+    outpostsCaptured: 0,
     difficulty: s.difficulty,
   })),
 }))

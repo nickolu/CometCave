@@ -5,7 +5,7 @@ import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -261,6 +261,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </span>
           )}
         </div>
+
+        {(peakArmySize > 0 || outpostsCaptured > 0) && (
+          <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.45)', fontSize: 12, letterSpacing: 0.5 }}>
+            {peakArmySize > 0 && (
+              <span>⚔ peak {peakArmySize} specks</span>
+            )}
+            {outpostsCaptured > 0 && (
+              <span>⬡ {outpostsCaptured} outpost{outpostsCaptured !== 1 ? 's' : ''} captured</span>
+            )}
+          </div>
+        )}
 
         {/* Recent run history for this difficulty */}
         {(() => {
