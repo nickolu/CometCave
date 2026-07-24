@@ -94,6 +94,35 @@ export function HUD() {
           }} />
         </>
       )}
+      {/* Dual base HP bars — top edge, fighting-game style */}
+      {phase === 'playing' && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          display: 'flex', height: 3, pointerEvents: 'none',
+        }}>
+          {/* Player bar: left edge, grows right */}
+          <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0, bottom: 0,
+              width: `${Math.round(hpFrac * 100)}%`,
+              background: hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.25 ? '#ffcc44' : '#ff4f7b',
+              transition: 'width 0.3s ease, background 0.5s ease',
+            }} />
+          </div>
+          {/* 1px gap in center */}
+          <div style={{ width: 2, background: 'rgba(0,0,0,0.8)' }} />
+          {/* Enemy bar: right edge, grows left */}
+          <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{
+              position: 'absolute', top: 0, right: 0, bottom: 0,
+              width: `${Math.round(aiHpFrac * 100)}%`,
+              background: aiHpFrac > 0.5 ? '#ff4f7b' : aiHpFrac > 0.25 ? '#ffcc44' : '#ff2200',
+              transition: 'width 0.3s ease, background 0.5s ease',
+            }} />
+          </div>
+        </div>
+      )}
+
       {/* Difficulty badge — top right */}
       {(() => {
         const diffColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
