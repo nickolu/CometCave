@@ -108,20 +108,30 @@ export class GameInstance {
 
       for (const event of this.sim.events) {
         if (event.type === 'GAME_OVER') {
-          if (event.winnerId === 'player') {
-            const isNew = recordBestTime(store.difficulty, this.elapsedMs)
-            incrementWinStreak()
-            recordGameResult(store.difficulty, true, this.elapsedMs, store.kills)
-            store.setIsNewBest(isNew)
-            store.setPhase('victory')
-          } else {
-            resetWinStreak()
-            recordGameResult(store.difficulty, false, this.elapsedMs, store.kills)
-            store.setIsNewBest(false)
-            store.setPhase('defeat')
-          }
+          const won = event.winnerId === 'player'
           store.setWinnerId(event.winnerId)
           store.setVictoryType(event.victoryType)
+          // Show dramatic notification, then transition to end screen after a brief delay
+          store.setNotification({
+            message: won ? '⚡ VICTORY!' : '💀 DEFEATED',
+            color: won ? '#4af7c4' : '#ff4f7b',
+          })
+          const elapsedAtEnd = this.elapsedMs
+          setTimeout(() => {
+            const s = useSpeckWarsStore.getState()
+            if (won) {
+              const isNew = recordBestTime(s.difficulty, elapsedAtEnd)
+              incrementWinStreak()
+              recordGameResult(s.difficulty, true, elapsedAtEnd, s.kills)
+              s.setIsNewBest(isNew)
+              s.setPhase('victory')
+            } else {
+              resetWinStreak()
+              recordGameResult(s.difficulty, false, elapsedAtEnd, s.kills)
+              s.setIsNewBest(false)
+              s.setPhase('defeat')
+            }
+          }, 1400)
         }
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
