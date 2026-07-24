@@ -135,9 +135,11 @@ export class GameInstance {
           this.shakeMaxMs = won ? 700 : 450
           this.shakeStrength = won ? 14 : 9
           // Show dramatic notification, then transition to end screen after a brief delay
+          const playerBaseHp = this.sim.buildings['building-player-base']?.hp ?? 100
+          const isComeback = won && playerBaseHp < 20  // base barely survived
           store.setNotification({
-            message: won ? '⚡ VICTORY!' : '💀 DEFEATED',
-            color: won ? '#4af7c4' : '#ff4f7b',
+            message: isComeback ? '🏆 COMEBACK VICTORY!' : won ? '⚡ VICTORY!' : '💀 DEFEATED',
+            color: isComeback ? '#ffd700' : won ? '#4af7c4' : '#ff4f7b',
           })
           const elapsedAtEnd = this.elapsedMs
           setTimeout(() => {
