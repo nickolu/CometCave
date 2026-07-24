@@ -47,6 +47,7 @@ export class GameInstance {
   private retreatWarnedAt = -20000          // allow retreat warning after 20s
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
+  private cinematicMs = 0
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -152,11 +153,18 @@ export class GameInstance {
     this.lastTime = performance.now()
     this.loop(this.lastTime)
 
-    // Brief "BATTLE START" flash when game begins
+    // Cinematic countdown: 3-2-1 before gameplay begins
+    // Freeze the sim for the countdown duration
+    this.cinematicMs = 3000  // 3 seconds total
+    useSpeckWarsStore.getState().setCountdown(3)
+    setTimeout(() => useSpeckWarsStore.getState().setCountdown(2), 1000)
+    setTimeout(() => useSpeckWarsStore.getState().setCountdown(1), 2000)
     setTimeout(() => {
-      useSpeckWarsStore.getState().setNotification({ message: '⚔ BATTLE START', color: '#4af7c4' })
-      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 900)
-    }, 200)
+      useSpeckWarsStore.getState().setCountdown(null)
+      this.cinematicMs = 0
+      useSpeckWarsStore.getState().setNotification({ message: '⚔ FIGHT!', color: '#4af7c4' })
+      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 800)
+    }, 3000)
 
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
@@ -183,6 +191,15 @@ export class GameInstance {
     this.lastTime = now
 
     const store = useSpeckWarsStore.getState()
+
+    if (this.cinematicMs > 0) {
+      const dtMs = dt
+      this.cinematicMs = Math.max(0, this.cinematicMs - dtMs)
+      const dragRect = this.inputHandler.getDragRect()
+      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect)
+      this.rafId = requestAnimationFrame(this.loop)
+      return
+    }
 
     if (store.phase === 'playing') {
       const scaledDt = dt * store.speed
