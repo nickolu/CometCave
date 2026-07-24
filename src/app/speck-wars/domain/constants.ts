@@ -21,6 +21,7 @@ export const CAPTURE_TIME = 5000             // ms to fully capture
 export const NEUTRAL_COLOR = 0x888888
 export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a friendly outpost move faster
 export const DOMINATION_TIME = 60000   // ms — hold all 3 outposts this long to win by domination
+export const RALLY_CRY_HP_THRESHOLD = 0.25  // base HP fraction below which Rally Cry activates (1.5× spawn)
 
 // Three map layouts — one is picked per game using the daily seed.
 // All layouts use the same outpost IDs so the rest of the codebase is layout-agnostic.
@@ -46,3 +47,21 @@ export const MAP_LAYOUTS = [
 ] as const
 
 export const OUTPOST_POSITIONS = MAP_LAYOUTS[0]  // default — overridden by createSim seed
+
+export const FORTIFY_TIME = 30000        // ms to reach full fortification
+export const FORTIFY_RADIUS = 200        // px — combat bonus applies within this radius
+export const FORTIFY_DAMAGE_BONUS = 0.25 // max damage multiplier bonus when fully fortified
+
+export type DailyModifier = 'standard' | 'bulwark' | 'blitz' | 'siege'
+
+// Weighted array: standard appears 2× more often than others
+export const DAILY_MODIFIER_POOL: DailyModifier[] = [
+  'standard', 'standard', 'bulwark', 'blitz', 'siege'
+]
+
+export const DAILY_MODIFIER_LABELS: Record<DailyModifier, string> = {
+  standard: '',
+  bulwark:  '⚔ BULWARK — bases have 2× HP',
+  blitz:    '⚡ BLITZ — 1.5× production speed',
+  siege:    '🏰 SIEGE — outposts take 2× longer to capture',
+}

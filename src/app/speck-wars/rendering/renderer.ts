@@ -35,6 +35,7 @@ export class Renderer {
   private effectsLayer!: EffectsLayer
   private starfieldLayer!: StarfieldLayer
   private rallyGfx!: Graphics
+  private selectionGfx!: Graphics
 
   async init(canvas: HTMLCanvasElement) {
     const app = new Application() as PixiApplication
@@ -65,9 +66,12 @@ export class Renderer {
 
     this.rallyGfx = new Graphics()
     this.world.addChild(this.rallyGfx)
+
+    this.selectionGfx = new Graphics()
+    this.app.stage.addChild(this.selectionGfx)
   }
 
-  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0) {
+  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null): void {
     this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
@@ -128,7 +132,9 @@ export class Renderer {
           const nx = dx / len, ny = dy / len
           const dashLen = 8, gapLen = 6
           this.rallyGfx.lineStyle(1, PLAYER_COLOR, 0.22)
-          let d = playerBase === null ? 0 : 46  // start outside the base
+          const dashCycle = dashLen + gapLen
+          const marchOffset = (Date.now() / 80) % dashCycle  // ~1.75 cycles/sec
+          let d = (playerBase === null ? 0 : 46) - marchOffset  // animated march toward rally
           while (d < len - 24) {
             const x1 = playerBase.x + nx * d
             const y1 = playerBase.y + ny * d
@@ -141,6 +147,31 @@ export class Renderer {
           this.rallyGfx.lineStyle(0)
         }
       }
+    }
+
+    // Draw drag-selection box (screen space)
+    this.selectionGfx.clear()
+    if (dragRect) {
+      const { x1, y1, x2, y2 } = dragRect
+      const minX = Math.min(x1, x2), maxX = Math.max(x1, x2)
+      const minY = Math.min(y1, y2), maxY = Math.max(y1, y2)
+      const w = maxX - minX, h = maxY - minY
+      // Semi-transparent cyan fill
+      this.selectionGfx.beginFill(0x4af7c4, 0.08)
+      this.selectionGfx.lineStyle(1.5, 0x4af7c4, 0.9)
+      this.selectionGfx.drawRect(minX, minY, w, h)
+      this.selectionGfx.endFill()
+      // Corner brackets for RTS feel
+      const cs = Math.min(12, w / 3, h / 3)  // corner size
+      this.selectionGfx.lineStyle(2, 0x4af7c4, 1.0)
+      // Top-left
+      this.selectionGfx.moveTo(minX, minY + cs); this.selectionGfx.lineTo(minX, minY); this.selectionGfx.lineTo(minX + cs, minY)
+      // Top-right
+      this.selectionGfx.moveTo(maxX - cs, minY); this.selectionGfx.lineTo(maxX, minY); this.selectionGfx.lineTo(maxX, minY + cs)
+      // Bottom-left
+      this.selectionGfx.moveTo(minX, maxY - cs); this.selectionGfx.lineTo(minX, maxY); this.selectionGfx.lineTo(minX + cs, maxY)
+      // Bottom-right
+      this.selectionGfx.moveTo(maxX - cs, maxY); this.selectionGfx.lineTo(maxX, maxY); this.selectionGfx.lineTo(maxX, maxY - cs)
     }
   }
 
@@ -155,6 +186,7 @@ export class Renderer {
     this.speckLayer.destroy()
     this.buildingLayer.destroy()
     this.rallyGfx.destroy()
+    this.selectionGfx.destroy()
     this.app.destroy()
   }
 }

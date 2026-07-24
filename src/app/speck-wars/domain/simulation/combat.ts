@@ -1,11 +1,14 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
+import { FORTIFY_RADIUS, FORTIFY_TIME, FORTIFY_DAMAGE_BONUS } from '../constants'
 
 const MORALE_RATIO = 2.0   // if your count > this × enemy count → morale bonus
 const MORALE_BONUS = 1.20  // 20% damage boost when morale is active
 const RAGE_HP_THRESHOLD = 0.15  // base HP fraction below which rage activates
 const RAGE_BONUS = 1.40         // 40% damage boost when base is critical
+const SUPREMACY_OUTPOST_LEAD = 2   // outpost advantage needed for supremacy
+const SUPREMACY_BONUS = 1.15        // 15% damage boost for outpost supremacy
 
 export function resolveCombat(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckHp, speckMeta, buildings, spatialGrid } = sim
@@ -16,6 +19,14 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const ownerId = speckMeta[i]?.ownerId
     if (speckIds[i] && ownerId) speckCountByOwner[ownerId] = (speckCountByOwner[ownerId] ?? 0) + 1
   }
+
+  // Pre-compute outpost ownership counts for supremacy bonus
+  const outpostCountByOwner: Record<string, number> = {}
+  for (const b of Object.values(buildings)) {
+    if (b.typeId !== 'outpost' || b.ownerId === 'neutral') continue
+    outpostCountByOwner[b.ownerId] = (outpostCountByOwner[b.ownerId] ?? 0) + 1
+  }
+
   const moraleMult = (ownerId: string): number => {
     const myCount = speckCountByOwner[ownerId] ?? 0
     let maxEnemyCount = 0
@@ -28,7 +39,15 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const base = Object.values(buildings).find(b => b.ownerId === ownerId && b.typeId === 'base')
     const rageBonus = (base && base.hp / base.maxHp < RAGE_HP_THRESHOLD) ? RAGE_BONUS : 1.0
 
-    return Math.max(moraleBonus, rageBonus)  // apply highest active bonus (don't stack)
+    // Supremacy: owning 2+ more outposts than any enemy → +15% damage (territorial control)
+    const myOutposts = outpostCountByOwner[ownerId] ?? 0
+    let maxEnemyOutposts = 0
+    for (const [id, n] of Object.entries(outpostCountByOwner)) {
+      if (id !== ownerId && n > maxEnemyOutposts) maxEnemyOutposts = n
+    }
+    const supremacyBonus = (myOutposts - maxEnemyOutposts >= SUPREMACY_OUTPOST_LEAD) ? SUPREMACY_BONUS : 1.0
+
+    return Math.max(moraleBonus, rageBonus) * supremacyBonus  // supremacy stacks on top
   }
 
   // --- Speck vs Speck combat ---
@@ -55,13 +74,41 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       const dy = speckY[j] - speckY[i]
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= stype.attackRange) {
-        const veteranBonus = meta.kills >= 3 ? 1.20 : 1.0  // veterans deal +20% damage
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus
+        const veteranBonus = meta.kills >= 6 ? 1.35 : meta.kills >= 3 ? 1.20 : 1.0  // elite +35%, veteran +20%
+        // Fortification bonus: if attacker is near a friendly fortified outpost, deal extra damage
+        let fortifyBonus = 1.0
+        for (const b of Object.values(buildings)) {
+          if (b.typeId !== 'outpost' || b.ownerId !== meta.ownerId) continue
+          const fdx = speckX[i] - b.x
+          const fdy = speckY[i] - b.y
+          if (fdx * fdx + fdy * fdy <= FORTIFY_RADIUS * FORTIFY_RADIUS) {
+            const level = Math.min(1, (b.fortifyDuration ?? 0) / FORTIFY_TIME)
+            if (level > 0) { fortifyBonus = 1 + FORTIFY_DAMAGE_BONUS * level; break }
+          }
+        }
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * fortifyBonus
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
         if (speckHp[j] <= 0) {
           meta.kills++  // attacker earns a kill
+          // Notify when player loses a veteran or elite
+          if (jMeta.ownerId === 'player' && jMeta.kills >= 3) {
+            sim.events.push({
+              type: 'VETERAN_FALLEN',
+              speckId: speckIds[j],
+              ownerId: jMeta.ownerId,
+              kills: jMeta.kills,
+              x: speckX[j],
+              y: speckY[j],
+            })
+          }
           sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
+          if (meta.kills === 3) {
+            sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })
+          }
+          if (meta.kills === 6) {
+            sim.events.push({ type: 'SPECK_ELITE', speckId: speckIds[i], ownerId: meta.ownerId })
+          }
         }
         break  // one attack per cooldown
       }
@@ -88,7 +135,10 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const attackDist = (btype?.size ?? 20) + stype.attackRange
 
     if (dist <= attackDist) {
-      building.hp -= stype.damage * moraleMult(meta.ownerId)
+      // Outposts are captured, not destroyed — immune to direct combat damage
+      if (building.typeId === 'outpost') continue
+      const siegeBonus = meta.typeId === 'heavy' ? 1.5 : 1.0
+      building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 

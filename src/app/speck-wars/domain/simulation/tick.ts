@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, DOMINATION_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, DOMINATION_TIME, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME } from '../constants'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -27,11 +27,36 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 5. Deal damage, destroy buildings/specks
   resolveCombat(sim, dt)
 
+  // 5b. Mark low-HP specks as retreating
+  for (let i = 0; i < sim.speckCount; i++) {
+    const meta = sim.speckMeta[i]
+    if (!meta || sim.speckHp[i] <= 0) continue
+    if (meta.state === 'retreating') continue  // already retreating
+    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
+    if (sim.speckHp[i] / maxHp < 0.25) {
+      meta.state = 'retreating'
+      meta.targetId = null
+    }
+  }
+
+  // 5c. Heal retreating specks that have reached a friendly building
+  regenRetreatingSpecks(sim, dt)
+
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
+
+  // 7a. Fortification: outposts held continuously accumulate a combat bonus
+  for (const building of Object.values(sim.buildings)) {
+    if (building.typeId !== 'outpost') continue
+    if (building.ownerId === 'neutral') { building.fortifyDuration = 0; continue }
+    // Pause fortification while actively under capture
+    const underCapture = (building.captureProgress ?? 0) > 0 && building.captureSide && building.captureSide !== building.ownerId
+    if (underCapture) continue
+    building.fortifyDuration = Math.min(FORTIFY_TIME, (building.fortifyDuration ?? 0) + dt)
+  }
 
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
@@ -42,6 +67,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7d. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
+  if (sim.sacrificeCooldown > 0) sim.sacrificeCooldown = Math.max(0, sim.sacrificeCooldown - dt)
 
   // 8. Check win/loss
   checkVictory(sim)
@@ -51,6 +77,41 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   if (sim.tick % HUD_UPDATE_INTERVAL === 0) emitHudUpdate(sim)
 
   return sim
+}
+
+function regenRetreatingSpecks(sim: SimulationState, dt: number) {
+  const dtSec = dt / 1000
+  const REGEN_RATE = 2  // HP per second while sheltering at base
+  const REENGAGE_THRESHOLD = 0.75  // re-engage when HP is at 75% of max
+
+  for (let i = 0; i < sim.speckCount; i++) {
+    const meta = sim.speckMeta[i]
+    if (!meta || meta.state !== 'retreating') continue
+    if (sim.speckHp[i] <= 0) continue
+
+    // Only heal if within range of a friendly building
+    let nearFriendly = false
+    for (const building of Object.values(sim.buildings)) {
+      if (building.ownerId !== meta.ownerId) continue
+      const bsize = BUILDING_TYPES[building.typeId]?.size ?? 40
+      const dx = sim.speckX[i] - building.x
+      const dy = sim.speckY[i] - building.y
+      if (dx * dx + dy * dy <= (bsize + 30) * (bsize + 30)) {
+        nearFriendly = true
+        break
+      }
+    }
+
+    if (!nearFriendly) continue
+
+    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
+    sim.speckHp[i] = Math.min(maxHp, sim.speckHp[i] + REGEN_RATE * dtSec)
+
+    // Re-engage once healed enough
+    if (sim.speckHp[i] >= maxHp * REENGAGE_THRESHOLD) {
+      meta.state = 'idle'
+    }
+  }
 }
 
 function regenBuildingHp(sim: SimulationState, dt: number) {
@@ -137,21 +198,46 @@ function consumeInputs(sim: SimulationState) {
         sim.surgeCooldown = 45000
       }
     }
+    if (event.type === 'SACRIFICE') {
+      if (sim.sacrificeCooldown > 0) continue
+      const building = sim.buildings[event.buildingId]
+      if (!building || building.ownerId !== event.ownerId || building.typeId !== 'base') continue
+      // Collect player specks, sorted by lowest HP first (weakest give their life)
+      const candidates: Array<{ i: number; hp: number }> = []
+      for (let i = 0; i < sim.speckCount; i++) {
+        if (!sim.speckIds[i]) continue
+        const m = sim.speckMeta[i]
+        if (!m || m.ownerId !== event.ownerId) continue
+        candidates.push({ i, hp: sim.speckHp[i] })
+      }
+      if (candidates.length < event.count) continue  // not enough specks
+      candidates.sort((a, b) => a.hp - b.hp)
+      const toSacrifice = candidates.slice(0, event.count)
+      for (const { i } of toSacrifice) {
+        sim.events.push({ type: 'SPECK_DIED', speckId: sim.speckIds[i], x: sim.speckX[i], y: sim.speckY[i], killedOwnerId: event.ownerId, killerOwnerId: event.ownerId })
+        sim.speckHp[i] = 0  // mark for removeDeadSpecks
+      }
+      building.hp = Math.min(building.maxHp, building.hp + event.count * 1.5)  // 10 specks → +15 HP
+      sim.sacrificeCooldown = 45000
+    }
   }
   sim.inputQueue = []
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number> }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
+    let veteranCount = 0, eliteCount = 0
     const speckTypes: Record<string, number> = {}
     for (let i = 0; i < sim.speckCount; i++) {
       const m = sim.speckMeta[i]
       if (m && m.ownerId === pid) {
         liveCount++
         speckTypes[m.typeId] = (speckTypes[m.typeId] ?? 0) + 1
+        if (m.kills >= 6) eliteCount++
+        else if (m.kills >= 3) veteranCount++
       }
     }
     data[pid] = {
@@ -159,6 +245,8 @@ function emitHudUpdate(sim: SimulationState) {
       buildingCount: myBuildings.length,
       buildingHp: Object.fromEntries(myBuildings.map(b => [b.id, b.hp])),
       speckTypes,
+      veteranCount,
+      eliteCount,
     }
   }
   // Buildings that are owned but actively being captured by the enemy
@@ -186,5 +274,108 @@ function emitHudUpdate(sim: SimulationState) {
       : null
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown } })
+  // Compute effective spawn rate (specks/min) for each player
+  const playerBaseBuilding = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+  const rallyCryActive = playerBaseBuilding
+    ? playerBaseBuilding.hp / playerBaseBuilding.maxHp < RALLY_CRY_HP_THRESHOLD
+    : false
+
+  const spawnRates: Record<string, number> = {}
+  for (const [pid] of Object.entries(sim.players)) {
+    if (pid === 'neutral') continue
+    let totalRate = 0
+    const hasSurge = pid === 'player' && sim.surgeDuration > 0
+    const hasRallyCry = pid === 'player' && rallyCryActive
+    for (const building of Object.values(sim.buildings)) {
+      if (building.ownerId !== pid) continue
+      const btype = BUILDING_TYPES[building.typeId]
+      if (!btype?.spawnTypeId) continue
+      const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
+      const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1)
+      const effectiveInterval = baseInterval / divisor
+      totalRate += (btype.spawnCount ?? 1) * 60000 / effectiveInterval
+    }
+    spawnRates[pid] = Math.round(totalRate)
+  }
+
+  // Mini-map data: downsampled specks + all buildings + rally point
+  const minimapBuildings = Object.values(sim.buildings).map(b => ({
+    id: b.id, x: b.x, y: b.y, ownerId: b.ownerId, typeId: b.typeId,
+  }))
+  const step = Math.max(1, Math.ceil(sim.speckCount / 400))
+  const minimapSpecks: { x: number; y: number; ownerId: string }[] = []
+  for (let i = 0; i < sim.speckCount; i += step) {
+    const meta = sim.speckMeta[i]
+    if (meta && sim.speckHp[i] > 0) {
+      minimapSpecks.push({ x: sim.speckX[i], y: sim.speckY[i], ownerId: meta.ownerId })
+    }
+  }
+  const minimap = {
+    specks: minimapSpecks,
+    buildings: minimapBuildings,
+    rallyPoint: sim.rallyPoints['player'] ?? null,
+  }
+
+  const outpostFortify: Record<string, number> = {}
+  for (const building of Object.values(sim.buildings)) {
+    if (building.typeId !== 'outpost') continue
+    outpostFortify[building.id] = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
+  }
+
+  let baseUnderThreat = false
+  const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+  if (playerBase) {
+    const threatRange = 280
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (!m || m.ownerId !== 'ai') continue
+      if (sim.speckHp[i] <= 0) continue
+      const dx = sim.speckX[i] - playerBase.x
+      const dy = sim.speckY[i] - playerBase.y
+      if (dx * dx + dy * dy <= threatRange * threatRange) { baseUnderThreat = true; break }
+    }
+  }
+
+  let enemyAdvanceDetected = false
+  const aiBase = sim.buildings['building-ai-base']
+  if (playerBase && aiBase) {
+    // Midpoint between the two bases — defines "player's half"
+    const midX = (playerBase.x + aiBase.x) / 2
+    const midY = (playerBase.y + aiBase.y) / 2
+    const ADVANCE_THRESHOLD = 15  // enemy specks needed in player half
+    let enemySpecksInPlayerHalf = 0
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (!m || m.ownerId !== 'ai') continue
+      if (sim.speckHp[i] <= 0) continue
+      // Is this speck closer to player base than to midpoint?
+      const dxP = sim.speckX[i] - playerBase.x
+      const dyP = sim.speckY[i] - playerBase.y
+      const dxM = sim.speckX[i] - midX
+      const dyM = sim.speckY[i] - midY
+      if (dxP * dxP + dyP * dyP < dxM * dxM + dyM * dyM) {
+        enemySpecksInPlayerHalf++
+        if (enemySpecksInPlayerHalf >= ADVANCE_THRESHOLD) { enemyAdvanceDetected = true; break }
+      }
+    }
+  }
+  // Suppress "advance" when base is already under direct threat (avoid double-warning)
+  if (baseUnderThreat) enemyAdvanceDetected = false
+
+  // Selection composition breakdown
+  let selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number } | null = null
+  if (sim.selectedSpeckIds.size > 0) {
+    const types: Record<string, number> = {}
+    let selVet = 0, selElite = 0
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (!m || !sim.speckIds[i] || !sim.selectedSpeckIds.has(sim.speckIds[i])) continue
+      types[m.typeId] = (types[m.typeId] ?? 0) + 1
+      if (m.kills >= 6) selElite++
+      else if (m.kills >= 3) selVet++
+    }
+    selectedComposition = { types, veteranCount: selVet, eliteCount: selElite }
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive } })
 }

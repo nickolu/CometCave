@@ -5,7 +5,7 @@ import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -131,20 +131,46 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           fontSize: 11,
           letterSpacing: 0.5,
           textAlign: 'left',
-          maxWidth: 280,
+          maxWidth: 320,
         }}>
           <span>🖱 Click — rally specks</span>
-          <span>Space — pause</span>
-          <span>Scroll — zoom</span>
-          <span>R / Right-click — clear rally</span>
-          <span>Drag — pan camera</span>
-          <span>H — heavy/basic mode</span>
-          <span>A — advance to outpost</span>
-          <span>B — rush enemy base</span>
-          <span>C — center on base</span>
-          <span>D — defend base</span>
+          <span>Space — pause / ? — help</span>
+          <span>Shift+drag — box select</span>
+          <span>1/2/3 — spawn basic/heavy/scout</span>
+          <span>Q — surge (2× spawn 8s)</span>
+          <span>V — snap to battle</span>
+          <span>A — advance · B — rush · D — defend</span>
+          <span>X — game speed · E — select all</span>
           <span>Minimap — click to rally</span>
+          <span>C — center camera</span>
         </div>
+        {/* Daily tip */}
+        {(() => {
+          const tips = [
+            'Hold all 3 outposts for 60s to win by Domination.',
+            'Scouts (3) auto-target outposts — fast but fragile.',
+            'Veterans deal +20% damage after 3 kills. Protect them!',
+            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Surge (Q) doubles production for 8s — use it before big pushes.',
+            'Box-select (Shift+drag) specks and right-click to send them anywhere.',
+            'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
+            'Heavy specks deal 2× damage but produce 2× slower.',
+            'V key snaps the camera to where fighting is happening.',
+            'Press ? in-game to see all hotkeys.',
+          ]
+          const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
+          return (
+            <div style={{
+              marginTop: 8, maxWidth: 320,
+              fontSize: 11, letterSpacing: 0.3,
+              color: 'rgba(255,215,0,0.45)',
+              textAlign: 'center',
+              fontStyle: 'italic',
+            }}>
+              💡 {tip}
+            </div>
+          )
+        })()}
       </div>
     )
   }
@@ -175,10 +201,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const nextDiff = won ? nextDifficulty[difficulty] : null
 
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) + ' ' : ''
+    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
+    const modifier = hud?.dailyModifier && hud.dailyModifier !== 'standard' ? ` [${hud.dailyModifier.toUpperCase()}]` : ''
+    const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
+    const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff${peakArmySize > 0 ? ` · peak ${peakArmySize}` : ''}`
     const shareText = won
-      ? `${starStr}I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks! 🎮 Daily map ${today} — can you beat my time?`
-      : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks. 🎮 Daily map ${today} — think you can do better?`
+      ? `${starStr} Speck Wars ${today}${modifier}\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
+      : `${starStr} Speck Wars ${today}${modifier}\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -245,11 +274,23 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>⏱ {timeStr}</span>
           <span style={{ color: diffColor, fontWeight: 'bold', border: `1px solid ${diffColor}`, padding: '2px 10px', borderRadius: 4 }}>
             {diffLabel}
           </span>
+          {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
+            <span style={{
+              fontSize: 11, letterSpacing: 1.5,
+              color: hud.dailyModifier === 'bulwark' ? '#44aaff'
+                : hud.dailyModifier === 'blitz' ? '#ffd700'
+                : '#ff8844',
+              border: `1px solid ${hud.dailyModifier === 'bulwark' ? '#44aaff44' : hud.dailyModifier === 'blitz' ? '#ffd70044' : '#ff884444'}`,
+              padding: '2px 8px', borderRadius: 4,
+            }}>
+              {hud.dailyModifier.toUpperCase()}
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
@@ -261,6 +302,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </span>
           )}
         </div>
+
+        {(peakArmySize > 0 || outpostsCaptured > 0) && (
+          <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.45)', fontSize: 12, letterSpacing: 0.5 }}>
+            {peakArmySize > 0 && (
+              <span>⚔ peak {peakArmySize} specks</span>
+            )}
+            {outpostsCaptured > 0 && (
+              <span>⬡ {outpostsCaptured} outpost{outpostsCaptured !== 1 ? 's' : ''} captured</span>
+            )}
+          </div>
+        )}
 
         {/* Recent run history for this difficulty */}
         {(() => {
@@ -284,6 +336,45 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   )
                 })}
               </div>
+            </div>
+          )
+        })()}
+
+        {/* Contextual tactical tip */}
+        {(() => {
+          const eff = kills + losses > 0 ? kills / (kills + losses) : 0
+          const modifier = hud?.dailyModifier ?? 'standard'
+          let tip: string | null = null
+
+          if (won && elapsedMs < 180000) {
+            tip = difficulty === 'very-hard' ? '⚡ Incredible! That was master-level play.' : 'That was fast! Try a harder difficulty for more of a challenge.'
+          } else if (won && difficulty !== 'very-hard' && stars === 3) {
+            tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
+          } else if (!won && kills < 30) {
+            tip = 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
+          } else if (!won && eff < 0.4) {
+            tip = 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
+          } else if (!won && elapsedMs > 300000) {
+            tip = 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
+          } else if (!won) {
+            tip = 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
+          } else if (won && modifier === 'siege') {
+            tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
+          }
+
+          if (!tip) return null
+          return (
+            <div style={{
+              maxWidth: 340, textAlign: 'center',
+              fontSize: 11, letterSpacing: 0.5,
+              color: 'rgba(255,255,255,0.5)',
+              fontStyle: 'italic',
+              padding: '8px 16px',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 6,
+              background: 'rgba(255,255,255,0.03)',
+            }}>
+              {tip}
             </div>
           )
         })()}

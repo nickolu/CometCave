@@ -29,7 +29,10 @@ export class GameInstance {
   private outpostHpWarnedAt: Record<string, number> = {}     // outpostId → timestamp (HP critical)
   private enemySurgeWarnedAt = -30000
   private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
+  private recentDeathPositions: { x: number; y: number; ts: number }[] = []
   private lastComboNotifiedAt = -5000
+  private recentKillTs: number[] = []        // timestamps of player kills in rolling window (kill streak)
+  private lastStreakNotifiedAt = 0            // prevent kill streak notification spam
   private idleArmyTimer = 0              // ms with no rally point + specks available
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
   private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
@@ -38,6 +41,12 @@ export class GameInstance {
   private dominationWarned10 = false    // notified at 10s remaining
   private dominationWarned5 = false     // notified at 5s remaining
   private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
+  private rallyCryFired = false               // one-time Rally Cry notification per game
+  private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
+  private recentPlayerCaptureTimes: number[] = []  // timestamps of recent player captures
+  private retreatWarnedAt = -20000          // allow retreat warning after 20s
+  private prevBaseUnderThreat = false
+  private prevEnemyAdvance = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -59,7 +68,8 @@ export class GameInstance {
       // very-hard: no balanced — pure pressure or macro domination
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality())
+    const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality(), adaptiveEnabled)
   }
 
   private onVisibilityChange = () => {
@@ -106,6 +116,23 @@ export class GameInstance {
         this.sim.rallyPoints['player-selected'] = null
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
+      () => { this.snapToAction() },                                        // V — snap camera to battle
+      () => { this.snapToBase() },                                          // H — snap camera to home base
+      (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
+        useSpeckWarsStore.getState().setSpawnMode(typeId)
+        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
+        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+      },
+      () => {                                                           // X — cycle game speed
+        useSpeckWarsStore.getState().cycleSpeed()
+        const spd = useSpeckWarsStore.getState().speed
+        this.notify(`Speed: ${spd}×`, spd > 1 ? '#4af7c4' : '#ffffff')
+      },
+      () => {                                                           // E — select all specks
+        this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
+      },
+      () => { this.sacrifice() },                                       // F — sacrifice specks to repair base
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -113,6 +140,14 @@ export class GameInstance {
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
+      rally: (x: number, y: number) => this.rally(x, y),
+      sacrifice: () => { this.sacrifice() },
+      setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
+        useSpeckWarsStore.getState().setSpawnMode(typeId)
+        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
+        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+      },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -127,9 +162,12 @@ export class GameInstance {
     if (isFirstGame()) {
       markFirstGameDone()
       const hints = [
-        { delay: 1200, message: '💡 Click the map to rally your specks!', color: '#aaddff' },
-        { delay: 6000, message: '💡 Capture outposts to boost production!', color: '#aaddff' },
-        { delay: 13000, message: '💡 Hold all 3 outposts for 60s to dominate!', color: '#ffd700' },
+        { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
+        { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
+        { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
+        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/scout)', color: '#aaddff' },
+        { delay: 32000, message: '💡 Hold all 3 outposts for 60s to win by domination!', color: '#ffd700' },
+        { delay: 45000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
         setTimeout(() => {
@@ -189,7 +227,19 @@ export class GameInstance {
         }
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
+          const bua = event.data.baseUnderThreat ?? false
+          if (bua && !this.prevBaseUnderThreat) {
+            this.notify('⚠ BASE UNDER ATTACK', '#ff3333')
+          }
+          this.prevBaseUnderThreat = bua
+          const adv = event.data.enemyAdvanceDetected ?? false
+          if (adv && !this.prevEnemyAdvance && !event.data.baseUnderThreat) {
+            this.notify('⚠ ENEMY ADVANCING', '#ff8844')
+          }
+          this.prevEnemyAdvance = adv
           this.cachedPlayerSpeckCount = event.data.players.player?.speckCount ?? 0
+          const playerSpeckCount = event.data.players.player?.speckCount ?? 0
+          store.setPeakArmySize(playerSpeckCount)
           // Warn when an enemy starts capturing a player-owned outpost
           const now = Date.now()
           const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
@@ -309,6 +359,29 @@ export class GameInstance {
             })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1800)
           }
+          this.recentDeathPositions.push({ x: event.x, y: event.y, ts: Date.now() })
+          // Keep only last 30 deaths
+          if (this.recentDeathPositions.length > 30) this.recentDeathPositions.shift()
+          // Kill streak tracking for player killer
+          if (event.killerOwnerId === 'player') {
+            const now = Date.now()
+            this.recentKillTs.push(now)
+            // Keep only kills in last 8 seconds
+            this.recentKillTs = this.recentKillTs.filter(t => now - t < 8000)
+            const killCount = this.recentKillTs.length
+            if (now - this.lastStreakNotifiedAt > 4000) {
+              if (killCount >= 20) {
+                this.lastStreakNotifiedAt = now
+                this.notify('⚡ UNSTOPPABLE! ×' + killCount, '#ffffff')
+              } else if (killCount >= 10) {
+                this.lastStreakNotifiedAt = now
+                this.notify('⚡ RAMPAGE! ×' + killCount, '#ffd700')
+              } else if (killCount >= 5) {
+                this.lastStreakNotifiedAt = now
+                this.notify('⚡ KILLING SPREE ×' + killCount, '#ff8844')
+              }
+            }
+          }
         }
         if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-ai-base') {
           const aiBase = this.sim.buildings['building-ai-base']
@@ -336,8 +409,22 @@ export class GameInstance {
             store.setNotification({ message: '⚠ BASE UNDER ATTACK!', color: '#ff4f7b' })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
+          // Rally Cry: one-time notification when base drops to 25% HP
+          if (!this.rallyCryFired) {
+            const playerBase = this.sim.buildings['building-player-base']
+            if (playerBase && playerBase.hp / playerBase.maxHp < 0.25) {
+              this.rallyCryFired = true
+              setTimeout(() => {
+                useSpeckWarsStore.getState().setNotification({ message: '🔥 RALLY CRY! 1.5× PRODUCTION!', color: '#ff8844' })
+                setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+              }, 500)
+            }
+          }
         }
         if (event.type === 'OUTPOST_CAPTURED') {
+          if (event.newOwner === 'player') {
+            store.addOutpostCaptured()
+          }
           const isPlayerGain = event.newOwner === 'player'
           const isPlayerLoss = event.previousOwner === 'player'
           const isRecapture = isPlayerGain && event.previousOwner === 'ai'
@@ -350,6 +437,62 @@ export class GameInstance {
             store.setNotification({ message, color })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
+          // Track capture combos
+          if (event.newOwner === 'player') {
+            const now = Date.now()
+            const COMBO_WINDOW = 30_000  // 30 seconds
+            // Remove captures older than window
+            this.recentPlayerCaptureTimes = this.recentPlayerCaptureTimes.filter(t => now - t < COMBO_WINDOW)
+            this.recentPlayerCaptureTimes.push(now)
+            const count = this.recentPlayerCaptureTimes.length
+            if (count === 3) {
+              this.notify('★ TRIPLE CAPTURE! ★', '#ffffff')
+            } else if (count === 2) {
+              this.notify('DOUBLE CAPTURE!', '#ffd700')
+            }
+          }
+        }
+        if (event.type === 'SPECK_VETERAN' && event.ownerId === 'player') {
+          const now = Date.now()
+          if (now - this.firstVeteranNotifiedAt > 20000) {
+            this.firstVeteranNotifiedAt = now
+            store.setNotification({ message: '⭐ VETERAN SPECK! +20% DAMAGE', color: '#ffd700' })
+            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+          }
+        }
+        if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
+          store.setNotification({ message: '✦ ELITE SPECK! +35% DAMAGE', color: '#ffffff' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+        }
+        if (event.type === 'VETERAN_FALLEN') {
+          const isElite = event.kills >= 6
+          const label = isElite ? '✦ ELITE FALLEN' : '⭐ VETERAN FALLEN'
+          const color = isElite ? '#ff8844' : '#ffcc00'
+          this.notify(label, color)
+        }
+        if (event.type === 'AI_WAVE_START') {
+          const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
+          const color = waveColors[(event.waveNumber - 1) % waveColors.length]
+          store.setNotification({ message: `⚠ WAVE ${event.waveNumber} ASSAULT!`, color })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+        }
+        if (event.type === 'AI_LAST_STAND') {
+          this.notify('⚠ ENEMY LAST STAND', '#ff4444')
+        }
+      }
+
+      // Retreat wave warning: 10+ player specks retreating = notify
+      const nowTs = Date.now()
+      if (nowTs - this.retreatWarnedAt > 15000) {
+        let retreatingCount = 0
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          const m = this.sim.speckMeta[i]
+          if (m && m.ownerId === 'player' && m.state === 'retreating') retreatingCount++
+        }
+        if (retreatingCount >= 10) {
+          this.retreatWarnedAt = nowTs
+          store.setNotification({ message: `⚡ ${retreatingCount} SPECKS RETREATING!`, color: '#ff8844' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
         }
       }
     }
@@ -384,6 +527,20 @@ export class GameInstance {
       }
     }
 
+    // Arrow key camera panning (works in both playing and paused states)
+    if (this.inputHandler) {
+      const panSpeed = 450  // px/s in world space
+      const dtSec = dt / 1000
+      if (this.inputHandler.isKeyHeld('ArrowUp'))
+        this.camera.y += panSpeed * dtSec
+      if (this.inputHandler.isKeyHeld('ArrowDown'))
+        this.camera.y -= panSpeed * dtSec
+      if (this.inputHandler.isKeyHeld('ArrowLeft'))
+        this.camera.x += panSpeed * dtSec
+      if (this.inputHandler.isKeyHeld('ArrowRight'))
+        this.camera.x -= panSpeed * dtSec
+    }
+
     // Edge pan (works in both playing and paused states)
     if (this.inputHandler) {
       const isPaused = store.phase === 'paused'
@@ -403,7 +560,8 @@ export class GameInstance {
       shakeX = (Math.random() * 2 - 1) * s
       shakeY = (Math.random() * 2 - 1) * s
     }
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY)
+    const dragRect = this.inputHandler.getDragRect()
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
@@ -450,6 +608,44 @@ export class GameInstance {
 
   surge() {
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
+  }
+
+  private sacrifice() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (!playerBase) return
+    const speckCount = this.sim.speckMeta.filter((m, i) => m && m.ownerId === 'player' && this.sim.speckIds[i]).length
+    if (speckCount < 10) {
+      useSpeckWarsStore.getState().setNotification({ message: 'Not enough specks to sacrifice!', color: '#ff4f7b' })
+      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+      return
+    }
+    this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
+  }
+
+  snapToAction() {
+    const now = Date.now()
+    // Use deaths from the last 5 seconds; fall back to all recent deaths
+    let positions = this.recentDeathPositions.filter(p => now - p.ts < 5000)
+    if (positions.length < 3) positions = this.recentDeathPositions
+    if (positions.length === 0) return
+    const cx = positions.reduce((s, p) => s + p.x, 0) / positions.length
+    const cy = positions.reduce((s, p) => s + p.y, 0) / positions.length
+    // Convert world centroid to camera position
+    const w = this.canvas.clientWidth
+    const h = this.canvas.clientHeight
+    this.camera.x = w / 2 - cx * this.camera.zoom
+    this.camera.y = h / 2 - cy * this.camera.zoom
+  }
+
+  private snapToBase() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (!playerBase) return
+    const zoom = this.camera.zoom
+    const w = this.canvas.clientWidth
+    const h = this.canvas.clientHeight
+    this.camera.x = w / 2 - playerBase.x * zoom
+    this.camera.y = h / 2 - playerBase.y * zoom
+    this.notify('⌂ Home', '#4af7c4')
   }
 
   private notify(message: string, color: string) {

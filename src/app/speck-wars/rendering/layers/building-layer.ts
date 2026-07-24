@@ -1,7 +1,7 @@
 import { Graphics, Container } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
-import { NEUTRAL_COLOR, OUTPOST_AURA_RADIUS } from '../../domain/constants'
+import { NEUTRAL_COLOR, OUTPOST_AURA_RADIUS, FORTIFY_TIME } from '../../domain/constants'
 
 function hexPoints(x: number, y: number, r: number): number[] {
   const pts: number[] = []
@@ -117,6 +117,14 @@ export class BuildingLayer {
         this.gfx.lineStyle(0)
       }
 
+      // Surge active: fast-pulsing gold outer ring on player base
+      if (!isOutpost && building.ownerId === 'player' && sim.surgeDuration > 0) {
+        const surgePulse = 0.5 + 0.5 * Math.sin(now / 120)
+        this.gfx.lineStyle(2.5, 0xffd700, surgePulse * 0.85)
+        this.gfx.drawCircle(building.x, building.y, r + 22)
+        this.gfx.lineStyle(0)
+      }
+
       // HP bar (above building)
       const barW = r * 2
       const barH = 4
@@ -140,7 +148,9 @@ export class BuildingLayer {
         if (progress > 0) {
           const startAngle = -Math.PI / 2
           const endAngle = startAngle + Math.PI * 2 * progress
-          const arcColor = building.spawnTypeOverride === 'heavy' ? 0xffa032 : 0xffffff
+          const arcColor = building.spawnTypeOverride === 'heavy' ? 0xffa032
+            : building.spawnTypeOverride === 'scout' ? 0x50c8ff
+            : 0xffffff
           this.gfx.lineStyle(2, arcColor, 0.5)
           this.gfx.moveTo(building.x + (r - 5) * Math.cos(startAngle), building.y + (r - 5) * Math.sin(startAngle))
           this.gfx.arc(building.x, building.y, r - 5, startAngle, endAngle)
@@ -154,6 +164,17 @@ export class BuildingLayer {
         this.gfx.lineStyle(1, color, auraPulse * 0.18 + 0.04)
         this.gfx.drawCircle(building.x, building.y, OUTPOST_AURA_RADIUS)
         this.gfx.lineStyle(0)
+      }
+
+      // Fortification ring: gold glow when outpost has been held and is fortifying
+      if (building.typeId === 'outpost' && building.ownerId !== 'neutral') {
+        const fortLevel = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
+        if (fortLevel > 0.05) {  // only show when at least 5% fortified
+          const fortPulse = Math.sin(now / 1500) * 0.2 + 0.8
+          this.gfx.lineStyle(1.5, 0xffd700, fortLevel * fortPulse * 0.55)
+          this.gfx.drawCircle(building.x, building.y, r + 16)
+          this.gfx.lineStyle(0)
+        }
       }
 
       // Capture progress ring

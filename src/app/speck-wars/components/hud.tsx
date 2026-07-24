@@ -42,7 +42,7 @@ export function HUD() {
   const kills = useSpeckWarsStore(s => s.kills)
   const losses = useSpeckWarsStore(s => s.losses)
   const spawnMode = useSpeckWarsStore(s => s.spawnMode)
-  const cycleSpawnMode = useSpeckWarsStore(s => s.cycleSpawnMode)
+  const setSpawnMode = useSpeckWarsStore(s => s.setSpawnMode)
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
@@ -62,6 +62,64 @@ export function HUD() {
       position: 'absolute', inset: 0, pointerEvents: 'none',
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
     }}>
+      <style>{`
+        @keyframes pulse-red {
+          from { opacity: 0.5; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      {hud?.baseUnderThreat && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          border: '4px solid rgba(255, 50, 50, 0.85)',
+          borderRadius: 2,
+          pointerEvents: 'none',
+          zIndex: 100,
+          animation: 'pulse-red 0.8s ease-in-out infinite alternate',
+          boxShadow: 'inset 0 0 40px rgba(255, 0, 0, 0.25)',
+        }} />
+      )}
+      {hud?.baseUnderThreat && (
+        <div style={{
+          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
+          padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
+          zIndex: 110, pointerEvents: 'none',
+          animation: 'pulse-red 0.6s ease-in-out infinite alternate',
+        }}>⚠ BASE UNDER ATTACK</div>
+      )}
+      {(() => {
+        const myCount = hud?.players?.player?.speckCount ?? 0
+        const aiCount = hud?.players?.ai?.speckCount ?? 0
+        const ratio = myCount > 0 ? aiCount / myCount : (aiCount > 0 ? 999 : 0)
+        if (ratio < 2.5) return null
+        return (
+          <div style={{
+            position: 'fixed', top: 44, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(200,100,0,0.9)', color: '#fff', fontWeight: 700,
+            padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
+            zIndex: 109, pointerEvents: 'none',
+          }}>OUTNUMBERED {Math.round(ratio)}:1</div>
+        )
+      })()}
+      {hud?.enemyAdvanceDetected && (
+        <div style={{
+          position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
+          padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
+          zIndex: 108, pointerEvents: 'none',
+        }}>ENEMY ADVANCING</div>
+      )}
+      {hud?.rallyCryActive && !hud?.baseUnderThreat && (
+        <div style={{
+          position: 'fixed', top: 108, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(255,136,0,0.88)', color: '#fff', fontWeight: 700,
+          padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
+          zIndex: 107, pointerEvents: 'none',
+          animation: 'pulse-red 0.9s ease-in-out infinite alternate',
+        }}>★ RALLY CRY — 1.5× SPAWN</div>
+      )}
       {isDanger && (
         <>
           <style>{`
@@ -135,6 +193,112 @@ export function HUD() {
             <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 8, letterSpacing: 0.5 }}>
               DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
+            {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
+              <span style={{ color: '#ffd700', fontSize: 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
+                {hud.dailyModifier === 'bulwark' ? '⚔ BULWARK' : hud.dailyModifier === 'blitz' ? '⚡ BLITZ' : '🏰 SIEGE'}
+              </span>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Wave countdown — only shows when wave is imminent or in progress */}
+      {hud && (hud.waveCountdown !== null || hud.waveInProgress) && (() => {
+        const countdown = hud.waveCountdown ?? 0
+        const inProgress = hud.waveInProgress
+        if (!inProgress && countdown > 30000) return null  // only show when < 30s
+        const secs = Math.ceil(countdown / 1000)
+        return (
+          <>
+            {inProgress && (
+              <style>{`
+                @keyframes danger-pulse {
+                  from { opacity: 0.4; }
+                  to   { opacity: 0.7; }
+                }
+              `}</style>
+            )}
+            <div style={{
+              position: 'absolute', top: 110, right: 16,
+              padding: '4px 10px',
+              background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
+              border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
+              borderRadius: 4,
+              fontSize: 10,
+              letterSpacing: 1.5,
+              color: inProgress ? '#ff5050' : '#ffa030',
+              animation: inProgress ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
+            }}>
+              {inProgress ? '⚠ WAVE INCOMING!' : `⚠ WAVE IN ${secs}s`}
+            </div>
+          </>
+        )
+      })()}
+
+      {/* Mini-map — top right, below difficulty badge */}
+      {hud && (() => {
+        const SCALE = 120 / 3000  // world→screen
+        return (
+          <div style={{
+            position: 'absolute', top: 72, right: 16,
+            width: 120, height: 120,
+            background: 'rgba(0,0,0,0.55)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 4,
+            overflow: 'hidden',
+            cursor: 'crosshair',
+          }}>
+            <svg width={120} height={120} style={{ display: 'block' }}
+              onClick={(e) => {
+                if (!gameActions?.rally) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const px = e.clientX - rect.left
+                const py = e.clientY - rect.top
+                const worldX = (px / 120) * 3000
+                const worldY = (py / 120) * 3000
+                gameActions.rally(worldX, worldY)
+              }}
+            >
+              {/* Speck dots */}
+              {hud.minimap.specks.map((s, i) => (
+                <circle
+                  key={i}
+                  cx={s.x * SCALE}
+                  cy={s.y * SCALE}
+                  r={1}
+                  fill={s.ownerId === 'player' ? colorHex(PLAYER_COLOR) : colorHex(AI_COLOR)}
+                  opacity={0.55}
+                />
+              ))}
+              {/* Buildings */}
+              {hud.minimap.buildings.map(b => {
+                const fill = b.ownerId === 'player' ? colorHex(PLAYER_COLOR)
+                  : b.ownerId === 'ai' ? colorHex(AI_COLOR)
+                  : '#888888'
+                const r = b.typeId === 'base' ? 4 : 2.5
+                return (
+                  <circle
+                    key={b.id}
+                    cx={b.x * SCALE}
+                    cy={b.y * SCALE}
+                    r={r}
+                    fill={fill}
+                    opacity={0.9}
+                  />
+                )
+              })}
+              {/* Rally point crosshair */}
+              {hud.minimap.rallyPoint && (() => {
+                const rx = hud.minimap.rallyPoint.x * SCALE
+                const ry = hud.minimap.rallyPoint.y * SCALE
+                return (
+                  <g>
+                    <line x1={rx - 4} y1={ry} x2={rx + 4} y2={ry} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
+                    <line x1={rx} y1={ry - 4} x2={rx} y2={ry + 4} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
+                  </g>
+                )
+              })()}
+            </svg>
           </div>
         )
       })()}
@@ -203,23 +367,35 @@ export function HUD() {
         >
           {speed}×
         </button>
-        <button
-          onClick={cycleSpawnMode}
-          title="H — toggle spawn mode"
-          style={{
-            pointerEvents: 'auto',
-            padding: '4px 14px',
-            fontSize: 12,
-            cursor: 'pointer',
-            background: spawnMode === 'heavy' ? 'rgba(255,160,50,0.15)' : 'rgba(0,0,0,0.5)',
-            border: `1px solid ${spawnMode === 'heavy' ? '#ffa032' : 'rgba(255,255,255,0.3)'}`,
-            borderRadius: 4,
-            color: spawnMode === 'heavy' ? '#ffa032' : '#fff',
-            letterSpacing: 1,
-          }}
-        >
-          {spawnMode === 'heavy' ? '⬡ HEAVY' : '· BASIC'}
-        </button>
+        {/* Spawn type selector — 3 direct buttons instead of cycle */}
+        {(['basic', 'heavy', 'scout'] as const).map((type, idx) => {
+          const active = spawnMode === type
+          const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
+          const subtitle = type === 'heavy' ? 'slow · siege' : type === 'scout' ? 'fast · outpost' : 'balanced'
+          return (
+            <button
+              key={type}
+              onClick={() => gameActions?.setSpawnType?.(type)}
+              title={`[${idx + 1}] Spawn ${type} — ${subtitle}`}
+              style={{
+                pointerEvents: 'auto',
+                padding: '3px 8px',
+                fontSize: 10,
+                cursor: 'pointer',
+                background: active ? `${color}22` : 'rgba(0,0,0,0.5)',
+                border: `1px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
+                borderRadius: idx === 0 ? '4px 0 0 4px' : idx === 2 ? '0 4px 4px 0' : '0',
+                color: active ? color : 'rgba(255,255,255,0.4)',
+                marginLeft: idx === 0 ? 0 : -1,
+                lineHeight: 1.3,
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontWeight: 700, letterSpacing: 0.5 }}>{idx + 1} {type.toUpperCase()}</div>
+              <div style={{ fontSize: 8, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
+            </button>
+          )
+        })}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
@@ -262,11 +438,17 @@ export function HUD() {
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
-            <span>Drag — pan camera</span><span>H — heavy/basic mode</span>
+            <span>Drag — pan camera</span><span>1/2/3 — set spawn type</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
-            <span>Q — surge (2× spawn 8s)</span><span>Shift+drag — select specks</span>
-            <span>Minimap — click to rally</span><span>? — this help</span>
+            <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
+            <span>H — snap to home base</span><span>Minimap — click to rally</span>
+            <span>E — select all specks</span><span>X — cycle speed (1×/2×/4×)</span>
+            <span>F — sacrifice 10 specks → +15 HP base</span><span>Arrow keys — pan camera</span>
+            <span>? — this help</span><span></span>
+            <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
+              Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
+            </span>
           </div>
         </div>
       )}
@@ -287,7 +469,7 @@ export function HUD() {
             : isAiOwned ? hud.players.ai?.buildingHp[id]
             : undefined
           const hpFrac = hp !== undefined ? hp / OUTPOST_MAX_HP : undefined
-          return { color, isUnderAttack, isPlayerOwned, cap, hpFrac }
+          return { id, color, isUnderAttack, isPlayerOwned, cap, hpFrac }
         })
         const playerCount = dots.filter(d => d.isPlayerOwned).length
         return (
@@ -307,7 +489,7 @@ export function HUD() {
               <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>
                 OUTPOSTS {playerCount}/{OUTPOST_IDS.length}
               </span>
-              {dots.map(({ color, isUnderAttack, isPlayerOwned, cap, hpFrac }, i) => {
+              {dots.map(({ id, color, isUnderAttack, isPlayerOwned, cap, hpFrac }, i) => {
                 const capColor = cap?.side === 'player' ? '#4af7c4' : '#ff4f7b'
                 return (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -335,6 +517,20 @@ export function HUD() {
                         }} />
                       </div>
                     ) : null}
+                    {/* Fortification indicator — gold bar for player-owned outposts with fortify progress */}
+                    {(() => {
+                      if (!isPlayerOwned) return null
+                      const level = hud.outpostFortify?.[id] ?? 0
+                      if (level <= 0) return null
+                      return (
+                        <div style={{ width: 14, height: 2, background: 'rgba(255,215,0,0.15)', borderRadius: 1 }}>
+                          <div style={{
+                            width: `${Math.round(level * 100)}%`,
+                            height: '100%', background: '#ffd700', borderRadius: 1, opacity: 0.7,
+                          }} />
+                        </div>
+                      )
+                    })()}
                   </div>
                 )
               })}
@@ -505,13 +701,16 @@ export function HUD() {
             const fmtTypes = (t: Record<string, number>) => {
               const basic = t['basic'] ?? 0
               const heavy = t['heavy'] ?? 0
-              if (basic === 0 && heavy === 0) return '—'
-              if (heavy === 0) return `${basic}× basic`
-              if (basic === 0) return `${heavy}× heavy`
-              return `${basic}× basic, ${heavy}× heavy`
+              const scout = t['scout'] ?? 0
+              const parts: string[] = []
+              if (heavy > 0) parts.push(`${heavy}× heavy`)
+              if (basic > 0) parts.push(`${basic}× basic`)
+              if (scout > 0) parts.push(`${scout}× dart`)
+              if (parts.length === 0) return '—'
+              return parts.join(', ')
             }
             // Production rate estimate
-            const BASE_MS = spawnMode === 'heavy' ? 1800 : 800
+            const BASE_MS = spawnMode === 'heavy' ? 1800 : spawnMode === 'scout' ? 500 : 800
             const OUTPOST_MS = 1200
             const playerTriple = hud.tripleOutpostOwner === 'player'
             const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)
@@ -566,9 +765,31 @@ export function HUD() {
       {phase === 'playing' && (
         <div style={{
           position: 'absolute', bottom: 16, right: 16,
-          display: 'flex', flexDirection: 'row', gap: 6,
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
+          {/* Squad indicator: shown when player has specks selected */}
+          {hud && (hud.selectedSpeckCount ?? 0) > 0 && (
+            <div style={{
+              fontSize: 9, letterSpacing: 1.5, color: '#ffffff', opacity: 0.7,
+              textAlign: 'center', marginBottom: 4,
+            }}>
+              SQUAD: {hud.selectedSpeckCount} · Shift+drag to reselect · Esc to clear
+              {hud.selectedComposition && (
+                <div style={{ fontSize: 9, color: 'rgba(74,247,196,0.75)', marginTop: 2, letterSpacing: 1 }}>
+                  {Object.entries(hud.selectedComposition.types)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([typeId, count]) => `${count} ${typeId}`)
+                    .join(' · ')}
+                  {hud.selectedComposition.eliteCount > 0 && ` · ✦${hud.selectedComposition.eliteCount} elite`}
+                  {hud.selectedComposition.veteranCount > 0 && ` · ⭐${hud.selectedComposition.veteranCount} vet`}
+                </div>
+              )}
+            </div>
+          )}
+          <div style={{
+            display: 'flex', gap: 6,
+          }}>
           <button
             onClick={() => gameActions.defend?.()}
             title="[D] Defend — rally to your base"
@@ -657,6 +878,33 @@ export function HUD() {
               </button>
             )
           })()}
+          {(() => {
+            const cd = hud?.sacrificeCooldown ?? 0
+            const speckCount = hud?.players.player?.speckCount ?? 0
+            const baseHp = hud?.players.player?.buildingHp['building-player-base'] ?? 100
+            const ready = cd <= 0 && speckCount >= 10 && baseHp < 90
+            return (
+              <button
+                onClick={() => { if (ready) gameActions.sacrifice?.() }}
+                title="[F] Sacrifice 10 specks → repair +15 HP base (45s cooldown)"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: 11,
+                  cursor: ready ? 'pointer' : 'default',
+                  background: ready ? 'rgba(100,200,100,0.12)' : 'rgba(100,200,100,0.04)',
+                  border: ready ? '1px solid rgba(100,200,100,0.5)' : '1px solid rgba(100,200,100,0.15)',
+                  borderRadius: 20,
+                  color: ready ? '#64c864' : 'rgba(100,200,100,0.35)',
+                  letterSpacing: 1,
+                  minHeight: 44,
+                  fontFamily: 'monospace',
+                  opacity: ready ? 1 : 0.6,
+                }}
+              >
+                {cd > 0 ? `F ${Math.ceil(cd / 1000)}s` : '🔧 F'}
+              </button>
+            )
+          })()}
           <button
             onClick={() => gameActions.clearRally?.()}
             title="[R] Clear rally"
@@ -675,6 +923,7 @@ export function HUD() {
           >
             ✕ R
           </button>
+          </div>
         </div>
       )}
 
@@ -710,6 +959,20 @@ export function HUD() {
                 </span>
               </div>
             )}
+            {/* Production rate */}
+            {(hud.spawnRates?.player ?? 0) > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 9, color: colorHex(PLAYER_COLOR), opacity: 0.6, minWidth: 20, textAlign: 'right' }}>
+                  {hud.spawnRates.player}/m
+                </span>
+                <div style={{ width: 100, textAlign: 'center', fontSize: 8, letterSpacing: 0.5, color: 'rgba(255,255,255,0.3)' }}>
+                  ⚡prod
+                </div>
+                <span style={{ fontSize: 9, color: colorHex(AI_COLOR), opacity: 0.6, minWidth: 20 }}>
+                  {hud.spawnRates.ai}/m
+                </span>
+              </div>
+            )}
             {/* Army composition: heavy % indicator */}
             {(() => {
               const playerTypes = hud.players.player?.speckTypes ?? {}
@@ -738,6 +1001,22 @@ export function HUD() {
                   <div title={`Enemy: ${aiHeavy}⬡ heavy, ${aiBasic}· basic`} style={{ width: 20 }}>
                     {aiHeavy > 0 && <span style={{ fontSize: 8, color: '#ff6b6b', opacity: 0.7 }}>⬡{aiHeavy}</span>}
                   </div>
+                </div>
+              )
+            })()}
+            {/* Veteran / elite count */}
+            {(() => {
+              const vets = hud.players.player?.veteranCount ?? 0
+              const elites = hud.players.player?.eliteCount ?? 0
+              if (vets + elites === 0) return null
+              return (
+                <div style={{ display: 'flex', gap: 8, fontSize: 9, letterSpacing: 0.5 }}>
+                  {elites > 0 && (
+                    <span style={{ color: '#ffffff', opacity: 0.8 }}>✦ {elites} elite</span>
+                  )}
+                  {vets > 0 && (
+                    <span style={{ color: '#ffd700', opacity: 0.65 }}>⭐ {vets} vet</span>
+                  )}
                 </div>
               )
             })()}

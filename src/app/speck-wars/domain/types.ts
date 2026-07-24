@@ -4,7 +4,7 @@ export interface SpeckMeta {
   id: string
   typeId: string
   ownerId: string
-  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing'
+  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing' | 'retreating'
   targetId: string | null
   attackCooldown: number   // ms remaining until next attack
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
@@ -23,6 +23,7 @@ export interface BuildingEntity {
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
+  fortifyDuration?: number      // ms continuously held — resets on capture
 }
 
 export interface Player {
@@ -60,6 +61,10 @@ export interface SimulationState {
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
+  dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
+  waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
+  waveInProgress: boolean        // true during the 15s wave assault
+  sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
 }
 
 export type InputEvent =
@@ -79,6 +84,11 @@ export type SimEvent =
   | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'domination' }
   | { type: 'HUD_UPDATE'; data: HudData }
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
+  | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
+  | { type: 'SPECK_ELITE'; speckId: string; ownerId: string }
+  | { type: 'AI_WAVE_START'; waveNumber: number }
+  | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
+  | { type: 'AI_LAST_STAND' }
 
 export interface HudData {
   players: Record<string, {
@@ -86,6 +96,8 @@ export interface HudData {
     buildingCount: number
     buildingHp: Record<string, number>
     speckTypes: Record<string, number>  // typeId → count
+    veteranCount: number  // specks with 3+ kills
+    eliteCount: number    // specks with 6+ kills
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
@@ -93,4 +105,20 @@ export interface HudData {
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
+  selectedSpeckCount: number   // 0 when no selection active
+  selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number } | null
+  spawnRates: Record<string, number>   // playerId → effective specks/min
+  dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
+  waveCountdown: number | null
+  waveInProgress: boolean
+  sacrificeCooldown: number
+  baseUnderThreat: boolean
+  enemyAdvanceDetected: boolean
+  rallyCryActive: boolean
+  outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
+  minimap: {
+    specks: { x: number; y: number; ownerId: string }[]
+    buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]
+    rallyPoint: { x: number; y: number } | null
+  }
 }

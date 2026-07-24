@@ -1,7 +1,7 @@
 import type { SimulationState, SpeckMeta } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { MAX_SPECKS } from '../constants'
+import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD } from '../constants'
 
 // Place a new speck into a recycled or fresh slot — never allocates new arrays
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
@@ -31,6 +31,10 @@ function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, b
 let speckCounter = 0
 
 export function updateSpawners(sim: SimulationState, dt: number) {
+  // Rally Cry: player base at critical HP spawns 1.5× faster (desperation comeback bonus)
+  const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+  const rallyCryActive = playerBase ? playerBase.hp / playerBase.maxHp < RALLY_CRY_HP_THRESHOLD : false
+
   for (const building of Object.values(sim.buildings)) {
     if (building.ownerId === 'neutral') continue
     const btype = BUILDING_TYPES[building.typeId]
@@ -42,7 +46,8 @@ export function updateSpawners(sim: SimulationState, dt: number) {
 
     const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
     const hasSurge = building.ownerId === 'player' && sim.surgeDuration > 0
-    const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1)
+    const hasRallyCry = building.ownerId === 'player' && rallyCryActive
+    const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1)
     building.spawnTimer = baseInterval / divisor
 
     for (let i = 0; i < btype.spawnCount; i++) {

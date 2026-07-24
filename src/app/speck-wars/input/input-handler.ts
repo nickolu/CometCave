@@ -15,6 +15,13 @@ export class InputHandler {
   private onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void
   private onClearSelect?: () => void
   private onSurge?: () => void
+  private onSnapToAction?: () => void
+  private onSnapToBase?: () => void
+  private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
+  private onCycleSpeed?: () => void
+  private onSelectAll?: () => void
+  private onSacrifice?: () => void
+  private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -43,6 +50,12 @@ export class InputHandler {
     onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void,
     onClearSelect?: () => void,
     onSurge?: () => void,
+    onSnapToAction?: () => void,
+    onSnapToBase?: () => void,
+    onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
+    onCycleSpeed?: () => void,
+    onSelectAll?: () => void,
+    onSacrifice?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -57,6 +70,12 @@ export class InputHandler {
     this.onBoxSelect = onBoxSelect
     this.onClearSelect = onClearSelect
     this.onSurge = onSurge
+    this.onSnapToAction = onSnapToAction
+    this.onSnapToBase = onSnapToBase
+    this.onSetSpawnType = onSetSpawnType
+    this.onCycleSpeed = onCycleSpeed
+    this.onSelectAll = onSelectAll
+    this.onSacrifice = onSacrifice
     this.attach()
   }
 
@@ -71,6 +90,8 @@ export class InputHandler {
     window.addEventListener('touchmove', this.onTouchMove, { passive: false })
     window.addEventListener('touchend', this.onTouchEnd)
     window.addEventListener('keydown', this.onKeyDown)
+    window.addEventListener('keyup', this.onKeyUp)
+    window.addEventListener('blur', () => this.heldKeys.clear())
     this.canvas.addEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.addEventListener('mouseleave', this.onMouseLeave)
   }
@@ -111,6 +132,10 @@ export class InputHandler {
 
   private onMouseMove = (e: MouseEvent) => {
     if (!this.isDragging) return
+    // Update cursor position always (needed for selection box visual)
+    const rect = this.canvas.getBoundingClientRect()
+    this.mouseX = e.clientX - rect.left
+    this.mouseY = e.clientY - rect.top
     if (this.isShiftDrag) return  // skip pan during shift-drag
     this.camera.x += e.clientX - this.lastX
     this.camera.y += e.clientY - this.lastY
@@ -222,9 +247,18 @@ export class InputHandler {
     this.lastPinchDist = 0
   }
 
+  private onKeyUp = (e: KeyboardEvent) => {
+    this.heldKeys.delete(e.code)
+  }
+
+  isKeyHeld(code: string): boolean {
+    return this.heldKeys.has(code)
+  }
+
   private onKeyDown = (e: KeyboardEvent) => {
     // Don't fire when typing in an input
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+    this.heldKeys.add(e.code)
     if (e.code === 'Space') {
       e.preventDefault()
       this.onTogglePause?.()
@@ -233,7 +267,7 @@ export class InputHandler {
     } else if (e.code === 'KeyR') {
       this.onClearRally?.()
     } else if (e.code === 'KeyH') {
-      this.onCycleSpawnMode?.()
+      this.onSnapToBase?.()
     } else if (e.code === 'KeyC') {
       this.onRecenterCamera?.()
     } else if (e.code === 'KeyD') {
@@ -244,6 +278,31 @@ export class InputHandler {
       this.onRush?.()
     } else if (e.code === 'KeyQ') {
       this.onSurge?.()
+    } else if (e.code === 'KeyV') {
+      this.onSnapToAction?.()
+    } else if (e.code === 'Digit1') {
+      this.onSetSpawnType?.('basic')
+    } else if (e.code === 'Digit2') {
+      this.onSetSpawnType?.('heavy')
+    } else if (e.code === 'Digit3') {
+      this.onSetSpawnType?.('scout')
+    } else if (e.code === 'KeyX') {
+      this.onCycleSpeed?.()
+    } else if (e.code === 'KeyE') {
+      this.onSelectAll?.()
+    } else if (e.code === 'KeyF') {
+      this.onSacrifice?.()
+    }
+  }
+
+  getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {
+    if (!this.isShiftDrag) return null
+    const rect = this.canvas.getBoundingClientRect()
+    return {
+      x1: this.mouseDownX - rect.left,
+      y1: this.mouseDownY - rect.top,
+      x2: this.mouseX,
+      y2: this.mouseY,
     }
   }
 
@@ -257,6 +316,7 @@ export class InputHandler {
     window.removeEventListener('touchmove', this.onTouchMove)
     window.removeEventListener('touchend', this.onTouchEnd)
     window.removeEventListener('keydown', this.onKeyDown)
+    window.removeEventListener('keyup', this.onKeyUp)
     this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.removeEventListener('mouseleave', this.onMouseLeave)
   }
