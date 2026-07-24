@@ -192,12 +192,24 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           {won ? 'VICTORY' : 'DEFEATED'}
         </h1>
         {victoryType && (
-          <div style={{
-            fontSize: 12, letterSpacing: 3, opacity: 0.6,
-            color: victoryType === 'domination' ? '#ffd700' : accentColor,
-            textTransform: 'uppercase',
-          }}>
-            {victoryType === 'domination' ? '⬡ by Domination' : '💥 by Destruction'}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{
+              fontSize: 12, letterSpacing: 3, opacity: 0.6,
+              color: victoryType === 'domination' ? '#ffd700' : accentColor,
+              textTransform: 'uppercase',
+            }}>
+              {victoryType === 'domination' ? '⬡ by Domination' : '💥 by Destruction'}
+            </div>
+            <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.35, color: '#fff' }}>
+              {won
+                ? victoryType === 'domination'
+                  ? 'held all 3 outposts for 60 seconds'
+                  : 'destroyed the enemy base'
+                : victoryType === 'domination'
+                  ? 'enemy held all 3 outposts for 60 seconds'
+                  : 'your base was destroyed'
+              }
+            </div>
           </div>
         )}
         {won && (
