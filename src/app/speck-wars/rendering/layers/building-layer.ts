@@ -3,12 +3,14 @@ import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
 import { NEUTRAL_COLOR, OUTPOST_AURA_RADIUS } from '../../domain/constants'
 
-const FLASH_DURATION = 200  // ms — how long a damage flash lasts
+const FLASH_DURATION = 200   // ms — how long a damage flash lasts
+const SPAWN_FLASH_DURATION = 250  // ms — brief golden ring when a speck spawns
 
 export class BuildingLayer {
   readonly stage: Container
   private gfx: Graphics
-  private flashMap: Map<string, number> = new Map()  // buildingId → timestamp of last hit
+  private flashMap: Map<string, number> = new Map()       // buildingId → timestamp of last hit
+  private spawnFlashMap: Map<string, number> = new Map()  // buildingId → timestamp of last spawn
 
   constructor() {
     this.stage = new Container()
@@ -18,6 +20,10 @@ export class BuildingLayer {
 
   flashBuilding(buildingId: string) {
     this.flashMap.set(buildingId, Date.now())
+  }
+
+  flashSpawn(buildingId: string) {
+    this.spawnFlashMap.set(buildingId, Date.now())
   }
 
   update(sim: SimulationState, playerColors: Record<string, number>) {
@@ -45,6 +51,22 @@ export class BuildingLayer {
           this.gfx.endFill()
         } else {
           this.flashMap.delete(building.id)
+        }
+      }
+
+      // Spawn flash: brief gold expanding ring when a speck is produced
+      const spawnTs = this.spawnFlashMap.get(building.id)
+      if (spawnTs !== undefined) {
+        const elapsed = now - spawnTs
+        if (elapsed < SPAWN_FLASH_DURATION) {
+          const t = elapsed / SPAWN_FLASH_DURATION
+          const alpha = (1 - t) * 0.6
+          const spawnR = r + 4 + t * 14  // expands from r+4 to r+18
+          this.gfx.lineStyle(1.5, 0xffd700, alpha)
+          this.gfx.drawCircle(building.x, building.y, spawnR)
+          this.gfx.lineStyle(0)
+        } else {
+          this.spawnFlashMap.delete(building.id)
         }
       }
 
