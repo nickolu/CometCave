@@ -100,7 +100,7 @@ export class GameInstance {
       const scaledDt = dt * store.speed
       this.elapsedMs += scaledDt
       store.setElapsedMs(this.elapsedMs)
-      this.aiController.update(this.sim)
+      this.aiController.update(this.sim, scaledDt)
       this.sim = tick(this.sim, scaledDt)
 
       for (const event of this.sim.events) {

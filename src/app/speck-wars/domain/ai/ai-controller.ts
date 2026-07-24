@@ -3,19 +3,43 @@ import type { SimulationState, InputEvent, BuildingEntity } from '../types'
 export class AIController {
   private playerId: string
   private tickInterval: number
+  private readonly baseTickInterval: number
   private lastDecisionTick: number = 0
   private aggressive: boolean  // true = Hard/Brutal: every 4th decision rushes base
   private decisionCount: number = 0
   private spawnMode: 'basic' | 'heavy' = 'basic'
   private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
+  private dominanceTimer: number = 0  // ms enemy has held a 3:1 count advantage
 
   constructor(playerId: string, tickInterval: number = 30, aggressive = false) {
     this.playerId = playerId
     this.tickInterval = tickInterval
+    this.baseTickInterval = tickInterval
     this.aggressive = aggressive
   }
 
-  update(sim: SimulationState) {
+  update(sim: SimulationState, dt: number = 16) {
+    // Adaptive difficulty: if the enemy holds a 3:1 speck advantage for 30s, speed up AI decisions
+    let aiCount = 0, enemyCount = 0
+    for (let i = 0; i < sim.speckCount; i++) {
+      if (!sim.speckIds[i]) continue
+      const m = sim.speckMeta[i]
+      if (!m) continue
+      if (m.ownerId === this.playerId) aiCount++
+      else if (m.ownerId !== 'neutral') enemyCount++
+    }
+    if (enemyCount >= 3 * aiCount && aiCount > 0) {
+      this.dominanceTimer += dt
+      if (this.dominanceTimer > 30000) {
+        // Enemy has dominated for 30s — reduce tick interval by 25% (floor at 75% of base)
+        const floor = Math.max(Math.floor(this.baseTickInterval * 0.75), 4)
+        this.tickInterval = Math.max(Math.floor(this.tickInterval * 0.75), floor)
+      }
+    } else {
+      this.dominanceTimer = 0
+      this.tickInterval = this.baseTickInterval
+    }
+
     if (sim.tick - this.lastDecisionTick < this.tickInterval) return
     this.lastDecisionTick = sim.tick
 
