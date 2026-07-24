@@ -75,6 +75,7 @@ export class Renderer {
       if (event.type === 'SPECK_DIED') {
         const flashColor = PLAYER_COLORS[event.killedOwnerId] ?? 0xffffff
         this.effectsLayer.addDeathFlash(event.x, event.y, flashColor)
+        this.effectsLayer.addDeathParticles(event.x, event.y, flashColor)
       }
       if (event.type === 'BUILDING_DAMAGED') {
         this.buildingLayer.flashBuilding(event.buildingId)
