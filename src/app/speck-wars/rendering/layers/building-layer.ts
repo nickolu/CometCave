@@ -3,6 +3,15 @@ import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
 import { NEUTRAL_COLOR, OUTPOST_AURA_RADIUS } from '../../domain/constants'
 
+function hexPoints(x: number, y: number, r: number): number[] {
+  const pts: number[] = []
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3
+    pts.push(x + r * Math.cos(a), y + r * Math.sin(a))
+  }
+  return pts
+}
+
 const FLASH_DURATION = 200   // ms — how long a damage flash lasts
 const SPAWN_FLASH_DURATION = 250  // ms — brief golden ring when a speck spawns
 
@@ -35,9 +44,15 @@ export class BuildingLayer {
       const color = building.ownerId === 'neutral' ? NEUTRAL_COLOR : (playerColors[building.ownerId] ?? 0xffffff)
       const r = btype?.size ?? 20
 
-      // Base circle
+      const isOutpost = building.typeId === 'outpost'
+
+      // Base shape: hexagon for outposts, circle for bases
       this.gfx.beginFill(color, 0.9)
-      this.gfx.drawCircle(building.x, building.y, r)
+      if (isOutpost) {
+        this.gfx.drawPolygon(hexPoints(building.x, building.y, r))
+      } else {
+        this.gfx.drawCircle(building.x, building.y, r)
+      }
       this.gfx.endFill()
 
       // Damage flash overlay
@@ -47,7 +62,11 @@ export class BuildingLayer {
         if (elapsed < FLASH_DURATION) {
           const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
           this.gfx.beginFill(0xff2222, alpha)
-          this.gfx.drawCircle(building.x, building.y, r)
+          if (isOutpost) {
+            this.gfx.drawPolygon(hexPoints(building.x, building.y, r))
+          } else {
+            this.gfx.drawCircle(building.x, building.y, r)
+          }
           this.gfx.endFill()
         } else {
           this.flashMap.delete(building.id)
@@ -72,7 +91,11 @@ export class BuildingLayer {
 
       // Stroke
       this.gfx.lineStyle(2, 0xffffff, 0.4)
-      this.gfx.drawCircle(building.x, building.y, r)
+      if (isOutpost) {
+        this.gfx.drawPolygon(hexPoints(building.x, building.y, r))
+      } else {
+        this.gfx.drawCircle(building.x, building.y, r)
+      }
       this.gfx.lineStyle(0)
 
       // Pulse ring
