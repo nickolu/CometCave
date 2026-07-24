@@ -42,6 +42,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 5c. Heal retreating specks that have reached a friendly building
   regenRetreatingSpecks(sim, dt)
 
+
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
 
