@@ -3,9 +3,12 @@ import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
 import { NEUTRAL_COLOR, OUTPOST_AURA_RADIUS } from '../../domain/constants'
 
+const FLASH_DURATION = 200  // ms — how long a damage flash lasts
+
 export class BuildingLayer {
   readonly stage: Container
   private gfx: Graphics
+  private flashMap: Map<string, number> = new Map()  // buildingId → timestamp of last hit
 
   constructor() {
     this.stage = new Container()
@@ -13,7 +16,12 @@ export class BuildingLayer {
     this.stage.addChild(this.gfx)
   }
 
+  flashBuilding(buildingId: string) {
+    this.flashMap.set(buildingId, Date.now())
+  }
+
   update(sim: SimulationState, playerColors: Record<string, number>) {
+    const now = Date.now()
     this.gfx.clear()
 
     for (const building of Object.values(sim.buildings)) {
@@ -25,6 +33,20 @@ export class BuildingLayer {
       this.gfx.beginFill(color, 0.9)
       this.gfx.drawCircle(building.x, building.y, r)
       this.gfx.endFill()
+
+      // Damage flash overlay
+      const flashTs = this.flashMap.get(building.id)
+      if (flashTs !== undefined) {
+        const elapsed = now - flashTs
+        if (elapsed < FLASH_DURATION) {
+          const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
+          this.gfx.beginFill(0xff2222, alpha)
+          this.gfx.drawCircle(building.x, building.y, r)
+          this.gfx.endFill()
+        } else {
+          this.flashMap.delete(building.id)
+        }
+      }
 
       // Stroke
       this.gfx.lineStyle(2, 0xffffff, 0.4)
