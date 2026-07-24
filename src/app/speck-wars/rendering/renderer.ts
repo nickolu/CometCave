@@ -79,6 +79,13 @@ export class Renderer {
       if (event.type === 'BUILDING_DAMAGED') {
         this.buildingLayer.flashBuilding(event.buildingId)
       }
+      if (event.type === 'OUTPOST_CAPTURED') {
+        const building = sim.buildings[event.outpostId]
+        const color = PLAYER_COLORS[event.newOwner] ?? 0xffffff
+        const x = building?.x ?? 0
+        const y = building?.y ?? 0
+        this.effectsLayer.addCaptureRipple(x, y, color)
+      }
     }
     this.effectsLayer.update(dt)
 

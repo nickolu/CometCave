@@ -2,12 +2,14 @@ import { Graphics, Container } from 'pixi.js'
 
 interface Flash { x: number; y: number; life: number; maxLife: number; color: number }
 interface Ping { x: number; y: number; life: number; maxLife: number }
+interface Ripple { x: number; y: number; life: number; maxLife: number; color: number }
 
 export class EffectsLayer {
   readonly stage: Container
   private gfx: Graphics
   private flashes: Flash[] = []
   private pings: Ping[] = []
+  private ripples: Ripple[] = []
 
   constructor() {
     this.stage = new Container()
@@ -21,6 +23,13 @@ export class EffectsLayer {
 
   showRallyPing(x: number, y: number) {
     this.pings.push({ x, y, life: 400, maxLife: 400 })
+  }
+
+  addCaptureRipple(x: number, y: number, color: number) {
+    // Three concentric expanding rings for dramatic capture effect
+    for (let i = 0; i < 3; i++) {
+      this.ripples.push({ x, y, life: 800 - i * 200, maxLife: 800 - i * 200, color })
+    }
   }
 
   update(dt: number) {
@@ -44,6 +53,17 @@ export class EffectsLayer {
       this.gfx.beginFill(f.color, alpha)
       this.gfx.drawCircle(f.x, f.y, r)
       this.gfx.endFill()
+    }
+
+    this.ripples = this.ripples.filter(r => r.life > 0)
+    for (const r of this.ripples) {
+      r.life -= dt
+      const t = 1 - r.life / r.maxLife
+      const radius = 24 + t * 60  // expands from 24 to 84px
+      const alpha = (1 - t) * 0.6
+      this.gfx.lineStyle(2, r.color, alpha)
+      this.gfx.drawCircle(r.x, r.y, radius)
+      this.gfx.lineStyle(0)
     }
   }
 
