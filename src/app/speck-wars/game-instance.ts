@@ -95,6 +95,12 @@ export class GameInstance {
     this.lastTime = performance.now()
     this.loop(this.lastTime)
 
+    // Brief "BATTLE START" flash when game begins
+    setTimeout(() => {
+      useSpeckWarsStore.getState().setNotification({ message: '⚔ BATTLE START', color: '#4af7c4' })
+      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 900)
+    }, 200)
+
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
       markFirstGameDone()
