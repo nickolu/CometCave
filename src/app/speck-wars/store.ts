@@ -26,6 +26,8 @@ interface SpeckWarsStore {
   addLoss: () => void
   spawnMode: 'basic' | 'heavy'
   cycleSpawnMode: () => 'basic' | 'heavy'
+  isNewBest: boolean
+  setIsNewBest: (v: boolean) => void
   resetGame: () => void
 }
 
@@ -62,6 +64,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
     })
     return next
   },
+  isNewBest: false,
+  setIsNewBest: v => set({ isNewBest: v }),
   resetGame: () => set(s => ({
     phase: 'menu' as GamePhase,
     winnerId: null,
@@ -72,6 +76,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
     kills: 0,
     losses: 0,
     spawnMode: 'basic' as 'basic' | 'heavy',
+    isNewBest: false,
     difficulty: s.difficulty,
   })),
 }))
