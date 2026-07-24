@@ -511,7 +511,7 @@ export function HUD() {
             }
             // Production rate estimate
             const BASE_MS = spawnMode === 'heavy' ? 1800 : 800
-            const OUTPOST_MS = 1800
+            const OUTPOST_MS = 1200
             const playerTriple = hud.tripleOutpostOwner === 'player'
             const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)
             const aiTriple = hud.tripleOutpostOwner === 'ai'

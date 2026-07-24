@@ -19,7 +19,7 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     id: 'outpost', name: 'Outpost',
     maxHp: 50, size: 20,
     spawnTypeId: 'heavy',
-    spawnInterval: 1800, spawnCount: 1,
+    spawnInterval: 1200, spawnCount: 1,
     hpRegen: 2,  // 2 HP/sec when not under attack
   },
 }
