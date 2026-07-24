@@ -36,3 +36,15 @@ export function resetWinStreak() {
   if (typeof window === 'undefined') return
   localStorage.setItem(STREAK_KEY, '0')
 }
+
+const FIRST_GAME_KEY = 'speck-wars-first-game-done'
+
+export function isFirstGame(): boolean {
+  if (typeof window === 'undefined') return false
+  return !localStorage.getItem(FIRST_GAME_KEY)
+}
+
+export function markFirstGameDone() {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(FIRST_GAME_KEY, '1')
+}
