@@ -514,7 +514,8 @@ export class GameInstance {
       shakeX = (Math.random() * 2 - 1) * s
       shakeY = (Math.random() * 2 - 1) * s
     }
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY)
+    const dragRect = this.inputHandler.getDragRect()
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
