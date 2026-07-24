@@ -126,6 +126,10 @@ export class InputHandler {
 
   private onMouseMove = (e: MouseEvent) => {
     if (!this.isDragging) return
+    // Update cursor position always (needed for selection box visual)
+    const rect = this.canvas.getBoundingClientRect()
+    this.mouseX = e.clientX - rect.left
+    this.mouseY = e.clientY - rect.top
     if (this.isShiftDrag) return  // skip pan during shift-drag
     this.camera.x += e.clientX - this.lastX
     this.camera.y += e.clientY - this.lastY
@@ -273,6 +277,17 @@ export class InputHandler {
       this.onSelectAll?.()
     } else if (e.code === 'KeyF') {
       this.onSacrifice?.()
+    }
+  }
+
+  getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {
+    if (!this.isShiftDrag) return null
+    const rect = this.canvas.getBoundingClientRect()
+    return {
+      x1: this.mouseDownX - rect.left,
+      y1: this.mouseDownY - rect.top,
+      x2: this.mouseX,
+      y2: this.mouseY,
     }
   }
 
