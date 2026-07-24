@@ -7,6 +7,7 @@ export class InputHandler {
   private onRally?: (worldX: number, worldY: number) => void
   private onTogglePause?: () => void
   private onClearRally?: () => void
+  private onCycleSpawnMode?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -21,12 +22,14 @@ export class InputHandler {
     onRally?: (worldX: number, worldY: number) => void,
     onTogglePause?: () => void,
     onClearRally?: () => void,
+    onCycleSpawnMode?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
     this.onRally = onRally
     this.onTogglePause = onTogglePause
     this.onClearRally = onClearRally
+    this.onCycleSpawnMode = onCycleSpawnMode
     this.attach()
   }
 
@@ -120,6 +123,8 @@ export class InputHandler {
       this.onTogglePause?.()
     } else if (e.code === 'KeyR') {
       this.onClearRally?.()
+    } else if (e.code === 'KeyH') {
+      this.onCycleSpawnMode?.()
     }
   }
 

@@ -17,6 +17,7 @@ export interface BuildingEntity {
   hp: number; maxHp: number
   spawnTimer: number       // ms until next spawn
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
+  spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
@@ -57,6 +58,7 @@ export interface SimulationState {
 
 export type InputEvent =
   | { type: 'RALLY'; ownerId: string; x: number; y: number }
+  | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string }
   | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
 

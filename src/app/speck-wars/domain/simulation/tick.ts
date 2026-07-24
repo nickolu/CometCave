@@ -1,4 +1,5 @@
 import type { SimulationState } from '../types'
+import { SPECK_TYPES } from '../config/speck-types'
 import { updateSpawners } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
@@ -45,6 +46,14 @@ function consumeInputs(sim: SimulationState) {
   for (const event of sim.inputQueue) {
     if (event.type === 'RALLY') {
       sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+    }
+    if (event.type === 'SET_SPAWN_TYPE') {
+      const stype = SPECK_TYPES[event.speckTypeId]
+      for (const building of Object.values(sim.buildings)) {
+        if (building.ownerId !== event.ownerId || building.typeId !== 'base') continue
+        building.spawnTypeOverride = event.speckTypeId
+        building.spawnIntervalOverride = stype?.productionTime
+      }
     }
   }
   sim.inputQueue = []

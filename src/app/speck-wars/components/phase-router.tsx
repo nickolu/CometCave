@@ -61,7 +61,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>Scroll — zoom</span>
           <span>R — clear rally</span>
           <span>Drag — pan camera</span>
-          <span>1×/2×/4× — speed</span>
+          <span>H — heavy/basic mode</span>
         </div>
       </div>
     )

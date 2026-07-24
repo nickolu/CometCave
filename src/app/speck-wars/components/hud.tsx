@@ -23,6 +23,8 @@ export function HUD() {
   const notification = useSpeckWarsStore(s => s.notification)
   const kills = useSpeckWarsStore(s => s.kills)
   const losses = useSpeckWarsStore(s => s.losses)
+  const spawnMode = useSpeckWarsStore(s => s.spawnMode)
+  const cycleSpawnMode = useSpeckWarsStore(s => s.cycleSpawnMode)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -90,6 +92,23 @@ export function HUD() {
           }}
         >
           {speed}×
+        </button>
+        <button
+          onClick={cycleSpawnMode}
+          title="H — toggle spawn mode"
+          style={{
+            pointerEvents: 'auto',
+            padding: '4px 14px',
+            fontSize: 12,
+            cursor: 'pointer',
+            background: spawnMode === 'heavy' ? 'rgba(255,160,50,0.15)' : 'rgba(0,0,0,0.5)',
+            border: `1px solid ${spawnMode === 'heavy' ? '#ffa032' : 'rgba(255,255,255,0.3)'}`,
+            borderRadius: 4,
+            color: spawnMode === 'heavy' ? '#ffa032' : '#fff',
+            letterSpacing: 1,
+          }}
+        >
+          {spawnMode === 'heavy' ? '⬡ HEAVY' : '· BASIC'}
         </button>
       </div>
 

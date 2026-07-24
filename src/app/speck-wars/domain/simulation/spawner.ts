@@ -51,7 +51,7 @@ export function updateSpawners(sim: SimulationState, dt: number) {
 
       const meta: SpeckMeta = {
         id: `speck-${++speckCounter}`,
-        typeId: btype.spawnTypeId!,
+        typeId: building.spawnTypeOverride ?? btype.spawnTypeId!,
         ownerId: building.ownerId,
         state: 'idle',
         targetId: null,

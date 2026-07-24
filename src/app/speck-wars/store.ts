@@ -24,6 +24,8 @@ interface SpeckWarsStore {
   losses: number
   addKill: () => void
   addLoss: () => void
+  spawnMode: 'basic' | 'heavy'
+  cycleSpawnMode: () => 'basic' | 'heavy'
   resetGame: () => void
 }
 
@@ -51,6 +53,15 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   losses: 0,
   addKill: () => set(s => ({ kills: s.kills + 1 })),
   addLoss: () => set(s => ({ losses: s.losses + 1 })),
+  spawnMode: 'basic' as 'basic' | 'heavy',
+  cycleSpawnMode: () => {
+    let next: 'basic' | 'heavy' = 'basic'
+    set(s => {
+      next = s.spawnMode === 'basic' ? 'heavy' : 'basic'
+      return { spawnMode: next }
+    })
+    return next
+  },
   resetGame: () => set(s => ({
     phase: 'menu' as GamePhase,
     winnerId: null,
@@ -60,6 +71,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
     notification: null,
     kills: 0,
     losses: 0,
+    spawnMode: 'basic' as 'basic' | 'heavy',
     difficulty: s.difficulty,
   })),
 }))
