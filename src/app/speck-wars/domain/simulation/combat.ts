@@ -2,8 +2,26 @@ import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 
+const MORALE_RATIO = 2.0   // if your count > this × enemy count → morale bonus
+const MORALE_BONUS = 1.20  // 20% damage boost when morale is active
+
 export function resolveCombat(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckHp, speckMeta, buildings, spatialGrid } = sim
+
+  // Compute morale multiplier: owner whose count > 2× all enemies gets +20% damage
+  const speckCountByOwner: Record<string, number> = {}
+  for (let i = 0; i < sim.speckCount; i++) {
+    const ownerId = speckMeta[i]?.ownerId
+    if (speckIds[i] && ownerId) speckCountByOwner[ownerId] = (speckCountByOwner[ownerId] ?? 0) + 1
+  }
+  const moraleMult = (ownerId: string): number => {
+    const myCount = speckCountByOwner[ownerId] ?? 0
+    let maxEnemyCount = 0
+    for (const [id, n] of Object.entries(speckCountByOwner)) {
+      if (id !== ownerId && id !== 'neutral' && n > maxEnemyCount) maxEnemyCount = n
+    }
+    return (maxEnemyCount > 0 && myCount > MORALE_RATIO * maxEnemyCount) ? MORALE_BONUS : 1.0
+  }
 
   // --- Speck vs Speck combat ---
   for (let i = 0; i < sim.speckCount; i++) {
@@ -29,7 +47,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       const dy = speckY[j] - speckY[i]
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= stype.attackRange) {
-        speckHp[j] -= stype.damage
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId)
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
         if (speckHp[j] <= 0) {
@@ -60,7 +78,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const attackDist = (btype?.size ?? 20) + stype.attackRange
 
     if (dist <= attackDist) {
-      building.hp -= stype.damage
+      building.hp -= stype.damage * moraleMult(meta.ownerId)
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 
