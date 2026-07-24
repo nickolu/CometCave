@@ -6,6 +6,7 @@ import { Renderer } from './rendering/renderer'
 import { createCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
+import { AIController } from './domain/ai/ai-controller'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -15,12 +16,14 @@ export class GameInstance {
   private lastTime: number = 0
   private camera: Camera
   private inputHandler!: InputHandler
+  private aiController: AIController
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.sim = createSim()
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
+    this.aiController = new AIController('ai')
   }
 
   async start() {
@@ -35,6 +38,7 @@ export class GameInstance {
     const dt = Math.min(now - this.lastTime, 50)
     this.lastTime = now
 
+    this.aiController.update(this.sim)
     this.sim = tick(this.sim, dt)
 
     // Forward sim events to Zustand store

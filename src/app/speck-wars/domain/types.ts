@@ -46,6 +46,7 @@ export interface SimulationState {
 
   inputQueue: InputEvent[]
   events: SimEvent[]
+  rallyPoints: Record<string, { x: number; y: number } | null>
   spatialGrid: SpatialGrid
 }
 

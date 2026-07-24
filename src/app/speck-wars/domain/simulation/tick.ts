@@ -38,8 +38,10 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 }
 
 function consumeInputs(sim: SimulationState) {
-  for (const _event of sim.inputQueue) {
-    // Future: handle RALLY, BUILD, SACRIFICE
+  for (const event of sim.inputQueue) {
+    if (event.type === 'RALLY') {
+      sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+    }
   }
   sim.inputQueue = []
 }
