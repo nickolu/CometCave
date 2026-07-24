@@ -7,7 +7,7 @@ import { createCamera, clampCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController } from './domain/ai/ai-controller'
-import { recordBestTime, incrementWinStreak, resetWinStreak } from './lib/personal-best'
+import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone } from './lib/personal-best'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -61,6 +61,22 @@ export class GameInstance {
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
+
+    // Show tutorial hints for first-time players
+    if (isFirstGame()) {
+      markFirstGameDone()
+      const hints = [
+        { delay: 1200, message: '💡 Click the map to rally your specks!', color: '#aaddff' },
+        { delay: 6000, message: '💡 Capture outposts to boost production!', color: '#aaddff' },
+        { delay: 13000, message: '💡 Hold all 3 outposts for 60s to dominate!', color: '#ffd700' },
+      ]
+      for (const { delay, message, color } of hints) {
+        setTimeout(() => {
+          useSpeckWarsStore.getState().setNotification({ message, color })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+        }, delay)
+      }
+    }
   }
 
   private loop = (now: number) => {
