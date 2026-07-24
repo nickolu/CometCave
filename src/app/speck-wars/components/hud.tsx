@@ -650,9 +650,21 @@ export function HUD() {
       {phase === 'playing' && (
         <div style={{
           position: 'absolute', bottom: 16, right: 16,
-          display: 'flex', flexDirection: 'row', gap: 6,
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
+          {/* Squad indicator: shown when player has specks selected */}
+          {hud && (hud.selectedSpeckCount ?? 0) > 0 && (
+            <div style={{
+              fontSize: 9, letterSpacing: 1.5, color: '#ffffff', opacity: 0.7,
+              textAlign: 'center', marginBottom: 4,
+            }}>
+              SQUAD: {hud.selectedSpeckCount} · Shift+drag to reselect · Esc to clear
+            </div>
+          )}
+          <div style={{
+            display: 'flex', gap: 6,
+          }}>
           <button
             onClick={() => gameActions.defend?.()}
             title="[D] Defend — rally to your base"
@@ -759,6 +771,7 @@ export function HUD() {
           >
             ✕ R
           </button>
+          </div>
         </div>
       )}
 

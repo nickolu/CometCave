@@ -96,6 +96,7 @@ export interface HudData {
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
+  selectedSpeckCount: number   // 0 when no selection active
   spawnRates: Record<string, number>   // playerId → effective specks/min
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
