@@ -1,4 +1,4 @@
-import { WORLD_WIDTH, WORLD_HEIGHT } from '../domain/constants'
+import { WORLD_WIDTH, WORLD_HEIGHT, PLAYER_BASE_X, PLAYER_BASE_Y } from '../domain/constants'
 
 export interface Camera {
   x: number      // stage offset x (screen space)
@@ -7,10 +7,10 @@ export interface Camera {
 }
 
 export function createCamera(canvasWidth: number, canvasHeight: number): Camera {
-  // Start centered on the world midpoint
+  // Start centered on the player's base
   return {
-    x: canvasWidth / 2 - (WORLD_WIDTH / 2),
-    y: canvasHeight / 2 - (WORLD_HEIGHT / 2),
+    x: canvasWidth / 2 - PLAYER_BASE_X,
+    y: canvasHeight / 2 - PLAYER_BASE_Y,
     zoom: 1,
   }
 }
