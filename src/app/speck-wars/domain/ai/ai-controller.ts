@@ -235,6 +235,7 @@ export class AIController {
           if (next !== this.spawnMode) {
             this.spawnMode = next
             sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: next })
+            if (next === 'heavy') sim.events.push({ type: 'AI_SPAWN_SWITCH', speckTypeId: 'heavy' })
           }
           this.spawnModeCountdown = 8 + Math.floor(Math.random() * 8)
         }
@@ -254,6 +255,7 @@ export class AIController {
         if (wantHeavy && this.spawnMode !== 'heavy') {
           this.spawnMode = 'heavy'
           sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'heavy' })
+          sim.events.push({ type: 'AI_SPAWN_SWITCH', speckTypeId: 'heavy' })
         } else if (wantBasic && this.spawnMode !== 'basic') {
           this.spawnMode = 'basic'
           sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'basic' })
