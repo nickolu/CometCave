@@ -5,7 +5,7 @@ import { getBestTime, getWinStreak, getRecentResults } from '../lib/personal-bes
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -128,6 +128,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const difficultyColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
     const diffLabel = difficulty === 'very-hard' ? 'Brutal' : difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
     const diffColor = difficultyColors[difficulty]
+    const playerBaseHp = hud?.players?.player?.buildingHp?.['building-player-base'] ?? 0
+    const baseHpFrac = playerBaseHp / 100
+    const stars = won
+      ? baseHpFrac > 0.75 ? 3 : baseHpFrac > 0.5 ? 2 : 1
+      : 0
+
     const nextDifficulty: Partial<Record<string, { key: Difficulty; label: string; color: string }>> = {
       easy:   { key: 'medium',    label: 'Medium', color: '#ffcc44' },
       medium: { key: 'hard',      label: 'Hard',   color: '#ff4f7b' },
@@ -172,9 +178,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             {victoryType === 'domination' ? '⬡ by Domination' : '💥 by Destruction'}
           </div>
         )}
+        {won && (
+          <div style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: stars === 3 ? '0 0 20px #ffd700' : 'none' }}>
+            {'★'.repeat(stars)}{'☆'.repeat(3 - stars)}
+          </div>
+        )}
         {won && isNewBest && (
-          <div style={{ color: '#ffd700', fontSize: 16, letterSpacing: 3, fontWeight: 'bold', textShadow: '0 0 16px #ffd700' }}>
-            ★ NEW BEST TIME ★
+          <div style={{ color: '#ffd700', fontSize: 14, letterSpacing: 3, fontWeight: 'bold', textShadow: '0 0 16px #ffd700' }}>
+            NEW BEST TIME
           </div>
         )}
 
