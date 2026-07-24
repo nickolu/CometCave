@@ -225,9 +225,14 @@ export class GameInstance {
         }
         if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-ai-base') {
           const aiBase = this.sim.buildings['building-ai-base']
-          if (aiBase && event.hp / aiBase.maxHp < 0.2) {
+          if (aiBase) {
+            const hpFrac = event.hp / aiBase.maxHp
             const now = Date.now()
-            if (now - this.enemyBaseWarnedAt > 15000) {
+            if (hpFrac < 0.1 && now - this.enemyBaseWarnedAt > 8000) {
+              this.enemyBaseWarnedAt = now
+              store.setNotification({ message: '💥 ENEMY BASE COLLAPSING!', color: '#ff8844' })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+            } else if (hpFrac < 0.2 && hpFrac >= 0.1 && now - this.enemyBaseWarnedAt > 15000) {
               this.enemyBaseWarnedAt = now
               store.setNotification({ message: '⚔ ENEMY BASE CRITICAL!', color: '#ffd700' })
               setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
