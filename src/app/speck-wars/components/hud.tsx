@@ -371,25 +371,28 @@ export function HUD() {
         {(['basic', 'heavy', 'scout'] as const).map((type, idx) => {
           const active = spawnMode === type
           const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
-          const label = type === 'heavy' ? '⬡' : type === 'scout' ? '→' : '·'
+          const subtitle = type === 'heavy' ? 'slow · siege' : type === 'scout' ? 'fast · outpost' : 'balanced'
           return (
             <button
               key={type}
               onClick={() => gameActions?.setSpawnType?.(type)}
-              title={`[${idx + 1}] Spawn ${type}`}
+              title={`[${idx + 1}] Spawn ${type} — ${subtitle}`}
               style={{
                 pointerEvents: 'auto',
-                padding: '4px 9px',
-                fontSize: 13,
+                padding: '3px 8px',
+                fontSize: 10,
                 cursor: 'pointer',
                 background: active ? `${color}22` : 'rgba(0,0,0,0.5)',
                 border: `1px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
                 borderRadius: idx === 0 ? '4px 0 0 4px' : idx === 2 ? '0 4px 4px 0' : '0',
                 color: active ? color : 'rgba(255,255,255,0.4)',
                 marginLeft: idx === 0 ? 0 : -1,
+                lineHeight: 1.3,
+                textAlign: 'center',
               }}
             >
-              {label}
+              <div style={{ fontWeight: 700, letterSpacing: 0.5 }}>{idx + 1} {type.toUpperCase()}</div>
+              <div style={{ fontSize: 8, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
             </button>
           )
         })}
