@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
-import { getBestTime } from '../lib/personal-best'
+import { getBestTime, getWinStreak } from '../lib/personal-best'
 
 function colorHex(n: number) {
   return `#${n.toString(16).padStart(6, '0')}`
@@ -17,6 +17,11 @@ function formatTime(ms: number): string {
 
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
+  const [winStreak, setWinStreak] = useState(0)
+
+  useEffect(() => {
+    setWinStreak(getWinStreak())
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -110,7 +115,7 @@ export function HUD() {
         position: 'absolute', top: 12, left: 0, right: 0,
         display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
       }}>
-        <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9 }}>
+        <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatTime(elapsedMs)}
           {(() => {
             const pb = getBestTime(difficulty)
@@ -118,7 +123,7 @@ export function HUD() {
             const ahead = pb - elapsedMs
             return (
               <span style={{
-                fontSize: 10, letterSpacing: 1, marginLeft: 8,
+                fontSize: 10, letterSpacing: 1,
                 color: ahead > 0 ? '#ffd700' : '#ff4f7b',
                 opacity: 0.7,
               }}>
@@ -126,6 +131,16 @@ export function HUD() {
               </span>
             )
           })()}
+          {winStreak >= 2 && (
+            <span style={{
+              fontSize: 9, letterSpacing: 1,
+              color: '#ffd700', opacity: 0.65,
+              border: '1px solid rgba(255,215,0,0.35)',
+              borderRadius: 3, padding: '1px 5px',
+            }}>
+              🔥 ×{winStreak}
+            </span>
+          )}
         </span>
         <button
           onClick={togglePause}
