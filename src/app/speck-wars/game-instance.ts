@@ -160,7 +160,8 @@ export class GameInstance {
           const isPlayerGain = event.newOwner === 'player'
           const isPlayerLoss = event.previousOwner === 'player'
           if (isPlayerGain || isPlayerLoss) {
-            const message = isPlayerGain ? '⬡ Outpost Captured!' : '⬡ Outpost Lost!'
+            const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
+            const message = isPlayerGain ? `⬡ ${outpostName} CAPTURED` : `⬡ ${outpostName} LOST`
             const color = isPlayerGain ? '#4af7c4' : '#ff4f7b'
             store.setNotification({ message, color })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
