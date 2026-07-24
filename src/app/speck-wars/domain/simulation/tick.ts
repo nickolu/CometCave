@@ -141,6 +141,14 @@ function emitHudUpdate(sim: SimulationState) {
 
   const dominationProgress = tripleOutpostOwner ? Math.min(1, sim.dominationTimer / DOMINATION_TIME) : null
 
+  // Capture progress for each outpost
+  const captureInfo: Record<string, { progress: number; side: string } | null> = {}
+  for (const o of outposts) {
+    captureInfo[o.id] = (o.captureProgress && o.captureSide)
+      ? { progress: o.captureProgress, side: o.captureSide }
+      : null
+  }
+
   // Minimap: sample every 8th speck, capped at 300
   const minimapSpecks: Array<{ x: number; y: number; ownerId: string }> = []
   const step = Math.max(1, Math.floor(sim.speckCount / 300)) * 8
@@ -151,5 +159,5 @@ function emitHudUpdate(sim: SimulationState) {
   const minimapBuildings = Object.values(sim.buildings).map(b => ({ x: b.x, y: b.y, ownerId: b.ownerId, typeId: b.typeId }))
   const rp = sim.rallyPoints['player']
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, minimap: { specks: minimapSpecks, buildings: minimapBuildings, rallyX: rp?.x ?? null, rallyY: rp?.y ?? null } } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, minimap: { specks: minimapSpecks, buildings: minimapBuildings, rallyX: rp?.x ?? null, rallyY: rp?.y ?? null } } })
 }
