@@ -19,6 +19,7 @@ export class InputHandler {
   private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
+  private onSacrifice?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -51,6 +52,7 @@ export class InputHandler {
     onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
     onCycleSpeed?: () => void,
     onSelectAll?: () => void,
+    onSacrifice?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -69,6 +71,7 @@ export class InputHandler {
     this.onSetSpawnType = onSetSpawnType
     this.onCycleSpeed = onCycleSpeed
     this.onSelectAll = onSelectAll
+    this.onSacrifice = onSacrifice
     this.attach()
   }
 
@@ -268,6 +271,8 @@ export class InputHandler {
       this.onCycleSpeed?.()
     } else if (e.code === 'KeyE') {
       this.onSelectAll?.()
+    } else if (e.code === 'KeyF') {
+      this.onSacrifice?.()
     }
   }
 

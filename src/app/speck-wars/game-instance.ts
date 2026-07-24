@@ -125,6 +125,7 @@ export class GameInstance {
       () => {                                                           // E — select all specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
       },
+      () => { this.sacrifice() },                                       // F — sacrifice specks to repair base
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -133,6 +134,7 @@ export class GameInstance {
       clearRally: () => this.clearRally(),
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
+      sacrifice: () => { this.sacrifice() },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -398,6 +400,10 @@ export class GameInstance {
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
           }
         }
+        if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
+          store.setNotification({ message: '✦ ELITE SPECK! +35% DAMAGE', color: '#ffffff' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+        }
         if (event.type === 'AI_WAVE_START') {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
           const color = waveColors[(event.waveNumber - 1) % waveColors.length]
@@ -518,6 +524,18 @@ export class GameInstance {
 
   surge() {
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
+  }
+
+  private sacrifice() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (!playerBase) return
+    const speckCount = this.sim.speckMeta.filter((m, i) => m && m.ownerId === 'player' && this.sim.speckIds[i]).length
+    if (speckCount < 10) {
+      useSpeckWarsStore.getState().setNotification({ message: 'Not enough specks to sacrifice!', color: '#ff4f7b' })
+      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+      return
+    }
+    this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
   }
 
   snapToAction() {

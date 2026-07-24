@@ -374,7 +374,7 @@ export function HUD() {
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
             <span>Shift+drag — select specks</span><span>Minimap — click to rally</span>
             <span>E — select all specks</span><span>X — cycle speed (1×/2×/4×)</span>
-            <span>? — this help</span>
+            <span>F — sacrifice 10 specks → +15 HP base</span><span>? — this help</span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
               Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
             </span>
@@ -794,6 +794,33 @@ export function HUD() {
                   : surgeCd > 0
                     ? `Q ${Math.ceil(surgeCd / 1000)}s`
                     : '★ Q'}
+              </button>
+            )
+          })()}
+          {(() => {
+            const cd = hud?.sacrificeCooldown ?? 0
+            const speckCount = hud?.players.player?.speckCount ?? 0
+            const baseHp = hud?.players.player?.buildingHp['building-player-base'] ?? 100
+            const ready = cd <= 0 && speckCount >= 10 && baseHp < 90
+            return (
+              <button
+                onClick={() => { if (ready) gameActions.sacrifice?.() }}
+                title="[F] Sacrifice 10 specks → repair +15 HP base (45s cooldown)"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: 11,
+                  cursor: ready ? 'pointer' : 'default',
+                  background: ready ? 'rgba(100,200,100,0.12)' : 'rgba(100,200,100,0.04)',
+                  border: ready ? '1px solid rgba(100,200,100,0.5)' : '1px solid rgba(100,200,100,0.15)',
+                  borderRadius: 20,
+                  color: ready ? '#64c864' : 'rgba(100,200,100,0.35)',
+                  letterSpacing: 1,
+                  minHeight: 44,
+                  fontFamily: 'monospace',
+                  opacity: ready ? 1 : 0.6,
+                }}
+              >
+                {cd > 0 ? `F ${Math.ceil(cd / 1000)}s` : '🔧 F'}
               </button>
             )
           })()}

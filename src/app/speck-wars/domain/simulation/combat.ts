@@ -56,7 +56,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       const dy = speckY[j] - speckY[i]
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= stype.attackRange) {
-        const veteranBonus = meta.kills >= 3 ? 1.20 : 1.0  // veterans deal +20% damage
+        const veteranBonus = meta.kills >= 6 ? 1.35 : meta.kills >= 3 ? 1.20 : 1.0  // elite +35%, veteran +20%
         // Fortification bonus: if attacker is near a friendly fortified outpost, deal extra damage
         let fortifyBonus = 1.0
         for (const b of Object.values(buildings)) {
@@ -76,6 +76,9 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
           if (meta.kills === 3) {
             sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })
+          }
+          if (meta.kills === 6) {
+            sim.events.push({ type: 'SPECK_ELITE', speckId: speckIds[i], ownerId: meta.ownerId })
           }
         }
         break  // one attack per cooldown
