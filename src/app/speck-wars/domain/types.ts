@@ -8,6 +8,8 @@ export interface SpeckMeta {
   targetId: string | null
   attackCooldown: number   // ms remaining until next attack
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
+  assignedRallyX?: number  // individual sub-group rally — persists after deselection
+  assignedRallyY?: number
 }
 
 export interface BuildingEntity {

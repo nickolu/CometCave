@@ -24,6 +24,10 @@ export function runSpeckAI(sim: SimulationState) {
     // unselected specks with an active selection use no rally (auto-target)
     const getEffectiveRally = () => {
       if (meta.ownerId !== 'player') return sim.rallyPoints[meta.ownerId]
+      // Individual sub-group rally takes priority — persists across deselection
+      if (meta.assignedRallyX !== undefined && meta.assignedRallyY !== undefined) {
+        return { x: meta.assignedRallyX, y: meta.assignedRallyY }
+      }
       const hasSelection = sim.selectedSpeckIds.size > 0
       if (!hasSelection) return sim.rallyPoints['player']
       const isSelected = sim.selectedSpeckIds.has(meta.id)
@@ -55,6 +59,11 @@ export function runSpeckAI(sim: SimulationState) {
         meta.targetId = closeTarget  // null = pure move toward rally, non-null = attack en route
         meta.state = 'moving'
         continue
+      }
+      // Arrived at individual rally — clear assignment so speck reverts to normal AI
+      if (meta.assignedRallyX !== undefined) {
+        meta.assignedRallyX = undefined
+        meta.assignedRallyY = undefined
       }
     }
 
