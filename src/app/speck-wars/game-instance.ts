@@ -37,6 +37,7 @@ export class GameInstance {
   private dominationCountdownHolder: string | null = null  // who has triple outpost for countdown
   private dominationWarned10 = false    // notified at 10s remaining
   private dominationWarned5 = false     // notified at 5s remaining
+  private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -212,8 +213,21 @@ export class GameInstance {
               setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
             }
           }
-          // Domination countdown: warn at 10s and 5s remaining
+          // Triple outpost notification: fire when ownership of all 3 outposts changes hands
           const holder = event.data.tripleOutpostOwner ?? null
+          if (holder !== this.lastTripleHolder) {
+            if (holder === 'player') {
+              store.setNotification({ message: '⬡ TRIPLE OUTPOST! Hold for 60s to win!', color: '#ffd700' })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 4000)
+            } else if (holder === 'ai' && this.lastTripleHolder !== null) {
+              // AI reclaimed triple — only notify if player had just lost it
+              store.setNotification({ message: '⬡ ENEMY HAS ALL OUTPOSTS!', color: '#ff4f7b' })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+            }
+            this.lastTripleHolder = holder
+          }
+
+          // Domination countdown: warn at 10s and 5s remaining
           const dp = event.data.dominationProgress ?? null
           if (holder !== this.dominationCountdownHolder) {
             // Holder changed — reset countdown flags
