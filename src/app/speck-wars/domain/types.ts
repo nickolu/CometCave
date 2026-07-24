@@ -82,6 +82,7 @@ export type SimEvent =
   | { type: 'HUD_UPDATE'; data: HudData }
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
   | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
+  | { type: 'AI_WAVE_START'; waveNumber: number }
 
 export interface HudData {
   players: Record<string, {

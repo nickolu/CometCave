@@ -384,6 +384,12 @@ export class GameInstance {
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
           }
         }
+        if (event.type === 'AI_WAVE_START') {
+          const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
+          const color = waveColors[(event.waveNumber - 1) % waveColors.length]
+          store.setNotification({ message: `⚠ WAVE ${event.waveNumber} ASSAULT!`, color })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+        }
       }
 
       // Retreat wave warning: 10+ player specks retreating = notify
