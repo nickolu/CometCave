@@ -923,6 +923,22 @@ export function HUD() {
                 </div>
               )
             })()}
+            {/* Veteran / elite count */}
+            {(() => {
+              const vets = hud.players.player?.veteranCount ?? 0
+              const elites = hud.players.player?.eliteCount ?? 0
+              if (vets + elites === 0) return null
+              return (
+                <div style={{ display: 'flex', gap: 8, fontSize: 9, letterSpacing: 0.5 }}>
+                  {elites > 0 && (
+                    <span style={{ color: '#ffffff', opacity: 0.8 }}>✦ {elites} elite</span>
+                  )}
+                  {vets > 0 && (
+                    <span style={{ color: '#ffd700', opacity: 0.65 }}>⭐ {vets} vet</span>
+                  )}
+                </div>
+              )
+            })()}
             {/* Kill/loss + enemy base HP */}
             <div style={{ display: 'flex', gap: 10, fontSize: 10, letterSpacing: 0.5 }}>
               <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
