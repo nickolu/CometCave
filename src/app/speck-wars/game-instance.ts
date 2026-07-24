@@ -43,6 +43,7 @@ export class GameInstance {
   private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
   private rallyCryFired = false               // one-time Rally Cry notification per game
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
+  private recentPlayerCaptureTimes: number[] = []  // timestamps of recent player captures
   private retreatWarnedAt = -20000          // allow retreat warning after 20s
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
@@ -434,6 +435,20 @@ export class GameInstance {
             const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
             store.setNotification({ message, color })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          }
+          // Track capture combos
+          if (event.newOwner === 'player') {
+            const now = Date.now()
+            const COMBO_WINDOW = 30_000  // 30 seconds
+            // Remove captures older than window
+            this.recentPlayerCaptureTimes = this.recentPlayerCaptureTimes.filter(t => now - t < COMBO_WINDOW)
+            this.recentPlayerCaptureTimes.push(now)
+            const count = this.recentPlayerCaptureTimes.length
+            if (count === 3) {
+              this.notify('★ TRIPLE CAPTURE! ★', '#ffffff')
+            } else if (count === 2) {
+              this.notify('DOUBLE CAPTURE!', '#ffd700')
+            }
           }
         }
         if (event.type === 'SPECK_VETERAN' && event.ownerId === 'player') {
