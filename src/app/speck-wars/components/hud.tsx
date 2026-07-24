@@ -103,6 +103,14 @@ export function HUD() {
           }}>OUTNUMBERED {Math.round(ratio)}:1</div>
         )
       })()}
+      {hud?.enemyAdvanceDetected && (
+        <div style={{
+          position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
+          padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
+          zIndex: 108, pointerEvents: 'none',
+        }}>ENEMY ADVANCING</div>
+      )}
       {isDanger && (
         <>
           <style>{`

@@ -45,6 +45,7 @@ export class GameInstance {
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
   private retreatWarnedAt = -20000          // allow retreat warning after 20s
   private prevBaseUnderThreat = false
+  private prevEnemyAdvance = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -229,6 +230,11 @@ export class GameInstance {
             this.notify('⚠ BASE UNDER ATTACK', '#ff3333')
           }
           this.prevBaseUnderThreat = bua
+          const adv = event.data.enemyAdvanceDetected ?? false
+          if (adv && !this.prevEnemyAdvance && !event.data.baseUnderThreat) {
+            this.notify('⚠ ENEMY ADVANCING', '#ff8844')
+          }
+          this.prevEnemyAdvance = adv
           this.cachedPlayerSpeckCount = event.data.players.player?.speckCount ?? 0
           const playerSpeckCount = event.data.players.player?.speckCount ?? 0
           store.setPeakArmySize(playerSpeckCount)

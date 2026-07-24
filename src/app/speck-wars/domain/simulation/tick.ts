@@ -336,5 +336,31 @@ function emitHudUpdate(sim: SimulationState) {
     }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat } })
+  let enemyAdvanceDetected = false
+  const aiBase = sim.buildings['building-ai-base']
+  if (playerBase && aiBase) {
+    // Midpoint between the two bases — defines "player's half"
+    const midX = (playerBase.x + aiBase.x) / 2
+    const midY = (playerBase.y + aiBase.y) / 2
+    const ADVANCE_THRESHOLD = 15  // enemy specks needed in player half
+    let enemySpecksInPlayerHalf = 0
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (!m || m.ownerId !== 'ai') continue
+      if (sim.speckHp[i] <= 0) continue
+      // Is this speck closer to player base than to midpoint?
+      const dxP = sim.speckX[i] - playerBase.x
+      const dyP = sim.speckY[i] - playerBase.y
+      const dxM = sim.speckX[i] - midX
+      const dyM = sim.speckY[i] - midY
+      if (dxP * dxP + dyP * dyP < dxM * dxM + dyM * dyM) {
+        enemySpecksInPlayerHalf++
+        if (enemySpecksInPlayerHalf >= ADVANCE_THRESHOLD) { enemyAdvanceDetected = true; break }
+      }
+    }
+  }
+  // Suppress "advance" when base is already under direct threat (avoid double-warning)
+  if (baseUnderThreat) enemyAdvanceDetected = false
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected } })
 }

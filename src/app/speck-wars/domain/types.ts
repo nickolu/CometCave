@@ -110,6 +110,7 @@ export interface HudData {
   waveInProgress: boolean
   sacrificeCooldown: number
   baseUnderThreat: boolean
+  enemyAdvanceDetected: boolean
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
