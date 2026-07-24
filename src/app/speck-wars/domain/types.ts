@@ -82,4 +82,10 @@ export interface HudData {
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
   dominationProgress: number | null  // 0..1 fraction of DOMINATION_TIME elapsed; null if no triple holder
+  minimap: {
+    specks: Array<{ x: number; y: number; ownerId: string }>  // sampled subset
+    buildings: Array<{ x: number; y: number; ownerId: string; typeId: string }>
+    rallyX: number | null
+    rallyY: number | null
+  }
 }
