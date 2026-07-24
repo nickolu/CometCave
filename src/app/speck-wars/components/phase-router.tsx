@@ -1,8 +1,10 @@
 'use client'
+import { useState } from 'react'
 import { useSpeckWarsStore } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs } = useSpeckWarsStore()
+  const [copied, setCopied] = useState(false)
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
@@ -59,6 +61,25 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
     const diffColor = difficultyColors[difficulty]
 
+    const shareText = won
+      ? `I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr}! 🎮 Can you beat my time?`
+      : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr}! 🎮 Think you can do better?`
+
+    const handleShare = async () => {
+      const url = typeof window !== 'undefined' ? window.location.href : ''
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share({ title: 'Speck Wars', text: shareText, url })
+        } catch {
+          // user cancelled — no action needed
+        }
+      } else {
+        await navigator.clipboard.writeText(`${shareText} ${url}`)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+    }
+
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -86,6 +107,16 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             }}
           >
             Play Again
+          </button>
+          <button
+            onClick={handleShare}
+            style={{
+              padding: '12px 28px', fontSize: 16, cursor: 'pointer',
+              background: 'transparent', border: `2px solid ${accentColor}`,
+              borderRadius: 8, color: accentColor,
+            }}
+          >
+            {copied ? 'Copied!' : 'Share'}
           </button>
           <a
             href="/"
