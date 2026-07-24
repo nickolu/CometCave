@@ -19,6 +19,7 @@ export const OUTPOST_SPAWN_INTERVAL = 1800   // ms per speck (slower than base)
 export const CAPTURE_RADIUS = 100            // px — specks within this distance count toward capture
 export const CAPTURE_TIME = 5000             // ms to fully capture
 export const NEUTRAL_COLOR = 0x888888
+export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a friendly outpost move faster
 
 // Triangle around center (1500, 1500), equidistant between the two bases
 export const OUTPOST_POSITIONS = [

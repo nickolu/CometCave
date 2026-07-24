@@ -1,7 +1,7 @@
 import { Graphics, Container } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
-import { NEUTRAL_COLOR } from '../../domain/constants'
+import { NEUTRAL_COLOR, OUTPOST_AURA_RADIUS } from '../../domain/constants'
 
 export class BuildingLayer {
   readonly stage: Container
@@ -51,6 +51,14 @@ export class BuildingLayer {
       this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
       this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
       this.gfx.endFill()
+
+      // Outpost speed aura ring (faint pulsing circle showing boost radius)
+      if (building.typeId === 'outpost' && building.ownerId !== 'neutral') {
+        const auraPulse = Math.sin(Date.now() / 1200) * 0.5 + 0.5
+        this.gfx.lineStyle(1, color, auraPulse * 0.18 + 0.04)
+        this.gfx.drawCircle(building.x, building.y, OUTPOST_AURA_RADIUS)
+        this.gfx.lineStyle(0)
+      }
 
       // Capture progress ring
       if (building.captureProgress && building.captureProgress > 0 && building.captureSide) {
