@@ -7,7 +7,7 @@ import { createCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController } from './domain/ai/ai-controller'
-import { recordBestTime } from './lib/personal-best'
+import { recordBestTime, incrementWinStreak, resetWinStreak } from './lib/personal-best'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -52,6 +52,11 @@ export class GameInstance {
         this.camera.x = this.canvas.clientWidth / 2 - base.x * this.camera.zoom
         this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
       },
+      () => {                                              // D — defend (rally to player base)
+        const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+        if (!base) return
+        this.rally(base.x, base.y)
+      },
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -73,9 +78,11 @@ export class GameInstance {
         if (event.type === 'GAME_OVER') {
           if (event.winnerId === 'player') {
             const isNew = recordBestTime(store.difficulty, this.elapsedMs)
+            incrementWinStreak()
             store.setIsNewBest(isNew)
             store.setPhase('victory')
           } else {
+            resetWinStreak()
             store.setIsNewBest(false)
             store.setPhase('defeat')
           }

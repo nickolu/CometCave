@@ -1,13 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { getBestTime } from '../lib/personal-best'
+import { getBestTime, getWinStreak } from '../lib/personal-best'
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
+  const [winStreak, setWinStreak] = useState(0)
 
   useEffect(() => {
     if (phase === 'menu') {
@@ -16,6 +17,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         medium: getBestTime('medium') ?? undefined,
         hard: getBestTime('hard') ?? undefined,
       })
+      setWinStreak(getWinStreak())
     }
   }, [phase])
 
@@ -30,6 +32,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
         <h1 style={{ color: '#fff', fontSize: 48, margin: 0 }}>Speck Wars</h1>
         <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base. Last base standing wins.</p>
+        {winStreak >= 2 && (
+          <div style={{ color: '#ffd700', fontSize: 14, letterSpacing: 2, fontWeight: 'bold' }}>
+            🔥 {winStreak} WIN STREAK
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           {difficulties.map(d => (
             <button
@@ -90,6 +97,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>Drag — pan camera</span>
           <span>H — heavy/basic mode</span>
           <span>C — center on base</span>
+          <span>D — defend base</span>
           <span>Minimap — click to rally</span>
         </div>
       </div>

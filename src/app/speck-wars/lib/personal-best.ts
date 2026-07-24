@@ -1,6 +1,7 @@
 import type { Difficulty } from '../store'
 
 const KEY = (d: Difficulty) => `speck-wars-best-${d}`
+const STREAK_KEY = 'speck-wars-win-streak'
 
 export function getBestTime(difficulty: Difficulty): number | null {
   if (typeof window === 'undefined') return null
@@ -17,4 +18,21 @@ export function recordBestTime(difficulty: Difficulty, ms: number): boolean {
     return true
   }
   return false
+}
+
+export function getWinStreak(): number {
+  if (typeof window === 'undefined') return 0
+  return Number(localStorage.getItem(STREAK_KEY) ?? '0') || 0
+}
+
+export function incrementWinStreak(): number {
+  if (typeof window === 'undefined') return 0
+  const next = getWinStreak() + 1
+  localStorage.setItem(STREAK_KEY, String(next))
+  return next
+}
+
+export function resetWinStreak() {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(STREAK_KEY, '0')
 }
