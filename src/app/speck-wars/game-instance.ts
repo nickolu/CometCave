@@ -102,6 +102,11 @@ export class GameInstance {
     console.log('GameInstance destroyed')
   }
 
+  rally(x: number, y: number) {
+    this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x, y })
+    this.renderer.showRallyPing(x, y)
+  }
+
   getSim(): SimulationState {
     return this.sim
   }
