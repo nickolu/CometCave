@@ -16,6 +16,7 @@ export interface BuildingEntity {
   x: number; y: number
   hp: number; maxHp: number
   spawnTimer: number       // ms until next spawn
+  spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
 }
 

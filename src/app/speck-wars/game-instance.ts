@@ -20,10 +20,12 @@ export class GameInstance {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    this.sim = createSim()
+    const difficulty = useSpeckWarsStore.getState().difficulty
+    const aiTickInterval: Record<'easy' | 'medium' | 'hard', number> = { easy: 60, medium: 30, hard: 15 }
+    this.sim = createSim(Date.now(), difficulty)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
-    this.aiController = new AIController('ai')
+    this.aiController = new AIController('ai', aiTickInterval[difficulty])
   }
 
   async start() {
