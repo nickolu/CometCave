@@ -122,8 +122,20 @@ export class GameInstance {
           store.setHud(event.data)
         }
         if (event.type === 'SPECK_DIED') {
-          if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') store.addKill()
-          else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') store.addLoss()
+          if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') {
+            store.addKill()
+            const k = useSpeckWarsStore.getState().kills
+            const milestones: Record<number, { message: string; color: string }> = {
+              10:  { message: '💀 10 KILLS',  color: '#4af7c4' },
+              25:  { message: '💀 25 KILLS',  color: '#ffd700' },
+              50:  { message: '💀 50 KILLS',  color: '#ff8844' },
+              100: { message: '💀 100 KILLS', color: '#cc00ff' },
+            }
+            if (milestones[k]) {
+              store.setNotification(milestones[k])
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+            }
+          } else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') store.addLoss()
           if (!this.firstBloodDone) {
             this.firstBloodDone = true
             const playerGotIt = event.killerOwnerId === 'player'
