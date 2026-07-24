@@ -7,12 +7,14 @@ const aiSpawnInterval: Record<Difficulty, number> = {
   easy: 2000,
   medium: 800,
   hard: 400,
+  'very-hard': 180,  // blazing spawn rate — AI floods the map
 }
 
 const playerSpawnInterval: Record<Difficulty, number | undefined> = {
-  easy: 550,   // faster on easy — the AI is already slow, this ensures clear advantage
-  medium: undefined,  // use default (800ms)
-  hard: undefined,    // use default (800ms) — player skill must compensate
+  easy: 550,         // faster on easy — the AI is already slow, this ensures clear advantage
+  medium: undefined, // use default (800ms)
+  hard: undefined,   // use default (800ms) — player skill must compensate
+  'very-hard': undefined,  // same as hard — no advantage
 }
 
 export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium'): SimulationState {

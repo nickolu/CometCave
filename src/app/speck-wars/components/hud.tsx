@@ -56,8 +56,8 @@ export function HUD() {
       )}
       {/* Difficulty badge — top right */}
       {(() => {
-        const diffColors = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b' }
-        const color = diffColors[difficulty]
+        const diffColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
+        const color = diffColors[difficulty] ?? '#ffffff'
         return (
           <div style={{ position: 'absolute', top: 12, right: 16, fontSize: 10, letterSpacing: 1 }}>
             <span style={{ color, opacity: 0.5, border: `1px solid ${color}`, borderRadius: 3, padding: '2px 6px' }}>

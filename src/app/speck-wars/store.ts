@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { HudData } from './domain/types'
 
 type GamePhase = 'menu' | 'playing' | 'paused' | 'victory' | 'defeat'
-export type Difficulty = 'easy' | 'medium' | 'hard'
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'very-hard'
 
 interface SpeckWarsStore {
   phase: GamePhase
