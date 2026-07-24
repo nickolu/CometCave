@@ -1,0 +1,14 @@
+export const WORLD_WIDTH = 3000
+export const WORLD_HEIGHT = 3000
+export const GRID_CELL_SIZE = 100
+export const GRID_COLS = Math.ceil(WORLD_WIDTH / GRID_CELL_SIZE)
+export const GRID_ROWS = Math.ceil(WORLD_HEIGHT / GRID_CELL_SIZE)
+export const HUD_UPDATE_INTERVAL = 10    // ticks
+export const BASE_HP = 100
+export const BASE_SIZE = 40
+export const PLAYER_BASE_X = 600
+export const PLAYER_BASE_Y = 1500
+export const AI_BASE_X = 2400
+export const AI_BASE_Y = 1500
+export const PLAYER_COLOR = 0x4af7c4
+export const AI_COLOR = 0xff4f7b
