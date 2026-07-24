@@ -63,8 +63,8 @@ export class Renderer {
     this.world.addChild(this.rallyGfx)
   }
 
-  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number) {
-    this.world.position.set(camera.x, camera.y)
+  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0) {
+    this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
     this.buildingLayer.update(sim, PLAYER_COLORS)
