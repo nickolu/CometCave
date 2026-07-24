@@ -12,15 +12,34 @@ export class AIController {
   private spawnMode: 'basic' | 'heavy' | 'scout' = 'basic'
   private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
   private dominanceTimer: number = 0  // ms enemy has held a 3:1 count advantage
+  private waveTimer: number  // ms until next wave
+  private waveRemainingMs = 0  // ms left in active wave (0 = not in wave)
+  private waveNumber = 0       // which wave this is (1, 2, 3...)
+  private waveEnabled: boolean  // only hard/very-hard get waves
 
   constructor(playerId: string, tickInterval: number = 30, personality: AIPersonality = 'balanced') {
     this.playerId = playerId
     this.tickInterval = tickInterval
     this.baseTickInterval = tickInterval
     this.personality = personality
+    this.waveTimer = 90000 + Math.random() * 30000  // stagger first wave: 90-120s
+    this.waveEnabled = tickInterval <= 15  // hard (15) and very-hard (6) only
   }
 
   update(sim: SimulationState, dt: number = 16) {
+    if (this.waveEnabled) {
+      this.waveTimer -= dt
+      if (this.waveRemainingMs > 0) {
+        this.waveRemainingMs = Math.max(0, this.waveRemainingMs - dt)
+      }
+      if (this.waveTimer <= 0) {
+        this.waveNumber++
+        this.waveRemainingMs = 15000
+        this.waveTimer = 90000
+        sim.events.push({ type: 'AI_WAVE_START', waveNumber: this.waveNumber })
+      }
+    }
+
     // Adaptive difficulty: if the enemy holds a 3:1 speck advantage for 30s, speed up AI decisions
     let aiCount = 0, enemyCount = 0
     for (let i = 0; i < sim.speckCount; i++) {
@@ -106,6 +125,15 @@ export class AIController {
           : (myBaseHpFrac < 0.3 ? 0.70 : 0.45)  // balanced
       if (Math.random() < defendChance) {
         sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: myBase.x, y: myBase.y })
+        return
+      }
+    }
+
+    // Wave assault: during active wave, always rush the enemy base
+    if (this.waveRemainingMs > 0) {
+      const enemyBase = nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+      if (enemyBase) {
+        sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: enemyBase.x, y: enemyBase.y })
         return
       }
     }
