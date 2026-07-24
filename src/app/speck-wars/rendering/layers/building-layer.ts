@@ -117,6 +117,14 @@ export class BuildingLayer {
         this.gfx.lineStyle(0)
       }
 
+      // Surge active: fast-pulsing gold outer ring on player base
+      if (!isOutpost && building.ownerId === 'player' && sim.surgeDuration > 0) {
+        const surgePulse = 0.5 + 0.5 * Math.sin(now / 120)
+        this.gfx.lineStyle(2.5, 0xffd700, surgePulse * 0.85)
+        this.gfx.drawCircle(building.x, building.y, r + 22)
+        this.gfx.lineStyle(0)
+      }
+
       // HP bar (above building)
       const barW = r * 2
       const barH = 4
