@@ -12,6 +12,8 @@ export class InputHandler {
   private lastY = 0
   private mouseDownX = 0
   private mouseDownY = 0
+  private mouseX = -1  // -1 means mouse not over canvas
+  private mouseY = -1
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -38,7 +40,17 @@ export class InputHandler {
     window.addEventListener('touchmove', this.onTouchMove, { passive: false })
     window.addEventListener('touchend', this.onTouchEnd)
     window.addEventListener('keydown', this.onKeyDown)
+    this.canvas.addEventListener('mousemove', this.onCanvasMouseMove)
+    this.canvas.addEventListener('mouseleave', this.onMouseLeave)
   }
+
+  private onCanvasMouseMove = (e: MouseEvent) => {
+    const rect = this.canvas.getBoundingClientRect()
+    this.mouseX = e.clientX - rect.left
+    this.mouseY = e.clientY - rect.top
+  }
+
+  private onMouseLeave = () => { this.mouseX = -1; this.mouseY = -1 }
 
   private onMouseDown = (e: MouseEvent) => {
     this.isDragging = true
@@ -120,5 +132,31 @@ export class InputHandler {
     window.removeEventListener('touchmove', this.onTouchMove)
     window.removeEventListener('touchend', this.onTouchEnd)
     window.removeEventListener('keydown', this.onKeyDown)
+    this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove)
+    this.canvas.removeEventListener('mouseleave', this.onMouseLeave)
+  }
+
+  getEdgePanDelta(dt: number, paused: boolean): { dx: number; dy: number } {
+    if (paused || this.mouseX < 0) return { dx: 0, dy: 0 }
+    const EDGE_ZONE = 40
+    const MAX_SPEED = 400  // px/sec in world space (before zoom)
+    const dtSec = dt / 1000
+    const w = this.canvas.clientWidth
+    const h = this.canvas.clientHeight
+
+    let dx = 0, dy = 0
+
+    if (this.mouseX < EDGE_ZONE) {
+      dx = -(1 - this.mouseX / EDGE_ZONE) * MAX_SPEED * dtSec
+    } else if (this.mouseX > w - EDGE_ZONE) {
+      dx = (1 - (w - this.mouseX) / EDGE_ZONE) * MAX_SPEED * dtSec
+    }
+    if (this.mouseY < EDGE_ZONE) {
+      dy = -(1 - this.mouseY / EDGE_ZONE) * MAX_SPEED * dtSec
+    } else if (this.mouseY > h - EDGE_ZONE) {
+      dy = (1 - (h - this.mouseY) / EDGE_ZONE) * MAX_SPEED * dtSec
+    }
+
+    return { dx, dy }
   }
 }

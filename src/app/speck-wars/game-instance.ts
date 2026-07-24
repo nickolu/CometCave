@@ -79,6 +79,14 @@ export class GameInstance {
       }
     }
 
+    // Edge pan (works in both playing and paused states)
+    if (this.inputHandler) {
+      const isPaused = store.phase === 'paused'
+      const { dx, dy } = this.inputHandler.getEdgePanDelta(dt, isPaused)
+      this.camera.x -= dx * this.camera.zoom
+      this.camera.y -= dy * this.camera.zoom
+    }
+
     this.renderer.render(this.sim, this.camera, dt)
     this.rafId = requestAnimationFrame(this.loop)
   }
