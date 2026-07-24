@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime } from '../lib/personal-best'
@@ -15,6 +16,17 @@ function formatTime(ms: number): string {
 }
 
 export function HUD() {
+  const [showHelp, setShowHelp] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Slash' && e.shiftKey) { e.preventDefault(); setShowHelp(h => !h) }
+      if (e.code === 'Escape') setShowHelp(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const hud = useSpeckWarsStore(s => s.hud)
   const phase = useSpeckWarsStore(s => s.phase)
   const togglePause = useSpeckWarsStore(s => s.togglePause)
@@ -140,7 +152,55 @@ export function HUD() {
         >
           {spawnMode === 'heavy' ? '⬡ HEAVY' : '· BASIC'}
         </button>
+        <button
+          onClick={() => setShowHelp(h => !h)}
+          title="? — show controls"
+          style={{
+            pointerEvents: 'auto',
+            padding: '4px 10px',
+            fontSize: 12,
+            cursor: 'pointer',
+            background: showHelp ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.5)',
+            border: `1px solid ${showHelp ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}`,
+            borderRadius: 4,
+            color: '#fff',
+          }}
+        >
+          ?
+        </button>
       </div>
+
+      {/* Help overlay */}
+      {showHelp && (
+        <div
+          onClick={() => setShowHelp(false)}
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'auto', cursor: 'default',
+          }}
+        >
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: '6px 32px',
+            color: 'rgba(255,255,255,0.8)',
+            fontSize: 13,
+            letterSpacing: 0.5,
+            background: 'rgba(0,0,0,0.5)',
+            padding: '24px 32px',
+            borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.15)',
+          }}>
+            <span>🖱 Click — rally specks</span><span>Space — pause</span>
+            <span>Scroll — zoom</span><span>R — clear rally</span>
+            <span>Drag — pan camera</span><span>H — heavy/basic mode</span>
+            <span>A — advance to outpost</span><span>C — center on base</span>
+            <span>B — rush enemy base</span><span>D — defend base</span>
+            <span>Minimap — click to rally</span><span>? — this help</span>
+          </div>
+        </div>
+      )}
 
       {/* Outpost ownership indicator dots */}
       {hud && (() => {
