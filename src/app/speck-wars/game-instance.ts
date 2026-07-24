@@ -33,6 +33,7 @@ export class GameInstance {
   private idleArmyTimer = 0              // ms with no rally point + specks available
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
   private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
+  private lastAiSpawnMode: string = 'basic'  // track AI spawn mode changes
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -278,6 +279,20 @@ export class GameInstance {
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
         }
+      }
+    }
+
+    // Detect AI spawn mode changes and notify player
+    if (store.phase === 'playing') {
+      const aiBase = this.sim.buildings['building-ai-base']
+      const aiSpawnMode = aiBase?.spawnTypeOverride ?? 'basic'
+      if (aiSpawnMode !== this.lastAiSpawnMode && this.elapsedMs > 5000) {
+        this.lastAiSpawnMode = aiSpawnMode
+        if (aiSpawnMode === 'heavy') {
+          store.setNotification({ message: '⬡ ENEMY BUILDING TANKS', color: '#ffaa55' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+        }
+        // No notification when switching back to basic — less alarming
       }
     }
 
