@@ -66,6 +66,16 @@ export class GameInstance {
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
         }
+        if (event.type === 'OUTPOST_CAPTURED') {
+          const isPlayerGain = event.newOwner === 'player'
+          const isPlayerLoss = event.previousOwner === 'player'
+          if (isPlayerGain || isPlayerLoss) {
+            const message = isPlayerGain ? '⬡ Outpost Captured!' : '⬡ Outpost Lost!'
+            const color = isPlayerGain ? '#4af7c4' : '#ff4f7b'
+            store.setNotification({ message, color })
+            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          }
+        }
       }
     }
 
