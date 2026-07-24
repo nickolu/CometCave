@@ -64,6 +64,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7d. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
+  if (sim.sacrificeCooldown > 0) sim.sacrificeCooldown = Math.max(0, sim.sacrificeCooldown - dt)
 
   // 8. Check win/loss
   checkVictory(sim)
@@ -158,6 +159,28 @@ function consumeInputs(sim: SimulationState) {
         sim.surgeDuration = 8000
         sim.surgeCooldown = 45000
       }
+    }
+    if (event.type === 'SACRIFICE') {
+      if (sim.sacrificeCooldown > 0) continue
+      const building = sim.buildings[event.buildingId]
+      if (!building || building.ownerId !== event.ownerId || building.typeId !== 'base') continue
+      // Collect player specks, sorted by lowest HP first (weakest give their life)
+      const candidates: Array<{ i: number; hp: number }> = []
+      for (let i = 0; i < sim.speckCount; i++) {
+        if (!sim.speckIds[i]) continue
+        const m = sim.speckMeta[i]
+        if (!m || m.ownerId !== event.ownerId) continue
+        candidates.push({ i, hp: sim.speckHp[i] })
+      }
+      if (candidates.length < event.count) continue  // not enough specks
+      candidates.sort((a, b) => a.hp - b.hp)
+      const toSacrifice = candidates.slice(0, event.count)
+      for (const { i } of toSacrifice) {
+        sim.events.push({ type: 'SPECK_DIED', speckId: sim.speckIds[i], x: sim.speckX[i], y: sim.speckY[i], killedOwnerId: event.ownerId, killerOwnerId: event.ownerId })
+        sim.speckHp[i] = 0  // mark for removeDeadSpecks
+      }
+      building.hp = Math.min(building.maxHp, building.hp + event.count * 1.5)  // 10 specks → +15 HP
+      sim.sacrificeCooldown = 45000
     }
   }
   sim.inputQueue = []
@@ -256,5 +279,5 @@ function emitHudUpdate(sim: SimulationState) {
     outpostFortify[building.id] = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown } })
 }
