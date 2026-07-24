@@ -118,6 +118,7 @@ export class GameInstance {
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
+      rally: (x: number, y: number) => this.rally(x, y),
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -382,6 +383,12 @@ export class GameInstance {
             store.setNotification({ message: '⭐ VETERAN SPECK! +20% DAMAGE', color: '#ffd700' })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
           }
+        }
+        if (event.type === 'AI_WAVE_START') {
+          const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
+          const color = waveColors[(event.waveNumber - 1) % waveColors.length]
+          store.setNotification({ message: `⚠ WAVE ${event.waveNumber} ASSAULT!`, color })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
         }
       }
 
