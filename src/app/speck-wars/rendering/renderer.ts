@@ -75,6 +75,10 @@ export class Renderer {
     this.effectsLayer.update(dt)
   }
 
+  showRallyPing(x: number, y: number) {
+    this.effectsLayer.showRallyPing(x, y)
+  }
+
   destroy() {
     this.gridLayer.destroy()
     this.effectsLayer.destroy()
