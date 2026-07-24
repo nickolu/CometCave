@@ -42,7 +42,9 @@ export interface SimulationState {
   speckVx: Float32Array
   speckVy: Float32Array
   speckHp: Float32Array
-  speckMeta: SpeckMeta[]   // parallel to speckIds
+  speckMeta: (SpeckMeta | null)[]   // parallel to speckIds; null means dead/unused slot
+  speckCount: number       // high-water mark: indices 0..speckCount-1 may be live or freed
+  freeSlots: number[]      // recycled slot indices from dead specks
 
   inputQueue: InputEvent[]
   events: SimEvent[]

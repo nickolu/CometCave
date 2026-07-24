@@ -1,5 +1,5 @@
 import type { SimulationState, Player, BuildingEntity } from '../types'
-import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP } from '../constants'
+import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 
 export function createSim(seed: number = Date.now()): SimulationState {
@@ -36,13 +36,15 @@ export function createSim(seed: number = Date.now()): SimulationState {
     rngState: seed,
     players: { player, ai },
     buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase },
-    speckIds: [],
-    speckX: new Float32Array(0),
-    speckY: new Float32Array(0),
-    speckVx: new Float32Array(0),
-    speckVy: new Float32Array(0),
-    speckHp: new Float32Array(0),
-    speckMeta: [],
+    speckIds: new Array(MAX_SPECKS).fill(''),
+    speckX: new Float32Array(MAX_SPECKS),
+    speckY: new Float32Array(MAX_SPECKS),
+    speckVx: new Float32Array(MAX_SPECKS),
+    speckVy: new Float32Array(MAX_SPECKS),
+    speckHp: new Float32Array(MAX_SPECKS),
+    speckMeta: new Array(MAX_SPECKS).fill(null),
+    speckCount: 0,
+    freeSlots: [],
     inputQueue: [],
     events: [],
     rallyPoints: { player: null, ai: null },

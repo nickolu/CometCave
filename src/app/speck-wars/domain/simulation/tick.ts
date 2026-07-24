@@ -50,8 +50,13 @@ function emitHudUpdate(sim: SimulationState) {
   const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number> }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
+    let liveCount = 0
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (m && m.ownerId === pid) liveCount++
+    }
     data[pid] = {
-      speckCount: sim.speckMeta.filter(m => m.ownerId === pid).length,
+      speckCount: liveCount,
       buildingCount: myBuildings.length,
       buildingHp: Object.fromEntries(myBuildings.map(b => [b.id, b.hp])),
     }

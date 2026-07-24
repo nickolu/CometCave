@@ -4,8 +4,10 @@ import { SPECK_TYPES } from '../config/speck-types'
 export function runSpeckAI(sim: SimulationState) {
   const { speckIds, speckX, speckY, speckMeta, buildings } = sim
 
-  for (let i = 0; i < speckIds.length; i++) {
+  for (let i = 0; i < sim.speckCount; i++) {
+    if (!speckIds[i]) continue
     const meta = speckMeta[i]
+    if (!meta) continue
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
