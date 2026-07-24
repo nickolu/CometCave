@@ -21,6 +21,9 @@ export class GameInstance {
   private elapsedMs = 0
   private firstBloodDone = false
   private baseAttackWarnedAt = -30000  // allow warning immediately on first hit
+  private shakeMs = 0
+  private shakeMaxMs = 300
+  private shakeStrength = 0
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -166,6 +169,9 @@ export class GameInstance {
           }
         }
         if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-player-base') {
+          // Screen shake on base hit
+          this.shakeMs = this.shakeMaxMs
+          this.shakeStrength = 5
           const now = Date.now()
           if (now - this.baseAttackWarnedAt > 12000) {
             this.baseAttackWarnedAt = now
@@ -198,7 +204,15 @@ export class GameInstance {
     // Clamp camera so world doesn't disappear off-screen
     clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
 
-    this.renderer.render(this.sim, this.camera, dt)
+    let shakeX = 0, shakeY = 0
+    if (this.shakeMs > 0) {
+      this.shakeMs -= dt
+      const t = Math.max(0, this.shakeMs / this.shakeMaxMs)
+      const s = this.shakeStrength * t
+      shakeX = (Math.random() * 2 - 1) * s
+      shakeY = (Math.random() * 2 - 1) * s
+    }
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
