@@ -68,6 +68,9 @@ export class GameInstance {
       () => {                                              // H — cycle spawn mode
         const next = useSpeckWarsStore.getState().cycleSpawnMode()
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
+        const s = useSpeckWarsStore.getState()
+        s.setNotification({ message: `Spawn: ${next.toUpperCase()}`, color: next === 'heavy' ? '#ff8844' : '#4af7c4' })
+        setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1200)
       },
       () => {                                              // C — recenter camera on player base
         const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
@@ -75,9 +78,9 @@ export class GameInstance {
         this.camera.x = this.canvas.clientWidth / 2 - base.x * this.camera.zoom
         this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
       },
-      () => this.defend(),                                 // D — defend (rally to player base)
-      () => this.advance(),                                // A — advance to nearest non-player outpost
-      () => this.rush(),                                   // B — rush enemy base
+      () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },   // D — defend (rally to player base)
+      () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // A — advance to nearest non-player outpost
+      () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -319,6 +322,11 @@ export class GameInstance {
 
   clearRally() {
     this.sim.rallyPoints['player'] = null
+  }
+
+  private notify(message: string, color: string) {
+    useSpeckWarsStore.getState().setNotification({ message, color })
+    setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1200)
   }
 
   getSim(): SimulationState {
