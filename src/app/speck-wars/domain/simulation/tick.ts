@@ -1,0 +1,58 @@
+import type { SimulationState } from '../types'
+import { updateSpawners } from './spawner'
+import { runSpeckAI } from './speck-ai'
+import { moveSpecks } from './movement'
+import { resolveCombat, removeDeadSpecks } from './combat'
+import { checkVictory } from './victory'
+import { HUD_UPDATE_INTERVAL } from '../constants'
+
+export function tick(sim: SimulationState, dt: number): SimulationState {
+  sim.events = []  // clear outbound events from previous tick
+
+  // 1. Process player/AI input commands
+  consumeInputs(sim)
+
+  // 2. Spawn new specks from buildings
+  updateSpawners(sim, dt)
+
+  // 3. Each speck picks/validates its target
+  runSpeckAI(sim)
+
+  // 4. Move specks + apply separation
+  moveSpecks(sim, dt)
+
+  // 5. Deal damage, destroy buildings/specks
+  resolveCombat(sim, dt)
+
+  // 6. Remove dead specks (compact arrays)
+  removeDeadSpecks(sim)
+
+  // 7. Check win/loss
+  checkVictory(sim)
+
+  // 8. Emit HUD update every N ticks
+  sim.tick++
+  if (sim.tick % HUD_UPDATE_INTERVAL === 0) emitHudUpdate(sim)
+
+  return sim
+}
+
+function consumeInputs(sim: SimulationState) {
+  for (const _event of sim.inputQueue) {
+    // Future: handle RALLY, BUILD, SACRIFICE
+  }
+  sim.inputQueue = []
+}
+
+function emitHudUpdate(sim: SimulationState) {
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number> }> = {}
+  for (const [pid] of Object.entries(sim.players)) {
+    const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
+    data[pid] = {
+      speckCount: sim.speckMeta.filter(m => m.ownerId === pid).length,
+      buildingCount: myBuildings.length,
+      buildingHp: Object.fromEntries(myBuildings.map(b => [b.id, b.hp])),
+    }
+  }
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data } })
+}
