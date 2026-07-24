@@ -502,7 +502,7 @@ export function HUD() {
             <span>🖱 Click — rally all specks</span><span>Space — pause</span>
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
             <span>Drag — box select specks</span><span>1/2/3 — set spawn type</span>
-            <span>E — select all · Esc — clear</span><span>Arrow/WASD — pan camera</span>
+            <span>E — select all · Esc — clear</span><span>Arrow keys / W S — pan camera</span>
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Click rally with group → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
             <span>A — attack-move mode + click</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
@@ -899,7 +899,7 @@ export function HUD() {
           </button>
           <button
             onClick={() => gameActions.advance?.()}
-            title="[A] Advance — rally to nearest outpost"
+            title="Advance — rally to nearest outpost"
             style={{
               padding: '6px 10px',
               fontSize: 11,
