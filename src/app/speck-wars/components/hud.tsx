@@ -152,6 +152,21 @@ export function HUD() {
         )
       })()}
 
+      {/* Triple outpost bonus indicator */}
+      {hud?.tripleOutpostOwner === 'player' && phase === 'playing' && (
+        <div style={{
+          position: 'absolute', top: 100, left: 0, right: 0,
+          display: 'flex', justifyContent: 'center',
+        }}>
+          <span style={{
+            fontSize: 11, letterSpacing: 2, fontWeight: 'bold',
+            color: '#ffd700', textShadow: '0 0 8px #ffd700',
+          }}>
+            ⬡⬡⬡ TRIPLE CONTROL — SPAWN ×2
+          </span>
+        </div>
+      )}
+
       {/* Outpost capture/loss notification */}
       {notification && (
         <div style={{

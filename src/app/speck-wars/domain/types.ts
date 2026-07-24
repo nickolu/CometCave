@@ -18,6 +18,7 @@ export interface BuildingEntity {
   spawnTimer: number       // ms until next spawn
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
+  tripleOutpostBonus?: boolean    // true when owner controls all outposts (2× spawn)
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
@@ -78,4 +79,5 @@ export interface HudData {
     buildingHp: Record<string, number>
   }>
   attackedBuildingIds: string[]
+  tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
 }

@@ -36,6 +36,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
 
+  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
+  updateTripleOutpostBonus(sim)
+
   // 8. Check win/loss
   checkVictory(sim)
 
@@ -56,6 +59,20 @@ function regenBuildingHp(sim: SimulationState, dt: number) {
     // No regen while actively being captured
     if (building.captureProgress && building.captureProgress > 0) continue
     building.hp = Math.min(building.maxHp, building.hp + btype.hpRegen * dtSec)
+  }
+}
+
+function updateTripleOutpostBonus(sim: SimulationState) {
+  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
+  if (outposts.length === 0) return
+
+  for (const [pid] of Object.entries(sim.players)) {
+    if (pid === 'neutral') continue
+    const ownsAll = outposts.every(o => o.ownerId === pid)
+    for (const building of Object.values(sim.buildings)) {
+      if (building.ownerId !== pid || building.typeId !== 'base') continue
+      building.tripleOutpostBonus = ownsAll
+    }
   }
 }
 
@@ -96,5 +113,15 @@ function emitHudUpdate(sim: SimulationState) {
     .filter(b => b.typeId === 'outpost' && b.ownerId !== 'neutral' && b.captureProgress && b.captureProgress > 0 && b.captureSide && b.captureSide !== b.ownerId)
     .map(b => b.id)
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds } })
+  // Which player (if any) owns all outposts and has the triple bonus
+  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
+  let tripleOutpostOwner: string | null = null
+  if (outposts.length > 0) {
+    for (const [pid] of Object.entries(sim.players)) {
+      if (pid === 'neutral') continue
+      if (outposts.every(o => o.ownerId === pid)) { tripleOutpostOwner = pid; break }
+    }
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner } })
 }
