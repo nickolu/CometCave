@@ -914,7 +914,7 @@ export function HUD() {
               fontFamily: 'monospace',
             }}
           >
-            → A
+            → N
           </button>
           <button
             onClick={() => gameActions.rush?.()}
