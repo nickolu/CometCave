@@ -93,6 +93,21 @@ export function Minimap({ gameRef }: MinimapProps) {
         ctx.globalAlpha = 1
       }
 
+      // Draw AI rally point (where enemy force is heading)
+      const aiRp = sim.rallyPoints['ai']
+      if (aiRp) {
+        const rx = aiRp.x * SCALE_X
+        const ry = aiRp.y * SCALE_Y
+        ctx.strokeStyle = aiColor
+        ctx.lineWidth = 1
+        ctx.globalAlpha = 0.45
+        ctx.beginPath()
+        ctx.moveTo(rx - 3, ry); ctx.lineTo(rx + 3, ry)
+        ctx.moveTo(rx, ry - 3); ctx.lineTo(rx, ry + 3)
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+
       // Draw viewport rectangle
       // The camera maps world→screen as: screenX = worldX * zoom + camera.x
       // Use window dimensions as the screen size approximation
