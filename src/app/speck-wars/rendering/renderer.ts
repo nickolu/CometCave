@@ -97,7 +97,7 @@ export class Renderer {
     }
     this.effectsLayer.update(dt)
 
-    // Rally point marker
+    // Rally point marker + dashed line from base to rally
     this.rallyGfx.clear()
     const rp = sim.rallyPoints['player']
     if (rp) {
@@ -112,6 +112,30 @@ export class Renderer {
       this.rallyGfx.lineStyle(1.5, PLAYER_COLOR, alpha * 0.5)
       this.rallyGfx.drawCircle(rp.x, rp.y, 14)
       this.rallyGfx.lineStyle(0)
+
+      // Dashed line from player base to rally point (only if far enough apart)
+      const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+      if (playerBase) {
+        const dx = rp.x - playerBase.x
+        const dy = rp.y - playerBase.y
+        const len = Math.sqrt(dx * dx + dy * dy)
+        if (len > 80) {
+          const nx = dx / len, ny = dy / len
+          const dashLen = 8, gapLen = 6
+          this.rallyGfx.lineStyle(1, PLAYER_COLOR, 0.22)
+          let d = playerBase === null ? 0 : 46  // start outside the base
+          while (d < len - 24) {
+            const x1 = playerBase.x + nx * d
+            const y1 = playerBase.y + ny * d
+            const x2 = playerBase.x + nx * Math.min(d + dashLen, len - 24)
+            const y2 = playerBase.y + ny * Math.min(d + dashLen, len - 24)
+            this.rallyGfx.moveTo(x1, y1)
+            this.rallyGfx.lineTo(x2, y2)
+            d += dashLen + gapLen
+          }
+          this.rallyGfx.lineStyle(0)
+        }
+      }
     }
   }
 

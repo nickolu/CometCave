@@ -47,6 +47,10 @@ export function HUD() {
   const isDanger = phase === 'playing' && hpFrac < 0.3
   const isCritical = phase === 'playing' && hpFrac < 0.15
 
+  const aiBaseHp = hud?.players.ai?.buildingHp['building-ai-base']
+  const aiHpFrac = aiBaseHp !== undefined ? aiBaseHp / BASE_MAX_HP : 1
+  const isWinning = phase === 'playing' && aiHpFrac < 0.2 && aiHpFrac > 0  // enemy near death
+
   return (
     <div style={{
       position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -64,6 +68,22 @@ export function HUD() {
             position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at center, transparent 45%, rgba(220,30,30,1) 100%)',
             animation: `danger-pulse ${isCritical ? '0.5s' : '1s'} ease-in-out infinite alternate`,
+            pointerEvents: 'none',
+          }} />
+        </>
+      )}
+      {isWinning && (
+        <>
+          <style>{`
+            @keyframes win-pulse {
+              from { opacity: 0.1; }
+              to   { opacity: 0.28; }
+            }
+          `}</style>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at center, transparent 50%, rgba(20,220,120,1) 100%)',
+            animation: 'win-pulse 1.2s ease-in-out infinite alternate',
             pointerEvents: 'none',
           }} />
         </>
