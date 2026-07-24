@@ -78,6 +78,21 @@ export function Minimap({ gameRef }: MinimapProps) {
         ctx.stroke()
       }
 
+      // Draw rally point
+      const rp = sim.rallyPoints['player']
+      if (rp) {
+        const rx = rp.x * SCALE_X
+        const ry = rp.y * SCALE_Y
+        ctx.strokeStyle = playerColor
+        ctx.lineWidth = 1.5
+        ctx.globalAlpha = 0.7
+        ctx.beginPath()
+        ctx.moveTo(rx - 4, ry); ctx.lineTo(rx + 4, ry)
+        ctx.moveTo(rx, ry - 4); ctx.lineTo(rx, ry + 4)
+        ctx.stroke()
+        ctx.globalAlpha = 1
+      }
+
       // Draw viewport rectangle
       // The camera maps world→screen as: screenX = worldX * zoom + camera.x
       // Use window dimensions as the screen size approximation
