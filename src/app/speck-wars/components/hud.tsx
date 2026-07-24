@@ -226,12 +226,14 @@ export function HUD() {
       {hud && (() => {
         const OUTPOST_IDS = ['outpost-top', 'outpost-left', 'outpost-right'] as const
         const attacked = new Set(hud.attackedBuildingIds ?? [])
+        const captureInfo = hud.captureInfo ?? {}
         const dots = OUTPOST_IDS.map(id => {
           const isPlayerOwned = hud.players.player?.buildingHp[id] !== undefined
           const isAiOwned = hud.players.ai?.buildingHp[id] !== undefined
           const isUnderAttack = attacked.has(id)
           const color = isPlayerOwned ? '#4af7c4' : isAiOwned ? '#ff4f7b' : '#888888'
-          return { color, isUnderAttack, isPlayerOwned }
+          const cap = captureInfo[id] ?? null
+          return { color, isUnderAttack, isPlayerOwned, cap }
         })
         const playerCount = dots.filter(d => d.isPlayerOwned).length
         return (
@@ -251,15 +253,28 @@ export function HUD() {
               <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>
                 OUTPOSTS {playerCount}/{OUTPOST_IDS.length}
               </span>
-              {dots.map(({ color, isUnderAttack, isPlayerOwned }, i) => (
-                <div key={i} style={{
-                  width: 10, height: 10,
-                  borderRadius: '50%',
-                  background: isUnderAttack && isPlayerOwned ? '#ff6b35' : color,
-                  boxShadow: color !== '#888888' ? `0 0 6px ${isUnderAttack && isPlayerOwned ? '#ff6b35' : color}` : 'none',
-                  animation: isUnderAttack && isPlayerOwned ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
-                }} />
-              ))}
+              {dots.map(({ color, isUnderAttack, isPlayerOwned, cap }, i) => {
+                const capColor = cap?.side === 'player' ? '#4af7c4' : '#ff4f7b'
+                return (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <div style={{
+                      width: 10, height: 10,
+                      borderRadius: '50%',
+                      background: isUnderAttack && isPlayerOwned ? '#ff6b35' : color,
+                      boxShadow: color !== '#888888' ? `0 0 6px ${isUnderAttack && isPlayerOwned ? '#ff6b35' : color}` : 'none',
+                      animation: isUnderAttack && isPlayerOwned ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
+                    }} />
+                    {cap && cap.progress > 0 && (
+                      <div style={{ width: 14, height: 2, background: 'rgba(255,255,255,0.15)', borderRadius: 1 }}>
+                        <div style={{
+                          width: `${Math.round(cap.progress * 100)}%`,
+                          height: '100%', background: capColor, borderRadius: 1,
+                        }} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </>
         )

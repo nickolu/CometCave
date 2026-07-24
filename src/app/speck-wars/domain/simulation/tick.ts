@@ -135,5 +135,14 @@ function emitHudUpdate(sim: SimulationState) {
   }
 
   const dominationProgress = tripleOutpostOwner ? Math.min(1, sim.dominationTimer / DOMINATION_TIME) : null
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress } })
+
+  // Capture progress for each outpost
+  const captureInfo: Record<string, { progress: number; side: string } | null> = {}
+  for (const o of outposts) {
+    captureInfo[o.id] = (o.captureProgress && o.captureSide)
+      ? { progress: o.captureProgress, side: o.captureSide }
+      : null
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo } })
 }
