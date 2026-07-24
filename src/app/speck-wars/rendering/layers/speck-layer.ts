@@ -26,10 +26,13 @@ export class SpeckLayer {
   }
 
   update(sim: SimulationState) {
-    // Group speck indices by owner
+    // Group live speck indices by owner
     const byOwner: Record<string, number[]> = {}
-    for (let i = 0; i < sim.speckIds.length; i++) {
-      const ownerId = sim.speckMeta[i].ownerId
+    for (let i = 0; i < sim.speckCount; i++) {
+      if (!sim.speckIds[i]) continue
+      const meta = sim.speckMeta[i]
+      if (!meta) continue
+      const ownerId = meta.ownerId
       if (!byOwner[ownerId]) byOwner[ownerId] = []
       byOwner[ownerId].push(i)
     }

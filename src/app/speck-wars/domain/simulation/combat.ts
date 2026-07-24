@@ -6,9 +6,11 @@ export function resolveCombat(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckHp, speckMeta, buildings, spatialGrid } = sim
 
   // --- Speck vs Speck combat ---
-  for (let i = 0; i < speckIds.length; i++) {
+  for (let i = 0; i < sim.speckCount; i++) {
+    if (!speckIds[i]) continue
     if (speckHp[i] <= 0) continue
     const meta = speckMeta[i]
+    if (!meta) continue
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
@@ -20,7 +22,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const neighbors = spatialGrid.query(speckX[i], speckY[i])
     for (const j of neighbors) {
       if (i === j || speckHp[j] <= 0) continue
-      if (speckMeta[j].ownerId === meta.ownerId) continue  // friendly
+      const jMeta = speckMeta[j]
+      if (!jMeta || jMeta.ownerId === meta.ownerId) continue  // dead slot or friendly
 
       const dx = speckX[j] - speckX[i]
       const dy = speckY[j] - speckY[i]
@@ -38,9 +41,11 @@ export function resolveCombat(sim: SimulationState, dt: number) {
   }
 
   // --- Speck vs Building combat ---
-  for (let i = 0; i < speckIds.length; i++) {
+  for (let i = 0; i < sim.speckCount; i++) {
+    if (!speckIds[i]) continue
     if (speckHp[i] <= 0) continue
     const meta = speckMeta[i]
+    if (!meta) continue
     if (!meta.targetId) continue
     const building = buildings[meta.targetId]
     if (!building) continue
@@ -63,42 +68,22 @@ export function resolveCombat(sim: SimulationState, dt: number) {
         sim.events.push({ type: 'BUILDING_DESTROYED', buildingId: building.id, ownerId: building.ownerId })
         delete sim.buildings[building.id]
         // Clear target for all specks pointing at this building
-        for (const m of sim.speckMeta) {
-          if (m.targetId === building.id) m.targetId = null
+        for (let k = 0; k < sim.speckCount; k++) {
+          const m = sim.speckMeta[k]
+          if (m && m.targetId === building.id) m.targetId = null
         }
       }
     }
   }
 }
 
-// Remove dead specks — compact all SOA arrays in one pass
+// Mark dead specks and push their slots onto the free-list — no array allocation
 export function removeDeadSpecks(sim: SimulationState) {
-  const alive: number[] = []
-  for (let i = 0; i < sim.speckIds.length; i++) {
-    if (sim.speckHp[i] > 0) alive.push(i)
+  for (let i = 0; i < sim.speckCount; i++) {
+    if (sim.speckIds[i] !== '' && sim.speckHp[i] <= 0) {
+      sim.freeSlots.push(i)
+      sim.speckIds[i] = ''
+      sim.speckMeta[i] = null
+    }
   }
-
-  if (alive.length === sim.speckIds.length) return  // nothing to remove
-
-  const n = alive.length
-  const newX = new Float32Array(n)
-  const newY = new Float32Array(n)
-  const newVx = new Float32Array(n)
-  const newVy = new Float32Array(n)
-  const newHp = new Float32Array(n)
-  const newIds: string[] = []
-  const newMeta: SimulationState['speckMeta'] = []
-
-  for (let j = 0; j < alive.length; j++) {
-    const i = alive[j]
-    newX[j] = sim.speckX[i]; newY[j] = sim.speckY[i]
-    newVx[j] = sim.speckVx[i]; newVy[j] = sim.speckVy[i]
-    newHp[j] = sim.speckHp[i]
-    newIds.push(sim.speckIds[i])
-    newMeta.push(sim.speckMeta[i])
-  }
-
-  sim.speckX = newX; sim.speckY = newY
-  sim.speckVx = newVx; sim.speckVy = newVy; sim.speckHp = newHp
-  sim.speckIds = newIds; sim.speckMeta = newMeta
 }

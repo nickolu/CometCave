@@ -12,3 +12,4 @@ export const AI_BASE_X = 2400
 export const AI_BASE_Y = 1500
 export const PLAYER_COLOR = 0x4af7c4
 export const AI_COLOR = 0xff4f7b
+export const MAX_SPECKS = 15000

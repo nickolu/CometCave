@@ -11,12 +11,14 @@ export function moveSpecks(sim: SimulationState, dt: number) {
 
   // Rebuild grid with current positions before applying separation
   spatialGrid.clear()
-  for (let i = 0; i < speckIds.length; i++) {
-    spatialGrid.insert(i, speckX[i], speckY[i])
+  for (let i = 0; i < sim.speckCount; i++) {
+    if (speckIds[i]) spatialGrid.insert(i, speckX[i], speckY[i])
   }
 
-  for (let i = 0; i < speckIds.length; i++) {
+  for (let i = 0; i < sim.speckCount; i++) {
+    if (!speckIds[i]) continue
     const meta = speckMeta[i]
+    if (!meta) continue
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
