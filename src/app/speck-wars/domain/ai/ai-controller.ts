@@ -115,8 +115,21 @@ export class AIController {
       }
     }
 
+    // Emergency: detect if the enemy (player) is about to win by domination
+    const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
+    const enemyId = Object.keys(sim.players).find(pid => pid !== this.playerId) ?? null
+    const enemyHasAllOutposts = enemyId !== null && outposts.length > 0 && outposts.every(o => o.ownerId === enemyId)
+    // If enemy has all outposts, temporarily halve decision interval to react faster
+    if (enemyHasAllOutposts) {
+      this.tickInterval = Math.max(Math.floor(this.baseTickInterval * 0.5), 2)
+    } else if (this.dominanceTimer === 0) {
+      // Only restore base interval if not already tracking dominance-timer speedup
+      this.tickInterval = this.baseTickInterval
+    }
+
     // Hard mode: every 4th decision, rush player base directly (pressure waves)
-    const forceBaseRush = this.aggressive && this.decisionCount % 4 === 0
+    // Exception: never base-rush during enemy domination threat — must recapture
+    const forceBaseRush = this.aggressive && this.decisionCount % 4 === 0 && !enemyHasAllOutposts
 
     // Defensive rally: when AI base is low HP, sometimes pull back to defend
     const myBaseHpFrac = (myBase?.hp ?? 100) / (myBase?.maxHp ?? 100)
