@@ -5,16 +5,26 @@ export class InputHandler {
   private canvas: HTMLCanvasElement
   private camera: Camera
   private onRally?: (worldX: number, worldY: number) => void
+  private onTogglePause?: () => void
+  private onClearRally?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
   private mouseDownX = 0
   private mouseDownY = 0
 
-  constructor(canvas: HTMLCanvasElement, camera: Camera, onRally?: (worldX: number, worldY: number) => void) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    camera: Camera,
+    onRally?: (worldX: number, worldY: number) => void,
+    onTogglePause?: () => void,
+    onClearRally?: () => void,
+  ) {
     this.canvas = canvas
     this.camera = camera
     this.onRally = onRally
+    this.onTogglePause = onTogglePause
+    this.onClearRally = onClearRally
     this.attach()
   }
 
@@ -27,6 +37,7 @@ export class InputHandler {
     this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true })
     window.addEventListener('touchmove', this.onTouchMove, { passive: false })
     window.addEventListener('touchend', this.onTouchEnd)
+    window.addEventListener('keydown', this.onKeyDown)
   }
 
   private onMouseDown = (e: MouseEvent) => {
@@ -89,6 +100,17 @@ export class InputHandler {
 
   private onTouchEnd = () => { this.isDragging = false }
 
+  private onKeyDown = (e: KeyboardEvent) => {
+    // Don't fire when typing in an input
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+    if (e.code === 'Space') {
+      e.preventDefault()
+      this.onTogglePause?.()
+    } else if (e.code === 'KeyR') {
+      this.onClearRally?.()
+    }
+  }
+
   destroy() {
     this.canvas.removeEventListener('mousedown', this.onMouseDown)
     window.removeEventListener('mousemove', this.onMouseMove)
@@ -97,5 +119,6 @@ export class InputHandler {
     this.canvas.removeEventListener('touchstart', this.onTouchStart)
     window.removeEventListener('touchmove', this.onTouchMove)
     window.removeEventListener('touchend', this.onTouchEnd)
+    window.removeEventListener('keydown', this.onKeyDown)
   }
 }

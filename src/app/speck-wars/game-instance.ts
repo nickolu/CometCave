@@ -32,10 +32,16 @@ export class GameInstance {
   async start() {
     console.log('GameInstance started')
     await this.renderer.init(this.canvas)
-    this.inputHandler = new InputHandler(this.canvas, this.camera, (wx, wy) => {
-      this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
-      this.renderer.showRallyPing(wx, wy)
-    })
+    this.inputHandler = new InputHandler(
+      this.canvas,
+      this.camera,
+      (wx, wy) => {
+        this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
+        this.renderer.showRallyPing(wx, wy)
+      },
+      () => useSpeckWarsStore.getState().togglePause(),   // Space
+      () => { this.sim.rallyPoints['player'] = null },    // R — clear rally
+    )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
   }
