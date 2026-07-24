@@ -65,5 +65,10 @@ function emitHudUpdate(sim: SimulationState) {
       buildingHp: Object.fromEntries(myBuildings.map(b => [b.id, b.hp])),
     }
   }
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data } })
+  // Buildings that are owned but actively being captured by the enemy
+  const attackedBuildingIds = Object.values(sim.buildings)
+    .filter(b => b.typeId === 'outpost' && b.ownerId !== 'neutral' && b.captureProgress && b.captureProgress > 0 && b.captureSide && b.captureSide !== b.ownerId)
+    .map(b => b.id)
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds } })
 }

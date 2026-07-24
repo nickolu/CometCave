@@ -96,26 +96,40 @@ export function HUD() {
       {/* Outpost ownership indicator dots */}
       {hud && (() => {
         const OUTPOST_IDS = ['outpost-top', 'outpost-left', 'outpost-right'] as const
+        const attacked = new Set(hud.attackedBuildingIds ?? [])
         const dots = OUTPOST_IDS.map(id => {
-          if (hud.players.player?.buildingHp[id] !== undefined) return '#4af7c4'
-          if (hud.players.ai?.buildingHp[id] !== undefined) return '#ff4f7b'
-          return '#888888'
+          const isPlayerOwned = hud.players.player?.buildingHp[id] !== undefined
+          const isAiOwned = hud.players.ai?.buildingHp[id] !== undefined
+          const isUnderAttack = attacked.has(id)
+          const color = isPlayerOwned ? '#4af7c4' : isAiOwned ? '#ff4f7b' : '#888888'
+          return { color, isUnderAttack, isPlayerOwned }
         })
         return (
-          <div style={{
-            position: 'absolute', top: 48, left: 0, right: 0,
-            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
-          }}>
-            <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>OUTPOSTS</span>
-            {dots.map((color, i) => (
-              <div key={i} style={{
-                width: 10, height: 10,
-                borderRadius: '50%',
-                background: color,
-                boxShadow: color !== '#888888' ? `0 0 6px ${color}` : 'none',
-              }} />
-            ))}
-          </div>
+          <>
+            {dots.some(d => d.isUnderAttack && d.isPlayerOwned) && (
+              <style>{`
+                @keyframes outpost-alert {
+                  0%, 100% { opacity: 1; transform: scale(1); }
+                  50% { opacity: 0.3; transform: scale(1.5); }
+                }
+              `}</style>
+            )}
+            <div style={{
+              position: 'absolute', top: 48, left: 0, right: 0,
+              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>OUTPOSTS</span>
+              {dots.map(({ color, isUnderAttack, isPlayerOwned }, i) => (
+                <div key={i} style={{
+                  width: 10, height: 10,
+                  borderRadius: '50%',
+                  background: isUnderAttack && isPlayerOwned ? '#ff6b35' : color,
+                  boxShadow: color !== '#888888' ? `0 0 6px ${isUnderAttack && isPlayerOwned ? '#ff6b35' : color}` : 'none',
+                  animation: isUnderAttack && isPlayerOwned ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
+                }} />
+              ))}
+            </div>
+          </>
         )
       })()}
 

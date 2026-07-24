@@ -75,4 +75,5 @@ export interface HudData {
     buildingCount: number
     buildingHp: Record<string, number>
   }>
+  attackedBuildingIds: string[]
 }
