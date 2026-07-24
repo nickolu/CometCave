@@ -4,10 +4,13 @@ export class AIController {
   private playerId: string
   private tickInterval: number
   private lastDecisionTick: number = 0
+  private aggressive: boolean  // true = Hard mode: every 4th decision rushes base
+  private decisionCount: number = 0
 
-  constructor(playerId: string, tickInterval: number = 30) {
+  constructor(playerId: string, tickInterval: number = 30, aggressive = false) {
     this.playerId = playerId
     this.tickInterval = tickInterval
+    this.aggressive = aggressive
   }
 
   update(sim: SimulationState) {
@@ -48,13 +51,22 @@ export class AIController {
       return best
     }
 
-    // Priority 1: recapture enemy-held outpost
+    this.decisionCount++
+
+    // Hard mode: every 4th decision, rush player base directly (pressure waves)
+    const forceBaseRush = this.aggressive && this.decisionCount % 4 === 0
+
+    // Priority 1 (always): recapture player-held outpost
     // Priority 2: capture neutral outpost
     // Priority 3: attack enemy base
-    const target =
-      nearest(b => b.typeId === 'outpost' && b.ownerId !== this.playerId && b.ownerId !== 'neutral') ??
-      nearest(b => b.typeId === 'outpost' && b.ownerId === 'neutral') ??
-      nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+    // Hard mode override: directly rush base on pressure-wave ticks
+    const target = forceBaseRush
+      ? nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+      : (
+          nearest(b => b.typeId === 'outpost' && b.ownerId !== this.playerId && b.ownerId !== 'neutral') ??
+          nearest(b => b.typeId === 'outpost' && b.ownerId === 'neutral') ??
+          nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+        )
 
     if (!target) return
 
