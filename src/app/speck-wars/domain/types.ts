@@ -106,6 +106,7 @@ export interface HudData {
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
   selectedSpeckCount: number   // 0 when no selection active
+  selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number } | null
   spawnRates: Record<string, number>   // playerId → effective specks/min
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null

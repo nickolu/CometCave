@@ -763,6 +763,16 @@ export function HUD() {
               textAlign: 'center', marginBottom: 4,
             }}>
               SQUAD: {hud.selectedSpeckCount} · Shift+drag to reselect · Esc to clear
+              {hud.selectedComposition && (
+                <div style={{ fontSize: 9, color: 'rgba(74,247,196,0.75)', marginTop: 2, letterSpacing: 1 }}>
+                  {Object.entries(hud.selectedComposition.types)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([typeId, count]) => `${count} ${typeId}`)
+                    .join(' · ')}
+                  {hud.selectedComposition.eliteCount > 0 && ` · ✦${hud.selectedComposition.eliteCount} elite`}
+                  {hud.selectedComposition.veteranCount > 0 && ` · ⭐${hud.selectedComposition.veteranCount} vet`}
+                </div>
+              )}
             </div>
           )}
           <div style={{
