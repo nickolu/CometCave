@@ -24,6 +24,7 @@ export interface BuildingEntity {
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
   fortifyDuration?: number      // ms continuously held — resets on capture
+  lastDamagedAt?: number        // Date.now() timestamp of last damage taken (for regen cooldown)
 }
 
 export interface Player {

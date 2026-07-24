@@ -139,6 +139,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       if (building.typeId === 'outpost') continue
       const siegeBonus = meta.typeId === 'heavy' ? 1.5 : 1.0
       building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus
+      building.lastDamagedAt = Date.now()
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 

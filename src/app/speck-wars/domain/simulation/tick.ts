@@ -117,6 +117,7 @@ function regenRetreatingSpecks(sim: SimulationState, dt: number) {
 
 function regenBuildingHp(sim: SimulationState, dt: number) {
   const dtSec = dt / 1000
+  const REGEN_COOLDOWN_MS = 5000
   for (const building of Object.values(sim.buildings)) {
     if (building.hp >= building.maxHp) continue
     if (building.ownerId === 'neutral') continue
@@ -124,6 +125,8 @@ function regenBuildingHp(sim: SimulationState, dt: number) {
     if (!btype?.hpRegen) continue
     // No regen while actively being captured
     if (building.captureProgress && building.captureProgress > 0) continue
+    // No regen within 5 seconds of last taking damage
+    if (Date.now() - (building.lastDamagedAt ?? 0) < REGEN_COOLDOWN_MS) continue
     building.hp = Math.min(building.maxHp, building.hp + btype.hpRegen * dtSec)
   }
 }
