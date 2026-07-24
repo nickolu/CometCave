@@ -80,6 +80,7 @@ export type SimEvent =
   | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'domination' }
   | { type: 'HUD_UPDATE'; data: HudData }
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
+  | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
 
 export interface HudData {
   players: Record<string, {

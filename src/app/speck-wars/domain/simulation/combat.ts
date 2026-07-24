@@ -74,6 +74,9 @@ export function resolveCombat(sim: SimulationState, dt: number) {
         if (speckHp[j] <= 0) {
           meta.kills++  // attacker earns a kill
           sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
+          if (meta.kills === 3) {
+            sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })
+          }
         }
         break  // one attack per cooldown
       }

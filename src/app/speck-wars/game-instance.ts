@@ -39,6 +39,8 @@ export class GameInstance {
   private dominationWarned5 = false     // notified at 5s remaining
   private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
   private rallyCryFired = false               // one-time Rally Cry notification per game
+  private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
+  private retreatWarnedAt = -20000          // allow retreat warning after 20s
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -362,6 +364,29 @@ export class GameInstance {
             store.setNotification({ message, color })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
+        }
+        if (event.type === 'SPECK_VETERAN' && event.ownerId === 'player') {
+          const now = Date.now()
+          if (now - this.firstVeteranNotifiedAt > 20000) {
+            this.firstVeteranNotifiedAt = now
+            store.setNotification({ message: '⭐ VETERAN SPECK! +20% DAMAGE', color: '#ffd700' })
+            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+          }
+        }
+      }
+
+      // Retreat wave warning: 10+ player specks retreating = notify
+      const nowTs = Date.now()
+      if (nowTs - this.retreatWarnedAt > 15000) {
+        let retreatingCount = 0
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          const m = this.sim.speckMeta[i]
+          if (m && m.ownerId === 'player' && m.state === 'retreating') retreatingCount++
+        }
+        if (retreatingCount >= 10) {
+          this.retreatWarnedAt = nowTs
+          store.setNotification({ message: `⚡ ${retreatingCount} SPECKS RETREATING!`, color: '#ff8844' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
         }
       }
     }
