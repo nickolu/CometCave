@@ -3,6 +3,7 @@ import { Graphics, Container } from 'pixi.js'
 interface Flash { x: number; y: number; life: number; maxLife: number; color: number }
 interface Ping { x: number; y: number; life: number; maxLife: number }
 interface Ripple { x: number; y: number; life: number; maxLife: number; color: number }
+interface Particle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: number }
 
 export class EffectsLayer {
   readonly stage: Container
@@ -10,6 +11,7 @@ export class EffectsLayer {
   private flashes: Flash[] = []
   private pings: Ping[] = []
   private ripples: Ripple[] = []
+  private particles: Particle[] = []
 
   constructor() {
     this.stage = new Container()
@@ -23,6 +25,14 @@ export class EffectsLayer {
 
   showRallyPing(x: number, y: number) {
     this.pings.push({ x, y, life: 400, maxLife: 400 })
+  }
+
+  addDeathParticles(x: number, y: number, color: number) {
+    for (let i = 0; i < 5; i++) {
+      const angle = (i / 5) * Math.PI * 2 + (Math.random() - 0.5) * 0.8
+      const speed = 50 + Math.random() * 60  // px/sec
+      this.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 280, maxLife: 280, color })
+    }
   }
 
   addCaptureRipple(x: number, y: number, color: number) {
@@ -52,6 +62,17 @@ export class EffectsLayer {
       const r = 3 + (1 - alpha) * 4
       this.gfx.beginFill(f.color, alpha)
       this.gfx.drawCircle(f.x, f.y, r)
+      this.gfx.endFill()
+    }
+
+    this.particles = this.particles.filter(p => p.life > 0)
+    for (const p of this.particles) {
+      p.x += p.vx * (dt / 1000)
+      p.y += p.vy * (dt / 1000)
+      p.life -= dt
+      const alpha = (p.life / p.maxLife) * 0.85
+      this.gfx.beginFill(p.color, alpha)
+      this.gfx.drawCircle(p.x, p.y, 1.5)
       this.gfx.endFill()
     }
 
