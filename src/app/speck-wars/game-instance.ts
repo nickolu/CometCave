@@ -398,6 +398,10 @@ export class GameInstance {
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
           }
         }
+        if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
+          store.setNotification({ message: '✦ ELITE SPECK! +35% DAMAGE', color: '#ffffff' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+        }
         if (event.type === 'AI_WAVE_START') {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
           const color = waveColors[(event.waveNumber - 1) % waveColors.length]

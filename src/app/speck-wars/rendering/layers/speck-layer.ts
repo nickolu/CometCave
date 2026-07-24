@@ -83,9 +83,19 @@ export class SpeckLayer {
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
 
-        // Gold ring for veteran specks (3+ kills)
-        const isVeteran = (typeMeta?.kills ?? 0) >= 3
-        if (isVeteran) {
+        // Gold ring for veteran specks (3+ kills), bright white diamond ring for elite (6+ kills)
+        const kills = typeMeta?.kills ?? 0
+        const isVeteran = kills >= 3
+        const isElite = kills >= 6
+        if (isElite) {
+          // Bright white outer ring + gold inner ring for elite
+          const elitePulse = 0.7 + 0.3 * Math.sin(now / 200)
+          this.gfx.lineStyle(2, 0xffffff, elitePulse * spriteList[j].alpha)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 5)
+          this.gfx.lineStyle(1.5, 0xffd700, spriteList[j].alpha * 0.9)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 2.5)
+          this.gfx.lineStyle(0)
+        } else if (isVeteran) {
           this.gfx.lineStyle(1.5, 0xffd700, spriteList[j].alpha * 0.9)
           this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 2.5)
           this.gfx.lineStyle(0)
