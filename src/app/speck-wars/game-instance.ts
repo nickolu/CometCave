@@ -26,6 +26,7 @@ export class GameInstance {
   private shakeStrength = 0
   private enemyBaseWarnedAt = -30000
   private outpostAttackWarnedAt: Record<string, number> = {}  // outpostId → timestamp
+  private outpostHpWarnedAt: Record<string, number> = {}     // outpostId → timestamp (HP critical)
   private enemySurgeWarnedAt = -30000
 
   constructor(canvas: HTMLCanvasElement) {
@@ -163,6 +164,20 @@ export class GameInstance {
             this.enemySurgeWarnedAt = now
             store.setNotification({ message: '⚠ ENEMY SURGE!', color: '#ff6b35' })
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          }
+          // Outpost HP critical: player outpost < 20% max HP (50)
+          const OUTPOST_MAX_HP = 50
+          const OUTPOST_CRITICAL_HP = OUTPOST_MAX_HP * 0.2  // 10 HP
+          for (const [buildingId, hp] of Object.entries(playerBuildingHp)) {
+            if (!buildingId.startsWith('outpost-')) continue
+            if (hp > OUTPOST_CRITICAL_HP) { delete this.outpostHpWarnedAt[buildingId]; continue }
+            const lastHpWarn = this.outpostHpWarnedAt[buildingId] ?? -Infinity
+            if (now - lastHpWarn > 12000) {
+              this.outpostHpWarnedAt[buildingId] = now
+              const name = buildingId.replace('outpost-', '').toUpperCase()
+              store.setNotification({ message: `⬡ ${name} HP CRITICAL!`, color: '#ff2200' })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+            }
           }
         }
         if (event.type === 'SPECK_DIED') {

@@ -374,12 +374,41 @@ export function HUD() {
       {phase === 'paused' && (
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.45)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24,
+          background: 'rgba(0,0,0,0.55)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
         }}>
           <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
             PAUSED
           </span>
+          {hud && (() => {
+            const playerSpecks = hud.players.player?.speckCount ?? 0
+            const aiSpecks = hud.players.ai?.speckCount ?? 0
+            const playerBaseHpVal = hud.players.player?.buildingHp['building-player-base'] ?? 0
+            const aiBaseHpVal = hud.players.ai?.buildingHp['building-ai-base'] ?? 0
+            const playerOutpostCount = hud.players.player?.buildingCount
+              ? hud.players.player.buildingCount - 1  // subtract base
+              : 0
+            return (
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px',
+                fontSize: 11, letterSpacing: 1, color: 'rgba(255,255,255,0.55)',
+                background: 'rgba(0,0,0,0.3)', padding: '16px 28px', borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}>
+                <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.8 }}>YOUR ARMY</span>
+                <span style={{ color: colorHex(AI_COLOR), opacity: 0.8 }}>ENEMY ARMY</span>
+                <span>{playerSpecks} specks</span>
+                <span>{aiSpecks} specks</span>
+                <span>Base: {Math.round(playerBaseHpVal)}HP</span>
+                <span>Base: {Math.round(aiBaseHpVal)}HP</span>
+                <span>Outposts: {playerOutpostCount}</span>
+                <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
+                <span style={{ gridColumn: '1/-1', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4 }}>
+                  {formatTime(elapsedMs)} elapsed
+                </span>
+              </div>
+            )
+          })()}
           <button
             onClick={surrender}
             style={{
