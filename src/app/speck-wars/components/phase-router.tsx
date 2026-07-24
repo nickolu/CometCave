@@ -2,7 +2,7 @@
 import { useSpeckWarsStore } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs } = useSpeckWarsStore()
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
@@ -48,12 +48,57 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
   if (phase === 'victory' || phase === 'defeat') {
     const won = winnerId === 'player'
+    const accentColor = won ? '#4af7c4' : '#ff4f7b'
+
+    const totalSec = Math.floor(elapsedMs / 1000)
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, '0')
+    const ss = String(totalSec % 60).padStart(2, '0')
+    const timeStr = `${mm}:${ss}`
+
+    const difficultyColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b' }
+    const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+    const diffColor = difficultyColors[difficulty]
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
-        <h1 style={{ color: won ? '#4af7c4' : '#ff4f7b', fontSize: 48 }}>{won ? 'Victory' : 'Defeated'}</h1>
-        <button onClick={() => window.location.reload()} style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer' }}>
-          Play Again
-        </button>
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', height: '100%', gap: 20,
+        fontFamily: 'monospace',
+      }}>
+        <h1 style={{ color: accentColor, fontSize: 64, margin: 0, letterSpacing: 4 }}>
+          {won ? 'VICTORY' : 'DEFEATED'}
+        </h1>
+
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
+          <span>⏱ {timeStr}</span>
+          <span style={{ color: diffColor, fontWeight: 'bold', border: `1px solid ${diffColor}`, padding: '2px 10px', borderRadius: 4 }}>
+            {diffLabel}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '12px 28px', fontSize: 16, cursor: 'pointer',
+              background: accentColor, border: 'none', borderRadius: 8,
+              fontWeight: 'bold', color: '#000',
+            }}
+          >
+            Play Again
+          </button>
+          <a
+            href="/"
+            style={{
+              padding: '12px 28px', fontSize: 16, cursor: 'pointer',
+              background: 'transparent', border: '2px solid rgba(255,255,255,0.3)',
+              borderRadius: 8, color: 'rgba(255,255,255,0.7)', textDecoration: 'none',
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            ← Cave
+          </a>
+        </div>
       </div>
     )
   }
