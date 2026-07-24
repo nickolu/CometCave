@@ -1,5 +1,6 @@
 import type { SimulationState, Player, BuildingEntity } from '../types'
-import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, MAP_LAYOUTS } from '../constants'
+import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, MAP_LAYOUTS, DAILY_MODIFIER_POOL } from '../constants'
+import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty } from '../../store'
@@ -73,6 +74,22 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     }
   }
 
+  // Pick daily modifier — LAST RNG call so it doesn't shift existing map layout or jitter
+  const modifierIndex = Math.floor(rng() * DAILY_MODIFIER_POOL.length)
+  const dailyModifier: DailyModifier = DAILY_MODIFIER_POOL[modifierIndex]
+
+  // Apply static modifier effects
+  if (dailyModifier === 'bulwark') {
+    playerBase.hp = BASE_HP * 2
+    playerBase.maxHp = BASE_HP * 2
+    aiBase.hp = BASE_HP * 2
+    aiBase.maxHp = BASE_HP * 2
+  }
+  if (dailyModifier === 'blitz') {
+    if (playerBase.spawnIntervalOverride !== undefined) playerBase.spawnIntervalOverride *= 0.65
+    aiBase.spawnIntervalOverride = (aiBase.spawnIntervalOverride ?? 800) * 0.65
+  }
+
   return {
     tick: 0,
     rngState: seed,
@@ -95,5 +112,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     dominationTimer: 0,
     surgeDuration: 0,
     surgeCooldown: 0,
+    dailyModifier,
   }
 }
