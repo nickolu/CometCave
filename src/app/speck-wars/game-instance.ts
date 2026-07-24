@@ -28,6 +28,8 @@ export class GameInstance {
   private outpostAttackWarnedAt: Record<string, number> = {}  // outpostId → timestamp
   private outpostHpWarnedAt: Record<string, number> = {}     // outpostId → timestamp (HP critical)
   private enemySurgeWarnedAt = -30000
+  private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
+  private lastComboNotifiedAt = -5000
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -183,6 +185,18 @@ export class GameInstance {
         if (event.type === 'SPECK_DIED') {
           if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') {
             store.addKill()
+            const nowTs = Date.now()
+            // Combo detection: 3+ kills within 2s
+            this.recentKillTimes.push(nowTs)
+            this.recentKillTimes = this.recentKillTimes.filter(t => nowTs - t < 2000)
+            if (this.recentKillTimes.length >= 3 && nowTs - this.lastComboNotifiedAt > 3000) {
+              this.lastComboNotifiedAt = nowTs
+              const count = this.recentKillTimes.length
+              const comboColors: Record<number, string> = { 3: '#4af7c4', 5: '#ffd700', 8: '#ff8844', 12: '#cc00ff' }
+              const color = count >= 12 ? '#cc00ff' : count >= 8 ? '#ff8844' : count >= 5 ? '#ffd700' : '#4af7c4'
+              store.setNotification({ message: `⚡ COMBO ×${count}!`, color })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+            }
             const k = useSpeckWarsStore.getState().kills
             const milestones: Record<number, { message: string; color: string }> = {
               10:  { message: '💀 10 KILLS',  color: '#4af7c4' },
