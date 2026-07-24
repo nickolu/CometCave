@@ -64,6 +64,7 @@ export interface SimulationState {
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
+  sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
 }
 
 export type InputEvent =
@@ -105,6 +106,7 @@ export interface HudData {
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null
   waveInProgress: boolean
+  sacrificeCooldown: number
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
