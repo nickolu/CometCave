@@ -42,7 +42,7 @@ export function HUD() {
   const kills = useSpeckWarsStore(s => s.kills)
   const losses = useSpeckWarsStore(s => s.losses)
   const spawnMode = useSpeckWarsStore(s => s.spawnMode)
-  const cycleSpawnMode = useSpeckWarsStore(s => s.cycleSpawnMode)
+  const setSpawnMode = useSpeckWarsStore(s => s.setSpawnMode)
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
@@ -309,23 +309,32 @@ export function HUD() {
         >
           {speed}×
         </button>
-        <button
-          onClick={cycleSpawnMode}
-          title="H — cycle spawn mode (basic → heavy → scout)"
-          style={{
-            pointerEvents: 'auto',
-            padding: '4px 14px',
-            fontSize: 12,
-            cursor: 'pointer',
-            background: spawnMode === 'heavy' ? 'rgba(255,160,50,0.15)' : spawnMode === 'scout' ? 'rgba(80,200,255,0.15)' : 'rgba(0,0,0,0.5)',
-            border: `1px solid ${spawnMode === 'heavy' ? '#ffa032' : spawnMode === 'scout' ? '#50c8ff' : 'rgba(255,255,255,0.3)'}`,
-            borderRadius: 4,
-            color: spawnMode === 'heavy' ? '#ffa032' : spawnMode === 'scout' ? '#50c8ff' : '#fff',
-            letterSpacing: 1,
-          }}
-        >
-          {spawnMode === 'heavy' ? '⬡ HEAVY' : spawnMode === 'scout' ? '→ SCOUT' : '· BASIC'}
-        </button>
+        {/* Spawn type selector — 3 direct buttons instead of cycle */}
+        {(['basic', 'heavy', 'scout'] as const).map((type, idx) => {
+          const active = spawnMode === type
+          const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
+          const label = type === 'heavy' ? '⬡' : type === 'scout' ? '→' : '·'
+          return (
+            <button
+              key={type}
+              onClick={() => gameActions?.setSpawnType?.(type)}
+              title={`[${idx + 1}] Spawn ${type}`}
+              style={{
+                pointerEvents: 'auto',
+                padding: '4px 9px',
+                fontSize: 13,
+                cursor: 'pointer',
+                background: active ? `${color}22` : 'rgba(0,0,0,0.5)',
+                border: `1px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
+                borderRadius: idx === 0 ? '4px 0 0 4px' : idx === 2 ? '0 4px 4px 0' : '0',
+                color: active ? color : 'rgba(255,255,255,0.4)',
+                marginLeft: idx === 0 ? 0 : -1,
+              }}
+            >
+              {label}
+            </button>
+          )
+        })}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
