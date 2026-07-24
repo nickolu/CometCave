@@ -270,6 +270,17 @@ export function HUD() {
                 ⚡ ENEMY MORALE
               </span>
             )}
+            {isCritical && !moraleActive && (
+              <span style={{
+                fontSize: 10, letterSpacing: 1,
+                color: '#ff4f7b', opacity: 0.85,
+                border: '1px solid rgba(255,79,123,0.5)', borderRadius: 3,
+                padding: '2px 6px',
+                fontWeight: 'bold',
+              }}>
+                ⚡ RAGE +40%
+              </span>
+            )}
           </div>
         )
       })()}
