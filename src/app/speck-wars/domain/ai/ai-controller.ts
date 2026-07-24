@@ -1,21 +1,23 @@
 import type { SimulationState, InputEvent, BuildingEntity } from '../types'
 
+export type AIPersonality = 'aggressive' | 'macro' | 'balanced'
+
 export class AIController {
   private playerId: string
   private tickInterval: number
   private readonly baseTickInterval: number
   private lastDecisionTick: number = 0
-  private aggressive: boolean  // true = Hard/Brutal: every 4th decision rushes base
+  private personality: AIPersonality
   private decisionCount: number = 0
   private spawnMode: 'basic' | 'heavy' = 'basic'
   private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
   private dominanceTimer: number = 0  // ms enemy has held a 3:1 count advantage
 
-  constructor(playerId: string, tickInterval: number = 30, aggressive = false) {
+  constructor(playerId: string, tickInterval: number = 30, personality: AIPersonality = 'balanced') {
     this.playerId = playerId
     this.tickInterval = tickInterval
     this.baseTickInterval = tickInterval
-    this.aggressive = aggressive
+    this.personality = personality
   }
 
   update(sim: SimulationState, dt: number = 16) {
@@ -79,8 +81,20 @@ export class AIController {
 
     this.decisionCount++
 
-    // Counter-spawn (non-aggressive only): mirror player's heavy ratio
-    if (!this.aggressive) {
+    // Spawn mode decisions
+    if (this.personality === 'aggressive') {
+      // Aggressive: unpredictable spawn mix — re-evaluate every 8–16 decisions
+      this.spawnModeCountdown--
+      if (this.spawnModeCountdown <= 0) {
+        const next = Math.random() < 0.45 ? 'heavy' : 'basic'
+        if (next !== this.spawnMode) {
+          this.spawnMode = next
+          sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: next })
+        }
+        this.spawnModeCountdown = 8 + Math.floor(Math.random() * 8)
+      }
+    } else {
+      // Balanced + Macro: counter-spawn — mirror player's heavy ratio
       let playerHeavy = 0, playerBasic = 0
       for (let i = 0; i < sim.speckCount; i++) {
         const m = sim.speckMeta[i]
@@ -101,60 +115,61 @@ export class AIController {
       }
     }
 
-    // Hard/Brutal mode: vary spawn type to add unpredictability
-    if (this.aggressive) {
-      this.spawnModeCountdown--
-      if (this.spawnModeCountdown <= 0) {
-        // 40% chance to switch to heavy, 60% stay/go basic
-        const next = Math.random() < 0.4 ? 'heavy' : 'basic'
-        if (next !== this.spawnMode) {
-          this.spawnMode = next
-          sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: next })
-        }
-        this.spawnModeCountdown = 8 + Math.floor(Math.random() * 8)  // re-evaluate in 8–16 decisions
-      }
-    }
-
     // Emergency: detect if the enemy (player) is about to win by domination
     const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
-    const enemyId = Object.keys(sim.players).find(pid => pid !== this.playerId) ?? null
+    const enemyId = Object.keys(sim.players).find(pid => pid !== this.playerId && pid !== 'neutral') ?? null
     const enemyHasAllOutposts = enemyId !== null && outposts.length > 0 && outposts.every(o => o.ownerId === enemyId)
     // If enemy has all outposts, temporarily halve decision interval to react faster
     if (enemyHasAllOutposts) {
       this.tickInterval = Math.max(Math.floor(this.baseTickInterval * 0.5), 2)
     } else if (this.dominanceTimer === 0) {
-      // Only restore base interval if not already tracking dominance-timer speedup
       this.tickInterval = this.baseTickInterval
     }
 
-    // Hard mode: every 4th decision, rush player base directly (pressure waves)
-    // Exception: never base-rush during enemy domination threat — must recapture
-    const forceBaseRush = this.aggressive && this.decisionCount % 4 === 0 && !enemyHasAllOutposts
+    // Aggressive: every 4th decision, rush player base directly (pressure waves)
+    // Exception: never base-rush during enemy domination threat — must recapture outposts
+    const forceBaseRush = this.personality === 'aggressive' && this.decisionCount % 4 === 0 && !enemyHasAllOutposts
 
     // Defensive rally: when AI base is low HP, sometimes pull back to defend
     const myBaseHpFrac = (myBase?.hp ?? 100) / (myBase?.maxHp ?? 100)
     if (!forceBaseRush && myBaseHpFrac < 0.6 && myBase) {
-      // Aggressive AI defends reluctantly; easy/medium AI defends more readily
-      const defendChance = this.aggressive
-        ? (myBaseHpFrac < 0.3 ? 0.35 : 0.15)
-        : (myBaseHpFrac < 0.3 ? 0.70 : 0.45)
+      const defendChance = this.personality === 'aggressive'
+        ? (myBaseHpFrac < 0.3 ? 0.35 : 0.15)   // aggressive defends reluctantly
+        : this.personality === 'macro'
+          ? (myBaseHpFrac < 0.3 ? 0.85 : 0.55)  // macro defends to protect production base
+          : (myBaseHpFrac < 0.3 ? 0.70 : 0.45)  // balanced
       if (Math.random() < defendChance) {
         sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: myBase.x, y: myBase.y })
         return
       }
     }
 
-    // Priority 1 (always): recapture player-held outpost
-    // Priority 2: capture neutral outpost
-    // Priority 3: attack enemy base
-    // Hard mode override: directly rush base on pressure-wave ticks
-    const target = forceBaseRush
-      ? nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
-      : (
+    // Rally target priority per personality:
+    //   Aggressive: rush base every 4th decision; otherwise recapture/neutral/base
+    //   Macro: only target outposts until all 3 are held, then attack base
+    //   Balanced: recapture → neutral outpost → base
+    let target: BuildingEntity | null
+    const myOutpostCount = outposts.filter(o => o.ownerId === this.playerId).length
+
+    if (forceBaseRush) {
+      target = nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+    } else if (this.personality === 'macro') {
+      if (myOutpostCount === outposts.length && outposts.length > 0) {
+        // Holding all outposts — press the base
+        target = nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+      } else {
+        // Still building outpost control — ignore base entirely
+        target =
           nearest(b => b.typeId === 'outpost' && b.ownerId !== this.playerId && b.ownerId !== 'neutral') ??
-          nearest(b => b.typeId === 'outpost' && b.ownerId === 'neutral') ??
-          nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
-        )
+          nearest(b => b.typeId === 'outpost' && b.ownerId === 'neutral')
+      }
+    } else {
+      // Balanced: recapture → neutral outpost → base
+      target =
+        nearest(b => b.typeId === 'outpost' && b.ownerId !== this.playerId && b.ownerId !== 'neutral') ??
+        nearest(b => b.typeId === 'outpost' && b.ownerId === 'neutral') ??
+        nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
+    }
 
     if (!target) return
 

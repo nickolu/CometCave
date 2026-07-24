@@ -6,7 +6,7 @@ import { Renderer } from './rendering/renderer'
 import { createCamera, clampCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
-import { AIController } from './domain/ai/ai-controller'
+import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday } from './lib/personal-best'
 
 export class GameInstance {
@@ -50,7 +50,16 @@ export class GameInstance {
     this.sim = createSim(dailySeed, difficulty)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, difficulty === 'hard' || difficulty === 'very-hard')
+    const aiPersonality = (): AIPersonality => {
+      if (difficulty === 'easy' || difficulty === 'medium') return 'balanced'
+      if (difficulty === 'hard') {
+        const r = Math.random()
+        return r < 0.4 ? 'aggressive' : r < 0.7 ? 'macro' : 'balanced'
+      }
+      // very-hard: no balanced — pure pressure or macro domination
+      return Math.random() < 0.55 ? 'aggressive' : 'macro'
+    }
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality())
   }
 
   private onVisibilityChange = () => {
