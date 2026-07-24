@@ -278,13 +278,23 @@ export function HUD() {
           position: 'absolute', top: 76, left: 0, right: 0,
           display: 'flex', justifyContent: 'center',
         }}>
-          <span style={{
-            color: notification.color,
-            fontSize: 13,
-            fontWeight: 'bold',
-            letterSpacing: 2,
-            textShadow: `0 0 12px ${notification.color}`,
-          }}>
+          <style>{`
+            @keyframes notif-in {
+              from { opacity: 0; transform: translateY(-8px) scale(0.92); }
+              to   { opacity: 1; transform: translateY(0)  scale(1); }
+            }
+          `}</style>
+          <span
+            key={notification.message + notification.color}
+            style={{
+              color: notification.color,
+              fontSize: 13,
+              fontWeight: 'bold',
+              letterSpacing: 2,
+              textShadow: `0 0 12px ${notification.color}`,
+              animation: 'notif-in 0.18s ease-out',
+            }}
+          >
             {notification.message}
           </span>
         </div>
