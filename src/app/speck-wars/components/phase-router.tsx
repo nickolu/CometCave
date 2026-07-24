@@ -21,6 +21,15 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     }
   }, [phase])
 
+  useEffect(() => {
+    if (phase !== 'menu') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Enter') setPhase('playing')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [phase, setPhase])
+
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
     { key: 'medium', label: 'Medium', color: '#ffcc44' },
