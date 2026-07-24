@@ -50,6 +50,32 @@ export function HUD() {
         </button>
       </div>
 
+      {/* Outpost ownership indicator dots */}
+      {hud && (() => {
+        const OUTPOST_IDS = ['outpost-top', 'outpost-left', 'outpost-right'] as const
+        const dots = OUTPOST_IDS.map(id => {
+          if (hud.players.player?.buildingHp[id] !== undefined) return '#4af7c4'
+          if (hud.players.ai?.buildingHp[id] !== undefined) return '#ff4f7b'
+          return '#888888'
+        })
+        return (
+          <div style={{
+            position: 'absolute', top: 48, left: 0, right: 0,
+            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
+          }}>
+            <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>OUTPOSTS</span>
+            {dots.map((color, i) => (
+              <div key={i} style={{
+                width: 10, height: 10,
+                borderRadius: '50%',
+                background: color,
+                boxShadow: color !== '#888888' ? `0 0 6px ${color}` : 'none',
+              }} />
+            ))}
+          </div>
+        )
+      })()}
+
       {/* Paused overlay */}
       {phase === 'paused' && (
         <div style={{
