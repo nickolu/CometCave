@@ -284,5 +284,19 @@ function emitHudUpdate(sim: SimulationState) {
     outpostFortify[building.id] = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown } })
+  let baseUnderThreat = false
+  const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+  if (playerBase) {
+    const threatRange = 280
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (!m || m.ownerId !== 'ai') continue
+      if (sim.speckHp[i] <= 0) continue
+      const dx = sim.speckX[i] - playerBase.x
+      const dy = sim.speckY[i] - playerBase.y
+      if (dx * dx + dy * dy <= threatRange * threatRange) { baseUnderThreat = true; break }
+    }
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat } })
 }

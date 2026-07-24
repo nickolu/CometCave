@@ -62,6 +62,33 @@ export function HUD() {
       position: 'absolute', inset: 0, pointerEvents: 'none',
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
     }}>
+      <style>{`
+        @keyframes pulse-red {
+          from { opacity: 0.5; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      {hud?.baseUnderThreat && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          border: '4px solid rgba(255, 50, 50, 0.85)',
+          borderRadius: 2,
+          pointerEvents: 'none',
+          zIndex: 100,
+          animation: 'pulse-red 0.8s ease-in-out infinite alternate',
+          boxShadow: 'inset 0 0 40px rgba(255, 0, 0, 0.25)',
+        }} />
+      )}
+      {hud?.baseUnderThreat && (
+        <div style={{
+          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
+          padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
+          zIndex: 110, pointerEvents: 'none',
+          animation: 'pulse-red 0.6s ease-in-out infinite alternate',
+        }}>⚠ BASE UNDER ATTACK</div>
+      )}
       {isDanger && (
         <>
           <style>{`

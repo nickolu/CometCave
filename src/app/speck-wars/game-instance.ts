@@ -44,6 +44,7 @@ export class GameInstance {
   private rallyCryFired = false               // one-time Rally Cry notification per game
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
   private retreatWarnedAt = -20000          // allow retreat warning after 20s
+  private prevBaseUnderThreat = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -222,6 +223,11 @@ export class GameInstance {
         }
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
+          const bua = event.data.baseUnderThreat ?? false
+          if (bua && !this.prevBaseUnderThreat) {
+            this.notify('⚠ BASE UNDER ATTACK', '#ff3333')
+          }
+          this.prevBaseUnderThreat = bua
           this.cachedPlayerSpeckCount = event.data.players.player?.speckCount ?? 0
           const playerSpeckCount = event.data.players.player?.speckCount ?? 0
           store.setPeakArmySize(playerSpeckCount)
