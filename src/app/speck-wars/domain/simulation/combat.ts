@@ -55,10 +55,12 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       const dy = speckY[j] - speckY[i]
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= stype.attackRange) {
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId)
+        const veteranBonus = meta.kills >= 3 ? 1.20 : 1.0  // veterans deal +20% damage
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
         if (speckHp[j] <= 0) {
+          meta.kills++  // attacker earns a kill
           sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
         }
         break  // one attack per cooldown

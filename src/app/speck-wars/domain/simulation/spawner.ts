@@ -57,6 +57,7 @@ export function updateSpawners(sim: SimulationState, dt: number) {
         state: 'idle',
         targetId: null,
         attackCooldown: 0,
+        kills: 0,
       }
       addSpeck(sim, meta, sx, sy, building.id)
     }
