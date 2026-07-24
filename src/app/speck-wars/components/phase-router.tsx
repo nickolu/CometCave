@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useSpeckWarsStore } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
@@ -44,6 +44,25 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         >
           Play
         </button>
+        {/* Controls hint */}
+        <div style={{
+          marginTop: 16,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '4px 24px',
+          color: 'rgba(255,255,255,0.35)',
+          fontSize: 11,
+          letterSpacing: 0.5,
+          textAlign: 'left',
+          maxWidth: 280,
+        }}>
+          <span>🖱 Click — rally specks</span>
+          <span>Space — pause</span>
+          <span>Scroll — zoom</span>
+          <span>R — clear rally</span>
+          <span>Drag — pan camera</span>
+          <span>1×/2×/4× — speed</span>
+        </div>
       </div>
     )
   }
@@ -99,7 +118,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
         <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
           <button
-            onClick={() => window.location.reload()}
+            onClick={resetGame}
             style={{
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: accentColor, border: 'none', borderRadius: 8,
