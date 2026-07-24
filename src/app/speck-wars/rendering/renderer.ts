@@ -1,4 +1,4 @@
-import { Application, Container } from 'pixi.js'
+import { Application, Container, Graphics } from 'pixi.js'
 import { SpeckLayer } from './layers/speck-layer'
 import { BuildingLayer } from './layers/building-layer'
 import { GridLayer } from './layers/grid-layer'
@@ -32,6 +32,7 @@ export class Renderer {
   private buildingLayer!: BuildingLayer
   private gridLayer!: GridLayer
   private effectsLayer!: EffectsLayer
+  private rallyGfx!: Graphics
 
   async init(canvas: HTMLCanvasElement) {
     const app = new Application() as PixiApplication
@@ -57,6 +58,9 @@ export class Renderer {
     this.world.addChild(this.buildingLayer.stage)
     this.world.addChild(this.effectsLayer.stage)
     this.world.addChild(this.speckLayer.stage)
+
+    this.rallyGfx = new Graphics()
+    this.world.addChild(this.rallyGfx)
   }
 
   render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number) {
@@ -73,6 +77,23 @@ export class Renderer {
       }
     }
     this.effectsLayer.update(dt)
+
+    // Rally point marker
+    this.rallyGfx.clear()
+    const rp = sim.rallyPoints['player']
+    if (rp) {
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400)
+      const alpha = 0.5 + 0.5 * pulse
+      this.rallyGfx.lineStyle(2, PLAYER_COLOR, alpha)
+      const s = 10
+      this.rallyGfx.moveTo(rp.x - s, rp.y)
+      this.rallyGfx.lineTo(rp.x + s, rp.y)
+      this.rallyGfx.moveTo(rp.x, rp.y - s)
+      this.rallyGfx.lineTo(rp.x, rp.y + s)
+      this.rallyGfx.lineStyle(1.5, PLAYER_COLOR, alpha * 0.5)
+      this.rallyGfx.drawCircle(rp.x, rp.y, 14)
+      this.rallyGfx.lineStyle(0)
+    }
   }
 
   showRallyPing(x: number, y: number) {
@@ -84,6 +105,7 @@ export class Renderer {
     this.effectsLayer.destroy()
     this.speckLayer.destroy()
     this.buildingLayer.destroy()
+    this.rallyGfx.destroy()
     this.app.destroy()
   }
 }
