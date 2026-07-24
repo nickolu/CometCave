@@ -1,6 +1,7 @@
 import { Container, Sprite } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
+import { SPECK_TYPES } from '../../domain/config/speck-types'
 
 export class SpeckLayer {
   private containers: Map<string, Container> = new Map()
@@ -54,6 +55,9 @@ export class SpeckLayer {
         const i = indices[j]
         spriteList[j].position.set(sim.speckX[i], sim.speckY[i])
         spriteList[j].visible = true
+        const typeMeta = sim.speckMeta[i]
+        const stype = typeMeta ? SPECK_TYPES[typeMeta.typeId] : null
+        spriteList[j].scale.set(stype ? stype.size / 4 : 0.75)
       }
 
       // Hide excess sprites

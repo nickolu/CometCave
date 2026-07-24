@@ -16,7 +16,7 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
   outpost: {
     id: 'outpost', name: 'Outpost',
     maxHp: 50, size: 20,
-    spawnTypeId: 'basic',
+    spawnTypeId: 'heavy',
     spawnInterval: 1800, spawnCount: 1,
   },
 }
