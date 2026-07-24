@@ -30,6 +30,19 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, setPhase])
 
+  useEffect(() => {
+    if (phase !== 'victory' && phase !== 'defeat') return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault()
+        resetGame()
+        setPhase('playing')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [phase, resetGame, setPhase])
+
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
     { key: 'medium', label: 'Medium', color: '#ffcc44' },
@@ -246,7 +259,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           )
         })()}
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
           <button
             onClick={resetGame}
             style={{
@@ -278,6 +292,10 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           >
             ← Cave
           </a>
+          </div>
+          <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)' }}>
+            Enter / Space — play again
+          </span>
         </div>
         {nextDiff && (
           <button
