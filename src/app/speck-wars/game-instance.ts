@@ -34,6 +34,9 @@ export class GameInstance {
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
   private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
   private lastAiSpawnMode: string = 'basic'  // track AI spawn mode changes
+  private dominationCountdownHolder: string | null = null  // who has triple outpost for countdown
+  private dominationWarned10 = false    // notified at 10s remaining
+  private dominationWarned5 = false     // notified at 5s remaining
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -206,6 +209,34 @@ export class GameInstance {
               const name = buildingId.replace('outpost-', '').toUpperCase()
               store.setNotification({ message: `⬡ ${name} HP CRITICAL!`, color: '#ff2200' })
               setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+            }
+          }
+          // Domination countdown: warn at 10s and 5s remaining
+          const holder = event.data.tripleOutpostOwner ?? null
+          const dp = event.data.dominationProgress ?? null
+          if (holder !== this.dominationCountdownHolder) {
+            // Holder changed — reset countdown flags
+            this.dominationCountdownHolder = holder
+            this.dominationWarned10 = false
+            this.dominationWarned5 = false
+          }
+          if (holder !== null && dp !== null) {
+            const isPlayer = holder === 'player'
+            // 10s left threshold: 50/60 ≈ 0.833
+            if (!this.dominationWarned10 && dp >= 50 / 60) {
+              this.dominationWarned10 = true
+              const msg = isPlayer ? '⬡ DOMINATION IN 10s!' : '⬡ ENEMY DOMINATION IN 10s!'
+              const color = isPlayer ? '#4af7c4' : '#ff4f7b'
+              store.setNotification({ message: msg, color })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+            }
+            // 5s left threshold: 55/60 ≈ 0.917
+            if (!this.dominationWarned5 && dp >= 55 / 60) {
+              this.dominationWarned5 = true
+              const msg = isPlayer ? '⬡ DOMINATION IN 5s!' : '⬡ ENEMY DOMINATION IN 5s!'
+              const color = isPlayer ? '#ffd700' : '#ff2200'
+              store.setNotification({ message: msg, color })
+              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 4500)
             }
           }
         }
