@@ -479,6 +479,10 @@ export class GameInstance {
         if (event.type === 'AI_LAST_STAND') {
           this.notify('⚠ ENEMY LAST STAND', '#ff4444')
         }
+
+        if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
+          this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
+        }
       }
 
       // Retreat wave warning: 10+ player specks retreating = notify
