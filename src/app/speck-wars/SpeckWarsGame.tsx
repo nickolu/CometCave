@@ -26,7 +26,14 @@ function GameCanvas() {
   }, [])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{
+      position: 'relative', width: '100%', height: '100%',
+      background: [
+        'radial-gradient(ellipse at 25% 75%, rgba(15,5,40,0.9) 0%, transparent 55%)',
+        'radial-gradient(ellipse at 75% 25%, rgba(5,15,35,0.7) 0%, transparent 50%)',
+        'radial-gradient(ellipse at 50% 50%, rgba(2,6,18,1) 0%, #010208 100%)',
+      ].join(', '),
+    }}>
       <canvas
         ref={canvasRef}
         style={{ display: 'block', width: '100%', height: '100%' }}
