@@ -4,6 +4,7 @@ import { useSpeckWarsStore } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs } = useSpeckWarsStore()
+  const [copied, setCopied] = useState(false)
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
@@ -63,8 +64,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const shareText = won
       ? `I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr}! 🎮 Can you beat my time?`
       : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr}! 🎮 Think you can do better?`
-
-    const [copied, setCopied] = useState(false)
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
