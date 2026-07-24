@@ -531,6 +531,37 @@ export function HUD() {
                 </span>
               </div>
             )}
+            {/* Army composition: heavy % indicator */}
+            {(() => {
+              const playerTypes = hud.players.player?.speckTypes ?? {}
+              const aiTypes = hud.players.ai?.speckTypes ?? {}
+              const playerHeavy = playerTypes['heavy'] ?? 0
+              const playerBasic = playerTypes['basic'] ?? 0
+              const aiHeavy = aiTypes['heavy'] ?? 0
+              const aiBasic = aiTypes['basic'] ?? 0
+              const playerTotal = playerHeavy + playerBasic
+              const aiTotal = aiHeavy + aiBasic
+              if (playerTotal < 3 && aiTotal < 3) return null
+              const playerHeavyFrac = playerTotal > 0 ? playerHeavy / playerTotal : 0
+              const aiHeavyFrac = aiTotal > 0 ? aiHeavy / aiTotal : 0
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div title={`You: ${playerHeavy}⬡ heavy, ${playerBasic}· basic`} style={{ width: 20, textAlign: 'right' }}>
+                    {playerHeavy > 0 && <span style={{ fontSize: 8, color: '#ffa032', opacity: 0.7 }}>⬡{playerHeavy}</span>}
+                  </div>
+                  <div style={{ width: 100, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, height: '100%',
+                      width: `${Math.round(playerHeavyFrac * 100)}%`,
+                      background: '#ffa032', opacity: 0.5, borderRadius: 2,
+                    }} />
+                  </div>
+                  <div title={`Enemy: ${aiHeavy}⬡ heavy, ${aiBasic}· basic`} style={{ width: 20 }}>
+                    {aiHeavy > 0 && <span style={{ fontSize: 8, color: '#ff6b6b', opacity: 0.7 }}>⬡{aiHeavy}</span>}
+                  </div>
+                </div>
+              )
+            })()}
             {/* Kill/loss + enemy base HP */}
             <div style={{ display: 'flex', gap: 10, fontSize: 10, letterSpacing: 0.5 }}>
               <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
