@@ -5,7 +5,7 @@ import { getBestTime, getWinStreak } from '../lib/personal-best'
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -154,6 +154,15 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         <h1 style={{ color: accentColor, fontSize: 64, margin: 0, letterSpacing: 4 }}>
           {won ? 'VICTORY' : 'DEFEATED'}
         </h1>
+        {victoryType && (
+          <div style={{
+            fontSize: 12, letterSpacing: 3, opacity: 0.6,
+            color: victoryType === 'domination' ? '#ffd700' : accentColor,
+            textTransform: 'uppercase',
+          }}>
+            {victoryType === 'domination' ? '⬡ by Domination' : '💥 by Destruction'}
+          </div>
+        )}
         {won && isNewBest && (
           <div style={{ color: '#ffd700', fontSize: 16, letterSpacing: 3, fontWeight: 'bold', textShadow: '0 0 16px #ffd700' }}>
             ★ NEW BEST TIME ★

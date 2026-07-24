@@ -12,6 +12,6 @@ export function checkVictory(sim: SimulationState) {
 
   const alive = Object.values(sim.players).filter(p => !p.isDefeated && p.id !== 'neutral')
   if (alive.length === 1) {
-    sim.events.push({ type: 'GAME_OVER', winnerId: alive[0].id })
+    sim.events.push({ type: 'GAME_OVER', winnerId: alive[0].id, victoryType: 'destruction' })
   }
 }

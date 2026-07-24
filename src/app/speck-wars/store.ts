@@ -10,6 +10,8 @@ interface SpeckWarsStore {
   togglePause: () => void
   winnerId: string | null
   setWinnerId: (id: string) => void
+  victoryType: 'destruction' | 'domination' | null
+  setVictoryType: (t: 'destruction' | 'domination') => void
   hud: HudData | null
   setHud: (data: HudData) => void
   difficulty: Difficulty
@@ -39,6 +41,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   })),
   winnerId: null,
   setWinnerId: winnerId => set({ winnerId }),
+  victoryType: null,
+  setVictoryType: victoryType => set({ victoryType }),
   hud: null,
   setHud: hud => set({ hud }),
   difficulty: 'medium',
@@ -69,6 +73,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   resetGame: () => set(s => ({
     phase: 'menu' as GamePhase,
     winnerId: null,
+    victoryType: null,
     hud: null,
     elapsedMs: 0,
     speed: 1 as 1 | 2 | 4,
