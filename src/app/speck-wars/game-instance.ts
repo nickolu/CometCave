@@ -108,16 +108,6 @@ export class GameInstance {
 
     const store = useSpeckWarsStore.getState()
 
-    // Consume pending rally from minimap click
-    if (store.pendingRally) {
-      const { x, y } = store.pendingRally
-      store.setPendingRally(null)
-      if (store.phase === 'playing') {
-        this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x, y })
-        this.renderer.showRallyPing(x, y)
-      }
-    }
-
     if (store.phase === 'playing') {
       const scaledDt = dt * store.speed
       this.elapsedMs += scaledDt

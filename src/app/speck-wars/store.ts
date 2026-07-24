@@ -9,8 +9,6 @@ interface SpeckWarsStore {
   phase: GamePhase
   setPhase: (phase: GamePhase) => void
   togglePause: () => void
-  pendingRally: { x: number; y: number } | null
-  setPendingRally: (pt: { x: number; y: number } | null) => void
   winnerId: string | null
   setWinnerId: (id: string) => void
   victoryType: 'destruction' | 'domination' | null
@@ -43,8 +41,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   togglePause: () => set(s => ({
     phase: s.phase === 'playing' ? 'paused' : s.phase === 'paused' ? 'playing' : s.phase,
   })),
-  pendingRally: null,
-  setPendingRally: pt => set({ pendingRally: pt }),
   winnerId: null,
   setWinnerId: winnerId => set({ winnerId }),
   victoryType: null,

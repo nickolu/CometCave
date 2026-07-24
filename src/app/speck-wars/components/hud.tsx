@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { PLAYER_COLOR, AI_COLOR, WORLD_WIDTH, WORLD_HEIGHT } from '../domain/constants'
+import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime } from '../lib/personal-best'
 
 function colorHex(n: number) {
@@ -549,99 +549,6 @@ export function HUD() {
         )
       })()}
 
-      {/* Minimap — bottom right */}
-      {hud?.minimap && phase !== 'paused' && <Minimap minimap={hud.minimap} />}
     </div>
-  )
-}
-
-const MINIMAP_SIZE = 130
-
-function Minimap({ minimap }: { minimap: NonNullable<import('../domain/types').HudData['minimap']> }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const setPendingRally = useSpeckWarsStore(s => s.setPendingRally)
-
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
-    const cx = e.clientX - rect.left
-    const cy = e.clientY - rect.top
-    const wx = (cx / MINIMAP_SIZE) * WORLD_WIDTH
-    const wy = (cy / MINIMAP_SIZE) * WORLD_HEIGHT
-    setPendingRally({ x: wx, y: wy })
-  }
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const W = MINIMAP_SIZE, H = MINIMAP_SIZE
-    const scaleX = W / WORLD_WIDTH
-    const scaleY = H / WORLD_HEIGHT
-
-    ctx.clearRect(0, 0, W, H)
-
-    // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'
-    ctx.fillRect(0, 0, W, H)
-
-    // Specks
-    const playerHex = `#${PLAYER_COLOR.toString(16).padStart(6, '0')}`
-    const aiHex = `#${AI_COLOR.toString(16).padStart(6, '0')}`
-    for (const sp of minimap.specks) {
-      ctx.fillStyle = sp.ownerId === 'player' ? playerHex : aiHex
-      ctx.fillRect(Math.round(sp.x * scaleX) - 0.5, Math.round(sp.y * scaleY) - 0.5, 1.5, 1.5)
-    }
-
-    // Buildings
-    for (const b of minimap.buildings) {
-      const bx = b.x * scaleX, by = b.y * scaleY
-      const isBase = b.typeId === 'base'
-      const r = isBase ? 4 : 2.5
-      ctx.beginPath()
-      ctx.arc(bx, by, r, 0, Math.PI * 2)
-      ctx.fillStyle = b.ownerId === 'player' ? playerHex : b.ownerId === 'ai' ? aiHex : '#888888'
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)'
-      ctx.lineWidth = 0.8
-      ctx.stroke()
-    }
-
-    // Rally point
-    if (minimap.rallyX !== null && minimap.rallyY !== null) {
-      const rx = minimap.rallyX * scaleX, ry = minimap.rallyY * scaleY
-      ctx.strokeStyle = playerHex
-      ctx.lineWidth = 1
-      ctx.globalAlpha = 0.8
-      ctx.beginPath()
-      ctx.moveTo(rx - 3, ry); ctx.lineTo(rx + 3, ry)
-      ctx.moveTo(rx, ry - 3); ctx.lineTo(rx, ry + 3)
-      ctx.stroke()
-      ctx.globalAlpha = 1
-    }
-
-    // Border
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
-    ctx.lineWidth = 1
-    ctx.strokeRect(0.5, 0.5, W - 1, H - 1)
-  }, [minimap])
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={MINIMAP_SIZE}
-      height={MINIMAP_SIZE}
-      onClick={handleClick}
-      style={{
-        position: 'absolute',
-        bottom: 16,
-        right: 16,
-        borderRadius: 4,
-        imageRendering: 'pixelated',
-        cursor: 'crosshair',
-        pointerEvents: 'auto',
-      }}
-    />
   )
 }
