@@ -16,7 +16,12 @@ export interface BuildingEntity {
   x: number; y: number
   hp: number; maxHp: number
   spawnTimer: number       // ms until next spawn
+  spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
+  spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
+  tripleOutpostBonus?: boolean    // true when owner controls all outposts (2× spawn)
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
+  captureProgress?: number      // 0..1 progress toward capture for captureSide
+  captureSide?: string | null   // which player is currently winning capture
 }
 
 export interface Player {
@@ -42,30 +47,41 @@ export interface SimulationState {
   speckVx: Float32Array
   speckVy: Float32Array
   speckHp: Float32Array
-  speckMeta: SpeckMeta[]   // parallel to speckIds
+  speckMeta: (SpeckMeta | null)[]   // parallel to speckIds; null means dead/unused slot
+  speckCount: number       // high-water mark: indices 0..speckCount-1 may be live or freed
+  freeSlots: number[]      // recycled slot indices from dead specks
 
   inputQueue: InputEvent[]
   events: SimEvent[]
+  rallyPoints: Record<string, { x: number; y: number } | null>
   spatialGrid: SpatialGrid
+  dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
 }
 
 export type InputEvent =
   | { type: 'RALLY'; ownerId: string; x: number; y: number }
+  | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string }
   | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
 
 export type SimEvent =
-  | { type: 'SPECK_DIED'; speckId: string; x: number; y: number }
+  | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
   | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
-  | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string }
+  | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string; x: number; y: number }
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
-  | { type: 'GAME_OVER'; winnerId: string }
+  | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'domination' }
   | { type: 'HUD_UPDATE'; data: HudData }
+  | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
 
 export interface HudData {
   players: Record<string, {
     speckCount: number
     buildingCount: number
     buildingHp: Record<string, number>
+    speckTypes: Record<string, number>  // typeId → count
   }>
+  attackedBuildingIds: string[]
+  tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
+  dominationProgress: number | null  // 0..1 fraction of DOMINATION_TIME elapsed; null if no triple holder
+  captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
 }

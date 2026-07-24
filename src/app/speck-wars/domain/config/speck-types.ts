@@ -15,4 +15,11 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     size: 3, productionTime: 800,
     abilities: [],
   },
+  heavy: {
+    id: 'heavy', name: 'Tank',
+    hp: 5, damage: 2, speed: 60,
+    attackRange: 8, attackCooldown: 700,
+    size: 6, productionTime: 1800,
+    abilities: [],
+  },
 }

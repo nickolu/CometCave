@@ -1,31 +1,38 @@
 import type { SimulationState, SpeckMeta } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
+import { MAX_SPECKS } from '../constants'
 
-// Resize all SOA arrays by 1 and insert a new speck at the end
-function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number) {
-  const n = sim.speckIds.length
+// Place a new speck into a recycled or fresh slot — never allocates new arrays
+function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
+  const hp = SPECK_TYPES[meta.typeId]?.hp ?? 1
 
-  // Grow Float32Arrays
-  const newX = new Float32Array(n + 1); newX.set(sim.speckX); newX[n] = x
-  const newY = new Float32Array(n + 1); newY.set(sim.speckY); newY[n] = y
-  const newVx = new Float32Array(n + 1); newVx.set(sim.speckVx); newVx[n] = 0
-  const newVy = new Float32Array(n + 1); newVy.set(sim.speckVy); newVy[n] = 0
-  const newHp = new Float32Array(n + 1); newHp.set(sim.speckHp)
-  newHp[n] = SPECK_TYPES[meta.typeId]?.hp ?? 1
+  let slot: number
+  if (sim.freeSlots.length > 0) {
+    slot = sim.freeSlots.pop()!
+  } else if (sim.speckCount < MAX_SPECKS) {
+    slot = sim.speckCount
+    sim.speckCount++
+  } else {
+    return  // at capacity, drop spawn
+  }
 
-  sim.speckX = newX; sim.speckY = newY
-  sim.speckVx = newVx; sim.speckVy = newVy; sim.speckHp = newHp
-  sim.speckIds.push(meta.id)
-  sim.speckMeta.push(meta)
+  sim.speckX[slot] = x
+  sim.speckY[slot] = y
+  sim.speckVx[slot] = 0
+  sim.speckVy[slot] = 0
+  sim.speckHp[slot] = hp
+  sim.speckIds[slot] = meta.id
+  sim.speckMeta[slot] = meta
 
-  sim.events.push({ type: 'SPECK_SPAWNED', speckId: meta.id, buildingId: '' })
+  sim.events.push({ type: 'SPECK_SPAWNED', speckId: meta.id, buildingId })
 }
 
 let speckCounter = 0
 
 export function updateSpawners(sim: SimulationState, dt: number) {
   for (const building of Object.values(sim.buildings)) {
+    if (building.ownerId === 'neutral') continue
     const btype = BUILDING_TYPES[building.typeId]
     if (!btype?.spawnTypeId) continue
     if (sim.players[building.ownerId]?.isDefeated) continue
@@ -33,7 +40,8 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     building.spawnTimer -= dt
     if (building.spawnTimer > 0) continue
 
-    building.spawnTimer = btype.spawnInterval
+    const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
+    building.spawnTimer = building.tripleOutpostBonus ? baseInterval / 2 : baseInterval
 
     for (let i = 0; i < btype.spawnCount; i++) {
       // Spawn just outside the building radius with slight random offset
@@ -44,13 +52,13 @@ export function updateSpawners(sim: SimulationState, dt: number) {
 
       const meta: SpeckMeta = {
         id: `speck-${++speckCounter}`,
-        typeId: btype.spawnTypeId!,
+        typeId: building.spawnTypeOverride ?? btype.spawnTypeId!,
         ownerId: building.ownerId,
         state: 'idle',
         targetId: null,
         attackCooldown: 0,
       }
-      addSpeck(sim, meta, sx, sy)
+      addSpeck(sim, meta, sx, sy, building.id)
     }
   }
 }
