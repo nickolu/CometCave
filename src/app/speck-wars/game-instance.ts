@@ -193,6 +193,8 @@ export class GameInstance {
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
           this.cachedPlayerSpeckCount = event.data.players.player?.speckCount ?? 0
+          const playerSpeckCount = event.data.players.player?.speckCount ?? 0
+          store.setPeakArmySize(playerSpeckCount)
           // Warn when an enemy starts capturing a player-owned outpost
           const now = Date.now()
           const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
@@ -352,6 +354,9 @@ export class GameInstance {
           }
         }
         if (event.type === 'OUTPOST_CAPTURED') {
+          if (event.newOwner === 'player') {
+            store.addOutpostCaptured()
+          }
           const isPlayerGain = event.newOwner === 'player'
           const isPlayerLoss = event.previousOwner === 'player'
           const isRecapture = isPlayerGain && event.previousOwner === 'ai'
