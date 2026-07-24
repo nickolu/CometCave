@@ -128,7 +128,9 @@ export class Renderer {
           const nx = dx / len, ny = dy / len
           const dashLen = 8, gapLen = 6
           this.rallyGfx.lineStyle(1, PLAYER_COLOR, 0.22)
-          let d = playerBase === null ? 0 : 46  // start outside the base
+          const dashCycle = dashLen + gapLen
+          const marchOffset = (Date.now() / 80) % dashCycle  // ~1.75 cycles/sec
+          let d = (playerBase === null ? 0 : 46) - marchOffset  // animated march toward rally
           while (d < len - 24) {
             const x1 = playerBase.x + nx * d
             const y1 = playerBase.y + ny * d

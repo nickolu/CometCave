@@ -31,6 +31,8 @@ export class GameInstance {
   private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
   private recentDeathPositions: { x: number; y: number; ts: number }[] = []
   private lastComboNotifiedAt = -5000
+  private recentKillTs: number[] = []        // timestamps of player kills in rolling window (kill streak)
+  private lastStreakNotifiedAt = 0            // prevent kill streak notification spam
   private idleArmyTimer = 0              // ms with no rally point + specks available
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
   private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
@@ -336,6 +338,26 @@ export class GameInstance {
           this.recentDeathPositions.push({ x: event.x, y: event.y, ts: Date.now() })
           // Keep only last 30 deaths
           if (this.recentDeathPositions.length > 30) this.recentDeathPositions.shift()
+          // Kill streak tracking for player killer
+          if (event.killerOwnerId === 'player') {
+            const now = Date.now()
+            this.recentKillTs.push(now)
+            // Keep only kills in last 8 seconds
+            this.recentKillTs = this.recentKillTs.filter(t => now - t < 8000)
+            const killCount = this.recentKillTs.length
+            if (now - this.lastStreakNotifiedAt > 4000) {
+              if (killCount >= 20) {
+                this.lastStreakNotifiedAt = now
+                this.notify('⚡ UNSTOPPABLE! ×' + killCount, '#ffffff')
+              } else if (killCount >= 10) {
+                this.lastStreakNotifiedAt = now
+                this.notify('⚡ RAMPAGE! ×' + killCount, '#ffd700')
+              } else if (killCount >= 5) {
+                this.lastStreakNotifiedAt = now
+                this.notify('⚡ KILLING SPREE ×' + killCount, '#ff8844')
+              }
+            }
+          }
         }
         if (event.type === 'BUILDING_DAMAGED' && event.buildingId === 'building-ai-base') {
           const aiBase = this.sim.buildings['building-ai-base']
