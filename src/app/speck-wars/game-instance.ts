@@ -123,6 +123,10 @@ export class GameInstance {
           const won = event.winnerId === 'player'
           store.setWinnerId(event.winnerId)
           store.setVictoryType(event.victoryType)
+          // Dramatic camera shake on game-over
+          this.shakeMs = won ? 700 : 450
+          this.shakeMaxMs = won ? 700 : 450
+          this.shakeStrength = won ? 14 : 9
           // Show dramatic notification, then transition to end screen after a brief delay
           store.setNotification({
             message: won ? '⚡ VICTORY!' : '💀 DEFEATED',
