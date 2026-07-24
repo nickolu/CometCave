@@ -215,34 +215,61 @@ export function HUD() {
         </div>
       )}
 
-      {/* Battle status indicator */}
+      {/* Battle status indicator + morale badge */}
       {hud && phase === 'playing' && (() => {
         const playerSpecks = hud.players.player?.speckCount ?? 0
         const aiSpecks = hud.players.ai?.speckCount ?? 0
         const total = playerSpecks + aiSpecks
-        if (total < 20) return null  // too few specks — don't show yet
-        const ratio = playerSpecks / total
-        const status =
+        const moraleActive = aiSpecks > 0 && playerSpecks >= 2 * aiSpecks
+        const enemyMoraleActive = playerSpecks > 0 && aiSpecks >= 2 * playerSpecks
+
+        if (total < 20 && !moraleActive && !enemyMoraleActive) return null
+
+        const ratio = playerSpecks / (total || 1)
+        const status = total >= 20 ? (
           ratio > 0.65 ? { label: 'DOMINATING', color: '#4af7c4' }
           : ratio > 0.55 ? { label: 'WINNING', color: '#88ff44' }
           : ratio < 0.35 ? { label: 'CRITICAL', color: '#ff4f7b' }
           : ratio < 0.45 ? { label: 'LOSING', color: '#ffaa44' }
           : null
-        if (!status) return null
+        ) : null
+
         return (
           <div style={{
             position: 'absolute', bottom: 16, left: 0, right: 0,
-            display: 'flex', justifyContent: 'center',
+            display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
           }}>
-            <span style={{
-              fontSize: 11,
-              letterSpacing: 2,
-              color: status.color,
-              opacity: 0.6,
-              textTransform: 'uppercase',
-            }}>
-              {status.label}
-            </span>
+            {status && (
+              <span style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: status.color,
+                opacity: 0.6,
+                textTransform: 'uppercase',
+              }}>
+                {status.label}
+              </span>
+            )}
+            {moraleActive && (
+              <span style={{
+                fontSize: 10, letterSpacing: 1,
+                color: '#ffd700', opacity: 0.75,
+                border: '1px solid rgba(255,215,0,0.4)', borderRadius: 3,
+                padding: '2px 6px',
+              }}>
+                ⚡ MORALE +20%
+              </span>
+            )}
+            {enemyMoraleActive && (
+              <span style={{
+                fontSize: 10, letterSpacing: 1,
+                color: '#ff6b35', opacity: 0.75,
+                border: '1px solid rgba(255,107,53,0.4)', borderRadius: 3,
+                padding: '2px 6px',
+              }}>
+                ⚡ ENEMY MORALE
+              </span>
+            )}
           </div>
         )
       })()}
