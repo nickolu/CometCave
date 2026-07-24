@@ -31,8 +31,16 @@ export class GameInstance {
     this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, difficulty === 'hard' || difficulty === 'very-hard')
   }
 
+  private onVisibilityChange = () => {
+    if (document.hidden) {
+      const store = useSpeckWarsStore.getState()
+      if (store.phase === 'playing') store.togglePause()
+    }
+  }
+
   async start() {
     console.log('GameInstance started')
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
     await this.renderer.init(this.canvas)
     this.inputHandler = new InputHandler(
       this.canvas,
@@ -178,6 +186,7 @@ export class GameInstance {
 
   destroy() {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId)
+    document.removeEventListener('visibilitychange', this.onVisibilityChange)
     this.renderer.destroy()
     this.inputHandler?.destroy()
     console.log('GameInstance destroyed')
