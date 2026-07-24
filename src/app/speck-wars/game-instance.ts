@@ -47,6 +47,7 @@ export class GameInstance {
   private retreatWarnedAt = -20000          // allow retreat warning after 20s
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
+  private attackMovePending = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -89,6 +90,12 @@ export class GameInstance {
       (wx, wy) => {
         this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
+        if (this.attackMovePending) {
+          this.attackMovePending = false
+          if (this.canvas) this.canvas.style.cursor = 'default'
+          this.notify('⚔ ATTACK MOVE!', '#ff4f7b')
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 900)
+        }
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => this.clearRally(),                             // R — clear rally
@@ -106,7 +113,12 @@ export class GameInstance {
         this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
       },
       () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },   // D — defend (rally to player base)
-      () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // A — advance to nearest non-player outpost
+      () => {                                              // A — enter attack-move mode
+        this.attackMovePending = true
+        if (this.canvas) this.canvas.style.cursor = 'crosshair'
+        this.notify('⚔ ATTACK MOVE — click target', '#ff6b35')
+        setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+      },
       () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
@@ -114,6 +126,11 @@ export class GameInstance {
       () => {                                                          // Escape — clear selection
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
+        if (this.attackMovePending) {
+          this.attackMovePending = false
+          if (this.canvas) this.canvas.style.cursor = 'default'
+          useSpeckWarsStore.getState().setNotification(null)
+        }
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
