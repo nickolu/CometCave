@@ -22,9 +22,27 @@ export const NEUTRAL_COLOR = 0x888888
 export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a friendly outpost move faster
 export const DOMINATION_TIME = 60000   // ms — hold all 3 outposts this long to win by domination
 
-// Triangle around center (1500, 1500), equidistant between the two bases
-export const OUTPOST_POSITIONS = [
-  { id: 'outpost-top',   x: 1500, y: 700  },
-  { id: 'outpost-left',  x: 850,  y: 2200 },
-  { id: 'outpost-right', x: 2150, y: 2200 },
+// Three map layouts — one is picked per game using the daily seed.
+// All layouts use the same outpost IDs so the rest of the codebase is layout-agnostic.
+export const MAP_LAYOUTS = [
+  // Layout 0 — Triangle: top-center sentinel + two base-side flanks
+  [
+    { id: 'outpost-top',   x: 1500, y: 700  },
+    { id: 'outpost-left',  x: 850,  y: 2200 },
+    { id: 'outpost-right', x: 2150, y: 2200 },
+  ],
+  // Layout 1 — Corridor: diagonal lane from player corner to AI corner
+  [
+    { id: 'outpost-top',   x: 1050, y: 1100 },
+    { id: 'outpost-left',  x: 1500, y: 1500 },
+    { id: 'outpost-right', x: 1950, y: 1900 },
+  ],
+  // Layout 2 — Wings: horizontal spread, forces split attention
+  [
+    { id: 'outpost-top',   x: 1500, y: 950  },
+    { id: 'outpost-left',  x: 950,  y: 1500 },
+    { id: 'outpost-right', x: 2050, y: 1500 },
+  ],
 ] as const
+
+export const OUTPOST_POSITIONS = MAP_LAYOUTS[0]  // default — overridden by createSim seed
