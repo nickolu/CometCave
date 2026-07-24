@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { getBestTime, getWinStreak } from '../lib/personal-best'
+import { getBestTime, getWinStreak, getRecentResults } from '../lib/personal-best'
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
@@ -187,6 +187,32 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </span>
           )}
         </div>
+
+        {/* Recent run history for this difficulty */}
+        {(() => {
+          const history = getRecentResults(difficulty)
+          if (history.length < 2) return null
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.3)' }}>
+                RECENT ({difficulty.toUpperCase()})
+              </span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {history.map((r, i) => {
+                  const mm = String(Math.floor(Math.floor(r.timeMs / 1000) / 60)).padStart(2, '0')
+                  const ss = String(Math.floor(r.timeMs / 1000) % 60).padStart(2, '0')
+                  return (
+                    <div key={i} title={`${r.won ? 'Win' : 'Loss'} — ${mm}:${ss} — ${r.kills} kills`} style={{
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: r.won ? '#4af7c4' : '#ff4f7b',
+                      opacity: i === 0 ? 1 : 0.4 + (history.length - i) / history.length * 0.4,
+                    }} />
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
 
         <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
           <button
