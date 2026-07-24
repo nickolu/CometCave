@@ -4,7 +4,7 @@ import { BUILDING_TYPES } from '../config/building-types'
 import { MAX_SPECKS } from '../constants'
 
 // Place a new speck into a recycled or fresh slot — never allocates new arrays
-function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number) {
+function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
   const hp = SPECK_TYPES[meta.typeId]?.hp ?? 1
 
   let slot: number
@@ -25,7 +25,7 @@ function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number) {
   sim.speckIds[slot] = meta.id
   sim.speckMeta[slot] = meta
 
-  sim.events.push({ type: 'SPECK_SPAWNED', speckId: meta.id, buildingId: '' })
+  sim.events.push({ type: 'SPECK_SPAWNED', speckId: meta.id, buildingId })
 }
 
 let speckCounter = 0
@@ -58,7 +58,7 @@ export function updateSpawners(sim: SimulationState, dt: number) {
         targetId: null,
         attackCooldown: 0,
       }
-      addSpeck(sim, meta, sx, sy)
+      addSpeck(sim, meta, sx, sy, building.id)
     }
   }
 }
