@@ -20,6 +20,7 @@ export const CAPTURE_RADIUS = 100            // px — specks within this distan
 export const CAPTURE_TIME = 5000             // ms to fully capture
 export const NEUTRAL_COLOR = 0x888888
 export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a friendly outpost move faster
+export const DOMINATION_TIME = 60000   // ms — hold all 3 outposts this long to win by domination
 
 // Triangle around center (1500, 1500), equidistant between the two bases
 export const OUTPOST_POSITIONS = [

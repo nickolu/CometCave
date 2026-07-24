@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL } from '../constants'
+import { HUD_UPDATE_INTERVAL, DOMINATION_TIME } from '../constants'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -36,8 +36,8 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
 
-  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
-  updateTripleOutpostBonus(sim)
+  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed + domination timer
+  updateTripleOutpostBonus(sim, dt)
 
   // 8. Check win/loss
   checkVictory(sim)
@@ -62,10 +62,11 @@ function regenBuildingHp(sim: SimulationState, dt: number) {
   }
 }
 
-function updateTripleOutpostBonus(sim: SimulationState) {
+function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
   const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
   if (outposts.length === 0) return
 
+  let tripleHolder: string | null = null
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     const ownsAll = outposts.every(o => o.ownerId === pid)
@@ -73,6 +74,16 @@ function updateTripleOutpostBonus(sim: SimulationState) {
       if (building.ownerId !== pid || building.typeId !== 'base') continue
       building.tripleOutpostBonus = ownsAll
     }
+    if (ownsAll) tripleHolder = pid
+  }
+
+  if (tripleHolder) {
+    sim.dominationTimer += dt
+    if (sim.dominationTimer >= DOMINATION_TIME) {
+      sim.events.push({ type: 'GAME_OVER', winnerId: tripleHolder })
+    }
+  } else {
+    sim.dominationTimer = 0
   }
 }
 
@@ -123,5 +134,6 @@ function emitHudUpdate(sim: SimulationState) {
     }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner } })
+  const dominationProgress = tripleOutpostOwner ? Math.min(1, sim.dominationTimer / DOMINATION_TIME) : null
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress } })
 }

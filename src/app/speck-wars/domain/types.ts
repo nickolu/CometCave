@@ -55,6 +55,7 @@ export interface SimulationState {
   events: SimEvent[]
   rallyPoints: Record<string, { x: number; y: number } | null>
   spatialGrid: SpatialGrid
+  dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
 }
 
 export type InputEvent =
@@ -80,4 +81,5 @@ export interface HudData {
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
+  dominationProgress: number | null  // 0..1 fraction of DOMINATION_TIME elapsed; null if no triple holder
 }
