@@ -11,6 +11,7 @@ export class InputHandler {
   private onRecenterCamera?: () => void
   private onDefend?: () => void
   private onAdvance?: () => void
+  private onRush?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -30,6 +31,7 @@ export class InputHandler {
     onRecenterCamera?: () => void,
     onDefend?: () => void,
     onAdvance?: () => void,
+    onRush?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -40,6 +42,7 @@ export class InputHandler {
     this.onRecenterCamera = onRecenterCamera
     this.onDefend = onDefend
     this.onAdvance = onAdvance
+    this.onRush = onRush
     this.attach()
   }
 
@@ -162,6 +165,8 @@ export class InputHandler {
       this.onDefend?.()
     } else if (e.code === 'KeyA') {
       this.onAdvance?.()
+    } else if (e.code === 'KeyB') {
+      this.onRush?.()
     }
   }
 

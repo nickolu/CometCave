@@ -107,6 +107,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>Drag — pan camera</span>
           <span>H — heavy/basic mode</span>
           <span>A — advance to outpost</span>
+          <span>B — rush enemy base</span>
           <span>C — center on base</span>
           <span>D — defend base</span>
           <span>Minimap — click to rally</span>
