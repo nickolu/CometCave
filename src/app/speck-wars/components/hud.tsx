@@ -447,6 +447,14 @@ export function HUD() {
               if (basic === 0) return `${heavy}× heavy`
               return `${basic}× basic, ${heavy}× heavy`
             }
+            // Production rate estimate
+            const BASE_MS = spawnMode === 'heavy' ? 1800 : 800
+            const OUTPOST_MS = 1800
+            const playerTriple = hud.tripleOutpostOwner === 'player'
+            const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)
+            const aiTriple = hud.tripleOutpostOwner === 'ai'
+            const playerProd = ((1000/BASE_MS) + playerOutpostCount * (1000/OUTPOST_MS)) * (playerTriple ? 2 : 1)
+            const aiProd = ((1000/800) + aiOutpostCount * (1000/OUTPOST_MS)) * (aiTriple ? 2 : 1)
             return (
               <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px',
@@ -460,6 +468,8 @@ export function HUD() {
                 <span>{aiSpecks} specks</span>
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(playerTypes)}</span>
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(aiTypes)}</span>
+                <span style={{ fontSize: 10, opacity: 0.6 }}>~{playerProd.toFixed(1)}/s prod</span>
+                <span style={{ fontSize: 10, opacity: 0.6 }}>~{aiProd.toFixed(1)}/s prod</span>
                 <span>Base: {Math.round(playerBaseHpVal)}HP</span>
                 <span>Base: {Math.round(aiBaseHpVal)}HP</span>
                 <span>Outposts: {playerOutpostCount}</span>
