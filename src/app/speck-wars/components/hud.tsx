@@ -505,7 +505,7 @@ export function HUD() {
             <span>E — select all · Esc — clear</span><span>Arrow keys / W S — pan camera</span>
             <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Click rally with group → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-            <span>A — attack-move mode + click</span><span>C — center on base</span>
+            <span>A — attack-move + click · N — advance</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
             <span>H — snap to home base</span><span>Minimap — click to rally</span>
@@ -900,7 +900,7 @@ export function HUD() {
           </button>
           <button
             onClick={() => gameActions.advance?.()}
-            title="Advance — rally to nearest outpost"
+            title="[N] Advance — rally to nearest outpost"
             style={{
               padding: '6px 10px',
               fontSize: 11,

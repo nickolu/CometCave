@@ -118,6 +118,7 @@ export class GameInstance {
         if (this.canvas) this.canvas.style.cursor = 'crosshair'
         this.notify('⚔ ATTACK MOVE — click target', '#ff6b35', 1500)
       },
+      () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // N — advance to nearest outpost
       () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })

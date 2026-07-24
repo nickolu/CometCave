@@ -139,7 +139,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>1/2/3 — spawn basic/heavy/scout</span>
           <span>Q — surge (2× spawn 8s)</span>
           <span>V — snap to battle</span>
-          <span>A(+click) — attack-move · B — rush · D — defend</span>
+          <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
           <span>X — speed · E — all · Esc — clear</span>
           <span>Ctrl+4-9 save group · 4-9 recall</span>
           <span>Minimap — click to rally</span>
