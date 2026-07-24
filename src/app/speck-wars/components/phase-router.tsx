@@ -68,16 +68,23 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </button>
           ))}
         </div>
-        {/* Best times per difficulty */}
-        <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+        {/* Best times + win rates per difficulty */}
+        <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
           {difficulties.map(d => {
             const best = bestTimes[d.key]
-            if (!best) return null
-            const mm = String(Math.floor(Math.floor(best / 1000) / 60)).padStart(2, '0')
-            const ss = String(Math.floor(best / 1000) % 60).padStart(2, '0')
+            const history = getRecentResults(d.key)
+            const wins = history.filter(r => r.won).length
+            if (!best && history.length === 0) return null
+            const mm = best ? String(Math.floor(Math.floor(best / 1000) / 60)).padStart(2, '0') : null
+            const ss = best ? String(Math.floor(best / 1000) % 60).padStart(2, '0') : null
             return (
-              <span key={d.key} style={{ color: d.color, opacity: 0.6 }}>
-                {d.label}: {mm}:{ss}
+              <span key={d.key} style={{ color: d.color, opacity: 0.6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                {mm && <span>{d.label}: {mm}:{ss}</span>}
+                {history.length > 0 && (
+                  <span style={{ opacity: 0.7, fontSize: 10, letterSpacing: 1 }}>
+                    {wins}/{history.length} W
+                  </span>
+                )}
               </span>
             )
           })}
