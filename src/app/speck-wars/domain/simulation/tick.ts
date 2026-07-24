@@ -362,5 +362,20 @@ function emitHudUpdate(sim: SimulationState) {
   // Suppress "advance" when base is already under direct threat (avoid double-warning)
   if (baseUnderThreat) enemyAdvanceDetected = false
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected } })
+  // Selection composition breakdown
+  let selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number } | null = null
+  if (sim.selectedSpeckIds.size > 0) {
+    const types: Record<string, number> = {}
+    let selVet = 0, selElite = 0
+    for (let i = 0; i < sim.speckCount; i++) {
+      const m = sim.speckMeta[i]
+      if (!m || !sim.speckIds[i] || !sim.selectedSpeckIds.has(sim.speckIds[i])) continue
+      types[m.typeId] = (types[m.typeId] ?? 0) + 1
+      if (m.kills >= 6) selElite++
+      else if (m.kills >= 3) selVet++
+    }
+    selectedComposition = { types, veteranCount: selVet, eliteCount: selElite }
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected } })
 }
