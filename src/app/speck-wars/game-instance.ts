@@ -52,7 +52,7 @@ export class GameInstance {
       }
     }
 
-    this.renderer.render(this.sim, this.camera)
+    this.renderer.render(this.sim, this.camera, dt)
 
     this.rafId = requestAnimationFrame(this.loop)
   }

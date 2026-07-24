@@ -30,6 +30,12 @@ export class BuildingLayer {
       this.gfx.drawCircle(building.x, building.y, r)
       this.gfx.lineStyle(0)
 
+      // Pulse ring
+      const pulse = Math.sin(Date.now() / 800) * 0.3 + 0.7
+      this.gfx.lineStyle(2, color, pulse * 0.4)
+      this.gfx.drawCircle(building.x, building.y, r + 8)
+      this.gfx.lineStyle(0)
+
       // HP bar (above building)
       const barW = r * 2
       const barH = 4
