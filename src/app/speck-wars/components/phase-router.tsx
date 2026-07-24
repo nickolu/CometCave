@@ -135,14 +135,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         }}>
           <span>🖱 Click — rally specks</span>
           <span>Space — pause / ? — help</span>
-          <span>Drag — box select</span>
+          <span>Drag — box select specks</span>
           <span>1/2/3 — spawn basic/heavy/scout</span>
           <span>Q — surge (2× spawn 8s)</span>
           <span>V — snap to battle</span>
           <span>A — advance · B — rush · D — defend</span>
-          <span>X — game speed · E — select all</span>
+          <span>X — speed · E — all · Esc — clear</span>
           <span>Minimap — click to rally</span>
-          <span>C — center camera</span>
+          <span>Arrow keys / WASD — pan</span>
         </div>
         {/* Daily tip */}
         {(() => {
@@ -152,7 +152,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s for a combat bonus.',
             'Surge (Q) doubles production for 8s — use it before big pushes.',
-            'Box-select (drag) specks and right-click to send them anywhere.',
+            'Drag to box-select specks, then click anywhere to rally only your selection.',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
             'Heavy specks deal 2× damage but produce 2× slower.',
             'V key snaps the camera to where fighting is happening.',
