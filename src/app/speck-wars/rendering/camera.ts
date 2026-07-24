@@ -39,3 +39,16 @@ export function zoomAt(camera: Camera, screenX: number, screenY: number, factor:
     y: screenY - (screenY - camera.y) * scale,
   }
 }
+
+// Clamp camera so the world doesn't disappear off-screen completely.
+// MARGIN is the minimum world pixels that must remain visible on each side.
+const EDGE_MARGIN = 120  // px
+
+export function clampCamera(camera: Camera, canvasWidth: number, canvasHeight: number): void {
+  const ww = WORLD_WIDTH * camera.zoom
+  const wh = WORLD_HEIGHT * camera.zoom
+  camera.x = Math.min(camera.x, canvasWidth - EDGE_MARGIN)
+  camera.x = Math.max(camera.x, EDGE_MARGIN - ww)
+  camera.y = Math.min(camera.y, canvasHeight - EDGE_MARGIN)
+  camera.y = Math.max(camera.y, EDGE_MARGIN - wh)
+}

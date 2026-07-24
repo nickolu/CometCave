@@ -3,7 +3,7 @@ import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
 import { Renderer } from './rendering/renderer'
-import { createCamera } from './rendering/camera'
+import { createCamera, clampCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController } from './domain/ai/ai-controller'
@@ -126,6 +126,9 @@ export class GameInstance {
       this.camera.x -= dx * this.camera.zoom
       this.camera.y -= dy * this.camera.zoom
     }
+
+    // Clamp camera so world doesn't disappear off-screen
+    clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
 
     this.renderer.render(this.sim, this.camera, dt)
     this.rafId = requestAnimationFrame(this.loop)
