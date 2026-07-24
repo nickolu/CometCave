@@ -89,6 +89,23 @@ export class SpeckLayer {
           this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], 2)
           this.gfx.lineStyle(0)
         }
+
+        // Motion trail: 3 fading dots extrapolated backwards from velocity
+        const vx = sim.speckVx[i], vy = sim.speckVy[i]
+        if (vx * vx + vy * vy > 900) {  // only when moving faster than ~30 px/s
+          const color = this.playerColors[ownerId] ?? 0xffffff
+          const baseAlpha = spriteList[j].alpha
+          const trailAlphas = [0.18, 0.09, 0.04] as const
+          for (let t = 1; t <= 3; t++) {
+            this.gfx.beginFill(color, baseAlpha * trailAlphas[t - 1])
+            this.gfx.drawCircle(
+              sim.speckX[i] - vx * (t * 0.018),
+              sim.speckY[i] - vy * (t * 0.018),
+              1.2,
+            )
+            this.gfx.endFill()
+          }
+        }
       }
 
       // Hide excess sprites
