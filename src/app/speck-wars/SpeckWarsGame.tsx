@@ -2,8 +2,11 @@
 
 import { useEffect, useRef } from 'react'
 import { GameInstance } from './game-instance'
+import { useSpeckWarsStore } from './store'
+import { HUD } from './components/hud'
+import { PhaseRouter } from './components/phase-router'
 
-export function SpeckWarsGame() {
+function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -11,7 +14,7 @@ export function SpeckWarsGame() {
     if (!canvas) return
 
     const game = new GameInstance(canvas)
-    game.start()  // fire-and-forget async (renderer inits then loop starts)
+    game.start()
 
     return () => {
       game.destroy()
@@ -24,19 +27,19 @@ export function SpeckWarsGame() {
         ref={canvasRef}
         style={{ display: 'block', width: '100%', height: '100%' }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          color: 'rgba(255,255,255,0.8)',
-          fontSize: 24,
-          fontWeight: 'bold',
-          pointerEvents: 'none',
-        }}
-      >
-        Speck Wars
-      </div>
+      <HUD />
+    </div>
+  )
+}
+
+export function SpeckWarsGame() {
+  const phase = useSpeckWarsStore(s => s.phase)
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <PhaseRouter>
+        {phase === 'playing' && <GameCanvas />}
+      </PhaseRouter>
     </div>
   )
 }
