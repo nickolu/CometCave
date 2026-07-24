@@ -45,6 +45,7 @@ export class GameInstance {
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
   private recentPlayerCaptureTimes: number[] = []  // timestamps of recent player captures
   private retreatWarnedAt = -20000          // allow retreat warning after 20s
+  private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
   private attackMovePending = false
@@ -94,8 +95,7 @@ export class GameInstance {
         if (this.attackMovePending) {
           this.attackMovePending = false
           if (this.canvas) this.canvas.style.cursor = 'default'
-          this.notify('⚔ ATTACK MOVE!', '#ff4f7b')
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 900)
+          this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
         }
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
@@ -103,9 +103,7 @@ export class GameInstance {
       () => {                                              // H — cycle spawn mode
         const next = useSpeckWarsStore.getState().cycleSpawnMode()
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
-        const s = useSpeckWarsStore.getState()
-        s.setNotification({ message: `Spawn: ${next.toUpperCase()}`, color: next === 'heavy' ? '#ff8844' : '#4af7c4' })
-        setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1200)
+        this.notify(`Spawn: ${next.toUpperCase()}`, next === 'heavy' ? '#ff8844' : '#4af7c4', 1200)
       },
       () => {                                              // C — recenter camera on player base
         const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
@@ -117,8 +115,7 @@ export class GameInstance {
       () => {                                              // A — enter attack-move mode
         this.attackMovePending = true
         if (this.canvas) this.canvas.style.cursor = 'crosshair'
-        this.notify('⚔ ATTACK MOVE — click target', '#ff6b35')
-        setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+        this.notify('⚔ ATTACK MOVE — click target', '#ff6b35', 1500)
       },
       () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
@@ -130,6 +127,7 @@ export class GameInstance {
         if (this.attackMovePending) {
           this.attackMovePending = false
           if (this.canvas) this.canvas.style.cursor = 'default'
+          this.notifGen++
           useSpeckWarsStore.getState().setNotification(null)
         }
       },
@@ -179,8 +177,7 @@ export class GameInstance {
     setTimeout(() => {
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
-      useSpeckWarsStore.getState().setNotification({ message: '⚔ FIGHT!', color: '#4af7c4' })
-      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 800)
+      this.notify('⚔ FIGHT!', '#4af7c4', 800)
     }, 3000)
 
     // Show tutorial hints for first-time players
@@ -195,10 +192,7 @@ export class GameInstance {
         { delay: 45000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
-        setTimeout(() => {
-          useSpeckWarsStore.getState().setNotification({ message, color })
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
-        }, delay)
+        setTimeout(() => this.notify(message, color, 3000), delay)
       }
     }
   }
@@ -283,8 +277,7 @@ export class GameInstance {
             if (now - lastWarn > 8000) {
               this.outpostAttackWarnedAt[outpostId] = now
               const name = outpostId.replace('outpost-', '').toUpperCase()
-              store.setNotification({ message: `⬡ ${name} UNDER ATTACK!`, color: '#ff8c00' })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+              this.notify(`⬡ ${name} UNDER ATTACK!`, '#ff8c00', 2500)
             }
           }
           // Clear warnings for outposts that are no longer under attack
@@ -298,8 +291,7 @@ export class GameInstance {
           const aiSpecks = event.data.players.ai?.speckCount ?? 0
           if (aiSpecks >= 2 * playerSpecks && playerSpecks > 5 && now - this.enemySurgeWarnedAt > 20000) {
             this.enemySurgeWarnedAt = now
-            store.setNotification({ message: '⚠ ENEMY SURGE!', color: '#ff6b35' })
-            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+            this.notify('⚠ ENEMY SURGE!', '#ff6b35', 2500)
           }
           // Outpost HP critical: player outpost < 20% max HP (50)
           const OUTPOST_MAX_HP = 50
@@ -311,20 +303,17 @@ export class GameInstance {
             if (now - lastHpWarn > 12000) {
               this.outpostHpWarnedAt[buildingId] = now
               const name = buildingId.replace('outpost-', '').toUpperCase()
-              store.setNotification({ message: `⬡ ${name} HP CRITICAL!`, color: '#ff2200' })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+              this.notify(`⬡ ${name} HP CRITICAL!`, '#ff2200', 2500)
             }
           }
           // Triple outpost notification: fire when ownership of all 3 outposts changes hands
           const holder = event.data.tripleOutpostOwner ?? null
           if (holder !== this.lastTripleHolder) {
             if (holder === 'player') {
-              store.setNotification({ message: '⬡ TRIPLE OUTPOST! Hold for 60s to win!', color: '#ffd700' })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 4000)
+              this.notify('⬡ TRIPLE OUTPOST! Hold for 60s to win!', '#ffd700', 4000)
             } else if (holder === 'ai' && this.lastTripleHolder !== null) {
               // AI reclaimed triple — only notify if player had just lost it
-              store.setNotification({ message: '⬡ ENEMY HAS ALL OUTPOSTS!', color: '#ff4f7b' })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+              this.notify('⬡ ENEMY HAS ALL OUTPOSTS!', '#ff4f7b', 3000)
             }
             this.lastTripleHolder = holder
           }
@@ -344,16 +333,14 @@ export class GameInstance {
               this.dominationWarned10 = true
               const msg = isPlayer ? '⬡ DOMINATION IN 10s!' : '⬡ ENEMY DOMINATION IN 10s!'
               const color = isPlayer ? '#4af7c4' : '#ff4f7b'
-              store.setNotification({ message: msg, color })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+              this.notify(msg, color, 3000)
             }
             // 5s left threshold: 55/60 ≈ 0.917
             if (!this.dominationWarned5 && dp >= 55 / 60) {
               this.dominationWarned5 = true
               const msg = isPlayer ? '⬡ DOMINATION IN 5s!' : '⬡ ENEMY DOMINATION IN 5s!'
               const color = isPlayer ? '#ffd700' : '#ff2200'
-              store.setNotification({ message: msg, color })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 4500)
+              this.notify(msg, color, 4500)
             }
           }
         }
@@ -369,8 +356,7 @@ export class GameInstance {
               const count = this.recentKillTimes.length
               const comboColors: Record<number, string> = { 3: '#4af7c4', 5: '#ffd700', 8: '#ff8844', 12: '#cc00ff' }
               const color = count >= 12 ? '#cc00ff' : count >= 8 ? '#ff8844' : count >= 5 ? '#ffd700' : '#4af7c4'
-              store.setNotification({ message: `⚡ COMBO ×${count}!`, color })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+              this.notify(`⚡ COMBO ×${count}!`, color, 1500)
             }
             const k = useSpeckWarsStore.getState().kills
             const milestones: Record<number, { message: string; color: string }> = {
@@ -380,18 +366,17 @@ export class GameInstance {
               100: { message: '💀 100 KILLS', color: '#cc00ff' },
             }
             if (milestones[k]) {
-              store.setNotification(milestones[k])
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+              this.notify(milestones[k].message, milestones[k].color, 2000)
             }
           } else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') store.addLoss()
           if (!this.firstBloodDone) {
             this.firstBloodDone = true
             const playerGotIt = event.killerOwnerId === 'player'
-            store.setNotification({
-              message: playerGotIt ? '⚔ FIRST BLOOD!' : '☠ FIRST BLOOD!',
-              color: playerGotIt ? '#4af7c4' : '#ff4f7b',
-            })
-            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1800)
+            this.notify(
+              playerGotIt ? '⚔ FIRST BLOOD!' : '☠ FIRST BLOOD!',
+              playerGotIt ? '#4af7c4' : '#ff4f7b',
+              1800
+            )
           }
           this.recentDeathPositions.push({ x: event.x, y: event.y, ts: Date.now() })
           // Keep only last 30 deaths
@@ -424,12 +409,10 @@ export class GameInstance {
             const now = Date.now()
             if (hpFrac < 0.1 && now - this.enemyBaseWarnedAt > 8000) {
               this.enemyBaseWarnedAt = now
-              store.setNotification({ message: '💥 ENEMY BASE COLLAPSING!', color: '#ff8844' })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+              this.notify('💥 ENEMY BASE COLLAPSING!', '#ff8844', 3000)
             } else if (hpFrac < 0.2 && hpFrac >= 0.1 && now - this.enemyBaseWarnedAt > 15000) {
               this.enemyBaseWarnedAt = now
-              store.setNotification({ message: '⚔ ENEMY BASE CRITICAL!', color: '#ffd700' })
-              setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+              this.notify('⚔ ENEMY BASE CRITICAL!', '#ffd700', 3000)
             }
           }
         }
@@ -440,18 +423,14 @@ export class GameInstance {
           const now = Date.now()
           if (now - this.baseAttackWarnedAt > 12000) {
             this.baseAttackWarnedAt = now
-            store.setNotification({ message: '⚠ BASE UNDER ATTACK!', color: '#ff4f7b' })
-            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+            this.notify('⚠ BASE UNDER ATTACK!', '#ff4f7b', 2500)
           }
           // Rally Cry: one-time notification when base drops to 25% HP
           if (!this.rallyCryFired) {
             const playerBase = this.sim.buildings['building-player-base']
             if (playerBase && playerBase.hp / playerBase.maxHp < 0.25) {
               this.rallyCryFired = true
-              setTimeout(() => {
-                useSpeckWarsStore.getState().setNotification({ message: '🔥 RALLY CRY! 1.5× PRODUCTION!', color: '#ff8844' })
-                setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
-              }, 500)
+              setTimeout(() => this.notify('🔥 RALLY CRY! 1.5× PRODUCTION!', '#ff8844', 3000), 500)
             }
           }
         }
@@ -468,8 +447,7 @@ export class GameInstance {
               : isRecapture ? `⬡ ${outpostName} RECAPTURED!`
               : `⬡ ${outpostName} CAPTURED`
             const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
-            store.setNotification({ message, color })
-            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+            this.notify(message, color, 2500)
           }
           // Track capture combos
           if (event.newOwner === 'player') {
@@ -490,13 +468,11 @@ export class GameInstance {
           const now = Date.now()
           if (now - this.firstVeteranNotifiedAt > 20000) {
             this.firstVeteranNotifiedAt = now
-            store.setNotification({ message: '⭐ VETERAN SPECK! +20% DAMAGE', color: '#ffd700' })
-            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+            this.notify('⭐ VETERAN SPECK! +20% DAMAGE', '#ffd700', 2000)
           }
         }
         if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
-          store.setNotification({ message: '✦ ELITE SPECK! +35% DAMAGE', color: '#ffffff' })
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          this.notify('✦ ELITE SPECK! +35% DAMAGE', '#ffffff', 2500)
         }
         if (event.type === 'VETERAN_FALLEN') {
           const isElite = event.kills >= 6
@@ -507,8 +483,7 @@ export class GameInstance {
         if (event.type === 'AI_WAVE_START') {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
           const color = waveColors[(event.waveNumber - 1) % waveColors.length]
-          store.setNotification({ message: `⚠ WAVE ${event.waveNumber} ASSAULT!`, color })
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 3000)
+          this.notify(`⚠ WAVE ${event.waveNumber} ASSAULT!`, color, 3000)
         }
         if (event.type === 'AI_LAST_STAND') {
           this.notify('⚠ ENEMY LAST STAND', '#ff4444')
@@ -529,8 +504,7 @@ export class GameInstance {
         }
         if (retreatingCount >= 10) {
           this.retreatWarnedAt = nowTs
-          store.setNotification({ message: `⚡ ${retreatingCount} SPECKS RETREATING!`, color: '#ff8844' })
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+          this.notify(`⚡ ${retreatingCount} SPECKS RETREATING!`, '#ff8844', 2000)
         }
       }
     }
@@ -542,8 +516,7 @@ export class GameInstance {
       if (aiSpawnMode !== this.lastAiSpawnMode && this.elapsedMs > 5000) {
         this.lastAiSpawnMode = aiSpawnMode
         if (aiSpawnMode === 'heavy') {
-          store.setNotification({ message: '⬡ ENEMY BUILDING TANKS', color: '#ffaa55' })
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2000)
+          this.notify('⬡ ENEMY BUILDING TANKS', '#ffaa55', 2000)
         }
         // No notification when switching back to basic — less alarming
       }
@@ -557,8 +530,7 @@ export class GameInstance {
         if (this.idleArmyTimer > 20000 && !store.notification
             && Date.now() - this.lastIdleNudge > 30000) {
           this.lastIdleNudge = Date.now()
-          store.setNotification({ message: '📍 Click to send your army!', color: '#aaddff' })
-          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+          this.notify('📍 Click to send your army!', '#aaddff', 2500)
         }
       } else {
         this.idleArmyTimer = 0
@@ -653,8 +625,7 @@ export class GameInstance {
     if (!playerBase) return
     const speckCount = this.sim.speckMeta.filter((m, i) => m && m.ownerId === 'player' && this.sim.speckIds[i]).length
     if (speckCount < 10) {
-      useSpeckWarsStore.getState().setNotification({ message: 'Not enough specks to sacrifice!', color: '#ff4f7b' })
-      setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1500)
+      this.notify('Not enough specks to sacrifice!', '#ff4f7b', 1500)
       return
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
@@ -686,9 +657,12 @@ export class GameInstance {
     this.notify('⌂ Home', '#4af7c4')
   }
 
-  private notify(message: string, color: string) {
+  private notify(message: string, color: string, durationMs = 1200) {
+    const gen = ++this.notifGen
     useSpeckWarsStore.getState().setNotification({ message, color })
-    setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1200)
+    setTimeout(() => {
+      if (this.notifGen === gen) useSpeckWarsStore.getState().setNotification(null)
+    }, durationMs)
   }
 
   getSim(): SimulationState {
