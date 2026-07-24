@@ -1,4 +1,4 @@
-import { Container, Sprite } from 'pixi.js'
+import { Container, Graphics, Sprite } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { SPECK_TYPES } from '../../domain/config/speck-types'
@@ -11,6 +11,7 @@ export class SpeckLayer {
   private texture: Texture
   private playerColors: Record<string, number>
   private attackAnimByIndex: Map<number, number> = new Map()
+  private gfx: Graphics
   readonly stage: Container
 
   constructor(texture: Texture, playerColors: Record<string, number>) {
@@ -27,9 +28,13 @@ export class SpeckLayer {
       this.containers.set(playerId, container)
       this.sprites.set(playerId, [])
     }
+
+    this.gfx = new Graphics()
+    this.stage.addChild(this.gfx)
   }
 
   update(sim: SimulationState) {
+    this.gfx.clear()
     // Group live speck indices by owner
     const byOwner: Record<string, number[]> = {}
     for (let i = 0; i < sim.speckCount; i++) {
@@ -77,6 +82,13 @@ export class SpeckLayer {
         // Fade speck as it takes damage — full HP = 1.0, near death = 0.35
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
+
+        const isHeavy = typeMeta?.typeId === 'heavy'
+        if (isHeavy) {
+          this.gfx.lineStyle(1, 0xffffff, spriteList[j].alpha * 0.6)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], 2)
+          this.gfx.lineStyle(0)
+        }
       }
 
       // Hide excess sprites
