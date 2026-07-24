@@ -399,26 +399,55 @@ export function HUD() {
         </div>
       )}
 
-      {/* Player stats — bottom left */}
-      {hud && (
-        <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
-          {Object.entries(hud.players)
-            .filter(([pid]) => pid !== 'neutral')
-            .map(([pid, data]) => {
-              const color = pid === 'player' ? colorHex(PLAYER_COLOR) : colorHex(AI_COLOR)
-              const label = pid === 'player' ? 'YOU' : 'AI'
-              const totalHp = Object.values(data.buildingHp).reduce((a, b) => a + b, 0)
-              return (
-                <div key={pid} style={{ marginBottom: 6, color }}>
-                  <strong>{label}</strong> — specks: {data.speckCount} | bases: {data.buildingCount} | HP: {totalHp}
-                  {pid === 'player' && (
-                    <span style={{ opacity: 0.7 }}> | ↑{kills} ↓{losses}</span>
-                  )}
+      {/* Player stats + force bar — bottom left */}
+      {hud && (() => {
+        const playerSpecks = hud.players.player?.speckCount ?? 0
+        const aiSpecks = hud.players.ai?.speckCount ?? 0
+        const total = playerSpecks + aiSpecks
+        const playerFrac = total > 0 ? playerSpecks / total : 0.5
+        const playerBaseHpVal = hud.players.player?.buildingHp['building-player-base'] ?? 0
+        const aiBaseHpVal = hud.players.ai?.buildingHp['building-ai-base'] ?? 0
+        const aiBaseHpFrac = aiBaseHpVal / 100
+        const aiBaseColor = aiBaseHpFrac > 0.5 ? '#ff4f7b' : aiBaseHpFrac > 0.2 ? '#ffaa44' : '#ff2200'
+        return (
+          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {/* Force ratio bar */}
+            {total >= 4 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 9, letterSpacing: 1, color: colorHex(PLAYER_COLOR), opacity: 0.7, minWidth: 20, textAlign: 'right' }}>
+                  {playerSpecks}
+                </span>
+                <div style={{ width: 100, height: 5, background: 'rgba(255,79,123,0.4)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{
+                    position: 'absolute', left: 0, top: 0, height: '100%',
+                    width: `${Math.round(playerFrac * 100)}%`,
+                    background: colorHex(PLAYER_COLOR),
+                    borderRadius: 3,
+                    transition: 'width 0.2s',
+                  }} />
                 </div>
-              )
-            })}
-        </div>
-      )}
+                <span style={{ fontSize: 9, letterSpacing: 1, color: colorHex(AI_COLOR), opacity: 0.7, minWidth: 20 }}>
+                  {aiSpecks}
+                </span>
+              </div>
+            )}
+            {/* Kill/loss + enemy base HP */}
+            <div style={{ display: 'flex', gap: 10, fontSize: 10, letterSpacing: 0.5 }}>
+              <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
+              {aiBaseHpVal > 0 && (
+                <span style={{ color: aiBaseColor, opacity: 0.8 }}>
+                  ENEMY BASE {Math.round(aiBaseHpFrac * 100)}%
+                </span>
+              )}
+              {playerBaseHpVal > 0 && (
+                <span style={{ color: hpFrac < 0.3 ? '#ff4f7b' : 'rgba(255,255,255,0.4)', opacity: 0.8 }}>
+                  BASE {Math.round(playerBaseHpVal)}HP
+                </span>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
