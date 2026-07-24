@@ -3,6 +3,7 @@ import { SPECK_TYPES } from '../config/speck-types'
 
 const RALLY_ARRIVAL_THRESHOLD = 30   // px — how close before speck is considered "arrived"
 const ATTACK_MOVE_PROXIMITY = 100    // px — attack enemy buildings within this range while moving to rally
+const DEFENDER_PRIORITY_RANGE = 100 // px — clear enemy specks this close before attacking buildings
 
 export function runSpeckAI(sim: SimulationState) {
   const { speckIds, speckX, speckY, speckMeta, buildings } = sim
@@ -55,6 +56,24 @@ export function runSpeckAI(sim: SimulationState) {
         meta.state = 'moving'
         continue
       }
+    }
+
+    // Defender priority: if enemy specks are within range, fight them before attacking buildings
+    // This ensures specks clear defenders instead of running past them to hit the structure
+    let nearestEnemySpeckDist = Infinity
+    for (let j = 0; j < sim.speckCount; j++) {
+      if (!speckIds[j] || j === i) continue
+      const jMeta = speckMeta[j]
+      if (!jMeta || jMeta.ownerId === meta.ownerId) continue
+      const dx = speckX[j] - speckX[i]
+      const dy = speckY[j] - speckY[i]
+      const dist = dx * dx + dy * dy  // squared — avoid sqrt for perf
+      if (dist < nearestEnemySpeckDist) nearestEnemySpeckDist = dist
+    }
+    if (nearestEnemySpeckDist < DEFENDER_PRIORITY_RANGE * DEFENDER_PRIORITY_RANGE) {
+      meta.targetId = null  // engage defenders via idle aggression in movement.ts
+      meta.state = 'idle'
+      continue
     }
 
     if (meta.targetId) continue  // already has a valid target
