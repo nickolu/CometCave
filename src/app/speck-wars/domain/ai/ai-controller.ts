@@ -216,5 +216,9 @@ export class AIController {
     }
 
     sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: target.x, y: target.y })
+
+    // Expose wave state to sim so HUD can display it
+    sim.waveCountdown = this.waveEnabled ? this.waveTimer : null
+    sim.waveInProgress = this.waveRemainingMs > 0
   }
 }

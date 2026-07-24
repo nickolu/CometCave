@@ -62,6 +62,8 @@ export interface SimulationState {
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
+  waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
+  waveInProgress: boolean        // true during the 15s wave assault
 }
 
 export type InputEvent =
@@ -100,6 +102,8 @@ export interface HudData {
   selectedSpeckCount: number   // 0 when no selection active
   spawnRates: Record<string, number>   // playerId → effective specks/min
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
+  waveCountdown: number | null
+  waveInProgress: boolean
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
