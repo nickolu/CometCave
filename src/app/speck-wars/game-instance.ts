@@ -49,6 +49,7 @@ export class GameInstance {
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
   private attackMovePending = false
+  private controlGroups = new Map<number, string[]>()
   private cinematicMs = 0
 
   constructor(canvas: HTMLCanvasElement) {
@@ -149,6 +150,27 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
       },
       () => { this.sacrifice() },                                       // F — sacrifice specks to repair base
+      (slot: number) => {                                               // Ctrl+4-9 — save control group
+        const saved = [...this.sim.selectedSpeckIds]
+        this.controlGroups.set(slot, saved)
+        if (saved.length > 0) {
+          this.notify(`★ Group ${slot} — ${saved.length} specks`, '#4af7c4', 900)
+        }
+      },
+      (slot: number) => {                                               // 4-9 — recall control group
+        const saved = this.controlGroups.get(slot)
+        if (!saved || saved.length === 0) return
+        // Filter to living specks
+        const aliveIds = new Set<string>()
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          if (this.sim.speckIds[i] && this.sim.speckMeta[i]) aliveIds.add(this.sim.speckIds[i])
+        }
+        this.sim.selectedSpeckIds.clear()
+        for (const id of saved) {
+          if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
+        }
+        this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+      },
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
