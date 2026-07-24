@@ -20,6 +20,10 @@ interface SpeckWarsStore {
   cycleSpeed: () => void
   notification: { message: string; color: string } | null
   setNotification: (n: { message: string; color: string } | null) => void
+  kills: number
+  losses: number
+  addKill: () => void
+  addLoss: () => void
   resetGame: () => void
 }
 
@@ -43,6 +47,10 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   })),
   notification: null,
   setNotification: n => set({ notification: n }),
+  kills: 0,
+  losses: 0,
+  addKill: () => set(s => ({ kills: s.kills + 1 })),
+  addLoss: () => set(s => ({ losses: s.losses + 1 })),
   resetGame: () => set(s => ({
     phase: 'menu' as GamePhase,
     winnerId: null,
@@ -50,6 +58,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
     elapsedMs: 0,
     speed: 1 as 1 | 2 | 4,
     notification: null,
+    kills: 0,
+    losses: 0,
     difficulty: s.difficulty,
   })),
 }))

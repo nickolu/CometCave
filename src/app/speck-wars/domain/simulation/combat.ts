@@ -33,7 +33,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
         if (speckHp[j] <= 0) {
-          sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j] })
+          sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
         }
         break  // one attack per cooldown
       }

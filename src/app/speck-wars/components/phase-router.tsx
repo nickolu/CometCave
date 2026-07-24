@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useSpeckWarsStore } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
@@ -81,8 +81,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const diffColor = difficultyColors[difficulty]
 
     const shareText = won
-      ? `I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr}! 🎮 Can you beat my time?`
-      : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr}! 🎮 Think you can do better?`
+      ? `I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks! 🎮 Can you beat my time?`
+      : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks. 🎮 Think you can do better?`
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -114,6 +114,16 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span style={{ color: diffColor, fontWeight: 'bold', border: `1px solid ${diffColor}`, padding: '2px 10px', borderRadius: 4 }}>
             {diffLabel}
           </span>
+        </div>
+
+        <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
+          <span style={{ color: '#4af7c4' }}>↑ {kills} killed</span>
+          <span style={{ color: '#ff4f7b' }}>↓ {losses} lost</span>
+          {kills + losses > 0 && (
+            <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+              {Math.round((kills / (kills + losses)) * 100)}% efficiency
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>

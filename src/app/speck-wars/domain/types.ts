@@ -61,7 +61,7 @@ export type InputEvent =
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
 
 export type SimEvent =
-  | { type: 'SPECK_DIED'; speckId: string; x: number; y: number }
+  | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
   | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
   | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string }
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
