@@ -3,11 +3,14 @@ import type { Texture } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { SPECK_TYPES } from '../../domain/config/speck-types'
 
+const ATTACK_ANIM_MS = 120
+
 export class SpeckLayer {
   private containers: Map<string, Container> = new Map()
   private sprites: Map<string, Sprite[]> = new Map()
   private texture: Texture
   private playerColors: Record<string, number>
+  private attackAnimByIndex: Map<number, number> = new Map()
   readonly stage: Container
 
   constructor(texture: Texture, playerColors: Record<string, number>) {
@@ -51,13 +54,26 @@ export class SpeckLayer {
       }
 
       // Update visible sprites
+      const now = Date.now()
       for (let j = 0; j < indices.length; j++) {
         const i = indices[j]
         spriteList[j].position.set(sim.speckX[i], sim.speckY[i])
         spriteList[j].visible = true
         const typeMeta = sim.speckMeta[i]
         const stype = typeMeta ? SPECK_TYPES[typeMeta.typeId] : null
-        spriteList[j].scale.set(stype ? stype.size / 4 : 0.75)
+        // Track attack animation
+        if (typeMeta?.state === 'attacking') this.attackAnimByIndex.set(i, now)
+        const attackTs = this.attackAnimByIndex.get(i)
+        let scaleBoost = 1.0
+        if (attackTs !== undefined) {
+          const elapsed = now - attackTs
+          if (elapsed < ATTACK_ANIM_MS) {
+            scaleBoost = 1 + 0.3 * (1 - elapsed / ATTACK_ANIM_MS)  // 1.3x → 1.0x
+          } else {
+            this.attackAnimByIndex.delete(i)
+          }
+        }
+        spriteList[j].scale.set((stype ? stype.size / 4 : 0.75) * scaleBoost)
         // Fade speck as it takes damage — full HP = 1.0, near death = 0.35
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
