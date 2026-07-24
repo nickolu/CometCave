@@ -88,6 +88,15 @@ export class SpeckLayer {
           this.gfx.lineStyle(1, 0xffffff, spriteList[j].alpha * 0.6)
           this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], 2)
           this.gfx.lineStyle(0)
+          // Critical HP ring: red outline when heavy speck is at 40% HP or below
+          if (stype && hpFrac <= 0.4 && hpFrac > 0) {
+            const critIntensity = (0.4 - hpFrac) / 0.4   // 0.0 → 1.0 as HP drops
+            const critAlpha = critIntensity * 0.8 * spriteList[j].alpha
+            const critPulse = 0.5 + 0.5 * Math.sin(now / 120)  // fast pulse ~8Hz
+            this.gfx.lineStyle(1.2, 0xff2222, critAlpha * critPulse)
+            this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], stype.size / 4 + 2)
+            this.gfx.lineStyle(0)
+          }
         }
 
         // Motion trail: 3 fading dots extrapolated backwards from velocity
