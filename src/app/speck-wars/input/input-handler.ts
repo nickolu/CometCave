@@ -17,6 +17,7 @@ export class InputHandler {
   private mouseDownY = 0
   private mouseX = -1  // -1 means mouse not over canvas
   private mouseY = -1
+  private lastPinchDist = 0  // 0 = not pinching
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -105,21 +106,42 @@ export class InputHandler {
   private onTouchStart = (e: TouchEvent) => {
     if (e.touches.length === 1) {
       this.isDragging = true
+      this.lastPinchDist = 0
+      this.lastX = e.touches[0].clientX
+      this.lastY = e.touches[0].clientY
+    } else if (e.touches.length === 2) {
+      this.isDragging = false
+      const dx = e.touches[1].clientX - e.touches[0].clientX
+      const dy = e.touches[1].clientY - e.touches[0].clientY
+      this.lastPinchDist = Math.sqrt(dx * dx + dy * dy)
+    }
+  }
+
+  private onTouchMove = (e: TouchEvent) => {
+    e.preventDefault()
+    if (e.touches.length === 2 && this.lastPinchDist > 0) {
+      // Pinch-to-zoom: compute new distance and zoom toward pinch midpoint
+      const dx = e.touches[1].clientX - e.touches[0].clientX
+      const dy = e.touches[1].clientY - e.touches[0].clientY
+      const newDist = Math.sqrt(dx * dx + dy * dy)
+      const factor = newDist / this.lastPinchDist
+      const rect = this.canvas.getBoundingClientRect()
+      const mx = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left
+      const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
+      Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
+      this.lastPinchDist = newDist
+    } else if (this.isDragging && e.touches.length === 1) {
+      this.camera.x += e.touches[0].clientX - this.lastX
+      this.camera.y += e.touches[0].clientY - this.lastY
       this.lastX = e.touches[0].clientX
       this.lastY = e.touches[0].clientY
     }
   }
 
-  private onTouchMove = (e: TouchEvent) => {
-    if (!this.isDragging || e.touches.length !== 1) return
-    e.preventDefault()
-    this.camera.x += e.touches[0].clientX - this.lastX
-    this.camera.y += e.touches[0].clientY - this.lastY
-    this.lastX = e.touches[0].clientX
-    this.lastY = e.touches[0].clientY
+  private onTouchEnd = () => {
+    this.isDragging = false
+    this.lastPinchDist = 0
   }
-
-  private onTouchEnd = () => { this.isDragging = false }
 
   private onKeyDown = (e: KeyboardEvent) => {
     // Don't fire when typing in an input
