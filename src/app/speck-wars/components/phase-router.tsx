@@ -201,10 +201,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const nextDiff = won ? nextDifficulty[difficulty] : null
 
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) + ' ' : ''
+    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
+    const modifier = hud?.dailyModifier && hud.dailyModifier !== 'standard' ? ` [${hud.dailyModifier.toUpperCase()}]` : ''
+    const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
+    const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff${peakArmySize > 0 ? ` · peak ${peakArmySize}` : ''}`
     const shareText = won
-      ? `${starStr}I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks! 🎮 Daily map ${today} — can you beat my time?`
-      : `The AI beat me in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks. 🎮 Daily map ${today} — think you can do better?`
+      ? `${starStr} Speck Wars ${today}${modifier}\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
+      : `${starStr} Speck Wars ${today}${modifier}\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -271,11 +274,23 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <span>⏱ {timeStr}</span>
           <span style={{ color: diffColor, fontWeight: 'bold', border: `1px solid ${diffColor}`, padding: '2px 10px', borderRadius: 4 }}>
             {diffLabel}
           </span>
+          {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
+            <span style={{
+              fontSize: 11, letterSpacing: 1.5,
+              color: hud.dailyModifier === 'bulwark' ? '#44aaff'
+                : hud.dailyModifier === 'blitz' ? '#ffd700'
+                : '#ff8844',
+              border: `1px solid ${hud.dailyModifier === 'bulwark' ? '#44aaff44' : hud.dailyModifier === 'blitz' ? '#ffd70044' : '#ff884444'}`,
+              padding: '2px 8px', borderRadius: 4,
+            }}>
+              {hud.dailyModifier.toUpperCase()}
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
