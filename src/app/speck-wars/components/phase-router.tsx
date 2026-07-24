@@ -131,20 +131,46 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           fontSize: 11,
           letterSpacing: 0.5,
           textAlign: 'left',
-          maxWidth: 280,
+          maxWidth: 320,
         }}>
           <span>🖱 Click — rally specks</span>
-          <span>Space — pause</span>
-          <span>Scroll — zoom</span>
-          <span>R / Right-click — clear rally</span>
-          <span>Drag — pan camera</span>
-          <span>H — heavy/basic mode</span>
-          <span>A — advance to outpost</span>
-          <span>B — rush enemy base</span>
-          <span>C — center on base</span>
-          <span>D — defend base</span>
+          <span>Space — pause / ? — help</span>
+          <span>Shift+drag — box select</span>
+          <span>1/2/3 — spawn basic/heavy/scout</span>
+          <span>Q — surge (2× spawn 8s)</span>
+          <span>V — snap to battle</span>
+          <span>A — advance · B — rush · D — defend</span>
+          <span>X — game speed · E — select all</span>
           <span>Minimap — click to rally</span>
+          <span>C — center camera</span>
         </div>
+        {/* Daily tip */}
+        {(() => {
+          const tips = [
+            'Hold all 3 outposts for 60s to win by Domination.',
+            'Scouts (3) auto-target outposts — fast but fragile.',
+            'Veterans deal +20% damage after 3 kills. Protect them!',
+            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Surge (Q) doubles production for 8s — use it before big pushes.',
+            'Box-select (Shift+drag) specks and right-click to send them anywhere.',
+            'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
+            'Heavy specks deal 2× damage but produce 2× slower.',
+            'V key snaps the camera to where fighting is happening.',
+            'Press ? in-game to see all hotkeys.',
+          ]
+          const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
+          return (
+            <div style={{
+              marginTop: 8, maxWidth: 320,
+              fontSize: 11, letterSpacing: 0.3,
+              color: 'rgba(255,215,0,0.45)',
+              textAlign: 'center',
+              fontStyle: 'italic',
+            }}>
+              💡 {tip}
+            </div>
+          )
+        })()}
       </div>
     )
   }
