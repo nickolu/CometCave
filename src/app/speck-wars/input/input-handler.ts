@@ -32,9 +32,9 @@ export class InputHandler {
   private lastPinchDist = 0  // 0 = not pinching
   private touchStartX = 0
   private touchStartY = 0
-  private isShiftDrag = false
-  private shiftDragStartWorldX = 0
-  private shiftDragStartWorldY = 0
+  private isDragSelect = false
+  private dragSelectStartWorldX = 0
+  private dragSelectStartWorldY = 0
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -111,19 +111,22 @@ export class InputHandler {
 
   private onMouseDown = (e: MouseEvent) => {
     if (e.button === 1) e.preventDefault()  // prevent middle-click scroll
-    if (e.button === 0 && e.shiftKey) {
-      this.isShiftDrag = true
+    if (e.button === 0) {
+      this.isDragSelect = true
       const rect = this.canvas.getBoundingClientRect()
       const sx = e.clientX - rect.left
       const sy = e.clientY - rect.top
       const world = screenToWorld(sx, sy, this.camera)
-      this.shiftDragStartWorldX = world.x
-      this.shiftDragStartWorldY = world.y
+      this.dragSelectStartWorldX = world.x
+      this.dragSelectStartWorldY = world.y
       this.mouseDownX = e.clientX
       this.mouseDownY = e.clientY
-      return  // don't start pan
+      this.isDragging = true  // still track drag for HUD visual
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+      return
     }
-    this.isDragging = true
+    this.isDragging = true  // non-left-button: camera pan
     this.lastX = e.clientX
     this.lastY = e.clientY
     this.mouseDownX = e.clientX
@@ -136,7 +139,7 @@ export class InputHandler {
     const rect = this.canvas.getBoundingClientRect()
     this.mouseX = e.clientX - rect.left
     this.mouseY = e.clientY - rect.top
-    if (this.isShiftDrag) return  // skip pan during shift-drag
+    if (this.isDragSelect) return  // skip pan during drag-select
     this.camera.x += e.clientX - this.lastX
     this.camera.y += e.clientY - this.lastY
     this.lastX = e.clientX
@@ -148,17 +151,22 @@ export class InputHandler {
     const dy = e.clientY - this.mouseDownY
     const dist = Math.sqrt(dx * dx + dy * dy)
 
-    if (this.isShiftDrag) {
-      this.isShiftDrag = false
+    if (this.isDragSelect) {
+      this.isDragSelect = false
+      this.isDragging = false
       if (dist > 10) {
         const rect = this.canvas.getBoundingClientRect()
         const sx = e.clientX - rect.left
         const sy = e.clientY - rect.top
         const world = screenToWorld(sx, sy, this.camera)
-        this.onBoxSelect?.(this.shiftDragStartWorldX, this.shiftDragStartWorldY, world.x, world.y)
-      } else {
-        // Tiny shift-click: clear selection
-        this.onClearSelect?.()
+        this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
+      } else if (dist < 5 && this.onRally) {
+        // Short click — set rally point
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.clientX - rect.left
+        const sy = e.clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        this.onRally(world.x, world.y)
       }
       return
     }
@@ -296,7 +304,7 @@ export class InputHandler {
   }
 
   getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {
-    if (!this.isShiftDrag) return null
+    if (!this.isDragSelect) return null
     const rect = this.canvas.getBoundingClientRect()
     return {
       x1: this.mouseDownX - rect.left,
