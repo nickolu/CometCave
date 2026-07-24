@@ -1,8 +1,15 @@
 import type { SimulationState, Player, BuildingEntity } from '../types'
 import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS } from '../constants'
 import { SpatialGrid } from './spatial-grid'
+import type { Difficulty } from '../../store'
 
-export function createSim(seed: number = Date.now()): SimulationState {
+const aiSpawnInterval: Record<Difficulty, number> = {
+  easy: 2000,
+  medium: 800,
+  hard: 400,
+}
+
+export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium'): SimulationState {
   const playerBase: BuildingEntity = {
     id: 'building-player-base',
     typeId: 'base',
@@ -19,6 +26,7 @@ export function createSim(seed: number = Date.now()): SimulationState {
     x: AI_BASE_X, y: AI_BASE_Y,
     hp: BASE_HP, maxHp: BASE_HP,
     spawnTimer: 0,
+    spawnIntervalOverride: aiSpawnInterval[difficulty],
     inputBuffer: {},
   }
 
