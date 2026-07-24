@@ -41,6 +41,10 @@ export class GameInstance {
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => { this.sim.rallyPoints['player'] = null },    // R — clear rally
+      () => {                                              // H — cycle spawn mode
+        const next = useSpeckWarsStore.getState().cycleSpawnMode()
+        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
+      },
     )
     this.lastTime = performance.now()
     this.loop(this.lastTime)
