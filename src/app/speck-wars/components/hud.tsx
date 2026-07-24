@@ -139,6 +139,64 @@ export function HUD() {
         )
       })()}
 
+      {/* Mini-map — top right, below difficulty badge */}
+      {hud && (() => {
+        const SCALE = 120 / 3000  // world→screen
+        return (
+          <div style={{
+            position: 'absolute', top: 72, right: 16,
+            width: 120, height: 120,
+            background: 'rgba(0,0,0,0.55)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 4,
+            overflow: 'hidden',
+            pointerEvents: 'none',
+          }}>
+            <svg width={120} height={120} style={{ display: 'block' }}>
+              {/* Speck dots */}
+              {hud.minimap.specks.map((s, i) => (
+                <circle
+                  key={i}
+                  cx={s.x * SCALE}
+                  cy={s.y * SCALE}
+                  r={1}
+                  fill={s.ownerId === 'player' ? colorHex(PLAYER_COLOR) : colorHex(AI_COLOR)}
+                  opacity={0.55}
+                />
+              ))}
+              {/* Buildings */}
+              {hud.minimap.buildings.map(b => {
+                const fill = b.ownerId === 'player' ? colorHex(PLAYER_COLOR)
+                  : b.ownerId === 'ai' ? colorHex(AI_COLOR)
+                  : '#888888'
+                const r = b.typeId === 'base' ? 4 : 2.5
+                return (
+                  <circle
+                    key={b.id}
+                    cx={b.x * SCALE}
+                    cy={b.y * SCALE}
+                    r={r}
+                    fill={fill}
+                    opacity={0.9}
+                  />
+                )
+              })}
+              {/* Rally point crosshair */}
+              {hud.minimap.rallyPoint && (() => {
+                const rx = hud.minimap.rallyPoint.x * SCALE
+                const ry = hud.minimap.rallyPoint.y * SCALE
+                return (
+                  <g>
+                    <line x1={rx - 4} y1={ry} x2={rx + 4} y2={ry} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
+                    <line x1={rx} y1={ry - 4} x2={rx} y2={ry + 4} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
+                  </g>
+                )
+              })()}
+            </svg>
+          </div>
+        )
+      })()}
+
       {/* Timer + Pause button — top bar */}
       <div style={{
         position: 'absolute', top: 12, left: 0, right: 0,

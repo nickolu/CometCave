@@ -94,4 +94,9 @@ export interface HudData {
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
   spawnRates: Record<string, number>   // playerId → effective specks/min
+  minimap: {
+    specks: { x: number; y: number; ownerId: string }[]
+    buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]
+    rallyPoint: { x: number; y: number } | null
+  }
 }

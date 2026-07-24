@@ -222,5 +222,23 @@ function emitHudUpdate(sim: SimulationState) {
     spawnRates[pid] = Math.round(totalRate)
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, spawnRates } })
+  // Mini-map data: downsampled specks + all buildings + rally point
+  const minimapBuildings = Object.values(sim.buildings).map(b => ({
+    id: b.id, x: b.x, y: b.y, ownerId: b.ownerId, typeId: b.typeId,
+  }))
+  const step = Math.max(1, Math.ceil(sim.speckCount / 400))
+  const minimapSpecks: { x: number; y: number; ownerId: string }[] = []
+  for (let i = 0; i < sim.speckCount; i += step) {
+    const meta = sim.speckMeta[i]
+    if (meta && sim.speckHp[i] > 0) {
+      minimapSpecks.push({ x: sim.speckX[i], y: sim.speckY[i], ownerId: meta.ownerId })
+    }
+  }
+  const minimap = {
+    specks: minimapSpecks,
+    buildings: minimapBuildings,
+    rallyPoint: sim.rallyPoints['player'] ?? null,
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, spawnRates, minimap } })
 }
