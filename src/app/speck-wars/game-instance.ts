@@ -151,9 +151,12 @@ export class GameInstance {
     if (isFirstGame()) {
       markFirstGameDone()
       const hints = [
-        { delay: 1200, message: '💡 Click the map to rally your specks!', color: '#aaddff' },
-        { delay: 6000, message: '💡 Capture outposts to boost production!', color: '#aaddff' },
-        { delay: 13000, message: '💡 Hold all 3 outposts for 60s to dominate!', color: '#ffd700' },
+        { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
+        { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
+        { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
+        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/scout)', color: '#aaddff' },
+        { delay: 32000, message: '💡 Hold all 3 outposts for 60s to win by domination!', color: '#ffd700' },
+        { delay: 45000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
         setTimeout(() => {
