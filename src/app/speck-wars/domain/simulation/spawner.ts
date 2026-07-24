@@ -32,6 +32,7 @@ let speckCounter = 0
 
 export function updateSpawners(sim: SimulationState, dt: number) {
   for (const building of Object.values(sim.buildings)) {
+    if (building.ownerId === 'neutral') continue
     const btype = BUILDING_TYPES[building.typeId]
     if (!btype?.spawnTypeId) continue
     if (sim.players[building.ownerId]?.isDefeated) continue

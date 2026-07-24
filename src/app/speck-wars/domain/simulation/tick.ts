@@ -4,6 +4,7 @@ import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
+import { updateCapture } from './capture'
 import { HUD_UPDATE_INTERVAL } from '../constants'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
@@ -27,10 +28,13 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
 
-  // 7. Check win/loss
+  // 7. Update outpost capture progress
+  updateCapture(sim, dt)
+
+  // 8. Check win/loss
   checkVictory(sim)
 
-  // 8. Emit HUD update every N ticks
+  // 9. Emit HUD update every N ticks
   sim.tick++
   if (sim.tick % HUD_UPDATE_INTERVAL === 0) emitHudUpdate(sim)
 

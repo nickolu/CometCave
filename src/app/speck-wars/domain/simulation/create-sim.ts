@@ -1,5 +1,5 @@
 import type { SimulationState, Player, BuildingEntity } from '../types'
-import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS } from '../constants'
+import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, OUTPOST_POSITIONS } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import type { Difficulty } from '../../store'
 
@@ -38,12 +38,29 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     id: 'ai', name: 'AI',
     color: AI_COLOR, isAI: true, isDefeated: false, stockpile: {},
   }
+  const neutral: Player = {
+    id: 'neutral', name: 'Neutral',
+    color: NEUTRAL_COLOR, isAI: false, isDefeated: false, stockpile: {},
+  }
+
+  const outpostBuildings: Record<string, BuildingEntity> = {}
+  for (const pos of OUTPOST_POSITIONS) {
+    outpostBuildings[pos.id] = {
+      id: pos.id,
+      typeId: 'outpost',
+      ownerId: 'neutral',
+      x: pos.x, y: pos.y,
+      hp: 50, maxHp: 50,
+      spawnTimer: 0,
+      inputBuffer: {},
+    }
+  }
 
   return {
     tick: 0,
     rngState: seed,
-    players: { player, ai },
-    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase },
+    players: { player, ai, neutral },
+    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings },
     speckIds: new Array(MAX_SPECKS).fill(''),
     speckX: new Float32Array(MAX_SPECKS),
     speckY: new Float32Array(MAX_SPECKS),

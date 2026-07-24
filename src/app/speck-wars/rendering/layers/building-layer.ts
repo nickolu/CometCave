@@ -1,6 +1,7 @@
 import { Graphics, Container } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
+import { NEUTRAL_COLOR } from '../../domain/constants'
 
 export class BuildingLayer {
   readonly stage: Container
@@ -17,7 +18,7 @@ export class BuildingLayer {
 
     for (const building of Object.values(sim.buildings)) {
       const btype = BUILDING_TYPES[building.typeId]
-      const color = playerColors[building.ownerId] ?? 0xffffff
+      const color = building.ownerId === 'neutral' ? NEUTRAL_COLOR : (playerColors[building.ownerId] ?? 0xffffff)
       const r = btype?.size ?? 20
 
       // Base circle
@@ -50,6 +51,17 @@ export class BuildingLayer {
       this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
       this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
       this.gfx.endFill()
+
+      // Capture progress ring
+      if (building.captureProgress && building.captureProgress > 0 && building.captureSide) {
+        const capColor = playerColors[building.captureSide] ?? 0xffffff
+        this.gfx.lineStyle(3, capColor, 0.9)
+        const startAngle = -Math.PI / 2
+        const endAngle = startAngle + Math.PI * 2 * building.captureProgress
+        this.gfx.moveTo(building.x + (r + 12) * Math.cos(startAngle), building.y + (r + 12) * Math.sin(startAngle))
+        this.gfx.arc(building.x, building.y, r + 12, startAngle, endAngle)
+        this.gfx.lineStyle(0)
+      }
     }
   }
 
