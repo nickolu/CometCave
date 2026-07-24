@@ -4,8 +4,10 @@ export class AIController {
   private playerId: string
   private tickInterval: number
   private lastDecisionTick: number = 0
-  private aggressive: boolean  // true = Hard mode: every 4th decision rushes base
+  private aggressive: boolean  // true = Hard/Brutal: every 4th decision rushes base
   private decisionCount: number = 0
+  private spawnMode: 'basic' | 'heavy' = 'basic'
+  private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
 
   constructor(playerId: string, tickInterval: number = 30, aggressive = false) {
     this.playerId = playerId
@@ -52,6 +54,20 @@ export class AIController {
     }
 
     this.decisionCount++
+
+    // Hard/Brutal mode: vary spawn type to add unpredictability
+    if (this.aggressive) {
+      this.spawnModeCountdown--
+      if (this.spawnModeCountdown <= 0) {
+        // 40% chance to switch to heavy, 60% stay/go basic
+        const next = Math.random() < 0.4 ? 'heavy' : 'basic'
+        if (next !== this.spawnMode) {
+          this.spawnMode = next
+          sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: next })
+        }
+        this.spawnModeCountdown = 8 + Math.floor(Math.random() * 8)  // re-evaluate in 8–16 decisions
+      }
+    }
 
     // Hard mode: every 4th decision, rush player base directly (pressure waves)
     const forceBaseRush = this.aggressive && this.decisionCount % 4 === 0
