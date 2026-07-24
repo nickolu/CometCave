@@ -9,6 +9,12 @@ const aiSpawnInterval: Record<Difficulty, number> = {
   hard: 400,
 }
 
+const playerSpawnInterval: Record<Difficulty, number | undefined> = {
+  easy: 550,   // faster on easy — the AI is already slow, this ensures clear advantage
+  medium: undefined,  // use default (800ms)
+  hard: undefined,    // use default (800ms) — player skill must compensate
+}
+
 export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium'): SimulationState {
   const playerBase: BuildingEntity = {
     id: 'building-player-base',
@@ -17,6 +23,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     x: PLAYER_BASE_X, y: PLAYER_BASE_Y,
     hp: BASE_HP, maxHp: BASE_HP,
     spawnTimer: 0,
+    spawnIntervalOverride: playerSpawnInterval[difficulty],
     inputBuffer: {},
   }
   const aiBase: BuildingEntity = {
