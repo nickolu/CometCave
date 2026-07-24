@@ -12,4 +12,5 @@ export const ROUTE_CONSTANTS = {
   STARMATCH: '/starmatch',
   COMET_CARDS: '/comet-cards',
   STORYBOOK_FACTORY: '/storybook-factory',
+  SPECK_WARS: '/speck-wars',
 }

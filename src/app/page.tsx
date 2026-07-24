@@ -18,6 +18,7 @@ const games: readonly { title: string; icon: string; href: string; description: 
   { title: 'Chat Room of Infinity', icon: 'chat', href: ROUTE_CONSTANTS.CHAT_ROOM, description: 'Chat with fictional characters in a chat room' },
   { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Create unique AI-powered avatars from your photos' },
   { title: 'Storybook Factory', icon: 'auto_stories', href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, description: 'Create illustrated comic books and storybooks from your pictures' },
+  { title: 'Speck Wars', icon: 'bug_report', href: ROUTE_CONSTANTS.SPECK_WARS, description: 'Command your specks to capture enemy bases in this real-time strategy micro-battle' },
 ]
 
 export default function Home() {
