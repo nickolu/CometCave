@@ -144,6 +144,39 @@ export function HUD() {
         )
       })()}
 
+      {/* Wave countdown — only shows when wave is imminent or in progress */}
+      {hud && (hud.waveCountdown !== null || hud.waveInProgress) && (() => {
+        const countdown = hud.waveCountdown ?? 0
+        const inProgress = hud.waveInProgress
+        if (!inProgress && countdown > 30000) return null  // only show when < 30s
+        const secs = Math.ceil(countdown / 1000)
+        return (
+          <>
+            {inProgress && (
+              <style>{`
+                @keyframes danger-pulse {
+                  from { opacity: 0.4; }
+                  to   { opacity: 0.7; }
+                }
+              `}</style>
+            )}
+            <div style={{
+              position: 'absolute', top: 110, right: 16,
+              padding: '4px 10px',
+              background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
+              border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
+              borderRadius: 4,
+              fontSize: 10,
+              letterSpacing: 1.5,
+              color: inProgress ? '#ff5050' : '#ffa030',
+              animation: inProgress ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
+            }}>
+              {inProgress ? '⚠ WAVE INCOMING!' : `⚠ WAVE IN ${secs}s`}
+            </div>
+          </>
+        )
+      })()}
+
       {/* Mini-map — top right, below difficulty badge */}
       {hud && (() => {
         const SCALE = 120 / 3000  // world→screen
