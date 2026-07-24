@@ -26,6 +26,7 @@ export function HUD() {
   const spawnMode = useSpeckWarsStore(s => s.spawnMode)
   const cycleSpawnMode = useSpeckWarsStore(s => s.cycleSpawnMode)
   const difficulty = useSpeckWarsStore(s => s.difficulty)
+  const surrender = useSpeckWarsStore(s => s.surrender)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -248,11 +249,27 @@ export function HUD() {
         <div style={{
           position: 'absolute', inset: 0,
           background: 'rgba(0,0,0,0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24,
         }}>
           <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
             PAUSED
           </span>
+          <button
+            onClick={surrender}
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 24px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: 'transparent',
+              border: '1px solid rgba(255,100,100,0.4)',
+              borderRadius: 4,
+              color: 'rgba(255,100,100,0.6)',
+              letterSpacing: 1,
+            }}
+          >
+            Give Up
+          </button>
         </div>
       )}
 
