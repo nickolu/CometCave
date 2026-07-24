@@ -80,7 +80,7 @@ function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
   if (tripleHolder) {
     sim.dominationTimer += dt
     if (sim.dominationTimer >= DOMINATION_TIME) {
-      sim.events.push({ type: 'GAME_OVER', winnerId: tripleHolder })
+      sim.events.push({ type: 'GAME_OVER', winnerId: tripleHolder, victoryType: 'domination' })
     }
   } else {
     sim.dominationTimer = 0

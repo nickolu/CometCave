@@ -88,6 +88,7 @@ export class GameInstance {
             store.setPhase('defeat')
           }
           store.setWinnerId(event.winnerId)
+          store.setVictoryType(event.victoryType)
         }
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)

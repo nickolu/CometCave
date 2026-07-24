@@ -69,7 +69,7 @@ export type SimEvent =
   | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
   | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string }
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
-  | { type: 'GAME_OVER'; winnerId: string }
+  | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'domination' }
   | { type: 'HUD_UPDATE'; data: HudData }
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
 
