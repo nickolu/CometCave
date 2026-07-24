@@ -30,10 +30,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, setPhase])
 
-  const difficulties: Array<{ key: 'easy' | 'medium' | 'hard'; label: string; color: string }> = [
+  const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88' },
     { key: 'medium', label: 'Medium', color: '#ffcc44' },
     { key: 'hard', label: 'Hard', color: '#ff4f7b' },
+    { key: 'very-hard', label: 'Brutal', color: '#cc00ff' },
   ]
 
   if (phase === 'menu') {
@@ -122,8 +123,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const ss = String(totalSec % 60).padStart(2, '0')
     const timeStr = `${mm}:${ss}`
 
-    const difficultyColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b' }
-    const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
+    const difficultyColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
+    const diffLabel = difficulty === 'very-hard' ? 'Brutal' : difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
     const diffColor = difficultyColors[difficulty]
 
     const shareText = won
