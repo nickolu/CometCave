@@ -19,6 +19,7 @@ export class GameInstance {
   private inputHandler!: InputHandler
   private aiController: AIController
   private elapsedMs = 0
+  private firstBloodDone = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -94,6 +95,15 @@ export class GameInstance {
         if (event.type === 'SPECK_DIED') {
           if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') store.addKill()
           else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') store.addLoss()
+          if (!this.firstBloodDone) {
+            this.firstBloodDone = true
+            const playerGotIt = event.killerOwnerId === 'player'
+            store.setNotification({
+              message: playerGotIt ? '⚔ FIRST BLOOD!' : '☠ FIRST BLOOD!',
+              color: playerGotIt ? '#4af7c4' : '#ff4f7b',
+            })
+            setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 1800)
+          }
         }
         if (event.type === 'OUTPOST_CAPTURED') {
           const isPlayerGain = event.newOwner === 'player'
