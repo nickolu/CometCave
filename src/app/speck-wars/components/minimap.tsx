@@ -59,6 +59,7 @@ export function Minimap({ gameRef }: MinimapProps) {
 
       // Draw buildings
       const neutralColor = '#888888'
+      const nowMs = Date.now()
       for (const building of Object.values(sim.buildings)) {
         ctx.fillStyle = building.ownerId === 'player' ? playerColor
           : building.ownerId === 'ai' ? aiColor
@@ -76,6 +77,21 @@ export function Minimap({ gameRef }: MinimapProps) {
         ctx.beginPath()
         ctx.arc(bx, by, 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * hpFrac)
         ctx.stroke()
+        // Capture alert: pulsing colored ring around outpost being captured by enemy
+        if (building.typeId === 'outpost' && building.captureSide && building.captureSide !== 'neutral') {
+          const isEnemyCapturing = building.captureSide === 'ai'
+          if (isEnemyCapturing || (building.ownerId === 'ai' && building.captureSide === 'player')) {
+            const pulse = 0.4 + 0.6 * Math.abs(Math.sin(nowMs / 250))
+            const captureColor = building.captureSide === 'player' ? playerColor : aiColor
+            ctx.strokeStyle = captureColor
+            ctx.lineWidth = 1.5
+            ctx.globalAlpha = pulse * 0.85
+            ctx.beginPath()
+            ctx.arc(bx, by, 7, 0, Math.PI * 2)
+            ctx.stroke()
+            ctx.globalAlpha = 1
+          }
+        }
       }
 
       // Draw rally point
