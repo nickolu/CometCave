@@ -1,3 +1,5 @@
+import type { SpatialGrid } from './simulation/spatial-grid'
+
 export interface SpeckMeta {
   id: string
   typeId: string
@@ -44,6 +46,7 @@ export interface SimulationState {
 
   inputQueue: InputEvent[]
   events: SimEvent[]
+  spatialGrid: SpatialGrid
 }
 
 export type InputEvent =
