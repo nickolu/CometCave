@@ -20,6 +20,7 @@ export function HUD() {
   const elapsedMs = useSpeckWarsStore(s => s.elapsedMs)
   const speed = useSpeckWarsStore(s => s.speed)
   const cycleSpeed = useSpeckWarsStore(s => s.cycleSpeed)
+  const notification = useSpeckWarsStore(s => s.notification)
 
   return (
     <div style={{
@@ -93,6 +94,24 @@ export function HUD() {
           </div>
         )
       })()}
+
+      {/* Outpost capture/loss notification */}
+      {notification && (
+        <div style={{
+          position: 'absolute', top: 76, left: 0, right: 0,
+          display: 'flex', justifyContent: 'center',
+        }}>
+          <span style={{
+            color: notification.color,
+            fontSize: 13,
+            fontWeight: 'bold',
+            letterSpacing: 2,
+            textShadow: `0 0 12px ${notification.color}`,
+          }}>
+            {notification.message}
+          </span>
+        </div>
+      )}
 
       {/* Paused overlay */}
       {phase === 'paused' && (

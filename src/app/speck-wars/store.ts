@@ -18,6 +18,8 @@ interface SpeckWarsStore {
   setElapsedMs: (ms: number) => void
   speed: 1 | 2 | 4
   cycleSpeed: () => void
+  notification: { message: string; color: string } | null
+  setNotification: (n: { message: string; color: string } | null) => void
 }
 
 export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
@@ -38,4 +40,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   cycleSpeed: () => set(s => ({
     speed: s.speed === 1 ? 2 : s.speed === 2 ? 4 : 1,
   })),
+  notification: null,
+  setNotification: n => set({ notification: n }),
 }))

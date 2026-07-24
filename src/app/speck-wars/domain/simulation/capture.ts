@@ -34,11 +34,18 @@ export function updateCapture(sim: SimulationState, dt: number) {
 
     building.captureProgress = (building.captureProgress ?? 0) + dt / CAPTURE_TIME
     if ((building.captureProgress ?? 0) >= 1) {
+      const previousOwner = building.ownerId
       building.ownerId = dominantOwner
       building.captureProgress = 0
       building.captureSide = null
       // Reset spawn timer so it starts fresh for the new owner
       building.spawnTimer = 0
+      sim.events.push({
+        type: 'OUTPOST_CAPTURED',
+        outpostId: building.id,
+        newOwner: dominantOwner,
+        previousOwner,
+      })
     }
   }
 }

@@ -67,6 +67,7 @@ export type SimEvent =
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
   | { type: 'GAME_OVER'; winnerId: string }
   | { type: 'HUD_UPDATE'; data: HudData }
+  | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
 
 export interface HudData {
   players: Record<string, {
