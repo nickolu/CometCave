@@ -16,6 +16,7 @@ export class InputHandler {
   private onClearSelect?: () => void
   private onSurge?: () => void
   private onSnapToAction?: () => void
+  private onSnapToBase?: () => void
   private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
@@ -49,6 +50,7 @@ export class InputHandler {
     onClearSelect?: () => void,
     onSurge?: () => void,
     onSnapToAction?: () => void,
+    onSnapToBase?: () => void,
     onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
     onCycleSpeed?: () => void,
     onSelectAll?: () => void,
@@ -68,6 +70,7 @@ export class InputHandler {
     this.onClearSelect = onClearSelect
     this.onSurge = onSurge
     this.onSnapToAction = onSnapToAction
+    this.onSnapToBase = onSnapToBase
     this.onSetSpawnType = onSetSpawnType
     this.onCycleSpeed = onCycleSpeed
     this.onSelectAll = onSelectAll
@@ -252,7 +255,7 @@ export class InputHandler {
     } else if (e.code === 'KeyR') {
       this.onClearRally?.()
     } else if (e.code === 'KeyH') {
-      this.onCycleSpawnMode?.()
+      this.onSnapToBase?.()
     } else if (e.code === 'KeyC') {
       this.onRecenterCamera?.()
     } else if (e.code === 'KeyD') {

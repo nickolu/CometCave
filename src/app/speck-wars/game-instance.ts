@@ -114,6 +114,7 @@ export class GameInstance {
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
+      () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
         useSpeckWarsStore.getState().setSpawnMode(typeId)
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
@@ -589,6 +590,17 @@ export class GameInstance {
     const h = this.canvas.clientHeight
     this.camera.x = w / 2 - cx * this.camera.zoom
     this.camera.y = h / 2 - cy * this.camera.zoom
+  }
+
+  private snapToBase() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (!playerBase) return
+    const zoom = this.camera.zoom
+    const w = this.canvas.clientWidth
+    const h = this.canvas.clientHeight
+    this.camera.x = w / 2 - playerBase.x * zoom
+    this.camera.y = h / 2 - playerBase.y * zoom
+    this.notify('⌂ Home', '#4af7c4')
   }
 
   private notify(message: string, color: string) {
