@@ -40,7 +40,8 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     building.spawnTimer -= dt
     if (building.spawnTimer > 0) continue
 
-    building.spawnTimer = building.spawnIntervalOverride ?? btype.spawnInterval
+    const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
+    building.spawnTimer = building.tripleOutpostBonus ? baseInterval / 2 : baseInterval
 
     for (let i = 0; i < btype.spawnCount; i++) {
       // Spawn just outside the building radius with slight random offset
