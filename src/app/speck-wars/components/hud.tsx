@@ -534,6 +534,16 @@ const MINIMAP_SIZE = 130
 
 function Minimap({ minimap }: { minimap: NonNullable<import('../domain/types').HudData['minimap']> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const setPendingRally = useSpeckWarsStore(s => s.setPendingRally)
+
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
+    const cx = e.clientX - rect.left
+    const cy = e.clientY - rect.top
+    const wx = (cx / MINIMAP_SIZE) * WORLD_WIDTH
+    const wy = (cy / MINIMAP_SIZE) * WORLD_HEIGHT
+    setPendingRally({ x: wx, y: wy })
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -597,12 +607,15 @@ function Minimap({ minimap }: { minimap: NonNullable<import('../domain/types').H
       ref={canvasRef}
       width={MINIMAP_SIZE}
       height={MINIMAP_SIZE}
+      onClick={handleClick}
       style={{
         position: 'absolute',
         bottom: 16,
         right: 16,
         borderRadius: 4,
         imageRendering: 'pixelated',
+        cursor: 'crosshair',
+        pointerEvents: 'auto',
       }}
     />
   )
