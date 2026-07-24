@@ -22,11 +22,33 @@ export function HUD() {
   const cycleSpeed = useSpeckWarsStore(s => s.cycleSpeed)
   const notification = useSpeckWarsStore(s => s.notification)
 
+  const BASE_MAX_HP = 100
+  const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
+  const hpFrac = playerBaseHp !== undefined ? playerBaseHp / BASE_MAX_HP : 1
+  const isDanger = phase === 'playing' && hpFrac < 0.3
+  const isCritical = phase === 'playing' && hpFrac < 0.15
+
   return (
     <div style={{
       position: 'absolute', inset: 0, pointerEvents: 'none',
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
     }}>
+      {isDanger && (
+        <>
+          <style>{`
+            @keyframes danger-pulse {
+              from { opacity: ${isCritical ? 0.4 : 0.15}; }
+              to   { opacity: ${isCritical ? 0.7 : 0.35}; }
+            }
+          `}</style>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at center, transparent 45%, rgba(220,30,30,1) 100%)',
+            animation: `danger-pulse ${isCritical ? '0.5s' : '1s'} ease-in-out infinite alternate`,
+            pointerEvents: 'none',
+          }} />
+        </>
+      )}
       {/* Timer + Pause button — top bar */}
       <div style={{
         position: 'absolute', top: 12, left: 0, right: 0,
