@@ -30,6 +30,9 @@ export class GameInstance {
   private enemySurgeWarnedAt = -30000
   private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
   private lastComboNotifiedAt = -5000
+  private idleArmyTimer = 0              // ms with no rally point + specks available
+  private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
+  private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -144,6 +147,7 @@ export class GameInstance {
         }
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
+          this.cachedPlayerSpeckCount = event.data.players.player?.speckCount ?? 0
           // Warn when an enemy starts capturing a player-owned outpost
           const now = Date.now()
           const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
@@ -259,6 +263,22 @@ export class GameInstance {
             setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
           }
         }
+      }
+    }
+
+    // Idle army nudge: remind player to rally when specks sit idle
+    if (store.phase === 'playing') {
+      const hasRally = !!this.sim.rallyPoints['player']
+      if (!hasRally && this.cachedPlayerSpeckCount >= 10) {
+        this.idleArmyTimer += dt
+        if (this.idleArmyTimer > 20000 && !store.notification
+            && Date.now() - this.lastIdleNudge > 30000) {
+          this.lastIdleNudge = Date.now()
+          store.setNotification({ message: '📍 Click to send your army!', color: '#aaddff' })
+          setTimeout(() => useSpeckWarsStore.getState().setNotification(null), 2500)
+        }
+      } else {
+        this.idleArmyTimer = 0
       }
     }
 
