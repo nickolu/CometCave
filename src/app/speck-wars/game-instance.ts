@@ -108,10 +108,10 @@ export class GameInstance {
       () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },   // D — defend (rally to player base)
       () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // A — advance to nearest non-player outpost
       () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
-      (x1, y1, x2, y2) => {                                           // Shift+drag — box-select specks
+      (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
-      () => {                                                          // Escape / Shift+click — clear selection
+      () => {                                                          // Escape — clear selection
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },

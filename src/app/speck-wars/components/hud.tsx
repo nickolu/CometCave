@@ -832,7 +832,7 @@ export function HUD() {
               fontSize: 9, letterSpacing: 1.5, color: '#ffffff', opacity: 0.7,
               textAlign: 'center', marginBottom: 4,
             }}>
-              SQUAD: {hud.selectedSpeckCount} · Shift+drag to reselect · Esc to clear
+              SQUAD: {hud.selectedSpeckCount} · Drag to reselect · Esc to clear
               {hud.selectedComposition && (
                 <div style={{ fontSize: 9, color: 'rgba(74,247,196,0.75)', marginTop: 2, letterSpacing: 1 }}>
                   {Object.entries(hud.selectedComposition.types)
