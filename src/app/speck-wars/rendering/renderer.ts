@@ -3,6 +3,7 @@ import { SpeckLayer } from './layers/speck-layer'
 import { BuildingLayer } from './layers/building-layer'
 import { GridLayer } from './layers/grid-layer'
 import { EffectsLayer } from './layers/effects-layer'
+import { StarfieldLayer } from './layers/starfield-layer'
 import { createSpeckTexture } from './textures'
 import type { SimulationState } from '../domain/types'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
@@ -32,6 +33,7 @@ export class Renderer {
   private buildingLayer!: BuildingLayer
   private gridLayer!: GridLayer
   private effectsLayer!: EffectsLayer
+  private starfieldLayer!: StarfieldLayer
   private rallyGfx!: Graphics
 
   async init(canvas: HTMLCanvasElement) {
@@ -49,11 +51,13 @@ export class Renderer {
     this.app.stage.addChild(this.world)
 
     const texture = createSpeckTexture(this.app, 4)
+    this.starfieldLayer = new StarfieldLayer()
     this.gridLayer = new GridLayer()
     this.effectsLayer = new EffectsLayer()
     this.buildingLayer = new BuildingLayer()
     this.speckLayer = new SpeckLayer(texture, PLAYER_COLORS)
 
+    this.world.addChild(this.starfieldLayer.stage)
     this.world.addChild(this.gridLayer.stage)
     this.world.addChild(this.buildingLayer.stage)
     this.world.addChild(this.effectsLayer.stage)
@@ -144,6 +148,7 @@ export class Renderer {
   }
 
   destroy() {
+    this.starfieldLayer.destroy()
     this.gridLayer.destroy()
     this.effectsLayer.destroy()
     this.speckLayer.destroy()
