@@ -90,7 +90,12 @@ function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
 function consumeInputs(sim: SimulationState) {
   for (const event of sim.inputQueue) {
     if (event.type === 'RALLY') {
-      sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+      const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
+      if (hasSelection) {
+        sim.rallyPoints['player-selected'] = { x: event.x, y: event.y }
+      } else {
+        sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+      }
     }
     if (event.type === 'SET_SPAWN_TYPE') {
       const stype = SPECK_TYPES[event.speckTypeId]
@@ -99,6 +104,28 @@ function consumeInputs(sim: SimulationState) {
         building.spawnTypeOverride = event.speckTypeId
         building.spawnIntervalOverride = stype?.productionTime
       }
+    }
+    if (event.type === 'BOX_SELECT') {
+      // Select player specks in world bounding box
+      const { x1, y1, x2, y2 } = event
+      const minX = Math.min(x1, x2), maxX = Math.max(x1, x2)
+      const minY = Math.min(y1, y2), maxY = Math.max(y1, y2)
+      sim.selectedSpeckIds.clear()
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || meta.ownerId !== event.ownerId) continue
+        if (!sim.speckIds[i]) continue
+        if (sim.speckX[i] >= minX && sim.speckX[i] <= maxX &&
+            sim.speckY[i] >= minY && sim.speckY[i] <= maxY) {
+          sim.selectedSpeckIds.add(meta.id)
+        }
+      }
+      // Selected specks initially use the same rally as unselected
+      sim.rallyPoints['player-selected'] = sim.rallyPoints['player']
+    }
+    if (event.type === 'CLEAR_SELECT') {
+      sim.selectedSpeckIds.clear()
+      sim.rallyPoints['player-selected'] = null
     }
   }
   sim.inputQueue = []

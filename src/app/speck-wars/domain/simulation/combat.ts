@@ -107,6 +107,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
 export function removeDeadSpecks(sim: SimulationState) {
   for (let i = 0; i < sim.speckCount; i++) {
     if (sim.speckIds[i] !== '' && sim.speckHp[i] <= 0) {
+      const deadId = sim.speckIds[i]  // save before clearing
+      sim.selectedSpeckIds.delete(deadId)
       sim.freeSlots.push(i)
       sim.speckIds[i] = ''
       sim.speckMeta[i] = null

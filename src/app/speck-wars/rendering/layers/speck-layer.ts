@@ -33,7 +33,7 @@ export class SpeckLayer {
     this.stage.addChild(this.gfx)
   }
 
-  update(sim: SimulationState) {
+  update(sim: SimulationState, selectedSpeckIds?: Set<string>) {
     this.gfx.clear()
     // Group live speck indices by owner
     const byOwner: Record<string, number[]> = {}
@@ -114,6 +114,14 @@ export class SpeckLayer {
             )
             this.gfx.endFill()
           }
+        }
+
+        // Selection ring: bright white ring around selected specks
+        const speckId = sim.speckMeta[i]?.id ?? ''
+        if (selectedSpeckIds?.has(speckId)) {
+          this.gfx.lineStyle(1.5, 0xffffff, 0.9)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 4)
+          this.gfx.lineStyle(0)
         }
       }
 

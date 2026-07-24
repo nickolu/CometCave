@@ -54,6 +54,7 @@ export interface SimulationState {
   inputQueue: InputEvent[]
   events: SimEvent[]
   rallyPoints: Record<string, { x: number; y: number } | null>
+  selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
   spatialGrid: SpatialGrid
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
 }
@@ -63,6 +64,8 @@ export type InputEvent =
   | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string }
   | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
+  | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
+  | { type: 'CLEAR_SELECT'; ownerId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }

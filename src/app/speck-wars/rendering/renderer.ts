@@ -72,7 +72,7 @@ export class Renderer {
     this.world.scale.set(camera.zoom)
 
     this.buildingLayer.update(sim, PLAYER_COLORS)
-    this.speckLayer.update(sim)
+    this.speckLayer.update(sim, sim.selectedSpeckIds)
 
     // Process events from this tick
     for (const event of sim.events) {
