@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { HudData } from './domain/types'
-import { resetWinStreak } from './lib/personal-best'
+import { resetWinStreak, recordGameResult } from './lib/personal-best'
 
 type GamePhase = 'menu' | 'playing' | 'paused' | 'victory' | 'defeat'
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'very-hard'
@@ -37,7 +37,7 @@ interface SpeckWarsStore {
   resetGame: () => void
 }
 
-export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
+export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   phase: 'menu',
   setPhase: phase => set({ phase }),
   togglePause: () => set(s => ({
@@ -77,7 +77,9 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   gameActions: { defend: null, advance: null, rush: null, clearRally: null },
   setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null } }),
   surrender: () => {
+    const s = get()
     resetWinStreak()
+    recordGameResult(s.difficulty, false, s.elapsedMs, s.kills)
     set({ phase: 'defeat', winnerId: 'ai', victoryType: 'destruction', isNewBest: false })
   },
   resetGame: () => set(s => ({
