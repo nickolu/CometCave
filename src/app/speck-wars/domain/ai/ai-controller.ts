@@ -79,6 +79,28 @@ export class AIController {
 
     this.decisionCount++
 
+    // Counter-spawn (non-aggressive only): mirror player's heavy ratio
+    if (!this.aggressive) {
+      let playerHeavy = 0, playerBasic = 0
+      for (let i = 0; i < sim.speckCount; i++) {
+        const m = sim.speckMeta[i]
+        if (!m || m.ownerId === this.playerId || m.ownerId === 'neutral') continue
+        if (m.typeId === 'heavy') playerHeavy++
+        else playerBasic++
+      }
+      const playerTotal = playerHeavy + playerBasic
+      const playerHeavyFrac = playerTotal > 0 ? playerHeavy / playerTotal : 0
+      const wantHeavy = playerHeavyFrac > 0.55
+      const wantBasic = playerHeavyFrac < 0.30
+      if (wantHeavy && this.spawnMode !== 'heavy') {
+        this.spawnMode = 'heavy'
+        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'heavy' })
+      } else if (wantBasic && this.spawnMode !== 'basic') {
+        this.spawnMode = 'basic'
+        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'basic' })
+      }
+    }
+
     // Hard/Brutal mode: vary spawn type to add unpredictability
     if (this.aggressive) {
       this.spawnModeCountdown--
@@ -95,6 +117,19 @@ export class AIController {
 
     // Hard mode: every 4th decision, rush player base directly (pressure waves)
     const forceBaseRush = this.aggressive && this.decisionCount % 4 === 0
+
+    // Defensive rally: when AI base is low HP, sometimes pull back to defend
+    const myBaseHpFrac = (myBase?.hp ?? 100) / (myBase?.maxHp ?? 100)
+    if (!forceBaseRush && myBaseHpFrac < 0.6 && myBase) {
+      // Aggressive AI defends reluctantly; easy/medium AI defends more readily
+      const defendChance = this.aggressive
+        ? (myBaseHpFrac < 0.3 ? 0.35 : 0.15)
+        : (myBaseHpFrac < 0.3 ? 0.70 : 0.45)
+      if (Math.random() < defendChance) {
+        sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: myBase.x, y: myBase.y })
+        return
+      }
+    }
 
     // Priority 1 (always): recapture player-held outpost
     // Priority 2: capture neutral outpost
