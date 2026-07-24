@@ -18,6 +18,8 @@ export interface BuildingEntity {
   spawnTimer: number       // ms until next spawn
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
+  captureProgress?: number      // 0..1 progress toward capture for captureSide
+  captureSide?: string | null   // which player is currently winning capture
 }
 
 export interface Player {

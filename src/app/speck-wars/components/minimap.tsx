@@ -58,12 +58,16 @@ export function Minimap({ gameRef }: MinimapProps) {
       }
 
       // Draw buildings
+      const neutralColor = '#888888'
       for (const building of Object.values(sim.buildings)) {
-        ctx.fillStyle = building.ownerId === 'player' ? playerColor : aiColor
+        ctx.fillStyle = building.ownerId === 'player' ? playerColor
+          : building.ownerId === 'ai' ? aiColor
+          : neutralColor
         const bx = building.x * SCALE_X
         const by = building.y * SCALE_Y
+        const buildingRadius = building.typeId === 'outpost' ? 3 : 4
         ctx.beginPath()
-        ctx.arc(bx, by, 4, 0, Math.PI * 2)
+        ctx.arc(bx, by, buildingRadius, 0, Math.PI * 2)
         ctx.fill()
         // HP ring
         const hpFrac = building.hp / building.maxHp
