@@ -1,0 +1,68 @@
+export interface SpeckMeta {
+  id: string
+  typeId: string
+  ownerId: string
+  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing'
+  targetId: string | null
+  attackCooldown: number   // ms remaining until next attack
+}
+
+export interface BuildingEntity {
+  id: string
+  typeId: string
+  ownerId: string
+  x: number; y: number
+  hp: number; maxHp: number
+  spawnTimer: number       // ms until next spawn
+  inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
+}
+
+export interface Player {
+  id: string
+  name: string
+  color: number            // pixi hex e.g. 0x4af7c4
+  isAI: boolean
+  isDefeated: boolean
+  stockpile: Record<string, number>  // typeId → count (resource form)
+}
+
+// SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
+export interface SimulationState {
+  tick: number
+  rngState: number
+
+  players: Record<string, Player>
+  buildings: Record<string, BuildingEntity>
+
+  speckIds: string[]
+  speckX: Float32Array
+  speckY: Float32Array
+  speckVx: Float32Array
+  speckVy: Float32Array
+  speckHp: Float32Array
+  speckMeta: SpeckMeta[]   // parallel to speckIds
+
+  inputQueue: InputEvent[]
+  events: SimEvent[]
+}
+
+export type InputEvent =
+  | { type: 'RALLY'; ownerId: string; x: number; y: number }
+  | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
+  | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
+
+export type SimEvent =
+  | { type: 'SPECK_DIED'; speckId: string; x: number; y: number }
+  | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
+  | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string }
+  | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
+  | { type: 'GAME_OVER'; winnerId: string }
+  | { type: 'HUD_UPDATE'; data: HudData }
+
+export interface HudData {
+  players: Record<string, {
+    speckCount: number
+    buildingCount: number
+    buildingHp: Record<string, number>
+  }>
+}
