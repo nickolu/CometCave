@@ -21,6 +21,8 @@ export function HUD() {
   const speed = useSpeckWarsStore(s => s.speed)
   const cycleSpeed = useSpeckWarsStore(s => s.cycleSpeed)
   const notification = useSpeckWarsStore(s => s.notification)
+  const kills = useSpeckWarsStore(s => s.kills)
+  const losses = useSpeckWarsStore(s => s.losses)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -160,6 +162,9 @@ export function HUD() {
               return (
                 <div key={pid} style={{ marginBottom: 6, color }}>
                   <strong>{label}</strong> — specks: {data.speckCount} | bases: {data.buildingCount} | HP: {totalHp}
+                  {pid === 'player' && (
+                    <span style={{ opacity: 0.7 }}> | ↑{kills} ↓{losses}</span>
+                  )}
                 </div>
               )
             })}

@@ -66,6 +66,10 @@ export class GameInstance {
         if (event.type === 'HUD_UPDATE') {
           store.setHud(event.data)
         }
+        if (event.type === 'SPECK_DIED') {
+          if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') store.addKill()
+          else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') store.addLoss()
+        }
         if (event.type === 'OUTPOST_CAPTURED') {
           const isPlayerGain = event.newOwner === 'player'
           const isPlayerLoss = event.previousOwner === 'player'
