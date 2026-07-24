@@ -20,7 +20,7 @@ export function updateCapture(sim: SimulationState, dt: number) {
 
     // Find player-owned specks (exclude neutral)
     const sides = Object.entries(counts).filter(([, n]) => n > 0)
-    if (sides.length === 0) return  // nobody near — decay progress slowly
+    if (sides.length === 0) continue  // nobody near — decay progress slowly
     if (sides.length > 1) continue  // contested — pause capture
 
     const [dominantOwner, dominantCount] = sides[0]

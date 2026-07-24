@@ -88,6 +88,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const attackDist = (btype?.size ?? 20) + stype.attackRange
 
     if (dist <= attackDist) {
+      // Outposts are captured, not destroyed — immune to direct combat damage
+      if (building.typeId === 'outpost') continue
       building.hp -= stype.damage * moraleMult(meta.ownerId)
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
