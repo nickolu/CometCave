@@ -45,6 +45,10 @@ export class GameInstance {
     for (const event of this.sim.events) {
       if (event.type === 'GAME_OVER') {
         useSpeckWarsStore.getState().setPhase('victory')
+        useSpeckWarsStore.getState().setWinnerId(event.winnerId)
+      }
+      if (event.type === 'HUD_UPDATE') {
+        useSpeckWarsStore.getState().setHud(event.data)
       }
     }
 
