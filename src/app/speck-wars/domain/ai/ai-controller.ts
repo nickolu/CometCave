@@ -9,7 +9,7 @@ export class AIController {
   private lastDecisionTick: number = 0
   private personality: AIPersonality
   private decisionCount: number = 0
-  private spawnMode: 'basic' | 'heavy' = 'basic'
+  private spawnMode: 'basic' | 'heavy' | 'scout' = 'basic'
   private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
   private dominanceTimer: number = 0  // ms enemy has held a 3:1 count advantage
 
@@ -81,40 +81,6 @@ export class AIController {
 
     this.decisionCount++
 
-    // Spawn mode decisions
-    if (this.personality === 'aggressive') {
-      // Aggressive: unpredictable spawn mix — re-evaluate every 8–16 decisions
-      this.spawnModeCountdown--
-      if (this.spawnModeCountdown <= 0) {
-        const next = Math.random() < 0.45 ? 'heavy' : 'basic'
-        if (next !== this.spawnMode) {
-          this.spawnMode = next
-          sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: next })
-        }
-        this.spawnModeCountdown = 8 + Math.floor(Math.random() * 8)
-      }
-    } else {
-      // Balanced + Macro: counter-spawn — mirror player's heavy ratio
-      let playerHeavy = 0, playerBasic = 0
-      for (let i = 0; i < sim.speckCount; i++) {
-        const m = sim.speckMeta[i]
-        if (!m || m.ownerId === this.playerId || m.ownerId === 'neutral') continue
-        if (m.typeId === 'heavy') playerHeavy++
-        else playerBasic++
-      }
-      const playerTotal = playerHeavy + playerBasic
-      const playerHeavyFrac = playerTotal > 0 ? playerHeavy / playerTotal : 0
-      const wantHeavy = playerHeavyFrac > 0.55
-      const wantBasic = playerHeavyFrac < 0.30
-      if (wantHeavy && this.spawnMode !== 'heavy') {
-        this.spawnMode = 'heavy'
-        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'heavy' })
-      } else if (wantBasic && this.spawnMode !== 'basic') {
-        this.spawnMode = 'basic'
-        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'basic' })
-      }
-    }
-
     // Emergency: detect if the enemy (player) is about to win by domination
     const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
     const enemyId = Object.keys(sim.players).find(pid => pid !== this.playerId && pid !== 'neutral') ?? null
@@ -172,6 +138,54 @@ export class AIController {
     }
 
     if (!target) return
+
+    // Spawn mode decisions (runs after target is known so it can react to what we're targeting)
+    // Scout rush: when targeting an outpost, use scouts (they arrive faster)
+    const rushingOutpost = target.typeId === 'outpost'
+    if (rushingOutpost) {
+      if (this.spawnMode !== 'scout') {
+        this.spawnMode = 'scout'
+        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'scout' })
+      }
+    } else {
+      // Not rushing an outpost — exit scout mode, run normal spawn logic
+      if (this.spawnMode === 'scout') {
+        this.spawnMode = 'basic'
+        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'basic' })
+      }
+      if (this.personality === 'aggressive') {
+        // Aggressive: unpredictable spawn mix — re-evaluate every 8–16 decisions
+        this.spawnModeCountdown--
+        if (this.spawnModeCountdown <= 0) {
+          const next = Math.random() < 0.45 ? 'heavy' : 'basic'
+          if (next !== this.spawnMode) {
+            this.spawnMode = next
+            sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: next })
+          }
+          this.spawnModeCountdown = 8 + Math.floor(Math.random() * 8)
+        }
+      } else {
+        // Balanced + Macro: counter-spawn — mirror player's heavy ratio
+        let playerHeavy = 0, playerBasic = 0
+        for (let i = 0; i < sim.speckCount; i++) {
+          const m = sim.speckMeta[i]
+          if (!m || m.ownerId === this.playerId || m.ownerId === 'neutral') continue
+          if (m.typeId === 'heavy') playerHeavy++
+          else playerBasic++
+        }
+        const playerTotal = playerHeavy + playerBasic
+        const playerHeavyFrac = playerTotal > 0 ? playerHeavy / playerTotal : 0
+        const wantHeavy = playerHeavyFrac > 0.55
+        const wantBasic = playerHeavyFrac < 0.30
+        if (wantHeavy && this.spawnMode !== 'heavy') {
+          this.spawnMode = 'heavy'
+          sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'heavy' })
+        } else if (wantBasic && this.spawnMode !== 'basic') {
+          this.spawnMode = 'basic'
+          sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'basic' })
+        }
+      }
+    }
 
     sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: target.x, y: target.y })
   }
