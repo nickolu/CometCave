@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, DOMINATION_TIME, RALLY_CRY_HP_THRESHOLD } from '../constants'
+import { HUD_UPDATE_INTERVAL, DOMINATION_TIME, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME } from '../constants'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -44,6 +44,16 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
+
+  // 7a. Fortification: outposts held continuously accumulate a combat bonus
+  for (const building of Object.values(sim.buildings)) {
+    if (building.typeId !== 'outpost') continue
+    if (building.ownerId === 'neutral') { building.fortifyDuration = 0; continue }
+    // Pause fortification while actively under capture
+    const underCapture = (building.captureProgress ?? 0) > 0 && building.captureSide && building.captureSide !== building.ownerId
+    if (underCapture) continue
+    building.fortifyDuration = Math.min(FORTIFY_TIME, (building.fortifyDuration ?? 0) + dt)
+  }
 
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
@@ -240,5 +250,11 @@ function emitHudUpdate(sim: SimulationState) {
     rallyPoint: sim.rallyPoints['player'] ?? null,
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, spawnRates, minimap } })
+  const outpostFortify: Record<string, number> = {}
+  for (const building of Object.values(sim.buildings)) {
+    if (building.typeId !== 'outpost') continue
+    outpostFortify[building.id] = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, spawnRates, minimap, outpostFortify } })
 }

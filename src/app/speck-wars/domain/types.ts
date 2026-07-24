@@ -23,6 +23,7 @@ export interface BuildingEntity {
   inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
+  fortifyDuration?: number      // ms continuously held — resets on capture
 }
 
 export interface Player {
@@ -94,6 +95,7 @@ export interface HudData {
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
   spawnRates: Record<string, number>   // playerId → effective specks/min
+  outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]

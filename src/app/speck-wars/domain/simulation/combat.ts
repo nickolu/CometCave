@@ -1,6 +1,7 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
+import { FORTIFY_RADIUS, FORTIFY_TIME, FORTIFY_DAMAGE_BONUS } from '../constants'
 
 const MORALE_RATIO = 2.0   // if your count > this × enemy count → morale bonus
 const MORALE_BONUS = 1.20  // 20% damage boost when morale is active
@@ -56,7 +57,18 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= stype.attackRange) {
         const veteranBonus = meta.kills >= 3 ? 1.20 : 1.0  // veterans deal +20% damage
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus
+        // Fortification bonus: if attacker is near a friendly fortified outpost, deal extra damage
+        let fortifyBonus = 1.0
+        for (const b of Object.values(buildings)) {
+          if (b.typeId !== 'outpost' || b.ownerId !== meta.ownerId) continue
+          const fdx = speckX[i] - b.x
+          const fdy = speckY[i] - b.y
+          if (fdx * fdx + fdy * fdy <= FORTIFY_RADIUS * FORTIFY_RADIUS) {
+            const level = Math.min(1, (b.fortifyDuration ?? 0) / FORTIFY_TIME)
+            if (level > 0) { fortifyBonus = 1 + FORTIFY_DAMAGE_BONUS * level; break }
+          }
+        }
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * fortifyBonus
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
         if (speckHp[j] <= 0) {

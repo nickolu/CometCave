@@ -38,6 +38,7 @@ export function updateCapture(sim: SimulationState, dt: number) {
     if ((building.captureProgress ?? 0) >= 1) {
       const previousOwner = building.ownerId
       building.ownerId = dominantOwner
+      building.fortifyDuration = 0
       building.captureProgress = 0
       building.captureSide = null
       // Reset spawn timer so it starts fresh for the new owner

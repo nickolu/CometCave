@@ -345,7 +345,7 @@ export function HUD() {
             : isAiOwned ? hud.players.ai?.buildingHp[id]
             : undefined
           const hpFrac = hp !== undefined ? hp / OUTPOST_MAX_HP : undefined
-          return { color, isUnderAttack, isPlayerOwned, cap, hpFrac }
+          return { id, color, isUnderAttack, isPlayerOwned, cap, hpFrac }
         })
         const playerCount = dots.filter(d => d.isPlayerOwned).length
         return (
@@ -365,7 +365,7 @@ export function HUD() {
               <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>
                 OUTPOSTS {playerCount}/{OUTPOST_IDS.length}
               </span>
-              {dots.map(({ color, isUnderAttack, isPlayerOwned, cap, hpFrac }, i) => {
+              {dots.map(({ id, color, isUnderAttack, isPlayerOwned, cap, hpFrac }, i) => {
                 const capColor = cap?.side === 'player' ? '#4af7c4' : '#ff4f7b'
                 return (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -393,6 +393,20 @@ export function HUD() {
                         }} />
                       </div>
                     ) : null}
+                    {/* Fortification indicator — gold bar for player-owned outposts with fortify progress */}
+                    {(() => {
+                      if (!isPlayerOwned) return null
+                      const level = hud.outpostFortify?.[id] ?? 0
+                      if (level <= 0) return null
+                      return (
+                        <div style={{ width: 14, height: 2, background: 'rgba(255,215,0,0.15)', borderRadius: 1 }}>
+                          <div style={{
+                            width: `${Math.round(level * 100)}%`,
+                            height: '100%', background: '#ffd700', borderRadius: 1, opacity: 0.7,
+                          }} />
+                        </div>
+                      )
+                    })()}
                   </div>
                 )
               })}
