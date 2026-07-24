@@ -52,6 +52,21 @@ export class BuildingLayer {
       this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
       this.gfx.endFill()
 
+      // Spawn timer progress arc (clockwise fill inside building, shows time to next spawn)
+      if (building.ownerId !== 'neutral' && btype?.spawnInterval) {
+        const totalInterval = building.spawnIntervalOverride ?? btype.spawnInterval
+        const effectiveInterval = building.tripleOutpostBonus ? totalInterval / 2 : totalInterval
+        const progress = Math.max(0, Math.min(1, 1 - building.spawnTimer / effectiveInterval))
+        if (progress > 0) {
+          const startAngle = -Math.PI / 2
+          const endAngle = startAngle + Math.PI * 2 * progress
+          this.gfx.lineStyle(2, 0xffffff, 0.5)
+          this.gfx.moveTo(building.x + (r - 5) * Math.cos(startAngle), building.y + (r - 5) * Math.sin(startAngle))
+          this.gfx.arc(building.x, building.y, r - 5, startAngle, endAngle)
+          this.gfx.lineStyle(0)
+        }
+      }
+
       // Outpost speed aura ring (faint pulsing circle showing boost radius)
       if (building.typeId === 'outpost' && building.ownerId !== 'neutral') {
         const auraPulse = Math.sin(Date.now() / 1200) * 0.5 + 0.5
