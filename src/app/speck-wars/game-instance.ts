@@ -52,10 +52,11 @@ export class GameInstance {
 
     const store = useSpeckWarsStore.getState()
     if (store.phase === 'playing') {
-      this.elapsedMs += dt
+      const scaledDt = dt * store.speed
+      this.elapsedMs += scaledDt
       store.setElapsedMs(this.elapsedMs)
       this.aiController.update(this.sim)
-      this.sim = tick(this.sim, dt)
+      this.sim = tick(this.sim, scaledDt)
 
       for (const event of this.sim.events) {
         if (event.type === 'GAME_OVER') {

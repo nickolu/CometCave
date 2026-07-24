@@ -18,6 +18,8 @@ export function HUD() {
   const phase = useSpeckWarsStore(s => s.phase)
   const togglePause = useSpeckWarsStore(s => s.togglePause)
   const elapsedMs = useSpeckWarsStore(s => s.elapsedMs)
+  const speed = useSpeckWarsStore(s => s.speed)
+  const cycleSpeed = useSpeckWarsStore(s => s.cycleSpeed)
 
   return (
     <div style={{
@@ -47,6 +49,22 @@ export function HUD() {
           }}
         >
           {phase === 'paused' ? 'RESUME' : 'PAUSE'}
+        </button>
+        <button
+          onClick={cycleSpeed}
+          style={{
+            pointerEvents: 'auto',
+            padding: '4px 14px',
+            fontSize: 12,
+            cursor: 'pointer',
+            background: speed > 1 ? 'rgba(74,247,196,0.15)' : 'rgba(0,0,0,0.5)',
+            border: `1px solid ${speed > 1 ? '#4af7c4' : 'rgba(255,255,255,0.3)'}`,
+            borderRadius: 4,
+            color: speed > 1 ? '#4af7c4' : '#fff',
+            letterSpacing: 1,
+          }}
+        >
+          {speed}×
         </button>
       </div>
 

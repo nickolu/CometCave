@@ -16,6 +16,8 @@ interface SpeckWarsStore {
   setDifficulty: (d: Difficulty) => void
   elapsedMs: number
   setElapsedMs: (ms: number) => void
+  speed: 1 | 2 | 4
+  cycleSpeed: () => void
 }
 
 export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
@@ -32,4 +34,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()(set => ({
   setDifficulty: difficulty => set({ difficulty }),
   elapsedMs: 0,
   setElapsedMs: elapsedMs => set({ elapsedMs }),
+  speed: 1 as 1 | 2 | 4,
+  cycleSpeed: () => set(s => ({
+    speed: s.speed === 1 ? 2 : s.speed === 2 ? 4 : 1,
+  })),
 }))
