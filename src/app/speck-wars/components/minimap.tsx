@@ -122,11 +122,22 @@ export function Minimap({ gameRef }: MinimapProps) {
     return () => cancelAnimationFrame(rafId)
   }, [gameRef])
 
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const game = gameRef.current
+    if (!game) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
+    game.rally(mx / SCALE_X, my / SCALE_Y)
+  }
+
   return (
     <canvas
       ref={canvasRef}
       width={MAP_W}
       height={MAP_H}
+      onClick={handleClick}
+      title="Click to set rally point"
       style={{
         position: 'absolute',
         bottom: 16,
@@ -135,7 +146,7 @@ export function Minimap({ gameRef }: MinimapProps) {
         height: MAP_H,
         borderRadius: 4,
         imageRendering: 'pixelated',
-        pointerEvents: 'none',
+        cursor: 'crosshair',
       }}
     />
   )
