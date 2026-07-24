@@ -21,6 +21,7 @@ export class InputHandler {
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
   private onSacrifice?: () => void
+  private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -89,6 +90,8 @@ export class InputHandler {
     window.addEventListener('touchmove', this.onTouchMove, { passive: false })
     window.addEventListener('touchend', this.onTouchEnd)
     window.addEventListener('keydown', this.onKeyDown)
+    window.addEventListener('keyup', this.onKeyUp)
+    window.addEventListener('blur', () => this.heldKeys.clear())
     this.canvas.addEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.addEventListener('mouseleave', this.onMouseLeave)
   }
@@ -244,9 +247,18 @@ export class InputHandler {
     this.lastPinchDist = 0
   }
 
+  private onKeyUp = (e: KeyboardEvent) => {
+    this.heldKeys.delete(e.code)
+  }
+
+  isKeyHeld(code: string): boolean {
+    return this.heldKeys.has(code)
+  }
+
   private onKeyDown = (e: KeyboardEvent) => {
     // Don't fire when typing in an input
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+    this.heldKeys.add(e.code)
     if (e.code === 'Space') {
       e.preventDefault()
       this.onTogglePause?.()
@@ -304,6 +316,7 @@ export class InputHandler {
     window.removeEventListener('touchmove', this.onTouchMove)
     window.removeEventListener('touchend', this.onTouchEnd)
     window.removeEventListener('keydown', this.onKeyDown)
+    window.removeEventListener('keyup', this.onKeyUp)
     this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.removeEventListener('mouseleave', this.onMouseLeave)
   }
