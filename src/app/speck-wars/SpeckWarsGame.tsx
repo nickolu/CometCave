@@ -43,7 +43,7 @@ export function SpeckWarsGame() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <PhaseRouter>
-        {phase === 'playing' && <GameCanvas />}
+        {(phase === 'playing' || phase === 'paused') && <GameCanvas />}
       </PhaseRouter>
     </div>
   )

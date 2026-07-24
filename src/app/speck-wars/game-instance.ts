@@ -17,6 +17,7 @@ export class GameInstance {
   private camera: Camera
   private inputHandler!: InputHandler
   private aiController: AIController
+  private elapsedMs = 0
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -43,22 +44,25 @@ export class GameInstance {
     const dt = Math.min(now - this.lastTime, 50)
     this.lastTime = now
 
-    this.aiController.update(this.sim)
-    this.sim = tick(this.sim, dt)
+    const store = useSpeckWarsStore.getState()
+    if (store.phase === 'playing') {
+      this.elapsedMs += dt
+      store.setElapsedMs(this.elapsedMs)
+      this.aiController.update(this.sim)
+      this.sim = tick(this.sim, dt)
 
-    // Forward sim events to Zustand store
-    for (const event of this.sim.events) {
-      if (event.type === 'GAME_OVER') {
-        useSpeckWarsStore.getState().setPhase('victory')
-        useSpeckWarsStore.getState().setWinnerId(event.winnerId)
-      }
-      if (event.type === 'HUD_UPDATE') {
-        useSpeckWarsStore.getState().setHud(event.data)
+      for (const event of this.sim.events) {
+        if (event.type === 'GAME_OVER') {
+          store.setPhase('victory')
+          store.setWinnerId(event.winnerId)
+        }
+        if (event.type === 'HUD_UPDATE') {
+          store.setHud(event.data)
+        }
       }
     }
 
     this.renderer.render(this.sim, this.camera, dt)
-
     this.rafId = requestAnimationFrame(this.loop)
   }
 

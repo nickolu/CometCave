@@ -6,28 +6,80 @@ function colorHex(n: number) {
   return `#${n.toString(16).padStart(6, '0')}`
 }
 
+function formatTime(ms: number): string {
+  const totalSec = Math.floor(ms / 1000)
+  const m = Math.floor(totalSec / 60)
+  const s = totalSec % 60
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
 export function HUD() {
   const hud = useSpeckWarsStore(s => s.hud)
-  if (!hud) return null
+  const phase = useSpeckWarsStore(s => s.phase)
+  const togglePause = useSpeckWarsStore(s => s.togglePause)
+  const elapsedMs = useSpeckWarsStore(s => s.elapsedMs)
 
   return (
     <div style={{
       position: 'absolute', inset: 0, pointerEvents: 'none',
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
     }}>
-      {/* Player stats — bottom left */}
-      <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
-        {Object.entries(hud.players).map(([pid, data]) => {
-          const color = pid === 'player' ? colorHex(PLAYER_COLOR) : colorHex(AI_COLOR)
-          const label = pid === 'player' ? 'YOU' : 'AI'
-          const totalHp = Object.values(data.buildingHp).reduce((a, b) => a + b, 0)
-          return (
-            <div key={pid} style={{ marginBottom: 6, color }}>
-              <strong>{label}</strong> — specks: {data.speckCount} | bases: {data.buildingCount} | HP: {totalHp}
-            </div>
-          )
-        })}
+      {/* Timer + Pause button — top bar */}
+      <div style={{
+        position: 'absolute', top: 12, left: 0, right: 0,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
+      }}>
+        <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9 }}>
+          {formatTime(elapsedMs)}
+        </span>
+        <button
+          onClick={togglePause}
+          style={{
+            pointerEvents: 'auto',
+            padding: '4px 14px',
+            fontSize: 12,
+            cursor: 'pointer',
+            background: 'rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 4,
+            color: '#fff',
+            letterSpacing: 1,
+          }}
+        >
+          {phase === 'paused' ? 'RESUME' : 'PAUSE'}
+        </button>
       </div>
+
+      {/* Paused overlay */}
+      {phase === 'paused' && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
+            PAUSED
+          </span>
+        </div>
+      )}
+
+      {/* Player stats — bottom left */}
+      {hud && (
+        <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
+          {Object.entries(hud.players)
+            .filter(([pid]) => pid !== 'neutral')
+            .map(([pid, data]) => {
+              const color = pid === 'player' ? colorHex(PLAYER_COLOR) : colorHex(AI_COLOR)
+              const label = pid === 'player' ? 'YOU' : 'AI'
+              const totalHp = Object.values(data.buildingHp).reduce((a, b) => a + b, 0)
+              return (
+                <div key={pid} style={{ marginBottom: 6, color }}>
+                  <strong>{label}</strong> — specks: {data.speckCount} | bases: {data.buildingCount} | HP: {totalHp}
+                </div>
+              )
+            })}
+        </div>
+      )}
     </div>
   )
 }
