@@ -23,7 +23,7 @@ export function updateCapture(sim: SimulationState, dt: number) {
     if (sides.length === 0) return  // nobody near — decay progress slowly
     if (sides.length > 1) continue  // contested — pause capture
 
-    const [dominantOwner] = sides[0]
+    const [dominantOwner, dominantCount] = sides[0]
     if (dominantOwner === building.ownerId) continue  // already owned by them
 
     // Start or continue capture
@@ -32,7 +32,9 @@ export function updateCapture(sim: SimulationState, dt: number) {
       building.captureProgress = 0
     }
 
-    building.captureProgress = (building.captureProgress ?? 0) + dt / CAPTURE_TIME
+    // Scale capture speed with speck count: 5 specks = 1×, capped at 3× (15 specks)
+    const captureSpeed = Math.min(3, dominantCount / 5)
+    building.captureProgress = (building.captureProgress ?? 0) + (dt / CAPTURE_TIME) * captureSpeed
     if ((building.captureProgress ?? 0) >= 1) {
       const previousOwner = building.ownerId
       building.ownerId = dominantOwner
