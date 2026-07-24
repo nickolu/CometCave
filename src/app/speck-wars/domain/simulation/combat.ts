@@ -91,7 +91,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 
       if (building.hp <= 0) {
-        sim.events.push({ type: 'BUILDING_DESTROYED', buildingId: building.id, ownerId: building.ownerId })
+        sim.events.push({ type: 'BUILDING_DESTROYED', buildingId: building.id, ownerId: building.ownerId, x: building.x, y: building.y })
         delete sim.buildings[building.id]
         // Clear target for all specks pointing at this building
         for (let k = 0; k < sim.speckCount; k++) {

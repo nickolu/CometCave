@@ -42,6 +42,19 @@ export class EffectsLayer {
     }
   }
 
+  addDestructionBurst(x: number, y: number, color: number) {
+    // 20 radial particles — fast, long-lived, large burst for building destruction
+    for (let i = 0; i < 20; i++) {
+      const angle = (i / 20) * Math.PI * 2 + (Math.random() - 0.5) * 0.5
+      const speed = 80 + Math.random() * 120  // px/sec
+      this.particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 600, maxLife: 600, color })
+    }
+    // Large shockwave rings
+    for (let i = 0; i < 3; i++) {
+      this.ripples.push({ x, y, life: 500 - i * 100, maxLife: 500 - i * 100, color: 0xffffff })
+    }
+  }
+
   update(dt: number) {
     this.gfx.clear()
 
