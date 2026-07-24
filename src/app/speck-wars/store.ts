@@ -29,6 +29,7 @@ interface SpeckWarsStore {
   addLoss: () => void
   spawnMode: 'basic' | 'heavy' | 'scout'
   cycleSpawnMode: () => 'basic' | 'heavy' | 'scout'
+  setSpawnMode: (mode: 'basic' | 'heavy' | 'scout') => void
   peakArmySize: number
   setPeakArmySize: (n: number) => void
   outpostsCaptured: number
@@ -76,6 +77,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     })
     return next
   },
+  setSpawnMode: mode => set({ spawnMode: mode }),
   peakArmySize: 0,
   setPeakArmySize: n => set(s => ({ peakArmySize: Math.max(s.peakArmySize, n) })),
   outpostsCaptured: 0,

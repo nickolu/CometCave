@@ -16,6 +16,7 @@ export class InputHandler {
   private onClearSelect?: () => void
   private onSurge?: () => void
   private onSnapToAction?: () => void
+  private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -45,6 +46,7 @@ export class InputHandler {
     onClearSelect?: () => void,
     onSurge?: () => void,
     onSnapToAction?: () => void,
+    onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -60,6 +62,7 @@ export class InputHandler {
     this.onClearSelect = onClearSelect
     this.onSurge = onSurge
     this.onSnapToAction = onSnapToAction
+    this.onSetSpawnType = onSetSpawnType
     this.attach()
   }
 
@@ -249,6 +252,12 @@ export class InputHandler {
       this.onSurge?.()
     } else if (e.code === 'KeyV') {
       this.onSnapToAction?.()
+    } else if (e.code === 'Digit1') {
+      this.onSetSpawnType?.('basic')
+    } else if (e.code === 'Digit2') {
+      this.onSetSpawnType?.('heavy')
+    } else if (e.code === 'Digit3') {
+      this.onSetSpawnType?.('scout')
     }
   }
 

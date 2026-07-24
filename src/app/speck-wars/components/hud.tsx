@@ -335,7 +335,7 @@ export function HUD() {
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
-            <span>Drag — pan camera</span><span>H — cycle spawn (basic/heavy/scout)</span>
+            <span>Drag — pan camera</span><span>1/2/3 or H — set/cycle spawn type</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
