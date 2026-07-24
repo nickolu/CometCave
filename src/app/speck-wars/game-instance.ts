@@ -569,9 +569,9 @@ export class GameInstance {
     if (this.inputHandler) {
       const panSpeed = 450  // px/s in world space
       const dtSec = dt / 1000
-      if (this.inputHandler.isKeyHeld('ArrowUp'))
+      if (this.inputHandler.isKeyHeld('ArrowUp') || this.inputHandler.isKeyHeld('KeyW'))
         this.camera.y += panSpeed * dtSec
-      if (this.inputHandler.isKeyHeld('ArrowDown'))
+      if (this.inputHandler.isKeyHeld('ArrowDown') || this.inputHandler.isKeyHeld('KeyS'))
         this.camera.y -= panSpeed * dtSec
       if (this.inputHandler.isKeyHeld('ArrowLeft'))
         this.camera.x += panSpeed * dtSec

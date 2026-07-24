@@ -142,7 +142,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>A(+click) — attack-move · B — rush · D — defend</span>
           <span>X — speed · E — all · Esc — clear</span>
           <span>Minimap — click to rally</span>
-          <span>Arrow keys / WASD — pan</span>
+          <span>Arrow keys / W S — pan</span>
         </div>
         {/* Daily tip */}
         {(() => {
