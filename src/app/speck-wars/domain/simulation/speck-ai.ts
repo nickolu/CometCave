@@ -74,6 +74,23 @@ export function runSpeckAI(sim: SimulationState) {
       }
     }
 
+    // Scout specks prefer outpost targets — they're too fragile to assault the enemy base
+    // but excel at rapid outpost capturing. Override the nearest target with the nearest
+    // non-friendly outpost if one exists.
+    if (meta.typeId === 'scout') {
+      let outpostNearest: string | null = null
+      let outpostNearestDist = Infinity
+      for (const [bid, building] of Object.entries(buildings)) {
+        if (building.typeId !== 'outpost') continue
+        if (building.ownerId === meta.ownerId) continue
+        const odx = building.x - speckX[i]
+        const ody = building.y - speckY[i]
+        const odist = Math.sqrt(odx * odx + ody * ody)
+        if (odist < outpostNearestDist) { outpostNearestDist = odist; outpostNearest = bid }
+      }
+      if (outpostNearest) nearest = outpostNearest
+    }
+
     meta.targetId = nearest
     meta.state = nearest ? 'moving' : 'idle'
   }
