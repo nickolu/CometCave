@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, DOMINATION_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, DOMINATION_TIME, RALLY_CRY_HP_THRESHOLD } from '../constants'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -198,5 +198,29 @@ function emitHudUpdate(sim: SimulationState) {
       : null
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown } })
+  // Compute effective spawn rate (specks/min) for each player
+  const playerBaseBuilding = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+  const rallyCryActive = playerBaseBuilding
+    ? playerBaseBuilding.hp / playerBaseBuilding.maxHp < RALLY_CRY_HP_THRESHOLD
+    : false
+
+  const spawnRates: Record<string, number> = {}
+  for (const [pid] of Object.entries(sim.players)) {
+    if (pid === 'neutral') continue
+    let totalRate = 0
+    const hasSurge = pid === 'player' && sim.surgeDuration > 0
+    const hasRallyCry = pid === 'player' && rallyCryActive
+    for (const building of Object.values(sim.buildings)) {
+      if (building.ownerId !== pid) continue
+      const btype = BUILDING_TYPES[building.typeId]
+      if (!btype?.spawnTypeId) continue
+      const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
+      const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1)
+      const effectiveInterval = baseInterval / divisor
+      totalRate += (btype.spawnCount ?? 1) * 60000 / effectiveInterval
+    }
+    spawnRates[pid] = Math.round(totalRate)
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, spawnRates } })
 }

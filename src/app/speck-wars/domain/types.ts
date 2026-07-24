@@ -93,4 +93,5 @@ export interface HudData {
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
+  spawnRates: Record<string, number>   // playerId → effective specks/min
 }

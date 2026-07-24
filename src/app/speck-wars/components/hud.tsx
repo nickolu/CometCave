@@ -710,6 +710,20 @@ export function HUD() {
                 </span>
               </div>
             )}
+            {/* Production rate */}
+            {(hud.spawnRates?.player ?? 0) > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 9, color: colorHex(PLAYER_COLOR), opacity: 0.6, minWidth: 20, textAlign: 'right' }}>
+                  {hud.spawnRates.player}/m
+                </span>
+                <div style={{ width: 100, textAlign: 'center', fontSize: 8, letterSpacing: 0.5, color: 'rgba(255,255,255,0.3)' }}>
+                  ⚡prod
+                </div>
+                <span style={{ fontSize: 9, color: colorHex(AI_COLOR), opacity: 0.6, minWidth: 20 }}>
+                  {hud.spawnRates.ai}/m
+                </span>
+              </div>
+            )}
             {/* Army composition: heavy % indicator */}
             {(() => {
               const playerTypes = hud.players.player?.speckTypes ?? {}
