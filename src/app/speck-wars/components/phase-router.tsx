@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { getBestTime, getWinStreak, getRecentResults } from '../lib/personal-best'
+import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib/personal-best'
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
@@ -61,25 +61,38 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          {difficulties.map(d => (
-            <button
-              key={d.key}
-              onClick={() => setDifficulty(d.key)}
-              style={{
-                padding: '8px 20px',
-                fontSize: 14,
-                cursor: 'pointer',
-                border: `2px solid ${difficulty === d.key ? d.color : 'rgba(255,255,255,0.2)'}`,
-                borderRadius: 6,
-                background: difficulty === d.key ? `${d.color}22` : 'transparent',
-                color: difficulty === d.key ? d.color : 'rgba(255,255,255,0.5)',
-                fontWeight: difficulty === d.key ? 'bold' : 'normal',
-                transition: 'all 0.15s',
-              }}
-            >
-              {d.label}
-            </button>
-          ))}
+          {difficulties.map(d => {
+            const wonToday = hasWonToday(d.key)
+            return (
+              <button
+                key={d.key}
+                onClick={() => setDifficulty(d.key)}
+                style={{
+                  padding: '8px 20px',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  border: `2px solid ${difficulty === d.key ? d.color : wonToday ? `${d.color}66` : 'rgba(255,255,255,0.2)'}`,
+                  borderRadius: 6,
+                  background: difficulty === d.key ? `${d.color}22` : 'transparent',
+                  color: difficulty === d.key ? d.color : wonToday ? `${d.color}99` : 'rgba(255,255,255,0.5)',
+                  fontWeight: difficulty === d.key ? 'bold' : 'normal',
+                  transition: 'all 0.15s',
+                  position: 'relative',
+                }}
+              >
+                {d.label}
+                {wonToday && (
+                  <span style={{
+                    position: 'absolute', top: -6, right: -6,
+                    fontSize: 10, background: d.color, color: '#000',
+                    borderRadius: '50%', width: 14, height: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 'bold',
+                  }}>✓</span>
+                )}
+              </button>
+            )
+          })}
         </div>
         {/* Best times + win rates per difficulty */}
         <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
