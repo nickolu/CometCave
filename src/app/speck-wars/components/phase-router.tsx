@@ -141,6 +141,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>V — snap to battle</span>
           <span>A(+click) — attack-move · B — rush · D — defend</span>
           <span>X — speed · E — all · Esc — clear</span>
+          <span>Ctrl+4-9 save group · 4-9 recall</span>
           <span>Minimap — click to rally</span>
           <span>Arrow keys / W S — pan</span>
         </div>
@@ -157,6 +158,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Heavy specks deal 2× damage but produce 2× slower.',
             'V key snaps the camera to where fighting is happening.',
             'Press ? in-game to see all hotkeys.',
+            'Control groups: box-select specks, Ctrl+4 to save, press 4 to recall.',
           ]
           const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
           return (

@@ -21,6 +21,8 @@ export class InputHandler {
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
   private onSacrifice?: () => void
+  private onSaveControlGroup?: (slot: number) => void
+  private onRecallControlGroup?: (slot: number) => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -56,6 +58,8 @@ export class InputHandler {
     onCycleSpeed?: () => void,
     onSelectAll?: () => void,
     onSacrifice?: () => void,
+    onSaveControlGroup?: (slot: number) => void,
+    onRecallControlGroup?: (slot: number) => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -76,6 +80,8 @@ export class InputHandler {
     this.onCycleSpeed = onCycleSpeed
     this.onSelectAll = onSelectAll
     this.onSacrifice = onSacrifice
+    this.onSaveControlGroup = onSaveControlGroup
+    this.onRecallControlGroup = onRecallControlGroup
     this.attach()
   }
 
@@ -300,6 +306,14 @@ export class InputHandler {
       this.onSelectAll?.()
     } else if (e.code === 'KeyF') {
       this.onSacrifice?.()
+    } else if (['Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)) {
+      const slot = parseInt(e.code.replace('Digit', ''))
+      if (e.ctrlKey) {
+        e.preventDefault()
+        this.onSaveControlGroup?.(slot)
+      } else {
+        this.onRecallControlGroup?.(slot)
+      }
     }
   }
 

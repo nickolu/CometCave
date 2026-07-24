@@ -503,6 +503,7 @@ export function HUD() {
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
             <span>Drag — box select specks</span><span>1/2/3 — set spawn type</span>
             <span>E — select all · Esc — clear</span><span>Arrow keys / W S — pan camera</span>
+            <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Click rally with group → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
             <span>A — attack-move mode + click</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
