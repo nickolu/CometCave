@@ -283,10 +283,24 @@ export function HUD() {
             }}>
               {isPlayer ? '⬡⬡⬡ TRIPLE CONTROL — SPAWN ×2' : '⬡⬡⬡ ENEMY TRIPLE CONTROL'}
             </span>
-            {secLeft !== null && (
-              <span style={{ fontSize: 10, letterSpacing: 1, color, opacity: 0.7 }}>
-                {isPlayer ? `DOMINATION in ${secLeft}s` : `ENEMY DOMINATES in ${secLeft}s`}
-              </span>
+            {hud.dominationProgress !== null && (
+              <>
+                <div style={{ width: 160, height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${Math.round(hud.dominationProgress * 100)}%`,
+                    background: color,
+                    borderRadius: 2,
+                    boxShadow: `0 0 6px ${color}`,
+                    transition: 'width 0.3s',
+                  }} />
+                </div>
+                {secLeft !== null && (
+                  <span style={{ fontSize: 10, letterSpacing: 1, color, opacity: 0.7 }}>
+                    {isPlayer ? `DOMINATION in ${secLeft}s` : `ENEMY DOMINATES in ${secLeft}s`}
+                  </span>
+                )}
+              </>
             )}
           </div>
         )
