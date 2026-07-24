@@ -91,6 +91,17 @@ export function resolveCombat(sim: SimulationState, dt: number) {
         meta.state = 'attacking'
         if (speckHp[j] <= 0) {
           meta.kills++  // attacker earns a kill
+          // Notify when player loses a veteran or elite
+          if (jMeta.ownerId === 'player' && jMeta.kills >= 3) {
+            sim.events.push({
+              type: 'VETERAN_FALLEN',
+              speckId: speckIds[j],
+              ownerId: jMeta.ownerId,
+              kills: jMeta.kills,
+              x: speckX[j],
+              y: speckY[j],
+            })
+          }
           sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
           if (meta.kills === 3) {
             sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })

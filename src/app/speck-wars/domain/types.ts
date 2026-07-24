@@ -87,6 +87,7 @@ export type SimEvent =
   | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
   | { type: 'SPECK_ELITE'; speckId: string; ownerId: string }
   | { type: 'AI_WAVE_START'; waveNumber: number }
+  | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
 
 export interface HudData {
   players: Record<string, {
