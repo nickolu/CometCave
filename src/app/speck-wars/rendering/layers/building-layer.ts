@@ -104,6 +104,19 @@ export class BuildingLayer {
       this.gfx.drawCircle(building.x, building.y, r + 8)
       this.gfx.lineStyle(0)
 
+      // Critical HP warning ring — pulsing red when building HP is low
+      const hpFracEarly = building.hp / building.maxHp
+      if (hpFracEarly < 0.3) {
+        const isCrit = hpFracEarly < 0.15
+        const speed = isCrit ? 180 : 350
+        const critPulse = 0.5 + 0.5 * Math.sin(now / speed)
+        const baseAlpha = isCrit ? 0.75 : 0.45
+        const width = isCrit ? 2.5 : 1.8
+        this.gfx.lineStyle(width, 0xff2222, critPulse * baseAlpha)
+        this.gfx.drawCircle(building.x, building.y, r + 12)
+        this.gfx.lineStyle(0)
+      }
+
       // HP bar (above building)
       const barW = r * 2
       const barH = 4
