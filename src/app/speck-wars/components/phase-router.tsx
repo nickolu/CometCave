@@ -127,6 +127,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const difficultyColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
     const diffLabel = difficulty === 'very-hard' ? 'Brutal' : difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
     const diffColor = difficultyColors[difficulty]
+    const nextDifficulty: Partial<Record<string, { key: Difficulty; label: string; color: string }>> = {
+      easy:   { key: 'medium',    label: 'Medium', color: '#ffcc44' },
+      medium: { key: 'hard',      label: 'Hard',   color: '#ff4f7b' },
+      hard:   { key: 'very-hard', label: 'Brutal', color: '#cc00ff' },
+    }
+    const nextDiff = won ? nextDifficulty[difficulty] : null
 
     const shareText = won
       ? `I defeated the AI in Speck Wars (${diffLabel}) in ${timeStr} — killed ${kills} specks! 🎮 Can you beat my time?`
@@ -247,6 +253,20 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             ← Cave
           </a>
         </div>
+        {nextDiff && (
+          <button
+            onClick={() => { setDifficulty(nextDiff.key); resetGame(); setPhase('playing') }}
+            style={{
+              padding: '8px 24px', fontSize: 13, cursor: 'pointer',
+              background: 'transparent',
+              border: `1px solid ${nextDiff.color}`,
+              borderRadius: 6, color: nextDiff.color, opacity: 0.8,
+              letterSpacing: 1,
+            }}
+          >
+            Try {nextDiff.label} →
+          </button>
+        )}
       </div>
     )
   }
