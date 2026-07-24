@@ -335,11 +335,12 @@ export function HUD() {
           }}>
             <span>🖱 Click — rally specks</span><span>Space — pause</span>
             <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
-            <span>Drag — pan camera</span><span>H — cycle spawn (basic/heavy/scout)</span>
+            <span>Drag — pan camera</span><span>1/2/3 or H — set/cycle spawn type</span>
             <span>A — advance to outpost</span><span>C — center on base</span>
             <span>B — rush enemy base</span><span>D — defend base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
             <span>Shift+drag — select specks</span><span>Minimap — click to rally</span>
+            <span>E — select all specks</span><span>X — cycle speed (1×/2×/4×)</span>
             <span>? — this help</span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
               Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)

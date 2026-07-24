@@ -111,6 +111,20 @@ export class GameInstance {
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
+      (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
+        useSpeckWarsStore.getState().setSpawnMode(typeId)
+        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
+        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+      },
+      () => {                                                           // X — cycle game speed
+        useSpeckWarsStore.getState().cycleSpeed()
+        const spd = useSpeckWarsStore.getState().speed
+        this.notify(`Speed: ${spd}×`, spd > 1 ? '#4af7c4' : '#ffffff')
+      },
+      () => {                                                           // E — select all specks
+        this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
+      },
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
