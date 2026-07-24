@@ -80,6 +80,10 @@ export class Renderer {
       if (event.type === 'BUILDING_DAMAGED') {
         this.buildingLayer.flashBuilding(event.buildingId)
       }
+      if (event.type === 'BUILDING_DESTROYED') {
+        const color = PLAYER_COLORS[event.ownerId] ?? 0xffffff
+        this.effectsLayer.addDestructionBurst(event.x, event.y, color)
+      }
       if (event.type === 'OUTPOST_CAPTURED') {
         const building = sim.buildings[event.outpostId]
         const color = PLAYER_COLORS[event.newOwner] ?? 0xffffff

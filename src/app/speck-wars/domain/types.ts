@@ -67,7 +67,7 @@ export type InputEvent =
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
   | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
-  | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string }
+  | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string; x: number; y: number }
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
   | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'domination' }
   | { type: 'HUD_UPDATE'; data: HudData }
