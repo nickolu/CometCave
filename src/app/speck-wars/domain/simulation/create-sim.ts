@@ -50,13 +50,16 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     color: NEUTRAL_COLOR, isAI: false, isDefeated: false, stockpile: {},
   }
 
+  const JITTER = 200  // ± px of positional variation per game
   const outpostBuildings: Record<string, BuildingEntity> = {}
   for (const pos of OUTPOST_POSITIONS) {
+    const jx = (Math.random() * 2 - 1) * JITTER
+    const jy = (Math.random() * 2 - 1) * JITTER
     outpostBuildings[pos.id] = {
       id: pos.id,
       typeId: 'outpost',
       ownerId: 'neutral',
-      x: pos.x, y: pos.y,
+      x: pos.x + jx, y: pos.y + jy,
       hp: 50, maxHp: 50,
       spawnTimer: 0,
       inputBuffer: {},
