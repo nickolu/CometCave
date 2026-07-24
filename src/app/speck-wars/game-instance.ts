@@ -85,6 +85,12 @@ export class GameInstance {
       () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // A — advance to nearest non-player outpost
       () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
     )
+    useSpeckWarsStore.getState().setGameActions({
+      defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
+      advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
+      rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
+      clearRally: () => this.clearRally(),
+    })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
 
@@ -319,6 +325,7 @@ export class GameInstance {
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
     this.renderer.destroy()
     this.inputHandler?.destroy()
+    useSpeckWarsStore.getState().setGameActions(null)
     console.log('GameInstance destroyed')
   }
 
