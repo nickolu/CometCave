@@ -15,7 +15,7 @@ export const AI_COLOR = 0xff4f7b
 export const MAX_SPECKS = 15000
 
 export const OUTPOST_SIZE = 20
-export const OUTPOST_SPAWN_INTERVAL = 1800   // ms per speck (slower than base)
+export const OUTPOST_SPAWN_INTERVAL = 1200   // ms per speck — fast enough to make outpost control strategically decisive
 export const CAPTURE_RADIUS = 100            // px — specks within this distance count toward capture
 export const CAPTURE_TIME = 5000             // ms to fully capture
 export const NEUTRAL_COLOR = 0x888888
