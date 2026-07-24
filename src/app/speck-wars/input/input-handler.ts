@@ -12,6 +12,8 @@ export class InputHandler {
   private onDefend?: () => void
   private onAdvance?: () => void
   private onRush?: () => void
+  private onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void
+  private onClearSelect?: () => void
   private isDragging = false
   private lastX = 0
   private lastY = 0
@@ -22,6 +24,9 @@ export class InputHandler {
   private lastPinchDist = 0  // 0 = not pinching
   private touchStartX = 0
   private touchStartY = 0
+  private isShiftDrag = false
+  private shiftDragStartWorldX = 0
+  private shiftDragStartWorldY = 0
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -34,6 +39,8 @@ export class InputHandler {
     onDefend?: () => void,
     onAdvance?: () => void,
     onRush?: () => void,
+    onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void,
+    onClearSelect?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -45,6 +52,8 @@ export class InputHandler {
     this.onDefend = onDefend
     this.onAdvance = onAdvance
     this.onRush = onRush
+    this.onBoxSelect = onBoxSelect
+    this.onClearSelect = onClearSelect
     this.attach()
   }
 
@@ -78,6 +87,18 @@ export class InputHandler {
 
   private onMouseDown = (e: MouseEvent) => {
     if (e.button === 1) e.preventDefault()  // prevent middle-click scroll
+    if (e.button === 0 && e.shiftKey) {
+      this.isShiftDrag = true
+      const rect = this.canvas.getBoundingClientRect()
+      const sx = e.clientX - rect.left
+      const sy = e.clientY - rect.top
+      const world = screenToWorld(sx, sy, this.camera)
+      this.shiftDragStartWorldX = world.x
+      this.shiftDragStartWorldY = world.y
+      this.mouseDownX = e.clientX
+      this.mouseDownY = e.clientY
+      return  // don't start pan
+    }
     this.isDragging = true
     this.lastX = e.clientX
     this.lastY = e.clientY
@@ -87,6 +108,7 @@ export class InputHandler {
 
   private onMouseMove = (e: MouseEvent) => {
     if (!this.isDragging) return
+    if (this.isShiftDrag) return  // skip pan during shift-drag
     this.camera.x += e.clientX - this.lastX
     this.camera.y += e.clientY - this.lastY
     this.lastX = e.clientX
@@ -97,6 +119,21 @@ export class InputHandler {
     const dx = e.clientX - this.mouseDownX
     const dy = e.clientY - this.mouseDownY
     const dist = Math.sqrt(dx * dx + dy * dy)
+
+    if (this.isShiftDrag) {
+      this.isShiftDrag = false
+      if (dist > 10) {
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.clientX - rect.left
+        const sy = e.clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        this.onBoxSelect?.(this.shiftDragStartWorldX, this.shiftDragStartWorldY, world.x, world.y)
+      } else {
+        // Tiny shift-click: clear selection
+        this.onClearSelect?.()
+      }
+      return
+    }
 
     // Middle-click: clear rally
     if (e.button === 1 && dist < 5) {
@@ -188,6 +225,8 @@ export class InputHandler {
     if (e.code === 'Space') {
       e.preventDefault()
       this.onTogglePause?.()
+    } else if (e.code === 'Escape') {
+      this.onClearSelect?.()
     } else if (e.code === 'KeyR') {
       this.onClearRally?.()
     } else if (e.code === 'KeyH') {

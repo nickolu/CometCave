@@ -19,8 +19,19 @@ export function runSpeckAI(sim: SimulationState) {
       meta.targetId = null
     }
 
+    // Selection-aware rally: selected player specks use 'player-selected' rally;
+    // unselected specks with an active selection use no rally (auto-target)
+    const getEffectiveRally = () => {
+      if (meta.ownerId !== 'player') return sim.rallyPoints[meta.ownerId]
+      const hasSelection = sim.selectedSpeckIds.size > 0
+      if (!hasSelection) return sim.rallyPoints['player']
+      const isSelected = sim.selectedSpeckIds.has(meta.id)
+      if (isSelected) return sim.rallyPoints['player-selected'] ?? sim.rallyPoints['player']
+      return null  // unselected specks: no rally, auto-target normally
+    }
+    const rally = getEffectiveRally()
+
     // If owner has an active rally point and speck hasn't arrived, defer to rally
-    const rally = sim.rallyPoints[meta.ownerId]
     if (rally) {
       const dx = rally.x - speckX[i]
       const dy = rally.y - speckY[i]
