@@ -496,6 +496,20 @@ export class GameInstance {
       }
     }
 
+    // Arrow key camera panning (works in both playing and paused states)
+    if (this.inputHandler) {
+      const panSpeed = 450  // px/s in world space
+      const dtSec = dt / 1000
+      if (this.inputHandler.isKeyHeld('ArrowUp'))
+        this.camera.y += panSpeed * dtSec
+      if (this.inputHandler.isKeyHeld('ArrowDown'))
+        this.camera.y -= panSpeed * dtSec
+      if (this.inputHandler.isKeyHeld('ArrowLeft'))
+        this.camera.x += panSpeed * dtSec
+      if (this.inputHandler.isKeyHeld('ArrowRight'))
+        this.camera.x -= panSpeed * dtSec
+    }
+
     // Edge pan (works in both playing and paused states)
     if (this.inputHandler) {
       const isPaused = store.phase === 'paused'
