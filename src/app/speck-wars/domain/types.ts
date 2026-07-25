@@ -11,6 +11,9 @@ export interface SpeckMeta {
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
   holdPosition?: boolean   // true = don't move, don't attack, wait for new order
+  attackMoveMode?: boolean          // true = A-click move; engage enemy specks en route
+  attackMoveTargetX?: number        // temporary target speck position while attack-moving
+  attackMoveTargetY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
   patrolOriginX?: number  // patrol: leg start X (swaps with dest on arrival)
@@ -86,7 +89,8 @@ export interface SimulationState {
 
 export type InputEvent =
   | { type: 'RALLY'; ownerId: string; x: number; y: number }
-  | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string }
+  | { type: 'ATTACK_MOVE'; ownerId: string; x: number; y: number }
+  | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string; buildingId?: string }
   | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
