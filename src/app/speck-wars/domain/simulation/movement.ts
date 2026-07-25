@@ -61,6 +61,13 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       continue
     }
 
+    // Hold position flag: stay in place, don't pursue (even idle aggression)
+    if (meta.holdPosition) {
+      speckVx[i] = 0
+      speckVy[i] = 0
+      continue
+    }
+
     // Holding: stay in place; combat.ts still resolves attacks for adjacent enemies
     if (meta.state === 'holding') {
       speckVx[i] = 0
