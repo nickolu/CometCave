@@ -381,6 +381,8 @@ export class InputHandler {
   }
 
   destroy() {
+    this.canvas.style.cursor = 'default'  // reset cursor in case modifier was active
+    this.pendingModifier = 'none'
     this.canvas.removeEventListener('mousedown', this.onMouseDown)
     window.removeEventListener('mousemove', this.onMouseMove)
     window.removeEventListener('mouseup', this.onMouseUp)
