@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
+import { getDailyModifier } from '../lib/daily-modifier'
+import { DAILY_MODIFIER_LABELS } from '../domain/constants'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
@@ -99,6 +101,24 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )
           })}
         </div>
+        {/* Daily modifier badge — shown when today's modifier is not standard */}
+        {(() => {
+          const mod = getDailyModifier(difficulty)
+          if (mod === 'standard') return null
+          const label = DAILY_MODIFIER_LABELS[mod]
+          const color = mod === 'bulwark' ? '#44aaff' : mod === 'blitz' ? '#ffd700' : '#ff8844'
+          return (
+            <div style={{
+              fontSize: 11, letterSpacing: 1.5,
+              color,
+              border: `1px solid ${color}44`,
+              padding: '4px 12px', borderRadius: 4,
+              marginBottom: 2,
+            }}>
+              {label}
+            </div>
+          )
+        })()}
         {/* Best times + win rates per difficulty */}
         <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
           {difficulties.map(d => {
