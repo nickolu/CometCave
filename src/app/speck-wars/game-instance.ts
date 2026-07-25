@@ -98,6 +98,7 @@ export class GameInstance {
         if (this.pendingBuild) {
           const typeId = this.pendingBuild
           this.pendingBuild = null
+          if (this.canvas) this.canvas.style.cursor = 'default'
           this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
           this.notify('◆ TURRET PLACED', '#ffd700', 1500)
           return
@@ -148,6 +149,7 @@ export class GameInstance {
       () => {                                                          // Escape — clear selection / cancel build mode
         if (this.pendingBuild) {
           this.pendingBuild = null
+          if (this.canvas) this.canvas.style.cursor = 'default'
           this.notify('Build cancelled', '#aaaaaa', 800)
           return
         }
@@ -694,7 +696,8 @@ export class GameInstance {
 
   enterBuildMode(buildingTypeId: string) {
     this.pendingBuild = buildingTypeId
-    this.notify('◆ CLICK TO PLACE TURRET', '#ffd700', 3000)
+    if (this.canvas) this.canvas.style.cursor = 'cell'
+    this.notify('◆ RIGHT-CLICK TO PLACE TURRET — Esc to cancel', '#ffd700', 4000)
   }
 
   snapToAction() {
