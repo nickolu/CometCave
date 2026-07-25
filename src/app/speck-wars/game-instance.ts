@@ -291,6 +291,7 @@ export class GameInstance {
       researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
         this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
       },
+      snapToAction: () => this.snapToAction(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
