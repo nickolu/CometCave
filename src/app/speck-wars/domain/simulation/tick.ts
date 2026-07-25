@@ -182,6 +182,7 @@ function consumeInputs(sim: SimulationState) {
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
           meta.holdPosition = false  // clear hold when a new rally is issued
+          meta.attackMoveMode = false  // normal move cancels attack-move
         }
       } else {
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
@@ -233,7 +234,9 @@ function consumeInputs(sim: SimulationState) {
     if (event.type === 'SET_SPAWN_TYPE') {
       const stype = SPECK_TYPES[event.speckTypeId]
       for (const building of Object.values(sim.buildings)) {
-        if (building.ownerId !== event.ownerId || building.typeId !== 'base') continue
+        if (building.ownerId !== event.ownerId) continue
+        if (building.typeId !== 'base' && building.typeId !== 'outpost') continue
+        if (event.buildingId && building.id !== event.buildingId) continue  // skip if targeting specific building
         building.spawnTypeOverride = event.speckTypeId
         building.spawnIntervalOverride = stype?.productionTime
       }
@@ -293,6 +296,7 @@ function consumeInputs(sim: SimulationState) {
         meta.assignedRallyY = undefined
         meta.targetId = null
         meta.holdPosition = false
+        meta.attackMoveMode = false
         meta.state = 'idle'
       }
       if (event.ownerId === 'player') {
@@ -310,6 +314,7 @@ function consumeInputs(sim: SimulationState) {
         meta.assignedRallyY = undefined
         meta.targetId = null
         meta.holdPosition = true
+        meta.attackMoveMode = false
         meta.state = 'holding'
       }
       if (event.ownerId === 'player') {
@@ -543,10 +548,10 @@ function emitHudUpdate(sim: SimulationState) {
     selectedComposition = { types, veteranCount: selVet, eliteCount: selElite }
   }
 
-  let selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number } | null = null
+  let selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null = null
   if (sim.selectedBuildingId) {
     const b = sim.buildings[sim.selectedBuildingId]
-    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, hp: b.hp, maxHp: b.maxHp }
+    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
   sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, selectedBuilding } })
