@@ -15,6 +15,37 @@ export function runSpeckAI(sim: SimulationState) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
+    // Missile: home directly toward mission target
+    if (meta.typeId === 'missile' && meta.missionTargetId) {
+      let ti = -1
+      for (let j = 0; j < sim.speckCount; j++) {
+        if (sim.speckIds[j] === meta.missionTargetId) { ti = j; break }
+      }
+      if (ti === -1) {
+        // Target dead — missile self-destructs
+        sim.speckHp[i] = 0
+      } else {
+        meta.state = 'moving'
+        meta.targetId = null
+        meta.assignedRallyX = sim.speckX[ti]
+        meta.assignedRallyY = sim.speckY[ti]
+      }
+      continue
+    }
+
+    // Construction march: selected specks march to construction site
+    if (meta.constructTargetId) {
+      const target = buildings[meta.constructTargetId]
+      if (!target || !target.underConstruction) {
+        meta.constructTargetId = null
+      } else {
+        meta.state = 'moving'
+        meta.assignedRallyX = target.x
+        meta.assignedRallyY = target.y
+      }
+      continue
+    }
+
     // Clear dead or invalid targets
     if (meta.targetId && !buildings[meta.targetId]) {
       meta.targetId = null

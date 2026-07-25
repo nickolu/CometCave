@@ -75,7 +75,7 @@ export class Renderer {
     this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
-    this.buildingLayer.update(sim, PLAYER_COLORS)
+    this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
 
     // Process events from this tick
@@ -95,6 +95,9 @@ export class Renderer {
       if (event.type === 'BUILDING_DESTROYED') {
         const color = PLAYER_COLORS[event.ownerId] ?? 0xffffff
         this.effectsLayer.addDestructionBurst(event.x, event.y, color)
+      }
+      if (event.type === 'CONSTRUCTION_COMPLETE') {
+        this.showRallyPing(event.x, event.y)
       }
       if (event.type === 'OUTPOST_CAPTURED') {
         const building = sim.buildings[event.outpostId]

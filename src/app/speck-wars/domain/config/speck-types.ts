@@ -29,4 +29,11 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     size: 2, productionTime: 500,
     abilities: [],
   },
+  missile: {
+    id: 'missile', name: 'Missile',
+    hp: 1, damage: 1, speed: 220,
+    attackRange: 6, attackCooldown: 0,
+    size: 2, productionTime: 0,
+    abilities: ['die_on_impact'],
+  },
 }

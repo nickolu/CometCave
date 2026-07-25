@@ -35,7 +35,7 @@ export class BuildingLayer {
     this.spawnFlashMap.set(buildingId, Date.now())
   }
 
-  update(sim: SimulationState, playerColors: Record<string, number>) {
+  update(sim: SimulationState, playerColors: Record<string, number>, selectedBuildingId: string | null = null) {
     const now = Date.now()
     this.gfx.clear()
 
@@ -45,6 +45,105 @@ export class BuildingLayer {
       const r = btype?.size ?? 20
 
       const isOutpost = building.typeId === 'outpost'
+      const isTurret = building.typeId === 'turret'
+
+      // Turret: special rendering path
+      if (isTurret) {
+        if (building.underConstruction) {
+          // Ghost: faint pulsing circle + sacrifice progress ring + countdown arc
+          const ghostPulse = 0.3 + 0.2 * Math.sin(now / 600)
+          this.gfx.beginFill(color, ghostPulse * 0.4)
+          this.gfx.drawCircle(building.x, building.y, r)
+          this.gfx.endFill()
+          this.gfx.lineStyle(1.5, color, ghostPulse)
+          this.gfx.drawCircle(building.x, building.y, r)
+          this.gfx.lineStyle(0)
+
+          // Sacrifice progress: how many specks have arrived / required
+          const required = building.sacrificeRequired ?? 1
+          const arrived = building.sacrificeArrived ?? 0
+          const sacrificeFrac = Math.min(1, arrived / required)
+          if (sacrificeFrac > 0) {
+            const startAngle = -Math.PI / 2
+            const endAngle = startAngle + Math.PI * 2 * sacrificeFrac
+            this.gfx.lineStyle(2.5, 0xffd700, 0.8)
+            this.gfx.moveTo(building.x + (r + 6) * Math.cos(startAngle), building.y + (r + 6) * Math.sin(startAngle))
+            this.gfx.arc(building.x, building.y, r + 6, startAngle, endAngle)
+            this.gfx.lineStyle(0)
+          }
+
+          // Construction timer arc (after all specks arrived, 2s countdown)
+          if (building.constructionTimer !== undefined && building.constructionTimer > 0) {
+            const timerFrac = 1 - building.constructionTimer / 2000
+            const startAngle = -Math.PI / 2
+            const endAngle = startAngle + Math.PI * 2 * timerFrac
+            this.gfx.lineStyle(2, 0xffffff, 0.6)
+            this.gfx.moveTo(building.x + (r - 4) * Math.cos(startAngle), building.y + (r - 4) * Math.sin(startAngle))
+            this.gfx.arc(building.x, building.y, r - 4, startAngle, endAngle)
+            this.gfx.lineStyle(0)
+          }
+        } else {
+          // Live turret: diamond shape
+          const s = r
+          this.gfx.beginFill(color, 0.9)
+          this.gfx.drawPolygon([
+            building.x, building.y - s,
+            building.x + s, building.y,
+            building.x, building.y + s,
+            building.x - s, building.y,
+          ])
+          this.gfx.endFill()
+          // Damage flash
+          const flashTs = this.flashMap.get(building.id)
+          if (flashTs !== undefined) {
+            const elapsed = now - flashTs
+            if (elapsed < FLASH_DURATION) {
+              const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
+              this.gfx.beginFill(0xff2222, alpha)
+              this.gfx.drawPolygon([
+                building.x, building.y - s,
+                building.x + s, building.y,
+                building.x, building.y + s,
+                building.x - s, building.y,
+              ])
+              this.gfx.endFill()
+            } else {
+              this.flashMap.delete(building.id)
+            }
+          }
+          // Stroke
+          this.gfx.lineStyle(2, 0xffffff, 0.4)
+          this.gfx.drawPolygon([
+            building.x, building.y - s,
+            building.x + s, building.y,
+            building.x, building.y + s,
+            building.x - s, building.y,
+          ])
+          this.gfx.lineStyle(0)
+          // Pulse ring
+          const pulse = Math.sin(now / 800) * 0.3 + 0.7
+          this.gfx.lineStyle(2, color, pulse * 0.4)
+          this.gfx.drawCircle(building.x, building.y, r + 8)
+          this.gfx.lineStyle(0)
+          // HP bar
+          const barW = r * 2
+          const barH = 4
+          const barX = building.x - r
+          const barY = building.y - r - 10
+          const hpFrac = building.hp / building.maxHp
+          this.gfx.beginFill(0x333333)
+          this.gfx.drawRect(barX, barY, barW, barH)
+          this.gfx.endFill()
+          this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
+          this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
+          this.gfx.endFill()
+          // Attack range ring (faint)
+          this.gfx.lineStyle(1, color, 0.06)
+          this.gfx.drawCircle(building.x, building.y, 220)
+          this.gfx.lineStyle(0)
+        }
+        continue
+      }
 
       // Base shape: hexagon for outposts, circle for bases
       this.gfx.beginFill(color, 0.9)
@@ -186,6 +285,61 @@ export class BuildingLayer {
         this.gfx.moveTo(building.x + (r + 12) * Math.cos(startAngle), building.y + (r + 12) * Math.sin(startAngle))
         this.gfx.arc(building.x, building.y, r + 12, startAngle, endAngle)
         this.gfx.lineStyle(0)
+      }
+
+      // Selection ring: pulsing teal ring around selected building
+      if (building.id === selectedBuildingId && building.ownerId === 'player') {
+        const selPulse = 0.7 + 0.3 * Math.sin(now / 250)
+        this.gfx.lineStyle(2, color, selPulse)
+        this.gfx.drawCircle(building.x, building.y, r + 18)
+        this.gfx.lineStyle(0)
+      }
+
+      // Rally point indicator: thin dashed-style line from building to rally marker
+      if (building.ownerId === 'player' && building.rallyPoint) {
+        const rp = building.rallyPoint
+        const showLine = building.id === selectedBuildingId
+        if (showLine) {
+          // Draw segmented "dashed" line
+          const dx = rp.x - building.x
+          const dy = rp.y - building.y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist > 5) {
+            const nx = dx / dist, ny = dy / dist
+            const dashLen = 8, gapLen = 6, total = dashLen + gapLen
+            const startDist = r + 5
+            let d = startDist
+            while (d < dist - 5) {
+              const segEnd = Math.min(d + dashLen, dist - 5)
+              this.gfx.lineStyle(1, color, 0.5)
+              this.gfx.moveTo(building.x + nx * d, building.y + ny * d)
+              this.gfx.lineTo(building.x + nx * segEnd, building.y + ny * segEnd)
+              this.gfx.lineStyle(0)
+              d += total
+            }
+          }
+        }
+
+        // Rally marker: small diamond at rally point (only show when line visible)
+        if (showLine) {
+          const markerSize = 5
+          this.gfx.beginFill(color, 0.7)
+          this.gfx.drawPolygon([
+            rp.x, rp.y - markerSize,
+            rp.x + markerSize, rp.y,
+            rp.x, rp.y + markerSize,
+            rp.x - markerSize, rp.y,
+          ])
+          this.gfx.endFill()
+          this.gfx.lineStyle(1, 0xffffff, 0.4)
+          this.gfx.drawPolygon([
+            rp.x, rp.y - markerSize,
+            rp.x + markerSize, rp.y,
+            rp.x, rp.y + markerSize,
+            rp.x - markerSize, rp.y,
+          ])
+          this.gfx.lineStyle(0)
+        }
       }
     }
   }
