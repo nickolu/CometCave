@@ -97,13 +97,14 @@ export class Renderer {
     return this.ready
   }
 
-  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null): void {
+  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null, fogEnabled = false): void {
     this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
     this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId, ghostBuild)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
-    if (this.fogFrameCounter++ % 4 === 0) this.fogLayer.update(sim, 'player')
+    this.fogLayer.stage.visible = fogEnabled
+    if (fogEnabled && this.fogFrameCounter++ % 4 === 0) this.fogLayer.update(sim, 'player')
 
     // Process events from this tick
     for (const event of sim.events) {
