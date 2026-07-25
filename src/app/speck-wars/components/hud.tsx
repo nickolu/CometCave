@@ -42,6 +42,7 @@ export function HUD() {
   const countdown = useSpeckWarsStore(s => s.countdown)
   const kills = useSpeckWarsStore(s => s.kills)
   const losses = useSpeckWarsStore(s => s.losses)
+  const killFeed = useSpeckWarsStore(s => s.killFeed)
   const spawnMode = useSpeckWarsStore(s => s.spawnMode)
   const setSpawnMode = useSpeckWarsStore(s => s.setSpawnMode)
   const difficulty = useSpeckWarsStore(s => s.difficulty)
@@ -423,6 +424,32 @@ export function HUD() {
           </div>
         )
       })()}
+
+      {/* Kill feed — below minimap, top-right */}
+      {phase === 'playing' && killFeed.length > 0 && (
+        <div style={{
+          position: 'absolute', top: 210, right: 16,
+          display: 'flex', flexDirection: 'column', gap: 3,
+          pointerEvents: 'none',
+          width: 140,
+        }}>
+          {killFeed.map(entry => {
+            const age = Date.now() - entry.ts
+            const opacity = age > 3000 ? Math.max(0, 1 - (age - 3000) / 1500) : 1
+            return (
+              <div key={entry.id} style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                fontSize: 9, letterSpacing: 0.5,
+                opacity,
+                transition: 'opacity 150ms',
+              }}>
+                <span style={{ fontSize: 11 }}>{entry.icon}</span>
+                <span style={{ color: entry.color }}>{entry.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Timer + Pause button — top bar */}
       <div style={{
