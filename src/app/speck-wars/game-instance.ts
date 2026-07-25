@@ -224,6 +224,7 @@ export class GameInstance {
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
     )
+    this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
