@@ -1031,7 +1031,7 @@ export function HUD() {
             borderRadius: 6,
             padding: '7px 12px',
             minWidth: 130,
-            pointerEvents: 'none',
+            pointerEvents: (hud?.selectedSpeckCount ?? 0) > 0 ? 'auto' : 'none',
           }}>
             <div style={{
               fontSize: 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
@@ -1062,6 +1062,41 @@ export function HUD() {
               <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
                 {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
                 {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
+              </div>
+            )}
+            {/* Unit action buttons */}
+            {(hud?.selectedSpeckCount ?? 0) > 0 && (
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8,
+              }}>
+                {[
+                  { label: 'Stop', key: 'S', action: gameActions.stop },
+                  { label: 'Hold', key: 'H', action: gameActions.hold },
+                  { label: 'Defend', key: 'D', action: gameActions.defend },
+                  { label: 'Advance', key: 'N', action: gameActions.advance },
+                  { label: 'Rush', key: 'B', action: gameActions.rush },
+                  { label: 'Guard', key: 'G', action: gameActions.guard },
+                ].map(({ label, key, action }) => (
+                  <button
+                    key={label}
+                    onClick={() => action?.()}
+                    style={{
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      borderRadius: 4,
+                      color: '#ddd',
+                      fontSize: 11,
+                      padding: '3px 7px',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      userSelect: 'none',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {label}
+                    <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
