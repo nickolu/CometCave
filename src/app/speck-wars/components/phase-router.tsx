@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -352,6 +352,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )}
             {peakVeteranCount > 0 && (
               <span style={{ color: '#ffd700', opacity: 0.65 }}>⭐ {peakVeteranCount} veteran{peakVeteranCount !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+        )}
+
+        {(surgesUsed > 0 || sacrificesUsed > 0) && (
+          <div style={{ display: 'flex', gap: 20, color: 'rgba(255,255,255,0.4)', fontSize: 12, letterSpacing: 0.5 }}>
+            {surgesUsed > 0 && (
+              <span>⚡ {surgesUsed} surge{surgesUsed !== 1 ? 's' : ''}</span>
+            )}
+            {sacrificesUsed > 0 && (
+              <span>☯ {sacrificesUsed} sacrifice{sacrificesUsed !== 1 ? 's' : ''}</span>
             )}
           </div>
         )}
