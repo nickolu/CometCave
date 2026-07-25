@@ -574,6 +574,31 @@ export function HUD() {
             <div style={{ fontSize: 8, opacity: 0.7 }}>E</div>
           </button>
         )}
+        {/* Snap to base button — essential for mobile (no keyboard shortcut) */}
+        {gameActions?.snapToBase && (
+          <button
+            onClick={() => gameActions.snapToBase?.()}
+            title="[C] Center camera on home base"
+            aria-label="Snap camera to home base"
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: 'rgba(74,247,196,0.08)',
+              border: '1px solid rgba(74,247,196,0.3)',
+              borderRadius: 4,
+              color: 'rgba(74,247,196,0.8)',
+              letterSpacing: 0.5,
+              lineHeight: 1.3,
+              textAlign: 'center',
+              minHeight: 44,
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>⌂ HOME</div>
+            <div style={{ fontSize: 8, opacity: 0.7 }}>C</div>
+          </button>
+        )}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
