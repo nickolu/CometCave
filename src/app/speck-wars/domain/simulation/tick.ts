@@ -325,6 +325,7 @@ function emitHudUpdate(sim: SimulationState) {
     specks: minimapSpecks,
     buildings: minimapBuildings,
     rallyPoint: sim.rallyPoints['player'] ?? null,
+    aiRallyPoint: sim.rallyPoints['ai'] ?? null,
   }
 
   const outpostFortify: Record<string, number> = {}

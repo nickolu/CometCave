@@ -124,5 +124,6 @@ export interface HudData {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]
     rallyPoint: { x: number; y: number } | null
+    aiRallyPoint: { x: number; y: number } | null
   }
 }
