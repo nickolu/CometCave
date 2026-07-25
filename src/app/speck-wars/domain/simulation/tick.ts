@@ -204,6 +204,7 @@ function consumeInputs(sim: SimulationState) {
       const minX = Math.min(x1, x2), maxX = Math.max(x1, x2)
       const minY = Math.min(y1, y2), maxY = Math.max(y1, y2)
       sim.selectedSpeckIds.clear()
+      sim.selectedBuildingId = null  // switching to speck selection clears building selection
       for (let i = 0; i < sim.speckCount; i++) {
         const meta = sim.speckMeta[i]
         if (!meta || meta.ownerId !== event.ownerId) continue

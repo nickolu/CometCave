@@ -115,14 +115,14 @@ export class GameInstance {
           }
         }
 
-        // If a building is selected, set its rally point
-        if (this.sim.selectedBuildingId) {
+        // If a building is selected (and no specks selected), set its rally point
+        if (this.sim.selectedBuildingId && this.sim.selectedSpeckIds.size === 0) {
           this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
           this.renderer.showRallyPing(wx, wy)
           return
         }
 
-        // Default: global rally for all units
+        // Default: global rally for all units (or move selected specks)
         this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
       },
