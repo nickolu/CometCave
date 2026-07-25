@@ -130,4 +130,5 @@ export interface HudData {
     rallyPoint: { x: number; y: number } | null
     aiRallyPoint: { x: number; y: number } | null
   }
+  cameraViewport?: { x: number; y: number; w: number; h: number }  // world-space viewport rect
 }

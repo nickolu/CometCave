@@ -270,7 +270,13 @@ export class GameInstance {
           }, 1400)
         }
         if (event.type === 'HUD_UPDATE') {
-          store.setHud(event.data)
+          const cameraViewport = {
+            x: -this.camera.x / this.camera.zoom,
+            y: -this.camera.y / this.camera.zoom,
+            w: this.canvas.clientWidth / this.camera.zoom,
+            h: this.canvas.clientHeight / this.camera.zoom,
+          }
+          store.setHud({ ...event.data, cameraViewport })
           const bua = event.data.baseUnderThreat ?? false
           if (bua && !this.prevBaseUnderThreat) {
             this.notify('⚠ BASE UNDER ATTACK', '#ff3333')

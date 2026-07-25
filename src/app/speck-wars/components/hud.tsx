@@ -332,6 +332,23 @@ export function HUD() {
                   </g>
                 )
               })()}
+              {/* Camera viewport rect */}
+              {hud.cameraViewport && (() => {
+                const vp = hud.cameraViewport
+                const vx = vp.x * SCALE
+                const vy = vp.y * SCALE
+                const vw = vp.w * SCALE
+                const vh = vp.h * SCALE
+                return (
+                  <rect
+                    x={vx} y={vy} width={vw} height={vh}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.25)"
+                    strokeWidth={1}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                )
+              })()}
             </svg>
           </div>
         )
