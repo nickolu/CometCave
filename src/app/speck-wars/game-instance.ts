@@ -659,10 +659,15 @@ export class GameInstance {
         if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
           this.notify('✦ ELITE SPECK! +35% DAMAGE', '#ffffff', 2500)
         }
+        if (event.type === 'SPECK_LEGEND' && event.ownerId === 'player') {
+          this.notify('✦✦ LEGEND BORN! ✦✦', '#cc44ff', 3000)
+          store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
+        }
         if (event.type === 'VETERAN_FALLEN') {
+          const isLegend = event.kills >= 12
           const isElite = event.kills >= 6
-          const label = isElite ? '✦ ELITE FALLEN' : '⭐ VETERAN FALLEN'
-          const color = isElite ? '#ff8844' : '#ffcc00'
+          const label = isLegend ? '✦✦ LEGEND FALLEN' : isElite ? '✦ ELITE FALLEN' : '⭐ VETERAN FALLEN'
+          const color = isLegend ? '#cc44ff' : isElite ? '#ff8844' : '#ffcc00'
           this.notify(label, color)
         }
         if (event.type === 'AI_WAVE_START') {

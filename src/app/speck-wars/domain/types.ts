@@ -112,6 +112,7 @@ export type SimEvent =
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
   | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
   | { type: 'SPECK_ELITE'; speckId: string; ownerId: string }
+  | { type: 'SPECK_LEGEND'; speckId: string; ownerId: string }
   | { type: 'AI_WAVE_START'; waveNumber: number }
   | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
   | { type: 'AI_LAST_STAND' }
@@ -126,6 +127,7 @@ export interface HudData {
     speckTypes: Record<string, number>  // typeId → count
     veteranCount: number  // specks with 3+ kills
     eliteCount: number    // specks with 6+ kills
+    legendCount: number   // specks with 12+ kills
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
@@ -134,7 +136,7 @@ export interface HudData {
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
   selectedSpeckCount: number   // 0 when no selection active
-  selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number } | null
+  selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number } | null
   spawnRates: Record<string, number>   // playerId → effective specks/min
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null

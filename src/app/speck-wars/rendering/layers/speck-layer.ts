@@ -83,11 +83,22 @@ export class SpeckLayer {
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
 
-        // Gold ring for veteran specks (3+ kills), bright white diamond ring for elite (6+ kills)
+        // Gold ring for veteran specks (3+ kills), bright white+gold ring for elite (6+ kills), purple+white ring for legend (12+ kills)
         const kills = typeMeta?.kills ?? 0
         const isVeteran = kills >= 3
         const isElite = kills >= 6
-        if (isElite) {
+        const isLegend = kills >= 12
+        if (isLegend) {
+          // Purple outer ring + pulsing white inner ring for legend
+          const legendPulse = 0.6 + 0.4 * Math.sin(now / 160)  // faster pulse ~6Hz
+          this.gfx.lineStyle(2.5, 0xcc44ff, legendPulse * spriteList[j].alpha)  // purple outer
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 7)
+          this.gfx.lineStyle(2, 0xffffff, spriteList[j].alpha * 0.95)  // white inner
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 4)
+          this.gfx.lineStyle(1.5, 0xcc44ff, spriteList[j].alpha * 0.6)  // faint purple core
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 1.5)
+          this.gfx.lineStyle(0)
+        } else if (isElite) {
           // Bright white outer ring + gold inner ring for elite
           const elitePulse = 0.7 + 0.3 * Math.sin(now / 200)
           this.gfx.lineStyle(2, 0xffffff, elitePulse * spriteList[j].alpha)
