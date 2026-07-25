@@ -134,10 +134,10 @@ export class SpeckLayer {
           }
         }
 
-        // Selection ring: bright white ring around selected specks
+        // Selection ring: warm yellow ring around selected specks (distinct from veteran gold/white)
         const speckId = sim.speckMeta[i]?.id ?? ''
         if (selectedSpeckIds?.has(speckId)) {
-          this.gfx.lineStyle(1.5, 0xffffff, 0.9)
+          this.gfx.lineStyle(1.5, 0xffe066, 0.92)
           this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 4)
           this.gfx.lineStyle(0)
         }

@@ -851,6 +851,58 @@ export function HUD() {
         </div>
       )}
 
+      {/* Selection info panel — bottom center */}
+      {phase === 'playing' && (
+        <div style={{
+          position: 'absolute',
+          bottom: 70,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          opacity: hud && (hud.selectedSpeckCount ?? 0) > 0 ? 1 : 0,
+          transition: 'opacity 150ms ease',
+          pointerEvents: 'none',
+          background: 'rgba(0,0,0,0.65)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 6,
+          padding: '7px 12px',
+          minWidth: 130,
+          fontFamily: 'monospace',
+          whiteSpace: 'nowrap',
+        }}>
+          <div style={{
+            fontSize: 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
+          }}>
+            SELECTED {hud?.selectedSpeckCount ?? 0}
+          </div>
+          {hud?.selectedComposition && Object.entries(hud.selectedComposition.types)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([typeId, count]) => (
+              <div key={typeId} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
+              }}>
+                <span style={{
+                  display: 'inline-block', width: 7, height: 7, flexShrink: 0,
+                  borderRadius: typeId === 'heavy' ? 1 : '50%',
+                  background: '#4af7c4',
+                  transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
+                }} />
+                <span style={{ flex: 1, letterSpacing: 1 }}>
+                  {typeId.charAt(0).toUpperCase() + typeId.slice(1)}
+                </span>
+                <span style={{ color: '#ffffff' }}>{count}</span>
+              </div>
+            ))
+          }
+          {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0) && (
+            <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
+              {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
+              {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Mobile action buttons — bottom right */}
       {phase === 'playing' && (
         <div style={{
@@ -858,25 +910,6 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
-          {/* Squad indicator: shown when player has specks selected */}
-          {hud && (hud.selectedSpeckCount ?? 0) > 0 && (
-            <div style={{
-              fontSize: 9, letterSpacing: 1.5, color: '#ffffff', opacity: 0.7,
-              textAlign: 'center', marginBottom: 4,
-            }}>
-              SQUAD: {hud.selectedSpeckCount} · Drag to reselect · Esc to clear
-              {hud.selectedComposition && (
-                <div style={{ fontSize: 9, color: 'rgba(74,247,196,0.75)', marginTop: 2, letterSpacing: 1 }}>
-                  {Object.entries(hud.selectedComposition.types)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([typeId, count]) => `${count} ${typeId}`)
-                    .join(' · ')}
-                  {hud.selectedComposition.eliteCount > 0 && ` · ✦${hud.selectedComposition.eliteCount} elite`}
-                  {hud.selectedComposition.veteranCount > 0 && ` · ⭐${hud.selectedComposition.veteranCount} vet`}
-                </div>
-              )}
-            </div>
-          )}
           <div style={{
             display: 'flex', gap: 6,
           }}>
