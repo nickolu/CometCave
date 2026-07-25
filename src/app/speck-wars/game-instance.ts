@@ -177,7 +177,7 @@ export class GameInstance {
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
-      () => { this.snapToBase() },                                          // H — snap camera to home base
+      () => { this.snapToBase() },                                          // (onSnapToBase — not bound to any key; C key recenter covers this)
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
         useSpeckWarsStore.getState().setSpawnMode(typeId)
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
