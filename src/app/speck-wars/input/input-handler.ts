@@ -26,6 +26,7 @@ export class InputHandler {
   private onRecallControlGroup?: (slot: number) => void
   private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
   private isPanDragging = false   // middle-mouse only
+  private pendingBuildActive = false
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
@@ -193,8 +194,17 @@ export class InputHandler {
         const world = screenToWorld(sx, sy, this.camera)
         this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
       } else {
-        // Single left-click: deselect all
-        this.onClearSelect?.()
+        if (this.pendingBuildActive) {
+          // In build placement mode: left-click places the building
+          const rect = this.canvas.getBoundingClientRect()
+          const sx = e.clientX - rect.left
+          const sy = e.clientY - rect.top
+          const world = screenToWorld(sx, sy, this.camera)
+          this.onRally?.(world.x, world.y)
+        } else {
+          // Normal left-click: deselect all
+          this.onClearSelect?.()
+        }
       }
       return
     }
@@ -378,6 +388,12 @@ export class InputHandler {
       x2: this.mouseX,
       y2: this.mouseY,
     }
+  }
+
+  setPendingBuildActive(active: boolean) { this.pendingBuildActive = active }
+  getMouseScreenPos(): { x: number; y: number } | null {
+    if (this.mouseX < 0) return null
+    return { x: this.mouseX, y: this.mouseY }
   }
 
   destroy() {
