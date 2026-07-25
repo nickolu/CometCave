@@ -68,12 +68,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       continue
     }
 
-    // Holding: stay in place; combat.ts still resolves attacks for adjacent enemies
-    if (meta.state === 'holding') {
-      speckVx[i] = 0
-      speckVy[i] = 0
-      continue
-    }
 
     let ax = 0, ay = 0
 

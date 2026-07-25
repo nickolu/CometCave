@@ -58,31 +58,6 @@ export function runSpeckAI(sim: SimulationState) {
       meta.state = 'holding'
     }
 
-    // Holding specks: don't move or pursue, but attack enemies within melee range
-    if (meta.state === 'holding') {
-      const HOLD_ATTACK_RANGE = 20  // px — only attack enemies that are literally adjacent
-      let adjacentEnemy: string | null = null
-      let adjacentDist = Infinity
-      for (let j = 0; j < sim.speckCount; j++) {
-        if (!speckIds[j] || j === i) continue
-        const jMeta = speckMeta[j]
-        if (!jMeta || jMeta.ownerId === meta.ownerId) continue
-        const dx = speckX[j] - speckX[i]
-        const dy = speckY[j] - speckY[i]
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        if (dist < HOLD_ATTACK_RANGE && dist < adjacentDist) {
-          adjacentDist = dist
-          adjacentEnemy = speckIds[j]
-        }
-      }
-      // Stay holding — movement.ts will not move 'holding' specks; combat handles adjacency
-      meta.targetId = null  // no building targets while holding
-      // If an enemy is adjacent, transition to attacking briefly; otherwise remain holding
-      if (adjacentEnemy) {
-        meta.state = 'attacking'
-      }
-      continue
-    }
 
     // Selection-aware rally: selected player specks use 'player-selected' rally;
     // unselected specks with an active selection use no rally (auto-target)
