@@ -1,13 +1,13 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
-import { updateSpawners } from './spawner'
+import { updateSpawners, spawnCampDefenders } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 
@@ -61,6 +61,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
+
+  // 7a-pre. Creep camp timers: boost decay, camp reset
+  updateCreepCamps(sim, dt)
 
   // 7a. Fortification: outposts held continuously accumulate a combat bonus
   for (const building of Object.values(sim.buildings)) {
@@ -141,6 +144,47 @@ function regenBuildingHp(sim: SimulationState, dt: number) {
     // No regen within 5 seconds of last taking damage
     if (Date.now() - (building.lastDamagedAt ?? 0) < REGEN_COOLDOWN_MS) continue
     building.hp = Math.min(building.maxHp, building.hp + btype.hpRegen * dtSec)
+  }
+}
+
+function updateCreepCamps(sim: SimulationState, dt: number) {
+  // Tick boost timers for all players
+  for (const player of Object.values(sim.players)) {
+    if (player.creepCampBoostMs > 0) {
+      player.creepCampBoostMs = Math.max(0, player.creepCampBoostMs - dt)
+    }
+  }
+
+  // Tick camp reset timers and handle reset
+  for (const building of Object.values(sim.buildings)) {
+    if (building.typeId !== 'creep_camp') continue
+    if (building.ownerId === 'neutral') continue
+    if ((building.campResetMs ?? 0) <= 0) continue
+    building.campResetMs = (building.campResetMs ?? 0) - dt
+    if (building.campResetMs <= 0) {
+      building.campResetMs = 0
+      building.ownerId = 'neutral'
+      building.hp = building.maxHp
+      building.captureProgress = 0
+      building.captureSide = undefined
+      spawnCampDefenders(sim, building.id)
+    }
+  }
+
+  // Leash defenders: pull back defenders that have strayed too far from their camp
+  const leashR2 = CREEP_CAMP_ZONE_RADIUS * CREEP_CAMP_ZONE_RADIUS
+  for (let i = 0; i < sim.speckCount; i++) {
+    const meta = sim.speckMeta[i]
+    if (!meta || meta.typeId !== 'defender') continue
+    if (meta.assignedRallyX === undefined || meta.assignedRallyY === undefined) continue
+    const dx = sim.speckX[i] - meta.assignedRallyX
+    const dy = sim.speckY[i] - meta.assignedRallyY
+    const dist2 = dx * dx + dy * dy
+    if (dist2 > leashR2 * 2.25) {  // > 1.5× leash radius
+      // Force the speck to return to camp
+      meta.state = 'moving'
+      meta.targetId = null
+    }
   }
 }
 
