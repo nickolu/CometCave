@@ -69,6 +69,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       if (i === j || speckHp[j] <= 0) continue
       const jMeta = speckMeta[j]
       if (!jMeta || jMeta.ownerId === meta.ownerId) continue  // dead slot or friendly
+      // Scout cloak: enemy cloaked scouts cannot be targeted
+      if (jMeta.cloakTimer && jMeta.cloakTimer > 0 && jMeta.ownerId !== meta.ownerId) continue
 
       const dx = speckX[j] - speckX[i]
       const dy = speckY[j] - speckY[i]
@@ -279,8 +281,11 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       // Outposts are captured, not destroyed — immune to direct combat damage
       if (building.typeId === 'outpost') continue
       const siegeBonus = meta.typeId === 'heavy' ? 1.5 : 1.0
-      building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus
+      const chargeDmgMult = (meta.typeId === 'heavy' && (meta.chargeTimer ?? 0) > 0) ? 1.5 : 1.0
+      building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus * chargeDmgMult
       building.lastDamagedAt = Date.now()
+      // Heavy Charge: set chargeTimer after landing a building attack
+      if (meta.typeId === 'heavy') meta.chargeTimer = 1500
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 
