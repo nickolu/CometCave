@@ -135,7 +135,7 @@ export class AIController {
           ? (myBaseHpFrac < 0.3 ? 0.85 : 0.55)  // macro defends to protect production base
           : (myBaseHpFrac < 0.3 ? 0.70 : 0.45)  // balanced
       if (Math.random() < defendChance) {
-        sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: myBase.x, y: myBase.y })
+        sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: this.playerId, x: myBase.x, y: myBase.y })
         return
       }
     }
@@ -144,7 +144,7 @@ export class AIController {
     if (this.waveRemainingMs > 0) {
       const enemyBase = nearest(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
       if (enemyBase) {
-        sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: enemyBase.x, y: enemyBase.y })
+        sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: this.playerId, x: enemyBase.x, y: enemyBase.y })
         return
       }
     }
@@ -256,7 +256,7 @@ export class AIController {
       }
     }
 
-    sim.inputQueue.push({ type: 'RALLY', ownerId: this.playerId, x: target.x, y: target.y })
+    sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: this.playerId, x: target.x, y: target.y })
 
     // Expose wave state to sim so HUD can display it
     sim.waveCountdown = this.waveEnabled ? this.waveTimer : null
