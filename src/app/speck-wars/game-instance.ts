@@ -79,7 +79,9 @@ export class GameInstance {
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
     const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality(), adaptiveEnabled)
+    const personality = aiPersonality()
+    useSpeckWarsStore.getState().setAiPersonality(personality)
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, personality, adaptiveEnabled)
   }
 
   private onVisibilityChange = () => {
@@ -100,6 +102,22 @@ export class GameInstance {
         // Build placement mode: place the pending building at the clicked location
         if (this.pendingBuild) {
           const typeId = this.pendingBuild
+          const btype = BUILDING_TYPES[typeId]
+          const cost = btype?.sacrificeCost ?? 0
+          // Count available specks before pushing the event (mirrors tick.ts BUILD handler)
+          const useSelection = this.sim.selectedSpeckIds.size > 0
+          let available = 0
+          for (let i = 0; i < this.sim.speckCount; i++) {
+            if (!this.sim.speckIds[i]) continue
+            const m = this.sim.speckMeta[i]
+            if (!m || m.ownerId !== 'player') continue
+            if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
+            available++
+          }
+          if (available < cost) {
+            this.notify(`Need ${cost} specks to build (have ${available})`, '#ff4f7b', 2000)
+            return  // stay in build mode so player can select more specks
+          }
           this.pendingBuild = null
           this.inputHandler?.setPendingBuildActive(false)
           this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
@@ -722,6 +740,10 @@ export class GameInstance {
 
   clearRally() {
     this.sim.rallyPoints['player'] = null
+    // Also clear per-building rally so R fully resets all spawn targeting
+    for (const building of Object.values(this.sim.buildings)) {
+      if (building.ownerId === 'player') building.rallyPoint = null
+    }
   }
 
   surge() {
