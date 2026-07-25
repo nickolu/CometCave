@@ -24,6 +24,11 @@ export class InputHandler {
   private onSacrifice?: () => void
   private onSaveControlGroup?: (slot: number) => void
   private onRecallControlGroup?: (slot: number) => void
+  private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
+  private isPanDragging = false   // middle-mouse only
+  private onStop?: () => void
+  private onHold?: () => void
+  private onAttackMove?: (worldX: number, worldY: number) => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -62,6 +67,9 @@ export class InputHandler {
     onSacrifice?: () => void,
     onSaveControlGroup?: (slot: number) => void,
     onRecallControlGroup?: (slot: number) => void,
+    onStop?: () => void,
+    onHold?: () => void,
+    onAttackMove?: (worldX: number, worldY: number) => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -85,6 +93,9 @@ export class InputHandler {
     this.onSacrifice = onSacrifice
     this.onSaveControlGroup = onSaveControlGroup
     this.onRecallControlGroup = onRecallControlGroup
+    this.onStop = onStop
+    this.onHold = onHold
+    this.onAttackMove = onAttackMove
     this.attach()
   }
 
@@ -114,12 +125,17 @@ export class InputHandler {
   private onMouseLeave = () => { this.mouseX = -1; this.mouseY = -1 }
 
   private onContextMenu = (e: MouseEvent) => {
-    e.preventDefault()   // suppress browser context menu
-    this.onClearRally?.()
+    e.preventDefault()
   }
 
   private onMouseDown = (e: MouseEvent) => {
-    if (e.button === 1) e.preventDefault()  // prevent middle-click scroll
+    if (e.button === 1) {
+      e.preventDefault()
+      this.isPanDragging = true
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+      return
+    }
     if (e.button === 0) {
       this.isDragSelect = true
       const rect = this.canvas.getBoundingClientRect()
@@ -130,69 +146,75 @@ export class InputHandler {
       this.dragSelectStartWorldY = world.y
       this.mouseDownX = e.clientX
       this.mouseDownY = e.clientY
-      this.isDragging = true  // still track drag for HUD visual
+      this.isDragging = true
       this.lastX = e.clientX
       this.lastY = e.clientY
-      return
     }
-    this.isDragging = true  // non-left-button: camera pan
-    this.lastX = e.clientX
-    this.lastY = e.clientY
-    this.mouseDownX = e.clientX
-    this.mouseDownY = e.clientY
+    if (e.button === 2) {
+      // track for right-click drag detection
+      this.mouseDownX = e.clientX
+      this.mouseDownY = e.clientY
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+    }
   }
 
   private onMouseMove = (e: MouseEvent) => {
-    if (!this.isDragging) return
-    // Update cursor position always (needed for selection box visual)
     const rect = this.canvas.getBoundingClientRect()
     this.mouseX = e.clientX - rect.left
     this.mouseY = e.clientY - rect.top
-    if (this.isDragSelect) return  // skip pan during drag-select
-    this.camera.x += e.clientX - this.lastX
-    this.camera.y += e.clientY - this.lastY
-    this.lastX = e.clientX
-    this.lastY = e.clientY
+    if (this.isPanDragging) {
+      this.camera.x += e.clientX - this.lastX
+      this.camera.y += e.clientY - this.lastY
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+    }
+    // drag-select visual update via isDragSelect (no action needed — renderer reads getDragRect)
   }
 
   private onMouseUp = (e: MouseEvent) => {
+    if (e.button === 1) {
+      this.isPanDragging = false
+      return
+    }
+
     const dx = e.clientX - this.mouseDownX
     const dy = e.clientY - this.mouseDownY
     const dist = Math.sqrt(dx * dx + dy * dy)
 
-    if (this.isDragSelect) {
+    if (e.button === 0 && this.isDragSelect) {
       this.isDragSelect = false
       this.isDragging = false
       if (dist > 10) {
+        // Box-select
         const rect = this.canvas.getBoundingClientRect()
         const sx = e.clientX - rect.left
         const sy = e.clientY - rect.top
         const world = screenToWorld(sx, sy, this.camera)
         this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
-      } else if (dist < 5 && this.onRally) {
-        // Short click — set rally point
-        const rect = this.canvas.getBoundingClientRect()
-        const sx = e.clientX - rect.left
-        const sy = e.clientY - rect.top
-        const world = screenToWorld(sx, sy, this.camera)
-        this.onRally(world.x, world.y)
+      } else {
+        // Single left-click: deselect all
+        this.onClearSelect?.()
       }
       return
     }
 
-    // Middle-click: clear rally
-    if (e.button === 1 && dist < 5) {
-      this.onClearRally?.()
-      this.isDragging = false
-      return
-    }
-
-    if (e.button === 0 && dist < 5 && this.onRally) {
+    if (e.button === 2 && dist < 5) {
+      // Right-click: issue move or attack-move command
       const rect = this.canvas.getBoundingClientRect()
       const sx = e.clientX - rect.left
       const sy = e.clientY - rect.top
       const world = screenToWorld(sx, sy, this.camera)
-      this.onRally(world.x, world.y)
+      if (this.pendingModifier === 'attack') {
+        this.onAttackMove?.(world.x, world.y)
+        this.pendingModifier = 'none'
+        if (this.canvas) this.canvas.style.cursor = 'default'
+      } else {
+        // 'none' or 'patrol' (stub patrol as move for now)
+        this.onRally?.(world.x, world.y)
+        if (this.pendingModifier === 'patrol') this.pendingModifier = 'none'
+      }
+      return
     }
 
     this.isDragging = false
@@ -276,21 +298,46 @@ export class InputHandler {
     // Don't fire when typing in an input
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
     this.heldKeys.add(e.code)
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault()
     if (e.code === 'Space') {
       e.preventDefault()
       this.onTogglePause?.()
     } else if (e.code === 'Escape') {
-      this.onClearSelect?.()
+      if (this.pendingModifier !== 'none') {
+        this.pendingModifier = 'none'
+        if (this.canvas) this.canvas.style.cursor = 'default'
+      } else {
+        this.onClearSelect?.()
+      }
     } else if (e.code === 'KeyR') {
       this.onClearRally?.()
     } else if (e.code === 'KeyH') {
-      this.onSnapToBase?.()
+      this.onHold?.()
     } else if (e.code === 'KeyC') {
       this.onRecenterCamera?.()
     } else if (e.code === 'KeyD') {
       this.onDefend?.()
+    } else if (e.code === 'KeyA' && e.ctrlKey) {
+      e.preventDefault()
+      this.onSelectAll?.()
     } else if (e.code === 'KeyA') {
-      this.onAdvance?.()
+      if (this.pendingModifier === 'attack') {
+        this.pendingModifier = 'none'
+        if (this.canvas) this.canvas.style.cursor = 'default'
+      } else {
+        this.pendingModifier = 'attack'
+        if (this.canvas) this.canvas.style.cursor = 'crosshair'
+      }
+    } else if (e.code === 'KeyP') {
+      if (this.pendingModifier === 'patrol') {
+        this.pendingModifier = 'none'
+        if (this.canvas) this.canvas.style.cursor = 'default'
+      } else {
+        this.pendingModifier = 'patrol'
+        if (this.canvas) this.canvas.style.cursor = 'cell'
+      }
+    } else if (e.code === 'KeyS') {
+      this.onStop?.()
     } else if (e.code === 'KeyN') {
       this.onAdvanceOutpost?.()
     } else if (e.code === 'KeyB') {

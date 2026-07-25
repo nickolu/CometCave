@@ -4,12 +4,13 @@ export interface SpeckMeta {
   id: string
   typeId: string
   ownerId: string
-  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing' | 'retreating'
+  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing' | 'retreating' | 'holding'
   targetId: string | null
   attackCooldown: number   // ms remaining until next attack
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
+  holdPosition?: boolean   // true = don't move, don't attack, wait for new order
 }
 
 export interface BuildingEntity {
@@ -78,6 +79,8 @@ export type InputEvent =
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
   | { type: 'CLEAR_SELECT'; ownerId: string }
   | { type: 'SURGE'; ownerId: string }
+  | { type: 'STOP'; ownerId: string }
+  | { type: 'HOLD'; ownerId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }

@@ -48,7 +48,6 @@ export class GameInstance {
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
-  private attackMovePending = false
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -95,11 +94,6 @@ export class GameInstance {
       (wx, wy) => {
         this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
-        if (this.attackMovePending) {
-          this.attackMovePending = false
-          if (this.canvas) this.canvas.style.cursor = 'default'
-          this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
-        }
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => this.clearRally(),                             // R — clear rally
@@ -115,11 +109,7 @@ export class GameInstance {
         this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
       },
       () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },   // D — defend (rally to player base)
-      () => {                                              // A — enter attack-move mode
-        this.attackMovePending = true
-        if (this.canvas) this.canvas.style.cursor = 'crosshair'
-        this.notify('⚔ ATTACK MOVE — click target', '#ff6b35', 1500)
-      },
+      () => { /* onAdvance — no longer called by key; A key now sets pendingModifier in input-handler */ },
       () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // N — advance to nearest outpost
       () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
@@ -128,12 +118,6 @@ export class GameInstance {
       () => {                                                          // Escape — clear selection
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
-        if (this.attackMovePending) {
-          this.attackMovePending = false
-          if (this.canvas) this.canvas.style.cursor = 'default'
-          this.notifGen++
-          useSpeckWarsStore.getState().setNotification(null)
-        }
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
@@ -173,6 +157,13 @@ export class GameInstance {
           if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
         }
         this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+      },
+      () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
+      () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
+      (wx: number, wy: number) => {                                    // A + right-click — attack-move
+        this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
+        this.renderer.showRallyPing(wx, wy)
+        this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
     )
     useSpeckWarsStore.getState().setGameActions({
