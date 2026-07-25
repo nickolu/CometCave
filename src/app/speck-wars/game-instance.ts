@@ -53,6 +53,13 @@ export class GameInstance {
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
   private cinematicMs = 0
+  private cinematicStartX = 0
+  private cinematicStartY = 0
+  private cinematicStartZoom = 0.1
+  private cinematicEndX = 0
+  private cinematicEndY = 0
+  private cinematicEndZoom = 1
+  private cinematicTotalMs = 3000
   private gameOverFreezeMs = 0  // freeze sim during dramatic game-over delay
   private pendingBuild: string | null = null  // building type ID awaiting placement click
   private killFeedKillAt = 0    // last time we pushed a kill entry
@@ -243,6 +250,29 @@ export class GameInstance {
         clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
       },
     })
+    // Cinematic intro: start zoomed out to show full world
+    const W = this.canvas.clientWidth
+    const H = this.canvas.clientHeight
+    const WORLD_SIZE = 3000
+    const minZoom = Math.min(W / WORLD_SIZE, H / WORLD_SIZE) * 0.9
+    // Snap camera to show full map
+    this.camera.zoom = minZoom
+    this.camera.x = W / 2 - (WORLD_SIZE / 2) * minZoom
+    this.camera.y = H / 2 - (WORLD_SIZE / 2) * minZoom
+    // Find player base for zoom-in target
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    const targetZoom = 1.0
+    const targetX = playerBase ? W / 2 - playerBase.x * targetZoom : W / 2 - (WORLD_SIZE / 2) * targetZoom
+    const targetY = playerBase ? H / 2 - playerBase.y * targetZoom : H / 2 - (WORLD_SIZE / 2) * targetZoom
+    // Store cinematic keyframes
+    this.cinematicStartX = this.camera.x
+    this.cinematicStartY = this.camera.y
+    this.cinematicStartZoom = this.camera.zoom
+    this.cinematicEndX = targetX
+    this.cinematicEndY = targetY
+    this.cinematicEndZoom = targetZoom
+    this.cinematicTotalMs = 3000
+
     this.lastTime = performance.now()
     this.loop(this.lastTime)
 
@@ -284,6 +314,16 @@ export class GameInstance {
     if (this.cinematicMs > 0) {
       const dtMs = dt
       this.cinematicMs = Math.max(0, this.cinematicMs - dtMs)
+      // Animate camera: t goes 1→0 as cinematic plays; alpha goes 0→1
+      const t = this.cinematicMs / this.cinematicTotalMs
+      // Ease-in-out: slow start, fast middle, slow end
+      const alpha = 1 - t  // 0 at start, 1 at end
+      const eased = alpha < 0.5
+        ? 2 * alpha * alpha
+        : 1 - Math.pow(-2 * alpha + 2, 2) / 2
+      this.camera.zoom = this.cinematicStartZoom + (this.cinematicEndZoom - this.cinematicStartZoom) * eased
+      this.camera.x = this.cinematicStartX + (this.cinematicEndX - this.cinematicStartX) * eased
+      this.camera.y = this.cinematicStartY + (this.cinematicEndY - this.cinematicStartY) * eased
       const dragRect = this.inputHandler.getDragRect()
       this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect)
       this.rafId = requestAnimationFrame(this.loop)
