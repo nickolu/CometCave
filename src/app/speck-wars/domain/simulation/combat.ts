@@ -172,7 +172,34 @@ export function resolveCombat(sim: SimulationState, dt: number) {
             sim.events.push({ type: 'HERO_DIED', ownerId: jMeta.ownerId, kills: jMeta.kills })
             sim.heroRespawnTimer[jMeta.ownerId] = 15000
           }
+          // When commander is killed, set commanderRespawnMs
+          if (jMeta.isCommander) {
+            const ownerPlayer = sim.players[jMeta.ownerId]
+            if (ownerPlayer) ownerPlayer.commanderRespawnMs = 15000
+            sim.events.push({ type: 'COMMANDER_DIED', ownerId: jMeta.ownerId, xp: jMeta.commanderXp ?? 0 })
+          }
           sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[j], x: speckX[j], y: speckY[j], killedOwnerId: jMeta.ownerId, killerOwnerId: meta.ownerId })
+          // Commander XP: award XP to commanders within 150px of the kill
+          {
+            const COMMANDER_XP_RANGE = 150
+            const xpR2 = COMMANDER_XP_RANGE * COMMANDER_XP_RANGE
+            for (let k = 0; k < sim.speckCount; k++) {
+              const cm = sim.speckMeta[k]
+              if (!cm?.isCommander || sim.speckHp[k] <= 0) continue
+              if (cm.ownerId === jMeta.ownerId) continue  // don't award XP for killing own team
+              const cdx = sim.speckX[k] - sim.speckX[j]
+              const cdy = sim.speckY[k] - sim.speckY[j]
+              if (cdx * cdx + cdy * cdy <= xpR2) {
+                cm.commanderXp = (cm.commanderXp ?? 0) + 1
+                const newLevel = (cm.commanderXp ?? 0) >= 15 ? 3 : (cm.commanderXp ?? 0) >= 5 ? 2 : 0
+                if (newLevel > (cm.commanderLevel ?? 0)) {
+                  cm.commanderLevel = newLevel as 0 | 1 | 2 | 3
+                  if (cm.pulseTimer === undefined) cm.pulseTimer = 3000
+                  sim.events.push({ type: 'COMMANDER_LEVEL_UP', ownerId: cm.ownerId, level: newLevel as 2 | 3 })
+                }
+              }
+            }
+          }
           if (meta.kills === 3) {
             sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })
           }
