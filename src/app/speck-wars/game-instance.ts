@@ -221,6 +221,21 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
+      (wx: number, wy: number) => {                                    // P + right-click — patrol
+        const speckIds: string[] = []
+        const useSelection = this.sim.selectedSpeckIds.size > 0
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          if (!this.sim.speckIds[i]) continue
+          const m = this.sim.speckMeta[i]
+          if (!m || m.ownerId !== 'player') continue
+          if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
+          speckIds.push(m.id)
+        }
+        if (speckIds.length === 0) return
+        this.sim.inputQueue.push({ type: 'SET_PATROL', ownerId: 'player', speckIds, destX: wx, destY: wy })
+        this.renderer.showRallyPing(wx, wy)
+        this.notify('◎ PATROL', '#a0d0ff', 900)
+      },
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },

@@ -30,6 +30,7 @@ export class InputHandler {
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
+  private onPatrol?: (worldX: number, worldY: number) => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -71,6 +72,7 @@ export class InputHandler {
     onStop?: () => void,
     onHold?: () => void,
     onAttackMove?: (worldX: number, worldY: number) => void,
+    onPatrol?: (worldX: number, worldY: number) => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -97,6 +99,7 @@ export class InputHandler {
     this.onStop = onStop
     this.onHold = onHold
     this.onAttackMove = onAttackMove
+    this.onPatrol = onPatrol
     this.attach()
   }
 
@@ -210,7 +213,7 @@ export class InputHandler {
     }
 
     if (e.button === 2 && dist < 5) {
-      // Right-click: issue move or attack-move command
+      // Right-click: issue move, attack-move, or patrol command
       const rect = this.canvas.getBoundingClientRect()
       const sx = e.clientX - rect.left
       const sy = e.clientY - rect.top
@@ -219,10 +222,12 @@ export class InputHandler {
         this.onAttackMove?.(world.x, world.y)
         this.pendingModifier = 'none'
         if (this.canvas) this.canvas.style.cursor = 'default'
+      } else if (this.pendingModifier === 'patrol') {
+        this.onPatrol?.(world.x, world.y)
+        this.pendingModifier = 'none'
+        if (this.canvas) this.canvas.style.cursor = 'default'
       } else {
-        // 'none' or 'patrol' (stub patrol as move for now)
         this.onRally?.(world.x, world.y)
-        if (this.pendingModifier === 'patrol') this.pendingModifier = 'none'
       }
       return
     }

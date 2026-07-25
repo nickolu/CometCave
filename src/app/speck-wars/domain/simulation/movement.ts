@@ -93,6 +93,16 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         if (dist > stype.attackRange) {
           ax += (dx / dist) * stype.speed
           ay += (dy / dist) * stype.speed
+        } else if (meta.patrolDestX !== undefined && meta.patrolOriginX !== undefined) {
+          // Arrived at patrol leg — swap origin and destination to bounce back
+          const newDestX = meta.patrolOriginX
+          const newDestY = meta.patrolOriginY!
+          meta.patrolOriginX = meta.patrolDestX
+          meta.patrolOriginY = meta.patrolDestY!
+          meta.patrolDestX = newDestX
+          meta.patrolDestY = newDestY
+          meta.assignedRallyX = newDestX
+          meta.assignedRallyY = newDestY
         }
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
