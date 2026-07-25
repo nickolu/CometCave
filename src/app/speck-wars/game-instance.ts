@@ -79,7 +79,9 @@ export class GameInstance {
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
     const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality(), adaptiveEnabled)
+    const personality = aiPersonality()
+    useSpeckWarsStore.getState().setAiPersonality(personality)
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, personality, adaptiveEnabled)
   }
 
   private onVisibilityChange = () => {
@@ -242,6 +244,7 @@ export class GameInstance {
         this.camera.y = this.canvas.clientHeight / 2 - wy * this.camera.zoom
         clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
       },
+      patrol: () => { this.notify('P + right-click to set patrol destination', '#44ffaa', 2000) },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
