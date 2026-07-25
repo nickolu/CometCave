@@ -370,7 +370,6 @@ function consumeInputs(sim: SimulationState) {
         meta.assignedRallyX = event.destX
         meta.assignedRallyY = event.destY
         meta.holdPosition = false
-        meta.attackMoveMode = false
         meta.state = 'moving'
       }
     }
