@@ -281,15 +281,33 @@ export function HUD() {
                   : b.ownerId === 'ai' ? colorHex(AI_COLOR)
                   : '#888888'
                 const r = b.typeId === 'base' ? 4 : 2.5
+                const ci = b.typeId === 'outpost' ? (hud.captureInfo?.[b.id] ?? null) : null
+                const bx = b.x * SCALE
+                const by = b.y * SCALE
                 return (
-                  <circle
-                    key={b.id}
-                    cx={b.x * SCALE}
-                    cy={b.y * SCALE}
-                    r={r}
-                    fill={fill}
-                    opacity={0.9}
-                  />
+                  <g key={b.id}>
+                    <circle
+                      cx={bx}
+                      cy={by}
+                      r={r}
+                      fill={fill}
+                      opacity={0.9}
+                    />
+                    {ci && ci.progress > 0 && (() => {
+                      const sideColor = ci.side === 'player' ? '#4af7c4' : '#ff5555'
+                      return (
+                        <circle
+                          cx={bx} cy={by}
+                          r={4 + ci.progress * 3}
+                          fill="none"
+                          stroke={sideColor}
+                          strokeWidth={1}
+                          opacity={0.8 - ci.progress * 0.3}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )
+                    })()}
+                  </g>
                 )
               })}
               {/* Rally point crosshair */}
@@ -300,6 +318,17 @@ export function HUD() {
                   <g>
                     <line x1={rx - 4} y1={ry} x2={rx + 4} y2={ry} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
                     <line x1={rx} y1={ry - 4} x2={rx} y2={ry + 4} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
+                  </g>
+                )
+              })()}
+              {/* AI rally point crosshair */}
+              {hud.minimap.aiRallyPoint && (() => {
+                const ax = hud.minimap.aiRallyPoint.x * SCALE
+                const ay = hud.minimap.aiRallyPoint.y * SCALE
+                return (
+                  <g>
+                    <line x1={ax - 5} y1={ay} x2={ax + 5} y2={ay} stroke="rgba(255,80,80,0.7)" strokeWidth={1.5} />
+                    <line x1={ax} y1={ay - 5} x2={ax} y2={ay + 5} stroke="rgba(255,80,80,0.7)" strokeWidth={1.5} />
                   </g>
                 )
               })()}
@@ -339,15 +368,33 @@ export function HUD() {
                   : b.ownerId === 'ai' ? colorHex(AI_COLOR)
                   : '#888888'
                 const r = b.typeId === 'base' ? 4 : 2.5
+                const ci = b.typeId === 'outpost' ? (hud.captureInfo?.[b.id] ?? null) : null
+                const bx = b.x * SCALE
+                const by = b.y * SCALE
                 return (
-                  <circle
-                    key={b.id}
-                    cx={b.x * SCALE}
-                    cy={b.y * SCALE}
-                    r={r}
-                    fill={fill}
-                    opacity={0.9}
-                  />
+                  <g key={b.id}>
+                    <circle
+                      cx={bx}
+                      cy={by}
+                      r={r}
+                      fill={fill}
+                      opacity={0.9}
+                    />
+                    {ci && ci.progress > 0 && (() => {
+                      const sideColor = ci.side === 'player' ? '#4af7c4' : '#ff5555'
+                      return (
+                        <circle
+                          cx={bx} cy={by}
+                          r={4 + ci.progress * 3}
+                          fill="none"
+                          stroke={sideColor}
+                          strokeWidth={1}
+                          opacity={0.8 - ci.progress * 0.3}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )
+                    })()}
+                  </g>
                 )
               })}
               {/* Rally point crosshair */}
@@ -358,6 +405,17 @@ export function HUD() {
                   <g>
                     <line x1={rx - 4} y1={ry} x2={rx + 4} y2={ry} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
                     <line x1={rx} y1={ry - 4} x2={rx} y2={ry + 4} stroke="#ffffff" strokeWidth={1} opacity={0.6} />
+                  </g>
+                )
+              })()}
+              {/* AI rally point crosshair */}
+              {hud.minimap.aiRallyPoint && (() => {
+                const ax = hud.minimap.aiRallyPoint.x * SCALE
+                const ay = hud.minimap.aiRallyPoint.y * SCALE
+                return (
+                  <g>
+                    <line x1={ax - 5} y1={ay} x2={ax + 5} y2={ay} stroke="rgba(255,80,80,0.7)" strokeWidth={1.5} />
+                    <line x1={ax} y1={ay - 5} x2={ax} y2={ay + 5} stroke="rgba(255,80,80,0.7)" strokeWidth={1.5} />
                   </g>
                 )
               })()}
