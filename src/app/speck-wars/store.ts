@@ -50,6 +50,10 @@ interface SpeckWarsStore {
   setPeakEliteCount: (n: number) => void
   peakLegendCount: number
   setPeakLegendCount: (n: number) => void
+  surgesUsed: number
+  addSurgeUsed: () => void
+  sacrificesUsed: number
+  addSacrificeUsed: () => void
   outpostsCaptured: number
   addOutpostCaptured: () => void
   isNewBest: boolean
@@ -111,6 +115,10 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setPeakEliteCount: n => set(s => ({ peakEliteCount: Math.max(s.peakEliteCount, n) })),
   peakLegendCount: 0,
   setPeakLegendCount: n => set(s => ({ peakLegendCount: Math.max(s.peakLegendCount, n) })),
+  surgesUsed: 0,
+  addSurgeUsed: () => set(s => ({ surgesUsed: s.surgesUsed + 1 })),
+  sacrificesUsed: 0,
+  addSacrificeUsed: () => set(s => ({ sacrificesUsed: s.sacrificesUsed + 1 })),
   outpostsCaptured: 0,
   addOutpostCaptured: () => set(s => ({ outpostsCaptured: s.outpostsCaptured + 1 })),
   isNewBest: false,
@@ -152,6 +160,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     peakVeteranCount: 0,
     peakEliteCount: 0,
     peakLegendCount: 0,
+    surgesUsed: 0,
+    sacrificesUsed: 0,
     outpostsCaptured: 0,
     killFeed: [],
     aiPersonality: null,

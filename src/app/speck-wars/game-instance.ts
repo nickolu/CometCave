@@ -865,6 +865,7 @@ export class GameInstance {
 
   surge() {
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
+    useSpeckWarsStore.getState().addSurgeUsed()
   }
 
   private sacrifice() {
@@ -876,6 +877,7 @@ export class GameInstance {
       return
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
+    useSpeckWarsStore.getState().addSacrificeUsed()
   }
 
   enterBuildMode(buildingTypeId: string) {
