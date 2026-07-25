@@ -108,11 +108,6 @@ export class GameInstance {
         if (this.sim.selectedBuildingId) {
           this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
           this.renderer.showRallyPing(wx, wy)
-          if (this.attackMovePending) {
-            this.attackMovePending = false
-            if (this.canvas) this.canvas.style.cursor = 'default'
-            this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
-          }
           return
         }
 
