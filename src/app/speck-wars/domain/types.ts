@@ -56,7 +56,7 @@ export interface Player {
   totalKills: number           // cumulative kills for upgrade milestones
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
-  creepCampBoostMs: number     // ms of +25% spawn boost remaining from creep camp capture
+  creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -153,6 +153,7 @@ export interface HudData {
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean
+  creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
