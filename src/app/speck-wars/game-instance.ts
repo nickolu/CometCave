@@ -222,10 +222,12 @@ export class GameInstance {
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
     )
+    this.inputHandler.onGuard = () => { this.guard(); this.notify('⬡ GUARD', '#4af7c4') }
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
+      guard: () => { this.guard(); this.notify('⬡ GUARD', '#4af7c4') },
       clearRally: () => this.clearRally(),
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
@@ -712,6 +714,21 @@ export class GameInstance {
   defend() {
     const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
     if (base) this.rally(base.x, base.y)
+  }
+
+  guard() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    const friendlyOutposts = Object.values(this.sim.buildings)
+      .filter(b => b.ownerId === 'player' && b.typeId === 'outpost')
+    if (friendlyOutposts.length === 0) return
+    const refX = playerBase?.x ?? 0
+    const refY = playerBase?.y ?? 0
+    const nearest = friendlyOutposts.reduce((best, b) => {
+      const dBest = (best.x - refX) ** 2 + (best.y - refY) ** 2
+      const dCur = (b.x - refX) ** 2 + (b.y - refY) ** 2
+      return dCur < dBest ? b : best
+    })
+    this.rally(nearest.x, nearest.y)
   }
 
   advance() {

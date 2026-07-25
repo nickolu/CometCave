@@ -22,6 +22,7 @@ export class InputHandler {
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
   private onSacrifice?: () => void
+  onGuard?: () => void
   private onSaveControlGroup?: (slot: number) => void
   private onRecallControlGroup?: (slot: number) => void
   private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
@@ -375,6 +376,8 @@ export class InputHandler {
       this.onSelectAll?.()
     } else if (e.code === 'KeyF') {
       this.onSacrifice?.()
+    } else if (e.code === 'KeyG') {
+      this.onGuard?.()
     } else if (['Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)) {
       const slot = parseInt(e.code.replace('Digit', ''))
       if (e.ctrlKey) {
