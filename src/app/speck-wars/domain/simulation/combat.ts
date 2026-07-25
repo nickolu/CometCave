@@ -128,6 +128,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     if (!meta.targetId) continue
     const building = buildings[meta.targetId]
     if (!building) continue
+    if (building.ownerId === meta.ownerId) { meta.targetId = null; continue }  // stale target after ownership change
 
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype || meta.attackCooldown > 0) continue
