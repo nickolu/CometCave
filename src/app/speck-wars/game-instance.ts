@@ -219,7 +219,7 @@ export class GameInstance {
       () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
       (wx: number, wy: number) => {                                    // A + right-click — attack-move
-        this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
+        this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
