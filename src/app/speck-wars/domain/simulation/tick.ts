@@ -4,6 +4,7 @@ import { updateSpawners, spawnCampDefenders, spawnCommander } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
+import { updateUnitAbilities } from './unit-abilities'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
@@ -49,6 +50,8 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     if (sim.speckHp[i] / maxHp < 0.25) {
       meta.state = 'retreating'
       meta.targetId = null
+      // Scout Cloak: scouts become untargetable for 2000ms when retreating
+      if (meta.typeId === 'scout') meta.cloakTimer = 2000
     }
   }
 
@@ -61,6 +64,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 6a. Hero abilities (AoE pulse for level 2 Commanders)
   updateHeroAbilities(sim, dt)
+
+  // 6b. Unit type abilities: tick chargeTimer (heavy) and cloakTimer (scout)
+  updateUnitAbilities(sim, dt)
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
