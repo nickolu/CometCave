@@ -61,6 +61,8 @@ export function updateCapture(sim: SimulationState, dt: number) {
       building.captureSide = null
       // Reset spawn timer so it starts fresh for the new owner
       building.spawnTimer = 0
+      // Clear previous owner's rally — new owner should not inherit it
+      building.rallyPoint = null
       sim.events.push({
         type: 'OUTPOST_CAPTURED',
         outpostId: building.id,
