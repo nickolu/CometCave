@@ -136,8 +136,11 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         }
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
-        // AI specks are more aggressive and hunt at a wider range than player specks
-        const AGGRO_RANGE = meta.ownerId === 'player' ? 40 : 120  // px
+        // Aggro range is determined by owner stance; AI uses a fixed 120px default
+        const playerStance = sim.players[meta.ownerId]?.stance ?? 'defensive'
+        const AGGRO_RANGE = playerStance === 'hold' ? 0
+          : playerStance === 'aggressive' ? 150
+          : meta.ownerId === 'player' ? 40 : 120  // defensive/default
         const aggroR2 = AGGRO_RANGE * AGGRO_RANGE
         let closestDist2 = Infinity, closestX = 0, closestY = 0
         const neighbors = spatialGrid.query(speckX[i], speckY[i])

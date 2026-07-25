@@ -405,6 +405,10 @@ function consumeInputs(sim: SimulationState) {
         meta.state = 'moving'
       }
     }
+    if (event.type === 'SET_STANCE') {
+      const p = sim.players[event.ownerId]
+      if (p) p.stance = event.stance
+    }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue
       const building = sim.buildings[event.buildingId]

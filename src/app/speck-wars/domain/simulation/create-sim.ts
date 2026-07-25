@@ -44,14 +44,17 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const player: Player = {
     id: 'player', name: 'Player',
     color: PLAYER_COLOR, isAI: false, isDefeated: false, stockpile: {},
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
   }
   const ai: Player = {
     id: 'ai', name: 'AI',
     color: AI_COLOR, isAI: true, isDefeated: false, stockpile: {},
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
   }
   const neutral: Player = {
     id: 'neutral', name: 'Neutral',
     color: NEUTRAL_COLOR, isAI: false, isDefeated: false, stockpile: {},
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
   }
 
   const JITTER = 150  // ± px of positional variation per game
