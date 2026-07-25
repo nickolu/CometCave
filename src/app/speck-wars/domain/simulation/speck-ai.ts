@@ -40,6 +40,7 @@ export function runSpeckAI(sim: SimulationState) {
         meta.constructTargetId = null
       } else {
         meta.state = 'moving'
+        meta.targetId = null  // don't chase enemy buildings while marching to construction site
         meta.assignedRallyX = target.x
         meta.assignedRallyY = target.y
       }
