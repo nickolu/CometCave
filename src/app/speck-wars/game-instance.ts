@@ -79,7 +79,9 @@ export class GameInstance {
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
     const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality(), adaptiveEnabled)
+    const personality = aiPersonality()
+    useSpeckWarsStore.getState().setAiPersonality(personality)
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, personality, adaptiveEnabled)
   }
 
   private onVisibilityChange = () => {
