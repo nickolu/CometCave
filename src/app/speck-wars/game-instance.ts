@@ -146,7 +146,10 @@ export class GameInstance {
       },
       (slot: number) => {                                               // 4-9 — recall control group
         const saved = this.controlGroups.get(slot)
-        if (!saved || saved.length === 0) return
+        if (!saved || saved.length === 0) {
+          this.notify(`Group ${slot} empty`, '#666666', 700)
+          return
+        }
         // Filter to living specks
         const aliveIds = new Set<string>()
         for (let i = 0; i < this.sim.speckCount; i++) {
@@ -157,6 +160,8 @@ export class GameInstance {
           if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
         }
         this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+        const recalledCount = this.sim.selectedSpeckIds.size
+        this.notify(`★ Group ${slot} — ${recalledCount} specks`, '#4af7c4', 900)
       },
       () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
