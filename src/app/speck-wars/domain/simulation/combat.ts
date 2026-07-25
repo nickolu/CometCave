@@ -87,6 +87,34 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           }
         }
         speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * fortifyBonus
+        // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
+        // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
+        const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0
+        if (splashRadius > 0) {
+          const splashDamage = stype.damage * moraleMult(meta.ownerId) * veteranBonus * (meta.kills >= 12 ? 0.75 : 0.50)
+          const splashNeighbors = spatialGrid.query(speckX[j], speckY[j])
+          for (const k of splashNeighbors) {
+            if (k === j || k === i) continue   // skip primary target and attacker
+            if (speckHp[k] <= 0) continue
+            const kMeta = speckMeta[k]
+            if (!kMeta || kMeta.ownerId === meta.ownerId) continue   // friendly
+            const sdx = speckX[k] - speckX[j]
+            const sdy = speckY[k] - speckY[j]
+            if (sdx * sdx + sdy * sdy <= splashRadius * splashRadius) {
+              speckHp[k] -= splashDamage
+              if (speckHp[k] <= 0) {
+                if (kMeta.ownerId === 'player' && kMeta.kills >= 3) {
+                  sim.events.push({ type: 'VETERAN_FALLEN', speckId: speckIds[k], ownerId: kMeta.ownerId, kills: kMeta.kills, x: speckX[k], y: speckY[k] })
+                }
+                sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[k], x: speckX[k], y: speckY[k], killedOwnerId: kMeta.ownerId, killerOwnerId: meta.ownerId })
+                meta.kills++
+                if (meta.kills === 3) sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })
+                if (meta.kills === 6) sim.events.push({ type: 'SPECK_ELITE', speckId: speckIds[i], ownerId: meta.ownerId })
+                if (meta.kills === 12) sim.events.push({ type: 'SPECK_LEGEND', speckId: speckIds[i], ownerId: meta.ownerId })
+              }
+            }
+          }
+        }
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
         // die_on_impact: missile self-destructs after dealing damage

@@ -117,3 +117,15 @@ export function updateLifetimeStats(kills: number, currentStreak: number) {
   }
   localStorage.setItem(LIFETIME_KEY, JSON.stringify(next))
 }
+
+const VETERAN_TIP_KEY = 'speck-wars-veteran-tip-seen'
+
+export function hasSeenVeteranTip(): boolean {
+  if (typeof window === 'undefined') return true
+  return !!localStorage.getItem(VETERAN_TIP_KEY)
+}
+
+export function markVeteranTipSeen() {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(VETERAN_TIP_KEY, '1')
+}
