@@ -54,6 +54,8 @@ export class GameInstance {
   private lastAdvanceIdx = 0
   private cinematicMs = 0
   private pendingBuild: string | null = null  // building type ID awaiting placement click
+  private killFeedKillAt = 0    // last time we pushed a kill entry
+  private killFeedLossAt = 0    // last time we pushed a loss entry
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -268,6 +270,7 @@ export class GameInstance {
       const scaledDt = dt * store.speed
       this.elapsedMs += scaledDt
       store.setElapsedMs(this.elapsedMs)
+      store.pruneKillFeed()
       this.aiController.update(this.sim, scaledDt)
       this.sim = tick(this.sim, scaledDt)
 
@@ -356,6 +359,7 @@ export class GameInstance {
               this.outpostHpWarnedAt[buildingId] = now
               const name = buildingId.replace('outpost-', '').toUpperCase()
               this.notify(`⬡ ${name} HP CRITICAL!`, '#ff2200', 2500)
+              store.pushKillFeedEntry({ icon: '🏗', label: `${name} critical`, color: '#ff2200' })
             }
           }
           // Triple outpost notification: fire when ownership of all 3 outposts changes hands
@@ -400,6 +404,10 @@ export class GameInstance {
           if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') {
             store.addKill()
             const nowTs = Date.now()
+            if (nowTs - this.killFeedKillAt > 700) {
+              this.killFeedKillAt = nowTs
+              store.pushKillFeedEntry({ icon: '⚔', label: 'enemy down', color: '#4af7c4' })
+            }
             // Combo detection: 3+ kills within 2s
             this.recentKillTimes.push(nowTs)
             this.recentKillTimes = this.recentKillTimes.filter(t => nowTs - t < 2000)
@@ -420,7 +428,14 @@ export class GameInstance {
             if (milestones[k]) {
               this.notify(milestones[k].message, milestones[k].color, 2000)
             }
-          } else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') store.addLoss()
+          } else if (event.killedOwnerId === 'player' && event.killerOwnerId === 'ai') {
+            store.addLoss()
+            const nowTs2 = Date.now()
+            if (nowTs2 - this.killFeedLossAt > 500) {
+              this.killFeedLossAt = nowTs2
+              store.pushKillFeedEntry({ icon: '💀', label: 'ally lost', color: '#ff4f7b' })
+            }
+          }
           if (!this.firstBloodDone) {
             this.firstBloodDone = true
             const playerGotIt = event.killerOwnerId === 'player'
@@ -500,6 +515,10 @@ export class GameInstance {
               : `⬡ ${outpostName} CAPTURED`
             const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
             this.notify(message, color, 2500)
+            store.pushKillFeedEntry({ icon: '⬡', label: message.replace('⬡ ', ''), color })
+          } else if (event.newOwner === 'ai' && event.previousOwner === 'neutral') {
+            const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
+            store.pushKillFeedEntry({ icon: '⬡', label: `${outpostName} → enemy`, color: '#ff8844' })
           }
           // Track capture combos
           if (event.newOwner === 'player') {

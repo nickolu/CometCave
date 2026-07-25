@@ -5,6 +5,14 @@ import { resetWinStreak, recordGameResult } from './lib/personal-best'
 type GamePhase = 'menu' | 'playing' | 'paused' | 'victory' | 'defeat'
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'very-hard'
 
+export interface KillFeedEntry {
+  id: number
+  ts: number
+  icon: string
+  label: string
+  color: string
+}
+
 interface SpeckWarsStore {
   phase: GamePhase
   setPhase: (phase: GamePhase) => void
@@ -38,6 +46,9 @@ interface SpeckWarsStore {
   addOutpostCaptured: () => void
   isNewBest: boolean
   setIsNewBest: (v: boolean) => void
+  killFeed: KillFeedEntry[]
+  pushKillFeedEntry: (entry: Omit<KillFeedEntry, 'id' | 'ts'>) => void
+  pruneKillFeed: () => void
   gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; buildTurret?: (() => void) | null }
   setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; buildTurret?: () => void } | null) => void
   surrender: () => void
@@ -88,6 +99,17 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   addOutpostCaptured: () => set(s => ({ outpostsCaptured: s.outpostsCaptured + 1 })),
   isNewBest: false,
   setIsNewBest: v => set({ isNewBest: v }),
+  killFeed: [],
+  pushKillFeedEntry: entry => set(s => {
+    const id = Date.now() + Math.random()
+    const next = [{ ...entry, id, ts: Date.now() }, ...s.killFeed].slice(0, 6)
+    return { killFeed: next }
+  }),
+  pruneKillFeed: () => set(s => {
+    const cutoff = Date.now() - 4500
+    const next = s.killFeed.filter(e => e.ts > cutoff)
+    return next.length === s.killFeed.length ? s : { killFeed: next }
+  }),
   gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null },
   setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null } }),
   surrender: () => {
@@ -110,6 +132,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     isNewBest: false,
     peakArmySize: 0,
     outpostsCaptured: 0,
+    killFeed: [],
     difficulty: s.difficulty,
   })),
 }))
