@@ -180,6 +180,11 @@ export class GameInstance {
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
         this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
       },
+      panCamera: (wx: number, wy: number) => {
+        this.camera.x = this.canvas.clientWidth / 2 - wx * this.camera.zoom
+        this.camera.y = this.canvas.clientHeight / 2 - wy * this.camera.zoom
+        clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
+      },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
