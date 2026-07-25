@@ -440,18 +440,19 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
-    let veteranCount = 0, eliteCount = 0
+    let veteranCount = 0, eliteCount = 0, legendCount = 0
     const speckTypes: Record<string, number> = {}
     for (let i = 0; i < sim.speckCount; i++) {
       const m = sim.speckMeta[i]
       if (m && m.ownerId === pid) {
         liveCount++
         speckTypes[m.typeId] = (speckTypes[m.typeId] ?? 0) + 1
-        if (m.kills >= 6) eliteCount++
+        if (m.kills >= 12) legendCount++
+        else if (m.kills >= 6) eliteCount++
         else if (m.kills >= 3) veteranCount++
       }
     }
@@ -462,6 +463,7 @@ function emitHudUpdate(sim: SimulationState) {
       speckTypes,
       veteranCount,
       eliteCount,
+      legendCount,
     }
   }
   // Buildings that are owned but actively being captured by the enemy
@@ -579,18 +581,19 @@ function emitHudUpdate(sim: SimulationState) {
   if (baseUnderThreat) enemyAdvanceDetected = false
 
   // Selection composition breakdown
-  let selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number } | null = null
+  let selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number } | null = null
   if (sim.selectedSpeckIds.size > 0) {
     const types: Record<string, number> = {}
-    let selVet = 0, selElite = 0
+    let selVet = 0, selElite = 0, selLegend = 0
     for (let i = 0; i < sim.speckCount; i++) {
       const m = sim.speckMeta[i]
       if (!m || !sim.speckIds[i] || !sim.selectedSpeckIds.has(sim.speckIds[i])) continue
       types[m.typeId] = (types[m.typeId] ?? 0) + 1
-      if (m.kills >= 6) selElite++
+      if (m.kills >= 12) selLegend++
+      else if (m.kills >= 6) selElite++
       else if (m.kills >= 3) selVet++
     }
-    selectedComposition = { types, veteranCount: selVet, eliteCount: selElite }
+    selectedComposition = { types, veteranCount: selVet, eliteCount: selElite, legendCount: selLegend }
   }
 
   let selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null = null

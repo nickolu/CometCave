@@ -1038,8 +1038,9 @@ export function HUD() {
                 </div>
               ))
             }
-            {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0) && (
+            {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0 || hud.selectedComposition.legendCount > 0) && (
               <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
+                {hud.selectedComposition.legendCount > 0 && <span style={{ color: '#cc44ff' }}>{`✦✦ ${hud.selectedComposition.legendCount} legend  `}</span>}
                 {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
                 {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
               </div>
@@ -1307,13 +1308,17 @@ export function HUD() {
                 </div>
               )
             })()}
-            {/* Veteran / elite count */}
+            {/* Veteran / elite / legend count */}
             {(() => {
               const vets = hud.players.player?.veteranCount ?? 0
               const elites = hud.players.player?.eliteCount ?? 0
-              if (vets + elites === 0) return null
+              const legends = hud.players.player?.legendCount ?? 0
+              if (vets + elites + legends === 0) return null
               return (
                 <div style={{ display: 'flex', gap: 8, fontSize: 9, letterSpacing: 0.5 }}>
+                  {legends > 0 && (
+                    <span style={{ color: '#cc44ff', opacity: 0.9 }}>✦✦ {legends} legend</span>
+                  )}
                   {elites > 0 && (
                     <span style={{ color: '#ffffff', opacity: 0.8 }}>✦ {elites} elite</span>
                   )}
