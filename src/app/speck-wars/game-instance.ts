@@ -624,6 +624,15 @@ export class GameInstance {
       shakeX = (Math.random() * 2 - 1) * s
       shakeY = (Math.random() * 2 - 1) * s
     }
+    // Update ghost building preview (shown while placing a turret)
+    if (this.pendingBuild) {
+      const mw = this.inputHandler.getMouseWorld()
+      if (mw) this.renderer.setGhostBuilding(this.pendingBuild, mw.x, mw.y)
+      else this.renderer.setGhostBuilding(null, 0, 0)
+    } else {
+      this.renderer.setGhostBuilding(null, 0, 0)
+    }
+
     const dragRect = this.inputHandler.getDragRect()
     this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
     this.rafId = requestAnimationFrame(this.loop)

@@ -7,6 +7,7 @@ import { StarfieldLayer } from './layers/starfield-layer'
 import { createSpeckTexture } from './textures'
 import type { SimulationState } from '../domain/types'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
+import { BUILDING_TYPES } from '../domain/config/building-types'
 
 export const PLAYER_COLORS: Record<string, number> = {
   player: PLAYER_COLOR,
@@ -35,6 +36,8 @@ export class Renderer {
   private effectsLayer!: EffectsLayer
   private starfieldLayer!: StarfieldLayer
   private rallyGfx!: Graphics
+  private ghostGfx!: Graphics
+  private ghostBuilding: { typeId: string; x: number; y: number } | null = null
   private selectionGfx!: Graphics
 
   async init(canvas: HTMLCanvasElement) {
@@ -67,8 +70,15 @@ export class Renderer {
     this.rallyGfx = new Graphics()
     this.world.addChild(this.rallyGfx)
 
+    this.ghostGfx = new Graphics()
+    this.world.addChild(this.ghostGfx)
+
     this.selectionGfx = new Graphics()
     this.app.stage.addChild(this.selectionGfx)
+  }
+
+  setGhostBuilding(typeId: string | null, x: number, y: number) {
+    this.ghostBuilding = typeId ? { typeId, x, y } : null
   }
 
   render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null): void {
@@ -149,6 +159,29 @@ export class Renderer {
           }
           this.rallyGfx.lineStyle(0)
         }
+      }
+    }
+
+    // Build mode ghost preview — faint diamond at cursor showing placement position
+    this.ghostGfx.clear()
+    if (this.ghostBuilding) {
+      const { typeId, x, y } = this.ghostBuilding
+      const btype = BUILDING_TYPES[typeId]
+      const r = btype?.size ?? 18
+      const pulse = 0.35 + 0.15 * Math.sin(Date.now() / 400)
+      // Faint filled diamond
+      this.ghostGfx.beginFill(PLAYER_COLOR, pulse * 0.25)
+      this.ghostGfx.drawPolygon([x, y - r, x + r, y, x, y + r, x - r, y])
+      this.ghostGfx.endFill()
+      // Dashed-style outline (drawn as solid, low alpha)
+      this.ghostGfx.lineStyle(1.5, PLAYER_COLOR, pulse * 0.8)
+      this.ghostGfx.drawPolygon([x, y - r, x + r, y, x, y + r, x - r, y])
+      this.ghostGfx.lineStyle(0)
+      // Attack range ring
+      if (btype?.attackRange) {
+        this.ghostGfx.lineStyle(1, PLAYER_COLOR, pulse * 0.2)
+        this.ghostGfx.drawCircle(x, y, btype.attackRange)
+        this.ghostGfx.lineStyle(0)
       }
     }
 
