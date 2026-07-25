@@ -264,6 +264,16 @@ export function HUD() {
                 const worldY = (py / 120) * 3000
                 gameActions.rally(worldX, worldY)
               }}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                if (!gameActions?.panCamera) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const px = e.clientX - rect.left
+                const py = e.clientY - rect.top
+                const worldX = (px / 120) * 3000
+                const worldY = (py / 120) * 3000
+                gameActions.panCamera(worldX, worldY)
+              }}
             >
               {/* Speck dots */}
               {hud.minimap.specks.map((s, i) => (
@@ -611,7 +621,7 @@ export function HUD() {
             <span>S — stop · H — hold position</span><span>C — center on base</span>
             <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-            <span>1/2/3 — set spawn type</span><span>Minimap — click to move</span>
+            <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
             <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
             <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
