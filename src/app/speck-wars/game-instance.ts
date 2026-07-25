@@ -137,7 +137,7 @@ export class GameInstance {
           if (building.ownerId !== 'player') continue
           const btype = BUILDING_TYPES[building.typeId]
           const r = btype?.size ?? 20
-          if (Math.hypot(wx - building.x, wy - building.y) <= r + 5) {
+          if (Math.hypot(wx - building.x, wy - building.y) <= r + 20) {
             this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
             return
           }
