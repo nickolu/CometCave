@@ -255,11 +255,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
     const modifier = hud?.dailyModifier && hud.dailyModifier !== 'standard' ? ` [${hud.dailyModifier.toUpperCase()}]` : ''
+    const { layoutName } = getDailyInfo(difficulty)
     const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
     const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff${peakArmySize > 0 ? ` · peak ${peakArmySize}` : ''}`
     const shareText = won
-      ? `${starStr} Speck Wars ${today}${modifier}\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
-      : `${starStr} Speck Wars ${today}${modifier}\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
+      ? `${starStr} Speck Wars ${today} [${layoutName}]${modifier}\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
+      : `${starStr} Speck Wars ${today} [${layoutName}]${modifier}\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -325,6 +326,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <span>⏱ {timeStr}</span>
           <span style={{ color: diffColor, fontWeight: 'bold', border: `1px solid ${diffColor}`, padding: '2px 10px', borderRadius: 4 }}>
             {diffLabel}
+          </span>
+          <span style={{
+            fontSize: 10, letterSpacing: 1,
+            color: 'rgba(255,255,255,0.3)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '2px 8px', borderRadius: 4,
+          }}>
+            ⬡ {layoutName}
           </span>
           {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
             <span style={{
