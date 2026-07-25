@@ -48,6 +48,7 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
+  const stance = useSpeckWarsStore(s => s.stance)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -504,6 +505,37 @@ export function HUD() {
             </button>
           )
         })}
+        {/* Stance toggle — cycles through aggressive/defensive/hold */}
+        {gameActions?.cycleStance && (() => {
+          const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
+            aggressive: { icon: '⚔', label: 'AGGRO', color: '#ff4f7b', title: '[Z] Aggressive — pursues nearby enemies' },
+            defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — holds position more' },
+            hold:       { icon: '⛨', label: 'HOLD',   color: '#aaaaaa', title: '[Z] Hold — only attacks at melee range' },
+          }
+          const cfg = stanceConfig[stance] ?? stanceConfig.defensive
+          return (
+            <button
+              onClick={gameActions.cycleStance ?? undefined}
+              title={cfg.title}
+              style={{
+                pointerEvents: 'auto',
+                padding: '3px 10px',
+                fontSize: 10,
+                cursor: 'pointer',
+                background: `${cfg.color}18`,
+                border: `1px solid ${cfg.color}66`,
+                borderRadius: 4,
+                color: cfg.color,
+                letterSpacing: 0.5,
+                lineHeight: 1.3,
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontWeight: 700 }}>{cfg.icon} {cfg.label}</div>
+              <div style={{ fontSize: 8, opacity: 0.7 }}>Z</div>
+            </button>
+          )
+        })()}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"

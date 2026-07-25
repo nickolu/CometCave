@@ -280,6 +280,7 @@ export class GameInstance {
       stop: () => this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }),
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
+      cycleStance: () => this.cycleStance(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
@@ -854,6 +855,18 @@ export class GameInstance {
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
     useSpeckWarsStore.getState().addSacrificeUsed()
+  }
+
+  cycleStance() {
+    const current = useSpeckWarsStore.getState().stance
+    const next: 'aggressive' | 'defensive' | 'hold' =
+      current === 'aggressive' ? 'defensive'
+      : current === 'defensive' ? 'hold'
+      : 'aggressive'
+    useSpeckWarsStore.getState().setStance(next)
+    const labels: Record<string, string> = { aggressive: 'AGGRO', defensive: 'DEF', hold: 'HOLD' }
+    const colors: Record<string, string> = { aggressive: '#ff4f7b', defensive: '#4af7c4', hold: '#aaaaaa' }
+    this.notify(`Stance: ${labels[next]}`, colors[next], 1200)
   }
 
   enterBuildMode(buildingTypeId: string) {
