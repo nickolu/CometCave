@@ -1,16 +1,17 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib/personal-best'
+import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
+  const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const { user } = useAuth()
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         hard: getBestTime('hard') ?? undefined,
       })
       setWinStreak(getWinStreak())
+      setLifetimeStats(getLifetimeStats())
     }
   }, [phase])
 
@@ -118,6 +120,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )
           })}
         </div>
+        {lifetimeStats.gamesPlayed > 0 && (
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, letterSpacing: 1, textAlign: 'center' }}>
+            {lifetimeStats.gamesPlayed.toLocaleString()} games · {lifetimeStats.totalKills.toLocaleString()} kills{lifetimeStats.bestStreak >= 2 ? ` · best ${lifetimeStats.bestStreak}-win streak` : ''}
+          </div>
+        )}
         <button
           onClick={() => setPhase('playing')}
           style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold' }}
@@ -338,6 +345,16 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )}
             {peakVeteranCount > 0 && (
               <span style={{ color: '#ffd700', opacity: 0.65 }}>⭐ {peakVeteranCount} veteran{peakVeteranCount !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+        )}
+        {(surgesUsed > 0 || sacrificesUsed > 0) && (
+          <div style={{ display: 'flex', gap: 20, color: 'rgba(255,255,255,0.4)', fontSize: 12, letterSpacing: 0.5 }}>
+            {surgesUsed > 0 && (
+              <span>⚡ {surgesUsed} surge{surgesUsed !== 1 ? 's' : ''}</span>
+            )}
+            {sacrificesUsed > 0 && (
+              <span>☯ {sacrificesUsed} sacrifice{sacrificesUsed !== 1 ? 's' : ''}</span>
             )}
           </div>
         )}

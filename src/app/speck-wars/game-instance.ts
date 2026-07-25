@@ -7,7 +7,7 @@ import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
-import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday } from './lib/personal-best'
+import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
 
 export class GameInstance {
@@ -49,6 +49,8 @@ export class GameInstance {
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
+  private prevSurgeDuration = 0
+  private prevSacrificeCooldown = 0
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -404,12 +406,14 @@ export class GameInstance {
             if (won) {
               const isNew = recordBestTime(s.difficulty, elapsedAtEnd)
               incrementWinStreak()
+              updateLifetimeStats(s.kills, getWinStreak())
               recordGameResult(s.difficulty, true, elapsedAtEnd, s.kills)
               markWonToday(s.difficulty)
               s.setIsNewBest(isNew)
               s.setPhase('victory')
             } else {
               resetWinStreak()
+              updateLifetimeStats(s.kills, 0)
               recordGameResult(s.difficulty, false, elapsedAtEnd, s.kills)
               s.setIsNewBest(false)
               s.setPhase('defeat')
@@ -440,6 +444,16 @@ export class GameInstance {
           store.setPeakVeteranCount(event.data.players.player?.veteranCount ?? 0)
           store.setPeakEliteCount(event.data.players.player?.eliteCount ?? 0)
           store.setPeakLegendCount(event.data.players.player?.legendCount ?? 0)
+          // Surge activation: duration just went from 0 to > 0
+          if (this.prevSurgeDuration === 0 && event.data.surgeDuration > 0) {
+            store.addSurgeUsed()
+          }
+          this.prevSurgeDuration = event.data.surgeDuration
+          // Sacrifice detection: cooldown jumped from ≤ 0 to a large value
+          if (this.prevSacrificeCooldown <= 0 && (event.data.sacrificeCooldown ?? 0) > 1000) {
+            store.addSacrificeUsed()
+          }
+          this.prevSacrificeCooldown = event.data.sacrificeCooldown ?? 0
           // Warn when an enemy starts capturing a player-owned outpost
           const now = Date.now()
           const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
