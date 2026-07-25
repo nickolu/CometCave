@@ -86,8 +86,9 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     aiBase.maxHp = BASE_HP * 2
   }
   if (dailyModifier === 'blitz') {
-    if (playerBase.spawnIntervalOverride !== undefined) playerBase.spawnIntervalOverride *= 0.65
-    aiBase.spawnIntervalOverride = (aiBase.spawnIntervalOverride ?? 800) * 0.65
+    const DEFAULT_BASE_INTERVAL = 800  // BUILDING_TYPES.base.spawnInterval
+    playerBase.spawnIntervalOverride = (playerBase.spawnIntervalOverride ?? DEFAULT_BASE_INTERVAL) * 0.65
+    aiBase.spawnIntervalOverride = (aiBase.spawnIntervalOverride ?? DEFAULT_BASE_INTERVAL) * 0.65
   }
 
   return {
