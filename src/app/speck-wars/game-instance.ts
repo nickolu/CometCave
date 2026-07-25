@@ -8,6 +8,7 @@ import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday } from './lib/personal-best'
+import { BUILDING_TYPES } from './domain/config/building-types'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -92,6 +93,30 @@ export class GameInstance {
       this.canvas,
       this.camera,
       (wx, wy) => {
+        // Check if click hit a player building — select it instead of rallying
+        for (const building of Object.values(this.sim.buildings)) {
+          if (building.ownerId !== 'player') continue
+          const btype = BUILDING_TYPES[building.typeId]
+          const r = btype?.size ?? 20
+          if (Math.hypot(wx - building.x, wy - building.y) <= r + 5) {
+            this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
+            return
+          }
+        }
+
+        // If a building is selected, set its rally point
+        if (this.sim.selectedBuildingId) {
+          this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
+          this.renderer.showRallyPing(wx, wy)
+          if (this.attackMovePending) {
+            this.attackMovePending = false
+            if (this.canvas) this.canvas.style.cursor = 'default'
+            this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
+          }
+          return
+        }
+
+        // Default: global rally for all units
         this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
       },

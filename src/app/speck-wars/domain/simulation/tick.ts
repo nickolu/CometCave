@@ -211,6 +211,22 @@ function consumeInputs(sim: SimulationState) {
     if (event.type === 'CLEAR_SELECT') {
       sim.selectedSpeckIds.clear()
       sim.rallyPoints['player-selected'] = null
+      sim.selectedBuildingId = null
+    }
+    if (event.type === 'SELECT_BUILDING') {
+      if (event.ownerId === 'player') {
+        sim.selectedBuildingId = event.buildingId
+        if (event.buildingId !== null) {
+          // Clear speck selection when selecting a building
+          sim.selectedSpeckIds.clear()
+          sim.rallyPoints['player-selected'] = null
+        }
+      }
+    }
+    if (event.type === 'SET_BUILDING_RALLY') {
+      const building = sim.buildings[event.buildingId]
+      if (!building || building.ownerId !== event.ownerId) continue
+      building.rallyPoint = { x: event.x, y: event.y }
     }
     if (event.type === 'SURGE') {
       if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
