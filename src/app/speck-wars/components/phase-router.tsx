@@ -5,7 +5,7 @@ import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib
 import type { Difficulty } from '../store'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -294,6 +294,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </span>
           )}
         </div>
+
+        {aiPersonality && aiPersonality !== 'balanced' && (
+          <div style={{ fontSize: 10, letterSpacing: 2, opacity: 0.4, color: '#fff', textTransform: 'uppercase' }}>
+            {aiPersonality === 'aggressive' ? '⚡ aggressive AI — frequent base rushes'
+              : 'macro AI — outpost control focus'}
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
           <span style={{ color: '#4af7c4' }}>↑ {kills} killed</span>

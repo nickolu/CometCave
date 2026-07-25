@@ -3,7 +3,7 @@ import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
 import { Renderer } from './rendering/renderer'
-import { createCamera, clampCamera } from './rendering/camera'
+import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
@@ -76,7 +76,9 @@ export class GameInstance {
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
     const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, aiPersonality(), adaptiveEnabled)
+    const personality = aiPersonality()
+    useSpeckWarsStore.getState().setAiPersonality(personality)
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, personality, adaptiveEnabled)
   }
 
   private onVisibilityChange = () => {
@@ -98,6 +100,7 @@ export class GameInstance {
         if (this.pendingBuild) {
           const typeId = this.pendingBuild
           this.pendingBuild = null
+          this.inputHandler?.setPendingBuildActive(false)
           this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
           this.notify('◆ TURRET PLACED', '#ffd700', 1500)
           return
@@ -148,6 +151,7 @@ export class GameInstance {
       () => {                                                          // Escape — clear selection / cancel build mode
         if (this.pendingBuild) {
           this.pendingBuild = null
+          this.inputHandler?.setPendingBuildActive(false)
           this.notify('Build cancelled', '#aaaaaa', 800)
           return
         }
@@ -259,7 +263,13 @@ export class GameInstance {
       const dtMs = dt
       this.cinematicMs = Math.max(0, this.cinematicMs - dtMs)
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect)
+      const _mpos0 = this.inputHandler.getMouseScreenPos()
+      let ghostBuildData0: { typeId: string; wx: number; wy: number } | null = null
+      if (this.pendingBuild && _mpos0) {
+        const w = screenToWorld(_mpos0.x, _mpos0.y, this.camera)
+        ghostBuildData0 = { typeId: this.pendingBuild, wx: w.x, wy: w.y }
+      }
+      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect, ghostBuildData0)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -623,7 +633,13 @@ export class GameInstance {
       shakeY = (Math.random() * 2 - 1) * s
     }
     const dragRect = this.inputHandler.getDragRect()
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
+    const _mpos = this.inputHandler.getMouseScreenPos()
+    let ghostBuildData: { typeId: string; wx: number; wy: number } | null = null
+    if (this.pendingBuild && _mpos) {
+      const w = screenToWorld(_mpos.x, _mpos.y, this.camera)
+      ghostBuildData = { typeId: this.pendingBuild, wx: w.x, wy: w.y }
+    }
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuildData)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
@@ -694,6 +710,7 @@ export class GameInstance {
 
   enterBuildMode(buildingTypeId: string) {
     this.pendingBuild = buildingTypeId
+    this.inputHandler?.setPendingBuildActive(true)
     this.notify('◆ CLICK TO PLACE TURRET', '#ffd700', 3000)
   }
 
