@@ -669,6 +669,8 @@ export class GameInstance {
     const h = this.canvas.clientHeight
     this.camera.x = w / 2 - cx * this.camera.zoom
     this.camera.y = h / 2 - cy * this.camera.zoom
+    clampCamera(this.camera, w, h)
+    this.notify('⚔ Battle', '#ff8844', 700)
   }
 
   private snapToBase() {

@@ -159,6 +159,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'V key snaps the camera to where fighting is happening.',
             'Press ? in-game to see all hotkeys.',
             'Control groups: box-select specks, Ctrl+4 to save, press 4 to recall.',
+            'Hold A then right-click to issue an attack-move — specks fight enemies en route.',
+            'H key makes selected specks hold position — great for defending a chokepoint.',
+            'Elite specks (6+ kills) get a white diamond ring and deal +30% damage.',
           ]
           const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
           return (
