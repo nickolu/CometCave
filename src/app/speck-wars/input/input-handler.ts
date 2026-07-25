@@ -420,7 +420,10 @@ export class InputHandler {
     }
   }
 
-  setPendingBuildActive(active: boolean) { this.pendingBuildActive = active }
+  setPendingBuildActive(active: boolean) {
+    this.pendingBuildActive = active
+    this.canvas.style.cursor = active ? 'crosshair' : 'default'
+  }
   getMouseScreenPos(): { x: number; y: number } | null {
     if (this.mouseX < 0) return null
     return { x: this.mouseX, y: this.mouseY }

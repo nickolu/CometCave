@@ -280,6 +280,9 @@ export class GameInstance {
         this.camera.y = this.canvas.clientHeight / 2 - wy * this.camera.zoom
         clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
       },
+      stop: () => this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }),
+      hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
+      guard: () => this.guard(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
