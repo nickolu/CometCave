@@ -619,7 +619,7 @@ export function HUD() {
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
             <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
             <span>S — stop · H — hold position</span><span>C — center on base</span>
-            <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
+            <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base · G — guard outpost</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
             <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
             <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
@@ -1184,6 +1184,24 @@ export function HUD() {
             }}
           >
             ⚡ B
+          </button>
+          <button
+            onClick={() => gameActions.guard?.()}
+            title="[G] Guard — rally to nearest friendly outpost"
+            style={{
+              padding: '6px 10px',
+              fontSize: 11,
+              cursor: 'pointer',
+              background: 'rgba(68,170,255,0.08)',
+              border: '1px solid rgba(68,170,255,0.4)',
+              borderRadius: 20,
+              color: '#44aaff',
+              letterSpacing: 1,
+              minHeight: 44,
+              fontFamily: 'monospace',
+            }}
+          >
+            ⬡ G
           </button>
           {(() => {
             const surgeActive = (hud?.surgeDuration ?? 0) > 0
