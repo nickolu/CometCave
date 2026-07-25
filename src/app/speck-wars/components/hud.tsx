@@ -650,46 +650,21 @@ export function HUD() {
         )
       })()}
 
-      {/* Triple outpost bonus indicator + domination countdown */}
-      {hud?.tripleOutpostOwner !== null && hud?.tripleOutpostOwner !== undefined && phase === 'playing' && (() => {
-        const isPlayer = hud.tripleOutpostOwner === 'player'
-        const color = isPlayer ? '#ffd700' : '#ff4f7b'
-        const secLeft = hud.dominationProgress != null
-          ? Math.ceil((1 - hud.dominationProgress) * 60)
-          : null
-        return (
-          <div style={{
-            position: 'absolute', top: 100, left: 0, right: 0,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+      {/* Triple outpost bonus indicator */}
+      {hud?.tripleOutpostOwner === 'player' && phase === 'playing' && (
+        <div style={{
+          position: 'absolute', top: 100, left: 0, right: 0,
+          display: 'flex', justifyContent: 'center',
+        }}>
+          <span style={{
+            fontSize: 11, letterSpacing: 2, fontWeight: 'bold',
+            color: '#ffd700', textShadow: '0 0 8px #ffd700',
+            background: 'rgba(0,0,0,0.4)', padding: '2px 10px', borderRadius: 4,
           }}>
-            <span style={{
-              fontSize: 11, letterSpacing: 2, fontWeight: 'bold',
-              color, textShadow: `0 0 8px ${color}`,
-            }}>
-              {isPlayer ? '⬡⬡⬡ TRIPLE CONTROL — SPAWN ×2' : '⬡⬡⬡ ENEMY TRIPLE CONTROL'}
-            </span>
-            {hud.dominationProgress !== null && (
-              <>
-                <div style={{ width: 160, height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${Math.round(hud.dominationProgress * 100)}%`,
-                    background: color,
-                    borderRadius: 2,
-                    boxShadow: `0 0 6px ${color}`,
-                    transition: 'width 0.3s',
-                  }} />
-                </div>
-                {secLeft !== null && (
-                  <span style={{ fontSize: 10, letterSpacing: 1, color, opacity: 0.7 }}>
-                    {isPlayer ? `DOMINATION in ${secLeft}s` : `ENEMY DOMINATES in ${secLeft}s`}
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-        )
-      })()}
+            ⬡ +PROD
+          </span>
+        </div>
+      )}
 
       {/* Cinematic countdown overlay */}
       {countdown !== null && (

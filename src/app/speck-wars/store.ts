@@ -23,8 +23,8 @@ interface SpeckWarsStore {
   setCountdown: (n: number | null) => void
   winnerId: string | null
   setWinnerId: (id: string) => void
-  victoryType: 'destruction' | 'domination' | 'surrender' | null
-  setVictoryType: (t: 'destruction' | 'domination' | 'surrender') => void
+  victoryType: 'destruction' | 'surrender' | null
+  setVictoryType: (t: 'destruction' | 'surrender') => void
   hud: HudData | null
   setHud: (data: HudData) => void
   difficulty: Difficulty

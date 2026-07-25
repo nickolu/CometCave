@@ -38,9 +38,6 @@ export class GameInstance {
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
   private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
   private lastAiSpawnMode: string = 'basic'  // track AI spawn mode changes
-  private dominationCountdownHolder: string | null = null  // who has triple outpost for countdown
-  private dominationWarned10 = false    // notified at 10s remaining
-  private dominationWarned5 = false     // notified at 5s remaining
   private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
   private rallyCryFired = false               // one-time Rally Cry notification per game
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
@@ -330,7 +327,7 @@ export class GameInstance {
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
         { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/scout)', color: '#aaddff' },
-        { delay: 32000, message: '💡 Hold all 3 outposts for 60s to win by domination!', color: '#ffd700' },
+        { delay: 32000, message: '💡 Hold all 3 outposts for 2× production boost!', color: '#ffd700' },
         { delay: 45000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
@@ -485,38 +482,12 @@ export class GameInstance {
           const holder = event.data.tripleOutpostOwner ?? null
           if (holder !== this.lastTripleHolder) {
             if (holder === 'player') {
-              this.notify('⬡ TRIPLE OUTPOST! Hold for 60s to win!', '#ffd700', 4000)
+              this.notify('⬡ TRIPLE OUTPOST! 2× production boost!', '#ffd700', 4000)
             } else if (holder === 'ai' && this.lastTripleHolder !== null) {
               // AI reclaimed triple — only notify if player had just lost it
               this.notify('⬡ ENEMY HAS ALL OUTPOSTS!', '#ff4f7b', 3000)
             }
             this.lastTripleHolder = holder
-          }
-
-          // Domination countdown: warn at 10s and 5s remaining
-          const dp = event.data.dominationProgress ?? null
-          if (holder !== this.dominationCountdownHolder) {
-            // Holder changed — reset countdown flags
-            this.dominationCountdownHolder = holder
-            this.dominationWarned10 = false
-            this.dominationWarned5 = false
-          }
-          if (holder !== null && dp !== null) {
-            const isPlayer = holder === 'player'
-            // 10s left threshold: 50/60 ≈ 0.833
-            if (!this.dominationWarned10 && dp >= 50 / 60) {
-              this.dominationWarned10 = true
-              const msg = isPlayer ? '⬡ DOMINATION IN 10s!' : '⬡ ENEMY DOMINATION IN 10s!'
-              const color = isPlayer ? '#4af7c4' : '#ff4f7b'
-              this.notify(msg, color, 3000)
-            }
-            // 5s left threshold: 55/60 ≈ 0.917
-            if (!this.dominationWarned5 && dp >= 55 / 60) {
-              this.dominationWarned5 = true
-              const msg = isPlayer ? '⬡ DOMINATION IN 5s!' : '⬡ ENEMY DOMINATION IN 5s!'
-              const color = isPlayer ? '#ffd700' : '#ff2200'
-              this.notify(msg, color, 4500)
-            }
           }
         }
         if (event.type === 'SPECK_DIED') {

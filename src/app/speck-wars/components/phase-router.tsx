@@ -195,7 +195,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         {/* Daily tip */}
         {(() => {
           const tips = [
-            'Hold all 3 outposts for 60s to win by Domination.',
+            'Capture outposts to boost your production.',
             'Scouts (3) auto-target outposts — fast but fragile.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s for a combat bonus.',
@@ -289,23 +289,18 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div style={{
               fontSize: 12, letterSpacing: 3, opacity: 0.6,
-              color: victoryType === 'domination' ? '#ffd700' : accentColor,
+              color: accentColor,
               textTransform: 'uppercase',
             }}>
-              {victoryType === 'domination' ? '⬡ by Domination'
-                : victoryType === 'surrender' ? '🏳 Surrendered'
+              {victoryType === 'surrender' ? '🏳 Surrendered'
                 : '💥 by Destruction'}
             </div>
             <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.35, color: '#fff' }}>
               {won
-                ? victoryType === 'domination'
-                  ? 'held all 3 outposts for 60 seconds'
-                  : 'destroyed the enemy base'
+                ? 'destroyed the enemy base'
                 : victoryType === 'surrender'
                   ? 'you chose to give up'
-                  : victoryType === 'domination'
-                    ? 'enemy held all 3 outposts for 60 seconds'
-                    : 'your base was destroyed'
+                  : 'your base was destroyed'
               }
             </div>
           </div>
