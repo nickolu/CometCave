@@ -50,11 +50,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, resetGame, setPhase])
 
-  const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string }> = [
-    { key: 'easy', label: 'Easy', color: '#44ff88' },
-    { key: 'medium', label: 'Medium', color: '#ffcc44' },
-    { key: 'hard', label: 'Hard', color: '#ff4f7b' },
-    { key: 'very-hard', label: 'Brutal', color: '#cc00ff' },
+  const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
+    { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI, relaxed' },
+    { key: 'medium', label: 'Medium', color: '#ffcc44', desc: 'standard challenge' },
+    { key: 'hard', label: 'Hard', color: '#ff4f7b', desc: 'fast AI, high pressure' },
+    { key: 'very-hard', label: 'Brutal', color: '#cc00ff', desc: 'overwhelming flood' },
   ]
 
   if (phase === 'menu') {
@@ -75,7 +75,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 key={d.key}
                 onClick={() => setDifficulty(d.key)}
                 style={{
-                  padding: '8px 20px',
+                  padding: '6px 16px',
                   fontSize: 14,
                   cursor: 'pointer',
                   border: `2px solid ${difficulty === d.key ? d.color : wonToday ? `${d.color}66` : 'rgba(255,255,255,0.2)'}`,
@@ -88,6 +88,16 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 }}
               >
                 {d.label}
+                <span style={{
+                  display: 'block',
+                  fontSize: 9,
+                  fontWeight: 'normal',
+                  opacity: difficulty === d.key ? 0.7 : 0.4,
+                  letterSpacing: 0.3,
+                  marginTop: 2,
+                }}>
+                  {d.desc}
+                </span>
                 {wonToday && (
                   <span style={{
                     position: 'absolute', top: -6, right: -6,
