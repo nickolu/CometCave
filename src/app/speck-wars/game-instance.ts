@@ -216,6 +216,11 @@ export class GameInstance {
         this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
       },
       buildTurret: () => this.enterBuildMode('turret'),
+      panCamera: (wx: number, wy: number) => {
+        this.camera.x = this.canvas.clientWidth / 2 - wx * this.camera.zoom
+        this.camera.y = this.canvas.clientHeight / 2 - wy * this.camera.zoom
+        clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
+      },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
