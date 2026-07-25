@@ -26,6 +26,7 @@ export class InputHandler {
   private onRecallControlGroup?: (slot: number) => void
   private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
   private isPanDragging = false   // middle-mouse only
+  private isRightDragging = false
   private pendingBuildActive = false
   private onStop?: () => void
   private onHold?: () => void
@@ -157,6 +158,7 @@ export class InputHandler {
       this.mouseDownY = e.clientY
       this.lastX = e.clientX
       this.lastY = e.clientY
+      this.isRightDragging = true
     }
   }
 
@@ -165,6 +167,12 @@ export class InputHandler {
     this.mouseX = e.clientX - rect.left
     this.mouseY = e.clientY - rect.top
     if (this.isPanDragging) {
+      this.camera.x += e.clientX - this.lastX
+      this.camera.y += e.clientY - this.lastY
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+    }
+    if (this.isRightDragging) {
       this.camera.x += e.clientX - this.lastX
       this.camera.y += e.clientY - this.lastY
       this.lastX = e.clientX
@@ -209,6 +217,9 @@ export class InputHandler {
       return
     }
 
+    if (e.button === 2) {
+      this.isRightDragging = false
+    }
     if (e.button === 2 && dist < 5) {
       // Right-click: issue move or attack-move command
       const rect = this.canvas.getBoundingClientRect()
@@ -269,7 +280,8 @@ export class InputHandler {
       const dx = e.touches[1].clientX - e.touches[0].clientX
       const dy = e.touches[1].clientY - e.touches[0].clientY
       const newDist = Math.sqrt(dx * dx + dy * dy)
-      const factor = newDist / this.lastPinchDist
+      const rawFactor = newDist / this.lastPinchDist
+      const factor = 1 + (rawFactor - 1) * 0.4  // dampen to 40% of raw pinch speed
       const rect = this.canvas.getBoundingClientRect()
       const mx = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left
       const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
