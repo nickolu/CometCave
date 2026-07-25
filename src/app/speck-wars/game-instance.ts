@@ -179,10 +179,16 @@ export class GameInstance {
       () => { this.snapToAction() },                                        // V — snap camera to battle
       () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
-        useSpeckWarsStore.getState().setSpawnMode(typeId)
-        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const selectedBuildingId = this.sim.selectedBuildingId
+        this.sim.inputQueue.push({
+          type: 'SET_SPAWN_TYPE',
+          ownerId: 'player',
+          speckTypeId: typeId,
+          buildingId: selectedBuildingId ?? undefined,
+        })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
+        this.notify(label, color, 1200)
       },
       () => {                                                           // X — cycle game speed
         useSpeckWarsStore.getState().cycleSpeed()
@@ -221,6 +227,21 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
+      (wx: number, wy: number) => {                                    // P + right-click — patrol
+        const speckIds: string[] = []
+        const useSelection = this.sim.selectedSpeckIds.size > 0
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          if (!this.sim.speckIds[i]) continue
+          const m = this.sim.speckMeta[i]
+          if (!m || m.ownerId !== 'player') continue
+          if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
+          speckIds.push(m.id)
+        }
+        if (speckIds.length === 0) return
+        this.sim.inputQueue.push({ type: 'SET_PATROL', ownerId: 'player', speckIds, destX: wx, destY: wy })
+        this.renderer.showRallyPing(wx, wy)
+        this.notify('◎ PATROL', '#a0d0ff', 900)
+      },
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -231,10 +252,16 @@ export class GameInstance {
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
-        useSpeckWarsStore.getState().setSpawnMode(typeId)
-        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const selectedBuildingId = this.sim.selectedBuildingId
+        this.sim.inputQueue.push({
+          type: 'SET_SPAWN_TYPE',
+          ownerId: 'player',
+          speckTypeId: typeId,
+          buildingId: selectedBuildingId ?? undefined,
+        })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
+        this.notify(label, color, 1200)
       },
       buildTurret: () => this.enterBuildMode('turret'),
       panCamera: (wx: number, wy: number) => {

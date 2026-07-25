@@ -183,6 +183,11 @@ function consumeInputs(sim: SimulationState) {
           meta.assignedRallyY = event.y
           meta.holdPosition = false  // clear hold when a new rally is issued
           meta.attackMoveMode = false  // normal move cancels attack-move
+          // Rally cancels patrol
+          meta.patrolOriginX = undefined
+          meta.patrolOriginY = undefined
+          meta.patrolDestX = undefined
+          meta.patrolDestY = undefined
         }
       } else {
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
@@ -298,6 +303,10 @@ function consumeInputs(sim: SimulationState) {
         meta.holdPosition = false
         meta.attackMoveMode = false
         meta.state = 'idle'
+        meta.patrolOriginX = undefined
+        meta.patrolOriginY = undefined
+        meta.patrolDestX = undefined
+        meta.patrolDestY = undefined
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
@@ -316,6 +325,10 @@ function consumeInputs(sim: SimulationState) {
         meta.holdPosition = true
         meta.attackMoveMode = false
         meta.state = 'holding'
+        meta.patrolOriginX = undefined
+        meta.patrolOriginY = undefined
+        meta.patrolDestX = undefined
+        meta.patrolDestY = undefined
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
@@ -367,6 +380,23 @@ function consumeInputs(sim: SimulationState) {
       // Clear selection after dispatching
       sim.selectedSpeckIds.clear()
       sim.rallyPoints['player-selected'] = null
+    }
+    if (event.type === 'SET_PATROL') {
+      const destSet = new Set(event.speckIds)
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+        if (!destSet.has(meta.id)) continue
+        meta.patrolOriginX = sim.speckX[i]
+        meta.patrolOriginY = sim.speckY[i]
+        meta.patrolDestX = event.destX
+        meta.patrolDestY = event.destY
+        meta.assignedRallyX = event.destX
+        meta.assignedRallyY = event.destY
+        meta.holdPosition = false
+        meta.attackMoveMode = false
+        meta.state = 'moving'
+      }
     }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue

@@ -16,6 +16,10 @@ export interface SpeckMeta {
   attackMoveTargetY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
+  patrolOriginX?: number  // patrol: leg start X (swaps with dest on arrival)
+  patrolOriginY?: number  // patrol: leg start Y
+  patrolDestX?: number    // patrol: leg destination X
+  patrolDestY?: number    // patrol: leg destination Y
 }
 
 export interface BuildingEntity {
@@ -86,7 +90,7 @@ export interface SimulationState {
 export type InputEvent =
   | { type: 'RALLY'; ownerId: string; x: number; y: number }
   | { type: 'ATTACK_MOVE'; ownerId: string; x: number; y: number }
-  | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string }
+  | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string; buildingId?: string }
   | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
@@ -96,6 +100,7 @@ export type InputEvent =
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
+  | { type: 'SET_PATROL'; ownerId: string; speckIds: string[]; destX: number; destY: number }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -139,7 +144,7 @@ export interface HudData {
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number } | null
+  selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]

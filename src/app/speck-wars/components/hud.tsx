@@ -1070,6 +1070,20 @@ export function HUD() {
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                   <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
                 </div>
+                {b.spawnTypeOverride && (
+                  <div style={{ marginTop: 6, fontSize: 11, color: '#aaa' }}>
+                    Producing:{' '}
+                    <span style={{
+                      color: b.spawnTypeOverride === 'heavy' ? '#ff8844'
+                           : b.spawnTypeOverride === 'scout' ? '#50c8ff'
+                           : '#4af7c4',
+                      fontWeight: 600,
+                    }}>
+                      {b.spawnTypeOverride.toUpperCase()}
+                    </span>
+                    <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>
+                  </div>
+                )}
                 <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
                   right-click to set rally
                 </div>
