@@ -130,7 +130,7 @@ export class GameInstance {
           if (building.ownerId !== 'player') continue
           const btype = BUILDING_TYPES[building.typeId]
           const r = btype?.size ?? 20
-          if (Math.hypot(wx - building.x, wy - building.y) <= r + 5) {
+          if (Math.hypot(wx - building.x, wy - building.y) <= r + 20) {
             this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
             return
           }
@@ -219,7 +219,7 @@ export class GameInstance {
       () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
       (wx: number, wy: number) => {                                    // A + right-click — attack-move
-        this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
+        this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
