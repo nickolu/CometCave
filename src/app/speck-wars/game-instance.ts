@@ -188,10 +188,16 @@ export class GameInstance {
       () => { this.snapToAction() },                                        // V — snap camera to battle
       () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
-        useSpeckWarsStore.getState().setSpawnMode(typeId)
-        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const selectedBuildingId = this.sim.selectedBuildingId
+        this.sim.inputQueue.push({
+          type: 'SET_SPAWN_TYPE',
+          ownerId: 'player',
+          speckTypeId: typeId,
+          buildingId: selectedBuildingId ?? undefined,
+        })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
+        this.notify(label, color, 1200)
       },
       () => {                                                           // X — cycle game speed
         useSpeckWarsStore.getState().cycleSpeed()
@@ -255,10 +261,16 @@ export class GameInstance {
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
-        useSpeckWarsStore.getState().setSpawnMode(typeId)
-        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
+        const selectedBuildingId = this.sim.selectedBuildingId
+        this.sim.inputQueue.push({
+          type: 'SET_SPAWN_TYPE',
+          ownerId: 'player',
+          speckTypeId: typeId,
+          buildingId: selectedBuildingId ?? undefined,
+        })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
+        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
+        this.notify(label, color, 1200)
       },
       buildTurret: () => this.enterBuildMode('turret'),
       panCamera: (wx: number, wy: number) => {

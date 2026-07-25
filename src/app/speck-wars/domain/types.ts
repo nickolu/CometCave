@@ -144,7 +144,7 @@ export interface HudData {
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number } | null
+  selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]
