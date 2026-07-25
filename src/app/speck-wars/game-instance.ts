@@ -3,7 +3,7 @@ import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
 import { Renderer } from './rendering/renderer'
-import { createCamera, clampCamera } from './rendering/camera'
+import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
@@ -98,6 +98,7 @@ export class GameInstance {
         if (this.pendingBuild) {
           const typeId = this.pendingBuild
           this.pendingBuild = null
+          this.inputHandler?.setPendingBuildActive(false)
           this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
           this.notify('◆ TURRET PLACED', '#ffd700', 1500)
           return
@@ -148,6 +149,7 @@ export class GameInstance {
       () => {                                                          // Escape — clear selection / cancel build mode
         if (this.pendingBuild) {
           this.pendingBuild = null
+          this.inputHandler?.setPendingBuildActive(false)
           this.notify('Build cancelled', '#aaaaaa', 800)
           return
         }
@@ -623,7 +625,15 @@ export class GameInstance {
       shakeY = (Math.random() * 2 - 1) * s
     }
     const dragRect = this.inputHandler.getDragRect()
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
+    let ghostBuild: { typeId: string; wx: number; wy: number } | null = null
+    if (this.pendingBuild) {
+      const mouse = this.inputHandler.getMouseScreenPos()
+      if (mouse) {
+        const wpos = screenToWorld(mouse.x, mouse.y, this.camera)
+        ghostBuild = { typeId: this.pendingBuild, wx: wpos.x, wy: wpos.y }
+      }
+    }
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
@@ -694,6 +704,7 @@ export class GameInstance {
 
   enterBuildMode(buildingTypeId: string) {
     this.pendingBuild = buildingTypeId
+    this.inputHandler?.setPendingBuildActive(true)
     this.notify('◆ CLICK TO PLACE TURRET', '#ffd700', 3000)
   }
 
