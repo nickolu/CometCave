@@ -168,6 +168,7 @@ function consumeInputs(sim: SimulationState) {
           if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
+          meta.holdPosition = false  // clear hold when a new rally is issued
         }
       } else {
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
@@ -207,6 +208,40 @@ function consumeInputs(sim: SimulationState) {
       if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
         sim.surgeDuration = 8000
         sim.surgeCooldown = 45000
+      }
+    }
+    if (event.type === 'STOP') {
+      // Stop selected specks: clear their assigned rally and targeting, enter idle
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+        const isSelected = sim.selectedSpeckIds.has(meta.id)
+        if (sim.selectedSpeckIds.size > 0 && !isSelected) continue
+        meta.assignedRallyX = undefined
+        meta.assignedRallyY = undefined
+        meta.targetId = null
+        meta.holdPosition = false
+        meta.state = 'idle'
+      }
+      if (event.ownerId === 'player') {
+        sim.rallyPoints['player-selected'] = null
+      }
+    }
+    if (event.type === 'HOLD') {
+      // Hold position: selected specks stop and don't attack
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+        const isSelected = sim.selectedSpeckIds.has(meta.id)
+        if (sim.selectedSpeckIds.size > 0 && !isSelected) continue
+        meta.assignedRallyX = undefined
+        meta.assignedRallyY = undefined
+        meta.targetId = null
+        meta.holdPosition = true
+        meta.state = 'idle'
+      }
+      if (event.ownerId === 'player') {
+        sim.rallyPoints['player-selected'] = null
       }
     }
     if (event.type === 'SACRIFICE') {

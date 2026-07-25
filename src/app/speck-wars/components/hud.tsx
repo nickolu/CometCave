@@ -557,16 +557,17 @@ export function HUD() {
             borderRadius: 8,
             border: '1px solid rgba(255,255,255,0.15)',
           }}>
-            <span>🖱 Click — rally all specks</span><span>Space — pause</span>
-            <span>Scroll — zoom</span><span>R / Right-click — clear rally</span>
-            <span>Drag — box select specks</span><span>1/2/3 — set spawn type</span>
-            <span>E — select all · Esc — clear</span><span>Arrow keys / W S — pan camera</span>
+            <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
+            <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
+            <span>Scroll — zoom</span><span>R — clear rally</span>
+            <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
             <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
-            <span style={{ color: 'rgba(74,247,196,0.7)' }}>Click rally with group → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-            <span>A — attack-move + click · N — advance</span><span>C — center on base</span>
-            <span>B — rush enemy base</span><span>D — defend base</span>
+            <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
+            <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
+            <span>S — stop · H — hold position</span><span>C — center on base</span>
+            <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-            <span>H — snap to home base</span><span>Minimap — click to rally</span>
+            <span>1/2/3 — set spawn type</span><span>Minimap — click to move</span>
             <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
             <span>? — this help</span><span></span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
