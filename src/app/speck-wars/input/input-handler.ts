@@ -116,7 +116,8 @@ export class InputHandler {
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false })
     this.canvas.addEventListener('contextmenu', this.onContextMenu)
     // Touch support
-    this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true })
+    // passive: false required to allow preventDefault() in onTouchStart (blocks browser context menu)
+    this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: false })
     window.addEventListener('touchmove', this.onTouchMove, { passive: false })
     window.addEventListener('touchend', this.onTouchEnd)
     window.addEventListener('keydown', this.onKeyDown)
@@ -268,6 +269,8 @@ export class InputHandler {
   }
 
   private onTouchStart = (e: TouchEvent) => {
+    // Prevent browser context menu and text selection on long-press (requires passive:false)
+    e.preventDefault()
     if (e.touches.length === 1) {
       this.isDragging = true
       this.lastPinchDist = 0

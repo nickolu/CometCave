@@ -120,6 +120,11 @@ function GameCanvas() {
     canvas.style.display = 'block'
     canvas.style.width = '100%'
     canvas.style.height = '100%'
+    // Prevent browser from intercepting touch gestures (context menu, text selection, scroll)
+    // so long-press attack-move and pinch-zoom work correctly on mobile.
+    canvas.style.touchAction = 'none'
+    canvas.style.userSelect = 'none'
+    ;(canvas.style as CSSStyleDeclaration & { webkitUserSelect: string }).webkitUserSelect = 'none'
     host.appendChild(canvas)
 
     const game = new GameInstance(canvas)
