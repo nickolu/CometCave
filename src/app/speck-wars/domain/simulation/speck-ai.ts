@@ -46,8 +46,8 @@ export function runSpeckAI(sim: SimulationState) {
       continue
     }
 
-    // Clear dead or invalid targets
-    if (meta.targetId && !buildings[meta.targetId]) {
+    // Clear dead or invalid targets (also clear if building changed to friendly ownership)
+    if (meta.targetId && (!buildings[meta.targetId] || buildings[meta.targetId].ownerId === meta.ownerId)) {
       meta.targetId = null
     }
 
