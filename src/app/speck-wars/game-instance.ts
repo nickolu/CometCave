@@ -646,6 +646,15 @@ export class GameInstance {
           this.notify('✦✦ LEGEND BORN! ✦✦', '#cc44ff', 3000)
           store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
         }
+        if (event.type === 'UPGRADE_UNLOCKED' && event.ownerId === 'player') {
+          const messages = [
+            '',
+            '⚡ BLOODED — Spawn Speed +10%',
+            '🛡 HARDENED — Units +1 HP',
+            '🔥 VETERAN ARMY — Damage +15%',
+          ]
+          this.notify(messages[event.level], '#ffd700', 3000)
+        }
         if (event.type === 'VETERAN_FALLEN') {
           const isLegend = event.kills >= 12
           const isElite = event.kills >= 6
