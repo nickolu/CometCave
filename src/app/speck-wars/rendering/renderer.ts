@@ -5,6 +5,7 @@ import { GridLayer } from './layers/grid-layer'
 import { EffectsLayer } from './layers/effects-layer'
 import { StarfieldLayer } from './layers/starfield-layer'
 import { FogLayer } from './layers/fog-layer'
+import type { MaskRenderer } from './layers/fog-layer'
 import { createSpeckTexture } from './textures'
 import type { SimulationState } from '../domain/types'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
@@ -60,7 +61,7 @@ export class Renderer {
     this.effectsLayer = new EffectsLayer()
     this.buildingLayer = new BuildingLayer()
     this.speckLayer = new SpeckLayer(texture, PLAYER_COLORS)
-    this.fogLayer = new FogLayer()
+    this.fogLayer = new FogLayer(this.app.renderer as unknown as MaskRenderer)
 
     this.world.addChild(this.starfieldLayer.stage)
     this.world.addChild(this.gridLayer.stage)
