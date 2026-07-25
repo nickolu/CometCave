@@ -52,10 +52,9 @@ export function runSpeckAI(sim: SimulationState) {
       meta.targetId = null
     }
 
-    // Hold position flag: force state to 'holding' so movement.ts keeps them stationary,
-    // then fall through to the 'holding' block to handle adjacent attacks
+    // Hold position flag: holdPosition boolean controls movement.ts; state stays 'idle'
     if (meta.holdPosition) {
-      meta.state = 'holding'
+      meta.state = 'idle'
     }
 
 

@@ -289,7 +289,7 @@ function consumeInputs(sim: SimulationState) {
         meta.patrolOriginY = undefined
         meta.targetId = null
         meta.holdPosition = true
-        meta.state = 'holding'
+        meta.state = 'idle'
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
