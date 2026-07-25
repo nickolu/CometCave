@@ -36,6 +36,7 @@ export class Renderer {
   private starfieldLayer!: StarfieldLayer
   private rallyGfx!: Graphics
   private selectionGfx!: Graphics
+  private vignetteGfx!: Graphics
 
   async init(canvas: HTMLCanvasElement) {
     const app = new Application() as PixiApplication
@@ -69,6 +70,9 @@ export class Renderer {
 
     this.selectionGfx = new Graphics()
     this.app.stage.addChild(this.selectionGfx)
+
+    this.vignetteGfx = new Graphics()
+    this.app.stage.addChild(this.vignetteGfx)
   }
 
   render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null): void {
@@ -176,6 +180,25 @@ export class Renderer {
       // Bottom-right
       this.selectionGfx.moveTo(maxX - cs, maxY); this.selectionGfx.lineTo(maxX, maxY); this.selectionGfx.lineTo(maxX, maxY - cs)
     }
+    // Winning vignette — pulsing green border glow when enemy base is critical
+    this.vignetteGfx.clear()
+    const aiBase = sim.buildings['building-ai-base']
+    if (aiBase && aiBase.maxHp > 0) {
+      const hpFrac = aiBase.hp / aiBase.maxHp
+      if (hpFrac < 0.20) {
+        const w = this.app.screen.width
+        const h = this.app.screen.height
+        const pulse = 0.75 + 0.25 * Math.sin(Date.now() / 400)
+        const intensity = ((0.20 - hpFrac) / 0.20) * pulse
+        const color = 0x00ff88
+        this.vignetteGfx.lineStyle(32, color, 0.12 * intensity)
+        this.vignetteGfx.drawRect(0, 0, w, h)
+        this.vignetteGfx.lineStyle(12, color, 0.35 * intensity)
+        this.vignetteGfx.drawRect(0, 0, w, h)
+        this.vignetteGfx.lineStyle(2, color, 0.9 * intensity)
+        this.vignetteGfx.drawRect(1, 1, w - 2, h - 2)
+      }
+    }
   }
 
   showRallyPing(x: number, y: number) {
@@ -190,6 +213,7 @@ export class Renderer {
     this.buildingLayer.destroy()
     this.rallyGfx.destroy()
     this.selectionGfx.destroy()
+    this.vignetteGfx.destroy()
     this.app.destroy()
   }
 }
