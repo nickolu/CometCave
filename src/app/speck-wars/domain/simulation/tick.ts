@@ -195,6 +195,41 @@ function consumeInputs(sim: SimulationState) {
         }
       }
     }
+    if (event.type === 'ATTACK_MOVE') {
+      const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
+      if (hasSelection) {
+        sim.rallyPoints['player-selected'] = { x: event.x, y: event.y }
+        for (let i = 0; i < sim.speckCount; i++) {
+          const meta = sim.speckMeta[i]
+          if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
+          meta.assignedRallyX = event.x
+          meta.assignedRallyY = event.y
+          meta.holdPosition = false
+          meta.targetId = null
+          meta.state = 'moving'
+          meta.attackMoveMode = true
+        }
+      } else {
+        sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+        for (let i = 0; i < sim.speckCount; i++) {
+          const meta = sim.speckMeta[i]
+          if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+          meta.assignedRallyX = event.x
+          meta.assignedRallyY = event.y
+          meta.holdPosition = false
+          meta.targetId = null
+          meta.state = 'moving'
+          meta.attackMoveMode = true
+        }
+        if (event.ownerId === 'player') {
+          for (const building of Object.values(sim.buildings)) {
+            if (building.ownerId === 'player') {
+              building.rallyPoint = { x: event.x, y: event.y }
+            }
+          }
+        }
+      }
+    }
     if (event.type === 'SET_SPAWN_TYPE') {
       const stype = SPECK_TYPES[event.speckTypeId]
       for (const building of Object.values(sim.buildings)) {
