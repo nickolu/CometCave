@@ -86,6 +86,7 @@ export interface SimulationState {
 
 export type InputEvent =
   | { type: 'RALLY'; ownerId: string; x: number; y: number }
+  | { type: 'ATTACK_MOVE'; ownerId: string; x: number; y: number }
   | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string }
   | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
   | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
