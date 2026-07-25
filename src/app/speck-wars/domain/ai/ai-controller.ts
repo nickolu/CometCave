@@ -41,6 +41,9 @@ export class AIController {
         this.waveTimer = 90000
         sim.events.push({ type: 'AI_WAVE_START', waveNumber: this.waveNumber })
       }
+      // Keep waveCountdown fresh every frame (not just during decisions) for smooth HUD display
+      sim.waveCountdown = this.waveTimer
+      sim.waveInProgress = this.waveRemainingMs > 0
     }
 
     // Adaptive difficulty: if the enemy holds a 3:1 speck advantage for 30s, speed up AI decisions
