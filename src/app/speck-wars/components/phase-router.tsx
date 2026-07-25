@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib/personal-best'
+import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
+  const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const { user } = useAuth()
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         hard: getBestTime('hard') ?? undefined,
       })
       setWinStreak(getWinStreak())
+      setLifetimeStats(getLifetimeStats())
     }
   }, [phase])
 
@@ -118,6 +120,18 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )
           })}
         </div>
+        {lifetimeStats.gamesPlayed > 0 && (
+          <div style={{
+            display: 'flex', gap: 20, fontSize: 10, letterSpacing: 1,
+            color: 'rgba(255,255,255,0.3)',
+          }}>
+            <span>{lifetimeStats.gamesPlayed} games</span>
+            <span>{lifetimeStats.totalKills.toLocaleString()} kills</span>
+            {lifetimeStats.bestStreak >= 2 && (
+              <span>best {lifetimeStats.bestStreak}-win streak</span>
+            )}
+          </div>
+        )}
         <button
           onClick={() => setPhase('playing')}
           style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold' }}

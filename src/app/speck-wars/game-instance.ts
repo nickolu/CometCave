@@ -7,7 +7,7 @@ import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
-import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday } from './lib/personal-best'
+import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
 
 export class GameInstance {
@@ -405,12 +405,14 @@ export class GameInstance {
               const isNew = recordBestTime(s.difficulty, elapsedAtEnd)
               incrementWinStreak()
               recordGameResult(s.difficulty, true, elapsedAtEnd, s.kills)
+              updateLifetimeStats(s.kills, getWinStreak())
               markWonToday(s.difficulty)
               s.setIsNewBest(isNew)
               s.setPhase('victory')
             } else {
               resetWinStreak()
               recordGameResult(s.difficulty, false, elapsedAtEnd, s.kills)
+              updateLifetimeStats(s.kills, getWinStreak())
               s.setIsNewBest(false)
               s.setPhase('defeat')
             }

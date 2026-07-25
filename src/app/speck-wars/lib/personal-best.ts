@@ -87,3 +87,33 @@ export function markWonToday(difficulty: Difficulty) {
   if (typeof window === 'undefined') return
   localStorage.setItem(DAILY_WIN_KEY(difficulty), todayKey())
 }
+
+// Lifetime stats: total games, total kills, best streak ever
+const LIFETIME_KEY = 'speck-wars-lifetime'
+
+interface LifetimeStats {
+  gamesPlayed: number
+  totalKills: number
+  bestStreak: number
+}
+
+export function getLifetimeStats(): LifetimeStats {
+  if (typeof window === 'undefined') return { gamesPlayed: 0, totalKills: 0, bestStreak: 0 }
+  try {
+    const raw = localStorage.getItem(LIFETIME_KEY)
+    return raw ? (JSON.parse(raw) as LifetimeStats) : { gamesPlayed: 0, totalKills: 0, bestStreak: 0 }
+  } catch {
+    return { gamesPlayed: 0, totalKills: 0, bestStreak: 0 }
+  }
+}
+
+export function updateLifetimeStats(kills: number, currentStreak: number) {
+  if (typeof window === 'undefined') return
+  const prev = getLifetimeStats()
+  const next: LifetimeStats = {
+    gamesPlayed: prev.gamesPlayed + 1,
+    totalKills: prev.totalKills + kills,
+    bestStreak: Math.max(prev.bestStreak, currentStreak),
+  }
+  localStorage.setItem(LIFETIME_KEY, JSON.stringify(next))
+}
