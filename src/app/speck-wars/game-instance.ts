@@ -370,7 +370,7 @@ export class GameInstance {
       this.camera.x = this.cinematicStartX + (this.cinematicEndX - this.cinematicStartX) * eased
       this.camera.y = this.cinematicStartY + (this.cinematicEndY - this.cinematicStartY) * eased
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect)
+      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -379,7 +379,7 @@ export class GameInstance {
       this.gameOverFreezeMs = Math.max(0, this.gameOverFreezeMs - dt)
       const { shakeX, shakeY } = this.computeShake(dt)
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
+      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -800,7 +800,7 @@ export class GameInstance {
         ghostBuild = { typeId: this.pendingBuild, wx: wpos.x, wy: wpos.y }
       }
     }
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild)
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild, useSpeckWarsStore.getState().fogEnabled)
     this.rafId = requestAnimationFrame(this.loop)
   }
 

@@ -238,7 +238,7 @@ export function HUD() {
               `}</style>
             )}
             <div style={{
-              position: 'absolute', top: 110, right: 16,
+              position: 'absolute', top: 240, right: 16,
               padding: '4px 10px',
               background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
               border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
@@ -256,25 +256,26 @@ export function HUD() {
 
       {/* Mini-map — top right, below difficulty badge */}
       {hud && (() => {
-        const SCALE = 120 / 3000  // world→screen
+        const MINIMAP_SIZE = 160
+        const SCALE = MINIMAP_SIZE / 3000  // world→screen
         return (
           <div style={{
             position: 'absolute', top: 72, right: 16,
-            width: 120, height: 120,
+            width: MINIMAP_SIZE, height: MINIMAP_SIZE,
             background: 'rgba(0,0,0,0.55)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 4,
             overflow: 'hidden',
             cursor: 'crosshair',
           }}>
-            <svg width={120} height={120} style={{ display: 'block' }}
+            <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
               onClick={(e) => {
                 if (!gameActions?.rally) return
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
                 const py = e.clientY - rect.top
-                const worldX = (px / 120) * 3000
-                const worldY = (py / 120) * 3000
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.rally(worldX, worldY)
               }}
               onContextMenu={(e) => {
@@ -283,8 +284,8 @@ export function HUD() {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
                 const py = e.clientY - rect.top
-                const worldX = (px / 120) * 3000
-                const worldY = (py / 120) * 3000
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.panCamera(worldX, worldY)
               }}
             >
@@ -397,7 +398,7 @@ export function HUD() {
       {/* Kill feed — below minimap, top-right */}
       {phase === 'playing' && killFeed.length > 0 && (
         <div style={{
-          position: 'absolute', top: 210, right: 16,
+          position: 'absolute', top: 250, right: 16,
           display: 'flex', flexDirection: 'column', gap: 3,
           pointerEvents: 'none',
           width: 140,
@@ -423,7 +424,8 @@ export function HUD() {
       {/* Timer + Pause button — top bar */}
       <div style={{
         position: 'absolute', top: 12, left: 0, right: 0,
-        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6,
+        flexWrap: 'wrap', padding: '0 8px',
       }}>
         <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatTime(elapsedMs)}
@@ -456,7 +458,7 @@ export function HUD() {
           onClick={togglePause}
           style={{
             pointerEvents: 'auto',
-            padding: '4px 14px',
+            padding: '8px 14px',
             fontSize: 12,
             cursor: 'pointer',
             background: 'rgba(0,0,0,0.5)',
@@ -464,6 +466,7 @@ export function HUD() {
             borderRadius: 4,
             color: '#fff',
             letterSpacing: 1,
+            minHeight: 44, minWidth: 44,
           }}
         >
           {phase === 'paused' ? 'RESUME' : 'PAUSE'}
@@ -472,7 +475,7 @@ export function HUD() {
           onClick={cycleSpeed}
           style={{
             pointerEvents: 'auto',
-            padding: '4px 14px',
+            padding: '8px 14px',
             fontSize: 12,
             cursor: 'pointer',
             background: speed > 1 ? 'rgba(74,247,196,0.15)' : 'rgba(0,0,0,0.5)',
@@ -480,6 +483,7 @@ export function HUD() {
             borderRadius: 4,
             color: speed > 1 ? '#4af7c4' : '#fff',
             letterSpacing: 1,
+            minHeight: 44, minWidth: 44,
           }}
         >
           {speed}×
@@ -496,8 +500,8 @@ export function HUD() {
               title={`[${idx + 1}] Spawn ${type} — ${subtitle}`}
               style={{
                 pointerEvents: 'auto',
-                padding: '3px 8px',
-                fontSize: 10,
+                padding: '8px 12px',
+                fontSize: 12,
                 cursor: 'pointer',
                 background: active ? `${color}22` : 'rgba(0,0,0,0.5)',
                 border: `1px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
@@ -506,10 +510,11 @@ export function HUD() {
                 marginLeft: idx === 0 ? 0 : -1,
                 lineHeight: 1.3,
                 textAlign: 'center',
+                minHeight: 44,
               }}
             >
               <div style={{ fontWeight: 700, letterSpacing: 0.5 }}>{idx + 1} {type.toUpperCase()}</div>
-              <div style={{ fontSize: 8, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
+              <div style={{ fontSize: 10, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
             </button>
           )
         })}
@@ -527,8 +532,8 @@ export function HUD() {
               title={cfg.title}
               style={{
                 pointerEvents: 'auto',
-                padding: '3px 10px',
-                fontSize: 10,
+                padding: '8px 12px',
+                fontSize: 12,
                 cursor: 'pointer',
                 background: `${cfg.color}18`,
                 border: `1px solid ${cfg.color}66`,
@@ -537,10 +542,11 @@ export function HUD() {
                 letterSpacing: 0.5,
                 lineHeight: 1.3,
                 textAlign: 'center',
+                minHeight: 44,
               }}
             >
               <div style={{ fontWeight: 700 }}>{cfg.icon} {cfg.label}</div>
-              <div style={{ fontSize: 8, opacity: 0.7 }}>Z</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>Z</div>
             </button>
           )
         })()}
@@ -571,15 +577,18 @@ export function HUD() {
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
+          aria-label="Show controls"
           style={{
             pointerEvents: 'auto',
-            padding: '4px 10px',
-            fontSize: 12,
+            padding: '8px 12px',
+            fontSize: 14,
             cursor: 'pointer',
             background: showHelp ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.5)',
             border: `1px solid ${showHelp ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}`,
             borderRadius: 4,
             color: '#fff',
+            minHeight: 44, minWidth: 44,
+            fontWeight: 700,
           }}
         >
           ?
@@ -615,6 +624,7 @@ export function HUD() {
             <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
             <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
+            <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
             <span>S — stop · H — hold position</span><span>C — center on base</span>
             <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
@@ -1179,12 +1189,13 @@ export function HUD() {
                       border: '1px solid rgba(255,255,255,0.18)',
                       borderRadius: 4,
                       color: '#ddd',
-                      fontSize: 11,
-                      padding: '3px 7px',
+                      fontSize: 12,
+                      padding: '8px 10px',
                       cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 4,
                       userSelect: 'none',
                       fontFamily: 'monospace',
+                      minHeight: 44,
                     }}
                   >
                     {label}
@@ -1193,6 +1204,10 @@ export function HUD() {
                 ))}
               </div>
             )}
+            {/* Touch gesture hint */}
+            <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
+              Tap: rally &bull; Long-press: attack-move
+            </div>
           </div>
         </div>
       )}

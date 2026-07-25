@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -194,6 +194,24 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )}
           </div>
         )}
+        {/* Fog of war toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+          <button
+            onClick={() => setFogEnabled(!fogEnabled)}
+            style={{
+              padding: '4px 14px',
+              fontSize: 12,
+              cursor: 'pointer',
+              border: `1px solid ${fogEnabled ? '#44aaff' : 'rgba(255,255,255,0.2)'}`,
+              borderRadius: 4,
+              background: fogEnabled ? 'rgba(68,170,255,0.12)' : 'transparent',
+              color: fogEnabled ? '#44aaff' : 'rgba(255,255,255,0.4)',
+              letterSpacing: 0.5,
+            }}
+          >
+            {fogEnabled ? '🌫 Fog of War: ON' : '🌫 Fog of War: OFF'}
+          </button>
+        </div>
         <button
           onClick={() => setPhase('playing')}
           style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold' }}
