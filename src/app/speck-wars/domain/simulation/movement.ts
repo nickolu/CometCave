@@ -86,7 +86,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       }
     } else {
       // Attack-move: scan for nearby enemy specks and steer toward them
-      if (meta.attackMoveMode && meta.assignedRallyX !== undefined) {
+      // Stagger scan across ticks — each speck rescans every 4 ticks to cut query volume by 75%
+      if (meta.attackMoveMode && meta.assignedRallyX !== undefined && (i + sim.tick) % 4 === 0) {
         const ATTACK_MOVE_RANGE = 80  // px
         const amR2 = ATTACK_MOVE_RANGE * ATTACK_MOVE_RANGE
         let closestDist2 = Infinity, closestX = 0, closestY = 0

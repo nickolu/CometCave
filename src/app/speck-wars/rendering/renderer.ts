@@ -37,6 +37,7 @@ export class Renderer {
   private effectsLayer!: EffectsLayer
   private starfieldLayer!: StarfieldLayer
   private fogLayer!: FogLayer
+  private fogFrameCounter = 0
   private rallyGfx!: Graphics
   private selectionGfx!: Graphics
   private vignetteGfx!: Graphics
@@ -102,7 +103,7 @@ export class Renderer {
 
     this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId, ghostBuild)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
-    this.fogLayer.update(sim, 'player')
+    if (this.fogFrameCounter++ % 4 === 0) this.fogLayer.update(sim, 'player')
 
     // Process events from this tick
     for (const event of sim.events) {
