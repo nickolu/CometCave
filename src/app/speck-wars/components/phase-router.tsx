@@ -3,12 +3,15 @@ import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday } from '../lib/personal-best'
 import type { Difficulty } from '../store'
+import { useAuth } from '@/hooks/useAuth'
+import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
+  const { user } = useAuth()
 
   useEffect(() => {
     if (phase === 'menu') {
@@ -383,6 +386,36 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </div>
           )
         })()}
+
+        {/* Sign-up CTA — shared pact: show for unauthenticated users at end of session */}
+        {!user && (
+          <div style={{
+            maxWidth: 320, textAlign: 'center',
+            padding: '10px 18px',
+            border: '1px solid rgba(74,247,196,0.18)',
+            borderRadius: 6,
+            background: 'rgba(74,247,196,0.04)',
+          }}>
+            <div style={{ fontSize: 11, letterSpacing: 1, color: 'rgba(74,247,196,0.8)', marginBottom: 6 }}>
+              {won && winStreak >= 2
+                ? `Your ${winStreak}-win streak deserves a record.`
+                : won
+                  ? 'Track your wins and best times.'
+                  : 'Log your battles. Climb the ranks.'}
+            </div>
+            <Link
+              href="/auth?redirect=/speck-wars"
+              style={{
+                display: 'inline-block',
+                fontSize: 10, letterSpacing: 2,
+                color: '#4af7c4', textTransform: 'uppercase',
+                textDecoration: 'none', opacity: 0.85,
+              }}
+            >
+              Create account →
+            </Link>
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 12 }}>
