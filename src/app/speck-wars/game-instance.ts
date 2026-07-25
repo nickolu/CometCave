@@ -7,7 +7,7 @@ import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
-import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak } from './lib/personal-best'
+import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak, hasSeenVeteranTip, markVeteranTipSeen } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
 
 export class GameInstance {
@@ -628,7 +628,11 @@ export class GameInstance {
         }
         if (event.type === 'SPECK_VETERAN' && event.ownerId === 'player') {
           const now = Date.now()
-          if (now - this.firstVeteranNotifiedAt > 20000) {
+          if (!hasSeenVeteranTip()) {
+            markVeteranTipSeen()
+            this.firstVeteranNotifiedAt = now
+            this.notify('⭐ FIRST VETERAN! Keep them alive — 6 kills = ELITE, 12 = LEGEND', '#ffd700', 5000)
+          } else if (now - this.firstVeteranNotifiedAt > 20000) {
             this.firstVeteranNotifiedAt = now
             this.notify('⭐ VETERAN SPECK! +20% DAMAGE', '#ffd700', 2000)
           }
