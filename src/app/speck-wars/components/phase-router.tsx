@@ -129,6 +129,28 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </div>
           )
         })()}
+        {/* Layout strategy tip */}
+        {(() => {
+          const { layoutName } = getDailyInfo(difficulty)
+          const layoutTips: Record<string, string> = {
+            Triangle: 'Triangle: the top outpost commands the map — contest it early for reach to both flanks.',
+            Corridor: 'Corridor: fight hard for the middle outpost, it splits the lane and cuts off retreats.',
+            Wings: 'Wings: forces split attention — consider scouting both flanks before committing.',
+          }
+          const tip = layoutTips[layoutName]
+          if (!tip) return null
+          return (
+            <div style={{
+              fontSize: 10, letterSpacing: 0.3,
+              color: 'rgba(255,255,255,0.28)',
+              textAlign: 'center',
+              fontStyle: 'italic',
+              maxWidth: 280,
+            }}>
+              {tip}
+            </div>
+          )
+        })()}
         {/* Best times + win rates per difficulty */}
         <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
           {difficulties.map(d => {
