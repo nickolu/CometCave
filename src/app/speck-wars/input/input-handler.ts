@@ -30,6 +30,7 @@ export class InputHandler {
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
+  private onGuard?: () => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -71,6 +72,7 @@ export class InputHandler {
     onStop?: () => void,
     onHold?: () => void,
     onAttackMove?: (worldX: number, worldY: number) => void,
+    onGuard?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -97,6 +99,7 @@ export class InputHandler {
     this.onStop = onStop
     this.onHold = onHold
     this.onAttackMove = onAttackMove
+    this.onGuard = onGuard
     this.attach()
   }
 
@@ -373,6 +376,8 @@ export class InputHandler {
       this.onCycleSpeed?.()
     } else if (e.code === 'KeyE') {
       this.onSelectAll?.()
+    } else if (e.code === 'KeyG') {
+      this.onGuard?.()
     } else if (e.code === 'KeyF') {
       this.onSacrifice?.()
     } else if (['Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)) {
