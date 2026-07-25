@@ -47,6 +47,8 @@ export class InputHandler {
   private touchStartX = 0
   private touchStartY = 0
   private isDragSelect = false
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null
+  private longPressFired = false
   private dragSelectStartWorldX = 0
   private dragSelectStartWorldY = 0
 
@@ -273,6 +275,18 @@ export class InputHandler {
       this.lastY = e.touches[0].clientY
       this.touchStartX = e.touches[0].clientX
       this.touchStartY = e.touches[0].clientY
+      this.longPressFired = false
+      // Long-press: if finger stays >500ms without moving, fire attack-move
+      this.longPressTimer = setTimeout(() => {
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = this.lastX - rect.left
+        const sy = this.lastY - rect.top
+        if (sx >= 0 && sy >= 0 && sx <= rect.width && sy <= rect.height) {
+          const world = screenToWorld(sx, sy, this.camera)
+          this.onAttackMove?.(world.x, world.y)
+          this.longPressFired = true
+        }
+      }, 500)
     } else if (e.touches.length === 2) {
       this.isDragging = false
       const dx = e.touches[1].clientX - e.touches[0].clientX
@@ -296,6 +310,16 @@ export class InputHandler {
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
     } else if (this.isDragging && e.touches.length === 1) {
+      if (e.touches.length === 1) {
+        const moveDist = Math.sqrt(
+          (e.touches[0].clientX - this.touchStartX) ** 2 +
+          (e.touches[0].clientY - this.touchStartY) ** 2
+        )
+        if (moveDist > 12 && this.longPressTimer) {
+          clearTimeout(this.longPressTimer)
+          this.longPressTimer = null
+        }
+      }
       this.camera.x += e.touches[0].clientX - this.lastX
       this.camera.y += e.touches[0].clientY - this.lastY
       this.lastX = e.touches[0].clientX
@@ -304,8 +328,13 @@ export class InputHandler {
   }
 
   private onTouchEnd = (e: TouchEvent) => {
-    // Tap-to-rally: single finger tap (small movement) → set rally at tap position
-    if (this.lastPinchDist === 0 && e.changedTouches.length === 1 && this.onRally) {
+    // Cancel any pending long-press
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer)
+      this.longPressTimer = null
+    }
+    // Tap-to-rally: only if long-press didn't fire
+    if (!this.longPressFired && this.lastPinchDist === 0 && e.changedTouches.length === 1 && this.onRally) {
       const touch = e.changedTouches[0]
       const dx = touch.clientX - this.touchStartX
       const dy = touch.clientY - this.touchStartY
@@ -321,6 +350,7 @@ export class InputHandler {
     }
     this.isDragging = false
     this.lastPinchDist = 0
+    this.longPressFired = false
   }
 
   private onKeyUp = (e: KeyboardEvent) => {
@@ -433,6 +463,10 @@ export class InputHandler {
   }
 
   destroy() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer)
+      this.longPressTimer = null
+    }
     this.canvas.removeEventListener('mousedown', this.onMouseDown)
     window.removeEventListener('mousemove', this.onMouseMove)
     window.removeEventListener('mouseup', this.onMouseUp)
