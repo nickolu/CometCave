@@ -44,6 +44,12 @@ interface SpeckWarsStore {
   setSpawnMode: (mode: 'basic' | 'heavy' | 'scout') => void
   peakArmySize: number
   setPeakArmySize: (n: number) => void
+  peakVeteranCount: number
+  setPeakVeteranCount: (n: number) => void
+  peakEliteCount: number
+  setPeakEliteCount: (n: number) => void
+  peakLegendCount: number
+  setPeakLegendCount: (n: number) => void
   outpostsCaptured: number
   addOutpostCaptured: () => void
   isNewBest: boolean
@@ -99,6 +105,12 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setSpawnMode: mode => set({ spawnMode: mode }),
   peakArmySize: 0,
   setPeakArmySize: n => set(s => ({ peakArmySize: Math.max(s.peakArmySize, n) })),
+  peakVeteranCount: 0,
+  setPeakVeteranCount: n => set(s => ({ peakVeteranCount: Math.max(s.peakVeteranCount, n) })),
+  peakEliteCount: 0,
+  setPeakEliteCount: n => set(s => ({ peakEliteCount: Math.max(s.peakEliteCount, n) })),
+  peakLegendCount: 0,
+  setPeakLegendCount: n => set(s => ({ peakLegendCount: Math.max(s.peakLegendCount, n) })),
   outpostsCaptured: 0,
   addOutpostCaptured: () => set(s => ({ outpostsCaptured: s.outpostsCaptured + 1 })),
   isNewBest: false,
@@ -137,6 +149,9 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
     isNewBest: false,
     peakArmySize: 0,
+    peakVeteranCount: 0,
+    peakEliteCount: 0,
+    peakLegendCount: 0,
     outpostsCaptured: 0,
     killFeed: [],
     aiPersonality: null,
