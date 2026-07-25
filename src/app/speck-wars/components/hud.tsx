@@ -884,7 +884,8 @@ export function HUD() {
                 <span>Base: {Math.round(playerBaseHpVal)}HP</span>
                 <span>Base: {Math.round(aiBaseHpVal)}HP</span>
                 <span>Outposts: {playerOutpostCount}</span>
-                <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
+                <span>Outposts: {aiOutpostCount}</span>
+                <span style={{ gridColumn: '1/-1', textAlign: 'center', color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} kills · {losses} lost</span>
                 <span style={{ gridColumn: '1/-1', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4 }}>
                   {formatTime(elapsedMs)} elapsed
                 </span>
