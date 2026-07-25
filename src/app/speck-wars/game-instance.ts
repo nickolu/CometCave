@@ -50,6 +50,8 @@ export class GameInstance {
   private prevEnemyAdvance = false
   private attackMovePending = false
   private controlGroups = new Map<number, string[]>()
+  private lastAdvanceMs = 0
+  private lastAdvanceIdx = 0
   private cinematicMs = 0
 
   constructor(canvas: HTMLCanvasElement) {
@@ -620,14 +622,23 @@ export class GameInstance {
   advance() {
     const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
     if (!playerBase) return
-    let best = null, bestD2 = Infinity
-    for (const b of Object.values(this.sim.buildings)) {
-      if (b.typeId !== 'outpost' || b.ownerId === 'player') continue
-      const dx = b.x - playerBase.x, dy = b.y - playerBase.y
-      const d2 = dx * dx + dy * dy
-      if (d2 < bestD2) { bestD2 = d2; best = b }
+    const targets = Object.values(this.sim.buildings)
+      .filter(b => b.typeId === 'outpost' && b.ownerId !== 'player')
+      .sort((a, b) => {
+        const da = (a.x - playerBase.x) ** 2 + (a.y - playerBase.y) ** 2
+        const db = (b.x - playerBase.x) ** 2 + (b.y - playerBase.y) ** 2
+        return da - db
+      })
+    if (targets.length === 0) return
+    const now = Date.now()
+    if (now - this.lastAdvanceMs < 3000 && targets.length > 1) {
+      this.lastAdvanceIdx = (this.lastAdvanceIdx + 1) % targets.length
+    } else {
+      this.lastAdvanceIdx = 0
     }
-    if (best) this.rally(best.x, best.y)
+    this.lastAdvanceMs = now
+    const target = targets[this.lastAdvanceIdx]
+    this.rally(target.x, target.y)
   }
 
   rush() {
