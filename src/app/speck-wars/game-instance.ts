@@ -64,13 +64,13 @@ export class GameInstance {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    const { difficulty, outpostCount, baseCount } = useSpeckWarsStore.getState()
+    const { difficulty } = useSpeckWarsStore.getState()
     const aiTickInterval: Record<string, number> = { easy: 60, medium: 30, hard: 15, 'very-hard': 6 }
     const now = new Date()
     const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
     const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
     const dailySeed = dateKey * 1000 + diffHash
-    this.sim = createSim(dailySeed, difficulty, outpostCount, baseCount)
+    this.sim = createSim(dailySeed, difficulty)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
     const aiPersonality = (): AIPersonality => {
