@@ -125,3 +125,37 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     }
   }
 }
+
+export function spawnCommander(sim: SimulationState, ownerId: string) {
+  // Find owner's base
+  const base = Object.values(sim.buildings).find(b => b.ownerId === ownerId && b.typeId === 'base')
+  if (!base) return
+  // Spawn near base with slight offset
+  const offsetX = ownerId === 'player' ? 80 : -80
+  const meta: SpeckMeta = {
+    id: `commander-${ownerId}-${Date.now()}`,
+    typeId: 'basic',
+    ownerId,
+    state: 'idle',
+    targetId: null,
+    attackCooldown: 0,
+    kills: 0,
+    isCommander: true,
+    commanderXp: 0,
+    commanderLevel: 0,
+    pulseTimer: 3000,
+  }
+  // Use existing addSpeck-like logic: find free slot and place
+  const slot = sim.freeSlots.length > 0
+    ? sim.freeSlots.pop()!
+    : (sim.speckCount < MAX_SPECKS ? sim.speckCount++ : -1)
+  if (slot < 0) return
+  const speckId = meta.id
+  sim.speckIds[slot] = speckId
+  sim.speckX[slot] = base.x + offsetX
+  sim.speckY[slot] = base.y + (Math.random() * 40 - 20)
+  sim.speckVx[slot] = 0
+  sim.speckVy[slot] = 0
+  sim.speckHp[slot] = 3  // 3× base HP
+  sim.speckMeta[slot] = meta
+}

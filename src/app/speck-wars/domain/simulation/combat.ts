@@ -76,6 +76,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       if (dist <= stype.attackRange) {
         const veteranBonus = meta.kills >= 12 ? 1.50 : meta.kills >= 6 ? 1.35 : meta.kills >= 3 ? 1.20 : 1.0  // legend +50%, elite +35%, veteran +20%
         const heroBonus = meta.isHero ? 1.5 : 1.0
+        const commanderBonus = meta.isCommander ? 2.0 : 1.0
         // Fortification bonus: if attacker is near a friendly fortified outpost, deal extra damage
         let fortifyBonus = 1.0
         for (const b of Object.values(buildings)) {
@@ -88,7 +89,7 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           }
         }
         const upgradeBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 3 ? 1.15 : 1.0
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * commanderBonus
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0
@@ -112,6 +113,12 @@ export function resolveCombat(sim: SimulationState, dt: number) {
                 if (kMeta.isHero) {
                   sim.events.push({ type: 'HERO_DIED', ownerId: kMeta.ownerId, kills: kMeta.kills })
                   sim.heroRespawnTimer[kMeta.ownerId] = 15000
+                }
+                // When commander is killed by splash damage, set commanderRespawnMs
+                if (kMeta.isCommander) {
+                  const ownerPlayer = sim.players[kMeta.ownerId]
+                  if (ownerPlayer) ownerPlayer.commanderRespawnMs = 15000
+                  sim.events.push({ type: 'COMMANDER_DIED', ownerId: kMeta.ownerId, xp: kMeta.commanderXp ?? 0 })
                 }
                 sim.events.push({ type: 'SPECK_DIED', speckId: speckIds[k], x: speckX[k], y: speckY[k], killedOwnerId: kMeta.ownerId, killerOwnerId: meta.ownerId })
                 meta.kills++
