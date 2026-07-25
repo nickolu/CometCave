@@ -291,6 +291,9 @@ export class GameInstance {
       researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
         this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
       },
+      selectAll: () => {
+        this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
+      },
       snapToBase: () => this.snapToBase(),
     })
     // Cinematic intro: start zoomed out to show full world
