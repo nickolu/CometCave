@@ -7,7 +7,7 @@ import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD, CREEP_CAMP_DEFENDER_COUNT, CREEP_CA
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
   const baseHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
   const upgradeHpBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 2 ? 1 : 0
-  const hp = baseHp + upgradeHpBonus
+  const hp = (baseHp + upgradeHpBonus) * (meta.isHero ? 4 : 1)
 
   let slot: number
   if (sim.freeSlots.length > 0) {
@@ -93,6 +93,17 @@ export function updateSpawners(sim: SimulationState, dt: number) {
         attackCooldown: 0,
         kills: 0,
       }
+      // Hero Commander: the first speck from a base when no hero is alive and respawn timer is clear
+      if (i === 0 && building.typeId === 'base') {
+        const hasHero = Array.from({ length: sim.speckCount }, (_, si) => sim.speckMeta[si]).some(m => m?.ownerId === building.ownerId && m?.isHero)
+        const heroReady = (sim.heroRespawnTimer[building.ownerId] ?? 0) <= 0
+        if (!hasHero && heroReady) {
+          meta.isHero = true
+          meta.heroLevel = 0
+          meta.abilityTimer = 3000  // first pulse after 3s
+          sim.events.push({ type: 'HERO_SPAWNED', ownerId: building.ownerId })
+        }
+      }
       // Auto-assign the building's per-building rally point so the speck marches there on spawn
       const sourceBuildingRally = building.rallyPoint
       if (sourceBuildingRally) {
@@ -100,6 +111,17 @@ export function updateSpawners(sim: SimulationState, dt: number) {
         meta.assignedRallyY = sourceBuildingRally.y
       }
       addSpeck(sim, meta, sx, sy, building.id)
+    }
+  }
+
+  // Tick hero respawn timers
+  for (const playerId of Object.keys(sim.heroRespawnTimer)) {
+    if (sim.heroRespawnTimer[playerId] > 0) {
+      sim.heroRespawnTimer[playerId] -= dt
+      if (sim.heroRespawnTimer[playerId] <= 0) {
+        sim.heroRespawnTimer[playerId] = 0
+        // Will auto-spawn on next tick via the hasHero check
+      }
     }
   }
 }

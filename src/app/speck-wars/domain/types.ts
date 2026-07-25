@@ -20,6 +20,9 @@ export interface SpeckMeta {
   patrolOriginY?: number  // patrol: leg start Y
   patrolDestX?: number    // patrol: leg destination X
   patrolDestY?: number    // patrol: leg destination Y
+  isHero?: boolean           // true if this speck is the Commander
+  heroLevel?: 0 | 1 | 2     // 0=base, 1=BLOODED, 2=EMPOWERED
+  abilityTimer?: number      // ms until next AoE pulse (level 2 only)
 }
 
 export interface BuildingEntity {
@@ -83,6 +86,7 @@ export interface SimulationState {
   selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
   selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid
+  heroRespawnTimer: Record<string, number>  // playerId → ms until respawn (0 = alive/none)
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
@@ -126,6 +130,9 @@ export type SimEvent =
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
+  | { type: 'HERO_LEVELED'; ownerId: string; heroLevel: 1 | 2 }
+  | { type: 'HERO_DIED'; ownerId: string; kills: number }
+  | { type: 'HERO_SPAWNED'; ownerId: string }
 
 export interface HudData {
   players: Record<string, {

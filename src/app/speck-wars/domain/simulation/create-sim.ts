@@ -133,6 +133,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     selectedSpeckIds: new Set<string>(),
     selectedBuildingId: null,
     spatialGrid: new SpatialGrid(),
+    heroRespawnTimer: { player: 0, ai: 0 },
     dominationTimer: 0,
     surgeDuration: 0,
     surgeCooldown: 0,

@@ -3,7 +3,7 @@ import { SPECK_TYPES } from '../config/speck-types'
 import { updateSpawners, spawnCampDefenders } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
-import { resolveCombat, removeDeadSpecks } from './combat'
+import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
@@ -58,6 +58,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
+
+  // 6a. Hero abilities (AoE pulse for level 2 Commanders)
+  updateHeroAbilities(sim, dt)
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
