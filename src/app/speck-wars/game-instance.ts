@@ -200,6 +200,7 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
+      () => { this.enterBuildMode('turret') },                           // T — enter turret build mode
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
