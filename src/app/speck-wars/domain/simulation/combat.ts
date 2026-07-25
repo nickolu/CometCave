@@ -89,7 +89,29 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           }
         }
         const upgradeBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 3 ? 1.15 : 1.0
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * commanderBonus
+        // Flanking bonus: +20% damage when attacking from behind/side
+        // Check if attacker is approaching from behind target's movement direction
+        const tvx = sim.speckVx[j]  // target velocity
+        const tvy = sim.speckVy[j]
+        const targetSpeed2 = tvx * tvx + tvy * tvy
+
+        let flankMult = 1.0
+        if (targetSpeed2 > 25) {  // only applies when target is moving (>5 px/s)
+          // Vector from target to attacker
+          const fdx = sim.speckX[i] - sim.speckX[j]
+          const fdy = sim.speckY[i] - sim.speckY[j]
+          const fdist = Math.sqrt(fdx * fdx + fdy * fdy) || 1
+          // Normalized attack direction (from target's perspective, attacker comes FROM this direction)
+          const adx = fdx / fdist, ady = fdy / fdist
+          // Normalized target velocity direction
+          const tspeed = Math.sqrt(targetSpeed2)
+          const tdx = tvx / tspeed, tdy = tvy / tspeed
+          // Dot product: if positive, attacker is behind/beside the target
+          const dot = adx * tdx + ady * tdy
+          if (dot > 0.17)  // cos(80°) ≈ 0.17 — covers wide flank angle
+            flankMult = 1.2
+        }
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * commanderBonus * flankMult
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0
