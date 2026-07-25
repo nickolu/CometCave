@@ -29,6 +29,10 @@ interface SpeckWarsStore {
   setHud: (data: HudData) => void
   difficulty: Difficulty
   setDifficulty: (d: Difficulty) => void
+  outpostCount: number
+  setOutpostCount: (n: number) => void
+  baseCount: number
+  setBaseCount: (n: number) => void
   elapsedMs: number
   setElapsedMs: (ms: number) => void
   speed: 1 | 2 | 4
@@ -85,6 +89,10 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setHud: hud => set({ hud }),
   difficulty: 'medium',
   setDifficulty: difficulty => set({ difficulty }),
+  outpostCount: 3,
+  setOutpostCount: n => set({ outpostCount: n }),
+  baseCount: 1,
+  setBaseCount: n => set({ baseCount: n }),
   elapsedMs: 0,
   setElapsedMs: elapsedMs => set({ elapsedMs }),
   speed: 1 as 1 | 2 | 4,

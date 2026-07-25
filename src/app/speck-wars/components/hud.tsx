@@ -566,7 +566,10 @@ export function HUD() {
 
       {/* Outpost ownership indicator dots */}
       {hud && (() => {
-        const OUTPOST_IDS = ['outpost-top', 'outpost-left', 'outpost-right'] as const
+        const OUTPOST_IDS = (hud.minimap?.buildings ?? [])
+          .filter(b => b.typeId === 'outpost')
+          .map(b => b.id)
+          .sort()
         const attacked = new Set(hud.attackedBuildingIds ?? [])
         const captureInfo = hud.captureInfo ?? {}
         const OUTPOST_MAX_HP = 50

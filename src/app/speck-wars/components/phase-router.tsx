@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, outpostCount, setOutpostCount, baseCount, setBaseCount, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -194,9 +194,35 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )}
           </div>
         )}
+        {/* Outpost count control */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+          <span style={{ color: '#aaa', fontSize: 13, width: 100 }}>Outposts</span>
+          <button
+            onClick={() => setOutpostCount(Math.max(1, outpostCount - 1))}
+            style={{ padding: '4px 12px', fontSize: 14, cursor: 'pointer', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, color: 'rgba(255,255,255,0.7)' }}
+          >−</button>
+          <span style={{ color: '#fff', fontSize: 15, width: 28, textAlign: 'center' }}>{outpostCount}</span>
+          <button
+            onClick={() => setOutpostCount(Math.min(25, outpostCount + 1))}
+            style={{ padding: '4px 12px', fontSize: 14, cursor: 'pointer', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, color: 'rgba(255,255,255,0.7)' }}
+          >+</button>
+        </div>
+        {/* Base count control */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+          <span style={{ color: '#aaa', fontSize: 13, width: 100 }}>Bases per side</span>
+          <button
+            onClick={() => setBaseCount(Math.max(1, baseCount - 1))}
+            style={{ padding: '4px 12px', fontSize: 14, cursor: 'pointer', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, color: 'rgba(255,255,255,0.7)' }}
+          >−</button>
+          <span style={{ color: '#fff', fontSize: 15, width: 28, textAlign: 'center' }}>{baseCount}</span>
+          <button
+            onClick={() => setBaseCount(Math.min(3, baseCount + 1))}
+            style={{ padding: '4px 12px', fontSize: 14, cursor: 'pointer', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 4, color: 'rgba(255,255,255,0.7)' }}
+          >+</button>
+        </div>
         <button
           onClick={() => setPhase('playing')}
-          style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold' }}
+          style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold', marginTop: 8 }}
         >
           Play
         </button>
