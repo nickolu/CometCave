@@ -98,6 +98,7 @@ export class GameInstance {
         if (this.pendingBuild) {
           const typeId = this.pendingBuild
           this.pendingBuild = null
+          if (this.canvas) this.canvas.style.cursor = 'default'
           this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
           this.notify('◆ TURRET PLACED', '#ffd700', 1500)
           return
@@ -114,14 +115,14 @@ export class GameInstance {
           }
         }
 
-        // If a building is selected, set its rally point
-        if (this.sim.selectedBuildingId) {
+        // If a building is selected (and no specks selected), set its rally point
+        if (this.sim.selectedBuildingId && this.sim.selectedSpeckIds.size === 0) {
           this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
           this.renderer.showRallyPing(wx, wy)
           return
         }
 
-        // Default: global rally for all units
+        // Default: global rally for all units (or move selected specks)
         this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy)
       },
@@ -148,6 +149,7 @@ export class GameInstance {
       () => {                                                          // Escape — clear selection / cancel build mode
         if (this.pendingBuild) {
           this.pendingBuild = null
+          if (this.canvas) this.canvas.style.cursor = 'default'
           this.notify('Build cancelled', '#aaaaaa', 800)
           return
         }
@@ -622,6 +624,15 @@ export class GameInstance {
       shakeX = (Math.random() * 2 - 1) * s
       shakeY = (Math.random() * 2 - 1) * s
     }
+    // Update ghost building preview (shown while placing a turret)
+    if (this.pendingBuild) {
+      const mw = this.inputHandler.getMouseWorld()
+      if (mw) this.renderer.setGhostBuilding(this.pendingBuild, mw.x, mw.y)
+      else this.renderer.setGhostBuilding(null, 0, 0)
+    } else {
+      this.renderer.setGhostBuilding(null, 0, 0)
+    }
+
     const dragRect = this.inputHandler.getDragRect()
     this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
     this.rafId = requestAnimationFrame(this.loop)
@@ -694,7 +705,8 @@ export class GameInstance {
 
   enterBuildMode(buildingTypeId: string) {
     this.pendingBuild = buildingTypeId
-    this.notify('◆ CLICK TO PLACE TURRET', '#ffd700', 3000)
+    if (this.canvas) this.canvas.style.cursor = 'cell'
+    this.notify('◆ RIGHT-CLICK TO PLACE TURRET — Esc to cancel', '#ffd700', 4000)
   }
 
   snapToAction() {

@@ -997,6 +997,9 @@ export function HUD() {
             const b = hud.selectedBuilding
             const hpFrac = b.hp / b.maxHp
             const hpColor = hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.2 ? '#ffaa44' : '#ff4f7b'
+            const sacrificeFrac = b.underConstruction
+              ? (b.sacrificeArrived ?? 0) / (b.sacrificeRequired ?? 20)
+              : 1
             return (
               <div style={{
                 background: 'rgba(0,0,0,0.65)',
@@ -1007,17 +1010,33 @@ export function HUD() {
                 pointerEvents: 'none',
               }}>
                 <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
-                  {b.typeId.toUpperCase()}
+                  {b.typeId.toUpperCase()}{b.underConstruction ? ' — BUILDING' : ''}
                 </div>
-                <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
-                  HP {Math.ceil(b.hp)} / {b.maxHp}
-                </div>
-                <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
-                  <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
-                </div>
-                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
-                  right-click to set rally
-                </div>
+                {b.underConstruction ? (
+                  <>
+                    <div style={{ fontSize: 9, color: '#ffd700', letterSpacing: 1, marginBottom: 4 }}>
+                      {b.sacrificeArrived ?? 0} / {b.sacrificeRequired ?? 20} specks
+                    </div>
+                    <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', width: `${sacrificeFrac * 100}%`, background: '#ffd700', borderRadius: 2, transition: 'width 150ms' }} />
+                    </div>
+                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
+                      specks sacrificing...
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
+                      HP {Math.ceil(b.hp)} / {b.maxHp}
+                    </div>
+                    <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
+                    </div>
+                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
+                      right-click to set rally
+                    </div>
+                  </>
+                )}
               </div>
             )
           })()}

@@ -374,6 +374,11 @@ export class InputHandler {
     }
   }
 
+  getMouseWorld(): { x: number; y: number } | null {
+    if (this.mouseX < 0) return null
+    return screenToWorld(this.mouseX, this.mouseY, this.camera)
+  }
+
   getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {
     if (!this.isDragSelect) return null
     const rect = this.canvas.getBoundingClientRect()
