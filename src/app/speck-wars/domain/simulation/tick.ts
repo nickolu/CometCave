@@ -1,9 +1,9 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
-import { updateSpawners, spawnCampDefenders } from './spawner'
+import { updateSpawners, spawnCampDefenders, spawnCommander } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
-import { resolveCombat, removeDeadSpecks } from './combat'
+import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
@@ -58,6 +58,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
+
+  // 6a. Hero abilities (AoE pulse for level 2 Commanders)
+  updateHeroAbilities(sim, dt)
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
@@ -184,6 +187,45 @@ function updateCreepCamps(sim: SimulationState, dt: number) {
       // Force the speck to return to camp
       meta.state = 'moving'
       meta.targetId = null
+    }
+  }
+}
+
+function updateCommanders(sim: SimulationState, dt: number) {
+  const PULSE_RANGE = 50
+  const PULSE_DAMAGE = 0.5
+  const PULSE_PERIOD = 3000
+
+  // Tick commanderRespawnMs for each player and respawn when ready
+  for (const [pid, player] of Object.entries(sim.players)) {
+    if ((player.commanderRespawnMs ?? 0) > 0) {
+      player.commanderRespawnMs = Math.max(0, (player.commanderRespawnMs ?? 0) - dt)
+      if (player.commanderRespawnMs <= 0) {
+        player.commanderRespawnMs = undefined
+        spawnCommander(sim, pid)
+      }
+    }
+  }
+
+  // AoE pulse for Level 2+ commanders
+  for (let i = 0; i < sim.speckCount; i++) {
+    const meta = sim.speckMeta[i]
+    if (!meta?.isCommander || sim.speckHp[i] <= 0) continue
+    if ((meta.commanderLevel ?? 0) < 2) continue
+
+    meta.pulseTimer = Math.max(0, (meta.pulseTimer ?? PULSE_PERIOD) - dt)
+    if (meta.pulseTimer <= 0) {
+      meta.pulseTimer = PULSE_PERIOD
+      const pr2 = PULSE_RANGE * PULSE_RANGE
+      for (let j = 0; j < sim.speckCount; j++) {
+        const jm = sim.speckMeta[j]
+        if (!jm || jm.ownerId === meta.ownerId || sim.speckHp[j] <= 0) continue
+        const dx = sim.speckX[j] - sim.speckX[i]
+        const dy = sim.speckY[j] - sim.speckY[i]
+        if (dx * dx + dy * dy <= pr2) {
+          sim.speckHp[j] -= PULSE_DAMAGE
+        }
+      }
     }
   }
 }

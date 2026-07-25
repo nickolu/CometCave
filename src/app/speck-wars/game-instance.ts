@@ -678,6 +678,30 @@ export class GameInstance {
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
         }
+        if (event.type === 'HERO_LEVELED' && event.ownerId === 'player') {
+          if (event.heroLevel === 1) {
+            this.notify('⚔ COMMANDER BLOODED — +15% SPEED', '#ffd700', 3000)
+          } else if (event.heroLevel === 2) {
+            this.notify('⚔ COMMANDER EMPOWERED — AoE PULSE ACTIVE', '#ffd700', 3000)
+          }
+          store.pushKillFeedEntry({ icon: '⚔', label: 'COMMANDER LEVELS UP', color: '#ffd700' })
+        }
+        if (event.type === 'HERO_DIED' && event.ownerId === 'player') {
+          this.notify('⚔ COMMANDER FALLEN — RESPAWNING IN 15s', '#ff4f7b', 4000)
+          store.pushKillFeedEntry({ icon: '†', label: `COMMANDER FALLEN (${event.kills} kills)`, color: '#ff4f7b' })
+        }
+        if (event.type === 'HERO_SPAWNED' && event.ownerId === 'player') {
+          this.notify('⚔ COMMANDER REBORN', '#4af7c4', 2000)
+        }
+        if (event.type === 'COMMANDER_LEVEL_UP' && event.ownerId === 'player') {
+          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — AoE PULSE' : '🌟 COMMANDER LVL 3 — SPEED AURA'
+          this.notify(label, '#ffd700', 4000)
+          store.pushKillFeedEntry({ icon: '⭐', label: label.split(' — ')[0].replace('⚡ ', '').replace('🌟 ', ''), color: '#ffd700' })
+        }
+        if (event.type === 'COMMANDER_DIED' && event.ownerId === 'player') {
+          this.notify('💀 COMMANDER FALLEN — respawning in 15s', '#ff6600', 3000)
+          store.pushKillFeedEntry({ icon: '💀', label: 'COMMANDER FALLEN', color: '#ff6600' })
+        }
       }
 
       // Retreat wave warning: 10+ player specks retreating = notify

@@ -27,6 +27,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
+    const speedMult = (meta.isHero && (meta.heroLevel ?? 0) >= 1) ? 1.15 : 1.0
+
     // Retreating: flee to nearest friendly building
     if (meta.state === 'retreating') {
       let nearestBuilding = null
@@ -52,8 +54,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           const dist = Math.sqrt(nearestDist2)
           const dx = nearestBuilding.x - speckX[i]
           const dy = nearestBuilding.y - speckY[i]
-          speckVx[i] = (dx / dist) * stype.speed
-          speckVy[i] = (dy / dist) * stype.speed
+          speckVx[i] = (dx / dist) * stype.speed * speedMult
+          speckVy[i] = (dy / dist) * stype.speed * speedMult
           speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
           speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
         }
@@ -78,8 +80,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = target.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed
-          ay += (dy / dist) * stype.speed
+          ax += (dx / dist) * stype.speed * speedMult
+          ay += (dy / dist) * stype.speed * speedMult
         }
       }
     } else {
@@ -121,8 +123,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = rally.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed
-          ay += (dy / dist) * stype.speed
+          ax += (dx / dist) * stype.speed * speedMult
+          ay += (dy / dist) * stype.speed * speedMult
         } else if (meta.patrolDestX !== undefined && meta.patrolOriginX !== undefined) {
           // Arrived at patrol leg — swap origin and destination to bounce back
           const newDestX = meta.patrolOriginX
@@ -181,8 +183,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         if (closestDist2 < Infinity) {
           const dist = Math.sqrt(closestDist2)
           if (dist > stype.attackRange) {
-            ax += ((closestX - speckX[i]) / dist) * stype.speed
-            ay += ((closestY - speckY[i]) / dist) * stype.speed
+            ax += ((closestX - speckX[i]) / dist) * stype.speed * speedMult
+            ay += ((closestY - speckY[i]) / dist) * stype.speed * speedMult
           }
         }
       }
