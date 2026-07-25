@@ -96,6 +96,9 @@ export class Renderer {
         const color = PLAYER_COLORS[event.ownerId] ?? 0xffffff
         this.effectsLayer.addDestructionBurst(event.x, event.y, color)
       }
+      if (event.type === 'CONSTRUCTION_COMPLETE') {
+        this.showRallyPing(event.x, event.y)
+      }
       if (event.type === 'OUTPOST_CAPTURED') {
         const building = sim.buildings[event.outpostId]
         const color = PLAYER_COLORS[event.newOwner] ?? 0xffffff

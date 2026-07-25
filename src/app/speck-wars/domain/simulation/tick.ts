@@ -8,6 +8,8 @@ import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
 import { HUD_UPDATE_INTERVAL, DOMINATION_TIME, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME } from '../constants'
+import { updateConstruction } from './construction'
+import { updateTurrets } from './turret'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -17,6 +19,12 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 2. Spawn new specks from buildings
   updateSpawners(sim, dt)
+
+  // 2a. Construction: absorb sacrificing specks, count down build timer
+  updateConstruction(sim, dt)
+
+  // 2b. Turrets: fire missiles at nearby enemies
+  updateTurrets(sim, dt)
 
   // 3. Each speck picks/validates its target
   runSpeckAI(sim)
@@ -267,6 +275,53 @@ function consumeInputs(sim: SimulationState) {
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
       }
+    }
+    if (event.type === 'BUILD') {
+      const btype = BUILDING_TYPES[event.buildingTypeId]
+      if (!btype) continue
+      const sacrificeCost = btype.sacrificeCost ?? 0
+      // Count how many player specks are selected (or all if no selection)
+      let selectedCount = 0
+      const useSelection = sim.selectedSpeckIds.size > 0
+      for (let i = 0; i < sim.speckCount; i++) {
+        if (!sim.speckIds[i]) continue
+        const m = sim.speckMeta[i]
+        if (!m || m.ownerId !== event.ownerId) continue
+        if (useSelection && !sim.selectedSpeckIds.has(m.id)) continue
+        selectedCount++
+      }
+      if (selectedCount < sacrificeCost) continue  // not enough specks
+      // Create the construction site
+      const buildId = `building-${event.ownerId}-turret-${sim.tick}`
+      sim.buildings[buildId] = {
+        id: buildId,
+        typeId: event.buildingTypeId,
+        ownerId: event.ownerId,
+        x: event.x, y: event.y,
+        hp: btype.maxHp, maxHp: btype.maxHp,
+        spawnTimer: 0,
+        inputBuffer: {},
+        underConstruction: true,
+        sacrificeRequired: sacrificeCost,
+        sacrificeArrived: 0,
+      }
+      // Send selected (or all) specks to march
+      let sent = 0
+      for (let i = 0; i < sim.speckCount; i++) {
+        if (sent >= sacrificeCost) break
+        if (!sim.speckIds[i]) continue
+        const m = sim.speckMeta[i]
+        if (!m || m.ownerId !== event.ownerId) continue
+        if (useSelection && !sim.selectedSpeckIds.has(m.id)) continue
+        m.constructTargetId = buildId
+        m.assignedRallyX = event.x
+        m.assignedRallyY = event.y
+        m.holdPosition = false
+        sent++
+      }
+      // Clear selection after dispatching
+      sim.selectedSpeckIds.clear()
+      sim.rallyPoints['player-selected'] = null
     }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue

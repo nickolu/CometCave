@@ -89,6 +89,10 @@ export function resolveCombat(sim: SimulationState, dt: number) {
         speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * fortifyBonus
         meta.attackCooldown = stype.attackCooldown
         meta.state = 'attacking'
+        // die_on_impact: missile self-destructs after dealing damage
+        if (stype.abilities.includes('die_on_impact')) {
+          speckHp[i] = 0
+        }
         if (speckHp[j] <= 0) {
           meta.kills++  // attacker earns a kill
           // Notify when player loses a veteran or elite

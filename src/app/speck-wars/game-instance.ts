@@ -53,6 +53,7 @@ export class GameInstance {
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
   private cinematicMs = 0
+  private pendingBuild: string | null = null  // building type ID awaiting placement click
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -93,6 +94,15 @@ export class GameInstance {
       this.canvas,
       this.camera,
       (wx, wy) => {
+        // Build placement mode: place the pending building at the clicked location
+        if (this.pendingBuild) {
+          const typeId = this.pendingBuild
+          this.pendingBuild = null
+          this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
+          this.notify('◆ TURRET PLACED', '#ffd700', 1500)
+          return
+        }
+
         // Check if click hit a player building — select it instead of rallying
         for (const building of Object.values(this.sim.buildings)) {
           if (building.ownerId !== 'player') continue
@@ -108,11 +118,6 @@ export class GameInstance {
         if (this.sim.selectedBuildingId) {
           this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
           this.renderer.showRallyPing(wx, wy)
-          if (this.attackMovePending) {
-            this.attackMovePending = false
-            if (this.canvas) this.canvas.style.cursor = 'default'
-            this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
-          }
           return
         }
 
@@ -140,7 +145,12 @@ export class GameInstance {
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
-      () => {                                                          // Escape — clear selection
+      () => {                                                          // Escape — clear selection / cancel build mode
+        if (this.pendingBuild) {
+          this.pendingBuild = null
+          this.notify('Build cancelled', '#aaaaaa', 800)
+          return
+        }
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
@@ -205,6 +215,7 @@ export class GameInstance {
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
         this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
       },
+      buildTurret: () => this.enterBuildMode('turret'),
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
@@ -679,6 +690,11 @@ export class GameInstance {
       return
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
+  }
+
+  enterBuildMode(buildingTypeId: string) {
+    this.pendingBuild = buildingTypeId
+    this.notify('◆ CLICK TO PLACE TURRET', '#ffd700', 3000)
   }
 
   snapToAction() {
