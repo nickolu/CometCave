@@ -15,6 +15,7 @@ export class GameInstance {
   private sim: SimulationState
   private renderer: Renderer
   private rafId: number | null = null
+  private destroyed = false
   private lastTime: number = 0
   private camera: Camera
   private inputHandler!: InputHandler
@@ -99,6 +100,11 @@ export class GameInstance {
     console.log('GameInstance started')
     document.addEventListener('visibilitychange', this.onVisibilityChange)
     await this.renderer.init(this.canvas)
+    // destroy() ran while the renderer was initialising (React StrictMode mounts, tears
+    // down and remounts the canvas effect). Bail out rather than wiring up input, the
+    // store and a render loop that nothing owns — the renderer has already cleaned
+    // itself up, and a second GameInstance is running by now.
+    if (this.destroyed) return
     this.inputHandler = new InputHandler(
       this.canvas,
       this.camera,
@@ -338,6 +344,7 @@ export class GameInstance {
   }
 
   private loop = (now: number) => {
+    if (this.destroyed) return   // a frame queued before destroy() can still fire
     const dt = Math.min(now - this.lastTime, 50)
     this.lastTime = now
 
@@ -795,7 +802,11 @@ export class GameInstance {
   }
 
   destroy() {
-    if (this.rafId !== null) cancelAnimationFrame(this.rafId)
+    this.destroyed = true
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
     this.renderer.destroy()
     this.inputHandler?.destroy()

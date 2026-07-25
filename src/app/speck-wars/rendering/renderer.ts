@@ -40,6 +40,8 @@ export class Renderer {
   private rallyGfx!: Graphics
   private selectionGfx!: Graphics
   private vignetteGfx!: Graphics
+  private ready = false        // layers built — everything below is safe to touch
+  private destroyed = false    // destroy() was called, possibly mid-init
 
   async init(canvas: HTMLCanvasElement) {
     const app = new Application() as PixiApplication
@@ -50,6 +52,13 @@ export class Renderer {
       antialias: false,
       preference: 'webgl',
     })
+    // We were destroyed while app.init() was in flight (React StrictMode remounts the
+    // canvas effect immediately). The app owns a live WebGL context, so tear it down
+    // here — destroy() could not, because it had nothing to tear down yet.
+    if (this.destroyed) {
+      app.destroy()
+      return
+    }
     this.app = app
 
     this.world = new Container()
@@ -78,6 +87,13 @@ export class Renderer {
 
     this.vignetteGfx = new Graphics()
     this.app.stage.addChild(this.vignetteGfx)
+
+    this.ready = true
+  }
+
+  /** True once init() has finished building the layers. */
+  get isReady(): boolean {
+    return this.ready
   }
 
   render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null): void {
@@ -212,6 +228,12 @@ export class Renderer {
   }
 
   destroy() {
+    this.destroyed = true
+    // Nothing was built yet — either init() has not run, or it is still awaiting
+    // app.init() and will clean up after itself when it resumes.
+    if (!this.ready) return
+    this.ready = false
+
     this.starfieldLayer.destroy()
     this.gridLayer.destroy()
     this.effectsLayer.destroy()
