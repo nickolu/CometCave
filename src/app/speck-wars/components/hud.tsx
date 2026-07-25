@@ -559,7 +559,7 @@ export function HUD() {
           }}>
             <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
             <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
-            <span>Scroll — zoom</span><span>R — clear rally</span>
+            <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
             <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
             <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
