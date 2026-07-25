@@ -38,8 +38,8 @@ interface SpeckWarsStore {
   addOutpostCaptured: () => void
   isNewBest: boolean
   setIsNewBest: (v: boolean) => void
-  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null }
-  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void } | null) => void
+  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; guard: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null }
+  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; guard: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void } | null) => void
   surrender: () => void
   resetGame: () => void
 }
@@ -88,8 +88,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   addOutpostCaptured: () => set(s => ({ outpostsCaptured: s.outpostsCaptured + 1 })),
   isNewBest: false,
   setIsNewBest: v => set({ isNewBest: v }),
-  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null },
-  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null } }),
+  gameActions: { defend: null, advance: null, rush: null, guard: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null },
+  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, guard: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null } }),
   surrender: () => {
     const s = get()
     resetWinStreak()
