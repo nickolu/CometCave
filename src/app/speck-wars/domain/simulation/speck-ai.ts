@@ -52,11 +52,10 @@ export function runSpeckAI(sim: SimulationState) {
       meta.targetId = null
     }
 
-    // Hold position flag: don't move or attack
+    // Hold position flag: force state to 'holding' so movement.ts keeps them stationary,
+    // then fall through to the 'holding' block to handle adjacent attacks
     if (meta.holdPosition) {
-      meta.state = 'idle'
-      meta.targetId = null
-      continue
+      meta.state = 'holding'
     }
 
     // Holding specks: don't move or pursue, but attack enemies within melee range
