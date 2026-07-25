@@ -102,6 +102,10 @@ export class FogLayer {
 
     this.visionTexture = createVisionTexture()
     this.visionScene = new Container()     // drawn into maskRT, never added to the stage
+
+    // A fresh render texture is uninitialised; clear it so the first frame is fully
+    // fogged rather than whatever happened to be in the buffer.
+    this.renderer.render({ container: this.visionScene, target: this.maskRT, clear: true })
   }
 
   update(sim: SimulationState, playerId: string): void {
