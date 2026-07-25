@@ -52,6 +52,7 @@ export class GameInstance {
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
   private cinematicMs = 0
+  private gameOverFreezeMs = 0  // freeze sim during dramatic game-over delay
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -233,6 +234,15 @@ export class GameInstance {
       return
     }
 
+    if (this.gameOverFreezeMs > 0) {
+      this.gameOverFreezeMs = Math.max(0, this.gameOverFreezeMs - dt)
+      const { shakeX, shakeY } = this.computeShake(dt)
+      const dragRect = this.inputHandler.getDragRect()
+      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
+      this.rafId = requestAnimationFrame(this.loop)
+      return
+    }
+
     if (store.phase === 'playing') {
       const scaledDt = dt * store.speed
       this.elapsedMs += scaledDt
@@ -245,7 +255,8 @@ export class GameInstance {
           const won = event.winnerId === 'player'
           store.setWinnerId(event.winnerId)
           store.setVictoryType(event.victoryType)
-          // Dramatic camera shake on game-over
+          // Freeze sim and apply camera shake during dramatic game-over delay
+          this.gameOverFreezeMs = 1400
           this.shakeMs = won ? 700 : 450
           this.shakeMaxMs = won ? 700 : 450
           this.shakeStrength = won ? 14 : 9
@@ -583,17 +594,18 @@ export class GameInstance {
     // Clamp camera so world doesn't disappear off-screen
     clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
 
-    let shakeX = 0, shakeY = 0
-    if (this.shakeMs > 0) {
-      this.shakeMs -= dt
-      const t = Math.max(0, this.shakeMs / this.shakeMaxMs)
-      const s = this.shakeStrength * t
-      shakeX = (Math.random() * 2 - 1) * s
-      shakeY = (Math.random() * 2 - 1) * s
-    }
+    const { shakeX, shakeY } = this.computeShake(dt)
     const dragRect = this.inputHandler.getDragRect()
     this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
     this.rafId = requestAnimationFrame(this.loop)
+  }
+
+  private computeShake(dt: number): { shakeX: number; shakeY: number } {
+    if (this.shakeMs <= 0) return { shakeX: 0, shakeY: 0 }
+    this.shakeMs -= dt
+    const t = Math.max(0, this.shakeMs / this.shakeMaxMs)
+    const s = this.shakeStrength * t
+    return { shakeX: (Math.random() * 2 - 1) * s, shakeY: (Math.random() * 2 - 1) * s }
   }
 
   destroy() {
