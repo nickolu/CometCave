@@ -1337,6 +1337,30 @@ export function HUD() {
                 </span>
               )}
             </div>
+            {/* Army upgrade tier */}
+            {kills >= 20 && (() => {
+              const upgradeLevel = kills >= 300 ? 3 : kills >= 150 ? 2 : kills >= 50 ? 1 : 0
+              const tiers: Array<{ icon: string; label: string; color: string } | null> = [
+                null,
+                { icon: '⚡', label: 'BLOODED', color: '#88ffaa' },
+                { icon: '🛡', label: 'HARDENED', color: '#44aaff' },
+                { icon: '🔥', label: 'VETERAN ARMY', color: '#ff8844' },
+              ]
+              const tier = tiers[upgradeLevel]
+              const nextKills = upgradeLevel === 0 ? 50 : upgradeLevel === 1 ? 150 : upgradeLevel === 2 ? 300 : null
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, letterSpacing: 0.5 }}>
+                  {tier ? (
+                    <span style={{ color: tier.color, opacity: 0.8 }}>{tier.icon} {tier.label}</span>
+                  ) : (
+                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>army upgrade: {kills}/50</span>
+                  )}
+                  {tier && nextKills && (
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>→ {nextKills}k</span>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         )
       })()}
