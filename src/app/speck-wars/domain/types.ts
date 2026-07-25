@@ -11,6 +11,8 @@ export interface SpeckMeta {
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
   holdPosition?: boolean   // true = don't move, don't attack, wait for new order
+  patrolOriginX?: number   // when set with assignedRally, speck bounces between origin and rally point
+  patrolOriginY?: number
 }
 
 export interface BuildingEntity {
@@ -82,6 +84,7 @@ export type InputEvent =
   | { type: 'SURGE'; ownerId: string }
   | { type: 'STOP'; ownerId: string }
   | { type: 'HOLD'; ownerId: string }
+  | { type: 'PATROL'; ownerId: string; x: number; y: number }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }

@@ -165,6 +165,10 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
+      (wx: number, wy: number) => {                                    // P + right-click — patrol
+        this.sim.inputQueue.push({ type: 'PATROL', ownerId: 'player', x: wx, y: wy })
+        this.notify('◆ PATROL', '#44ffaa', 2000)
+      },
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -180,6 +184,7 @@ export class GameInstance {
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
         this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
       },
+      patrol: () => { this.notify('P + right-click to set patrol destination', '#44ffaa', 2000) },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)

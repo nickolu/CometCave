@@ -563,7 +563,7 @@ export function HUD() {
             <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
             <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
             <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-            <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
+            <span>A — attack-move modifier · P — patrol modifier</span><span>P + right-click — patrol specks between two points</span>
             <span>S — stop · H — hold position</span><span>C — center on base</span>
             <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
