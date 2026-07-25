@@ -169,9 +169,19 @@ function consumeInputs(sim: SimulationState) {
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
           meta.holdPosition = false  // clear hold when a new rally is issued
+          meta.patrolOriginX = undefined  // cancel patrol when a new move is ordered
+          meta.patrolOriginY = undefined
         }
       } else {
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+        // Global rally: cancel patrol on all owner specks so they obey the command
+        for (let i = 0; i < sim.speckCount; i++) {
+          const meta = sim.speckMeta[i]
+          if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+          meta.patrolOriginX = undefined
+          meta.patrolOriginY = undefined
+          meta.holdPosition = false
+        }
         // Update per-building rally for all player buildings
         if (event.ownerId === 'player') {
           for (const building of Object.values(sim.buildings)) {
