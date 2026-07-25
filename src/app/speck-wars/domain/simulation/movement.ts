@@ -27,8 +27,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
-    const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
     const speedMult = (meta.isHero && (meta.heroLevel ?? 0) >= 1) ? 1.15 : 1.0
+    const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
 
     // Retreating: flee to nearest friendly building
     if (meta.state === 'retreating') {

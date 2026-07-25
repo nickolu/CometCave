@@ -601,6 +601,11 @@ export class GameInstance {
           this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
           store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
         }
+        if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
+          const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
+          this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)
+          store.pushKillFeedEntry({ icon: '⚗', label: labels[event.upgrade as keyof typeof labels], color: '#44aaff' })
+        }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {
             store.addOutpostCaptured()
@@ -680,11 +685,6 @@ export class GameInstance {
 
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
-        }
-        if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
-          const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
-          this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)
-          store.pushKillFeedEntry({ icon: '⚗', label: labels[event.upgrade as keyof typeof labels], color: '#44aaff' })
         }
         if (event.type === 'HERO_LEVELED' && event.ownerId === 'player') {
           if (event.heroLevel === 1) {

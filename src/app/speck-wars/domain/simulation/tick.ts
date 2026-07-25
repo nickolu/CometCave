@@ -496,17 +496,16 @@ function consumeInputs(sim: SimulationState) {
       if (p) p.stance = event.stance
     }
     if (event.type === 'RESEARCH_UPGRADE') {
+      const player = sim.players[event.ownerId]
       const building = sim.buildings[event.buildingId]
-      if (!building) continue
+      if (!player || !building) continue
       if (building.ownerId !== event.ownerId) continue
       if (building.typeId !== 'outpost') continue
-      if ((building.fortifyDuration ?? 0) < 20000) continue
-      if (building.researchedUpgrade) continue  // already researched
+      if ((building.fortifyDuration ?? 0) < 20000) continue  // must hold 20s first
+      if (building.researchedUpgrade) continue  // outpost already researched
+      if (player.outpostUpgrades[event.upgrade]) continue  // already have this upgrade globally
       building.researchedUpgrade = event.upgrade
-      const player = sim.players[event.ownerId]
-      if (player) {
-        player.outpostUpgrades[event.upgrade] = true
-      }
+      player.outpostUpgrades[event.upgrade] = true
       sim.events.push({ type: 'OUTPOST_UPGRADE_RESEARCHED', buildingId: event.buildingId, ownerId: event.ownerId, upgrade: event.upgrade })
     }
     if (event.type === 'SACRIFICE') {
