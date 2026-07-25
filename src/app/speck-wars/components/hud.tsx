@@ -73,6 +73,10 @@ export function HUD() {
           from { transform: scale(1.5); opacity: 0; }
           to { transform: scale(1); opacity: 1; }
         }
+        @keyframes minimap-capture-pulse {
+          0% { opacity: 0.8; transform: scale(0.85); }
+          100% { opacity: 0; transform: scale(1.6); }
+        }
       `}</style>
       {hud?.baseUnderThreat && (
         <div style={{
@@ -307,15 +311,31 @@ export function HUD() {
                     {ci && ci.progress > 0 && (() => {
                       const sideColor = ci.side === 'player' ? '#4af7c4' : '#ff5555'
                       return (
-                        <circle
-                          cx={bx} cy={by}
-                          r={4 + ci.progress * 3}
-                          fill="none"
-                          stroke={sideColor}
-                          strokeWidth={1}
-                          opacity={0.8 - ci.progress * 0.3}
-                          style={{ pointerEvents: 'none' }}
-                        />
+                        <>
+                          {/* Static capture progress ring */}
+                          <circle
+                            cx={bx} cy={by}
+                            r={4 + ci.progress * 3}
+                            fill="none"
+                            stroke={sideColor}
+                            strokeWidth={1}
+                            opacity={0.8 - ci.progress * 0.3}
+                            style={{ pointerEvents: 'none' }}
+                          />
+                          {/* Pulsing outward ring — draws attention to active capture */}
+                          <circle
+                            cx={bx} cy={by}
+                            r={4}
+                            fill="none"
+                            stroke={sideColor}
+                            strokeWidth={1.5}
+                            style={{
+                              pointerEvents: 'none',
+                              animation: `minimap-capture-pulse 1.1s ease-out infinite`,
+                              transformOrigin: `${bx}px ${by}px`,
+                            }}
+                          />
+                        </>
                       )
                     })()}
                   </g>
