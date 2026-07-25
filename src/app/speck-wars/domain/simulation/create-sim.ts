@@ -4,6 +4,7 @@ import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty } from '../../store'
+import { spawnCampDefenders } from './spawner'
 
 const aiSpawnInterval: Record<Difficulty, number> = {
   easy: 2000,
@@ -44,17 +45,17 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const player: Player = {
     id: 'player', name: 'Player',
     color: PLAYER_COLOR, isAI: false, isDefeated: false, stockpile: {},
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
   }
   const ai: Player = {
     id: 'ai', name: 'AI',
     color: AI_COLOR, isAI: true, isDefeated: false, stockpile: {},
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
   }
   const neutral: Player = {
     id: 'neutral', name: 'Neutral',
     color: NEUTRAL_COLOR, isAI: false, isDefeated: false, stockpile: {},
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
   }
 
   const JITTER = 150  // ± px of positional variation per game
@@ -77,6 +78,24 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     }
   }
 
+  // Add creep camps at fixed positions
+  const campPositions = [
+    { id: 'camp-north', x: 1100, y: 900 },
+    { id: 'camp-south', x: 1900, y: 2100 },
+  ]
+  const campBuildings: Record<string, BuildingEntity> = {}
+  for (const pos of campPositions) {
+    campBuildings[pos.id] = {
+      id: pos.id,
+      typeId: 'creep_camp',
+      ownerId: 'neutral',
+      x: pos.x, y: pos.y,
+      hp: 40, maxHp: 40,
+      spawnTimer: 0,
+      inputBuffer: {},
+    }
+  }
+
   // Pick daily modifier — LAST RNG call so it doesn't shift existing map layout or jitter
   const modifierIndex = Math.floor(rng() * DAILY_MODIFIER_POOL.length)
   const dailyModifier: DailyModifier = DAILY_MODIFIER_POOL[modifierIndex]
@@ -94,11 +113,11 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     aiBase.spawnIntervalOverride = (aiBase.spawnIntervalOverride ?? DEFAULT_BASE_INTERVAL) * 0.65
   }
 
-  return {
+  const sim: SimulationState = {
     tick: 0,
     rngState: seed,
     players: { player, ai, neutral },
-    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings },
+    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings, ...campBuildings },
     speckIds: new Array(MAX_SPECKS).fill(''),
     speckX: new Float32Array(MAX_SPECKS),
     speckY: new Float32Array(MAX_SPECKS),
@@ -122,4 +141,11 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     waveInProgress: false,
     sacrificeCooldown: 0,
   }
+
+  // Spawn initial defenders for each creep camp
+  for (const pos of campPositions) {
+    spawnCampDefenders(sim, pos.id)
+  }
+
+  return sim
 }

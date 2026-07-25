@@ -34,4 +34,10 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     attackRange: 220,
     fireInterval: 1200,
   },
+  creep_camp: {
+    id: 'creep_camp', name: 'Creep Camp',
+    maxHp: 40, size: 18,
+    spawnTypeId: null,
+    spawnInterval: 99999, spawnCount: 0,  // never used as spawner
+  },
 }

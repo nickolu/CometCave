@@ -1,9 +1,9 @@
 import type { SimulationState } from '../types'
-import { CAPTURE_RADIUS, CAPTURE_TIME } from '../constants'
+import { CAPTURE_RADIUS, CAPTURE_TIME, CREEP_CAMP_RESET_MS, CREEP_CAMP_BOOST_MS } from '../constants'
 
 export function updateCapture(sim: SimulationState, dt: number) {
   for (const building of Object.values(sim.buildings)) {
-    if (building.typeId !== 'outpost') continue
+    if (building.typeId !== 'outpost' && building.typeId !== 'creep_camp') continue
 
     // Count nearby specks by owner (not neutral)
     const counts: Record<string, number> = {}
@@ -56,19 +56,33 @@ export function updateCapture(sim: SimulationState, dt: number) {
     if ((building.captureProgress ?? 0) >= 1) {
       const previousOwner = building.ownerId
       building.ownerId = dominantOwner
-      building.fortifyDuration = 0
       building.captureProgress = 0
       building.captureSide = null
       // Reset spawn timer so it starts fresh for the new owner
       building.spawnTimer = 0
       // Clear previous owner's rally — new owner should not inherit it
       building.rallyPoint = null
-      sim.events.push({
-        type: 'OUTPOST_CAPTURED',
-        outpostId: building.id,
-        newOwner: dominantOwner,
-        previousOwner,
-      })
+
+      if (building.typeId === 'outpost') {
+        building.fortifyDuration = 0
+        sim.events.push({
+          type: 'OUTPOST_CAPTURED',
+          outpostId: building.id,
+          newOwner: dominantOwner,
+          previousOwner,
+        })
+      } else if (building.typeId === 'creep_camp') {
+        building.campResetMs = CREEP_CAMP_RESET_MS
+        const newOwnerPlayer = sim.players[dominantOwner]
+        if (newOwnerPlayer) {
+          newOwnerPlayer.creepCampBoostMs = CREEP_CAMP_BOOST_MS
+        }
+        sim.events.push({
+          type: 'CAMP_CAPTURED',
+          campId: building.id,
+          newOwner: dominantOwner,
+        })
+      }
     }
   }
 }

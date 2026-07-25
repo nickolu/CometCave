@@ -1,7 +1,7 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS } from '../constants'
+import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS } from '../constants'
 
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
 const SEPARATION_FORCE = 120  // strength of push-apart
@@ -136,6 +136,27 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         }
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
+
+        // Defender leash: don't chase beyond 1.5× CREEP_CAMP_ZONE_RADIUS from rally point
+        if (meta.typeId === 'defender' && meta.assignedRallyX !== undefined && meta.assignedRallyY !== undefined) {
+          const ldx = speckX[i] - meta.assignedRallyX
+          const ldy = speckY[i] - meta.assignedRallyY
+          const leashLimit = CREEP_CAMP_ZONE_RADIUS * 1.5
+          if (ldx * ldx + ldy * ldy > leashLimit * leashLimit) {
+            // Beyond leash — don't engage, let the rally logic pull back
+            const rdx = meta.assignedRallyX - speckX[i]
+            const rdy = meta.assignedRallyY - speckY[i]
+            const rdist = Math.sqrt(rdx * rdx + rdy * rdy)
+            if (rdist > 0) {
+              speckVx[i] = (rdx / rdist) * stype.speed
+              speckVy[i] = (rdy / rdist) * stype.speed
+              speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+              speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+            }
+            continue
+          }
+        }
+
         // Aggro range is determined by owner stance; AI uses a fixed 120px default
         const playerStance = sim.players[meta.ownerId]?.stance ?? 'defensive'
         const AGGRO_RANGE = playerStance === 'hold' ? 0

@@ -594,6 +594,10 @@ export class GameInstance {
             }
           }
         }
+        if (event.type === 'CAMP_CAPTURED' && event.newOwner === 'player') {
+          this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
+          store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
+        }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {
             store.addOutpostCaptured()
@@ -645,6 +649,15 @@ export class GameInstance {
         if (event.type === 'SPECK_LEGEND' && event.ownerId === 'player') {
           this.notify('✦✦ LEGEND BORN! ✦✦', '#cc44ff', 3000)
           store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
+        }
+        if (event.type === 'UPGRADE_UNLOCKED' && event.ownerId === 'player') {
+          const messages = [
+            '',
+            '⚡ BLOODED — Spawn Speed +10%',
+            '🛡 HARDENED — Units +1 HP',
+            '🔥 VETERAN ARMY — Damage +15%',
+          ]
+          this.notify(messages[event.level], '#ffd700', 3000)
         }
         if (event.type === 'VETERAN_FALLEN') {
           const isLegend = event.kills >= 12

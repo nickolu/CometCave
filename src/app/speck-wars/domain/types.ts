@@ -43,6 +43,7 @@ export interface BuildingEntity {
   sacrificeArrived?: number
   constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
+  campResetMs?: number          // ms until camp resets to neutral (when owned)
 }
 
 export interface Player {
@@ -55,6 +56,7 @@ export interface Player {
   totalKills: number           // cumulative kills for upgrade milestones
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
+  creepCampBoostMs: number     // ms of +25% spawn boost remaining from creep camp capture
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -123,6 +125,7 @@ export type SimEvent =
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
+  | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
 
 export interface HudData {
   players: Record<string, {
