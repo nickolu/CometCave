@@ -569,7 +569,7 @@ export function HUD() {
             <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
             <span>1/2/3 — set spawn type</span><span>Minimap — click to move</span>
             <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
-            <span>? — this help</span><span></span>
+            <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
               Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
             </span>
