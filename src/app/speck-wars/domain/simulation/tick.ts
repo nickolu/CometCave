@@ -357,6 +357,23 @@ function consumeInputs(sim: SimulationState) {
       sim.selectedSpeckIds.clear()
       sim.rallyPoints['player-selected'] = null
     }
+    if (event.type === 'SET_PATROL') {
+      const destSet = new Set(event.speckIds)
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+        if (!destSet.has(meta.id)) continue
+        meta.patrolOriginX = sim.speckX[i]
+        meta.patrolOriginY = sim.speckY[i]
+        meta.patrolDestX = event.destX
+        meta.patrolDestY = event.destY
+        meta.assignedRallyX = event.destX
+        meta.assignedRallyY = event.destY
+        meta.holdPosition = false
+        meta.attackMoveMode = false
+        meta.state = 'moving'
+      }
+    }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue
       const building = sim.buildings[event.buildingId]
