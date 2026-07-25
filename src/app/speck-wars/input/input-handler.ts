@@ -29,6 +29,7 @@ export class InputHandler {
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
+  private onBuildTurret?: () => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -70,6 +71,7 @@ export class InputHandler {
     onStop?: () => void,
     onHold?: () => void,
     onAttackMove?: (worldX: number, worldY: number) => void,
+    onBuildTurret?: () => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -96,6 +98,7 @@ export class InputHandler {
     this.onStop = onStop
     this.onHold = onHold
     this.onAttackMove = onAttackMove
+    this.onBuildTurret = onBuildTurret
     this.attach()
   }
 
@@ -358,6 +361,8 @@ export class InputHandler {
       this.onSelectAll?.()
     } else if (e.code === 'KeyF') {
       this.onSacrifice?.()
+    } else if (e.code === 'KeyT') {
+      this.onBuildTurret?.()
     } else if (['Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)) {
       const slot = parseInt(e.code.replace('Digit', ''))
       if (e.ctrlKey) {
