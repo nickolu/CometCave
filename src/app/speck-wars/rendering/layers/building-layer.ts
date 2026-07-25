@@ -35,7 +35,7 @@ export class BuildingLayer {
     this.spawnFlashMap.set(buildingId, Date.now())
   }
 
-  update(sim: SimulationState, playerColors: Record<string, number>, selectedBuildingId: string | null = null) {
+  update(sim: SimulationState, playerColors: Record<string, number>, selectedBuildingId: string | null = null, ghostBuild?: { typeId: string; wx: number; wy: number } | null) {
     const now = Date.now()
     this.gfx.clear()
 
@@ -340,6 +340,26 @@ export class BuildingLayer {
           ])
           this.gfx.lineStyle(0)
         }
+      }
+    }
+
+    // Draw placement ghost for pending build
+    if (ghostBuild) {
+      const btype = BUILDING_TYPES[ghostBuild.typeId]
+      const r = btype?.size ?? 18
+      const pulse = 0.5 + 0.3 * Math.sin(now / 400)
+      const ghostColor = 0x4af7c4  // player color
+      this.gfx.beginFill(ghostColor, pulse * 0.2)
+      this.gfx.drawCircle(ghostBuild.wx, ghostBuild.wy, r)
+      this.gfx.endFill()
+      this.gfx.lineStyle(2, ghostColor, pulse)
+      this.gfx.drawCircle(ghostBuild.wx, ghostBuild.wy, r)
+      this.gfx.lineStyle(0)
+      const attackRange = (btype as { attackRange?: number })?.attackRange
+      if (attackRange) {
+        this.gfx.lineStyle(0.5, ghostColor, 0.15)
+        this.gfx.drawCircle(ghostBuild.wx, ghostBuild.wy, attackRange)
+        this.gfx.lineStyle(0)
       }
     }
   }

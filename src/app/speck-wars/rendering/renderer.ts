@@ -71,11 +71,11 @@ export class Renderer {
     this.app.stage.addChild(this.selectionGfx)
   }
 
-  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null): void {
+  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null): void {
     this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
-    this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId)
+    this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId, ghostBuild)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
 
     // Process events from this tick
