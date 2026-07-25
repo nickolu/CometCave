@@ -48,6 +48,7 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
+  const stance = useSpeckWarsStore(s => s.stance)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -557,6 +558,7 @@ export function HUD() {
             <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
             <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
             <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
+            <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span></span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
               Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
             </span>
@@ -1086,6 +1088,11 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
+          {/* Stance indicator */}
+          <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.8, color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4', textAlign: 'right' }}>
+            {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
+            <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>
+          </div>
           <div style={{
             display: 'flex', gap: 6,
           }}>

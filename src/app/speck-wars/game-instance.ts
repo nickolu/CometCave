@@ -251,6 +251,7 @@ export class GameInstance {
     )
     this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
+    this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
@@ -854,6 +855,23 @@ export class GameInstance {
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
     useSpeckWarsStore.getState().addSacrificeUsed()
+  }
+
+  setStance(stance: 'aggressive' | 'defensive' | 'hold') {
+    this.sim.inputQueue.push({ type: 'SET_STANCE', ownerId: 'player', stance })
+    useSpeckWarsStore.getState().setStance(stance)
+  }
+
+  cycleStance() {
+    const current = useSpeckWarsStore.getState().stance
+    const next: 'aggressive' | 'defensive' | 'hold' =
+      current === 'aggressive' ? 'defensive'
+      : current === 'defensive' ? 'hold'
+      : 'aggressive'
+    this.setStance(next)
+    const labels: Record<string, string> = { aggressive: 'AGGRO', defensive: 'DEF', hold: 'HOLD' }
+    const colors: Record<string, string> = { aggressive: '#ff4f7b', defensive: '#4af7c4', hold: '#aaaaaa' }
+    this.notify(`Stance: ${labels[next]}`, colors[next], 1200)
   }
 
   enterBuildMode(buildingTypeId: string) {
