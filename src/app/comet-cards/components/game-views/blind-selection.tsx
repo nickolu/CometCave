@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 import { motion, useReducedMotion } from 'framer-motion'
 
@@ -38,6 +38,28 @@ export function BlindSelectionView() {
   const { game } = useGameState()
   const reducedMotion = useReducedMotion()
   const autoFocusRef = useAutoFocus()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const container = containerRef.current
+    if (!container) return
+    // find all enabled Select buttons (aria-label starts with "Select ")
+    const selectBtns = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('button[aria-label^="Select "]:not([disabled])')
+    )
+    if (selectBtns.length === 0) return
+    const currentIdx = selectBtns.indexOf(document.activeElement as HTMLButtonElement)
+    if (currentIdx === -1) {
+      // focus the first available select button
+      selectBtns[0].focus()
+      return
+    }
+    e.preventDefault()
+    const next = e.key === 'ArrowRight'
+      ? Math.min(currentIdx + 1, selectBtns.length - 1)
+      : Math.max(currentIdx - 1, 0)
+    selectBtns[next]?.focus()
+  }, [])
   const [showGiveUpModal, setShowGiveUpModal] = useState(false)
   const { todayRun } = useRunHistory()
   const isPractice = todayRun !== null
@@ -71,6 +93,7 @@ export function BlindSelectionView() {
       }
     >
       <div ref={autoFocusRef}>
+      <div ref={containerRef} onKeyDown={handleKeyDown}>
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-3 items-stretch gap-4"
         variants={containerVariants}
@@ -117,6 +140,7 @@ export function BlindSelectionView() {
           />
         </motion.div>
       </motion.div>
+      </div>
       </div>
     </ViewTemplate>
     {showGiveUpModal && (
