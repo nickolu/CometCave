@@ -134,11 +134,16 @@ export class SpeckLayer {
           }
         }
 
-        // Selection ring: warm yellow ring around selected specks (distinct from veteran gold/white)
+        // Selection indicator: pulsing filled glow + solid ring (must be large enough to see at low zoom)
         const speckId = sim.speckMeta[i]?.id ?? ''
         if (selectedSpeckIds?.has(speckId)) {
-          this.gfx.lineStyle(1.5, 0xffe066, 0.92)
-          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 4)
+          const selPulse = 0.22 + 0.13 * Math.sin(now / 280)
+          const selRadius = (stype ? stype.size / 4 : 0.75) + 8
+          this.gfx.beginFill(0xffe066, selPulse)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], selRadius)
+          this.gfx.endFill()
+          this.gfx.lineStyle(2, 0xffe066, 0.9)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], selRadius)
           this.gfx.lineStyle(0)
         }
       }
