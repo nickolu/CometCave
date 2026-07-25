@@ -48,6 +48,9 @@ export const MAP_LAYOUTS = [
 
 export const OUTPOST_POSITIONS = MAP_LAYOUTS[0]  // default — overridden by createSim seed
 
+// Human-readable names for each map layout (index matches MAP_LAYOUTS)
+export const MAP_LAYOUT_NAMES: string[] = ['Triangle', 'Corridor', 'Wings']
+
 export const FORTIFY_TIME = 30000        // ms to reach full fortification
 export const FORTIFY_RADIUS = 200        // px — combat bonus applies within this radius
 export const FORTIFY_DAMAGE_BONUS = 0.25 // max damage multiplier bonus when fully fortified

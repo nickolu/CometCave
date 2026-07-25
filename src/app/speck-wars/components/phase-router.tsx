@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
+import { getDailyInfo } from '../lib/daily-modifier'
+import { DAILY_MODIFIER_LABELS } from '../domain/constants'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
@@ -99,6 +101,34 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )
           })}
         </div>
+        {/* Daily info row — map layout + modifier badge */}
+        {(() => {
+          const { modifier, layoutName } = getDailyInfo(difficulty)
+          const color = modifier === 'bulwark' ? '#44aaff' : modifier === 'blitz' ? '#ffd700' : modifier === 'siege' ? '#ff8844' : 'rgba(255,255,255,0.25)'
+          const label = modifier !== 'standard' ? DAILY_MODIFIER_LABELS[modifier] : null
+          return (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
+              <div style={{
+                fontSize: 10, letterSpacing: 1,
+                color: 'rgba(255,255,255,0.3)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                padding: '3px 8px', borderRadius: 4,
+              }}>
+                ⬡ {layoutName}
+              </div>
+              {label && (
+                <div style={{
+                  fontSize: 10, letterSpacing: 1,
+                  color,
+                  border: `1px solid ${color}44`,
+                  padding: '3px 8px', borderRadius: 4,
+                }}>
+                  {label}
+                </div>
+              )}
+            </div>
+          )
+        })()}
         {/* Best times + win rates per difficulty */}
         <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
           {difficulties.map(d => {
