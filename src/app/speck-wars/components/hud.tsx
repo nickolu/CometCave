@@ -48,6 +48,7 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
+  const stance = useSpeckWarsStore(s => s.stance)
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -504,6 +505,37 @@ export function HUD() {
             </button>
           )
         })}
+        {/* Stance toggle — cycles through aggressive/defensive/hold */}
+        {gameActions?.cycleStance && (() => {
+          const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
+            aggressive: { icon: '⚔', label: 'AGGRO', color: '#ff4f7b', title: '[Z] Aggressive — pursues nearby enemies' },
+            defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — holds position more' },
+            hold:       { icon: '⛨', label: 'HOLD',   color: '#aaaaaa', title: '[Z] Hold — only attacks at melee range' },
+          }
+          const cfg = stanceConfig[stance] ?? stanceConfig.defensive
+          return (
+            <button
+              onClick={gameActions.cycleStance ?? undefined}
+              title={cfg.title}
+              style={{
+                pointerEvents: 'auto',
+                padding: '3px 10px',
+                fontSize: 10,
+                cursor: 'pointer',
+                background: `${cfg.color}18`,
+                border: `1px solid ${cfg.color}66`,
+                borderRadius: 4,
+                color: cfg.color,
+                letterSpacing: 0.5,
+                lineHeight: 1.3,
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontWeight: 700 }}>{cfg.icon} {cfg.label}</div>
+              <div style={{ fontSize: 8, opacity: 0.7 }}>Z</div>
+            </button>
+          )
+        })()}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
@@ -557,6 +589,7 @@ export function HUD() {
             <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
             <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
             <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
+            <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span></span>
             <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
               Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
             </span>
@@ -1086,6 +1119,11 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
+          {/* Stance indicator */}
+          <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.8, color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4', textAlign: 'right' }}>
+            {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
+            <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>
+          </div>
           <div style={{
             display: 'flex', gap: 6,
           }}>
@@ -1337,6 +1375,30 @@ export function HUD() {
                 </span>
               )}
             </div>
+            {/* Army upgrade tier */}
+            {kills >= 20 && (() => {
+              const upgradeLevel = kills >= 300 ? 3 : kills >= 150 ? 2 : kills >= 50 ? 1 : 0
+              const tiers: Array<{ icon: string; label: string; color: string } | null> = [
+                null,
+                { icon: '⚡', label: 'BLOODED', color: '#88ffaa' },
+                { icon: '🛡', label: 'HARDENED', color: '#44aaff' },
+                { icon: '🔥', label: 'VETERAN ARMY', color: '#ff8844' },
+              ]
+              const tier = tiers[upgradeLevel]
+              const nextKills = upgradeLevel === 0 ? 50 : upgradeLevel === 1 ? 150 : upgradeLevel === 2 ? 300 : null
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, letterSpacing: 0.5 }}>
+                  {tier ? (
+                    <span style={{ color: tier.color, opacity: 0.8 }}>{tier.icon} {tier.label}</span>
+                  ) : (
+                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>army upgrade: {kills}/50</span>
+                  )}
+                  {tier && nextKills && (
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>→ {nextKills}k</span>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         )
       })()}
