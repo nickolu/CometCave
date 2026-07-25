@@ -28,6 +28,7 @@ export interface BuildingEntity {
   captureSide?: string | null   // which player is currently winning capture
   fortifyDuration?: number      // ms continuously held — resets on capture
   lastDamagedAt?: number        // Date.now() timestamp of last damage taken (for regen cooldown)
+  rallyPoint?: { x: number; y: number } | null  // per-building rally; specks auto-march here on spawn
 }
 
 export interface Player {

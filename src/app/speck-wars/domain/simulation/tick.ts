@@ -172,6 +172,14 @@ function consumeInputs(sim: SimulationState) {
         }
       } else {
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
+        // Update per-building rally for all player buildings
+        if (event.ownerId === 'player') {
+          for (const building of Object.values(sim.buildings)) {
+            if (building.ownerId === 'player') {
+              building.rallyPoint = { x: event.x, y: event.y }
+            }
+          }
+        }
       }
     }
     if (event.type === 'SET_SPAWN_TYPE') {
