@@ -52,6 +52,8 @@ export class GameInstance {
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
+  private lastGuardMs = 0
+  private lastGuardIdx = 0
   private cinematicMs = 0
   private pendingBuild: string | null = null  // building type ID awaiting placement click
 
@@ -200,11 +202,13 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
+      () => { this.guard(); this.notify('⬡ GUARD', '#44aaff') },     // G — guard nearest player outpost
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
+      guard: () => { this.guard(); this.notify('⬡ GUARD', '#44aaff') },
       clearRally: () => this.clearRally(),
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
@@ -666,6 +670,30 @@ export class GameInstance {
     this.lastAdvanceMs = now
     const target = targets[this.lastAdvanceIdx]
     this.rally(target.x, target.y)
+  }
+
+  guard() {
+    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    if (!playerBase) return
+    const outposts = Object.values(this.sim.buildings)
+      .filter(b => b.typeId === 'outpost' && b.ownerId === 'player')
+      .sort((a, b) => {
+        const da = (a.x - playerBase.x) ** 2 + (a.y - playerBase.y) ** 2
+        const db = (b.x - playerBase.x) ** 2 + (b.y - playerBase.y) ** 2
+        return da - db
+      })
+    if (outposts.length === 0) {
+      this.defend()  // no owned outposts — fall back to defending base
+      return
+    }
+    const now = Date.now()
+    if (now - this.lastGuardMs < 3000 && outposts.length > 1) {
+      this.lastGuardIdx = (this.lastGuardIdx + 1) % outposts.length
+    } else {
+      this.lastGuardIdx = 0
+    }
+    this.lastGuardMs = now
+    this.rally(outposts[this.lastGuardIdx].x, outposts[this.lastGuardIdx].y)
   }
 
   rush() {
