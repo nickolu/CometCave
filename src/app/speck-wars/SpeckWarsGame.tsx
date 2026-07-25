@@ -7,12 +7,23 @@ import { HUD } from './components/hud'
 import { PhaseRouter } from './components/phase-router'
 
 function GameCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const hostRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef<GameInstance | null>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const host = hostRef.current
+    if (!host) return
+
+    // Own the canvas element rather than letting React reuse one across mounts. Once a
+    // Pixi Application is destroyed its WebGL context is gone, and initialising a new
+    // one on the same canvas yields a context whose shaders fail to compile — a blank
+    // canvas. React StrictMode mounts, tears down and remounts this effect in
+    // development, so that path is hit on every dev page load.
+    const canvas = document.createElement('canvas')
+    canvas.style.display = 'block'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    host.appendChild(canvas)
 
     const game = new GameInstance(canvas)
     gameRef.current = game
@@ -21,6 +32,7 @@ function GameCanvas() {
     return () => {
       game.destroy()
       gameRef.current = null
+      canvas.remove()
     }
   }, [])
 
@@ -33,10 +45,7 @@ function GameCanvas() {
         'radial-gradient(ellipse at 50% 50%, rgba(2,6,18,1) 0%, #010208 100%)',
       ].join(', '),
     }}>
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      />
+      <div ref={hostRef} style={{ position: 'absolute', inset: 0 }} />
       <HUD />
     </div>
   )
