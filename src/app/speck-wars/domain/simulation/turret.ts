@@ -1,6 +1,7 @@
 import type { SimulationState, SpeckMeta } from '../types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { SPECK_TYPES } from '../config/speck-types'
+import { MAX_SPECKS } from '../constants'
 
 let missileCounter = 0
 
@@ -19,8 +20,10 @@ function spawnMissile(sim: SimulationState, bx: number, by: number, ownerId: str
   let slot: number
   if (sim.freeSlots.length > 0) {
     slot = sim.freeSlots.pop()!
-  } else {
+  } else if (sim.speckCount < MAX_SPECKS) {
     slot = sim.speckCount++
+  } else {
+    return  // at capacity, skip missile
   }
   sim.speckX[slot] = bx
   sim.speckY[slot] = by
