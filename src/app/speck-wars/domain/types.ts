@@ -27,6 +27,8 @@ export interface SpeckMeta {
   commanderXp?: number          // XP earned from nearby kills
   commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
   pulseTimer?: number           // ms until next AoE pulse
+  chargeTimer?: number          // ms of heavy charge burst remaining
+  cloakTimer?: number           // ms of scout cloak remaining (enemy can't target)
 }
 
 export interface BuildingEntity {
