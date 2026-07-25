@@ -910,55 +910,128 @@ export function HUD() {
         </div>
       )}
 
-      {/* Selection info panel — bottom center */}
+      {/* Command panel — bottom center: build menu + selection info, stacked */}
       {phase === 'playing' && (
         <div style={{
           position: 'absolute',
           bottom: 70,
           left: '50%',
           transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
           opacity: hud && (hud.selectedSpeckCount ?? 0) > 0 ? 1 : 0,
           transition: 'opacity 150ms ease',
-          pointerEvents: 'none',
-          background: 'rgba(0,0,0,0.65)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 6,
-          padding: '7px 12px',
-          minWidth: 130,
           fontFamily: 'monospace',
           whiteSpace: 'nowrap',
         }}>
-          <div style={{
-            fontSize: 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
-          }}>
-            SELECTED {hud?.selectedSpeckCount ?? 0}
-          </div>
-          {hud?.selectedComposition && Object.entries(hud.selectedComposition.types)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([typeId, count]) => (
-              <div key={typeId} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
+          {/* Build menu — only shows when specks are selected */}
+          {(() => {
+            const selectedCount = hud?.selectedSpeckCount ?? 0
+            const TURRET_COST = 20
+            const canBuild = selectedCount >= TURRET_COST
+            const barFill = Math.min(1, selectedCount / TURRET_COST)
+            return (
+              <div style={{
+                background: 'rgba(0,0,0,0.65)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 6,
+                padding: '7px 12px',
+                width: 190,
+                pointerEvents: 'auto',
               }}>
-                <span style={{
-                  display: 'inline-block', width: 7, height: 7, flexShrink: 0,
-                  borderRadius: typeId === 'heavy' ? 1 : '50%',
-                  background: '#4af7c4',
-                  transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
-                }} />
-                <span style={{ flex: 1, letterSpacing: 1 }}>
-                  {typeId.charAt(0).toUpperCase() + typeId.slice(1)}
-                </span>
-                <span style={{ color: '#ffffff' }}>{count}</span>
+                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>
+                  BUILD
+                </div>
+                <button
+                  onClick={() => { if (canBuild) (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.() }}
+                  style={{
+                    width: '100%',
+                    background: canBuild ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${canBuild ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: 4,
+                    padding: '6px 8px',
+                    cursor: canBuild ? 'pointer' : 'default',
+                    textAlign: 'left',
+                    fontFamily: 'monospace',
+                    opacity: canBuild ? 1 : 0.45,
+                    transition: 'opacity 200ms, border-color 200ms',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                    <span style={{ fontSize: 10, color: canBuild ? '#ffd700' : 'rgba(255,255,255,0.6)', letterSpacing: 1 }}>
+                      ◆ TURRET
+                    </span>
+                    <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.45)', letterSpacing: 1 }}>
+                      {TURRET_COST} specks
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.5, marginBottom: 5 }}>
+                    Fires missiles at nearby enemies
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{
+                      flex: 1, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${barFill * 100}%`,
+                        background: canBuild ? '#ffd700' : '#4af7c4',
+                        borderRadius: 2,
+                        transition: 'width 100ms',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 8, color: canBuild ? '#ffd700' : 'rgba(255,255,255,0.45)', letterSpacing: 0.5, minWidth: 32, textAlign: 'right' }}>
+                      {selectedCount}/{TURRET_COST}
+                    </span>
+                  </div>
+                </button>
               </div>
-            ))
-          }
-          {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0) && (
-            <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
-              {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
-              {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
+            )
+          })()}
+
+          {/* Selection info panel */}
+          <div style={{
+            background: 'rgba(0,0,0,0.65)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 6,
+            padding: '7px 12px',
+            minWidth: 130,
+            pointerEvents: 'none',
+          }}>
+            <div style={{
+              fontSize: 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
+            }}>
+              SELECTED {hud?.selectedSpeckCount ?? 0}
             </div>
-          )}
+            {hud?.selectedComposition && Object.entries(hud.selectedComposition.types)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([typeId, count]) => (
+                <div key={typeId} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
+                }}>
+                  <span style={{
+                    display: 'inline-block', width: 7, height: 7, flexShrink: 0,
+                    borderRadius: typeId === 'heavy' ? 1 : '50%',
+                    background: '#4af7c4',
+                    transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
+                  }} />
+                  <span style={{ flex: 1, letterSpacing: 1 }}>
+                    {typeId.charAt(0).toUpperCase() + typeId.slice(1)}
+                  </span>
+                  <span style={{ color: '#ffffff' }}>{count}</span>
+                </div>
+              ))
+            }
+            {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0) && (
+              <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
+                {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
+                {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
