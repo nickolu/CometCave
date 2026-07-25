@@ -253,6 +253,7 @@ export class GameInstance {
       },
     )
     this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
+    this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
@@ -809,6 +810,36 @@ export class GameInstance {
   rush() {
     const enemyBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'ai' && b.typeId === 'base')
     if (enemyBase) this.rally(enemyBase.x, enemyBase.y)
+  }
+
+  guard() {
+    // Rally selected (or all) specks to nearest friendly outpost
+    const playerOutposts = Object.values(this.sim.buildings)
+      .filter(b => b.ownerId === 'player' && b.typeId === 'outpost')
+    if (playerOutposts.length === 0) {
+      this.notify('No friendly outpost to guard', '#aaaaaa', 1200)
+      return
+    }
+    // Use center of mass of selected specks (or player base) as reference point
+    let refX = 0, refY = 0, count = 0
+    for (let i = 0; i < this.sim.speckCount; i++) {
+      const meta = this.sim.speckMeta[i]
+      if (!meta || !this.sim.speckIds[i]) continue
+      if (this.sim.selectedSpeckIds.size > 0 && !this.sim.selectedSpeckIds.has(meta.id)) continue
+      if (meta.ownerId !== 'player') continue
+      refX += this.sim.speckX[i]; refY += this.sim.speckY[i]; count++
+    }
+    if (count > 0) { refX /= count; refY /= count }
+    else {
+      const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+      if (base) { refX = base.x; refY = base.y }
+    }
+    const nearest = playerOutposts.reduce((best, b) => {
+      const d = (b.x - refX) ** 2 + (b.y - refY) ** 2
+      const bd = (best.x - refX) ** 2 + (best.y - refY) ** 2
+      return d < bd ? b : best
+    })
+    this.rally(nearest.x, nearest.y)
   }
 
   clearRally() {
