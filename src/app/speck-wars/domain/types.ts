@@ -52,6 +52,8 @@ export interface Player {
   isAI: boolean
   isDefeated: boolean
   stockpile: Record<string, number>  // typeId → count (resource form)
+  totalKills: number           // cumulative kills for upgrade milestones
+  upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -118,6 +120,7 @@ export type SimEvent =
   | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
+  | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
 
 export interface HudData {
   players: Record<string, {

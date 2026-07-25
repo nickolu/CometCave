@@ -64,13 +64,13 @@ export class GameInstance {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    const difficulty = useSpeckWarsStore.getState().difficulty
+    const { difficulty, outpostCount, baseCount } = useSpeckWarsStore.getState()
     const aiTickInterval: Record<string, number> = { easy: 60, medium: 30, hard: 15, 'very-hard': 6 }
     const now = new Date()
     const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
     const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
     const dailySeed = dateKey * 1000 + diffHash
-    this.sim = createSim(dailySeed, difficulty)
+    this.sim = createSim(dailySeed, difficulty, outpostCount, baseCount)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
     const aiPersonality = (): AIPersonality => {
@@ -643,6 +643,15 @@ export class GameInstance {
         if (event.type === 'SPECK_LEGEND' && event.ownerId === 'player') {
           this.notify('✦✦ LEGEND BORN! ✦✦', '#cc44ff', 3000)
           store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
+        }
+        if (event.type === 'UPGRADE_UNLOCKED' && event.ownerId === 'player') {
+          const messages = [
+            '',
+            '⚡ BLOODED — Spawn Speed +10%',
+            '🛡 HARDENED — Units +1 HP',
+            '🔥 VETERAN ARMY — Damage +15%',
+          ]
+          this.notify(messages[event.level], '#ffd700', 3000)
         }
         if (event.type === 'VETERAN_FALLEN') {
           const isLegend = event.kills >= 12

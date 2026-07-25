@@ -5,7 +5,9 @@ import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD } from '../constants'
 
 // Place a new speck into a recycled or fresh slot — never allocates new arrays
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
-  const hp = SPECK_TYPES[meta.typeId]?.hp ?? 1
+  const baseHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
+  const upgradeHpBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 2 ? 1 : 0
+  const hp = baseHp + upgradeHpBonus
 
   let slot: number
   if (sim.freeSlots.length > 0) {
@@ -47,7 +49,8 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
     const hasSurge = building.ownerId === 'player' && sim.surgeDuration > 0
     const hasRallyCry = building.ownerId === 'player' && rallyCryActive
-    const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1)
+    const upgradeSpawnBonus = (sim.players[building.ownerId]?.upgradeLevel ?? 0) >= 1 ? 1.1 : 1.0
+    const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1) * upgradeSpawnBonus
     building.spawnTimer = baseInterval / divisor
 
     for (let i = 0; i < btype.spawnCount; i++) {
