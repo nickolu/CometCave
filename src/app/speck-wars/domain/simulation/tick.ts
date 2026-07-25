@@ -35,6 +35,11 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 5. Deal damage, destroy buildings/specks
   resolveCombat(sim, dt)
 
+  // 5a. Auto-clear selectedBuildingId if the building was destroyed this tick
+  if (sim.selectedBuildingId && !sim.buildings[sim.selectedBuildingId]) {
+    sim.selectedBuildingId = null
+  }
+
   // 5b. Mark low-HP specks as retreating
   for (let i = 0; i < sim.speckCount; i++) {
     const meta = sim.speckMeta[i]
