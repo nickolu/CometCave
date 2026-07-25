@@ -66,6 +66,12 @@ export function updateSpawners(sim: SimulationState, dt: number) {
         attackCooldown: 0,
         kills: 0,
       }
+      // Auto-assign the building's per-building rally point so the speck marches there on spawn
+      const sourceBuildingRally = building.rallyPoint
+      if (sourceBuildingRally) {
+        meta.assignedRallyX = sourceBuildingRally.x
+        meta.assignedRallyY = sourceBuildingRally.y
+      }
       addSpeck(sim, meta, sx, sy, building.id)
     }
   }
