@@ -308,6 +308,7 @@ function consumeInputs(sim: SimulationState) {
         meta.assignedRallyY = event.y
         meta.holdPosition = false
       }
+    }
     if (event.type === 'BUILD') {
       const btype = BUILDING_TYPES[event.buildingTypeId]
       if (!btype) continue
