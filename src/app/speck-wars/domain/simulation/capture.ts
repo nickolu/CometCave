@@ -20,7 +20,18 @@ export function updateCapture(sim: SimulationState, dt: number) {
 
     // Find player-owned specks (exclude neutral)
     const sides = Object.entries(counts).filter(([, n]) => n > 0)
-    if (sides.length === 0) continue  // nobody near — decay progress slowly
+    if (sides.length === 0) {
+      // Decay capture progress slowly when nobody is near
+      if ((building.captureProgress ?? 0) > 0) {
+        const captureTimeMs = sim.dailyModifier === 'siege' ? CAPTURE_TIME * 2 : CAPTURE_TIME
+        building.captureProgress = Math.max(0, (building.captureProgress ?? 0) - (dt / captureTimeMs) * 0.1)
+        if ((building.captureProgress ?? 0) <= 0) {
+          building.captureProgress = 0
+          building.captureSide = null
+        }
+      }
+      continue
+    }
     if (sides.length > 1) {
       // Contested tug-of-war: dominant side (more specks) reverses enemy capture progress.
       // Neither side can GAIN progress — only erase the enemy's progress.
