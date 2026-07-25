@@ -31,6 +31,7 @@ export class InputHandler {
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
   private onPatrol?: (worldX: number, worldY: number) => void
+  public onBuildTurret?: () => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -360,6 +361,8 @@ export class InputHandler {
       }
     } else if (e.code === 'KeyS') {
       this.onStop?.()
+    } else if (e.code === 'KeyT') {
+      this.onBuildTurret?.()
     } else if (e.code === 'KeyN') {
       this.onAdvanceOutpost?.()
     } else if (e.code === 'KeyB') {
