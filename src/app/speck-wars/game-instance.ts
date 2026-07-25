@@ -437,6 +437,9 @@ export class GameInstance {
           this.cachedPlayerSpeckCount = event.data.players.player?.speckCount ?? 0
           const playerSpeckCount = event.data.players.player?.speckCount ?? 0
           store.setPeakArmySize(playerSpeckCount)
+          store.setPeakVeteranCount(event.data.players.player?.veteranCount ?? 0)
+          store.setPeakEliteCount(event.data.players.player?.eliteCount ?? 0)
+          store.setPeakLegendCount(event.data.players.player?.legendCount ?? 0)
           // Warn when an enemy starts capturing a player-owned outpost
           const now = Date.now()
           const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
