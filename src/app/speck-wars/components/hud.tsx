@@ -550,6 +550,30 @@ export function HUD() {
             </button>
           )
         })()}
+        {/* Select All button — critical for mobile (no keyboard shortcut available) */}
+        {gameActions?.selectAll && (
+          <button
+            onClick={() => gameActions.selectAll?.()}
+            title="[E] Select all friendly specks"
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: 'rgba(74,247,196,0.12)',
+              border: '1px solid rgba(74,247,196,0.4)',
+              borderRadius: 4,
+              color: '#4af7c4',
+              letterSpacing: 0.5,
+              lineHeight: 1.3,
+              textAlign: 'center',
+              minHeight: 44,
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>⬡ ALL</div>
+            <div style={{ fontSize: 8, opacity: 0.7 }}>E</div>
+          </button>
+        )}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
