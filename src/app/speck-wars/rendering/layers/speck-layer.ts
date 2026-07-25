@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite } from 'pixi.js'
 import type { Texture } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { SPECK_TYPES } from '../../domain/config/speck-types'
+import { RALLY_CRY_HP_THRESHOLD } from '../../domain/constants'
 
 const ATTACK_ANIM_MS = 120
 
@@ -35,6 +36,10 @@ export class SpeckLayer {
 
   update(sim: SimulationState, selectedSpeckIds?: Set<string>) {
     this.gfx.clear()
+    // Pre-compute once: surge active + rally cry active (used in tight speck loop below)
+    const surgeActive = sim.surgeDuration > 0
+    const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
+    const rallyCryActive = playerBase ? playerBase.hp / playerBase.maxHp < RALLY_CRY_HP_THRESHOLD : false
     // Group live speck indices by owner
     const byOwner: Record<string, number[]> = {}
     for (let i = 0; i < sim.speckCount; i++) {
@@ -139,6 +144,22 @@ export class SpeckLayer {
         if (selectedSpeckIds?.has(speckId)) {
           this.gfx.lineStyle(1.5, 0xffe066, 0.92)
           this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 4)
+          this.gfx.lineStyle(0)
+        }
+
+        // Surge aura: faint gold outer ring when surge is active
+        if (ownerId === 'player' && surgeActive) {
+          const surgePulse = 0.12 + 0.08 * Math.sin(now / 180)
+          this.gfx.lineStyle(0.8, 0xffaa00, surgePulse)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 7)
+          this.gfx.lineStyle(0)
+        }
+
+        // Rally cry aura: faint red ring when player base is at critical HP
+        if (ownerId === 'player' && rallyCryActive) {
+          const cryPulse = 0.12 + 0.10 * Math.sin(now / 300)
+          this.gfx.lineStyle(0.8, 0xff4400, cryPulse)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 9)
           this.gfx.lineStyle(0)
         }
       }
