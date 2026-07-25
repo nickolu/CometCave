@@ -25,7 +25,8 @@ export class EffectsLayer {
   }
 
   addDeathFlash(x: number, y: number, color = 0xffffff) {
-    this.flashes.push({ x, y, life: 300, maxLife: 300, color })
+    // Short bright pop + expanding ring
+    this.flashes.push({ x, y, life: 180, maxLife: 180, color })
   }
 
   showRallyPing(x: number, y: number) {
@@ -100,10 +101,17 @@ export class EffectsLayer {
     for (const f of this.flashes) {
       f.life -= dt
       const alpha = f.life / f.maxLife
-      const r = 3 + (1 - alpha) * 4
-      this.gfx.beginFill(f.color, alpha)
+      // Bright filled pop at start (first 40% of life)
+      if (alpha > 0.6) {
+        this.gfx.beginFill(f.color, (alpha - 0.6) * 2.5)
+        this.gfx.drawCircle(f.x, f.y, 5)
+        this.gfx.endFill()
+      }
+      // Expanding ring that fades out
+      const r = 4 + (1 - alpha) * 18  // grows 4→22px
+      this.gfx.lineStyle(1.5, f.color, alpha * 0.9)
       this.gfx.drawCircle(f.x, f.y, r)
-      this.gfx.endFill()
+      this.gfx.lineStyle(0)
     }
 
     this.particles = this.particles.filter(p => p.life > 0)
