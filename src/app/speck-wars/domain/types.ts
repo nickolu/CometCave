@@ -44,6 +44,7 @@ export interface BuildingEntity {
   constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
   campResetMs?: number          // ms until camp resets to neutral (when owned)
+  researchedUpgrade?: 'carapace' | 'blades' | 'afterburners'
 }
 
 export interface Player {
@@ -57,6 +58,11 @@ export interface Player {
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
+  outpostUpgrades: {
+    carapace: boolean
+    blades: boolean
+    afterburners: boolean
+  }
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -107,6 +113,7 @@ export type InputEvent =
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
   | { type: 'SET_PATROL'; ownerId: string; speckIds: string[]; destX: number; destY: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
+  | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -126,6 +133,7 @@ export type SimEvent =
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
+  | { type: 'OUTPOST_UPGRADE_RESEARCHED'; buildingId: string; ownerId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
 
 export interface HudData {
   players: Record<string, {
@@ -155,7 +163,7 @@ export interface HudData {
   rallyCryActive: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
+  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]

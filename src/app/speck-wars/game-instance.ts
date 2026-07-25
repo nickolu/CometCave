@@ -282,6 +282,9 @@ export class GameInstance {
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
       cycleStance: () => this.cycleStance(),
+      researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
+        this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
+      },
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
@@ -677,6 +680,11 @@ export class GameInstance {
 
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
+        }
+        if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
+          const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
+          this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)
+          store.pushKillFeedEntry({ icon: '⚗', label: labels[event.upgrade as keyof typeof labels], color: '#44aaff' })
         }
       }
 

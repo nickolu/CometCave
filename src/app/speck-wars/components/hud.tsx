@@ -1041,6 +1041,58 @@ export function HUD() {
             )
           })()}
 
+          {/* Outpost upgrade research panel */}
+          {hud?.selectedBuilding?.typeId === 'outpost' &&
+           hud.selectedBuilding.ownerId === 'player' &&
+           (hud.selectedBuilding.fortifyDuration ?? 0) >= 20000 &&
+           phase === 'playing' && (() => {
+            if (hud.selectedBuilding!.researchedUpgrade) {
+              return (
+                <div style={{
+                  background: 'rgba(0,0,0,0.65)',
+                  border: '1px solid rgba(68,170,255,0.3)',
+                  borderRadius: 6,
+                  padding: '6px 12px',
+                  pointerEvents: 'none',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 10, letterSpacing: 1,
+                  color: '#44aaff',
+                }}>
+                  <span>⚗</span>
+                  <span>{hud.selectedBuilding!.researchedUpgrade!.toUpperCase()}</span>
+                </div>
+              )
+            }
+            const upgrades: Array<{ id: 'carapace' | 'blades' | 'afterburners'; label: string; desc: string; color: string }> = [
+              { id: 'carapace', label: 'CARAPACE', desc: '+1 HP', color: '#44ff88' },
+              { id: 'blades', label: 'BLADES', desc: '+15% DMG', color: '#ff4f7b' },
+              { id: 'afterburners', label: 'AFTERBURNERS', desc: '+15% SPD', color: '#44aaff' },
+            ]
+            return (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                background: 'rgba(0,0,0,0.7)', padding: '8px 12px', borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.15)',
+                pointerEvents: 'auto',
+              }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.5)' }}>⚗ RESEARCH UPGRADE</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {upgrades.map(u => (
+                    <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(hud.selectedBuilding!.id, u.id)} style={{
+                      padding: '4px 10px', fontSize: 10, letterSpacing: 1,
+                      background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
+                      color: u.color, cursor: 'pointer', borderRadius: 4,
+                      fontFamily: 'monospace',
+                    }}>
+                      <div>{u.label}</div>
+                      <div style={{ opacity: 0.7 }}>{u.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Selection info panel */}
           <div style={{
             background: 'rgba(0,0,0,0.65)',

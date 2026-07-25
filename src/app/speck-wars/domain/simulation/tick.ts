@@ -453,6 +453,20 @@ function consumeInputs(sim: SimulationState) {
       const p = sim.players[event.ownerId]
       if (p) p.stance = event.stance
     }
+    if (event.type === 'RESEARCH_UPGRADE') {
+      const building = sim.buildings[event.buildingId]
+      if (!building) continue
+      if (building.ownerId !== event.ownerId) continue
+      if (building.typeId !== 'outpost') continue
+      if ((building.fortifyDuration ?? 0) < 20000) continue
+      if (building.researchedUpgrade) continue  // already researched
+      building.researchedUpgrade = event.upgrade
+      const player = sim.players[event.ownerId]
+      if (player) {
+        player.outpostUpgrades[event.upgrade] = true
+      }
+      sim.events.push({ type: 'OUTPOST_UPGRADE_RESEARCHED', buildingId: event.buildingId, ownerId: event.ownerId, upgrade: event.upgrade })
+    }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue
       const building = sim.buildings[event.buildingId]
@@ -636,10 +650,10 @@ function emitHudUpdate(sim: SimulationState) {
     selectedComposition = { types, veteranCount: selVet, eliteCount: selElite, legendCount: selLegend }
   }
 
-  let selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null = null
+  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string } | null = null
   if (sim.selectedBuildingId) {
     const b = sim.buildings[sim.selectedBuildingId]
-    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
+    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade }
   }
 
   sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })

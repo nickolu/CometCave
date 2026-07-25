@@ -65,8 +65,8 @@ interface SpeckWarsStore {
   setStance: (s: 'aggressive' | 'defensive' | 'hold') => void
   aiPersonality: AIPersonality | null
   setAiPersonality: (p: AIPersonality) => void
-  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; buildTurret?: (() => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; cycleStance: (() => void) | null }
-  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; buildTurret?: () => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; cycleStance: () => void } | null) => void
+  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; buildTurret?: (() => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; cycleStance: (() => void) | null; researchUpgrade?: ((buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => void) | null }
+  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; buildTurret?: () => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; cycleStance: () => void; researchUpgrade?: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => void } | null) => void
   surrender: () => void
   resetGame: () => void
 }
@@ -140,8 +140,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setStance: stance => set({ stance }),
   aiPersonality: null,
   setAiPersonality: p => set({ aiPersonality: p }),
-  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null },
-  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null } }),
+  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, researchUpgrade: null },
+  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, researchUpgrade: null } }),
   surrender: () => {
     const s = get()
     resetWinStreak()
