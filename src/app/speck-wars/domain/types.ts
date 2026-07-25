@@ -4,7 +4,7 @@ export interface SpeckMeta {
   id: string
   typeId: string
   ownerId: string
-  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing' | 'retreating' | 'holding'
+  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing' | 'retreating'
   targetId: string | null
   attackCooldown: number   // ms remaining until next attack
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
