@@ -298,10 +298,10 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        {aiPersonality && aiPersonality !== 'balanced' && (
+        {aiPersonality && aiPersonality !== 'balanced' && (difficulty === 'hard' || difficulty === 'very-hard') && (
           <div style={{ fontSize: 10, letterSpacing: 2, opacity: 0.4, color: '#fff', textTransform: 'uppercase' }}>
             {aiPersonality === 'aggressive' ? '⚡ aggressive AI — frequent base rushes'
-              : 'macro AI — outpost control focus'}
+              : '🏭 macro AI — outpost economy focus'}
           </div>
         )}
 
