@@ -35,7 +35,7 @@ export class BuildingLayer {
     this.spawnFlashMap.set(buildingId, Date.now())
   }
 
-  update(sim: SimulationState, playerColors: Record<string, number>) {
+  update(sim: SimulationState, playerColors: Record<string, number>, selectedBuildingId: string | null = null) {
     const now = Date.now()
     this.gfx.clear()
 
@@ -186,6 +186,61 @@ export class BuildingLayer {
         this.gfx.moveTo(building.x + (r + 12) * Math.cos(startAngle), building.y + (r + 12) * Math.sin(startAngle))
         this.gfx.arc(building.x, building.y, r + 12, startAngle, endAngle)
         this.gfx.lineStyle(0)
+      }
+
+      // Selection ring: pulsing teal ring around selected building
+      if (building.id === selectedBuildingId && building.ownerId === 'player') {
+        const selPulse = 0.7 + 0.3 * Math.sin(now / 250)
+        this.gfx.lineStyle(2, color, selPulse)
+        this.gfx.drawCircle(building.x, building.y, r + 18)
+        this.gfx.lineStyle(0)
+      }
+
+      // Rally point indicator: thin dashed-style line from building to rally marker
+      if (building.ownerId === 'player' && building.rallyPoint) {
+        const rp = building.rallyPoint
+        const showLine = building.id === selectedBuildingId
+        if (showLine) {
+          // Draw segmented "dashed" line
+          const dx = rp.x - building.x
+          const dy = rp.y - building.y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist > 5) {
+            const nx = dx / dist, ny = dy / dist
+            const dashLen = 8, gapLen = 6, total = dashLen + gapLen
+            const startDist = r + 5
+            let d = startDist
+            while (d < dist - 5) {
+              const segEnd = Math.min(d + dashLen, dist - 5)
+              this.gfx.lineStyle(1, color, 0.5)
+              this.gfx.moveTo(building.x + nx * d, building.y + ny * d)
+              this.gfx.lineTo(building.x + nx * segEnd, building.y + ny * segEnd)
+              this.gfx.lineStyle(0)
+              d += total
+            }
+          }
+        }
+
+        // Rally marker: small diamond at rally point (only show when line visible)
+        if (showLine) {
+          const markerSize = 5
+          this.gfx.beginFill(color, 0.7)
+          this.gfx.drawPolygon([
+            rp.x, rp.y - markerSize,
+            rp.x + markerSize, rp.y,
+            rp.x, rp.y + markerSize,
+            rp.x - markerSize, rp.y,
+          ])
+          this.gfx.endFill()
+          this.gfx.lineStyle(1, 0xffffff, 0.4)
+          this.gfx.drawPolygon([
+            rp.x, rp.y - markerSize,
+            rp.x + markerSize, rp.y,
+            rp.x, rp.y + markerSize,
+            rp.x - markerSize, rp.y,
+          ])
+          this.gfx.lineStyle(0)
+        }
       }
     }
   }

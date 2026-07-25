@@ -75,7 +75,7 @@ export class Renderer {
     this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
-    this.buildingLayer.update(sim, PLAYER_COLORS)
+    this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
 
     // Process events from this tick

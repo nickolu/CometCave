@@ -10,6 +10,8 @@ export interface SpeckMeta {
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
+  constructTargetId?: string | null   // building ID this speck is marching to sacrifice
+  missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
 }
 
 export interface BuildingEntity {
@@ -27,6 +29,12 @@ export interface BuildingEntity {
   captureSide?: string | null   // which player is currently winning capture
   fortifyDuration?: number      // ms continuously held — resets on capture
   lastDamagedAt?: number        // Date.now() timestamp of last damage taken (for regen cooldown)
+  rallyPoint?: { x: number; y: number } | null  // per-building rally point for spawned specks
+  underConstruction?: boolean
+  sacrificeRequired?: number
+  sacrificeArrived?: number
+  constructionTimer?: number    // ms remaining after all specks arrive
+  fireTimer?: number            // ms until next shot
 }
 
 export interface Player {
@@ -60,6 +68,7 @@ export interface SimulationState {
   events: SimEvent[]
   rallyPoints: Record<string, { x: number; y: number } | null>
   selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
+  selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
@@ -78,6 +87,8 @@ export type InputEvent =
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
   | { type: 'CLEAR_SELECT'; ownerId: string }
   | { type: 'SURGE'; ownerId: string }
+  | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
+  | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -93,6 +104,7 @@ export type SimEvent =
   | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
   | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
+  | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
 
 export interface HudData {
   players: Record<string, {
