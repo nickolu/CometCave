@@ -27,6 +27,7 @@ export class InputHandler {
   private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
   private isPanDragging = false   // middle-mouse only
   private pendingBuildActive = false
+  private onPatrol?: (wx: number, wy: number) => void
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
@@ -71,6 +72,7 @@ export class InputHandler {
     onStop?: () => void,
     onHold?: () => void,
     onAttackMove?: (worldX: number, worldY: number) => void,
+    onPatrol?: (wx: number, wy: number) => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -97,6 +99,7 @@ export class InputHandler {
     this.onStop = onStop
     this.onHold = onHold
     this.onAttackMove = onAttackMove
+    this.onPatrol = onPatrol
     this.attach()
   }
 
@@ -219,10 +222,12 @@ export class InputHandler {
         this.onAttackMove?.(world.x, world.y)
         this.pendingModifier = 'none'
         if (this.canvas) this.canvas.style.cursor = 'default'
+      } else if (this.pendingModifier === 'patrol') {
+        this.onPatrol?.(world.x, world.y)
+        this.pendingModifier = 'none'
+        if (this.canvas) this.canvas.style.cursor = 'default'
       } else {
-        // 'none' or 'patrol' (stub patrol as move for now)
         this.onRally?.(world.x, world.y)
-        if (this.pendingModifier === 'patrol') this.pendingModifier = 'none'
       }
       return
     }

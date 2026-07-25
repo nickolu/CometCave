@@ -11,6 +11,8 @@ export interface SpeckMeta {
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
   holdPosition?: boolean   // true = don't move, don't attack, wait for new order
+  patrolOriginX?: number   // when set with assignedRally, speck bounces between origin and rally point
+  patrolOriginY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
 }
@@ -90,6 +92,7 @@ export type InputEvent =
   | { type: 'SURGE'; ownerId: string }
   | { type: 'STOP'; ownerId: string }
   | { type: 'HOLD'; ownerId: string }
+  | { type: 'PATROL'; ownerId: string; x: number; y: number }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
 

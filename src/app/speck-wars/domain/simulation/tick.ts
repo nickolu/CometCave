@@ -256,6 +256,8 @@ function consumeInputs(sim: SimulationState) {
         if (sim.selectedSpeckIds.size > 0 && !isSelected) continue
         meta.assignedRallyX = undefined
         meta.assignedRallyY = undefined
+        meta.patrolOriginX = undefined
+        meta.patrolOriginY = undefined
         meta.targetId = null
         meta.holdPosition = false
         meta.state = 'idle'
@@ -273,6 +275,8 @@ function consumeInputs(sim: SimulationState) {
         if (sim.selectedSpeckIds.size > 0 && !isSelected) continue
         meta.assignedRallyX = undefined
         meta.assignedRallyY = undefined
+        meta.patrolOriginX = undefined
+        meta.patrolOriginY = undefined
         meta.targetId = null
         meta.holdPosition = true
         meta.state = 'idle'
@@ -281,6 +285,19 @@ function consumeInputs(sim: SimulationState) {
         sim.rallyPoints['player-selected'] = null
       }
     }
+    if (event.type === 'PATROL') {
+      // Patrol: selected specks bounce back and forth between current position and destination
+      const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
+        if (hasSelection && !sim.selectedSpeckIds.has(meta.id)) continue
+        meta.patrolOriginX = sim.speckX[i]
+        meta.patrolOriginY = sim.speckY[i]
+        meta.assignedRallyX = event.x
+        meta.assignedRallyY = event.y
+        meta.holdPosition = false
+      }
     if (event.type === 'BUILD') {
       const btype = BUILDING_TYPES[event.buildingTypeId]
       if (!btype) continue

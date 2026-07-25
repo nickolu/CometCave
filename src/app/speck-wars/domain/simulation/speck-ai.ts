@@ -125,10 +125,19 @@ export function runSpeckAI(sim: SimulationState) {
         meta.state = 'moving'
         continue
       }
-      // Arrived at individual rally — clear assignment so speck reverts to normal AI
+      // Arrived at individual rally — if patrolling, swap origin↔destination; otherwise clear
       if (meta.assignedRallyX !== undefined) {
-        meta.assignedRallyX = undefined
-        meta.assignedRallyY = undefined
+        if (meta.patrolOriginX !== undefined) {
+          const nx = meta.patrolOriginX
+          const ny = meta.patrolOriginY!
+          meta.patrolOriginX = meta.assignedRallyX
+          meta.patrolOriginY = meta.assignedRallyY
+          meta.assignedRallyX = nx
+          meta.assignedRallyY = ny
+        } else {
+          meta.assignedRallyX = undefined
+          meta.assignedRallyY = undefined
+        }
       }
     }
 

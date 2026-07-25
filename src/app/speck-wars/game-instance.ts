@@ -161,7 +161,7 @@ export class GameInstance {
       },
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
-      () => { this.snapToBase() },                                          // (onSnapToBase — not bound to any key; C key recenter covers this)
+      () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
         useSpeckWarsStore.getState().setSpawnMode(typeId)
         this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: typeId })
@@ -205,6 +205,10 @@ export class GameInstance {
         this.renderer.showRallyPing(wx, wy)
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
+      (wx: number, wy: number) => {                                    // P + right-click — patrol
+        this.sim.inputQueue.push({ type: 'PATROL', ownerId: 'player', x: wx, y: wy })
+        this.notify('◆ PATROL', '#44ffaa', 2000)
+      },
     )
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -221,6 +225,7 @@ export class GameInstance {
         this.notify(`Spawn: ${typeId.toUpperCase()}`, color)
       },
       buildTurret: () => this.enterBuildMode('turret'),
+      patrol: () => { this.notify('P + right-click to set patrol destination', '#44ffaa', 2000) },
     })
     this.lastTime = performance.now()
     this.loop(this.lastTime)
