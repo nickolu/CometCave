@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, DOMINATION_TIME, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 
@@ -75,7 +75,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
 
-  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed + domination timer
+  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
   updateTripleOutpostBonus(sim, dt)
 
   // 7d. Surge timers
@@ -159,14 +159,6 @@ function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
     if (ownsAll) tripleHolder = pid
   }
 
-  if (tripleHolder) {
-    sim.dominationTimer += dt
-    if (sim.dominationTimer >= DOMINATION_TIME) {
-      sim.events.push({ type: 'GAME_OVER', winnerId: tripleHolder, victoryType: 'domination' })
-    }
-  } else {
-    sim.dominationTimer = 0
-  }
 }
 
 function consumeInputs(sim: SimulationState) {
@@ -481,7 +473,7 @@ function emitHudUpdate(sim: SimulationState) {
     }
   }
 
-  const dominationProgress = tripleOutpostOwner ? Math.min(1, sim.dominationTimer / DOMINATION_TIME) : null
+  const dominationProgress: number | null = null
 
   // Capture progress for each outpost
   const captureInfo: Record<string, { progress: number; side: string } | null> = {}
