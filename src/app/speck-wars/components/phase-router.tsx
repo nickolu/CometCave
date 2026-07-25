@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
+import { getDailyModifier } from '../lib/daily-modifier'
+import { DAILY_MODIFIER_LABELS } from '../domain/constants'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
@@ -99,6 +101,24 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )
           })}
         </div>
+        {/* Daily modifier badge — shown when today's modifier is not standard */}
+        {(() => {
+          const mod = getDailyModifier(difficulty)
+          if (mod === 'standard') return null
+          const label = DAILY_MODIFIER_LABELS[mod]
+          const color = mod === 'bulwark' ? '#44aaff' : mod === 'blitz' ? '#ffd700' : '#ff8844'
+          return (
+            <div style={{
+              fontSize: 11, letterSpacing: 1.5,
+              color,
+              border: `1px solid ${color}44`,
+              padding: '4px 12px', borderRadius: 4,
+              marginBottom: 2,
+            }}>
+              {label}
+            </div>
+          )
+        })()}
         {/* Best times + win rates per difficulty */}
         <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
           {difficulties.map(d => {
@@ -165,7 +185,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         {/* Daily tip */}
         {(() => {
           const tips = [
-            'Hold all 3 outposts for 60s to win by Domination.',
+            'Capture outposts to boost your production.',
             'Scouts (3) auto-target outposts — fast but fragile.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s for a combat bonus.',
@@ -259,23 +279,18 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div style={{
               fontSize: 12, letterSpacing: 3, opacity: 0.6,
-              color: victoryType === 'domination' ? '#ffd700' : accentColor,
+              color: accentColor,
               textTransform: 'uppercase',
             }}>
-              {victoryType === 'domination' ? '⬡ by Domination'
-                : victoryType === 'surrender' ? '🏳 Surrendered'
+              {victoryType === 'surrender' ? '🏳 Surrendered'
                 : '💥 by Destruction'}
             </div>
             <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.35, color: '#fff' }}>
               {won
-                ? victoryType === 'domination'
-                  ? 'held all 3 outposts for 60 seconds'
-                  : 'destroyed the enemy base'
+                ? 'destroyed the enemy base'
                 : victoryType === 'surrender'
                   ? 'you chose to give up'
-                  : victoryType === 'domination'
-                    ? 'enemy held all 3 outposts for 60 seconds'
-                    : 'your base was destroyed'
+                  : 'your base was destroyed'
               }
             </div>
           </div>
