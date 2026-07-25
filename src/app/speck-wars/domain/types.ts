@@ -20,6 +20,13 @@ export interface SpeckMeta {
   patrolOriginY?: number  // patrol: leg start Y
   patrolDestX?: number    // patrol: leg destination X
   patrolDestY?: number    // patrol: leg destination Y
+  isHero?: boolean           // true if this speck is the Commander
+  heroLevel?: 0 | 1 | 2     // 0=base, 1=BLOODED, 2=EMPOWERED
+  abilityTimer?: number      // ms until next AoE pulse (level 2 only)
+  isCommander?: boolean         // this speck is the owner's hero unit
+  commanderXp?: number          // XP earned from nearby kills
+  commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
+  pulseTimer?: number           // ms until next AoE pulse
 }
 
 export interface BuildingEntity {
@@ -63,6 +70,7 @@ export interface Player {
     blades: boolean
     afterburners: boolean
   }
+  commanderRespawnMs?: number   // ms until commander respawns (undefined = alive or not spawned yet)
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -89,6 +97,7 @@ export interface SimulationState {
   selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
   selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid
+  heroRespawnTimer: Record<string, number>  // playerId → ms until respawn (0 = alive/none)
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
@@ -134,6 +143,11 @@ export type SimEvent =
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
   | { type: 'OUTPOST_UPGRADE_RESEARCHED'; buildingId: string; ownerId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
+  | { type: 'HERO_LEVELED'; ownerId: string; heroLevel: 1 | 2 }
+  | { type: 'HERO_DIED'; ownerId: string; kills: number }
+  | { type: 'HERO_SPAWNED'; ownerId: string }
+  | { type: 'COMMANDER_LEVEL_UP'; ownerId: string; level: 2 | 3 }
+  | { type: 'COMMANDER_DIED'; ownerId: string; xp: number }
 
 export interface HudData {
   players: Record<string, {

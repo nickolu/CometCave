@@ -83,6 +83,24 @@ export class SpeckLayer {
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
 
+        // Hero Commander: gold diamond + HP ring rendered before veteran/elite/legend rings
+        if (typeMeta?.isHero) {
+          const heroLevel = typeMeta.heroLevel ?? 0
+          const size = 9 + heroLevel * 2
+          const pulse = 0.8 + 0.2 * Math.sin(now * 0.003)
+          this.gfx.beginFill(0xffd700, 0.6 * pulse)
+          this.gfx.moveTo(sim.speckX[i], sim.speckY[i] - size)
+          this.gfx.lineTo(sim.speckX[i] + size, sim.speckY[i])
+          this.gfx.lineTo(sim.speckX[i], sim.speckY[i] + size)
+          this.gfx.lineTo(sim.speckX[i] - size, sim.speckY[i])
+          this.gfx.closePath()
+          this.gfx.endFill()
+          // Bright HP ring
+          this.gfx.lineStyle(1.5, 0xffd700, 0.8 * pulse)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], size + 3)
+          this.gfx.lineStyle(0)
+        }
+
         // Gold ring for veteran specks (3+ kills), bright white+gold ring for elite (6+ kills), purple+white ring for legend (12+ kills)
         const kills = typeMeta?.kills ?? 0
         const isVeteran = kills >= 3
@@ -109,6 +127,20 @@ export class SpeckLayer {
         } else if (isVeteran) {
           this.gfx.lineStyle(1.5, 0xffd700, spriteList[j].alpha * 0.9)
           this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 2.5)
+          this.gfx.lineStyle(0)
+        }
+
+        // Commander: large animated golden ring
+        if (typeMeta?.isCommander) {
+          const level = typeMeta?.commanderLevel ?? 0
+          const cmdPulse = 0.65 + 0.35 * Math.sin(now / 300)
+          const cmdColor = level >= 3 ? 0x00ffcc : level >= 2 ? 0xffd700 : 0xccaa00
+          this.gfx.lineStyle(2, cmdColor, cmdPulse * spriteList[j].alpha)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 10)
+          if (level >= 2) {
+            this.gfx.lineStyle(1.5, 0xffffff, 0.5 * spriteList[j].alpha)
+            this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 13)
+          }
           this.gfx.lineStyle(0)
         }
 
