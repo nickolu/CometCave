@@ -112,6 +112,20 @@ export class SpeckLayer {
           this.gfx.lineStyle(0)
         }
 
+        // Commander: large animated golden ring
+        if (typeMeta?.isCommander) {
+          const level = typeMeta?.commanderLevel ?? 0
+          const cmdPulse = 0.65 + 0.35 * Math.sin(now / 300)
+          const cmdColor = level >= 3 ? 0x00ffcc : level >= 2 ? 0xffd700 : 0xccaa00
+          this.gfx.lineStyle(2, cmdColor, cmdPulse * spriteList[j].alpha)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 10)
+          if (level >= 2) {
+            this.gfx.lineStyle(1.5, 0xffffff, 0.5 * spriteList[j].alpha)
+            this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 13)
+          }
+          this.gfx.lineStyle(0)
+        }
+
         const isHeavy = typeMeta?.typeId === 'heavy'
         if (isHeavy) {
           this.gfx.lineStyle(1, 0xffffff, spriteList[j].alpha * 0.6)

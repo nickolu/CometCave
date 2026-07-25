@@ -20,6 +20,10 @@ export interface SpeckMeta {
   patrolOriginY?: number  // patrol: leg start Y
   patrolDestX?: number    // patrol: leg destination X
   patrolDestY?: number    // patrol: leg destination Y
+  isCommander?: boolean         // this speck is the owner's hero unit
+  commanderXp?: number          // XP earned from nearby kills
+  commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
+  pulseTimer?: number           // ms until next AoE pulse
 }
 
 export interface BuildingEntity {
@@ -57,6 +61,7 @@ export interface Player {
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
+  commanderRespawnMs?: number   // ms until commander respawns (undefined = alive or not spawned yet)
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -126,6 +131,8 @@ export type SimEvent =
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
+  | { type: 'COMMANDER_LEVEL_UP'; ownerId: string; level: 2 | 3 }
+  | { type: 'COMMANDER_DIED'; ownerId: string; xp: number }
 
 export interface HudData {
   players: Record<string, {

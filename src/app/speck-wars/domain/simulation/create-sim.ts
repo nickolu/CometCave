@@ -4,7 +4,7 @@ import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty } from '../../store'
-import { spawnCampDefenders } from './spawner'
+import { spawnCampDefenders, spawnCommander } from './spawner'
 
 const aiSpawnInterval: Record<Difficulty, number> = {
   easy: 2000,
@@ -146,6 +146,10 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   for (const pos of campPositions) {
     spawnCampDefenders(sim, pos.id)
   }
+
+  // Spawn one commander per side
+  spawnCommander(sim, 'player')
+  spawnCommander(sim, 'ai')
 
   return sim
 }

@@ -678,6 +678,15 @@ export class GameInstance {
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
         }
+        if (event.type === 'COMMANDER_LEVEL_UP' && event.ownerId === 'player') {
+          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — AoE PULSE' : '🌟 COMMANDER LVL 3 — SPEED AURA'
+          this.notify(label, '#ffd700', 4000)
+          store.pushKillFeedEntry({ icon: '⭐', label: label.split(' — ')[0].replace('⚡ ', '').replace('🌟 ', ''), color: '#ffd700' })
+        }
+        if (event.type === 'COMMANDER_DIED' && event.ownerId === 'player') {
+          this.notify('💀 COMMANDER FALLEN — respawning in 15s', '#ff6600', 3000)
+          store.pushKillFeedEntry({ icon: '💀', label: 'COMMANDER FALLEN', color: '#ff6600' })
+        }
       }
 
       // Retreat wave warning: 10+ player specks retreating = notify
