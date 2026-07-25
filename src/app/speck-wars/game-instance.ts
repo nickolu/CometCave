@@ -281,6 +281,7 @@ export class GameInstance {
       stop: () => this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }),
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
+      cycleStance: () => this.cycleStance(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
