@@ -921,7 +921,7 @@ export function HUD() {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 6,
-          opacity: hud && (hud.selectedSpeckCount ?? 0) > 0 ? 1 : 0,
+          opacity: hud && ((hud.selectedSpeckCount ?? 0) > 0 || hud.selectedBuilding != null) ? 1 : 0,
           transition: 'opacity 150ms ease',
           fontFamily: 'monospace',
           whiteSpace: 'nowrap',
@@ -929,6 +929,7 @@ export function HUD() {
           {/* Build menu — only shows when specks are selected */}
           {(() => {
             const selectedCount = hud?.selectedSpeckCount ?? 0
+            if (selectedCount === 0) return null
             const TURRET_COST = 20
             const canBuild = selectedCount >= TURRET_COST
             const barFill = Math.min(1, selectedCount / TURRET_COST)
@@ -987,6 +988,36 @@ export function HUD() {
                     </span>
                   </div>
                 </button>
+              </div>
+            )
+          })()}
+
+          {/* Building info panel — shown when a building is selected and no specks are selected */}
+          {hud?.selectedBuilding && (hud.selectedSpeckCount ?? 0) === 0 && (() => {
+            const b = hud.selectedBuilding
+            const hpFrac = b.hp / b.maxHp
+            const hpColor = hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.2 ? '#ffaa44' : '#ff4f7b'
+            return (
+              <div style={{
+                background: 'rgba(0,0,0,0.65)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 6,
+                padding: '7px 12px',
+                minWidth: 160,
+                pointerEvents: 'none',
+              }}>
+                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
+                  {b.typeId.toUpperCase()}
+                </div>
+                <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
+                  HP {Math.ceil(b.hp)} / {b.maxHp}
+                </div>
+                <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
+                  <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
+                </div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
+                  right-click to set rally
+                </div>
               </div>
             )
           })()}
