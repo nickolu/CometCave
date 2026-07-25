@@ -83,7 +83,37 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         }
       }
     } else {
-      const rally = (meta.assignedRallyX !== undefined)
+      // Attack-move: scan for nearby enemy specks and steer toward them
+      if (meta.attackMoveMode && meta.assignedRallyX !== undefined) {
+        const ATTACK_MOVE_RANGE = 80  // px
+        const amR2 = ATTACK_MOVE_RANGE * ATTACK_MOVE_RANGE
+        let closestDist2 = Infinity, closestX = 0, closestY = 0
+        const amNeighbors = spatialGrid.query(speckX[i], speckY[i])
+        for (const j of amNeighbors) {
+          if (i === j || !speckIds[j]) continue
+          const jMeta = speckMeta[j]
+          if (!jMeta || jMeta.ownerId === meta.ownerId || jMeta.ownerId === 'neutral') continue
+          const dx = speckX[j] - speckX[i]
+          const dy = speckY[j] - speckY[i]
+          const d2 = dx * dx + dy * dy
+          if (d2 < amR2 && d2 < closestDist2) {
+            closestDist2 = d2
+            closestX = speckX[j]
+            closestY = speckY[j]
+          }
+        }
+        if (closestDist2 < Infinity) {
+          meta.attackMoveTargetX = closestX
+          meta.attackMoveTargetY = closestY
+        } else {
+          meta.attackMoveTargetX = undefined
+          meta.attackMoveTargetY = undefined
+        }
+      }
+
+      const rally = (meta.attackMoveTargetX !== undefined)
+        ? { x: meta.attackMoveTargetX, y: meta.attackMoveTargetY! }
+        : (meta.assignedRallyX !== undefined)
         ? { x: meta.assignedRallyX, y: meta.assignedRallyY! }
         : sim.rallyPoints[meta.ownerId]
       if (rally) {
@@ -96,7 +126,7 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         }
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
-        const AGGRO_RANGE = 150  // px
+        const AGGRO_RANGE = 40  // px
         const aggroR2 = AGGRO_RANGE * AGGRO_RANGE
         let closestDist2 = Infinity, closestX = 0, closestY = 0
         const neighbors = spatialGrid.query(speckX[i], speckY[i])
