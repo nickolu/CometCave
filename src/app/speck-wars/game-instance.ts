@@ -28,6 +28,7 @@ export class GameInstance {
   private enemyBaseWarnedAt = -30000
   private outpostAttackWarnedAt: Record<string, number> = {}  // outpostId → timestamp
   private outpostHpWarnedAt: Record<string, number> = {}     // outpostId → timestamp (HP critical)
+  private controlGroupRallies: Array<{ x: number; y: number } | null> = new Array(6).fill(null)  // slots 4-9
   private enemySurgeWarnedAt = -30000
   private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
   private recentDeathPositions: { x: number; y: number; ts: number }[] = []
@@ -252,6 +253,21 @@ export class GameInstance {
     this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
+    this.inputHandler.onSaveControlGroup = (slot: number) => {
+      const rp = this.sim.rallyPoints['player']
+      if (rp) {
+        this.controlGroupRallies[slot - 4] = { x: rp.x, y: rp.y }
+        this.notify(`◈ GROUP ${slot} SAVED`, '#a0d0ff', 1000)
+      }
+    }
+    this.inputHandler.onRecallControlGroup = (slot: number) => {
+      const saved = this.controlGroupRallies[slot - 4]
+      if (saved) {
+        this.rally(saved.x, saved.y)
+        this.renderer.showRallyPing(saved.x, saved.y)
+        this.notify(`◈ GROUP ${slot} RECALLED`, '#a0d0ff', 900)
+      }
+    }
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
