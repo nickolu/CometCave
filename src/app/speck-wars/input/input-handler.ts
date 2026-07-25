@@ -30,6 +30,7 @@ export class InputHandler {
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
+  public onGuard?: () => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -369,6 +370,8 @@ export class InputHandler {
       this.onSetSpawnType?.('heavy')
     } else if (e.code === 'Digit3') {
       this.onSetSpawnType?.('scout')
+    } else if (e.code === 'KeyG') {
+      this.onGuard?.()
     } else if (e.code === 'KeyX') {
       this.onCycleSpeed?.()
     } else if (e.code === 'KeyE') {
