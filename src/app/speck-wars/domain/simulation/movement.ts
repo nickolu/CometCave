@@ -83,7 +83,9 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         }
       }
     } else {
-      const rally = sim.rallyPoints[meta.ownerId]
+      const rally = (meta.assignedRallyX !== undefined)
+        ? { x: meta.assignedRallyX, y: meta.assignedRallyY! }
+        : sim.rallyPoints[meta.ownerId]
       if (rally) {
         const dx = rally.x - speckX[i]
         const dy = rally.y - speckY[i]
