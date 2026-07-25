@@ -60,6 +60,13 @@ export const FORTIFY_TIME = 30000        // ms to reach full fortification
 export const FORTIFY_RADIUS = 200        // px — combat bonus applies within this radius
 export const FORTIFY_DAMAGE_BONUS = 0.25 // max damage multiplier bonus when fully fortified
 
+// Fog of war
+export const FOG_ALPHA = 0.85
+export const FOG_CELL_SIZE = 200        // coarse grid cell size for speck vision
+export const FOG_VISION_SPECK = 150     // px vision radius per speck (coarse cell)
+export const FOG_VISION_BASE = 300      // px vision radius around player base
+export const FOG_VISION_BUILDING = 180  // px vision radius around owned outposts/buildings
+
 export type DailyModifier = 'standard' | 'bulwark' | 'blitz' | 'siege'
 
 // Weighted array: standard appears 2× more often than others

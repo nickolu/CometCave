@@ -4,6 +4,7 @@ import { BuildingLayer } from './layers/building-layer'
 import { GridLayer } from './layers/grid-layer'
 import { EffectsLayer } from './layers/effects-layer'
 import { StarfieldLayer } from './layers/starfield-layer'
+import { FogLayer } from './layers/fog-layer'
 import { createSpeckTexture } from './textures'
 import type { SimulationState } from '../domain/types'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
@@ -34,6 +35,7 @@ export class Renderer {
   private gridLayer!: GridLayer
   private effectsLayer!: EffectsLayer
   private starfieldLayer!: StarfieldLayer
+  private fogLayer!: FogLayer
   private rallyGfx!: Graphics
   private selectionGfx!: Graphics
   private vignetteGfx!: Graphics
@@ -58,12 +60,14 @@ export class Renderer {
     this.effectsLayer = new EffectsLayer()
     this.buildingLayer = new BuildingLayer()
     this.speckLayer = new SpeckLayer(texture, PLAYER_COLORS)
+    this.fogLayer = new FogLayer()
 
     this.world.addChild(this.starfieldLayer.stage)
     this.world.addChild(this.gridLayer.stage)
     this.world.addChild(this.buildingLayer.stage)
     this.world.addChild(this.effectsLayer.stage)
     this.world.addChild(this.speckLayer.stage)
+    this.world.addChild(this.fogLayer.stage)
 
     this.rallyGfx = new Graphics()
     this.world.addChild(this.rallyGfx)
@@ -81,6 +85,7 @@ export class Renderer {
 
     this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId, ghostBuild)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
+    this.fogLayer.update(sim, 'player')
 
     // Process events from this tick
     for (const event of sim.events) {
@@ -211,6 +216,7 @@ export class Renderer {
     this.effectsLayer.destroy()
     this.speckLayer.destroy()
     this.buildingLayer.destroy()
+    this.fogLayer.destroy()
     this.rallyGfx.destroy()
     this.selectionGfx.destroy()
     this.vignetteGfx.destroy()
