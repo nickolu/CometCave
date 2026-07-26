@@ -18,12 +18,35 @@ function formatTime(ms: number): string {
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
+  const [touchPatrolActive, setTouchPatrolActive] = useState(false)
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
+  )
+  const [showPortraitHint, setShowPortraitHint] = useState(true)
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
     setWinStreak(getWinStreak())
   }, [])
+
+  useEffect(() => {
+    const update = () => {
+      const portrait = window.innerWidth < window.innerHeight
+      setIsPortrait(portrait)
+      if (portrait) setShowPortraitHint(true)  // re-show if user rotates back
+    }
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('orientationchange', update) }
+  }, [])
+
+  // Auto-dismiss portrait hint after 4s
+  useEffect(() => {
+    if (!showPortraitHint) return
+    const t = setTimeout(() => setShowPortraitHint(false), 4000)
+    return () => clearTimeout(t)
+  }, [showPortraitHint])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -82,6 +105,17 @@ export function HUD() {
           100% { opacity: 0; transform: scale(1.6); }
         }
       `}</style>
+      {/* Portrait mode hint — shown briefly for touch users in portrait orientation, auto-dismisses */}
+      {isTouchDevice && isPortrait && showPortraitHint && phase === 'playing' && (
+        <div style={{
+          position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 6, padding: '6px 14px', fontSize: 12, color: 'rgba(255,255,255,0.7)',
+          letterSpacing: 0.5, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 90,
+        }}>
+          ↺ Rotate to landscape for best experience
+        </div>
+      )}
       {hud?.baseUnderThreat && (
         <div style={{
           position: 'fixed',
@@ -731,8 +765,9 @@ export function HUD() {
               <div style={{ fontWeight: 700, fontSize: 15, color: '#4af7c4', marginBottom: 4 }}>Touch Controls</div>
               {[
                 ['Tap canvas', 'Rally units to that spot'],
+                ['Double-tap canvas', 'Zoom in / out (toggle)'],
                 ['Long-press canvas', 'Attack Move (aggressive)'],
-                ['Pinch', 'Zoom in / out'],
+                ['Pinch', 'Zoom in / out (precise)'],
                 ['Drag', 'Pan camera'],
                 ['Tap minimap', 'Navigate camera there'],
               ].map(([gesture, desc]) => (
@@ -750,6 +785,7 @@ export function HUD() {
                   ['★ SURGE', '2× spawn rate for 8s'],
                   ['🔧 SACR', 'Sacrifice 10 specks → +15 HP base'],
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3)'],
+                  ['◎ Patrol', 'Tap Patrol button → tap destination'],
                   ['◆ TURRET', 'Build turret (need 20+ selected)'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
@@ -1388,7 +1424,7 @@ export function HUD() {
                 ].map(({ label, key, action }) => (
                   <button
                     key={label}
-                    onClick={() => action?.()}
+                    onClick={() => { setTouchPatrolActive(false); action?.() }}
                     style={{
                       background: 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.18)',
@@ -1408,11 +1444,41 @@ export function HUD() {
                     {!isTouchDevice && <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>}
                   </button>
                 ))}
+                {/* Patrol button — touch only (desktop uses P key) */}
+                {isTouchDevice && (
+                  <button
+                    onClick={() => {
+                      if (touchPatrolActive) {
+                        setTouchPatrolActive(false)
+                      } else {
+                        gameActions.activatePatrol?.()
+                        setTouchPatrolActive(true)
+                        setTimeout(() => setTouchPatrolActive(false), 5000)
+                      }
+                    }}
+                    title="Patrol: tap target location after pressing"
+                    style={{
+                      background: touchPatrolActive ? 'rgba(160,208,255,0.18)' : 'rgba(255,255,255,0.07)',
+                      border: `1px solid ${touchPatrolActive ? '#a0d0ff' : 'rgba(255,255,255,0.18)'}`,
+                      borderRadius: 4,
+                      color: touchPatrolActive ? '#a0d0ff' : '#ddd',
+                      fontSize: 13,
+                      padding: '8px 14px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      fontFamily: 'monospace',
+                      minHeight: 44,
+                      minWidth: 56,
+                    }}
+                  >
+                    {touchPatrolActive ? '◎ Tap target' : '◎ Patrol'}
+                  </button>
+                )}
               </div>
             )}
             {/* Touch gesture hint */}
             {isTouchDevice && <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
-              Tap: rally &bull; Long-press: attack-move
+              Tap: rally &bull; Long-press: attack-move &bull; Patrol: tap ◎ then tap target
             </div>}
           </div>
         </div>

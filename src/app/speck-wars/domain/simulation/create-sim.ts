@@ -3,8 +3,36 @@ import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_CO
 import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
-import type { Difficulty } from '../../store'
+import type { Difficulty, MapPreset } from '../../store'
 import { spawnCampDefenders, spawnCommander } from './spawner'
+
+// Preset obstacle layouts — world is 3000×3000, player base at (600,1500), AI base at (2400,1500)
+const MAP_PRESET_OBSTACLES: Partial<Record<MapPreset, WallObstacle[]>> = {
+  open: [],
+  canyon: [
+    // Two long horizontal walls — passage through the center (y=1140–1860)
+    { x: 650, y: 1020, w: 1700, h: 120 },
+    { x: 650, y: 1860, w: 1700, h: 120 },
+  ],
+  river: [
+    // One vertical wall with center gap (y=1300–1700) — single chokepoint
+    { x: 1445, y: 100, w: 110, h: 1200 },
+    { x: 1445, y: 1700, w: 110, h: 1200 },
+  ],
+  pillars: [
+    // Five square columns in an X pattern across the center zone
+    { x: 950, y: 950, w: 140, h: 140 },
+    { x: 950, y: 1910, w: 140, h: 140 },
+    { x: 1430, y: 1430, w: 140, h: 140 },
+    { x: 1910, y: 950, w: 140, h: 140 },
+    { x: 1910, y: 1910, w: 140, h: 140 },
+  ],
+  walls: [
+    // Two offset walls creating a zigzag — upper-left block, lower-right block
+    { x: 680, y: 1200, w: 860, h: 100 },
+    { x: 1460, y: 1700, w: 860, h: 100 },
+  ],
+}
 
 function generateObstacles(rng: () => number): WallObstacle[] {
   const obstacles: WallObstacle[] = []
@@ -41,7 +69,7 @@ const playerSpawnInterval: Record<Difficulty, number | undefined> = {
   'very-hard': undefined,  // same as hard — no advantage
 }
 
-export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium'): SimulationState {
+export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium', mapPreset: MapPreset = 'random'): SimulationState {
   const playerBase: BuildingEntity = {
     id: 'building-player-base',
     typeId: 'base',
@@ -128,7 +156,9 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const dailyModifier: DailyModifier = DAILY_MODIFIER_POOL[modifierIndex]
 
   // Generate obstacles AFTER modifier pick to avoid shifting existing RNG sequence
-  const obstacles = generateObstacles(rng)
+  const obstacles = mapPreset === 'random'
+    ? generateObstacles(rng)
+    : (MAP_PRESET_OBSTACLES[mapPreset] ?? [])
 
   // Apply static modifier effects
   if (dailyModifier === 'bulwark') {

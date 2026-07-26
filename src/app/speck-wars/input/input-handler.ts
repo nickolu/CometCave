@@ -52,6 +52,10 @@ export class InputHandler {
   private longPressFired = false
   private dragSelectStartWorldX = 0
   private dragSelectStartWorldY = 0
+  private lastTapTime = 0
+  private lastTapX = 0
+  private lastTapY = 0
+  private touchPatrolPending = false
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -338,8 +342,8 @@ export class InputHandler {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
     }
-    // Tap-to-rally: only if long-press didn't fire
-    if (!this.longPressFired && this.lastPinchDist === 0 && e.changedTouches.length === 1 && this.onRally) {
+    // Tap-to-rally / double-tap-to-zoom: only if long-press didn't fire
+    if (!this.longPressFired && this.lastPinchDist === 0 && e.changedTouches.length === 1) {
       const touch = e.changedTouches[0]
       const dx = touch.clientX - this.touchStartX
       const dy = touch.clientY - this.touchStartY
@@ -348,9 +352,32 @@ export class InputHandler {
         const sx = touch.clientX - rect.left
         const sy = touch.clientY - rect.top
         if (sx >= 0 && sy >= 0 && sx <= rect.width && sy <= rect.height) {
-          const world = screenToWorld(sx, sy, this.camera)
-          navigator.vibrate?.(18)  // short pulse confirms rally
-          this.onRally(world.x, world.y)
+          const now = Date.now()
+          const tapDx = touch.clientX - this.lastTapX
+          const tapDy = touch.clientY - this.lastTapY
+          const isDoubleTap = now - this.lastTapTime < 300 && Math.sqrt(tapDx * tapDx + tapDy * tapDy) < 40
+          if (this.touchPatrolPending) {
+            // Touch patrol mode: one-shot — fire patrol to this location
+            this.touchPatrolPending = false
+            const world = screenToWorld(sx, sy, this.camera)
+            navigator.vibrate?.([10, 30, 10, 30, 10])  // triple-pulse for patrol
+            this.onPatrol?.(world.x, world.y)
+          } else if (isDoubleTap) {
+            // Double-tap: zoom 1.5× toward tap point; if already zoomed in (≥1.5×), return to overview (0.7×)
+            const factor = this.camera.zoom >= 1.5 ? (0.7 / this.camera.zoom) : 1.5
+            Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
+            navigator.vibrate?.([12, 40, 12])  // double-pulse distinguishes from rally
+            this.lastTapTime = 0  // reset so triple-tap doesn't chain
+          } else {
+            this.lastTapTime = now
+            this.lastTapX = touch.clientX
+            this.lastTapY = touch.clientY
+            if (this.onRally) {
+              const world = screenToWorld(sx, sy, this.camera)
+              navigator.vibrate?.(18)  // short pulse confirms rally
+              this.onRally(world.x, world.y)
+            }
+          }
         }
       }
     }
@@ -448,6 +475,15 @@ export class InputHandler {
         this.onRecallControlGroup?.(slot)
       }
     }
+  }
+
+  /** Activate one-shot touch patrol mode: next canvas tap fires patrol to that location */
+  activateTouchPatrol() {
+    this.touchPatrolPending = true
+  }
+
+  isTouchPatrolPending(): boolean {
+    return this.touchPatrolPending
   }
 
   getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {

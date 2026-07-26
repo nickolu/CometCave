@@ -67,12 +67,13 @@ export class GameInstance {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     const difficulty = useSpeckWarsStore.getState().difficulty
+    const mapPreset = useSpeckWarsStore.getState().mapPreset
     const aiTickInterval: Record<string, number> = { easy: 60, medium: 30, hard: 15, 'very-hard': 6 }
     const now = new Date()
     const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
     const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
     const dailySeed = dateKey * 1000 + diffHash
-    this.sim = createSim(dailySeed, difficulty)
+    this.sim = createSim(dailySeed, difficulty, mapPreset)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
     const aiPersonality = (): AIPersonality => {
@@ -240,7 +241,7 @@ export class GameInstance {
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
       (wx: number, wy: number) => {                                    // A + right-click — attack-move
         this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
-        this.renderer.showRallyPing(wx, wy)
+        this.renderer.showRallyPing(wx, wy, 0xff4f7b)  // red ping for attack-move
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
       (wx: number, wy: number) => {                                    // P + right-click — patrol
@@ -255,7 +256,7 @@ export class GameInstance {
         }
         if (speckIds.length === 0) return
         this.sim.inputQueue.push({ type: 'SET_PATROL', ownerId: 'player', speckIds, destX: wx, destY: wy })
-        this.renderer.showRallyPing(wx, wy)
+        this.renderer.showRallyPing(wx, wy, 0xa0d0ff)  // blue ping for patrol
         this.notify('◎ PATROL', '#a0d0ff', 900)
       },
     )
@@ -302,6 +303,7 @@ export class GameInstance {
       snapToBase: () => this.snapToBase(),
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
+      activatePatrol: () => this.inputHandler.activateTouchPatrol(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
