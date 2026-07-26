@@ -304,6 +304,22 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      selectByType: (typeId: string) => {
+        this.sim.selectedSpeckIds.clear()
+        let count = 0
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          const m = this.sim.speckMeta[i]
+          if (m && m.ownerId === 'player' && m.typeId === typeId) {
+            this.sim.selectedSpeckIds.add(m.id)
+            count++
+          }
+        }
+        this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+        if (count > 0) {
+          const label = typeId === 'heavy' ? 'Heavies' : typeId === 'scout' ? 'Darts' : 'Basics'
+          this.notify(`Selected all ${label} (${count})`, '#4af7c4', 900)
+        }
+      },
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
