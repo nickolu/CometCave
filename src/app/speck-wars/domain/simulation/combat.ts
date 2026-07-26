@@ -1,5 +1,5 @@
 import type { SimulationState } from '../types'
-import { SPECK_TYPES } from '../config/speck-types'
+import { SPECK_TYPES, getTypeAdvantage } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { FORTIFY_RADIUS, FORTIFY_TIME, FORTIFY_DAMAGE_BONUS } from '../constants'
 
@@ -114,7 +114,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           if (dot > 0.17)  // cos(80°) ≈ 0.17 — covers wide flank angle
             flankMult = 1.2
         }
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * bladesBonus * commanderBonus * flankMult
+        const typeAdvMult = getTypeAdvantage(stype.id, jMeta.typeId)
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * bladesBonus * commanderBonus * flankMult * typeAdvMult
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0

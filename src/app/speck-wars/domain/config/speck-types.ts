@@ -44,3 +44,17 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     abilities: [],
   },
 }
+
+/**
+ * Type advantage multiplier (rock-paper-scissors):
+ * Heavy beats Basic (siege vs unarmored swarm)
+ * Scout beats Heavy (agility vs slow armor)
+ * Basic beats Scout (swarm overwhelms fragile fast units)
+ * All other matchups: 1.0 (no advantage)
+ */
+export function getTypeAdvantage(attackerTypeId: string, targetTypeId: string): number {
+  if (attackerTypeId === 'heavy'  && targetTypeId === 'basic')  return 1.3
+  if (attackerTypeId === 'scout'  && targetTypeId === 'heavy')  return 1.35
+  if (attackerTypeId === 'basic'  && targetTypeId === 'scout')  return 1.25
+  return 1.0
+}
