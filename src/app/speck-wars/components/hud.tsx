@@ -1078,7 +1078,8 @@ export function HUD() {
           opacity: hud && ((hud.selectedSpeckCount ?? 0) > 0 || hud.selectedBuilding != null) ? 1 : 0,
           transition: 'opacity 150ms ease',
           fontFamily: 'monospace',
-          whiteSpace: 'nowrap',
+          whiteSpace: isTouchDevice ? 'normal' : 'nowrap',
+          maxWidth: isTouchDevice ? 'calc(100vw - 32px)' : undefined,
         }}>
           {/* Build menu — only shows when specks are selected */}
           {(() => {
