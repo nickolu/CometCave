@@ -397,12 +397,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       const url = typeof window !== 'undefined' ? window.location.href : ''
       if (typeof navigator !== 'undefined' && navigator.share) {
         try {
+          navigator.vibrate?.(8)
           await navigator.share({ title: 'Speck Wars', text: shareText, url })
         } catch {
           // user cancelled — no action needed
         }
       } else {
         await navigator.clipboard.writeText(`${shareText} ${url}`)
+        navigator.vibrate?.(12)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }
