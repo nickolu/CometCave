@@ -304,6 +304,9 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      selectBuilding: (buildingId: string) => {
+        this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId })
+      },
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
