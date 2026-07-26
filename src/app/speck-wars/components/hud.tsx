@@ -65,6 +65,7 @@ export function HUD() {
     <div style={{
       position: 'absolute', inset: 0, pointerEvents: 'none',
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
+      touchAction: 'manipulation',
     }}>
       <style>{`
         @keyframes pulse-red {
