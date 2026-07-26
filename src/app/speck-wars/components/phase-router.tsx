@@ -15,6 +15,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const [winStreak, setWinStreak] = useState(0)
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const { user } = useAuth()
+  const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
 
   useEffect(() => {
     if (phase === 'menu') {
@@ -85,6 +86,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   fontWeight: difficulty === d.key ? 'bold' : 'normal',
                   transition: 'all 0.15s',
                   position: 'relative',
+                  minHeight: 44,
                 }}
               >
                 {d.label}
@@ -207,6 +209,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               background: fogEnabled ? 'rgba(68,170,255,0.12)' : 'transparent',
               color: fogEnabled ? '#44aaff' : 'rgba(255,255,255,0.4)',
               letterSpacing: 0.5,
+              minHeight: 44,
             }}
           >
             {fogEnabled ? '🌫 Fog of War: ON' : '🌫 Fog of War: OFF'}
@@ -219,29 +222,50 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           Play
         </button>
         {/* Controls hint */}
-        <div style={{
-          marginTop: 16,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '4px 24px',
-          color: 'rgba(255,255,255,0.35)',
-          fontSize: 11,
-          letterSpacing: 0.5,
-          textAlign: 'left',
-          maxWidth: 320,
-        }}>
-          <span>🖱 Click — rally specks</span>
-          <span>Space — pause / ? — help</span>
-          <span>Drag — box select specks</span>
-          <span>1/2/3 — spawn basic/heavy/scout</span>
-          <span>Q — surge (2× spawn 8s)</span>
-          <span>V — snap to battle</span>
-          <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
-          <span>X — speed · E — all · Esc — clear</span>
-          <span>Ctrl+4-9 save group · 4-9 recall</span>
-          <span>Minimap — click to rally</span>
-          <span>Arrow keys / W S — pan</span>
-        </div>
+        {!isTouchDevice && (
+          <div style={{
+            marginTop: 16,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '4px 24px',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 11,
+            letterSpacing: 0.5,
+            textAlign: 'left',
+            maxWidth: 320,
+          }}>
+            <span>🖱 Click — rally specks</span>
+            <span>Space — pause / ? — help</span>
+            <span>Drag — box select specks</span>
+            <span>1/2/3 — spawn basic/heavy/scout</span>
+            <span>Q — surge (2× spawn 8s)</span>
+            <span>V — snap to battle</span>
+            <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
+            <span>X — speed · E — all · Esc — clear</span>
+            <span>Ctrl+4-9 save group · 4-9 recall</span>
+            <span>Minimap — left-click rally · right-click pan</span>
+            <span>Arrow keys / W S — pan</span>
+          </div>
+        )}
+        {isTouchDevice && (
+          <div style={{
+            marginTop: 16,
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: '4px 24px',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 11, letterSpacing: 0.5,
+            textAlign: 'left', maxWidth: 320,
+          }}>
+            <span>👆 Tap canvas — rally specks</span>
+            <span>⏸ Pause button — pause game</span>
+            <span>👆 Long-press canvas — attack-move</span>
+            <span>⬡ ALL button — select all specks</span>
+            <span>👌 Pinch — zoom · Drag — pan</span>
+            <span>⌂ HOME · ⚔ FIGHT — snap camera</span>
+            <span>🗺 Tap minimap — navigate camera</span>
+            <span>? button — touch controls help</span>
+          </div>
+        )}
         {/* Daily tip */}
         {(() => {
           const tips = [
@@ -580,9 +604,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             ← Cave
           </a>
           </div>
-          <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)' }}>
-            Enter / Space — play again
-          </span>
+          {!isTouchDevice && (
+            <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)' }}>
+              Enter / Space — play again
+            </span>
+          )}
         </div>
         {nextDiff && (
           <button
