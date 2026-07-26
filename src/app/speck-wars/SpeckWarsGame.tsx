@@ -157,6 +157,17 @@ function GameCanvas() {
 export function SpeckWarsGame() {
   const phase = useSpeckWarsStore(s => s.phase)
 
+  useEffect(() => {
+    document.body.classList.add('game-active')
+    document.documentElement.style.overscrollBehavior = 'none'
+    document.body.style.overscrollBehavior = 'none'
+    return () => {
+      document.body.classList.remove('game-active')
+      document.documentElement.style.overscrollBehavior = ''
+      document.body.style.overscrollBehavior = ''
+    }
+  }, [])
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <PhaseRouter>
