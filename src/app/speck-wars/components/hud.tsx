@@ -258,7 +258,7 @@ export function HUD() {
 
       {/* Mini-map — top right, below difficulty badge */}
       {hud && (() => {
-        const MINIMAP_SIZE = 160
+        const MINIMAP_SIZE = isTouchDevice ? 110 : 160
         const SCALE = MINIMAP_SIZE / 3000  // world→screen
         return (
           <div style={{
@@ -413,7 +413,7 @@ export function HUD() {
       {/* Kill feed — below minimap, top-right */}
       {phase === 'playing' && killFeed.length > 0 && (
         <div style={{
-          position: 'absolute', top: 250, right: 16,
+          position: 'absolute', top: isTouchDevice ? 210 : 250, right: 16,
           display: 'flex', flexDirection: 'column', gap: 3,
           pointerEvents: 'none',
           width: 140,
