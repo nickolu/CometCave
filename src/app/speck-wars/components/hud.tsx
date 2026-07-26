@@ -1444,6 +1444,28 @@ export function HUD() {
                     {!isTouchDevice && <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>}
                   </button>
                 ))}
+                {/* Clear selection button — touch only (desktop uses Escape) */}
+                {isTouchDevice && (
+                  <button
+                    onClick={() => { gameActions?.clearSelection?.(); navigator.vibrate?.(8) }}
+                    title="Clear selection (Escape on desktop)"
+                    style={{
+                      background: 'rgba(255,79,123,0.07)',
+                      border: '1px solid rgba(255,79,123,0.3)',
+                      borderRadius: 4,
+                      color: 'rgba(255,120,120,0.8)',
+                      fontSize: 13,
+                      padding: '8px 14px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      fontFamily: 'monospace',
+                      minHeight: 44,
+                      minWidth: 56,
+                    }}
+                  >
+                    ✗ SEL
+                  </button>
+                )}
                 {/* Patrol button — touch only (desktop uses P key) */}
                 {isTouchDevice && (
                   <button

@@ -269,6 +269,10 @@ export class GameInstance {
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
+      clearSelection: () => {
+        this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
+        this.sim.rallyPoints['player-selected'] = null
+      },
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
