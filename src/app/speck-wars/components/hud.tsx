@@ -1220,13 +1220,14 @@ export function HUD() {
                 border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: 6,
                 padding: '7px 12px',
-                minWidth: 160,
+                minWidth: isTouchDevice ? 130 : 160,
+                maxWidth: isTouchDevice ? 'min(200px, calc(100vw - 48px))' : undefined,
                 pointerEvents: 'none',
               }}>
-                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
+                <div style={{ fontSize: isTouchDevice ? 11 : 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
                   {b.typeId.toUpperCase()}
                 </div>
-                <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
+                <div style={{ fontSize: isTouchDevice ? 12 : 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
                   HP {Math.ceil(b.hp)} / {b.maxHp}
                 </div>
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
@@ -1246,7 +1247,7 @@ export function HUD() {
                     {!isTouchDevice && <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>}
                   </div>
                 )}
-                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
+                <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
                   {isTouchDevice ? 'tap canvas to set rally' : 'right-click to set rally'}
                 </div>
               </div>
@@ -1327,18 +1328,42 @@ export function HUD() {
                   fontSize: isTouchDevice ? 11 : 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
                 }}>
                   <span style={{
-                    display: 'inline-block', width: 7, height: 7, flexShrink: 0,
+                    display: 'inline-block',
+                    width: isTouchDevice ? 9 : 7, height: isTouchDevice ? 9 : 7, flexShrink: 0,
                     borderRadius: typeId === 'heavy' ? 1 : '50%',
-                    background: '#4af7c4',
+                    background: typeId === 'heavy' ? '#ffa032' : typeId === 'scout' ? '#50c8ff' : '#4af7c4',
                     transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
                   }} />
                   <span style={{ flex: 1, letterSpacing: 1 }}>
-                    {typeId.charAt(0).toUpperCase() + typeId.slice(1)}
+                    {typeId === 'heavy' ? 'Heavy' : typeId === 'scout' ? 'Dart' : typeId.charAt(0).toUpperCase() + typeId.slice(1)}
                   </span>
                   <span style={{ color: '#ffffff' }}>{count}</span>
                 </div>
               ))
             }
+            {/* Type advantage hint — show counter/weakness for dominant unit type */}
+            {hud?.selectedComposition && (() => {
+              const types = hud.selectedComposition.types
+              const heavy = types['heavy'] ?? 0
+              const scout = types['scout'] ?? 0
+              const basic = types['basic'] ?? 0
+              const total = heavy + scout + basic
+              if (total === 0) return null
+              const dominant = heavy >= scout && heavy >= basic ? 'heavy'
+                : scout >= basic ? 'scout' : 'basic'
+              const hints: Record<string, { beats: string; weak: string; color: string }> = {
+                heavy: { beats: 'Basic', weak: 'Dart', color: '#ffa032' },
+                scout: { beats: 'Heavy', weak: 'Basic', color: '#50c8ff' },
+                basic: { beats: 'Dart', weak: 'Heavy', color: '#4af7c4' },
+              }
+              const h = hints[dominant]
+              return (
+                <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.4)', marginTop: 4, letterSpacing: 0.5, display: 'flex', gap: 6 }}>
+                  <span style={{ color: h.color, opacity: 0.7 }}>▲{h.beats}</span>
+                  <span style={{ opacity: 0.35 }}>▼{h.weak}</span>
+                </div>
+              )
+            })()}
             {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0 || hud.selectedComposition.legendCount > 0) && (
               <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
                 {hud.selectedComposition.legendCount > 0 && <span style={{ color: '#cc44ff' }}>{`✦✦ ${hud.selectedComposition.legendCount} legend  `}</span>}
@@ -1367,13 +1392,14 @@ export function HUD() {
                       border: '1px solid rgba(255,255,255,0.18)',
                       borderRadius: 4,
                       color: '#ddd',
-                      fontSize: 12,
-                      padding: '8px 10px',
+                      fontSize: isTouchDevice ? 13 : 12,
+                      padding: isTouchDevice ? '8px 14px' : '8px 10px',
                       cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 4,
                       userSelect: 'none',
                       fontFamily: 'monospace',
                       minHeight: 44,
+                      minWidth: isTouchDevice ? 56 : undefined,
                     }}
                   >
                     {label}
@@ -1430,12 +1456,12 @@ export function HUD() {
                     key={type}
                     onClick={() => gameActions?.setSpawnType?.(type)}
                     style={{
-                      padding: '6px 8px', fontSize: 9,
+                      padding: '8px 10px', fontSize: 10,
                       cursor: 'pointer', letterSpacing: 1,
                       background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
                       border: active ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.15)',
                       borderRadius: 4, color: active ? color : 'rgba(255,255,255,0.35)',
-                      fontFamily: 'monospace', minHeight: 36, minWidth: 44,
+                      fontFamily: 'monospace', minHeight: 44, minWidth: 52,
                       fontWeight: active ? 700 : 400,
                       transition: 'all 0.1s',
                     }}
