@@ -45,6 +45,8 @@ export class InputHandler {
   private mouseX = -1  // -1 means mouse not over canvas
   private mouseY = -1
   private lastPinchDist = 0  // 0 = not pinching
+  private pinchVelocity = 0   // zoom factor momentum
+  private pinchDecayTimer: ReturnType<typeof requestAnimationFrame> | null = null
   private touchStartX = 0
   private touchStartY = 0
   private isDragSelect = false
@@ -318,6 +320,11 @@ export class InputHandler {
       const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
+      this.pinchVelocity = rawFactor - 1  // positive = zooming in, negative = out
+    } else if (e.touches.length === 1 && this.touchSelectMode && this.isDragSelect) {
+      const rect = this.canvas.getBoundingClientRect()
+      this.mouseX = e.touches[0].clientX - rect.left
+      this.mouseY = e.touches[0].clientY - rect.top
     } else if (this.isDragging && e.touches.length === 1) {
       if (e.touches.length === 1) {
         const moveDist = Math.sqrt(
@@ -337,6 +344,36 @@ export class InputHandler {
   }
 
   private onTouchEnd = (e: TouchEvent) => {
+    // Launch pinch inertia when second finger lifts
+    if (e.touches.length < 2 && this.lastPinchDist > 0) {
+      if (this.pinchDecayTimer) cancelAnimationFrame(this.pinchDecayTimer)
+      if (Math.abs(this.pinchVelocity) > 0.001) {
+        this.pinchDecayTimer = requestAnimationFrame(this.applyPinchInertia)
+      }
+      this.lastPinchDist = 0
+      this.pinchVelocity = 0
+    }
+    if (this.touchSelectMode) {
+      this.touchSelectMode = false
+      this.isDragSelect = false
+      clearTimeout(this.longPressTimer!)
+      this.longPressTimer = null
+      const touch = e.changedTouches[0]
+      const rect = this.canvas.getBoundingClientRect()
+      const sx = touch.clientX - rect.left
+      const sy = touch.clientY - rect.top
+      const world = screenToWorld(sx, sy, this.camera)
+      const dx = touch.clientX - this.touchStartX
+      const dy = touch.clientY - this.touchStartY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > 10) {
+        this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
+      } else {
+        // Treat small movement as tap → rally
+        this.onRally?.(world.x, world.y)
+      }
+      return
+    }
     // Cancel any pending long-press
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
@@ -382,8 +419,21 @@ export class InputHandler {
       }
     }
     this.isDragging = false
-    this.lastPinchDist = 0
     this.longPressFired = false
+  }
+
+  private applyPinchInertia = () => {
+    if (Math.abs(this.pinchVelocity) < 0.0005) {
+      this.pinchDecayTimer = null
+      return
+    }
+    const rect = this.canvas.getBoundingClientRect()
+    const cx = rect.width / 2
+    const cy = rect.height / 2
+    const dampened = 1 + this.pinchVelocity * 0.3
+    Object.assign(this.camera, zoomAt(this.camera, cx, cy, dampened))
+    this.pinchVelocity *= 0.75  // decay
+    this.pinchDecayTimer = requestAnimationFrame(this.applyPinchInertia)
   }
 
   private onKeyUp = (e: KeyboardEvent) => {
@@ -511,6 +561,7 @@ export class InputHandler {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
     }
+    if (this.pinchDecayTimer) { cancelAnimationFrame(this.pinchDecayTimer); this.pinchDecayTimer = null }
     this.canvas.removeEventListener('mousedown', this.onMouseDown)
     window.removeEventListener('mousemove', this.onMouseMove)
     window.removeEventListener('mouseup', this.onMouseUp)

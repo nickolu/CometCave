@@ -767,8 +767,8 @@ export function HUD() {
                 ['Tap canvas', 'Rally units to that spot'],
                 ['Double-tap canvas', 'Zoom in / out (toggle)'],
                 ['Long-press canvas', 'Attack Move (aggressive)'],
-                ['Pinch', 'Zoom in / out (precise)'],
-                ['Drag', 'Pan camera'],
+                ['Pinch + move', 'Zoom and pan simultaneously'],
+                ['Single-finger drag', 'Pan camera'],
                 ['Tap minimap', 'Navigate camera there'],
               ].map(([gesture, desc]) => (
                 <div key={gesture} style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
@@ -783,12 +783,14 @@ export function HUD() {
                   ['⌂ HOME', 'Camera → your base'],
                   ['⚔ FIGHT', 'Camera → active battle'],
                   ['★ SURGE', '2× spawn rate for 8s'],
-                  ['🔧 SACR', 'Sacrifice 10 specks → +15 HP base'],
+                  ['🔧 HEAL', 'Sacrifice 10 specks → +15 HP base'],
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3)'],
                   ['◎ Patrol', 'Tap Patrol button → tap destination'],
+                  ['⊞ SEL', 'Tap then drag to box-select units'],
                   ['◆ TURRET', 'Build turret (need 20+ selected)'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
+                  ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
                 ].map(([btn, desc]) => (
                   <div key={btn} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
                     <span style={{ color: '#4af7c4', fontWeight: 600, whiteSpace: 'nowrap' }}>{btn}</span>
