@@ -45,6 +45,8 @@ export class InputHandler {
   private mouseX = -1  // -1 means mouse not over canvas
   private mouseY = -1
   private lastPinchDist = 0  // 0 = not pinching
+  private lastPinchMidX = 0
+  private lastPinchMidY = 0
   private touchStartX = 0
   private touchStartY = 0
   private isDragSelect = false
@@ -301,6 +303,8 @@ export class InputHandler {
       const dx = e.touches[1].clientX - e.touches[0].clientX
       const dy = e.touches[1].clientY - e.touches[0].clientY
       this.lastPinchDist = Math.sqrt(dx * dx + dy * dy)
+      this.lastPinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      this.lastPinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2
     }
   }
 
@@ -318,6 +322,13 @@ export class InputHandler {
       const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
+      // Two-finger pan: track midpoint movement and pan camera accordingly
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+      this.camera.x += midX - this.lastPinchMidX
+      this.camera.y += midY - this.lastPinchMidY
+      this.lastPinchMidX = midX
+      this.lastPinchMidY = midY
     } else if (this.isDragging && e.touches.length === 1) {
       if (e.touches.length === 1) {
         const moveDist = Math.sqrt(
