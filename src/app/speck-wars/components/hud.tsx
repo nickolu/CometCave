@@ -1371,7 +1371,7 @@ export function HUD() {
           )}
           {/* Stance indicator — tappable on mobile to cycle stance */}
           <div
-            onClick={isTouchDevice ? (gameActions?.cycleStance ?? undefined) : undefined}
+            onClick={isTouchDevice ? (() => { navigator.vibrate?.(12); gameActions?.cycleStance?.() }) : undefined}
             style={{
               fontSize: 11, letterSpacing: 1.5, opacity: 0.8,
               color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4',
@@ -1388,7 +1388,7 @@ export function HUD() {
             display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end',
           }}>
           <button
-            onClick={() => gameActions.defend?.()}
+            onClick={() => { navigator.vibrate?.(12); gameActions.defend?.() }}
             title="[D] Defend — rally to your base"
             style={{
               padding: '8px 12px',
@@ -1406,7 +1406,7 @@ export function HUD() {
             🛡 D
           </button>
           <button
-            onClick={() => gameActions.advance?.()}
+            onClick={() => { navigator.vibrate?.(12); gameActions.advance?.() }}
             title="[N] Advance — rally to nearest outpost"
             style={{
               padding: '8px 12px',
@@ -1424,7 +1424,7 @@ export function HUD() {
             → N
           </button>
           <button
-            onClick={() => gameActions.rush?.()}
+            onClick={() => { navigator.vibrate?.(20); gameActions.rush?.() }}
             title="[B] Rush — attack enemy base"
             style={{
               padding: '8px 12px',
@@ -1447,7 +1447,7 @@ export function HUD() {
             const surgeReady = !surgeActive && surgeCd <= 0
             return (
               <button
-                onClick={() => { if (surgeReady) gameActions.surge?.() }}
+                onClick={() => { if (surgeReady) { navigator.vibrate?.(30); gameActions.surge?.() } }}
                 title="[Q] Surge — 2× production for 8s (45s cooldown)"
                 style={{
                   padding: '8px 12px',
@@ -1482,7 +1482,7 @@ export function HUD() {
             const ready = cd <= 0 && speckCount >= 10 && baseHp < 90
             return (
               <button
-                onClick={() => { if (ready) gameActions.sacrifice?.() }}
+                onClick={() => { if (ready) { navigator.vibrate?.(30); gameActions.sacrifice?.() } }}
                 title="[F] Sacrifice 10 specks → repair +15 HP base (45s cooldown)"
                 style={{
                   padding: '8px 12px',
@@ -1503,7 +1503,7 @@ export function HUD() {
             )
           })()}
           <button
-            onClick={() => gameActions.clearRally?.()}
+            onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
             title="[R] Clear rally"
             style={{
               padding: '8px 12px',
