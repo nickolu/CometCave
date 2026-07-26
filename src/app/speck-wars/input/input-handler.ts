@@ -321,10 +321,6 @@ export class InputHandler {
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
       this.pinchVelocity = rawFactor - 1  // positive = zooming in, negative = out
-    } else if (e.touches.length === 1 && this.touchSelectMode && this.isDragSelect) {
-      const rect = this.canvas.getBoundingClientRect()
-      this.mouseX = e.touches[0].clientX - rect.left
-      this.mouseY = e.touches[0].clientY - rect.top
     } else if (this.isDragging && e.touches.length === 1) {
       if (e.touches.length === 1) {
         const moveDist = Math.sqrt(
@@ -352,27 +348,6 @@ export class InputHandler {
       }
       this.lastPinchDist = 0
       this.pinchVelocity = 0
-    }
-    if (this.touchSelectMode) {
-      this.touchSelectMode = false
-      this.isDragSelect = false
-      clearTimeout(this.longPressTimer!)
-      this.longPressTimer = null
-      const touch = e.changedTouches[0]
-      const rect = this.canvas.getBoundingClientRect()
-      const sx = touch.clientX - rect.left
-      const sy = touch.clientY - rect.top
-      const world = screenToWorld(sx, sy, this.camera)
-      const dx = touch.clientX - this.touchStartX
-      const dy = touch.clientY - this.touchStartY
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist > 10) {
-        this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
-      } else {
-        // Treat small movement as tap → rally
-        this.onRally?.(world.x, world.y)
-      }
-      return
     }
     // Cancel any pending long-press
     if (this.longPressTimer) {
