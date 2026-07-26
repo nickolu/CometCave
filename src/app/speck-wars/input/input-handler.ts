@@ -56,6 +56,9 @@ export class InputHandler {
   private lastTapX = 0
   private lastTapY = 0
   private touchPatrolPending = false
+  private twoFingerActive = false      // true while 2 fingers are on canvas
+  private twoFingerMoved = false       // true if pinch changed significantly (not a tap)
+  private twoFingerTapStartDist = 0   // initial pinch distance when 2nd finger touched
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -297,10 +300,19 @@ export class InputHandler {
         }
       }, 500)
     } else if (e.touches.length === 2) {
+      // Cancel any pending long-press from the first finger
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer)
+        this.longPressTimer = null
+      }
       this.isDragging = false
-      const dx = e.touches[1].clientX - e.touches[0].clientX
-      const dy = e.touches[1].clientY - e.touches[0].clientY
-      this.lastPinchDist = Math.sqrt(dx * dx + dy * dy)
+      const dx2 = e.touches[1].clientX - e.touches[0].clientX
+      const dy2 = e.touches[1].clientY - e.touches[0].clientY
+      const initDist = Math.sqrt(dx2 * dx2 + dy2 * dy2)
+      this.lastPinchDist = initDist
+      this.twoFingerTapStartDist = initDist
+      this.twoFingerActive = true
+      this.twoFingerMoved = false
     }
   }
 
@@ -311,6 +323,10 @@ export class InputHandler {
       const dx = e.touches[1].clientX - e.touches[0].clientX
       const dy = e.touches[1].clientY - e.touches[0].clientY
       const newDist = Math.sqrt(dx * dx + dy * dy)
+      // If pinch distance changed significantly, this is a pinch not a tap
+      if (Math.abs(newDist - this.twoFingerTapStartDist) > 15) {
+        this.twoFingerMoved = true
+      }
       const rawFactor = newDist / this.lastPinchDist
       const factor = 1 + (rawFactor - 1) * 0.4  // dampen to 40% of raw pinch speed
       const rect = this.canvas.getBoundingClientRect()
@@ -380,6 +396,16 @@ export class InputHandler {
           }
         }
       }
+    }
+    // Two-finger tap → stop selected specks
+    if (this.twoFingerActive && !this.twoFingerMoved && e.touches.length === 0) {
+      navigator.vibrate?.([20, 30, 20])  // double-tap pattern — distinct from rally (18ms) and attack-move ([30,60,30])
+      this.onStop?.()
+    }
+    // Reset two-finger state when all fingers lifted
+    if (e.touches.length === 0) {
+      this.twoFingerActive = false
+      this.twoFingerMoved = false
     }
     this.isDragging = false
     this.lastPinchDist = 0
