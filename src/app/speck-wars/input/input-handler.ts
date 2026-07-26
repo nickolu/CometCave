@@ -35,6 +35,7 @@ export class InputHandler {
   public onBuildTurret?: () => void
   public onGuard?: () => void
   public onCycleStance?: () => void
+  public onCommanderAbility?: () => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -434,6 +435,8 @@ export class InputHandler {
       this.onCycleSpeed?.()
     } else if (e.code === 'KeyE') {
       this.onSelectAll?.()
+    } else if (e.code === 'KeyY' && !e.repeat) {
+      this.onCommanderAbility?.()
     } else if (e.code === 'KeyF') {
       this.onSacrifice?.()
     } else if (['Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)) {

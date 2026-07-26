@@ -29,6 +29,10 @@ export interface SpeckMeta {
   pulseTimer?: number           // ms until next AoE pulse
   chargeTimer?: number          // ms of heavy charge burst remaining
   cloakTimer?: number           // ms of scout cloak remaining (enemy can't target)
+  stunTimer?: number            // ms remaining in stun (Battle Roar / Last Stand)
+  commanderAbilityCooldown?: number   // ms until Battle Roar / Last Stand can fire again
+  commanderAbilityActive?: number     // ms of Level 3 buff remaining (invuln + 3× dmg)
+  speedBoostTimer?: number      // ms of +50% speed boost from commander Last Stand
 }
 
 export interface BuildingEntity {
@@ -134,6 +138,7 @@ export type InputEvent =
   | { type: 'SET_PATROL'; ownerId: string; speckIds: string[]; destX: number; destY: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
   | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
+  | { type: 'COMMANDER_ABILITY'; ownerId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -185,6 +190,7 @@ export interface HudData {
   waveCountdown: number | null
   waveInProgress: boolean
   sacrificeCooldown: number
+  commander: { level: number; abilityCooldown: number; abilityActive: number } | null
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean

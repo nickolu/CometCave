@@ -60,9 +60,18 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
+    // Stunned specks cannot move
+    if ((meta.stunTimer ?? 0) > 0) {
+      speckVx[i] = 0
+      speckVy[i] = 0
+      continue
+    }
+
     const speedMult = (meta.isHero && (meta.heroLevel ?? 0) >= 1) ? 1.15 : 1.0
     const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
     const chargeMult = (meta.typeId === 'heavy' && (meta.chargeTimer ?? 0) > 0) ? 1.35 : 1.0
+    const speedBoostMult = (meta.speedBoostTimer ?? 0) > 0 ? 1.5 : 1.0
+    const lastStandMult = (meta.isCommander && (meta.commanderAbilityActive ?? 0) > 0) ? 1.25 : 1.0
 
     // Retreating: flee to nearest friendly building
     if (meta.state === 'retreating') {
@@ -273,6 +282,12 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           break
         }
       }
+    }
+
+    // Speed boost from commander Last Stand ability
+    if ((speedBoostMult !== 1.0 || lastStandMult !== 1.0) && (ax !== 0 || ay !== 0)) {
+      ax *= speedBoostMult * lastStandMult
+      ay *= speedBoostMult * lastStandMult
     }
 
     // Simple velocity (no mass — direct velocity override)
