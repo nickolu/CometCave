@@ -18,6 +18,7 @@ function formatTime(ms: number): string {
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
+  const [touchPatrolActive, setTouchPatrolActive] = useState(false)
   const [isPortrait, setIsPortrait] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
   )
@@ -784,6 +785,7 @@ export function HUD() {
                   ['★ SURGE', '2× spawn rate for 8s'],
                   ['🔧 SACR', 'Sacrifice 10 specks → +15 HP base'],
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3)'],
+                  ['◎ Patrol', 'Tap Patrol button → tap destination'],
                   ['◆ TURRET', 'Build turret (need 20+ selected)'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
@@ -1422,7 +1424,7 @@ export function HUD() {
                 ].map(({ label, key, action }) => (
                   <button
                     key={label}
-                    onClick={() => action?.()}
+                    onClick={() => { setTouchPatrolActive(false); action?.() }}
                     style={{
                       background: 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.18)',
@@ -1442,11 +1444,41 @@ export function HUD() {
                     {!isTouchDevice && <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>}
                   </button>
                 ))}
+                {/* Patrol button — touch only (desktop uses P key) */}
+                {isTouchDevice && (
+                  <button
+                    onClick={() => {
+                      if (touchPatrolActive) {
+                        setTouchPatrolActive(false)
+                      } else {
+                        gameActions.activatePatrol?.()
+                        setTouchPatrolActive(true)
+                        setTimeout(() => setTouchPatrolActive(false), 5000)
+                      }
+                    }}
+                    title="Patrol: tap target location after pressing"
+                    style={{
+                      background: touchPatrolActive ? 'rgba(160,208,255,0.18)' : 'rgba(255,255,255,0.07)',
+                      border: `1px solid ${touchPatrolActive ? '#a0d0ff' : 'rgba(255,255,255,0.18)'}`,
+                      borderRadius: 4,
+                      color: touchPatrolActive ? '#a0d0ff' : '#ddd',
+                      fontSize: 13,
+                      padding: '8px 14px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      fontFamily: 'monospace',
+                      minHeight: 44,
+                      minWidth: 56,
+                    }}
+                  >
+                    {touchPatrolActive ? '◎ Tap target' : '◎ Patrol'}
+                  </button>
+                )}
               </div>
             )}
             {/* Touch gesture hint */}
             {isTouchDevice && <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
-              Tap: rally &bull; Long-press: attack-move
+              Tap: rally &bull; Long-press: attack-move &bull; Patrol: tap ◎ then tap target
             </div>}
           </div>
         </div>

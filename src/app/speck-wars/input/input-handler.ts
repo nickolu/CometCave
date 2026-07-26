@@ -55,6 +55,7 @@ export class InputHandler {
   private lastTapTime = 0
   private lastTapX = 0
   private lastTapY = 0
+  private touchPatrolPending = false
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -355,7 +356,13 @@ export class InputHandler {
           const tapDx = touch.clientX - this.lastTapX
           const tapDy = touch.clientY - this.lastTapY
           const isDoubleTap = now - this.lastTapTime < 300 && Math.sqrt(tapDx * tapDx + tapDy * tapDy) < 40
-          if (isDoubleTap) {
+          if (this.touchPatrolPending) {
+            // Touch patrol mode: one-shot — fire patrol to this location
+            this.touchPatrolPending = false
+            const world = screenToWorld(sx, sy, this.camera)
+            navigator.vibrate?.([10, 30, 10, 30, 10])  // triple-pulse for patrol
+            this.onPatrol?.(world.x, world.y)
+          } else if (isDoubleTap) {
             // Double-tap: zoom 1.5× toward tap point; if already zoomed in (≥1.5×), return to overview (0.7×)
             const factor = this.camera.zoom >= 1.5 ? (0.7 / this.camera.zoom) : 1.5
             Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
@@ -468,6 +475,15 @@ export class InputHandler {
         this.onRecallControlGroup?.(slot)
       }
     }
+  }
+
+  /** Activate one-shot touch patrol mode: next canvas tap fires patrol to that location */
+  activateTouchPatrol() {
+    this.touchPatrolPending = true
+  }
+
+  isTouchPatrolPending(): boolean {
+    return this.touchPatrolPending
   }
 
   getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {

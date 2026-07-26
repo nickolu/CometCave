@@ -303,6 +303,7 @@ export class GameInstance {
       snapToBase: () => this.snapToBase(),
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
+      activatePatrol: () => this.inputHandler.activateTouchPatrol(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
