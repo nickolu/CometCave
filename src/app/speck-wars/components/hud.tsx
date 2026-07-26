@@ -584,7 +584,7 @@ export function HUD() {
             }}
           >
             <div style={{ fontWeight: 700 }}>⬡ ALL</div>
-            <div style={{ fontSize: 8, opacity: 0.7 }}>E</div>
+            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>E</div>}
           </button>
         )}
         {/* Snap to base button — essential for mobile (no keyboard shortcut) */}
@@ -609,7 +609,7 @@ export function HUD() {
             }}
           >
             <div style={{ fontWeight: 700 }}>⌂ HOME</div>
-            <div style={{ fontSize: 8, opacity: 0.7 }}>C</div>
+            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>C</div>}
           </button>
         )}
         {/* Snap to battle button — mobile: jump camera to where the fight is (V key) */}
@@ -634,7 +634,7 @@ export function HUD() {
             }}
           >
             <div style={{ fontWeight: 700 }}>⚔ FIGHT</div>
-            <div style={{ fontSize: 8, opacity: 0.7 }}>V</div>
+            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>V</div>}
           </button>
         )}
         <button
@@ -1307,15 +1307,15 @@ export function HUD() {
                     }}
                   >
                     {label}
-                    <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>
+                    {!isTouchDevice && <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>}
                   </button>
                 ))}
               </div>
             )}
             {/* Touch gesture hint */}
-            <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
+            {isTouchDevice && <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
               Tap: rally &bull; Long-press: attack-move
-            </div>
+            </div>}
           </div>
         </div>
       )}
@@ -1330,7 +1330,7 @@ export function HUD() {
           {/* Stance indicator */}
           <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.8, color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4', textAlign: 'right' }}>
             {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
-            <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>
+            {!isTouchDevice && <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>}
           </div>
           <div style={{
             display: 'flex', gap: 6,
