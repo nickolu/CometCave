@@ -60,6 +60,9 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
+    // Garrisoned specks don't move
+    if (meta.isGarrisoned) continue
+
     // Stunned specks cannot move
     if ((meta.stunTimer ?? 0) > 0) {
       speckVx[i] = 0

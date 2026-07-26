@@ -304,6 +304,8 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      garrison: (buildingId: string) => this.garrison(buildingId),
+      recallGarrison: (buildingId: string) => this.recallGarrison(buildingId),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
@@ -930,6 +932,32 @@ export class GameInstance {
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
     useSpeckWarsStore.getState().addSacrificeUsed()
+  }
+
+  garrison(buildingId: string) {
+    const building = this.sim.buildings[buildingId]
+    if (!building || building.ownerId !== 'player') return
+    if (building.typeId !== 'outpost') return
+    const speckIds: string[] = []
+    const useSelection = this.sim.selectedSpeckIds.size > 0
+    for (let i = 0; i < this.sim.speckCount; i++) {
+      if (!this.sim.speckIds[i]) continue
+      const m = this.sim.speckMeta[i]
+      if (!m || m.ownerId !== 'player' || m.isGarrisoned) continue
+      if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
+      speckIds.push(m.id)
+      if (speckIds.length >= 5) break
+    }
+    if (speckIds.length === 0) return
+    this.sim.inputQueue.push({ type: 'GARRISON', ownerId: 'player', buildingId, speckIds })
+    this.notify('GARRISON', '#44aaff', 1200)
+    navigator.vibrate?.([20, 40, 20])
+  }
+
+  recallGarrison(buildingId: string) {
+    this.sim.inputQueue.push({ type: 'RECALL_GARRISON', ownerId: 'player', buildingId })
+    this.notify('RECALL', '#44aaff', 900)
+    navigator.vibrate?.([15, 30])
   }
 
   setStance(stance: 'aggressive' | 'defensive' | 'hold') {
