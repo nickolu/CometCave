@@ -152,6 +152,30 @@ export class SpeckLayer {
           this.gfx.lineStyle(0)
         }
 
+        // Stun indicator: blue-white spinning ring around stunned specks
+        if (typeMeta?.stunTimer && typeMeta.stunTimer > 0) {
+          const stunAngle = now / 200
+          const stunR = (stype ? stype.size / 4 : 0.75) + 4
+          for (let s = 0; s < 4; s++) {
+            const a = stunAngle + (s * Math.PI / 2)
+            const sx = sim.speckX[i] + Math.cos(a) * stunR
+            const sy = sim.speckY[i] + Math.sin(a) * stunR
+            this.gfx.beginFill(0x99ccff, 0.7 * spriteList[j].alpha)
+            this.gfx.drawCircle(sx, sy, 1.2)
+            this.gfx.endFill()
+          }
+        }
+
+        // Last Stand: white pulsing aura around commander during active buff
+        if (typeMeta?.isCommander && (typeMeta.commanderAbilityActive ?? 0) > 0) {
+          const lsPulse = 0.5 + 0.5 * Math.sin(now / 120)
+          this.gfx.lineStyle(3, 0xffffff, lsPulse * spriteList[j].alpha)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 16)
+          this.gfx.lineStyle(2, 0x00ffcc, lsPulse * 0.7 * spriteList[j].alpha)
+          this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], (stype ? stype.size / 4 : 0.75) + 20)
+          this.gfx.lineStyle(0)
+        }
+
         const isHeavy = typeMeta?.typeId === 'heavy'
         if (isHeavy) {
           this.gfx.lineStyle(1, 0xffffff, spriteList[j].alpha * 0.6)
