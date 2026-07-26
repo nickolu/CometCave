@@ -301,6 +301,7 @@ export function HUD() {
                 const worldX = (px / MINIMAP_SIZE) * 3000
                 const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.panCamera(worldX, worldY)
+                navigator.vibrate?.(15)  // short pulse confirms minimap navigation
               }}
             >
               {/* Speck dots */}
@@ -423,11 +424,11 @@ export function HUD() {
             return (
               <div key={entry.id} style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 9, letterSpacing: 0.5,
+                fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5,
                 opacity,
                 transition: 'opacity 150ms',
               }}>
-                <span style={{ fontSize: 11 }}>{entry.icon}</span>
+                <span style={{ fontSize: isTouchDevice ? 13 : 11 }}>{entry.icon}</span>
                 <span style={{ color: entry.color }}>{entry.label}</span>
               </div>
             )
@@ -1345,7 +1346,7 @@ export function HUD() {
             onClick={() => gameActions.defend?.()}
             title="[D] Defend — rally to your base"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(74,247,196,0.08)',
@@ -1363,7 +1364,7 @@ export function HUD() {
             onClick={() => gameActions.advance?.()}
             title="[N] Advance — rally to nearest outpost"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(255,215,0,0.08)',
@@ -1381,7 +1382,7 @@ export function HUD() {
             onClick={() => gameActions.rush?.()}
             title="[B] Rush — attack enemy base"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(255,79,123,0.08)',
@@ -1404,7 +1405,7 @@ export function HUD() {
                 onClick={() => { if (surgeReady) gameActions.surge?.() }}
                 title="[Q] Surge — 2× production for 8s (45s cooldown)"
                 style={{
-                  padding: '6px 10px',
+                  padding: '8px 12px',
                   fontSize: 11,
                   cursor: surgeReady ? 'pointer' : 'default',
                   background: surgeActive ? 'rgba(255,215,0,0.25)' : 'rgba(255,215,0,0.06)',
@@ -1439,7 +1440,7 @@ export function HUD() {
                 onClick={() => { if (ready) gameActions.sacrifice?.() }}
                 title="[F] Sacrifice 10 specks → repair +15 HP base (45s cooldown)"
                 style={{
-                  padding: '6px 10px',
+                  padding: '8px 12px',
                   fontSize: 11,
                   cursor: ready ? 'pointer' : 'default',
                   background: ready ? 'rgba(100,200,100,0.12)' : 'rgba(100,200,100,0.04)',
@@ -1460,7 +1461,7 @@ export function HUD() {
             onClick={() => gameActions.clearRally?.()}
             title="[R] Clear rally"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(0,0,0,0.4)',
