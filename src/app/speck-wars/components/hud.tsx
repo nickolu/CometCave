@@ -1424,7 +1424,7 @@ export function HUD() {
                 ].map(({ label, key, action }) => (
                   <button
                     key={label}
-                    onClick={() => { setTouchPatrolActive(false); action?.() }}
+                    onClick={() => { navigator.vibrate?.(8); setTouchPatrolActive(false); action?.() }}
                     style={{
                       background: 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.18)',
@@ -1522,7 +1522,7 @@ export function HUD() {
                 return (
                   <button
                     key={type}
-                    onClick={() => gameActions?.setSpawnType?.(type)}
+                    onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
                     style={{
                       padding: '8px 10px', fontSize: 10,
                       cursor: 'pointer', letterSpacing: 1,
