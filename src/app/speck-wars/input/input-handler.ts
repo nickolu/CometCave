@@ -286,6 +286,7 @@ export class InputHandler {
         const sy = this.lastY - rect.top
         if (sx >= 0 && sy >= 0 && sx <= rect.width && sy <= rect.height) {
           const world = screenToWorld(sx, sy, this.camera)
+          navigator.vibrate?.([30, 60, 30])  // double-pulse distinguishes attack-move from rally
           this.onAttackMove?.(world.x, world.y)
           this.longPressFired = true
         }
@@ -347,6 +348,7 @@ export class InputHandler {
         const sy = touch.clientY - rect.top
         if (sx >= 0 && sy >= 0 && sx <= rect.width && sy <= rect.height) {
           const world = screenToWorld(sx, sy, this.camera)
+          navigator.vibrate?.(18)  // short pulse confirms rally
           this.onRally(world.x, world.y)
         }
       }
