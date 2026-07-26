@@ -68,7 +68,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
   if (phase === 'menu') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, overflowY: 'auto', padding: '16px 0' }}>
         <h1 style={{ color: '#fff', fontSize: 48, margin: 0 }}>Speck Wars</h1>
         <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base. Last base standing wins.</p>
         {winStreak >= 2 && (
@@ -363,7 +363,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100%', gap: 20,
-        fontFamily: 'monospace',
+        fontFamily: 'monospace', overflowY: 'auto', padding: '16px 0',
       }}>
         <h1 style={{ color: accentColor, fontSize: 64, margin: 0, letterSpacing: 4 }}>
           {won ? 'VICTORY' : 'DEFEATED'}
