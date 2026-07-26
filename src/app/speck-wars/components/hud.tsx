@@ -875,8 +875,23 @@ export function HUD() {
               </span>
               {dots.map(({ id, color, isUnderAttack, isPlayerOwned, cap, hpFrac }, i) => {
                 const capColor = cap?.side === 'player' ? '#4af7c4' : '#ff4f7b'
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                const building = hud.minimap.buildings.find(b => b.id === id)
+                const canTap = isTouchDevice && !!building && !!gameActions?.panCamera
+                const sharedStyle = {
+                  display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 2,
+                }
+                const touchStyle = canTap ? {
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '6px 8px', minWidth: 36, minHeight: 44, justifyContent: 'center',
+                  borderBottom: '1px dotted rgba(255,255,255,0.2)',
+                } : {}
+                const handleTap = () => {
+                  if (!building) return
+                  gameActions?.panCamera?.(building.x, building.y)
+                  navigator.vibrate?.(15)
+                }
+                const innerContent = (
+                  <>
                     <div style={{
                       width: 10, height: 10,
                       borderRadius: '50%',
@@ -915,6 +930,15 @@ export function HUD() {
                         </div>
                       )
                     })()}
+                  </>
+                )
+                return canTap ? (
+                  <button key={i} onClick={handleTap} style={{ ...sharedStyle, ...touchStyle }}>
+                    {innerContent}
+                  </button>
+                ) : (
+                  <div key={i} style={sharedStyle}>
+                    {innerContent}
                   </div>
                 )
               })}
