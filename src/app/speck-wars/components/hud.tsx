@@ -780,7 +780,7 @@ export function HUD() {
               `}</style>
             )}
             <div style={{
-              position: 'absolute', top: 48, left: 0, right: 0,
+              position: 'absolute', top: isTouchDevice ? 68 : 48, left: 0, right: 0,
               display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
             }}>
               <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>
