@@ -288,6 +288,18 @@ export function HUD() {
                 const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.panCamera(worldX, worldY)
               }}
+              onTouchEnd={(e) => {
+                e.preventDefault()
+                if (!gameActions?.panCamera) return
+                const touch = e.changedTouches[0]
+                if (!touch) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const px = touch.clientX - rect.left
+                const py = touch.clientY - rect.top
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
+                gameActions.panCamera(worldX, worldY)
+              }}
             >
               {/* Speck dots */}
               {hud.minimap.specks.map((s, i) => (
