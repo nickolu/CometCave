@@ -341,7 +341,8 @@ export function HUD() {
 
       {/* Mini-map — top right, below difficulty badge */}
       {hud && (() => {
-        const MINIMAP_SIZE = isTouchDevice ? 110 : 160
+        const isNarrowDevice = typeof window !== 'undefined' && window.innerWidth < 768
+        const MINIMAP_SIZE = isTouchDevice && isNarrowDevice ? 110 : 160
         const SCALE = MINIMAP_SIZE / 3000  // world→screen
         return (
           <div style={{
