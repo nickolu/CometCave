@@ -144,6 +144,7 @@ export class GameInstance {
           const btype = BUILDING_TYPES[building.typeId]
           const r = btype?.size ?? 20
           if (Math.hypot(wx - building.x, wy - building.y) <= r + 20) {
+            navigator.vibrate?.(10)
             this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
             return
           }
@@ -527,6 +528,7 @@ export class GameInstance {
               const count = this.recentKillTimes.length
               const comboColors: Record<number, string> = { 3: '#4af7c4', 5: '#ffd700', 8: '#ff8844', 12: '#cc00ff' }
               const color = count >= 12 ? '#cc00ff' : count >= 8 ? '#ff8844' : count >= 5 ? '#ffd700' : '#4af7c4'
+              navigator.vibrate?.(count >= 8 ? [30, 30, 30] : 25)
               this.notify(`⚡ COMBO ×${count}!`, color, 1500)
             }
             const k = useSpeckWarsStore.getState().kills
@@ -569,12 +571,15 @@ export class GameInstance {
             if (now - this.lastStreakNotifiedAt > 4000) {
               if (killCount >= 20) {
                 this.lastStreakNotifiedAt = now
+                navigator.vibrate?.([25, 30, 40, 30, 25])
                 this.notify('⚡ UNSTOPPABLE! ×' + killCount, '#ffffff')
               } else if (killCount >= 10) {
                 this.lastStreakNotifiedAt = now
+                navigator.vibrate?.([25, 30, 25])
                 this.notify('⚡ RAMPAGE! ×' + killCount, '#ffd700')
               } else if (killCount >= 5) {
                 this.lastStreakNotifiedAt = now
+                navigator.vibrate?.(25)
                 this.notify('⚡ KILLING SPREE ×' + killCount, '#ff8844')
               }
             }

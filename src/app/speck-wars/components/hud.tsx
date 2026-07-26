@@ -1225,7 +1225,7 @@ export function HUD() {
                 pointerEvents: 'auto',
               }}>
                 <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.5)' }}>⚗ RESEARCH UPGRADE</div>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
                   {upgrades.map(u => (
                     <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(hud.selectedBuilding!.id, u.id)} style={{
                       padding: '4px 10px', fontSize: 10, letterSpacing: 1,
