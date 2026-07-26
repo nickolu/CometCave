@@ -240,7 +240,7 @@ export function HUD() {
               `}</style>
             )}
             <div style={{
-              position: 'absolute', top: 240, right: 16,
+              position: 'absolute', top: isTouchDevice ? 175 : 240, right: 16,
               padding: '4px 10px',
               background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
               border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
