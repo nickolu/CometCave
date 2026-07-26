@@ -62,6 +62,7 @@ export class GameInstance {
   private pendingBuild: string | null = null  // building type ID awaiting placement click
   private killFeedKillAt = 0    // last time we pushed a kill entry
   private killFeedLossAt = 0    // last time we pushed a loss entry
+  private onResize: (() => void) | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -99,6 +100,8 @@ export class GameInstance {
   async start() {
     console.log('GameInstance started')
     document.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.onResize = () => { clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight) }
+    window.addEventListener('resize', this.onResize)
     await this.renderer.init(this.canvas)
     // destroy() ran while the renderer was initialising (React StrictMode mounts, tears
     // down and remounts the canvas effect). Bail out rather than wiring up input, the
@@ -821,6 +824,7 @@ export class GameInstance {
       this.rafId = null
     }
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
+    if (this.onResize) window.removeEventListener('resize', this.onResize)
     this.renderer.destroy()
     this.inputHandler?.destroy()
     useSpeckWarsStore.getState().setGameActions(null)

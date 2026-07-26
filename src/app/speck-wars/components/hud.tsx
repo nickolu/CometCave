@@ -177,7 +177,7 @@ export function HUD() {
       {phase === 'playing' && (
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          display: 'flex', height: 3, pointerEvents: 'none',
+          display: 'flex', height: isTouchDevice ? 6 : 3, pointerEvents: 'none',
         }}>
           {/* Player bar: left edge, grows right */}
           <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
