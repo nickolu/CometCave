@@ -18,6 +18,7 @@ function formatTime(ms: number): string {
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
+  const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
 
   useEffect(() => {
     setWinStreak(getWinStreak())
@@ -668,37 +669,82 @@ export function HUD() {
             pointerEvents: 'auto', cursor: 'default',
           }}
         >
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr',
-            gap: '6px 32px',
-            color: 'rgba(255,255,255,0.8)',
-            fontSize: 13,
-            letterSpacing: 0.5,
-            background: 'rgba(0,0,0,0.5)',
-            padding: '24px 32px',
-            borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.15)',
-          }}>
-            <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
-            <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
-            <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
-            <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
-            <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
-            <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-            <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
-            <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
-            <span>S — stop · H — hold position</span><span>C — center on base</span>
-            <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
-            <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-            <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
-            <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
-            <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
-            <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
-            <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
-            <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-              Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
-            </span>
-          </div>
+          {isTouchDevice ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 12,
+              color: 'rgba(255,255,255,0.8)', fontSize: 13, letterSpacing: 0.5,
+              background: 'rgba(0,0,0,0.5)', padding: '24px 32px',
+              borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)',
+              maxWidth: 320, maxHeight: '80vh', overflowY: 'auto',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#4af7c4', marginBottom: 4 }}>Touch Controls</div>
+              {[
+                ['Tap canvas', 'Rally units to that spot'],
+                ['Long-press canvas', 'Attack Move (aggressive)'],
+                ['Pinch', 'Zoom in / out'],
+                ['Drag', 'Pan camera'],
+                ['Tap minimap', 'Navigate camera there'],
+              ].map(([gesture, desc]) => (
+                <div key={gesture} style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                  <span style={{ color: '#ffb450', whiteSpace: 'nowrap' }}>{gesture}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'right' }}>{desc}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10, marginTop: 4 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8, letterSpacing: 1 }}>BUTTONS</div>
+                {[
+                  ['⬡ ALL', 'Select all your specks'],
+                  ['⌂ HOME', 'Camera → your base'],
+                  ['⚔ FIGHT', 'Camera → active battle'],
+                  ['★ SURGE', '2× spawn rate for 8s'],
+                  ['🔧 SACR', 'Sacrifice 10 specks → +15 HP base'],
+                  ['◆ TURRET', 'Build turret (need 20+ selected)'],
+                  ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
+                  ['1× / 2× / 4×', 'Game speed'],
+                ].map(([btn, desc]) => (
+                  <div key={btn} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
+                    <span style={{ color: '#4af7c4', fontWeight: 600, whiteSpace: 'nowrap' }}>{btn}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'right', fontSize: 12 }}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 2, color: 'rgba(160,220,255,0.6)', fontSize: 11 }}>
+                Tap anywhere to close
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              gap: '6px 32px',
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: 13,
+              letterSpacing: 0.5,
+              background: 'rgba(0,0,0,0.5)',
+              padding: '24px 32px',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}>
+              <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
+              <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
+              <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
+              <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
+              <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
+              <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
+              <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
+              <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
+              <span>S — stop · H — hold position</span><span>C — center on base</span>
+              <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
+              <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
+              <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
+              <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
+              <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
+              <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
+              <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
+              <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
+                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
+              </span>
+            </div>
+          )}
         </div>
       )}
 
