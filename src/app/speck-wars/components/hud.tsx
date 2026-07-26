@@ -731,8 +731,9 @@ export function HUD() {
               <div style={{ fontWeight: 700, fontSize: 15, color: '#4af7c4', marginBottom: 4 }}>Touch Controls</div>
               {[
                 ['Tap canvas', 'Rally units to that spot'],
+                ['Double-tap canvas', 'Zoom in / out (toggle)'],
                 ['Long-press canvas', 'Attack Move (aggressive)'],
-                ['Pinch', 'Zoom in / out'],
+                ['Pinch', 'Zoom in / out (precise)'],
                 ['Drag', 'Pan camera'],
                 ['Tap minimap', 'Navigate camera there'],
               ].map(([gesture, desc]) => (
