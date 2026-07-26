@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -222,6 +222,40 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           >
             {fogEnabled ? '🌫 Fog of War: ON' : '🌫 Fog of War: OFF'}
           </button>
+        </div>
+        {/* Map preset selector */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 1 }}>MAP</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {([
+              { key: 'random', label: '🎲 Daily', desc: 'procedural' },
+              { key: 'open',   label: '□ Open',  desc: 'no walls' },
+              { key: 'canyon', label: '═ Canyon', desc: 'twin walls' },
+              { key: 'river',  label: '| River',  desc: 'center gap' },
+              { key: 'pillars',label: '⊞ Pillars',desc: '5 columns' },
+              { key: 'walls',  label: '⌐ Walls',  desc: 'zigzag' },
+            ] as const).map(({ key, label, desc }) => (
+              <button
+                key={key}
+                title={desc}
+                onClick={() => setMapPreset(key)}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  border: `1px solid ${mapPreset === key ? '#ffcc44' : 'rgba(255,255,255,0.15)'}`,
+                  borderRadius: 4,
+                  background: mapPreset === key ? 'rgba(255,204,68,0.12)' : 'transparent',
+                  color: mapPreset === key ? '#ffcc44' : 'rgba(255,255,255,0.4)',
+                  letterSpacing: 0.3,
+                  minHeight: 36,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         <button
           onClick={() => setPhase('playing')}
