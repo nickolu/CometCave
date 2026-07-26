@@ -8,7 +8,7 @@ import { updateUnitAbilities } from './unit-abilities'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 
@@ -541,7 +541,7 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
@@ -565,6 +565,8 @@ function emitHudUpdate(sim: SimulationState) {
       veteranCount,
       eliteCount,
       legendCount,
+      supplyUsed: sim.players[pid]?.supply ?? 0,
+      supplyCap: SUPPLY_HARD_CAP,
     }
   }
   // Buildings that are owned but actively being captured by the enemy

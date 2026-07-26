@@ -203,6 +203,54 @@ export function HUD() {
         </div>
       )}
 
+      {/* Supply bars — below HP bars, two-side player/enemy */}
+      {phase === 'playing' && hud && (
+        <div style={{
+          position: 'absolute', top: isTouchDevice ? 6 : 3, left: 0, right: 0,
+          display: 'flex', height: 2, pointerEvents: 'none',
+        }}>
+          {(() => {
+            const supplyUsed = hud.players.player?.supplyUsed ?? 0
+            const supplyCap = hud.players.player?.supplyCap ?? 120
+            const SOFT_CAP = 60
+            const frac = Math.min(1, supplyUsed / supplyCap)
+            const color = supplyUsed >= supplyCap ? '#ff4f7b'
+              : supplyUsed >= SOFT_CAP ? '#ffaa44' : '#4af7c4'
+            return (
+              <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, bottom: 0,
+                  width: `${frac * 100}%`,
+                  background: color,
+                  transition: 'width 0.5s ease, background 0.3s ease',
+                  opacity: 0.7,
+                }} />
+              </div>
+            )
+          })()}
+          <div style={{ width: 2, background: 'rgba(0,0,0,0.6)' }} />
+          {(() => {
+            const supplyUsed = hud.players.ai?.supplyUsed ?? 0
+            const supplyCap = hud.players.ai?.supplyCap ?? 120
+            const SOFT_CAP = 60
+            const frac = Math.min(1, supplyUsed / supplyCap)
+            const color = supplyUsed >= supplyCap ? '#ff4f7b'
+              : supplyUsed >= SOFT_CAP ? '#ffaa44' : '#ff4f7b'
+            return (
+              <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{
+                  position: 'absolute', top: 0, right: 0, bottom: 0,
+                  width: `${frac * 100}%`,
+                  background: color,
+                  transition: 'width 0.5s ease, background 0.3s ease',
+                  opacity: 0.5,
+                }} />
+              </div>
+            )
+          })()}
+        </div>
+      )}
+
       {/* Difficulty badge — top right */}
       {(() => {
         const diffColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
@@ -990,6 +1038,9 @@ export function HUD() {
           {hud && (() => {
             const playerSpecks = hud.players.player?.speckCount ?? 0
             const aiSpecks = hud.players.ai?.speckCount ?? 0
+            const playerSupply = hud.players.player?.supplyUsed ?? 0
+            const aiSupply = hud.players.ai?.supplyUsed ?? 0
+            const supplyCap = hud.players.player?.supplyCap ?? 120
             const playerBaseHpVal = hud.players.player?.buildingHp['building-player-base'] ?? 0
             const aiBaseHpVal = hud.players.ai?.buildingHp['building-ai-base'] ?? 0
             const playerOutpostCount = hud.players.player?.buildingCount
@@ -1035,6 +1086,12 @@ export function HUD() {
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(aiTypes)}</span>
                 <span style={{ fontSize: 10, opacity: 0.6 }}>~{playerProd.toFixed(1)}/s prod</span>
                 <span style={{ fontSize: 10, opacity: 0.6 }}>~{aiProd.toFixed(1)}/s prod</span>
+                <span style={{ fontSize: 10, color: playerSupply >= supplyCap ? '#ff4f7b' : playerSupply >= 60 ? '#ffaa44' : undefined }}>
+                  Supply: {Math.round(playerSupply)}/{supplyCap}
+                </span>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>
+                  Supply: {Math.round(aiSupply)}/{supplyCap}
+                </span>
                 <span>Base: {Math.round(playerBaseHpVal)}HP</span>
                 <span>Base: {Math.round(aiBaseHpVal)}HP</span>
                 <span>Outposts: {playerOutpostCount}</span>
@@ -1340,6 +1397,25 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
+          {/* Supply indicator — above spawn buttons */}
+          {isTouchDevice && hud && (() => {
+            const supplyUsed = hud.players.player?.supplyUsed ?? 0
+            const supplyCap = hud.players.player?.supplyCap ?? 120
+            const SOFT_CAP = 60
+            const atHardCap = supplyUsed >= supplyCap
+            const inPressure = supplyUsed >= SOFT_CAP
+            const color = atHardCap ? '#ff4f7b' : inPressure ? '#ffaa44' : '#4af7c4'
+            return (
+              <div style={{ fontSize: 9, letterSpacing: 1, color, opacity: 0.75, textAlign: 'right', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 32, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, supplyUsed / supplyCap * 100)}%`, height: '100%', background: color, transition: 'width 0.4s' }} />
+                </div>
+                <span style={{ color: atHardCap ? '#ff4f7b' : inPressure ? '#ffaa44' : 'rgba(255,255,255,0.45)' }}>
+                  {atHardCap ? 'SUP CAP!' : inPressure ? `SUP ${Math.round(supplyUsed)}` : `SUP ${Math.round(supplyUsed)}`}
+                </span>
+              </div>
+            )
+          })()}
           {/* Spawn type quick-select — bottom-right for thumb reach on mobile */}
           {isTouchDevice && (
             <div style={{ display: 'flex', gap: 4 }}>

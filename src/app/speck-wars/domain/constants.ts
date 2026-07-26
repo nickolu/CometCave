@@ -28,6 +28,10 @@ export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a
 export const DOMINATION_TIME = 60000   // ms — hold all 3 outposts this long to win by domination
 export const RALLY_CRY_HP_THRESHOLD = 0.25  // base HP fraction below which Rally Cry activates (1.5× spawn)
 
+// Supply pressure thresholds
+export const SUPPLY_SOFT_CAP = 60   // above this: spawn timers scale up
+export const SUPPLY_HARD_CAP = 120  // above this: non-base spawning halted
+
 // Three map layouts — one is picked per game using the daily seed.
 // All layouts use the same outpost IDs so the rest of the codebase is layout-agnostic.
 export const MAP_LAYOUTS = [

@@ -73,6 +73,7 @@ export interface Player {
     afterburners: boolean
   }
   commanderRespawnMs?: number   // ms until commander respawns (undefined = alive or not spawned yet)
+  supply: number                // total supply slots currently in use
 }
 
 export interface WallObstacle {
@@ -168,6 +169,8 @@ export interface HudData {
     veteranCount: number  // specks with 3+ kills
     eliteCount: number    // specks with 6+ kills
     legendCount: number   // specks with 12+ kills
+    supplyUsed: number    // current supply in use
+    supplyCap: number     // hard supply cap
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
