@@ -893,7 +893,7 @@ export function HUD() {
             key={notification.message + notification.color}
             style={{
               color: notification.color,
-              fontSize: 13,
+              fontSize: isTouchDevice ? 15 : 13,
               fontWeight: 'bold',
               letterSpacing: 2,
               textShadow: `0 0 12px ${notification.color}`,
@@ -1380,7 +1380,7 @@ export function HUD() {
               : <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>}
           </div>
           <div style={{
-            display: 'flex', gap: 6,
+            display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end',
           }}>
           <button
             onClick={() => gameActions.defend?.()}
