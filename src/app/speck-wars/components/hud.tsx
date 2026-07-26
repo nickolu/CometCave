@@ -880,7 +880,7 @@ export function HUD() {
       {/* Outpost capture/loss notification */}
       {notification && (
         <div style={{
-          position: 'absolute', top: 76, left: 0, right: 0,
+          position: 'absolute', top: isTouchDevice ? 92 : 76, left: 0, right: 0,
           display: 'flex', justifyContent: 'center',
         }}>
           <style>{`
