@@ -19,6 +19,7 @@ export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
     setWinStreak(getWinStreak())
@@ -89,7 +90,7 @@ export function HUD() {
           borderRadius: 2,
           pointerEvents: 'none',
           zIndex: 100,
-          animation: 'pulse-red 0.8s ease-in-out infinite alternate',
+          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.8s ease-in-out infinite alternate',
           boxShadow: 'inset 0 0 40px rgba(255, 0, 0, 0.25)',
         }} />
       )}
@@ -99,7 +100,7 @@ export function HUD() {
           background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
           padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
           zIndex: 110, pointerEvents: 'none',
-          animation: 'pulse-red 0.6s ease-in-out infinite alternate',
+          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.6s ease-in-out infinite alternate',
         }}>⚠ BASE UNDER ATTACK</div>
       )}
       {(() => {
@@ -130,7 +131,7 @@ export function HUD() {
           background: 'rgba(255,136,0,0.88)', color: '#fff', fontWeight: 700,
           padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
           zIndex: 107, pointerEvents: 'none',
-          animation: 'pulse-red 0.9s ease-in-out infinite alternate',
+          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.9s ease-in-out infinite alternate',
         }}>★ RALLY CRY — 1.5× SPAWN</div>
       )}
       {hud && (hud.creepCampBoostMs ?? 0) > 0 && phase === 'playing' && (
@@ -152,7 +153,7 @@ export function HUD() {
           <div style={{
             position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at center, transparent 45%, rgba(220,30,30,1) 100%)',
-            animation: `danger-pulse ${isCritical ? '0.5s' : '1s'} ease-in-out infinite alternate`,
+            animation: prefersReducedMotion ? 'none' : `danger-pulse ${isCritical ? '0.5s' : '1s'} ease-in-out infinite alternate`,
             pointerEvents: 'none',
           }} />
         </>
@@ -168,7 +169,7 @@ export function HUD() {
           <div style={{
             position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at center, transparent 50%, rgba(20,220,120,1) 100%)',
-            animation: 'win-pulse 1.2s ease-in-out infinite alternate',
+            animation: prefersReducedMotion ? 'none' : 'win-pulse 1.2s ease-in-out infinite alternate',
             pointerEvents: 'none',
           }} />
         </>
@@ -248,7 +249,7 @@ export function HUD() {
               fontSize: 10,
               letterSpacing: 1.5,
               color: inProgress ? '#ff5050' : '#ffa030',
-              animation: inProgress ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
+              animation: (!prefersReducedMotion && inProgress) ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
             }}>
               {inProgress ? '⚠ WAVE INCOMING!' : `⚠ WAVE IN ${secs}s`}
             </div>
@@ -356,7 +357,7 @@ export function HUD() {
                             strokeWidth={1.5}
                             style={{
                               pointerEvents: 'none',
-                              animation: `minimap-capture-pulse 1.1s ease-out infinite`,
+                              animation: prefersReducedMotion ? 'none' : `minimap-capture-pulse 1.1s ease-out infinite`,
                               transformOrigin: `${bx}px ${by}px`,
                             }}
                           />
@@ -795,7 +796,7 @@ export function HUD() {
                       borderRadius: '50%',
                       background: isUnderAttack && isPlayerOwned ? '#ff6b35' : color,
                       boxShadow: color !== '#888888' ? `0 0 6px ${isUnderAttack && isPlayerOwned ? '#ff6b35' : color}` : 'none',
-                      animation: isUnderAttack && isPlayerOwned ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
+                      animation: (!prefersReducedMotion && isUnderAttack && isPlayerOwned) ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
                     }} />
                     {cap && cap.progress > 0 ? (
                       <div style={{ width: 14, height: 2, background: 'rgba(255,255,255,0.15)', borderRadius: 1 }}>
@@ -869,7 +870,7 @@ export function HUD() {
               textShadow: `0 0 40px currentColor, 0 0 80px currentColor`,
               letterSpacing: 8,
               lineHeight: 1,
-              animation: 'countdown-pop 0.9s ease-out forwards',
+              animation: prefersReducedMotion ? 'none' : 'countdown-pop 0.9s ease-out forwards',
             }}
           >
             {countdown}
@@ -897,7 +898,7 @@ export function HUD() {
               fontWeight: 'bold',
               letterSpacing: 2,
               textShadow: `0 0 12px ${notification.color}`,
-              animation: 'notif-in 0.18s ease-out',
+              animation: prefersReducedMotion ? 'none' : 'notif-in 0.18s ease-out',
             }}
           >
             {notification.message}
