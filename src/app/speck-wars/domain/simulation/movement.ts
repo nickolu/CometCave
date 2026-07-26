@@ -1,4 +1,4 @@
-import type { SimulationState } from '../types'
+import type { SimulationState, WallObstacle } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS } from '../constants'
@@ -6,7 +6,7 @@ import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS 
 function resolveWallCollisions(
   nx: number, ny: number,
   vx: number, vy: number,
-  obstacles: import('../types').WallObstacle[],
+  obstacles: WallObstacle[],
   radius: number
 ): { x: number; y: number; vx: number; vy: number } {
   let rx = nx, ry = ny, rvx = vx, rvy = vy
