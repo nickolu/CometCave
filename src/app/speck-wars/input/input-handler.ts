@@ -56,6 +56,7 @@ export class InputHandler {
   private lastTapX = 0
   private lastTapY = 0
   private touchPatrolPending = false
+  private touchSelectMode = false
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -277,6 +278,24 @@ export class InputHandler {
     // Prevent browser context menu and text selection on long-press (requires passive:false)
     e.preventDefault()
     if (e.touches.length === 1) {
+      if (this.touchSelectMode) {
+        clearTimeout(this.longPressTimer!)
+        this.longPressTimer = null
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.touches[0].clientX - rect.left
+        const sy = e.touches[0].clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        this.mouseDownX = e.touches[0].clientX
+        this.mouseDownY = e.touches[0].clientY
+        this.mouseX = sx
+        this.mouseY = sy
+        this.isDragSelect = true
+        this.dragSelectStartWorldX = world.x
+        this.dragSelectStartWorldY = world.y
+        this.touchStartX = e.touches[0].clientX
+        this.touchStartY = e.touches[0].clientY
+        return
+      }
       this.isDragging = true
       this.lastPinchDist = 0
       this.lastX = e.touches[0].clientX
@@ -318,6 +337,10 @@ export class InputHandler {
       const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
+    } else if (e.touches.length === 1 && this.touchSelectMode && this.isDragSelect) {
+      const rect = this.canvas.getBoundingClientRect()
+      this.mouseX = e.touches[0].clientX - rect.left
+      this.mouseY = e.touches[0].clientY - rect.top
     } else if (this.isDragging && e.touches.length === 1) {
       if (e.touches.length === 1) {
         const moveDist = Math.sqrt(
@@ -337,6 +360,27 @@ export class InputHandler {
   }
 
   private onTouchEnd = (e: TouchEvent) => {
+    if (this.touchSelectMode) {
+      this.touchSelectMode = false
+      this.isDragSelect = false
+      clearTimeout(this.longPressTimer!)
+      this.longPressTimer = null
+      const touch = e.changedTouches[0]
+      const rect = this.canvas.getBoundingClientRect()
+      const sx = touch.clientX - rect.left
+      const sy = touch.clientY - rect.top
+      const world = screenToWorld(sx, sy, this.camera)
+      const dx = touch.clientX - this.touchStartX
+      const dy = touch.clientY - this.touchStartY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > 10) {
+        this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
+      } else {
+        // Treat small movement as tap → rally
+        this.onRally?.(world.x, world.y)
+      }
+      return
+    }
     // Cancel any pending long-press
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
@@ -484,6 +528,15 @@ export class InputHandler {
 
   isTouchPatrolPending(): boolean {
     return this.touchPatrolPending
+  }
+
+  activateTouchSelectMode() {
+    this.touchSelectMode = true
+    this.isDragSelect = false
+  }
+
+  isTouchSelectModePending() {
+    return this.touchSelectMode
   }
 
   getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {

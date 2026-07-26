@@ -19,6 +19,7 @@ export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
   const [touchPatrolActive, setTouchPatrolActive] = useState(false)
+  const [touchSelectActive, setTouchSelectActive] = useState(false)
   const [isPortrait, setIsPortrait] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
   )
@@ -47,6 +48,13 @@ export function HUD() {
     const t = setTimeout(() => setShowPortraitHint(false), 4000)
     return () => clearTimeout(t)
   }, [showPortraitHint])
+
+  // Auto-reset touch select mode after 5s
+  useEffect(() => {
+    if (!touchSelectActive) return
+    const t = setTimeout(() => setTouchSelectActive(false), 5000)
+    return () => clearTimeout(t)
+  }, [touchSelectActive])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1472,6 +1480,35 @@ export function HUD() {
                     }}
                   >
                     {touchPatrolActive ? '◎ Tap target' : '◎ Patrol'}
+                  </button>
+                )}
+                {/* Drag-select button — touch only (desktop uses left-click-drag) */}
+                {isTouchDevice && (
+                  <button
+                    onClick={() => {
+                      const next = !touchSelectActive
+                      setTouchSelectActive(next)
+                      if (next) {
+                        navigator.vibrate?.([10, 20, 10])
+                        gameActions?.activateSelectMode?.()
+                      }
+                    }}
+                    style={{
+                      pointerEvents: 'auto',
+                      padding: '6px 10px',
+                      fontSize: 10,
+                      cursor: 'pointer',
+                      background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
+                      border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: 4,
+                      color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
+                      letterSpacing: 0.5,
+                      minHeight: 44,
+                      minWidth: 44,
+                    }}
+                    title="Touch drag-select mode — drag to box-select units"
+                  >
+                    {touchSelectActive ? '⊞ Drag' : '⊞ SEL'}
                   </button>
                 )}
               </div>

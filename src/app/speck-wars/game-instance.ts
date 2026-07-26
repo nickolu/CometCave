@@ -304,6 +304,7 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      activateSelectMode: () => this.inputHandler.activateTouchSelectMode(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
