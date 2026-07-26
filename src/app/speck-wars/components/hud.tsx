@@ -1478,7 +1478,7 @@ export function HUD() {
             )}
             {/* Touch gesture hint */}
             {isTouchDevice && <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
-              Tap: rally &bull; Long-press: attack-move &bull; Patrol: tap ◎ then tap target
+              Tap: rally &bull; Long-press: attack-move &bull; Double-tap: zoom &bull; 2-finger: zoom+pan
             </div>}
           </div>
         </div>
@@ -1592,7 +1592,7 @@ export function HUD() {
               fontFamily: 'monospace',
             }}
           >
-            → N
+            {isTouchDevice ? '→ ADV' : '→ N'}
           </button>
           <button
             onClick={() => { navigator.vibrate?.(20); gameActions.rush?.() }}
@@ -1610,7 +1610,7 @@ export function HUD() {
               fontFamily: 'monospace',
             }}
           >
-            ⚡ B
+            {isTouchDevice ? '⚡ RUSH' : '⚡ B'}
           </button>
           {(() => {
             const surgeActive = (hud?.surgeDuration ?? 0) > 0
@@ -1641,8 +1641,8 @@ export function HUD() {
                 {surgeActive
                   ? `★ ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s`
                   : surgeCd > 0
-                    ? `Q ${Math.ceil(surgeCd / 1000)}s`
-                    : '★ Q'}
+                    ? `${isTouchDevice ? 'SURGE' : 'Q'} ${Math.ceil(surgeCd / 1000)}s`
+                    : isTouchDevice ? '⚡ SURGE' : '★ Q'}
               </button>
             )
           })()}
@@ -1669,7 +1669,7 @@ export function HUD() {
                   opacity: ready ? 1 : 0.6,
                 }}
               >
-                {cd > 0 ? `F ${Math.ceil(cd / 1000)}s` : '🔧 F'}
+                {cd > 0 ? `${isTouchDevice ? 'HEAL' : 'F'} ${Math.ceil(cd / 1000)}s` : isTouchDevice ? '🔧 HEAL' : '🔧 F'}
               </button>
             )
           })()}
