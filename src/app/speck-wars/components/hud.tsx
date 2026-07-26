@@ -503,8 +503,8 @@ export function HUD() {
         >
           {speed}×
         </button>
-        {/* Spawn type selector — 3 direct buttons instead of cycle */}
-        {(['basic', 'heavy', 'scout'] as const).map((type, idx) => {
+        {/* Spawn type selector — hidden on touch (bottom-right panel has it) */}
+        {!isTouchDevice && (['basic', 'heavy', 'scout'] as const).map((type, idx) => {
           const active = spawnMode === type
           const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
           const subtitle = type === 'heavy' ? 'slow · siege' : type === 'scout' ? 'fast · outpost' : 'balanced'
@@ -1364,10 +1364,20 @@ export function HUD() {
               })}
             </div>
           )}
-          {/* Stance indicator */}
-          <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.8, color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4', textAlign: 'right' }}>
+          {/* Stance indicator — tappable on mobile to cycle stance */}
+          <div
+            onClick={isTouchDevice ? (gameActions?.cycleStance ?? undefined) : undefined}
+            style={{
+              fontSize: 11, letterSpacing: 1.5, opacity: 0.8,
+              color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4',
+              textAlign: 'right',
+              ...(isTouchDevice ? { cursor: 'pointer', padding: '4px 6px', minHeight: 32, display: 'flex', alignItems: 'center' } : {}),
+            }}
+          >
             {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
-            {!isTouchDevice && <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>}
+            {isTouchDevice
+              ? <span style={{ opacity: 0.4, marginLeft: 4, fontSize: 9 }}>tap</span>
+              : <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>}
           </div>
           <div style={{
             display: 'flex', gap: 6,
