@@ -1178,11 +1178,11 @@ export function HUD() {
                     }}>
                       {b.spawnTypeOverride.toUpperCase()}
                     </span>
-                    <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>
+                    {!isTouchDevice && <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>}
                   </div>
                 )}
                 <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
-                  right-click to set rally
+                  {isTouchDevice ? 'tap canvas to set rally' : 'right-click to set rally'}
                 </div>
               </div>
             )
@@ -1229,7 +1229,7 @@ export function HUD() {
                       padding: '4px 10px', fontSize: 10, letterSpacing: 1,
                       background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
                       color: u.color, cursor: 'pointer', borderRadius: 4,
-                      fontFamily: 'monospace',
+                      fontFamily: 'monospace', minHeight: 44,
                     }}>
                       <div>{u.label}</div>
                       <div style={{ opacity: 0.7 }}>{u.desc}</div>
