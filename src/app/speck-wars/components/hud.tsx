@@ -129,13 +129,17 @@ export function HUD() {
         }} />
       )}
       {hud?.baseUnderThreat && (
-        <div style={{
-          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
-          padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
-          zIndex: 110, pointerEvents: 'none',
-          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.6s ease-in-out infinite alternate',
-        }}>⚠ BASE UNDER ATTACK</div>
+        <button
+          onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(25) }}
+          style={{
+            position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
+            padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
+            zIndex: 110, pointerEvents: 'auto', cursor: 'pointer',
+            animation: prefersReducedMotion ? 'none' : 'pulse-red 0.6s ease-in-out infinite alternate',
+            border: 'none', fontFamily: 'monospace',
+          }}
+        >⚠ BASE UNDER ATTACK ↑</button>
       )}
       {(() => {
         const myCount = hud?.players?.player?.speckCount ?? 0
@@ -152,12 +156,16 @@ export function HUD() {
         )
       })()}
       {hud?.enemyAdvanceDetected && (
-        <div style={{
-          position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
-          padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
-          zIndex: 108, pointerEvents: 'none',
-        }}>ENEMY ADVANCING</div>
+        <button
+          onClick={() => { gameActions?.snapToAction?.(); navigator.vibrate?.(20) }}
+          style={{
+            position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
+            padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
+            zIndex: 108, pointerEvents: 'auto', cursor: 'pointer',
+            border: 'none', fontFamily: 'monospace',
+          }}
+        >ENEMY ADVANCING ↑</button>
       )}
       {hud?.rallyCryActive && !hud?.baseUnderThreat && (
         <div style={{
@@ -675,7 +683,7 @@ export function HUD() {
         {/* Snap to base button — essential for mobile (no keyboard shortcut) */}
         {gameActions?.snapToBase && (
           <button
-            onClick={() => gameActions.snapToBase?.()}
+            onClick={() => { gameActions.snapToBase?.(); navigator.vibrate?.(20) }}
             title="[C] Center camera on home base"
             aria-label="Snap camera to home base"
             style={{
@@ -683,14 +691,15 @@ export function HUD() {
               padding: '8px 12px',
               fontSize: 12,
               cursor: 'pointer',
-              background: 'rgba(74,247,196,0.08)',
-              border: '1px solid rgba(74,247,196,0.3)',
+              background: hud?.baseUnderThreat ? 'rgba(255,0,0,0.2)' : 'rgba(74,247,196,0.08)',
+              border: `1px solid ${hud?.baseUnderThreat ? 'rgba(255,60,60,0.8)' : 'rgba(74,247,196,0.3)'}`,
               borderRadius: 4,
-              color: 'rgba(74,247,196,0.8)',
+              color: hud?.baseUnderThreat ? '#ff8080' : 'rgba(74,247,196,0.8)',
               letterSpacing: 0.5,
               lineHeight: 1.3,
               textAlign: 'center',
               minHeight: 44,
+              animation: hud?.baseUnderThreat && !prefersReducedMotion ? 'pulse-red 0.6s ease-in-out infinite alternate' : 'none',
             }}
           >
             <div style={{ fontWeight: 700 }}>⌂ HOME</div>
@@ -700,7 +709,7 @@ export function HUD() {
         {/* Snap to battle button — mobile: jump camera to where the fight is (V key) */}
         {gameActions?.snapToAction && (
           <button
-            onClick={() => gameActions.snapToAction?.()}
+            onClick={() => { gameActions.snapToAction?.(); navigator.vibrate?.(20) }}
             title="[V] Snap camera to active battle"
             aria-label="Snap camera to battle"
             style={{
@@ -708,10 +717,10 @@ export function HUD() {
               padding: '8px 12px',
               fontSize: 12,
               cursor: 'pointer',
-              background: 'rgba(255,80,80,0.1)',
-              border: '1px solid rgba(255,80,80,0.35)',
+              background: hud?.enemyAdvanceDetected ? 'rgba(255,100,0,0.2)' : 'rgba(255,80,80,0.1)',
+              border: `1px solid ${hud?.enemyAdvanceDetected ? 'rgba(255,120,0,0.8)' : 'rgba(255,80,80,0.35)'}`,
               borderRadius: 4,
-              color: 'rgba(255,120,80,0.9)',
+              color: hud?.enemyAdvanceDetected ? '#ffb060' : 'rgba(255,120,80,0.9)',
               letterSpacing: 0.5,
               lineHeight: 1.3,
               textAlign: 'center',
