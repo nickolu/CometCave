@@ -211,11 +211,11 @@ export function HUD() {
             <span style={{ color, opacity: 0.5, border: `1px solid ${color}`, borderRadius: 3, padding: '2px 6px' }}>
               {difficulty.toUpperCase()}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 8, letterSpacing: 0.5 }}>
+            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5 }}>
               DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
             {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
-              <span style={{ color: '#ffd700', fontSize: 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
+              <span style={{ color: '#ffd700', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
                 {hud.dailyModifier === 'bulwark' ? '⚔ BULWARK' : hud.dailyModifier === 'blitz' ? '⚡ BLITZ' : '🏰 SIEGE'}
               </span>
             )}
