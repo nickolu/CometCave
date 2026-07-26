@@ -1334,6 +1334,36 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
+          {/* Spawn type quick-select — bottom-right for thumb reach on mobile */}
+          {isTouchDevice && (
+            <div style={{ display: 'flex', gap: 4 }}>
+              {([
+                { type: 'basic' as const, label: 'BASIC', color: 'rgba(255,255,255,0.85)' },
+                { type: 'heavy' as const, label: 'HEAVY', color: '#ffa032' },
+                { type: 'scout' as const, label: 'DART', color: '#50c8ff' },
+              ]).map(({ type, label, color }) => {
+                const active = spawnMode === type
+                return (
+                  <button
+                    key={type}
+                    onClick={() => gameActions?.setSpawnType?.(type)}
+                    style={{
+                      padding: '6px 8px', fontSize: 9,
+                      cursor: 'pointer', letterSpacing: 1,
+                      background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
+                      border: active ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 4, color: active ? color : 'rgba(255,255,255,0.35)',
+                      fontFamily: 'monospace', minHeight: 36, minWidth: 44,
+                      fontWeight: active ? 700 : 400,
+                      transition: 'all 0.1s',
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
           {/* Stance indicator */}
           <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.8, color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4', textAlign: 'right' }}>
             {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
