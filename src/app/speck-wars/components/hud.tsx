@@ -508,7 +508,7 @@ export function HUD() {
         {!isTouchDevice && (['basic', 'heavy', 'scout'] as const).map((type, idx) => {
           const active = spawnMode === type
           const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
-          const subtitle = type === 'heavy' ? 'slow · siege' : type === 'scout' ? 'fast · outpost' : 'balanced'
+          const subtitle = type === 'heavy' ? 'slow · siege · ↑basic' : type === 'scout' ? 'fast · flanker · ↑heavy' : 'balanced · ↑scout'
           return (
             <button
               key={type}
