@@ -975,10 +975,11 @@ export function HUD() {
 
       {/* Paused overlay */}
       {phase === 'paused' && (
-        <div style={{
+        <div onClick={togglePause} style={{
           position: 'absolute', inset: 0,
           background: 'rgba(0,0,0,0.55)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+          cursor: 'pointer',
         }}>
           <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
             PAUSED
@@ -1039,7 +1040,7 @@ export function HUD() {
             )
           })()}
           <button
-            onClick={surrender}
+            onClick={(e) => { e.stopPropagation(); surrender() }}
             style={{
               pointerEvents: 'auto',
               padding: '8px 24px',
@@ -1050,10 +1051,14 @@ export function HUD() {
               borderRadius: 4,
               color: 'rgba(255,100,100,0.6)',
               letterSpacing: 1,
+              minHeight: 44,
             }}
           >
             Give Up
           </button>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>
+            Tap anywhere to resume
+          </div>
         </div>
       )}
 
