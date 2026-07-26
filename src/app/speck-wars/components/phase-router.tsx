@@ -276,7 +276,22 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         )}
         {/* Daily tip */}
         {(() => {
-          const tips = [
+          const tips = isTouchDevice ? [
+            'Capture outposts to boost your production.',
+            'Scouts auto-target outposts — tap the Scout spawn button (3rd) for fast flanking.',
+            'Veterans deal +20% damage after 3 kills. Protect them!',
+            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
+            'Tap canvas to rally · long-press canvas to attack-move (aggressive advance).',
+            'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
+            'Heavy specks deal 2× damage but produce 2× slower.',
+            'Tap ⚔ FIGHT to snap the camera to where the fighting is happening.',
+            'Tap ? in-game to see all touch controls.',
+            'Tap ⬡ ALL to select all your specks, then tap canvas to rally them together.',
+            'Long-press canvas then lift — specks fight enemies on the way (attack-move).',
+            'Tap Hold in the unit panel to make selected specks defend a position.',
+            'Elite specks (6+ kills) get a white diamond ring and deal +30% damage.',
+          ] : [
             'Capture outposts to boost your production.',
             'Scouts (3) auto-target outposts — fast but fragile.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
@@ -520,13 +535,21 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           } else if (won && difficulty !== 'very-hard' && stars === 3) {
             tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
           } else if (!won && kills < 30) {
-            tip = 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
+            tip = isTouchDevice
+              ? 'Tip: Scouts are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
+              : 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
           } else if (!won && eff < 0.4) {
-            tip = 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
+            tip = isTouchDevice
+              ? 'Tip: Heavy specks deal 2× damage — switch to Heavy spawn during big fights.'
+              : 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
           } else if (!won && elapsedMs > 300000) {
-            tip = 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
+            tip = isTouchDevice
+              ? 'Tip: Tap ★ SURGE for 2× production 8s. Use it when you\'re behind!'
+              : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
           } else if (!won) {
-            tip = 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
+            tip = isTouchDevice
+              ? 'Tip: Tap 🔧 SACR to sacrifice 10 specks and repair your base when HP is critical.'
+              : 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
           } else if (won && modifier === 'siege') {
             tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
           }
