@@ -554,10 +554,11 @@ export function HUD() {
         </span>
         <button
           onClick={togglePause}
+          aria-label={phase === 'paused' ? 'Resume game' : 'Pause game'}
           style={{
             pointerEvents: 'auto',
-            padding: '8px 14px',
-            fontSize: 12,
+            padding: isTouchDevice ? '8px 10px' : '8px 14px',
+            fontSize: isTouchDevice ? 16 : 12,
             cursor: 'pointer',
             background: 'rgba(0,0,0,0.5)',
             border: '1px solid rgba(255,255,255,0.3)',
@@ -567,7 +568,9 @@ export function HUD() {
             minHeight: 44, minWidth: 44,
           }}
         >
-          {phase === 'paused' ? 'RESUME' : 'PAUSE'}
+          {isTouchDevice
+            ? (phase === 'paused' ? '▶' : '⏸')
+            : (phase === 'paused' ? 'RESUME' : 'PAUSE')}
         </button>
         <button
           onClick={cycleSpeed}
