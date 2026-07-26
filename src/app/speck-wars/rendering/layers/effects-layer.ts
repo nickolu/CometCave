@@ -1,7 +1,7 @@
 import { Graphics, Container } from 'pixi.js'
 
 interface Flash { x: number; y: number; life: number; maxLife: number; color: number }
-interface Ping { x: number; y: number; life: number; maxLife: number }
+interface Ping { x: number; y: number; life: number; maxLife: number; color: number }
 interface Ripple { x: number; y: number; life: number; maxLife: number; color: number }
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: number }
 interface CombatZone { x: number; y: number; life: number; maxLife: number }
@@ -29,15 +29,15 @@ export class EffectsLayer {
     this.flashes.push({ x, y, life: 180, maxLife: 180, color })
   }
 
-  showRallyPing(x: number, y: number) {
+  showRallyPing(x: number, y: number, color = 0x4af7c4) {
     // Two rings: fast inner + slower outer
-    this.pings.push({ x, y, life: 320, maxLife: 320 })
-    this.pings.push({ x, y, life: 540, maxLife: 540 })
+    this.pings.push({ x, y, life: 320, maxLife: 320, color })
+    this.pings.push({ x, y, life: 540, maxLife: 540, color })
     // 4 brief crosshair sparks
     const S = 12
     const dirs = [[1,0],[-1,0],[0,1],[0,-1]] as const
     for (const [dx, dy] of dirs) {
-      this.particles.push({ x, y, vx: dx * S * 50, vy: dy * S * 50, life: 180, maxLife: 180, color: 0x4af7c4 })
+      this.particles.push({ x, y, vx: dx * S * 50, vy: dy * S * 50, life: 180, maxLife: 180, color })
     }
   }
 
@@ -92,7 +92,7 @@ export class EffectsLayer {
       const maxR = p.maxLife > 400 ? 44 : 26
       const r = (1 - alpha) * maxR + 4
       const thickness = p.maxLife > 400 ? 1.2 : 2
-      this.gfx.lineStyle(thickness, 0x4af7c4, alpha * 0.8)
+      this.gfx.lineStyle(thickness, p.color, alpha * 0.8)
       this.gfx.drawCircle(p.x, p.y, r)
       this.gfx.lineStyle(0)
     }

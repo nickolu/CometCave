@@ -225,8 +225,8 @@ export class Renderer {
     }
   }
 
-  showRallyPing(x: number, y: number) {
-    this.effectsLayer.showRallyPing(x, y)
+  showRallyPing(x: number, y: number, color?: number) {
+    this.effectsLayer.showRallyPing(x, y, color)
   }
 
   destroy() {

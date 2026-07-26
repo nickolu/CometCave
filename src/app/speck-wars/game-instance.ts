@@ -241,7 +241,7 @@ export class GameInstance {
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
       (wx: number, wy: number) => {                                    // A + right-click — attack-move
         this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
-        this.renderer.showRallyPing(wx, wy)
+        this.renderer.showRallyPing(wx, wy, 0xff4f7b)  // red ping for attack-move
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
       (wx: number, wy: number) => {                                    // P + right-click — patrol
@@ -256,7 +256,7 @@ export class GameInstance {
         }
         if (speckIds.length === 0) return
         this.sim.inputQueue.push({ type: 'SET_PATROL', ownerId: 'player', speckIds, destX: wx, destY: wy })
-        this.renderer.showRallyPing(wx, wy)
+        this.renderer.showRallyPing(wx, wy, 0xa0d0ff)  // blue ping for patrol
         this.notify('◎ PATROL', '#a0d0ff', 900)
       },
     )
