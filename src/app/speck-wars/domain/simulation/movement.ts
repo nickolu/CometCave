@@ -3,6 +3,39 @@ import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS } from '../constants'
 
+function resolveWallCollisions(
+  nx: number, ny: number,
+  vx: number, vy: number,
+  obstacles: import('../types').WallObstacle[],
+  radius: number
+): { x: number; y: number; vx: number; vy: number } {
+  let rx = nx, ry = ny, rvx = vx, rvy = vy
+  for (const obs of obstacles) {
+    const left = obs.x - radius
+    const right = obs.x + obs.w + radius
+    const top = obs.y - radius
+    const bottom = obs.y + obs.h + radius
+    if (rx < left || rx > right || ry < top || ry > bottom) continue
+    // Find minimum penetration axis
+    const dLeft   = rx - left
+    const dRight  = right - rx
+    const dTop    = ry - top
+    const dBottom = bottom - ry
+    const minH = Math.min(dLeft, dRight)
+    const minV = Math.min(dTop, dBottom)
+    if (minH <= minV) {
+      // Push out horizontally, kill horizontal velocity
+      rx += dLeft < dRight ? -dLeft : dRight
+      rvx = 0
+    } else {
+      // Push out vertically, kill vertical velocity
+      ry += dTop < dBottom ? -dTop : dBottom
+      rvy = 0
+    }
+  }
+  return { x: rx, y: ry, vx: rvx, vy: rvy }
+}
+
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
 const SEPARATION_FORCE = 120  // strength of push-apart
 const AURA_SPEED_MULT = 1.35  // 35% speed boost inside outpost aura
@@ -58,8 +91,15 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           const dy = nearestBuilding.y - speckY[i]
           speckVx[i] = (dx / dist) * stype.speed * speedMult * afterburnersMult * chargeMult
           speckVy[i] = (dy / dist) * stype.speed * speedMult * afterburnersMult * chargeMult
-          speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-          speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+          {
+            const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+            const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+            const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
+            speckX[i] = r.x
+            speckY[i] = r.y
+            speckVx[i] = r.vx
+            speckVy[i] = r.vy
+          }
         }
       }
       continue
@@ -155,8 +195,15 @@ export function moveSpecks(sim: SimulationState, dt: number) {
             if (rdist > 0) {
               speckVx[i] = (rdx / rdist) * stype.speed
               speckVy[i] = (rdy / rdist) * stype.speed
-              speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-              speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+              {
+                const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+                const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+                const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
+                speckX[i] = r.x
+                speckY[i] = r.y
+                speckVx[i] = r.vx
+                speckVy[i] = r.vy
+              }
             }
             continue
           }
@@ -233,7 +280,14 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     speckVy[i] = ay
 
     // Integrate position
-    speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-    speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+    {
+      const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+      const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+      const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
+      speckX[i] = r.x
+      speckY[i] = r.y
+      speckVx[i] = r.vx
+      speckVy[i] = r.vy
+    }
   }
 }
