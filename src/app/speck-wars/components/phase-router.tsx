@@ -377,10 +377,10 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', height: '100%', gap: 20,
-        fontFamily: 'monospace', overflowY: 'auto', padding: '16px 0',
+        justifyContent: isTouchDevice ? 'flex-start' : 'center', height: '100%', gap: isTouchDevice ? 10 : 20,
+        fontFamily: 'monospace', overflowY: 'auto', padding: isTouchDevice ? '12px 0 80px' : '16px 0',
       }}>
-        <h1 style={{ color: accentColor, fontSize: 64, margin: 0, letterSpacing: 4 }}>
+        <h1 style={{ color: accentColor, fontSize: isTouchDevice ? 44 : 64, margin: 0, letterSpacing: 4 }}>
           {won ? 'VICTORY' : 'DEFEATED'}
         </h1>
         {victoryType && (
@@ -601,7 +601,16 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8 }}>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8,
+          ...(isTouchDevice ? {
+            position: 'sticky', bottom: 0,
+            background: 'rgba(0,0,0,0.92)',
+            padding: '10px 0 12px',
+            width: '100%',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+          } : {}),
+        }}>
           <div style={{ display: 'flex', gap: 12 }}>
           <button
             onClick={resetGame}
