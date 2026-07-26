@@ -1271,6 +1271,13 @@ export function HUD() {
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                   <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
                 </div>
+                {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) > 0 && (
+                  <div style={{ fontSize: 10, color: 'rgba(255,215,0,0.65)', letterSpacing: 0.5, marginBottom: 4 }}>
+                    {(b.fortifyDuration ?? 0) >= 20000
+                      ? '⚒ FORTIFIED — +25% DMG nearby'
+                      : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / 20000) * 100)}% fortified`}
+                  </div>
+                )}
                 {b.spawnTypeOverride && (
                   <div style={{ marginTop: 6, fontSize: 11, color: '#aaa' }}>
                     Producing:{' '}
@@ -1700,9 +1707,13 @@ export function HUD() {
                   animation: active && !prefersReducedMotion ? 'pulse-red 0.4s ease-in-out infinite alternate' : 'none',
                 }}
               >
-                {active ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
-                  : cd > 0 ? `Y ${Math.ceil(cd / 1000)}s`
-                  : `${isLastStand ? '★★' : '★'} Y`}
+                {active
+                  ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
+                  : cd > 0
+                    ? `${isTouchDevice ? (isLastStand ? 'LAST' : 'ROAR') : 'Y'} ${Math.ceil(cd / 1000)}s`
+                    : isTouchDevice
+                      ? `${isLastStand ? '★★ LAST' : '★ ROAR'}`
+                      : `${isLastStand ? '★★' : '★'} Y`}
               </button>
             )
           })()}
