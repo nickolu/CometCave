@@ -75,6 +75,13 @@ export interface Player {
   commanderRespawnMs?: number   // ms until commander respawns (undefined = alive or not spawned yet)
 }
 
+export interface WallObstacle {
+  x: number   // left edge (world px)
+  y: number   // top edge (world px)
+  w: number   // width
+  h: number   // height
+}
+
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
 export interface SimulationState {
   tick: number
@@ -107,6 +114,7 @@ export interface SimulationState {
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
   sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
+  obstacles: WallObstacle[]
 }
 
 export type InputEvent =

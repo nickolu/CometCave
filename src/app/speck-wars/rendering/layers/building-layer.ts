@@ -421,6 +421,21 @@ export class BuildingLayer {
       }
     }
 
+    // Draw terrain wall obstacles
+    for (const obs of sim.obstacles) {
+      this.gfx.beginFill(0x3d3550, 0.9)
+      this.gfx.drawRect(obs.x, obs.y, obs.w, obs.h)
+      this.gfx.endFill()
+      this.gfx.lineStyle(2, 0x7766aa, 0.7)
+      this.gfx.drawRect(obs.x, obs.y, obs.w, obs.h)
+      this.gfx.lineStyle(0)
+      // Highlight ledge on top edge
+      this.gfx.lineStyle(1, 0xffffff, 0.15)
+      this.gfx.moveTo(obs.x + 3, obs.y + 3)
+      this.gfx.lineTo(obs.x + obs.w - 3, obs.y + 3)
+      this.gfx.lineStyle(0)
+    }
+
     // Draw placement ghost for pending build
     if (ghostBuild) {
       const btype = BUILDING_TYPES[ghostBuild.typeId]

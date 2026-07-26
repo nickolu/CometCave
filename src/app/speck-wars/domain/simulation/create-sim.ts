@@ -1,10 +1,31 @@
-import type { SimulationState, Player, BuildingEntity } from '../types'
+import type { SimulationState, Player, BuildingEntity, WallObstacle } from '../types'
 import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, MAP_LAYOUTS, DAILY_MODIFIER_POOL } from '../constants'
 import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty } from '../../store'
 import { spawnCampDefenders, spawnCommander } from './spawner'
+
+function generateObstacles(rng: () => number): WallObstacle[] {
+  const obstacles: WallObstacle[] = []
+  const count = 2 + Math.floor(rng() * 3)  // 2, 3, or 4
+  const BASE_A = { x: 600, y: 1500 }
+  const BASE_B = { x: 2400, y: 1500 }
+  const SAFE_RADIUS = 780  // keep obstacles away from bases
+
+  for (let attempt = 0; obstacles.length < count; attempt++) {
+    if (attempt > 60) break
+    const cx = 900 + rng() * 1200   // mid-field: 900–2100
+    const cy = 750 + rng() * 1500   // mid-field: 750–2250
+    const distA = Math.hypot(cx - BASE_A.x, cy - BASE_A.y)
+    const distB = Math.hypot(cx - BASE_B.x, cy - BASE_B.y)
+    if (distA < SAFE_RADIUS || distB < SAFE_RADIUS) continue
+    const w = 80 + rng() * 140     // 80–220px wide
+    const h = 60 + rng() * 100     // 60–160px tall
+    obstacles.push({ x: cx - w / 2, y: cy - h / 2, w, h })
+  }
+  return obstacles
+}
 
 const aiSpawnInterval: Record<Difficulty, number> = {
   easy: 2000,
@@ -99,9 +120,12 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     }
   }
 
-  // Pick daily modifier — LAST RNG call so it doesn't shift existing map layout or jitter
+  // Pick daily modifier — after layout and jitter RNG calls
   const modifierIndex = Math.floor(rng() * DAILY_MODIFIER_POOL.length)
   const dailyModifier: DailyModifier = DAILY_MODIFIER_POOL[modifierIndex]
+
+  // Generate obstacles AFTER modifier pick to avoid shifting existing RNG sequence
+  const obstacles = generateObstacles(rng)
 
   // Apply static modifier effects
   if (dailyModifier === 'bulwark') {
@@ -144,6 +168,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     waveCountdown: null,
     waveInProgress: false,
     sacrificeCooldown: 0,
+    obstacles,
   }
 
   // Spawn initial defenders for each creep camp
