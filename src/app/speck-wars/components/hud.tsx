@@ -599,6 +599,31 @@ export function HUD() {
             <div style={{ fontSize: 8, opacity: 0.7 }}>C</div>
           </button>
         )}
+        {/* Snap to battle button — mobile: jump camera to where the fight is (V key) */}
+        {gameActions?.snapToAction && (
+          <button
+            onClick={() => gameActions.snapToAction?.()}
+            title="[V] Snap camera to active battle"
+            aria-label="Snap camera to battle"
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: 'rgba(255,80,80,0.1)',
+              border: '1px solid rgba(255,80,80,0.35)',
+              borderRadius: 4,
+              color: 'rgba(255,120,80,0.9)',
+              letterSpacing: 0.5,
+              lineHeight: 1.3,
+              textAlign: 'center',
+              minHeight: 44,
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>⚔ FIGHT</div>
+            <div style={{ fontSize: 8, opacity: 0.7 }}>V</div>
+          </button>
+        )}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
