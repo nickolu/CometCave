@@ -100,7 +100,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 {d.label}
                 <span style={{
                   display: 'block',
-                  fontSize: 9,
+                  fontSize: isTouchDevice ? 11 : 9,
                   fontWeight: 'normal',
                   opacity: difficulty === d.key ? 0.7 : 0.4,
                   letterSpacing: 0.3,

@@ -1534,7 +1534,7 @@ export function HUD() {
             {/* Force ratio bar */}
             {total >= 4 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 9, letterSpacing: 1, color: colorHex(PLAYER_COLOR), opacity: 0.7, minWidth: 20, textAlign: 'right' }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, letterSpacing: 1, color: colorHex(PLAYER_COLOR), opacity: 0.7, minWidth: 20, textAlign: 'right' }}>
                   {playerSpecks}
                 </span>
                 <div style={{ width: 100, height: 5, background: 'rgba(255,79,123,0.4)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
@@ -1546,7 +1546,7 @@ export function HUD() {
                     transition: 'width 0.2s',
                   }} />
                 </div>
-                <span style={{ fontSize: 9, letterSpacing: 1, color: colorHex(AI_COLOR), opacity: 0.7, minWidth: 20 }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, letterSpacing: 1, color: colorHex(AI_COLOR), opacity: 0.7, minWidth: 20 }}>
                   {aiSpecks}
                 </span>
               </div>
@@ -1554,13 +1554,13 @@ export function HUD() {
             {/* Production rate */}
             {(hud.spawnRates?.player ?? 0) > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 9, color: colorHex(PLAYER_COLOR), opacity: 0.6, minWidth: 20, textAlign: 'right' }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, color: colorHex(PLAYER_COLOR), opacity: 0.6, minWidth: 20, textAlign: 'right' }}>
                   {hud.spawnRates.player}/m
                 </span>
-                <div style={{ width: 100, textAlign: 'center', fontSize: 8, letterSpacing: 0.5, color: 'rgba(255,255,255,0.3)' }}>
+                <div style={{ width: 100, textAlign: 'center', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, color: 'rgba(255,255,255,0.3)' }}>
                   ⚡prod
                 </div>
-                <span style={{ fontSize: 9, color: colorHex(AI_COLOR), opacity: 0.6, minWidth: 20 }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, color: colorHex(AI_COLOR), opacity: 0.6, minWidth: 20 }}>
                   {hud.spawnRates.ai}/m
                 </span>
               </div>
@@ -1581,7 +1581,7 @@ export function HUD() {
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div title={`You: ${playerHeavy}⬡ heavy, ${playerBasic}· basic`} style={{ width: 20, textAlign: 'right' }}>
-                    {playerHeavy > 0 && <span style={{ fontSize: 8, color: '#ffa032', opacity: 0.7 }}>⬡{playerHeavy}</span>}
+                    {playerHeavy > 0 && <span style={{ fontSize: isTouchDevice ? 10 : 8, color: '#ffa032', opacity: 0.7 }}>⬡{playerHeavy}</span>}
                   </div>
                   <div style={{ width: 100, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
                     <div style={{
@@ -1591,7 +1591,7 @@ export function HUD() {
                     }} />
                   </div>
                   <div title={`Enemy: ${aiHeavy}⬡ heavy, ${aiBasic}· basic`} style={{ width: 20 }}>
-                    {aiHeavy > 0 && <span style={{ fontSize: 8, color: '#ff6b6b', opacity: 0.7 }}>⬡{aiHeavy}</span>}
+                    {aiHeavy > 0 && <span style={{ fontSize: isTouchDevice ? 10 : 8, color: '#ff6b6b', opacity: 0.7 }}>⬡{aiHeavy}</span>}
                   </div>
                 </div>
               )
@@ -1603,7 +1603,7 @@ export function HUD() {
               const legends = hud.players.player?.legendCount ?? 0
               if (vets + elites + legends === 0) return null
               return (
-                <div style={{ display: 'flex', gap: 8, fontSize: 9, letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', gap: 8, fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5 }}>
                   {legends > 0 && (
                     <span style={{ color: '#cc44ff', opacity: 0.9 }}>✦✦ {legends} legend</span>
                   )}
@@ -1617,7 +1617,7 @@ export function HUD() {
               )
             })()}
             {/* Kill/loss + enemy base HP */}
-            <div style={{ display: 'flex', gap: 10, fontSize: 10, letterSpacing: 0.5 }}>
+            <div style={{ display: 'flex', gap: 10, fontSize: isTouchDevice ? 12 : 10, letterSpacing: 0.5 }}>
               <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
               {aiBaseHpVal > 0 && (
                 <span style={{ color: aiBaseColor, opacity: 0.8 }}>
@@ -1642,7 +1642,7 @@ export function HUD() {
               const tier = tiers[upgradeLevel]
               const nextKills = upgradeLevel === 0 ? 50 : upgradeLevel === 1 ? 150 : upgradeLevel === 2 ? 300 : null
               return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5 }}>
                   {tier ? (
                     <span style={{ color: tier.color, opacity: 0.8 }}>{tier.icon} {tier.label}</span>
                   ) : (
