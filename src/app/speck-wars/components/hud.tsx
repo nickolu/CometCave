@@ -1828,13 +1828,30 @@ export function HUD() {
             {/* Kill/loss + enemy base HP */}
             <div style={{ display: 'flex', gap: 10, fontSize: isTouchDevice ? 12 : 10, letterSpacing: 0.5 }}>
               <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
-              {aiBaseHpVal > 0 && (
-                <span style={{ color: aiBaseColor, opacity: 0.8 }}>
-                  ENEMY BASE {Math.round(aiBaseHpFrac * 100)}%
-                </span>
-              )}
+              {aiBaseHpVal > 0 && (() => {
+                const aiBase = hud?.minimap?.buildings?.find(b => b.typeId === 'base' && b.ownerId === 'ai')
+                return (
+                  <span
+                    onClick={isTouchDevice && aiBase ? () => { gameActions?.panCamera?.(aiBase.x, aiBase.y); navigator.vibrate?.(15) } : undefined}
+                    style={{
+                      color: aiBaseColor, opacity: 0.8,
+                      ...(isTouchDevice && aiBase ? { cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' } : {}),
+                    }}
+                    title={isTouchDevice ? 'Tap to jump to enemy base' : undefined}
+                  >
+                    ENEMY BASE {Math.round(aiBaseHpFrac * 100)}%
+                  </span>
+                )
+              })()}
               {playerBaseHpVal > 0 && (
-                <span style={{ color: hpFrac < 0.3 ? '#ff4f7b' : 'rgba(255,255,255,0.4)', opacity: 0.8 }}>
+                <span
+                  onClick={isTouchDevice ? () => { gameActions?.snapToBase?.(); navigator.vibrate?.(15) } : undefined}
+                  style={{
+                    color: hpFrac < 0.3 ? '#ff4f7b' : 'rgba(255,255,255,0.4)', opacity: 0.8,
+                    ...(isTouchDevice ? { cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' } : {}),
+                  }}
+                  title={isTouchDevice ? 'Tap to jump to your base' : undefined}
+                >
                   BASE {Math.round(playerBaseHpVal)}HP
                 </span>
               )}
