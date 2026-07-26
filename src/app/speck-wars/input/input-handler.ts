@@ -1,5 +1,6 @@
 import type { Camera } from '../rendering/camera'
 import { zoomAt, screenToWorld } from '../rendering/camera'
+import { emitLongPressStart, emitLongPressCancel, emitTapRipple } from './touch-feedback'
 
 export class InputHandler {
   private canvas: HTMLCanvasElement
@@ -296,6 +297,7 @@ export class InputHandler {
           this.longPressFired = true
         }
       }, 500)
+      emitLongPressStart(e.touches[0].clientX, e.touches[0].clientY)
     } else if (e.touches.length === 2) {
       this.isDragging = false
       const dx = e.touches[1].clientX - e.touches[0].clientX
@@ -327,6 +329,7 @@ export class InputHandler {
         if (moveDist > 12 && this.longPressTimer) {
           clearTimeout(this.longPressTimer)
           this.longPressTimer = null
+          emitLongPressCancel()
         }
       }
       this.camera.x += e.touches[0].clientX - this.lastX
@@ -341,6 +344,7 @@ export class InputHandler {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
+      emitLongPressCancel()
     }
     // Tap-to-rally / double-tap-to-zoom: only if long-press didn't fire
     if (!this.longPressFired && this.lastPinchDist === 0 && e.changedTouches.length === 1) {
@@ -362,6 +366,7 @@ export class InputHandler {
             const world = screenToWorld(sx, sy, this.camera)
             navigator.vibrate?.([10, 30, 10, 30, 10])  // triple-pulse for patrol
             this.onPatrol?.(world.x, world.y)
+            emitTapRipple(touch.clientX, touch.clientY)
           } else if (isDoubleTap) {
             // Double-tap: zoom 1.5× toward tap point; if already zoomed in (≥1.5×), return to overview (0.7×)
             const factor = this.camera.zoom >= 1.5 ? (0.7 / this.camera.zoom) : 1.5
@@ -376,6 +381,7 @@ export class InputHandler {
               const world = screenToWorld(sx, sy, this.camera)
               navigator.vibrate?.(18)  // short pulse confirms rally
               this.onRally(world.x, world.y)
+              emitTapRipple(touch.clientX, touch.clientY)
             }
           }
         }
