@@ -749,6 +749,7 @@ export function HUD() {
                   ['⚔ FIGHT', 'Camera → active battle'],
                   ['★ SURGE', '2× spawn rate for 8s'],
                   ['🔧 SACR', 'Sacrifice 10 specks → +15 HP base'],
+                  ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3)'],
                   ['◆ TURRET', 'Build turret (need 20+ selected)'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
@@ -790,6 +791,7 @@ export function HUD() {
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
               <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
+              <span>Y — Battle Roar (lvl2 Cmdr) / Last Stand (lvl3)</span><span style={{ opacity: 0.5 }}>Commander levels up from nearby kills</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
                 Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
@@ -1576,6 +1578,39 @@ export function HUD() {
                 }}
               >
                 {cd > 0 ? `F ${Math.ceil(cd / 1000)}s` : '🔧 F'}
+              </button>
+            )
+          })()}
+          {(() => {
+            const cmd = hud?.commander
+            if (!cmd || cmd.level < 2) return null
+            const cd = cmd.abilityCooldown
+            const active = cmd.abilityActive > 0
+            const ready = cd <= 0 && !active
+            const isLastStand = cmd.level >= 3
+            const baseColor = isLastStand ? '#00ffcc' : '#ffd700'
+            return (
+              <button
+                onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
+                title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? 'invuln + 3× dmg + speed (60s)' : 'stun enemies 80px (20s)'}`}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: 11,
+                  cursor: ready ? 'pointer' : 'default',
+                  background: active ? `${baseColor}33` : ready ? `${baseColor}11` : 'rgba(0,0,0,0.3)',
+                  border: active ? `1px solid ${baseColor}` : ready ? `1px solid ${baseColor}88` : `1px solid ${baseColor}30`,
+                  borderRadius: 20,
+                  color: active ? baseColor : ready ? `${baseColor}cc` : `${baseColor}50`,
+                  letterSpacing: 1,
+                  minHeight: 44,
+                  fontFamily: 'monospace',
+                  opacity: ready || active ? 1 : 0.6,
+                  animation: active && !prefersReducedMotion ? 'pulse-red 0.4s ease-in-out infinite alternate' : 'none',
+                }}
+              >
+                {active ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
+                  : cd > 0 ? `Y ${Math.ceil(cd / 1000)}s`
+                  : `${isLastStand ? '★★' : '★'} Y`}
               </button>
             )
           })()}

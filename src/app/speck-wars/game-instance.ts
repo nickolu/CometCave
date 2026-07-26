@@ -262,6 +262,7 @@ export class GameInstance {
     this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
+    this.inputHandler.onCommanderAbility = () => this.commanderAbility()  // Y — Battle Roar / Last Stand
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
@@ -300,6 +301,7 @@ export class GameInstance {
       },
       snapToBase: () => this.snapToBase(),
       snapToAction: () => this.snapToAction(),
+      commanderAbility: () => this.commanderAbility(),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
@@ -931,6 +933,37 @@ export class GameInstance {
   setStance(stance: 'aggressive' | 'defensive' | 'hold') {
     this.sim.inputQueue.push({ type: 'SET_STANCE', ownerId: 'player', stance })
     useSpeckWarsStore.getState().setStance(stance)
+  }
+
+  commanderAbility() {
+    // Find the player's commander speck
+    let commanderMeta = null
+    for (let i = 0; i < this.sim.speckCount; i++) {
+      const m = this.sim.speckMeta[i]
+      if (m?.isCommander && m.ownerId === 'player' && this.sim.speckHp[i] > 0) {
+        commanderMeta = m
+        break
+      }
+    }
+    if (!commanderMeta) {
+      this.notify('Commander is down!', '#ff4f7b', 1200)
+      return
+    }
+    const level = commanderMeta.commanderLevel ?? 0
+    if (level < 2) {
+      this.notify('Commander needs rank 2 to use abilities', 'rgba(255,255,255,0.5)', 1500)
+      return
+    }
+    if ((commanderMeta.commanderAbilityCooldown ?? 0) > 0) {
+      const remaining = Math.ceil((commanderMeta.commanderAbilityCooldown ?? 0) / 1000)
+      this.notify(`Battle Roar ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
+      return
+    }
+    this.sim.inputQueue.push({ type: 'COMMANDER_ABILITY', ownerId: 'player' })
+    const label = level >= 3 ? '★★ LAST STAND!' : '★ BATTLE ROAR!'
+    const color = level >= 3 ? '#00ffcc' : '#ffd700'
+    this.notify(label, color, 2000)
+    navigator.vibrate?.([30, 40, 50])
   }
 
   cycleStance() {
