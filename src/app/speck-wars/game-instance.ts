@@ -28,7 +28,6 @@ export class GameInstance {
   private enemyBaseWarnedAt = -30000
   private outpostAttackWarnedAt: Record<string, number> = {}  // outpostId → timestamp
   private outpostHpWarnedAt: Record<string, number> = {}     // outpostId → timestamp (HP critical)
-  private controlGroupRallies: Array<{ x: number; y: number } | null> = new Array(6).fill(null)  // slots 4-9
   private enemySurgeWarnedAt = -30000
   private recentKillTimes: number[] = []  // timestamps of recent player kills (combo detection)
   private recentDeathPositions: { x: number; y: number; ts: number }[] = []
@@ -254,19 +253,24 @@ export class GameInstance {
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
     this.inputHandler.onSaveControlGroup = (slot: number) => {
-      const rp = this.sim.rallyPoints['player']
-      if (rp) {
-        this.controlGroupRallies[slot - 4] = { x: rp.x, y: rp.y }
-        this.notify(`◈ GROUP ${slot} SAVED`, '#a0d0ff', 1000)
+      const saved = [...this.sim.selectedSpeckIds]
+      this.controlGroups.set(slot, saved)
+      if (saved.length > 0) {
+        this.notify(`★ Group ${slot} — ${saved.length} specks`, '#4af7c4', 900)
       }
     }
     this.inputHandler.onRecallControlGroup = (slot: number) => {
-      const saved = this.controlGroupRallies[slot - 4]
-      if (saved) {
-        this.rally(saved.x, saved.y)
-        this.renderer.showRallyPing(saved.x, saved.y)
-        this.notify(`◈ GROUP ${slot} RECALLED`, '#a0d0ff', 900)
+      const saved = this.controlGroups.get(slot)
+      if (!saved || saved.length === 0) return
+      const aliveIds = new Set<string>()
+      for (let i = 0; i < this.sim.speckCount; i++) {
+        if (this.sim.speckIds[i] && this.sim.speckMeta[i]) aliveIds.add(this.sim.speckIds[i])
       }
+      this.sim.selectedSpeckIds.clear()
+      for (const id of saved) {
+        if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
+      }
+      this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
     }
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -298,6 +302,12 @@ export class GameInstance {
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
       cycleStance: () => this.cycleStance(),
+      saveControlGroup: (slot: number) => {
+        this.inputHandler.onSaveControlGroup?.(slot)
+      },
+      recallControlGroup: (slot: number) => {
+        this.inputHandler.onRecallControlGroup?.(slot)
+      },
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
