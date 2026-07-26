@@ -18,12 +18,34 @@ function formatTime(ms: number): string {
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
+  )
+  const [showPortraitHint, setShowPortraitHint] = useState(true)
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
     setWinStreak(getWinStreak())
   }, [])
+
+  useEffect(() => {
+    const update = () => {
+      const portrait = window.innerWidth < window.innerHeight
+      setIsPortrait(portrait)
+      if (portrait) setShowPortraitHint(true)  // re-show if user rotates back
+    }
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('orientationchange', update) }
+  }, [])
+
+  // Auto-dismiss portrait hint after 4s
+  useEffect(() => {
+    if (!showPortraitHint) return
+    const t = setTimeout(() => setShowPortraitHint(false), 4000)
+    return () => clearTimeout(t)
+  }, [showPortraitHint])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -82,6 +104,17 @@ export function HUD() {
           100% { opacity: 0; transform: scale(1.6); }
         }
       `}</style>
+      {/* Portrait mode hint — shown briefly for touch users in portrait orientation, auto-dismisses */}
+      {isTouchDevice && isPortrait && showPortraitHint && phase === 'playing' && (
+        <div style={{
+          position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 6, padding: '6px 14px', fontSize: 12, color: 'rgba(255,255,255,0.7)',
+          letterSpacing: 0.5, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 90,
+        }}>
+          ↺ Rotate to landscape for best experience
+        </div>
+      )}
       {hud?.baseUnderThreat && (
         <div style={{
           position: 'fixed',
