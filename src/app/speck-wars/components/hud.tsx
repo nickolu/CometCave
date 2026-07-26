@@ -501,7 +501,7 @@ export function HUD() {
           pointerEvents: 'none',
           width: 140,
         }}>
-          {killFeed.map(entry => {
+          {killFeed.slice(0, isTouchDevice ? 3 : 6).map(entry => {
             const age = Date.now() - entry.ts
             const opacity = age > 3000 ? Math.max(0, 1 - (age - 3000) / 1500) : 1
             return (
@@ -616,8 +616,8 @@ export function HUD() {
             </button>
           )
         })}
-        {/* Stance toggle — cycles through aggressive/defensive/hold */}
-        {gameActions?.cycleStance && (() => {
+        {/* Stance toggle — cycles through aggressive/defensive/hold — hidden on touch (bottom-right panel has it) */}
+        {!isTouchDevice && gameActions?.cycleStance && (() => {
           const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
             aggressive: { icon: '⚔', label: 'AGGRO', color: '#ff4f7b', title: '[Z] Aggressive — pursues nearby enemies' },
             defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — holds position more' },
@@ -1547,7 +1547,7 @@ export function HUD() {
               fontSize: 11, letterSpacing: 1.5, opacity: 0.8,
               color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4',
               textAlign: 'right',
-              ...(isTouchDevice ? { cursor: 'pointer', padding: '4px 6px', minHeight: 32, display: 'flex', alignItems: 'center' } : {}),
+              ...(isTouchDevice ? { cursor: 'pointer', padding: '4px 8px', minHeight: 44, display: 'flex', alignItems: 'center' } : {}),
             }}
           >
             {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
