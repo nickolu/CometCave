@@ -1257,7 +1257,7 @@ export function HUD() {
             pointerEvents: (hud?.selectedSpeckCount ?? 0) > 0 ? 'auto' : 'none',
           }}>
             <div style={{
-              fontSize: 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
+              fontSize: isTouchDevice ? 11 : 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
             }}>
               SELECTED {hud?.selectedSpeckCount ?? 0}
             </div>
@@ -1266,7 +1266,7 @@ export function HUD() {
               .map(([typeId, count]) => (
                 <div key={typeId} style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
+                  fontSize: isTouchDevice ? 11 : 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
                 }}>
                   <span style={{
                     display: 'inline-block', width: 7, height: 7, flexShrink: 0,
@@ -1282,7 +1282,7 @@ export function HUD() {
               ))
             }
             {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0 || hud.selectedComposition.legendCount > 0) && (
-              <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
+              <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
                 {hud.selectedComposition.legendCount > 0 && <span style={{ color: '#cc44ff' }}>{`✦✦ ${hud.selectedComposition.legendCount} legend  `}</span>}
                 {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
                 {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
