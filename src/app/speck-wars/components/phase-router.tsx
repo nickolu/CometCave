@@ -50,6 +50,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, resetGame, setPhase])
 
+  useEffect(() => {
+    if (phase === 'victory') {
+      navigator.vibrate?.([40, 80, 40, 80, 120])  // ascending triple-pulse: celebration
+    } else if (phase === 'defeat') {
+      navigator.vibrate?.([200, 60, 80])  // heavy thud then short pulse: loss
+    }
+  }, [phase])
+
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI, relaxed' },
     { key: 'medium', label: 'Medium', color: '#ffcc44', desc: 'standard challenge' },
