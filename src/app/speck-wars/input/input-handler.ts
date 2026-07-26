@@ -56,6 +56,10 @@ export class InputHandler {
   private lastTapX = 0
   private lastTapY = 0
   private touchPatrolPending = false
+  private panVelocityX = 0   // px/frame at time of finger lift
+  private panVelocityY = 0
+  private panInertiaTimer: ReturnType<typeof requestAnimationFrame> | null = null
+  private lastMoveTime = 0   // timestamp of last touchmove for velocity calc
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -276,6 +280,13 @@ export class InputHandler {
   private onTouchStart = (e: TouchEvent) => {
     // Prevent browser context menu and text selection on long-press (requires passive:false)
     e.preventDefault()
+    // Cancel any ongoing pan inertia so new touch takes full control
+    if (this.panInertiaTimer !== null) {
+      cancelAnimationFrame(this.panInertiaTimer)
+      this.panInertiaTimer = null
+      this.panVelocityX = 0
+      this.panVelocityY = 0
+    }
     if (e.touches.length === 1) {
       this.isDragging = true
       this.lastPinchDist = 0
@@ -283,6 +294,7 @@ export class InputHandler {
       this.lastY = e.touches[0].clientY
       this.touchStartX = e.touches[0].clientX
       this.touchStartY = e.touches[0].clientY
+      this.lastMoveTime = performance.now()
       this.longPressFired = false
       // Long-press: if finger stays >500ms without moving, fire attack-move
       this.longPressTimer = setTimeout(() => {
@@ -329,8 +341,19 @@ export class InputHandler {
           this.longPressTimer = null
         }
       }
-      this.camera.x += e.touches[0].clientX - this.lastX
-      this.camera.y += e.touches[0].clientY - this.lastY
+      const dx = e.touches[0].clientX - this.lastX
+      const dy = e.touches[0].clientY - this.lastY
+      this.camera.x += dx
+      this.camera.y += dy
+      // Track velocity for inertia (exponential smoothing keeps it stable)
+      const now = performance.now()
+      const dt = Math.min(50, now - this.lastMoveTime)  // clamp to 50ms max gap
+      if (dt > 0) {
+        const alpha = 0.6  // blend factor (higher = more responsive, less smooth)
+        this.panVelocityX = alpha * (dx / dt * 16.67) + (1 - alpha) * this.panVelocityX
+        this.panVelocityY = alpha * (dy / dt * 16.67) + (1 - alpha) * this.panVelocityY
+      }
+      this.lastMoveTime = now
       this.lastX = e.touches[0].clientX
       this.lastY = e.touches[0].clientY
     }
@@ -384,6 +407,34 @@ export class InputHandler {
     this.isDragging = false
     this.lastPinchDist = 0
     this.longPressFired = false
+    // Launch pan inertia if finger was moving at lift (drag, not a tap)
+    const wasDragging = Math.sqrt(
+      (e.changedTouches[0]?.clientX - this.touchStartX) ** 2 +
+      (e.changedTouches[0]?.clientY - this.touchStartY) ** 2
+    ) > 12
+    if (wasDragging && (Math.abs(this.panVelocityX) > 1 || Math.abs(this.panVelocityY) > 1)) {
+      if (this.panInertiaTimer !== null) cancelAnimationFrame(this.panInertiaTimer)
+      this.applyPanInertia()
+    } else {
+      this.panVelocityX = 0
+      this.panVelocityY = 0
+    }
+  }
+
+  private applyPanInertia = () => {
+    const DECAY = 0.88  // 88% velocity retained each frame (~16ms)
+    const THRESHOLD = 0.3  // stop when velocity below this
+    this.camera.x += this.panVelocityX
+    this.camera.y += this.panVelocityY
+    this.panVelocityX *= DECAY
+    this.panVelocityY *= DECAY
+    if (Math.abs(this.panVelocityX) > THRESHOLD || Math.abs(this.panVelocityY) > THRESHOLD) {
+      this.panInertiaTimer = requestAnimationFrame(this.applyPanInertia)
+    } else {
+      this.panVelocityX = 0
+      this.panVelocityY = 0
+      this.panInertiaTimer = null
+    }
   }
 
   private onKeyUp = (e: KeyboardEvent) => {
@@ -510,6 +561,10 @@ export class InputHandler {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
+    }
+    if (this.panInertiaTimer !== null) {
+      cancelAnimationFrame(this.panInertiaTimer)
+      this.panInertiaTimer = null
     }
     this.canvas.removeEventListener('mousedown', this.onMouseDown)
     window.removeEventListener('mousemove', this.onMouseMove)
