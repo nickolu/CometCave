@@ -1017,10 +1017,14 @@ export function HUD() {
             const aiProd = ((1000/800) + aiOutpostCount * (1000/OUTPOST_MS)) * (aiTriple ? 2 : 1)
             return (
               <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px',
+                display: 'grid', gridTemplateColumns: '1fr 1fr',
+                gap: isTouchDevice ? '8px 16px' : '8px 32px',
                 fontSize: 11, letterSpacing: 1, color: 'rgba(255,255,255,0.55)',
-                background: 'rgba(0,0,0,0.3)', padding: '16px 28px', borderRadius: 8,
+                background: 'rgba(0,0,0,0.3)',
+                padding: isTouchDevice ? '12px 16px' : '16px 28px',
+                borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.08)',
+                maxWidth: isTouchDevice ? 'calc(100vw - 48px)' : undefined,
               }}>
                 <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.8 }}>YOUR ARMY</span>
                 <span style={{ color: colorHex(AI_COLOR), opacity: 0.8 }}>ENEMY ARMY</span>
