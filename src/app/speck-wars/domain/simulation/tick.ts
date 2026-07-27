@@ -51,8 +51,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     if (sim.speckHp[i] / maxHp < 0.25) {
       meta.state = 'retreating'
       meta.targetId = null
-      // Scout Cloak: scouts become untargetable for 2000ms when retreating
-      if (meta.typeId === 'scout') meta.cloakTimer = 2000
     }
   }
 
@@ -66,7 +64,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 6a. Hero abilities (AoE pulse for level 2 Commanders)
   updateHeroAbilities(sim, dt)
 
-  // 6b. Unit type abilities: tick chargeTimer (heavy) and cloakTimer (scout)
+  // 6b. Unit type abilities: tick stun and commander timers
   updateUnitAbilities(sim, dt)
 
   // 7. Update outpost capture progress
@@ -270,11 +268,6 @@ function consumeInputs(sim: SimulationState) {
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
           meta.holdPosition = false  // clear hold when a new rally is issued
-          // Rally cancels patrol and attack-move mode
-          meta.patrolOriginX = undefined
-          meta.patrolOriginY = undefined
-          meta.patrolDestX = undefined
-          meta.patrolDestY = undefined
           meta.attackMoveMode = false  // normal move cancels attack-move
         }
       } else {
@@ -391,10 +384,6 @@ function consumeInputs(sim: SimulationState) {
         meta.holdPosition = false
         meta.attackMoveMode = false
         meta.state = 'idle'
-        meta.patrolOriginX = undefined
-        meta.patrolOriginY = undefined
-        meta.patrolDestX = undefined
-        meta.patrolDestY = undefined
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
@@ -413,29 +402,9 @@ function consumeInputs(sim: SimulationState) {
         meta.holdPosition = true
         meta.attackMoveMode = false
         meta.state = 'holding'
-        meta.patrolOriginX = undefined
-        meta.patrolOriginY = undefined
-        meta.patrolDestX = undefined
-        meta.patrolDestY = undefined
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
-      }
-    }
-    if (event.type === 'SET_PATROL') {
-      const destSet = new Set(event.speckIds)
-      for (let i = 0; i < sim.speckCount; i++) {
-        const meta = sim.speckMeta[i]
-        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
-        if (!destSet.has(meta.id)) continue
-        meta.patrolOriginX = sim.speckX[i]
-        meta.patrolOriginY = sim.speckY[i]
-        meta.patrolDestX = event.destX
-        meta.patrolDestY = event.destY
-        meta.assignedRallyX = event.destX
-        meta.assignedRallyY = event.destY
-        meta.holdPosition = false
-        meta.state = 'moving'
       }
     }
     if (event.type === 'BUILD') {
@@ -484,22 +453,6 @@ function consumeInputs(sim: SimulationState) {
       // Clear selection after dispatching
       sim.selectedSpeckIds.clear()
       sim.rallyPoints['player-selected'] = null
-    }
-    if (event.type === 'SET_PATROL') {
-      const destSet = new Set(event.speckIds)
-      for (let i = 0; i < sim.speckCount; i++) {
-        const meta = sim.speckMeta[i]
-        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
-        if (!destSet.has(meta.id)) continue
-        meta.patrolOriginX = sim.speckX[i]
-        meta.patrolOriginY = sim.speckY[i]
-        meta.patrolDestX = event.destX
-        meta.patrolDestY = event.destY
-        meta.assignedRallyX = event.destX
-        meta.assignedRallyY = event.destY
-        meta.holdPosition = false
-        meta.state = 'moving'
-      }
     }
     if (event.type === 'SET_STANCE') {
       const p = sim.players[event.ownerId]
