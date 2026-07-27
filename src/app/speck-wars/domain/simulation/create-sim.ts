@@ -56,16 +56,16 @@ function generateObstacles(rng: () => number): WallObstacle[] {
 }
 
 const aiSpawnInterval: Record<Difficulty, number> = {
-  easy: 2000,
-  medium: 800,
-  hard: 400,
-  'very-hard': 180,  // blazing spawn rate — AI floods the map
+  easy: 4400,
+  medium: 1800,
+  hard: 900,
+  'very-hard': 400,
 }
 
 const playerSpawnInterval: Record<Difficulty, number | undefined> = {
-  easy: 550,         // faster on easy — the AI is already slow, this ensures clear advantage
-  medium: undefined, // use default (800ms)
-  hard: undefined,   // use default (800ms) — player skill must compensate
+  easy: 1200,        // faster on easy — the AI is already slow, this ensures clear advantage
+  medium: undefined, // use default (1800ms from building-types)
+  hard: undefined,   // use default (1800ms) — player skill must compensate
   'very-hard': undefined,  // same as hard — no advantage
 }
 
