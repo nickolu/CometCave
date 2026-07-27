@@ -353,7 +353,15 @@ export class GameInstance {
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
       markFirstGameDone()
-      const hints = [
+      const touch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+      const hints = touch ? [
+        { delay: 1200,  message: '💡 Tap the map to rally your specks!', color: '#aaddff' },
+        { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
+        { delay: 13000, message: '💡 Long-press for attack-move — hold 0.5s!', color: '#ff8c44' },
+        { delay: 22000, message: '💡 Use ⚡ SURGE button — doubles production for 8s!', color: '#ffd700' },
+        { delay: 38000, message: '💡 Double-tap canvas to zoom in/out!', color: '#aaddff' },
+        { delay: 50000, message: '💡 Use 🔧 HEAL to sacrifice 10 specks → repair base!', color: '#64c864' },
+      ] : [
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
