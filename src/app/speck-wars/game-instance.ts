@@ -55,6 +55,7 @@ export class GameInstance {
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
+  private prevAtSupplyCap = false              // notify once when player first hits hard supply cap
   private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
@@ -548,6 +549,12 @@ export class GameInstance {
             this.enemySurgeWarnedAt = now
             this.notify('⚠ ENEMY SURGE!', '#ff6b35', 2500)
           }
+          // Supply cap notification: fires once when player first hits hard cap (outpost spawn halts)
+          const atSupplyCap = (event.data.players.player?.supplyUsed ?? 0) >= (event.data.players.player?.supplyCap ?? 120)
+          if (atSupplyCap && !this.prevAtSupplyCap) {
+            this.notify('⚠ SUPPLY CAP — outpost spawn halted (use basic/dart)', '#ffaa44', 3500)
+          }
+          this.prevAtSupplyCap = atSupplyCap
           // Outpost HP critical: player outpost < 20% max HP (50)
           const OUTPOST_MAX_HP = 50
           const OUTPOST_CRITICAL_HP = OUTPOST_MAX_HP * 0.2  // 10 HP
@@ -636,7 +643,8 @@ export class GameInstance {
             if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
               this.fortifyResearchNotified.add(outpostId)
               const name = outpostId.replace('outpost-', '').toUpperCase()
-              this.notify(`⚗ ${name} OUTPOST — research available! (select to choose upgrade)`, '#44aaff', 3500)
+              const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+              this.notify(`⚗ ${name} OUTPOST — research available! (${isTouchDevice ? 'tap outpost' : 'click outpost'} to research)`, '#44aaff', 3500)
             }
           }
 
@@ -1016,7 +1024,10 @@ export class GameInstance {
         const db = (b.x - playerBase.x) ** 2 + (b.y - playerBase.y) ** 2
         return da - db
       })
-    if (targets.length === 0) return
+    if (targets.length === 0) {
+      this.notify('→ All outposts held — press B to rush enemy base', '#ffd700', 2000)
+      return
+    }
     const now = Date.now()
     if (now - this.lastAdvanceMs < 3000 && targets.length > 1) {
       this.lastAdvanceIdx = (this.lastAdvanceIdx + 1) % targets.length
