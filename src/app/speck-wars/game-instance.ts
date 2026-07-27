@@ -49,8 +49,9 @@ export class GameInstance {
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
   private prevCommanderAbilityCooldown = 0
-  private dominationWarnedAt15s = false   // true once "15s left" AI domination warning fires
-  private dominationWarnedAt10s = false   // true once "10s left" AI domination warning fires
+  private dominationWarnedAt15s = false         // true once "15s left" AI domination warning fires
+  private dominationWarnedAt10s = false         // true once "10s left" AI domination warning fires
+  private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -570,6 +571,9 @@ export class GameInstance {
               this.dominationWarnedAt15s = false
               this.dominationWarnedAt10s = false
             }
+            if (holder !== 'player') {
+              this.dominationPlayerWarnedAt15s = false
+            }
           }
           // Domination critical warnings: AI is about to win
           if (holder === 'ai' && event.data.dominationProgress !== null) {
@@ -583,6 +587,16 @@ export class GameInstance {
               this.dominationWarnedAt10s = true
               this.notify('⬡ DOMINATION IMMINENT!', '#ff0055', 3000)
               navigator.vibrate?.([400, 100, 400])
+            }
+          }
+          // Domination win approaching: player is about to win
+          if (holder === 'player' && event.data.dominationProgress !== null) {
+            const progress = event.data.dominationProgress
+            const secsLeft = Math.ceil((1 - progress) * 60)
+            if (secsLeft <= 15 && !this.dominationPlayerWarnedAt15s) {
+              this.dominationPlayerWarnedAt15s = true
+              this.notify(`⬡ DOMINATION IN ${secsLeft}s — HOLD THE LINE!`, '#ffd700', 3000)
+              navigator.vibrate?.([100, 50, 100])
             }
           }
 
