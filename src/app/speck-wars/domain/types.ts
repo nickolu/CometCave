@@ -194,6 +194,7 @@ export interface HudData {
   sacrificeCooldown: number
   commander: { level: number; abilityCooldown: number; abilityActive: number; xp: number } | null
   commanderRespawnMs: number   // ms until player commander respawns; 0 if alive or not yet spawned
+  heroRespawnMs: number        // ms until player hero respawns; 0 if alive or not yet spawned
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean

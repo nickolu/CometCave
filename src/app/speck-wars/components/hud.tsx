@@ -1903,6 +1903,34 @@ export function HUD() {
               </>
             )
           })()}
+          {(() => {
+            const heroRespawnMs = hud?.heroRespawnMs ?? 0
+            if (heroRespawnMs <= 0) return null
+            return (
+              <div
+                title="Hero is respawning — will rejoin your forces shortly"
+                style={{
+                  padding: '6px 10px',
+                  fontSize: 9,
+                  background: 'rgba(255,215,0,0.05)',
+                  border: '1px solid rgba(255,215,0,0.2)',
+                  borderRadius: 16,
+                  color: 'rgba(255,215,0,0.5)',
+                  letterSpacing: 0.5,
+                  fontFamily: 'monospace',
+                  minHeight: 36,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                }}
+              >
+                <span>◇ HERO</span>
+                <span>{Math.ceil(heroRespawnMs / 1000)}s</span>
+              </div>
+            )
+          })()}
           <button
             onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
             title="[R] Clear rally"
