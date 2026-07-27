@@ -1343,14 +1343,15 @@ export function HUD() {
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>SPAWNING</div>
                     <div style={{ display: 'flex', gap: 3 }}>
                       {([
-                        { type: 'basic', label: isTouchDevice ? 'BSC' : '1 BASIC', color: '#4af7c4' },
-                        { type: 'heavy', label: isTouchDevice ? 'HVY' : '2 HEAVY', color: '#ff8844' },
-                        { type: 'scout', label: isTouchDevice ? 'DRT' : '3 DART', color: '#50c8ff' },
-                      ] as const).map(({ type, label, color }) => {
+                        { type: 'basic', label: isTouchDevice ? 'BSC' : '1 BASIC', color: '#4af7c4', title: 'Basic — balanced speed and HP' },
+                        { type: 'heavy', label: isTouchDevice ? 'HVY' : '2 HEAVY', color: '#ff8844', title: 'Heavy — 3× HP, 1.5× damage, spawns slower' },
+                        { type: 'scout', label: isTouchDevice ? 'DRT' : '3 DART', color: '#50c8ff', title: 'Dart — 2× speed, less HP, spawns faster' },
+                      ] as const).map(({ type, label, color, title }) => {
                         const active = (b.spawnTypeOverride ?? 'basic') === type
                         return (
                           <button
                             key={type}
+                            title={title}
                             onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
                             style={{
                               flex: 1,
