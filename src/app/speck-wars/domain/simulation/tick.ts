@@ -192,6 +192,7 @@ function updateCreepCamps(sim: SimulationState, dt: number) {
     building.campResetMs = (building.campResetMs ?? 0) - dt
     if (building.campResetMs <= 0) {
       building.campResetMs = 0
+      sim.events.push({ type: 'CAMP_RESET', campId: building.id, previousOwner: building.ownerId })
       building.ownerId = 'neutral'
       building.hp = building.maxHp
       building.captureProgress = 0
