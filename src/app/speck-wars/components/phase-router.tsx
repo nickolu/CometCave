@@ -70,7 +70,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, overflowY: 'auto', padding: '16px 0' }}>
         <h1 style={{ color: '#fff', fontSize: 48, margin: 0 }}>Speck Wars</h1>
-        <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base. Last base standing wins.</p>
+        <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base — or hold all 3 outposts for 60 seconds.</p>
         {winStreak >= 2 && (
           <div style={{ color: '#ffd700', fontSize: 14, letterSpacing: 2, fontWeight: 'bold' }}>
             🔥 {winStreak} WIN STREAK
