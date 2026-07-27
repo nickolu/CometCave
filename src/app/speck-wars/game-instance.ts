@@ -1059,6 +1059,7 @@ export class GameInstance {
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
     useSpeckWarsStore.getState().addSacrificeUsed()
+    this.notify('⟡ SACRIFICE — +15 BASE HP', '#ff8844', 1500)
   }
 
   garrison(buildingId: string) {
