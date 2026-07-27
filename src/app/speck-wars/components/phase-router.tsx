@@ -339,6 +339,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Tap Hold in the unit panel to make selected specks defend a position.',
             'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
             'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
+            'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
           ] : [
             'Capture outposts to boost your production.',
             'Dart specks (3) auto-target outposts — fast but fragile.',
@@ -356,6 +357,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'H key makes selected specks hold position — great for defending a chokepoint.',
             'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
             'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
+            'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
           ]
           const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
           return (
