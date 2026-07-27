@@ -1421,6 +1421,7 @@ export function HUD() {
                       </div>
                     )
                   }
+                  const globalUpgrades = hud.players.player?.outpostUpgrades ?? { carapace: false, blades: false, afterburners: false }
                   const upgrades: Array<{ id: 'carapace' | 'blades' | 'afterburners'; label: string; desc: string; color: string }> = [
                     { id: 'carapace', label: 'CARAPACE', desc: '+1 HP', color: '#44ff88' },
                     { id: 'blades', label: 'BLADES', desc: '+15% DMG', color: '#ff4f7b' },
@@ -1434,12 +1435,20 @@ export function HUD() {
                       </div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         {upgrades.map(u => (
-                          <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(b.id, u.id)} style={{
-                            flex: 1, padding: '4px 4px', fontSize: 9, letterSpacing: 0.5,
-                            background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
-                            color: u.color, cursor: 'pointer', borderRadius: 4,
-                            fontFamily: 'monospace', minHeight: 40,
-                          }}>
+                          <button
+                            key={u.id}
+                            onClick={() => gameActions?.researchUpgrade?.(b.id, u.id)}
+                            disabled={globalUpgrades[u.id]}
+                            title={globalUpgrades[u.id] ? `${u.label} already active globally` : `${u.label}: ${u.desc} for all units`}
+                            style={{
+                              flex: 1, padding: '4px 4px', fontSize: 9, letterSpacing: 0.5,
+                              background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
+                              color: u.color, borderRadius: 4,
+                              fontFamily: 'monospace', minHeight: 40,
+                              opacity: globalUpgrades[u.id] ? 0.35 : 1,
+                              cursor: globalUpgrades[u.id] ? 'not-allowed' : 'pointer',
+                            }}
+                          >
                             <div>{u.label}</div>
                             <div style={{ opacity: 0.7, fontSize: 8 }}>{u.desc}</div>
                           </button>

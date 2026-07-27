@@ -596,7 +596,7 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number; outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean } }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
@@ -622,6 +622,7 @@ function emitHudUpdate(sim: SimulationState) {
       legendCount,
       supplyUsed: sim.players[pid]?.supply ?? 0,
       supplyCap: SUPPLY_HARD_CAP,
+      outpostUpgrades: { ...(sim.players[pid].outpostUpgrades ?? { carapace: false, blades: false, afterburners: false }) },
     }
   }
   // Buildings that are owned but actively being captured by the enemy
