@@ -49,6 +49,7 @@ export class GameInstance {
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
   private prevCommanderAbilityCooldown = 0
+  private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -563,6 +564,22 @@ export class GameInstance {
               this.notify('⬡ ENEMY HAS ALL OUTPOSTS — 60s TO WIN!', '#ff4f7b', 5000)
             }
             this.lastTripleHolder = holder
+          }
+
+          // Research available notification: outpost held 20s+ unlocks upgrade research
+          const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
+          const RESEARCH_FORTIFY_THRESHOLD = 20000 / 30000  // 0.667 — matches tick.ts gate
+          for (const [outpostId, fortLevel] of Object.entries(event.data.outpostFortify ?? {})) {
+            if (!(outpostId in playerBuildingHp)) {
+              // Lost the outpost — reset so we can re-notify if recaptured
+              this.fortifyResearchNotified.delete(outpostId)
+              continue
+            }
+            if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
+              this.fortifyResearchNotified.add(outpostId)
+              const name = outpostId.replace('outpost-', '').toUpperCase()
+              this.notify(`⚗ ${name} FORTIFIED — upgrade research available`, '#44aaff', 3500)
+            }
           }
 
           // Surge cooldown ready notification
