@@ -16,10 +16,6 @@ export interface SpeckMeta {
   attackMoveTargetY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
-  patrolOriginX?: number  // patrol: leg start X (swaps with dest on arrival)
-  patrolOriginY?: number  // patrol: leg start Y
-  patrolDestX?: number    // patrol: leg destination X
-  patrolDestY?: number    // patrol: leg destination Y
   isHero?: boolean           // true if this speck is the Commander
   heroLevel?: 0 | 1 | 2     // 0=base, 1=BLOODED, 2=EMPOWERED
   abilityTimer?: number      // ms until next AoE pulse (level 2 only)
@@ -27,8 +23,6 @@ export interface SpeckMeta {
   commanderXp?: number          // XP earned from nearby kills
   commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
   pulseTimer?: number           // ms until next AoE pulse
-  chargeTimer?: number          // ms of heavy charge burst remaining
-  cloakTimer?: number           // ms of scout cloak remaining (enemy can't target)
   stunTimer?: number            // ms remaining in stun (Battle Roar / Last Stand)
   commanderAbilityCooldown?: number   // ms until Battle Roar / Last Stand can fire again
   commanderAbilityActive?: number     // ms of Level 3 buff remaining (invuln + 3× dmg)
@@ -138,7 +132,6 @@ export type InputEvent =
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
-  | { type: 'SET_PATROL'; ownerId: string; speckIds: string[]; destX: number; destY: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
   | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
   | { type: 'COMMANDER_ABILITY'; ownerId: string }

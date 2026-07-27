@@ -25,14 +25,13 @@ export class InputHandler {
   private onSacrifice?: () => void
   public onSaveControlGroup?: (slot: number) => void
   public onRecallControlGroup?: (slot: number) => void
-  private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
+  private pendingModifier: 'none' | 'attack' = 'none'
   private isPanDragging = false   // middle-mouse only
   private isRightDragging = false
   private pendingBuildActive = false
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
-  private onPatrol?: (worldX: number, worldY: number) => void
   public onBuildTurret?: () => void
   public onGuard?: () => void
   public onCycleStance?: () => void
@@ -96,7 +95,6 @@ export class InputHandler {
     onStop?: () => void,
     onHold?: () => void,
     onAttackMove?: (worldX: number, worldY: number) => void,
-    onPatrol?: (worldX: number, worldY: number) => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -123,7 +121,6 @@ export class InputHandler {
     this.onStop = onStop
     this.onHold = onHold
     this.onAttackMove = onAttackMove
-    this.onPatrol = onPatrol
     this.attach()
   }
 
@@ -255,10 +252,6 @@ export class InputHandler {
       const world = screenToWorld(sx, sy, this.camera)
       if (this.pendingModifier === 'attack') {
         this.onAttackMove?.(world.x, world.y)
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else if (this.pendingModifier === 'patrol') {
-        this.onPatrol?.(world.x, world.y)
         this.pendingModifier = 'none'
         if (this.canvas) this.canvas.style.cursor = 'default'
       } else {
@@ -472,14 +465,7 @@ export class InputHandler {
           const tapDx = touch.clientX - this.lastTapX
           const tapDy = touch.clientY - this.lastTapY
           const isDoubleTap = now - this.lastTapTime < 300 && Math.sqrt(tapDx * tapDx + tapDy * tapDy) < 40
-          if (this.touchPatrolPending) {
-            // Touch patrol mode: one-shot — fire patrol to this location
-            this.touchPatrolPending = false
-            const world = screenToWorld(sx, sy, this.camera)
-            navigator.vibrate?.([10, 30, 10, 30, 10])  // triple-pulse for patrol
-            this.onPatrol?.(world.x, world.y)
-            emitTapRipple(touch.clientX, touch.clientY)
-          } else if (isDoubleTap) {
+          if (isDoubleTap) {
             // Double-tap: zoom 1.5× toward tap point; if already zoomed in (≥1.5×), return to overview (0.7×)
             const factor = this.camera.zoom >= 1.5 ? (0.7 / this.camera.zoom) : 1.5
             Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
@@ -596,14 +582,6 @@ export class InputHandler {
       } else {
         this.pendingModifier = 'attack'
         if (this.canvas) this.canvas.style.cursor = 'crosshair'
-      }
-    } else if (e.code === 'KeyP') {
-      if (this.pendingModifier === 'patrol') {
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else {
-        this.pendingModifier = 'patrol'
-        if (this.canvas) this.canvas.style.cursor = 'cell'
       }
     } else if (e.code === 'KeyS') {
       this.onStop?.()
