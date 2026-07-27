@@ -1039,21 +1039,38 @@ export function HUD() {
         )
       })()}
 
-      {/* Triple outpost production bonus indicator */}
-      {hud?.tripleOutpostOwner === 'player' && phase === 'playing' && (
-        <div style={{
-          position: 'absolute', top: 100, left: 0, right: 0,
-          display: 'flex', justifyContent: 'center',
-        }}>
-          <span style={{
-            fontSize: 11, letterSpacing: 2, fontWeight: 'bold',
-            color: '#ffd700', textShadow: '0 0 8px #ffd700',
-            background: 'rgba(0,0,0,0.4)', padding: '2px 10px', borderRadius: 4,
+      {/* Triple outpost production bonus + domination countdown */}
+      {hud?.tripleOutpostOwner && phase === 'playing' && (() => {
+        const isPlayer = hud.tripleOutpostOwner === 'player'
+        const progress = hud.dominationProgress ?? 0
+        const secsLeft = Math.ceil((1 - progress) * 60)
+        return (
+          <div style={{
+            position: 'absolute', top: 100, left: 0, right: 0,
+            display: 'flex', justifyContent: 'center', pointerEvents: 'none',
           }}>
-            ⬡ +PROD
-          </span>
-        </div>
-      )}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <span style={{
+                fontSize: 11, letterSpacing: 2, fontWeight: 'bold',
+                color: isPlayer ? '#ffd700' : '#ff4f7b',
+                textShadow: `0 0 8px ${isPlayer ? '#ffd700' : '#ff4f7b'}`,
+                background: 'rgba(0,0,0,0.4)', padding: '2px 10px', borderRadius: 4,
+              }}>
+                {isPlayer ? `⬡ +PROD · DOMINATION ${secsLeft}s` : `⚠ ENEMY DOMINATING ${secsLeft}s`}
+              </span>
+              {progress > 0 && (
+                <div style={{ width: 120, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${progress * 100}%`, height: '100%',
+                    background: isPlayer ? '#ffd700' : '#ff4f7b',
+                    transition: 'width 0.5s linear',
+                  }} />
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Cinematic countdown overlay */}
       {countdown !== null && (

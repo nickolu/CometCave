@@ -8,7 +8,7 @@ import { updateUnitAbilities } from './unit-abilities'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP, DOMINATION_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 import { updateGarrison } from './garrison'
@@ -97,8 +97,26 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
   if (sim.sacrificeCooldown > 0) sim.sacrificeCooldown = Math.max(0, sim.sacrificeCooldown - dt)
 
-  // 8. Check win/loss
+  // 8. Check win/loss + domination timer
   checkVictory(sim)
+
+  // Domination: hold all 3 outposts for DOMINATION_TIME ms to win
+  const outpostsForDom = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
+  let domOwner: string | null = null
+  if (outpostsForDom.length > 0) {
+    for (const [pid] of Object.entries(sim.players)) {
+      if (pid === 'neutral') continue
+      if (outpostsForDom.every(o => o.ownerId === pid)) { domOwner = pid; break }
+    }
+  }
+  if (domOwner !== null) {
+    sim.dominationTimer += dt
+    if (sim.dominationTimer >= DOMINATION_TIME) {
+      sim.events.push({ type: 'GAME_OVER', winnerId: domOwner, victoryType: 'domination' })
+    }
+  } else {
+    sim.dominationTimer = 0
+  }
 
   // 9. Emit HUD update every N ticks
   sim.tick++
@@ -621,7 +639,9 @@ function emitHudUpdate(sim: SimulationState) {
     }
   }
 
-  const dominationProgress: number | null = null
+  const dominationProgress: number | null = tripleOutpostOwner !== null
+    ? Math.min(1, sim.dominationTimer / DOMINATION_TIME)
+    : null
 
   // Capture progress for each outpost
   const captureInfo: Record<string, { progress: number; side: string } | null> = {}

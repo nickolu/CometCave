@@ -438,11 +438,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               textTransform: 'uppercase',
             }}>
               {victoryType === 'surrender' ? '🏳 Surrendered'
+                : victoryType === 'domination' ? '⬡ by Domination'
                 : '💥 by Destruction'}
             </div>
             <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.35, color: '#fff' }}>
               {won
-                ? 'destroyed the enemy base'
+                ? victoryType === 'domination' ? 'held all outposts for 60 seconds' : 'destroyed the enemy base'
                 : victoryType === 'surrender'
                   ? 'you chose to give up'
                   : 'your base was destroyed'
