@@ -2095,7 +2095,7 @@ export function HUD() {
                     <span style={{ color: 'rgba(255,255,255,0.3)' }}>army upgrade: {kills}/50</span>
                   )}
                   {tier && nextKills && (
-                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>→ {nextKills}k</span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>→ {nextKills} kills</span>
                   )}
                 </div>
               )
