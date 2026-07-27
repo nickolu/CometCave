@@ -1418,9 +1418,10 @@ export function HUD() {
                 {/* Research panel */}
                 {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) >= 20000 && (() => {
                   if (b.researchedUpgrade) {
+                    const researchDescs: Record<string, string> = { carapace: '+1 HP', blades: '+15% DMG', afterburners: '+15% SPD' }
                     return (
                       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, letterSpacing: 1, color: '#44aaff' }}>
-                        <span>⚗</span><span>{b.researchedUpgrade.toUpperCase()} — all units buffed</span>
+                        <span>⚗</span><span>{b.researchedUpgrade.toUpperCase()} — all units {researchDescs[b.researchedUpgrade] ?? 'buffed'}</span>
                       </div>
                     )
                   }
