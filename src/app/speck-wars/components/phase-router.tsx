@@ -587,8 +587,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
           } else if (!won && kills < 30) {
             tip = isTouchDevice
-              ? 'Tip: Scouts are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
-              : 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
+              ? 'Tip: Dart specks are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
+              : 'Tip: Dart specks are fast for outpost rushes — press 3 to switch spawn type.'
           } else if (!won && eff < 0.4) {
             tip = isTouchDevice
               ? 'Tip: Heavy specks deal 2× damage — switch to Heavy spawn during big fights.'
