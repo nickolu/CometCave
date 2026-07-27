@@ -599,7 +599,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
           } else if (!won) {
             tip = isTouchDevice
-              ? 'Tip: Tap 🔧 SACR to sacrifice 10 specks and repair your base when HP is critical.'
+              ? 'Tip: Tap 🔧 HEAL to sacrifice 10 specks and repair your base when HP is critical.'
               : 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
           } else if (won && modifier === 'siege') {
             tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
