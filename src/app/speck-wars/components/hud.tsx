@@ -786,6 +786,7 @@ export function HUD() {
                 ['Tap canvas', 'Rally units to that spot'],
                 ['Double-tap canvas', 'Zoom in / out (toggle)'],
                 ['Long-press canvas', 'Attack Move (aggressive)'],
+                ['Two-finger tap', 'Stop specks in place'],
                 ['Pinch', 'Zoom in / out (precise)'],
                 ['Drag', 'Pan camera'],
                 ['Tap minimap', 'Navigate camera there'],
