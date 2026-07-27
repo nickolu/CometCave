@@ -47,6 +47,8 @@ export class GameInstance {
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
+  private prevSurgeCooldown = 0
+  private prevCommanderAbilityCooldown = 0
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -563,6 +565,22 @@ export class GameInstance {
             this.lastTripleHolder = holder
           }
 
+          // Surge cooldown ready notification
+          const surgeCd = event.data.surgeCooldown ?? 0
+          const surgeActive = (event.data.surgeDuration ?? 0) > 0
+          if (!surgeActive && surgeCd === 0 && this.prevSurgeCooldown > 0) {
+            this.notify('⚡ SURGE READY', '#ffd700', 2000)
+          }
+          this.prevSurgeCooldown = surgeCd
+
+          // Commander ability cooldown ready notification
+          const cmdData = event.data.commander
+          const cmdCd = cmdData?.abilityCooldown ?? 0
+          const commanderAlive = cmdData !== null && (event.data.commanderRespawnMs ?? 0) === 0
+          if (commanderAlive && cmdCd === 0 && this.prevCommanderAbilityCooldown > 0) {
+            this.notify('★ ABILITY READY', 'rgba(255,215,0,0.85)', 2000)
+          }
+          this.prevCommanderAbilityCooldown = commanderAlive ? cmdCd : 0
 
         }
         if (event.type === 'SPECK_DIED') {
