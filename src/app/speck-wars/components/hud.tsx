@@ -925,7 +925,7 @@ export function HUD() {
               <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
               <span>Y — Battle Roar (lvl2 Cmdr: 5 XP) / Last Stand (lvl3: 15 XP)</span><span style={{ opacity: 0.5 }}>Commander: +1 XP per nearby kill (HUD shows progress)</span>
-              <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
+              <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>◇ Hero auto-spawns from base — 4× HP, 1.5× dmg, 15s respawn</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hero 5+ kills: +15% spd · 15+ kills: AoE pulse every 3s</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
