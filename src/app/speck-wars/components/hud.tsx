@@ -1776,7 +1776,7 @@ export function HUD() {
             return (
               <button
                 onClick={() => { if (ready) { navigator.vibrate?.(30); gameActions.sacrifice?.() } }}
-                title="[F] Sacrifice 10 specks → repair +15 HP base (45s cooldown)"
+                title="[F] Sacrifice 10 specks → repair +15 HP base (20s cooldown)"
                 style={{
                   padding: '8px 12px',
                   fontSize: 11,
