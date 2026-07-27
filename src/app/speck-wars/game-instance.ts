@@ -628,7 +628,7 @@ export class GameInstance {
             if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
               this.fortifyResearchNotified.add(outpostId)
               const name = outpostId.replace('outpost-', '').toUpperCase()
-              this.notify(`⚗ ${name} FORTIFIED — upgrade research available`, '#44aaff', 3500)
+              this.notify(`⚗ ${name} OUTPOST — research available! (select to choose upgrade)`, '#44aaff', 3500)
             }
           }
 
