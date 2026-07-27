@@ -1400,8 +1400,8 @@ export function HUD() {
                 {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) >= 20000 && (() => {
                   if (b.researchedUpgrade) {
                     return (
-                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, letterSpacing: 1, color: '#44aaff' }}>
-                        <span>⚗</span><span>{b.researchedUpgrade.toUpperCase()} researched</span>
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, letterSpacing: 1, color: '#44aaff' }}>
+                        <span>⚗</span><span>{b.researchedUpgrade.toUpperCase()} — all units buffed</span>
                       </div>
                     )
                   }
@@ -1412,7 +1412,10 @@ export function HUD() {
                   ]
                   return (
                     <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 8 }}>
-                      <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>⚗ RESEARCH</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)' }}>⚗ RESEARCH</div>
+                        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>global · pick 1</div>
+                      </div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         {upgrades.map(u => (
                           <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(b.id, u.id)} style={{
