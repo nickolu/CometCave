@@ -643,7 +643,8 @@ export class GameInstance {
             if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
               this.fortifyResearchNotified.add(outpostId)
               const name = outpostId.replace('outpost-', '').toUpperCase()
-              this.notify(`⚗ ${name} OUTPOST — research available! (select to choose upgrade)`, '#44aaff', 3500)
+              const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+              this.notify(`⚗ ${name} OUTPOST — research available! (${isTouchDevice ? 'tap outpost' : 'click outpost'} to research)`, '#44aaff', 3500)
             }
           }
 
