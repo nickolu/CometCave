@@ -15,14 +15,14 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     id: 'base', name: 'Base',
     maxHp: 100, size: 40,
     spawnTypeId: 'basic',
-    spawnInterval: 800, spawnCount: 1,
+    spawnInterval: 1800, spawnCount: 1,
     hpRegen: 0.5,  // 0.5 HP/sec when not under attack — slow recovery rewards defensive play
   },
   outpost: {
     id: 'outpost', name: 'Outpost',
     maxHp: 50, size: 20,
     spawnTypeId: 'heavy',
-    spawnInterval: 1200, spawnCount: 1,
+    spawnInterval: 2700, spawnCount: 1,
     hpRegen: 2,  // 2 HP/sec when not under attack
   },
   turret: {
