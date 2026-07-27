@@ -27,6 +27,7 @@ export function HUD() {
   )
   const [showPortraitHint, setShowPortraitHint] = useState(true)
   const [minimapExpanded, setMinimapExpanded] = useState(false)
+  const [buildingPanelExpanded, setBuildingPanelExpanded] = useState(false)
   const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
   const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
   const tapRippleKeyRef = useRef(0)
@@ -61,6 +62,10 @@ export function HUD() {
     const t = setTimeout(() => setTouchSelectActive(false), 5000)
     return () => clearTimeout(t)
   }, [touchSelectActive])
+
+  useEffect(() => {
+    if (!hud?.selectedBuilding) setBuildingPanelExpanded(false)
+  }, [hud?.selectedBuilding])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,6 +141,10 @@ export function HUD() {
         @keyframes tap-ripple-expand {
           from { transform: scale(1); opacity: 0.8; }
           to   { transform: scale(4); opacity: 0; }
+        }
+        @keyframes panel-slide-up {
+          from { transform: translateX(-50%) translateY(12px); opacity: 0; }
+          to   { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
       `}</style>
       {/* Portrait mode hint — shown briefly for touch users in portrait orientation, auto-dismisses */}
@@ -1301,114 +1310,42 @@ export function HUD() {
         </div>
       )}
 
-      {/* Command panel — bottom center: build menu + selection info, stacked */}
+      {/* Action bar — slim 52px strip at the bottom, replaces stacked command panels */}
       {phase === 'playing' && (
-        <div style={{
-          position: 'absolute',
-          bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6,
-          opacity: hud && ((hud.selectedSpeckCount ?? 0) > 0 || hud.selectedBuilding != null) ? 1 : 0,
-          transition: 'opacity 150ms ease',
-          fontFamily: 'monospace',
-          whiteSpace: isTouchDevice ? 'normal' : 'nowrap',
-          maxWidth: isTouchDevice ? 'calc(100vw - 32px)' : undefined,
-        }}>
-          {/* Build menu — only shows when specks are selected */}
-          {(() => {
-            const selectedCount = hud?.selectedSpeckCount ?? 0
-            if (selectedCount === 0) return null
-            const TURRET_COST = 20
-            const canBuild = selectedCount >= TURRET_COST
-            const barFill = Math.min(1, selectedCount / TURRET_COST)
-            return (
-              <div style={{
-                background: 'rgba(0,0,0,0.65)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 6,
-                padding: '7px 12px',
-                width: 190,
-                pointerEvents: 'auto',
-              }}>
-                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>
-                  BUILD
-                </div>
-                <button
-                  onClick={() => { if (canBuild) { (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.(); navigator.vibrate?.(15) } }}
-                  style={{
-                    width: '100%',
-                    background: canBuild ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${canBuild ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                    borderRadius: 4,
-                    padding: isTouchDevice ? '10px 8px' : '6px 8px',
-                    minHeight: isTouchDevice ? 44 : undefined,
-                    cursor: canBuild ? 'pointer' : 'default',
-                    textAlign: 'left',
-                    fontFamily: 'monospace',
-                    opacity: canBuild ? 1 : 0.45,
-                    transition: 'opacity 200ms, border-color 200ms',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                    <span style={{ fontSize: 10, color: canBuild ? '#ffd700' : 'rgba(255,255,255,0.6)', letterSpacing: 1 }}>
-                      ◆ TURRET
-                    </span>
-                    <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.45)', letterSpacing: 1 }}>
-                      {TURRET_COST} specks
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.5, marginBottom: 5 }}>
-                    Fires missiles at nearby enemies
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{
-                      flex: 1, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden',
-                    }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${barFill * 100}%`,
-                        background: canBuild ? '#ffd700' : '#4af7c4',
-                        borderRadius: 2,
-                        transition: 'width 100ms',
-                      }} />
-                    </div>
-                    <span style={{ fontSize: 8, color: canBuild ? '#ffd700' : 'rgba(255,255,255,0.45)', letterSpacing: 0.5, minWidth: 32, textAlign: 'right' }}>
-                      {selectedCount}/{TURRET_COST}
-                    </span>
-                  </div>
-                </button>
-              </div>
-            )
-          })()}
-
-          {/* Building info panel — shown when a building is selected and no specks are selected */}
-          {hud?.selectedBuilding && (hud.selectedSpeckCount ?? 0) === 0 && (() => {
-            const b = hud.selectedBuilding
+        <>
+          {/* Building drawer — slides up above the bar when expanded */}
+          {hud?.selectedBuilding && buildingPanelExpanded && (() => {
+            const b = hud.selectedBuilding!
             const hpFrac = b.hp / b.maxHp
             const hpColor = hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.2 ? '#ffaa44' : '#ff4f7b'
             return (
               <div style={{
-                background: 'rgba(0,0,0,0.65)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 6,
-                padding: '7px 12px',
-                minWidth: isTouchDevice ? 130 : 160,
-                maxWidth: isTouchDevice ? 'min(200px, calc(100vw - 48px))' : undefined,
-                pointerEvents: 'none',
+                position: 'absolute',
+                bottom: 'calc(52px + env(safe-area-inset-bottom, 0px))',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'min(360px, calc(100vw - 32px))',
+                background: 'rgba(0,0,0,0.88)',
+                border: '1px solid rgba(255,255,255,0.13)',
+                borderBottom: 'none',
+                borderRadius: '10px 10px 0 0',
+                padding: '12px 16px',
+                fontFamily: 'monospace',
+                animation: prefersReducedMotion ? undefined : 'panel-slide-up 150ms ease',
+                zIndex: 10,
+                pointerEvents: 'auto',
               }}>
-                <div style={{ fontSize: isTouchDevice ? 11 : 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
+                {/* Type + HP */}
+                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>
                   {b.typeId.toUpperCase()}
                 </div>
-                <div style={{ fontSize: isTouchDevice ? 12 : 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
+                <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 3 }}>
                   HP {Math.ceil(b.hp)} / {b.maxHp}
                 </div>
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                   <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
                 </div>
+                {/* Fortify status */}
                 {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) > 0 && (
                   <div style={{ fontSize: 10, color: 'rgba(255,215,0,0.65)', letterSpacing: 0.5, marginBottom: 4 }}>
                     {(b.fortifyDuration ?? 0) >= 20000
@@ -1416,334 +1353,323 @@ export function HUD() {
                       : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / 20000) * 100)}% fortified`}
                   </div>
                 )}
-                {b.spawnTypeOverride && (
-                  <div style={{ marginTop: 6, fontSize: 11, color: '#aaa' }}>
-                    Producing:{' '}
-                    <span style={{
-                      color: b.spawnTypeOverride === 'heavy' ? '#ff8844'
-                           : b.spawnTypeOverride === 'scout' ? '#50c8ff'
-                           : '#4af7c4',
-                      fontWeight: 600,
-                    }}>
-                      {b.spawnTypeOverride.toUpperCase()}
-                    </span>
-                    {!isTouchDevice && <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>}
+                {/* Spawn type selector */}
+                {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>SPAWNING</div>
+                    <div style={{ display: 'flex', gap: 3 }}>
+                      {([
+                        { type: 'basic', label: isTouchDevice ? 'BSC' : '1 BASIC', color: '#4af7c4' },
+                        { type: 'heavy', label: isTouchDevice ? 'HVY' : '2 HEAVY', color: '#ff8844' },
+                        { type: 'scout', label: isTouchDevice ? 'DRT' : '3 DART', color: '#50c8ff' },
+                      ] as const).map(({ type, label, color }) => {
+                        const active = (b.spawnTypeOverride ?? 'basic') === type
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
+                            style={{
+                              flex: 1,
+                              padding: isTouchDevice ? '6px 0' : '3px 0',
+                              fontSize: isTouchDevice ? 10 : 8,
+                              cursor: 'pointer', letterSpacing: 0.5,
+                              background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
+                              border: `1px solid ${active ? color : 'rgba(255,255,255,0.15)'}`,
+                              borderRadius: 3,
+                              color: active ? color : 'rgba(255,255,255,0.4)',
+                              fontFamily: 'monospace',
+                              minHeight: isTouchDevice ? 40 : 24,
+                              fontWeight: active ? 700 : 400,
+                            }}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
-                <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
+                {/* Rally hint */}
+                <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.5 }}>
                   {isTouchDevice ? 'tap canvas to set rally' : 'right-click to set rally'}
                 </div>
+                {/* Garrison panel */}
+                {b.typeId === 'outpost' && b.ownerId === 'player' && (() => {
+                  const garCount = b.garrisonCount ?? 0
+                  return (
+                    <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 10 }}>
+                      <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#44aaff', opacity: 0.8, marginBottom: 5 }}>
+                        GARRISON {garCount}/5
+                      </div>
+                      <div style={{ display: 'flex', gap: 5 }}>
+                        <button onClick={() => gameActions?.garrison?.(b.id)} style={{
+                          flex: 1, padding: '4px 8px', fontSize: 10, letterSpacing: 1,
+                          background: 'rgba(0,0,0,0.5)', border: '1px solid #44aaff44',
+                          color: '#44aaff', cursor: 'pointer', borderRadius: 4,
+                          fontFamily: 'monospace', minHeight: 36,
+                        }}>
+                          <div>GARRISON</div>
+                          <div style={{ opacity: 0.6, fontSize: 9 }}>selected specks</div>
+                        </button>
+                        {garCount > 0 && (
+                          <button onClick={() => gameActions?.recallGarrison?.(b.id)} style={{
+                            flex: 1, padding: '4px 8px', fontSize: 10, letterSpacing: 1,
+                            background: 'rgba(0,0,0,0.5)', border: '1px solid #ff884444',
+                            color: '#ff8844', cursor: 'pointer', borderRadius: 4,
+                            fontFamily: 'monospace', minHeight: 36,
+                          }}>
+                            <div>RECALL</div>
+                            <div style={{ opacity: 0.6, fontSize: 9 }}>{garCount} specks</div>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {/* Research panel */}
+                {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) >= 20000 && (() => {
+                  if (b.researchedUpgrade) {
+                    return (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, letterSpacing: 1, color: '#44aaff' }}>
+                        <span>⚗</span><span>{b.researchedUpgrade.toUpperCase()} researched</span>
+                      </div>
+                    )
+                  }
+                  const upgrades: Array<{ id: 'carapace' | 'blades' | 'afterburners'; label: string; desc: string; color: string }> = [
+                    { id: 'carapace', label: 'CARAPACE', desc: '+1 HP', color: '#44ff88' },
+                    { id: 'blades', label: 'BLADES', desc: '+15% DMG', color: '#ff4f7b' },
+                    { id: 'afterburners', label: 'AFTRBRN', desc: '+15% SPD', color: '#44aaff' },
+                  ]
+                  return (
+                    <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 8 }}>
+                      <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 6 }}>⚗ RESEARCH</div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {upgrades.map(u => (
+                          <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(b.id, u.id)} style={{
+                            flex: 1, padding: '4px 4px', fontSize: 9, letterSpacing: 0.5,
+                            background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
+                            color: u.color, cursor: 'pointer', borderRadius: 4,
+                            fontFamily: 'monospace', minHeight: 40,
+                          }}>
+                            <div>{u.label}</div>
+                            <div style={{ opacity: 0.7, fontSize: 8 }}>{u.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )
           })()}
 
-          {/* Garrison panel — shown for player-owned outposts */}
-          {hud?.selectedBuilding?.typeId === 'outpost' &&
-           hud.selectedBuilding.ownerId === 'player' &&
-           phase === 'playing' && (() => {
-            const garCount = hud.selectedBuilding!.garrisonCount ?? 0
-            const buildingId = hud.selectedBuilding!.id
-            return (
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                background: 'rgba(0,0,0,0.7)', padding: '7px 12px', borderRadius: 8,
-                border: '1px solid rgba(68,170,255,0.25)',
-                pointerEvents: 'auto',
-              }}>
-                <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#44aaff', opacity: 0.8 }}>
-                  GARRISON {garCount}/5
-                </div>
-                <div style={{ display: 'flex', gap: 5 }}>
-                  <button
-                    onClick={() => gameActions?.garrison?.(buildingId)}
-                    style={{
-                      padding: '4px 10px', fontSize: 10, letterSpacing: 1,
-                      background: 'rgba(0,0,0,0.5)', border: '1px solid #44aaff44',
-                      color: '#44aaff', cursor: 'pointer', borderRadius: 4,
-                      fontFamily: 'monospace', minHeight: 36,
-                    }}
-                  >
-                    <div>GARRISON</div>
-                    <div style={{ opacity: 0.6, fontSize: 9 }}>selected specks</div>
-                  </button>
-                  {garCount > 0 && (
-                    <button
-                      onClick={() => gameActions?.recallGarrison?.(buildingId)}
-                      style={{
-                        padding: '4px 10px', fontSize: 10, letterSpacing: 1,
-                        background: 'rgba(0,0,0,0.5)', border: '1px solid #ff884444',
-                        color: '#ff8844', cursor: 'pointer', borderRadius: 4,
-                        fontFamily: 'monospace', minHeight: 36,
-                      }}
-                    >
-                      <div>RECALL</div>
-                      <div style={{ opacity: 0.6, fontSize: 9 }}>{garCount} specks</div>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Outpost upgrade research panel */}
-          {hud?.selectedBuilding?.typeId === 'outpost' &&
-           hud.selectedBuilding.ownerId === 'player' &&
-           (hud.selectedBuilding.fortifyDuration ?? 0) >= 20000 &&
-           phase === 'playing' && (() => {
-            if (hud.selectedBuilding!.researchedUpgrade) {
-              return (
-                <div style={{
-                  background: 'rgba(0,0,0,0.65)',
-                  border: '1px solid rgba(68,170,255,0.3)',
-                  borderRadius: 6,
-                  padding: '6px 12px',
-                  pointerEvents: 'none',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 10, letterSpacing: 1,
-                  color: '#44aaff',
-                }}>
-                  <span>⚗</span>
-                  <span>{hud.selectedBuilding!.researchedUpgrade!.toUpperCase()}</span>
-                </div>
-              )
-            }
-            const upgrades: Array<{ id: 'carapace' | 'blades' | 'afterburners'; label: string; desc: string; color: string }> = [
-              { id: 'carapace', label: 'CARAPACE', desc: '+1 HP', color: '#44ff88' },
-              { id: 'blades', label: 'BLADES', desc: '+15% DMG', color: '#ff4f7b' },
-              { id: 'afterburners', label: 'AFTERBURNERS', desc: '+15% SPD', color: '#44aaff' },
-            ]
-            return (
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                background: 'rgba(0,0,0,0.7)', padding: '8px 12px', borderRadius: 8,
-                border: '1px solid rgba(255,255,255,0.15)',
-                pointerEvents: 'auto',
-              }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.5)' }}>⚗ RESEARCH UPGRADE</div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {upgrades.map(u => (
-                    <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(hud.selectedBuilding!.id, u.id)} style={{
-                      padding: '4px 10px', fontSize: 10, letterSpacing: 1,
-                      background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
-                      color: u.color, cursor: 'pointer', borderRadius: 4,
-                      fontFamily: 'monospace', minHeight: 44,
-                    }}>
-                      <div>{u.label}</div>
-                      <div style={{ opacity: 0.7 }}>{u.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* Selection info panel */}
+          {/* 52px action bar */}
           <div style={{
-            background: 'rgba(0,0,0,0.65)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 6,
-            padding: '7px 12px',
-            minWidth: 130,
-            pointerEvents: (hud?.selectedSpeckCount ?? 0) > 0 ? 'auto' : 'none',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 'calc(52px + env(safe-area-inset-bottom, 0px))',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 3,
+            paddingLeft: 10,
+            paddingRight: 10,
+            background: 'rgba(0,0,0,0.62)',
+            WebkitBackdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(10px)',
+            fontFamily: 'monospace',
+            pointerEvents: 'none',
+            zIndex: 5,
+            borderTop: '1px solid rgba(255,255,255,0.07)',
           }}>
-            <div style={{
-              fontSize: isTouchDevice ? 11 : 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
-            }}>
-              SELECTED {hud?.selectedSpeckCount ?? 0}
-            </div>
-            {hud?.selectedComposition && Object.entries(hud.selectedComposition.types)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([typeId, count]) => {
-                const typeColor = typeId === 'heavy' ? '#ffa032' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-                const typeName = typeId === 'heavy' ? 'Heavy' : typeId === 'scout' ? 'Dart' : typeId.charAt(0).toUpperCase() + typeId.slice(1)
-                return (
-                  <div
-                    key={typeId}
-                    onClick={isTouchDevice ? () => { gameActions?.selectByType?.(typeId); navigator.vibrate?.(12) } : undefined}
-                    title={isTouchDevice ? `Tap to select all ${typeName}s` : undefined}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      fontSize: isTouchDevice ? 11 : 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
-                      ...(isTouchDevice ? { cursor: 'pointer', padding: '2px 4px', borderRadius: 3, minHeight: 28, WebkitTapHighlightColor: 'transparent' } : {}),
-                    }}
-                    onPointerDown={isTouchDevice ? e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}22` } : undefined}
-                    onPointerUp={isTouchDevice ? e => { (e.currentTarget as HTMLElement).style.background = '' } : undefined}
-                    onPointerLeave={isTouchDevice ? e => { (e.currentTarget as HTMLElement).style.background = '' } : undefined}
-                  >
-                    <span style={{
-                      display: 'inline-block',
-                      width: isTouchDevice ? 9 : 7, height: isTouchDevice ? 9 : 7, flexShrink: 0,
-                      borderRadius: typeId === 'heavy' ? 1 : '50%',
-                      background: typeColor,
-                      transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
-                    }} />
-                    <span style={{ flex: 1, letterSpacing: 1 }}>{typeName}</span>
-                    <span style={{ color: '#ffffff' }}>{count}</span>
-                    {isTouchDevice && <span style={{ fontSize: 9, opacity: 0.35, color: typeColor }}>ALL</span>}
-                  </div>
-                )
-              })
-            }
-            {/* Type advantage hint — show counter/weakness for dominant unit type */}
-            {hud?.selectedComposition && (() => {
-              const types = hud.selectedComposition.types
-              const heavy = types['heavy'] ?? 0
-              const scout = types['scout'] ?? 0
-              const basic = types['basic'] ?? 0
-              const total = heavy + scout + basic
-              if (total === 0) return null
-              const dominant = heavy >= scout && heavy >= basic ? 'heavy'
-                : scout >= basic ? 'scout' : 'basic'
-              const hints: Record<string, { beats: string; weak: string; color: string }> = {
-                heavy: { beats: 'Basic', weak: 'Dart', color: '#ffa032' },
-                scout: { beats: 'Heavy', weak: 'Basic', color: '#50c8ff' },
-                basic: { beats: 'Dart', weak: 'Heavy', color: '#4af7c4' },
-              }
-              const h = hints[dominant]
+            {/* Building chip */}
+            {hud?.selectedBuilding && (() => {
+              const b = hud.selectedBuilding!
+              const hpFrac = b.hp / b.maxHp
+              const hpColor = hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.2 ? '#ffaa44' : '#ff4f7b'
               return (
-                <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.4)', marginTop: 4, letterSpacing: 0.5, display: 'flex', gap: 6 }}>
-                  <span style={{ color: h.color, opacity: 0.7 }}>▲{h.beats}</span>
-                  <span style={{ opacity: 0.35 }}>▼{h.weak}</span>
-                </div>
+                <button
+                  onClick={() => { setBuildingPanelExpanded(v => !v); navigator.vibrate?.(8) }}
+                  style={{
+                    height: 36, borderRadius: 18, padding: '0 12px',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: buildingPanelExpanded ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.45)',
+                    border: `1px solid ${buildingPanelExpanded ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'}`,
+                    fontSize: 10, letterSpacing: 1,
+                    color: 'rgba(255,255,255,0.85)',
+                    cursor: 'pointer', pointerEvents: 'auto',
+                    fontFamily: 'monospace', flexShrink: 0,
+                    transition: 'background 150ms, border-color 150ms',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: hpColor, flexShrink: 0 }} />
+                  <span>{b.typeId.toUpperCase()}</span>
+                  <span style={{ fontSize: 8, opacity: 0.5 }}>{buildingPanelExpanded ? '▲' : '▼'}</span>
+                </button>
               )
             })()}
-            {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0 || hud.selectedComposition.legendCount > 0) && (
-              <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
-                {hud.selectedComposition.legendCount > 0 && <span style={{ color: '#cc44ff' }}>{`✦✦ ${hud.selectedComposition.legendCount} legend  `}</span>}
-                {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
-                {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
-              </div>
-            )}
-            {/* Unit action buttons */}
+            {/* Center spacer */}
+            <div style={{ flex: 1 }} />
+            {/* Action buttons — when specks selected */}
             {(hud?.selectedSpeckCount ?? 0) > 0 && (
-              <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8,
-              }}>
-                {[
-                  { label: 'Stop', key: 'S', action: gameActions.stop },
-                  { label: 'Hold', key: 'H', action: gameActions.hold },
-                  { label: 'Defend', key: 'D', action: gameActions.defend },
-                  { label: 'Advance', key: 'N', action: gameActions.advance },
-                  { label: 'Rush', key: 'B', action: gameActions.rush },
-                  { label: 'Guard', key: 'G', action: gameActions.guard },
-                ].map(({ label, key, action }) => (
+              <>
+                {([
+                  { label: 'Stop', icon: '■', key: 'S', action: () => gameActions?.stop?.() },
+                  { label: 'Hold', icon: '⊕', key: 'H', action: () => gameActions?.hold?.() },
+                  { label: 'Defend', icon: '🛡', key: 'D', action: () => gameActions?.defend?.() },
+                  { label: 'Advance', icon: '→', key: 'N', action: () => gameActions?.advance?.() },
+                  { label: 'Rush', icon: '⚡', key: 'B', action: () => gameActions?.rush?.() },
+                  { label: 'Guard', icon: '◈', key: 'G', action: () => gameActions?.guard?.() },
+                ] as const).map(({ label, icon, key, action }) => (
                   <button
                     key={label}
-                    onClick={() => { navigator.vibrate?.(8); setTouchPatrolActive(false); action?.() }}
+                    onClick={() => { navigator.vibrate?.(8); setTouchPatrolActive(false); action() }}
+                    title={`${label} [${key}]`}
                     style={{
+                      width: 44, height: 44, borderRadius: 8,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      gap: 1,
                       background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.18)',
-                      borderRadius: 4,
-                      color: '#ddd',
-                      fontSize: isTouchDevice ? 13 : 12,
-                      padding: isTouchDevice ? '8px 14px' : '8px 10px',
-                      cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      userSelect: 'none',
-                      fontFamily: 'monospace',
-                      minHeight: 44,
-                      minWidth: isTouchDevice ? 56 : undefined,
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: '#ddd', fontSize: 15,
+                      cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
                     }}
                   >
-                    {label}
-                    {!isTouchDevice && <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>}
+                    <span>{icon}</span>
+                    {!isTouchDevice && <span style={{ fontSize: 7, color: '#888', letterSpacing: 0.5 }}>[{key}]</span>}
                   </button>
                 ))}
-                {/* Clear selection button — touch only (desktop uses Escape) */}
+                {/* Turret build button */}
+                {(() => {
+                  const selectedCount = hud?.selectedSpeckCount ?? 0
+                  const TURRET_COST = 20
+                  const canBuild = selectedCount >= TURRET_COST
+                  const barFill = Math.min(1, selectedCount / TURRET_COST)
+                  return (
+                    <button
+                      onClick={() => { if (canBuild) { (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.(); navigator.vibrate?.(15) } }}
+                      title={canBuild ? 'Build Turret' : `Build Turret (${selectedCount}/${TURRET_COST})`}
+                      style={{
+                        width: 44, height: 44, borderRadius: 8,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        gap: 1,
+                        background: canBuild ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${canBuild ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                        color: canBuild ? '#ffd700' : 'rgba(255,255,255,0.3)',
+                        fontSize: 14, cursor: canBuild ? 'pointer' : 'default',
+                        opacity: canBuild ? 1 : 0.55,
+                        pointerEvents: 'auto', flexShrink: 0, position: 'relative', overflow: 'hidden',
+                      }}
+                    >
+                      <span>◆</span>
+                      {!canBuild && (
+                        <div style={{
+                          position: 'absolute', bottom: 0, left: 0,
+                          height: 2, width: `${barFill * 100}%`,
+                          background: '#4af7c4', transition: 'width 200ms',
+                        }} />
+                      )}
+                      {!isTouchDevice && <span style={{ fontSize: 7, color: canBuild ? '#ffd700aa' : '#888', letterSpacing: 0.5 }}>BLD</span>}
+                    </button>
+                  )
+                })()}
+                {/* Touch-only utility buttons */}
                 {isTouchDevice && (
-                  <button
-                    onClick={() => { gameActions?.clearSelection?.(); navigator.vibrate?.(8) }}
-                    title="Clear selection (Escape on desktop)"
-                    style={{
-                      background: 'rgba(255,79,123,0.07)',
-                      border: '1px solid rgba(255,79,123,0.3)',
-                      borderRadius: 4,
-                      color: 'rgba(255,120,120,0.8)',
-                      fontSize: 13,
-                      padding: '8px 14px',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      fontFamily: 'monospace',
-                      minHeight: 44,
-                      minWidth: 56,
-                    }}
-                  >
-                    ✗ SEL
-                  </button>
+                  <>
+                    <button
+                      onClick={() => { gameActions?.clearSelection?.(); navigator.vibrate?.(8) }}
+                      title="Clear selection"
+                      style={{
+                        width: 44, height: 44, borderRadius: 8,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(255,79,123,0.08)',
+                        border: '1px solid rgba(255,79,123,0.3)',
+                        color: 'rgba(255,120,120,0.8)',
+                        fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                      }}
+                    >✗</button>
+                    <button
+                      onClick={() => {
+                        if (touchPatrolActive) {
+                          setTouchPatrolActive(false)
+                        } else {
+                          gameActions?.activatePatrol?.()
+                          setTouchPatrolActive(true)
+                          setTimeout(() => setTouchPatrolActive(false), 5000)
+                        }
+                      }}
+                      title="Patrol"
+                      style={{
+                        width: 44, height: 44, borderRadius: 8,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: touchPatrolActive ? 'rgba(160,208,255,0.18)' : 'rgba(255,255,255,0.07)',
+                        border: `1px solid ${touchPatrolActive ? '#a0d0ff' : 'rgba(255,255,255,0.18)'}`,
+                        color: touchPatrolActive ? '#a0d0ff' : '#ddd',
+                        fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                      }}
+                    >◎</button>
+                    <button
+                      onClick={() => {
+                        const next = !touchSelectActive
+                        setTouchSelectActive(next)
+                        if (next) { navigator.vibrate?.([10, 20, 10]); gameActions?.activateSelectMode?.() }
+                      }}
+                      title="Drag-select"
+                      style={{
+                        width: 44, height: 44, borderRadius: 8,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
+                        border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
+                        color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
+                        fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                      }}
+                    >⊞</button>
+                  </>
                 )}
-                {/* Patrol button — touch only (desktop uses P key) */}
-                {isTouchDevice && (
-                  <button
-                    onClick={() => {
-                      if (touchPatrolActive) {
-                        setTouchPatrolActive(false)
-                      } else {
-                        gameActions.activatePatrol?.()
-                        setTouchPatrolActive(true)
-                        setTimeout(() => setTouchPatrolActive(false), 5000)
-                      }
-                    }}
-                    title="Patrol: tap target location after pressing"
-                    style={{
-                      background: touchPatrolActive ? 'rgba(160,208,255,0.18)' : 'rgba(255,255,255,0.07)',
-                      border: `1px solid ${touchPatrolActive ? '#a0d0ff' : 'rgba(255,255,255,0.18)'}`,
-                      borderRadius: 4,
-                      color: touchPatrolActive ? '#a0d0ff' : '#ddd',
-                      fontSize: 13,
-                      padding: '8px 14px',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      fontFamily: 'monospace',
-                      minHeight: 44,
-                      minWidth: 56,
-                    }}
-                  >
-                    {touchPatrolActive ? '◎ Tap target' : '◎ Patrol'}
-                  </button>
-                )}
-                {/* Drag-select button — touch only (desktop uses left-click-drag) */}
-                {isTouchDevice && (
-                  <button
-                    onClick={() => {
-                      const next = !touchSelectActive
-                      setTouchSelectActive(next)
-                      if (next) {
-                        navigator.vibrate?.([10, 20, 10])
-                        gameActions?.activateSelectMode?.()
-                      }
-                    }}
-                    style={{
-                      pointerEvents: 'auto',
-                      padding: '6px 10px',
-                      fontSize: 10,
-                      cursor: 'pointer',
-                      background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
-                      border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: 4,
-                      color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
-                      letterSpacing: 0.5,
-                      minHeight: 44,
-                      minWidth: 44,
-                    }}
-                    title="Touch drag-select mode — drag to box-select units"
-                  >
-                    {touchSelectActive ? '⊞ Drag' : '⊞ SEL'}
-                  </button>
+              </>
+            )}
+            {/* Right spacer */}
+            <div style={{ flex: 1 }} />
+            {/* Selection count chip */}
+            {(hud?.selectedSpeckCount ?? 0) > 0 && (
+              <div style={{
+                height: 36, borderRadius: 18, padding: '0 12px',
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'rgba(0,0,0,0.4)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 10, letterSpacing: 1,
+                color: 'rgba(255,255,255,0.8)', flexShrink: 0,
+              }}>
+                <span>{hud?.selectedSpeckCount}</span>
+                {hud?.selectedComposition && Object.entries(hud.selectedComposition.types).map(([typeId, count]) => {
+                  if (!count) return null
+                  const dotColor = typeId === 'heavy' ? '#ffa032' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
+                  return (
+                    <span key={typeId} style={{
+                      width: 6, height: 6, borderRadius: typeId === 'heavy' ? 1 : '50%',
+                      background: dotColor, flexShrink: 0, display: 'inline-block',
+                      transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
+                    }} />
+                  )
+                })}
+                {hud?.selectedComposition && (
+                  hud.selectedComposition.legendCount > 0 ? <span style={{ fontSize: 9, color: '#cc44ff' }}>✦✦</span>
+                  : hud.selectedComposition.eliteCount > 0 ? <span style={{ fontSize: 9, color: '#ffd700' }}>✦</span>
+                  : hud.selectedComposition.veteranCount > 0 ? <span style={{ fontSize: 9, color: '#ffd70088' }}>⭐</span>
+                  : null
                 )}
               </div>
             )}
-            {/* Touch gesture hint */}
-            {isTouchDevice && <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
-              Tap: rally &bull; Long-press: attack-move &bull; Double-tap: zoom &bull; 2-finger: zoom+pan
-            </div>}
           </div>
-        </div>
+        </>
       )}
 
       {/* Mobile action buttons — bottom right */}
       {phase === 'playing' && (
         <div style={{
-          position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', right: 16,
+          position: 'absolute', bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))', right: 16,
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
