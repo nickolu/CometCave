@@ -204,7 +204,10 @@ export class GameInstance {
       () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type for selected building only
         const selectedBuildingId = this.sim.selectedBuildingId
-        if (!selectedBuildingId) return  // per-building only; select a base/outpost first
+        if (!selectedBuildingId) {
+          this.notify('Click your base or an outpost first', 'rgba(255,255,255,0.45)', 1200)
+          return
+        }
         this.sim.inputQueue.push({
           type: 'SET_SPAWN_TYPE',
           ownerId: 'player',
