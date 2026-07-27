@@ -340,6 +340,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
             'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
             'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
+            'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
           ] : [
             'Capture outposts to boost your production.',
             'Dart specks (3) auto-target outposts — fast but fragile.',
@@ -358,6 +359,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
             'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
             'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
+            'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
           ]
           const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
           return (
