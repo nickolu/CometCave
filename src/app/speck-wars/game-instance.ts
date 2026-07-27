@@ -770,10 +770,15 @@ export class GameInstance {
             }
           }
         }
-        if (event.type === 'CAMP_CAPTURED' && event.newOwner === 'player') {
-          this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
-          navigator.vibrate?.([20, 30, 20, 30, 20])
-          store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
+        if (event.type === 'CAMP_CAPTURED') {
+          if (event.newOwner === 'player') {
+            this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
+            navigator.vibrate?.([20, 30, 20, 30, 20])
+            store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
+          } else if (event.newOwner === 'ai') {
+            this.notify('⚠ ENEMY SEIZED CAMP — +25% THEIR SPAWN FOR 30s', '#ff4444', 2500)
+            store.pushKillFeedEntry({ icon: '◈', label: 'ENEMY CAMP SEIZED', color: '#ff4444' })
+          }
         }
         if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
           const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
