@@ -20,7 +20,6 @@ export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
   const [controlGroupSizes, setControlGroupSizes] = useState<[number, number, number]>([0, 0, 0])
-  const [touchPatrolActive, setTouchPatrolActive] = useState(false)
   const [touchSelectActive, setTouchSelectActive] = useState(false)
   const [isPortrait, setIsPortrait] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
@@ -875,7 +874,6 @@ export function HUD() {
                   ['★ SURGE', '2× spawn rate for 8s'],
                   ['🔧 HEAL', 'Sacrifice 10 specks → +15 HP base'],
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3)'],
-                  ['◎ Patrol', 'Tap Patrol button → tap destination'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
                   ['◆ TURRET', 'Build turret (need 20+ selected)'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
@@ -905,12 +903,12 @@ export function HUD() {
               border: '1px solid rgba(255,255,255,0.15)',
             }}>
               <span>Left-click — move/rally · Left-drag — box select</span><span>Space — pause</span>
-              <span>A + left-click — attack-move · P + left-click — patrol</span><span>Middle-drag — pan camera</span>
+              <span>A + left-click — attack-move</span><span>Middle-drag — pan camera</span>
               <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
               <span>E / Ctrl+A — select all · Esc — cancel/deselect</span><span>Arrow keys / W S — pan camera</span>
               <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
               <span style={{ color: 'rgba(74,247,196,0.7)' }}>Left-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-              <span>A — attack-move mode · P — patrol mode</span><span>then left-click destination to execute</span>
+              <span>A — attack-move mode (then left-click destination)</span><span>then left-click destination to execute</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
@@ -922,7 +920,7 @@ export function HUD() {
               <span>Y — Battle Roar (lvl2 Cmdr) / Last Stand (lvl3)</span><span style={{ opacity: 0.5 }}>Commander levels up from nearby kills</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
+                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts 60s = domination win
               </span>
             </div>
           )}
@@ -1515,7 +1513,7 @@ export function HUD() {
                 ] as const).map(({ label, icon, key, action }) => (
                   <button
                     key={label}
-                    onClick={() => { navigator.vibrate?.(8); setTouchPatrolActive(false); action() }}
+                    onClick={() => { navigator.vibrate?.(8); action() }}
                     title={`${label} [${key}]`}
                     style={{
                       width: 44, height: 44, borderRadius: 8,
@@ -1580,26 +1578,6 @@ export function HUD() {
                         fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
                       }}
                     >✗</button>
-                    <button
-                      onClick={() => {
-                        if (touchPatrolActive) {
-                          setTouchPatrolActive(false)
-                        } else {
-                          gameActions?.activatePatrol?.()
-                          setTouchPatrolActive(true)
-                          setTimeout(() => setTouchPatrolActive(false), 5000)
-                        }
-                      }}
-                      title="Patrol"
-                      style={{
-                        width: 44, height: 44, borderRadius: 8,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: touchPatrolActive ? 'rgba(160,208,255,0.18)' : 'rgba(255,255,255,0.07)',
-                        border: `1px solid ${touchPatrolActive ? '#a0d0ff' : 'rgba(255,255,255,0.18)'}`,
-                        color: touchPatrolActive ? '#a0d0ff' : '#ddd',
-                        fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
-                      }}
-                    >◎</button>
                     <button
                       onClick={() => {
                         const next = !touchSelectActive
