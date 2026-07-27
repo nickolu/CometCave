@@ -46,6 +46,8 @@ export class InputHandler {
   private mouseX = -1  // -1 means mouse not over canvas
   private mouseY = -1
   private lastPinchDist = 0  // 0 = not pinching
+  private pinchVelocity = 0   // zoom factor momentum
+  private pinchDecayTimer: ReturnType<typeof requestAnimationFrame> | null = null
   private lastPinchMidX = 0
   private lastPinchMidY = 0
   private touchStartX = 0
@@ -359,6 +361,7 @@ export class InputHandler {
       const my = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
+      this.pinchVelocity = rawFactor - 1  // positive = zooming in, negative = out
       // Two-finger pan: track midpoint movement and pan camera accordingly
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
@@ -410,6 +413,15 @@ export class InputHandler {
         this.onRally?.(world.x, world.y)
       }
       return
+    }
+    // Launch pinch inertia when second finger lifts
+    if (e.touches.length < 2 && this.lastPinchDist > 0) {
+      if (this.pinchDecayTimer) cancelAnimationFrame(this.pinchDecayTimer)
+      if (Math.abs(this.pinchVelocity) > 0.001) {
+        this.pinchDecayTimer = requestAnimationFrame(this.applyPinchInertia)
+      }
+      this.lastPinchDist = 0
+      this.pinchVelocity = 0
     }
     // Cancel any pending long-press
     if (this.longPressTimer) {
@@ -469,8 +481,21 @@ export class InputHandler {
       this.twoFingerMoved = false
     }
     this.isDragging = false
-    this.lastPinchDist = 0
     this.longPressFired = false
+  }
+
+  private applyPinchInertia = () => {
+    if (Math.abs(this.pinchVelocity) < 0.0005) {
+      this.pinchDecayTimer = null
+      return
+    }
+    const rect = this.canvas.getBoundingClientRect()
+    const cx = rect.width / 2
+    const cy = rect.height / 2
+    const dampened = 1 + this.pinchVelocity * 0.3
+    Object.assign(this.camera, zoomAt(this.camera, cx, cy, dampened))
+    this.pinchVelocity *= 0.75  // decay
+    this.pinchDecayTimer = requestAnimationFrame(this.applyPinchInertia)
   }
 
   private onKeyUp = (e: KeyboardEvent) => {
@@ -607,6 +632,7 @@ export class InputHandler {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
     }
+    if (this.pinchDecayTimer) { cancelAnimationFrame(this.pinchDecayTimer); this.pinchDecayTimer = null }
     this.canvas.removeEventListener('mousedown', this.onMouseDown)
     window.removeEventListener('mousemove', this.onMouseMove)
     window.removeEventListener('mouseup', this.onMouseUp)
