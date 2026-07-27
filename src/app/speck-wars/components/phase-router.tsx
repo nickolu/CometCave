@@ -338,6 +338,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Long-press canvas then lift — specks fight enemies on the way (attack-move).',
             'Tap Hold in the unit panel to make selected specks defend a position.',
             'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
+            'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
           ] : [
             'Capture outposts to boost your production.',
             'Dart specks (3) auto-target outposts — fast but fragile.',
@@ -354,6 +355,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Hold A then right-click to issue an attack-move — specks fight enemies en route.',
             'H key makes selected specks hold position — great for defending a chokepoint.',
             'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
+            'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
           ]
           const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
           return (
