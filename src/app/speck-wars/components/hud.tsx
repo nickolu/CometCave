@@ -1168,7 +1168,7 @@ export function HUD() {
                 border: '1px solid rgba(255,215,0,0.4)', borderRadius: 3,
                 padding: '2px 6px',
               }}>
-                ⚡ MORALE +20%
+                ⚡ MORALE SURGE
               </span>
             )}
             {enemyMoraleActive && (
@@ -1189,7 +1189,7 @@ export function HUD() {
                 padding: '2px 6px',
                 fontWeight: 'bold',
               }}>
-                ⚡ RAGE +40%
+                ⚡ LAST STAND
               </span>
             )}
           </div>
