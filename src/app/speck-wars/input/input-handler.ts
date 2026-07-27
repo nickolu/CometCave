@@ -259,17 +259,23 @@ export class InputHandler {
 
   private onWheel = (e: WheelEvent) => {
     e.preventDefault()
-    if (e.ctrlKey) {
-      // Pinch-to-zoom (trackpad) or Ctrl+scroll — zoom toward cursor
-      const factor = e.deltaY < 0 ? 1.1 : 0.9
-      const rect = this.canvas.getBoundingClientRect()
-      const sx = e.clientX - rect.left
-      const sy = e.clientY - rect.top
-      Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
-    } else {
-      // Two-finger swipe (trackpad) or scroll wheel — pan camera
+    const rect = this.canvas.getBoundingClientRect()
+    const sx = e.clientX - rect.left
+    const sy = e.clientY - rect.top
+    if (e.shiftKey) {
+      // Shift+scroll — pan camera
       this.camera.x -= e.deltaX
       this.camera.y -= e.deltaY
+    } else if (!e.ctrlKey && e.deltaX !== 0) {
+      // Two-finger trackpad horizontal swipe — pan camera
+      this.camera.x -= e.deltaX
+      this.camera.y -= e.deltaY
+    } else {
+      // Default: scroll wheel zooms toward cursor (ctrlKey = trackpad pinch, also zooms)
+      if (e.deltaY !== 0) {
+        const factor = e.deltaY < 0 ? 1.1 : 0.9
+        Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
+      }
     }
   }
 
