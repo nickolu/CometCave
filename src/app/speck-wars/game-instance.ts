@@ -775,6 +775,9 @@ export class GameInstance {
           navigator.vibrate?.([20, 30, 20, 30, 20])
           store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
         }
+        if (event.type === 'CAMP_RESET' && event.previousOwner === 'player') {
+          this.notify('◈ CAMP RESET — defenders respawned', '#ff9933', 2000)
+        }
         if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
           const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
           this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)

@@ -157,6 +157,7 @@ export type SimEvent =
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
+  | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
   | { type: 'OUTPOST_UPGRADE_RESEARCHED'; buildingId: string; ownerId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
   | { type: 'HERO_LEVELED'; ownerId: string; heroLevel: 1 | 2 }
   | { type: 'HERO_DIED'; ownerId: string; kills: number }
