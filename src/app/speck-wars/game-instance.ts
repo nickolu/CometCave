@@ -49,6 +49,7 @@ export class GameInstance {
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
   private prevCommanderAbilityCooldown = 0
+  private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -564,6 +565,16 @@ export class GameInstance {
             }
             this.lastTripleHolder = holder
           }
+
+          // Wave pre-warning: fire a toast 30s before each AI wave
+          const waveCd = event.data.waveCountdown ?? null
+          const waveInProg = event.data.waveInProgress ?? false
+          if (!waveInProg && waveCd !== null && waveCd < 30000
+              && (this.prevWaveCountdown === null || this.prevWaveCountdown >= 30000)) {
+            const secs = Math.ceil(waveCd / 1000)
+            this.notify(`⚠ WAVE IN ${secs}s — PREPARE DEFENSES`, '#ff6b35', 2500)
+          }
+          this.prevWaveCountdown = waveCd
 
           // Surge cooldown ready notification
           const surgeCd = event.data.surgeCooldown ?? 0
