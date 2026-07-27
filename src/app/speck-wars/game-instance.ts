@@ -830,6 +830,7 @@ export class GameInstance {
         }
         if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
           this.notify('✦ ELITE SPECK! +35% DAMAGE', '#ffffff', 2500)
+          store.pushKillFeedEntry({ icon: '✦', label: 'ELITE SPECK', color: '#ffd700' })
         }
         if (event.type === 'SPECK_LEGEND' && event.ownerId === 'player') {
           this.notify('✦✦ LEGEND BORN — +50% DMG + AoE SPLASH! ✦✦', '#cc44ff', 3500)
@@ -849,7 +850,7 @@ export class GameInstance {
           const isElite = event.kills >= 6
           const label = isLegend ? '✦✦ LEGEND FALLEN' : isElite ? '✦ ELITE FALLEN' : '⭐ VETERAN FALLEN'
           const color = isLegend ? '#cc44ff' : isElite ? '#ff8844' : '#ffcc00'
-          this.notify(label, color)
+          this.notify(label, color, 2500)
         }
         if (event.type === 'AI_WAVE_START') {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
@@ -857,7 +858,7 @@ export class GameInstance {
           this.notify(`⚠ WAVE ${event.waveNumber} ASSAULT!`, color, 3000)
         }
         if (event.type === 'AI_LAST_STAND') {
-          this.notify('⚠ ENEMY LAST STAND', '#ff4444')
+          this.notify('⚠ ENEMY LAST STAND — desperate all-in push!', '#ff4444', 3500)
         }
 
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
