@@ -292,7 +292,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             <span>1/2/3 — spawn basic/heavy/dart</span>
             <span style={{ gridColumn: 'span 2', color: 'rgba(255,255,255,0.2)' }}>↳ heavy beats basic · dart beats heavy · basic beats dart</span>
             <span>Q — surge (2× spawn 8s)</span>
-            <span>V — snap to battle</span>
+            <span>V — snap to recent kills</span>
             <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
             <span>X — speed · E — all · Esc — clear</span>
             <span>Ctrl+4-9 save group · 4-9 recall</span>
@@ -349,7 +349,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Drag to box-select specks, then click anywhere to rally only your selection.',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
             'Heavy specks deal 2× damage but produce 2× slower.',
-            'V key snaps the camera to where fighting is happening.',
+            'V key snaps the camera to recent kill positions — find the heat of battle.',
             'Press ? in-game to see all hotkeys.',
             'Control groups: box-select specks, Ctrl+4 to save, press 4 to recall.',
             'Hold A then right-click to issue an attack-move — specks fight enemies en route.',
