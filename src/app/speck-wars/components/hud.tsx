@@ -423,10 +423,23 @@ export function HUD() {
             )}
             <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
               onClick={(e) => {
-                if (!gameActions?.rally) return
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
                 const py = e.clientY - rect.top
+                // Check if tap is near a player-owned building on the minimap
+                const TAP_THRESHOLD = 10  // px in minimap space
+                const nearBuilding = hud?.minimap?.buildings?.find(b => {
+                  if (b.ownerId !== 'player') return false
+                  const bx = b.x * SCALE
+                  const by = b.y * SCALE
+                  return Math.hypot(px - bx, py - by) < TAP_THRESHOLD
+                })
+                if (nearBuilding && gameActions?.panCamera) {
+                  gameActions.panCamera(nearBuilding.x, nearBuilding.y)
+                  gameActions?.selectBuilding?.(nearBuilding.id)
+                  return
+                }
+                if (!gameActions?.rally) return
                 const worldX = (px / MINIMAP_SIZE) * 3000
                 const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.rally(worldX, worldY)
@@ -450,6 +463,20 @@ export function HUD() {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = touch.clientX - rect.left
                 const py = touch.clientY - rect.top
+                // Check if tap is near a player-owned building on the minimap
+                const TAP_THRESHOLD = 10  // px in minimap space
+                const nearBuilding = hud?.minimap?.buildings?.find(b => {
+                  if (b.ownerId !== 'player') return false
+                  const bx = b.x * SCALE
+                  const by = b.y * SCALE
+                  return Math.hypot(px - bx, py - by) < TAP_THRESHOLD
+                })
+                if (nearBuilding) {
+                  gameActions.panCamera(nearBuilding.x, nearBuilding.y)
+                  gameActions?.selectBuilding?.(nearBuilding.id)
+                  navigator.vibrate?.(15)
+                  return
+                }
                 const worldX = (px / MINIMAP_SIZE) * 3000
                 const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.panCamera(worldX, worldY)
