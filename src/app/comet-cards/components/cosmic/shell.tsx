@@ -24,11 +24,12 @@ export function CosmicShell({ children }: { children: ReactNode }) {
         aria-label="Exit to CometCave"
         style={{
           position: 'absolute',
-          top: 12,
-          left: 12,
+          top: 8,
+          left: 8,
           zIndex: 50,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: 4,
           fontSize: 13,
           color: 'var(--cc-text-muted, rgba(255,255,255,0.5))',
@@ -36,6 +37,8 @@ export function CosmicShell({ children }: { children: ReactNode }) {
           padding: '4px 8px',
           borderRadius: 6,
           transition: 'color 0.15s',
+          minWidth: 44,
+          minHeight: 44,
         }}
         className="cc-btn hover:!text-white"
       >
