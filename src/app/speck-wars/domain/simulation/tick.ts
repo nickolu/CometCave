@@ -571,7 +571,7 @@ function consumeInputs(sim: SimulationState) {
         sim.speckHp[i] = 0  // mark for removeDeadSpecks
       }
       building.hp = Math.min(building.maxHp, building.hp + event.count * 1.5)  // 10 specks → +15 HP
-      sim.sacrificeCooldown = 45000
+      sim.sacrificeCooldown = 20000
     }
   }
   sim.inputQueue = []
