@@ -917,7 +917,7 @@ export function HUD() {
               <span>Garrison btn — post 5 specks at outpost to defend</span><span>Recall btn — release garrisoned specks</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
-              <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
+              <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
               <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click rally · right-click pan</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
