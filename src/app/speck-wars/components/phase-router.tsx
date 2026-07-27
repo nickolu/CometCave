@@ -9,12 +9,13 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const { user } = useAuth()
+  const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
 
   useEffect(() => {
     if (phase === 'menu') {
@@ -50,6 +51,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, resetGame, setPhase])
 
+  useEffect(() => {
+    if (phase === 'victory') {
+      navigator.vibrate?.([40, 80, 40, 80, 120])  // ascending triple-pulse: celebration
+    } else if (phase === 'defeat') {
+      navigator.vibrate?.([200, 60, 80])  // heavy thud then short pulse: loss
+    }
+  }, [phase])
+
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI, relaxed' },
     { key: 'medium', label: 'Medium', color: '#ffcc44', desc: 'standard challenge' },
@@ -59,7 +68,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
   if (phase === 'menu') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, overflowY: 'auto', padding: '16px 0' }}>
         <h1 style={{ color: '#fff', fontSize: 48, margin: 0 }}>Speck Wars</h1>
         <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base. Last base standing wins.</p>
         {winStreak >= 2 && (
@@ -67,7 +76,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             🔥 {winStreak} WIN STREAK
           </div>
         )}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
           {difficulties.map(d => {
             const wonToday = hasWonToday(d.key)
             return (
@@ -75,7 +84,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 key={d.key}
                 onClick={() => setDifficulty(d.key)}
                 style={{
-                  padding: '6px 16px',
+                  padding: isTouchDevice ? '8px 20px' : '6px 16px',
                   fontSize: 14,
                   cursor: 'pointer',
                   border: `2px solid ${difficulty === d.key ? d.color : wonToday ? `${d.color}66` : 'rgba(255,255,255,0.2)'}`,
@@ -85,12 +94,15 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   fontWeight: difficulty === d.key ? 'bold' : 'normal',
                   transition: 'all 0.15s',
                   position: 'relative',
+                  minHeight: 44,
+                  flex: isTouchDevice ? '1 1 calc(50% - 8px)' : undefined,
+                  maxWidth: isTouchDevice ? 160 : undefined,
                 }}
               >
                 {d.label}
                 <span style={{
                   display: 'block',
-                  fontSize: 9,
+                  fontSize: isTouchDevice ? 11 : 9,
                   fontWeight: 'normal',
                   opacity: difficulty === d.key ? 0.7 : 0.4,
                   letterSpacing: 0.3,
@@ -194,39 +206,136 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )}
           </div>
         )}
+        {/* Fog of war toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+          <button
+            onClick={() => setFogEnabled(!fogEnabled)}
+            style={{
+              padding: '4px 14px',
+              fontSize: 12,
+              cursor: 'pointer',
+              border: `1px solid ${fogEnabled ? '#44aaff' : 'rgba(255,255,255,0.2)'}`,
+              borderRadius: 4,
+              background: fogEnabled ? 'rgba(68,170,255,0.12)' : 'transparent',
+              color: fogEnabled ? '#44aaff' : 'rgba(255,255,255,0.4)',
+              letterSpacing: 0.5,
+              minHeight: 44,
+            }}
+          >
+            {fogEnabled ? '🌫 Fog of War: ON' : '🌫 Fog of War: OFF'}
+          </button>
+        </div>
+        {/* Map preset selector */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 1 }}>MAP</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {([
+              { key: 'random', label: '🎲 Daily', desc: 'procedural' },
+              { key: 'open',   label: '□ Open',  desc: 'no walls' },
+              { key: 'canyon', label: '═ Canyon', desc: 'twin walls' },
+              { key: 'river',  label: '| River',  desc: 'center gap' },
+              { key: 'pillars',label: '⊞ Pillars',desc: '5 columns' },
+              { key: 'walls',  label: '⌐ Walls',  desc: 'zigzag' },
+            ] as const).map(({ key, label, desc }) => (
+              <button
+                key={key}
+                title={desc}
+                onClick={() => setMapPreset(key)}
+                style={{
+                  padding: isTouchDevice ? '8px 12px' : '4px 10px',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  border: `1px solid ${mapPreset === key ? '#ffcc44' : 'rgba(255,255,255,0.15)'}`,
+                  borderRadius: 4,
+                  background: mapPreset === key ? 'rgba(255,204,68,0.12)' : 'transparent',
+                  color: mapPreset === key ? '#ffcc44' : 'rgba(255,255,255,0.4)',
+                  letterSpacing: 0.3,
+                  minHeight: isTouchDevice ? 44 : 36,
+                  transition: 'all 0.15s',
+                  lineHeight: 1.3,
+                }}
+              >
+                <div>{label}</div>
+                {isTouchDevice && <div style={{ fontSize: 9, opacity: 0.5, letterSpacing: 0.5 }}>{desc}</div>}
+              </button>
+            ))}
+          </div>
+        </div>
         <button
           onClick={() => setPhase('playing')}
-          style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold' }}
+          style={{
+            padding: isTouchDevice ? '16px 48px' : '12px 32px',
+            fontSize: isTouchDevice ? 20 : 18,
+            cursor: 'pointer', background: '#4af7c4', border: 'none',
+            borderRadius: 8, fontWeight: 'bold',
+            minHeight: 56, minWidth: isTouchDevice ? 200 : undefined,
+          }}
         >
           Play
         </button>
         {/* Controls hint */}
-        <div style={{
-          marginTop: 16,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '4px 24px',
-          color: 'rgba(255,255,255,0.35)',
-          fontSize: 11,
-          letterSpacing: 0.5,
-          textAlign: 'left',
-          maxWidth: 320,
-        }}>
-          <span>🖱 Click — rally specks</span>
-          <span>Space — pause / ? — help</span>
-          <span>Drag — box select specks</span>
-          <span>1/2/3 — spawn basic/heavy/scout</span>
-          <span>Q — surge (2× spawn 8s)</span>
-          <span>V — snap to battle</span>
-          <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
-          <span>X — speed · E — all · Esc — clear</span>
-          <span>Ctrl+4-9 save group · 4-9 recall</span>
-          <span>Minimap — click to rally</span>
-          <span>Arrow keys / W S — pan</span>
-        </div>
+        {!isTouchDevice && (
+          <div style={{
+            marginTop: 16,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '4px 24px',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 11,
+            letterSpacing: 0.5,
+            textAlign: 'left',
+            maxWidth: 320,
+          }}>
+            <span>🖱 Click — rally specks</span>
+            <span>Space — pause / ? — help</span>
+            <span>Drag — box select specks</span>
+            <span>1/2/3 — spawn basic/heavy/scout</span>
+            <span>Q — surge (2× spawn 8s)</span>
+            <span>V — snap to battle</span>
+            <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
+            <span>X — speed · E — all · Esc — clear</span>
+            <span>Ctrl+4-9 save group · 4-9 recall</span>
+            <span>Minimap — left-click rally · right-click pan</span>
+            <span>Arrow keys / W S — pan</span>
+          </div>
+        )}
+        {isTouchDevice && (
+          <div style={{
+            marginTop: 16,
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: '4px 24px',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 11, letterSpacing: 0.5,
+            textAlign: 'left', maxWidth: 320,
+          }}>
+            <span>👆 Tap canvas — rally specks</span>
+            <span>⏸ Pause button — pause game</span>
+            <span>👆 Long-press canvas — attack-move</span>
+            <span>⬡ ALL button — select all specks</span>
+            <span>👌 Pinch — zoom · Drag — pan</span>
+            <span>⌂ HOME · ⚔ FIGHT — snap camera</span>
+            <span>🗺 Tap minimap — navigate camera</span>
+            <span>? button — touch controls help</span>
+          </div>
+        )}
         {/* Daily tip */}
         {(() => {
-          const tips = [
+          const tips = isTouchDevice ? [
+            'Capture outposts to boost your production.',
+            'Scouts auto-target outposts — tap the Scout spawn button (3rd) for fast flanking.',
+            'Veterans deal +20% damage after 3 kills. Protect them!',
+            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
+            'Tap canvas to rally · long-press canvas to attack-move (aggressive advance).',
+            'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
+            'Heavy specks deal 2× damage but produce 2× slower.',
+            'Tap ⚔ FIGHT to snap the camera to where the fighting is happening.',
+            'Tap ? in-game to see all touch controls.',
+            'Tap ⬡ ALL to select all your specks, then tap canvas to rally them together.',
+            'Long-press canvas then lift — specks fight enemies on the way (attack-move).',
+            'Tap Hold in the unit panel to make selected specks defend a position.',
+            'Elite specks (6+ kills) get a white diamond ring and deal +30% damage.',
+          ] : [
             'Capture outposts to boost your production.',
             'Scouts (3) auto-target outposts — fast but fragile.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
@@ -298,12 +407,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       const url = typeof window !== 'undefined' ? window.location.href : ''
       if (typeof navigator !== 'undefined' && navigator.share) {
         try {
+          navigator.vibrate?.(8)
           await navigator.share({ title: 'Speck Wars', text: shareText, url })
         } catch {
           // user cancelled — no action needed
         }
       } else {
         await navigator.clipboard.writeText(`${shareText} ${url}`)
+        navigator.vibrate?.(12)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
       }
@@ -312,10 +423,10 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', height: '100%', gap: 20,
-        fontFamily: 'monospace',
+        justifyContent: isTouchDevice ? 'flex-start' : 'center', height: '100%', gap: isTouchDevice ? 10 : 20,
+        fontFamily: 'monospace', overflowY: 'auto', padding: isTouchDevice ? '12px 0 80px' : '16px 0',
       }}>
-        <h1 style={{ color: accentColor, fontSize: 64, margin: 0, letterSpacing: 4 }}>
+        <h1 style={{ color: accentColor, fontSize: isTouchDevice ? 44 : 64, margin: 0, letterSpacing: 4 }}>
           {won ? 'VICTORY' : 'DEFEATED'}
         </h1>
         {victoryType && (
@@ -470,13 +581,21 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           } else if (won && difficulty !== 'very-hard' && stars === 3) {
             tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
           } else if (!won && kills < 30) {
-            tip = 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
+            tip = isTouchDevice
+              ? 'Tip: Scouts are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
+              : 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
           } else if (!won && eff < 0.4) {
-            tip = 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
+            tip = isTouchDevice
+              ? 'Tip: Heavy specks deal 2× damage — switch to Heavy spawn during big fights.'
+              : 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
           } else if (!won && elapsedMs > 300000) {
-            tip = 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
+            tip = isTouchDevice
+              ? 'Tip: Tap ★ SURGE for 2× production 8s. Use it when you\'re behind!'
+              : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
           } else if (!won) {
-            tip = 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
+            tip = isTouchDevice
+              ? 'Tip: Tap 🔧 SACR to sacrifice 10 specks and repair your base when HP is critical.'
+              : 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
           } else if (won && modifier === 'siege') {
             tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
           }
@@ -528,14 +647,23 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8 }}>
-          <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8,
+          ...(isTouchDevice ? {
+            position: 'sticky', bottom: 0,
+            background: 'rgba(0,0,0,0.92)',
+            padding: '10px 0 12px',
+            width: '100%',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+          } : {}),
+        }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
             onClick={resetGame}
             style={{
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: accentColor, border: 'none', borderRadius: 8,
-              fontWeight: 'bold', color: '#000',
+              fontWeight: 'bold', color: '#000', minHeight: 52,
             }}
           >
             Play Again
@@ -545,7 +673,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             style={{
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: 'transparent', border: `2px solid ${accentColor}`,
-              borderRadius: 8, color: accentColor,
+              borderRadius: 8, color: accentColor, minHeight: 52,
             }}
           >
             {copied ? 'Copied!' : 'Share'}
@@ -556,15 +684,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: 'transparent', border: '2px solid rgba(255,255,255,0.3)',
               borderRadius: 8, color: 'rgba(255,255,255,0.7)', textDecoration: 'none',
-              display: 'flex', alignItems: 'center',
+              display: 'flex', alignItems: 'center', minHeight: 52,
             }}
           >
             ← Cave
           </a>
           </div>
-          <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)' }}>
-            Enter / Space — play again
-          </span>
+          {!isTouchDevice && (
+            <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)' }}>
+              Enter / Space — play again
+            </span>
+          )}
         </div>
         {nextDiff && (
           <button
@@ -574,7 +704,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               background: 'transparent',
               border: `1px solid ${nextDiff.color}`,
               borderRadius: 6, color: nextDiff.color, opacity: 0.8,
-              letterSpacing: 1,
+              letterSpacing: 1, minHeight: isTouchDevice ? 44 : undefined,
             }}
           >
             Try {nextDiff.label} →

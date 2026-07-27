@@ -4,12 +4,14 @@ import { updateSpawners, spawnCampDefenders, spawnCommander } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
+import { updateUnitAbilities } from './unit-abilities'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
+import { updateGarrison } from './garrison'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -49,6 +51,8 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     if (sim.speckHp[i] / maxHp < 0.25) {
       meta.state = 'retreating'
       meta.targetId = null
+      // Scout Cloak: scouts become untargetable for 2000ms when retreating
+      if (meta.typeId === 'scout') meta.cloakTimer = 2000
     }
   }
 
@@ -62,8 +66,14 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 6a. Hero abilities (AoE pulse for level 2 Commanders)
   updateHeroAbilities(sim, dt)
 
+  // 6b. Unit type abilities: tick chargeTimer (heavy) and cloakTimer (scout)
+  updateUnitAbilities(sim, dt)
+
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
+
+  // 7-garrison. Garrisoned specks fire at nearby enemies
+  updateGarrison(sim, dt)
 
   // 7a-pre. Creep camp timers: boost decay, camp reset
   updateCreepCamps(sim, dt)
@@ -495,6 +505,99 @@ function consumeInputs(sim: SimulationState) {
       const p = sim.players[event.ownerId]
       if (p) p.stance = event.stance
     }
+    if (event.type === 'RESEARCH_UPGRADE') {
+      const player = sim.players[event.ownerId]
+      const building = sim.buildings[event.buildingId]
+      if (!player || !building) continue
+      if (building.ownerId !== event.ownerId) continue
+      if (building.typeId !== 'outpost') continue
+      if ((building.fortifyDuration ?? 0) < 20000) continue  // must hold 20s first
+      if (building.researchedUpgrade) continue  // outpost already researched
+      if (player.outpostUpgrades[event.upgrade]) continue  // already have this upgrade globally
+      building.researchedUpgrade = event.upgrade
+      player.outpostUpgrades[event.upgrade] = true
+      sim.events.push({ type: 'OUTPOST_UPGRADE_RESEARCHED', buildingId: event.buildingId, ownerId: event.ownerId, upgrade: event.upgrade })
+    }
+    if (event.type === 'COMMANDER_ABILITY') {
+      const ROAR_RADIUS = 80
+      const STUN_DURATION = 1500    // ms
+      const ROAR_COOLDOWN = 20000   // ms
+      const LAST_STAND_COOLDOWN = 60000
+      const LAST_STAND_DURATION = 5000
+      const r2 = ROAR_RADIUS * ROAR_RADIUS
+      // Find the owner's commander
+      let cmdIdx = -1
+      for (let i = 0; i < sim.speckCount; i++) {
+        const m = sim.speckMeta[i]
+        if (m?.isCommander && m.ownerId === event.ownerId && sim.speckHp[i] > 0) { cmdIdx = i; break }
+      }
+      if (cmdIdx < 0) continue
+      const cmdMeta = sim.speckMeta[cmdIdx]!
+      const level = cmdMeta.commanderLevel ?? 0
+      if (level < 2) continue
+      if ((cmdMeta.commanderAbilityCooldown ?? 0) > 0) continue
+      const cx = sim.speckX[cmdIdx], cy = sim.speckY[cmdIdx]
+      // Stun enemies within radius
+      for (let j = 0; j < sim.speckCount; j++) {
+        const jm = sim.speckMeta[j]
+        if (!jm || jm.ownerId === event.ownerId || sim.speckHp[j] <= 0) continue
+        const dx = sim.speckX[j] - cx, dy = sim.speckY[j] - cy
+        if (dx * dx + dy * dy <= r2) jm.stunTimer = STUN_DURATION
+      }
+      if (level >= 3) {
+        // Last Stand: commander invulnerable + 3× dmg; nearby friends speed boost
+        cmdMeta.commanderAbilityActive = LAST_STAND_DURATION
+        cmdMeta.commanderAbilityCooldown = LAST_STAND_COOLDOWN
+        for (let j = 0; j < sim.speckCount; j++) {
+          if (j === cmdIdx) continue
+          const jm = sim.speckMeta[j]
+          if (!jm || jm.ownerId !== event.ownerId || sim.speckHp[j] <= 0) continue
+          const dx = sim.speckX[j] - cx, dy = sim.speckY[j] - cy
+          if (dx * dx + dy * dy <= r2) jm.speedBoostTimer = LAST_STAND_DURATION
+        }
+      } else {
+        // Battle Roar: stun only, shorter cooldown
+        cmdMeta.commanderAbilityCooldown = ROAR_COOLDOWN
+      }
+    }
+    if (event.type === 'GARRISON') {
+      const building = sim.buildings[event.buildingId]
+      if (!building || building.ownerId !== event.ownerId) continue
+      if (building.typeId !== 'outpost') continue
+      const MAX_GARRISON = 5
+      if (!building.garrisonedSpeckIds) building.garrisonedSpeckIds = []
+
+      for (const id of event.speckIds) {
+        if (building.garrisonedSpeckIds.length >= MAX_GARRISON) break
+        for (let i = 0; i < sim.speckCount; i++) {
+          if (sim.speckMeta[i]?.id !== id) continue
+          const m = sim.speckMeta[i]!
+          if (m.ownerId !== event.ownerId) continue
+          if (m.isGarrisoned) continue
+          m.isGarrisoned = true
+          m.garrisonBuildingId = event.buildingId
+          m.state = 'holding'
+          building.garrisonedSpeckIds.push(id)
+          break
+        }
+      }
+    }
+    if (event.type === 'RECALL_GARRISON') {
+      const building = sim.buildings[event.buildingId]
+      if (!building || building.ownerId !== event.ownerId) continue
+      const garrison = building.garrisonedSpeckIds ?? []
+      for (let i = 0; i < sim.speckCount; i++) {
+        const m = sim.speckMeta[i]
+        if (!m || !garrison.includes(m.id)) continue
+        m.isGarrisoned = false
+        m.garrisonBuildingId = undefined
+        m.state = 'attacking'
+        // Place recalled specks at the outpost position
+        sim.speckX[i] = building.x + (Math.random() - 0.5) * 40
+        sim.speckY[i] = building.y + (Math.random() - 0.5) * 40
+      }
+      building.garrisonedSpeckIds = []
+    }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue
       const building = sim.buildings[event.buildingId]
@@ -522,7 +625,7 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
@@ -546,6 +649,8 @@ function emitHudUpdate(sim: SimulationState) {
       veteranCount,
       eliteCount,
       legendCount,
+      supplyUsed: sim.players[pid]?.supply ?? 0,
+      supplyCap: SUPPLY_HARD_CAP,
     }
   }
   // Buildings that are owned but actively being captured by the enemy
@@ -678,11 +783,25 @@ function emitHudUpdate(sim: SimulationState) {
     selectedComposition = { types, veteranCount: selVet, eliteCount: selElite, legendCount: selLegend }
   }
 
-  let selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null = null
+  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string; garrisonCount?: number } | null = null
   if (sim.selectedBuildingId) {
     const b = sim.buildings[sim.selectedBuildingId]
-    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
+    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade, garrisonCount: b.garrisonedSpeckIds?.length ?? 0 }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
+  // Commander state for player HUD
+  let commander: { level: number; abilityCooldown: number; abilityActive: number } | null = null
+  for (let i = 0; i < sim.speckCount; i++) {
+    const m = sim.speckMeta[i]
+    if (m?.isCommander && m.ownerId === 'player' && sim.speckHp[i] > 0) {
+      commander = {
+        level: m.commanderLevel ?? 0,
+        abilityCooldown: m.commanderAbilityCooldown ?? 0,
+        abilityActive: m.commanderAbilityActive ?? 0,
+      }
+      break
+    }
+  }
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, commander, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
 }

@@ -15,6 +15,7 @@ export class GameInstance {
   private sim: SimulationState
   private renderer: Renderer
   private rafId: number | null = null
+  private destroyed = false
   private lastTime: number = 0
   private camera: Camera
   private inputHandler!: InputHandler
@@ -61,16 +62,18 @@ export class GameInstance {
   private pendingBuild: string | null = null  // building type ID awaiting placement click
   private killFeedKillAt = 0    // last time we pushed a kill entry
   private killFeedLossAt = 0    // last time we pushed a loss entry
+  private onResize: (() => void) | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     const difficulty = useSpeckWarsStore.getState().difficulty
+    const mapPreset = useSpeckWarsStore.getState().mapPreset
     const aiTickInterval: Record<string, number> = { easy: 60, medium: 30, hard: 15, 'very-hard': 6 }
     const now = new Date()
     const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
     const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
     const dailySeed = dateKey * 1000 + diffHash
-    this.sim = createSim(dailySeed, difficulty)
+    this.sim = createSim(dailySeed, difficulty, mapPreset)
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
     const aiPersonality = (): AIPersonality => {
@@ -98,7 +101,14 @@ export class GameInstance {
   async start() {
     console.log('GameInstance started')
     document.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.onResize = () => { clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight) }
+    window.addEventListener('resize', this.onResize)
     await this.renderer.init(this.canvas)
+    // destroy() ran while the renderer was initialising (React StrictMode mounts, tears
+    // down and remounts the canvas effect). Bail out rather than wiring up input, the
+    // store and a render loop that nothing owns — the renderer has already cleaned
+    // itself up, and a second GameInstance is running by now.
+    if (this.destroyed) return
     this.inputHandler = new InputHandler(
       this.canvas,
       this.camera,
@@ -130,11 +140,15 @@ export class GameInstance {
         }
 
         // Check if click hit a player building — select it instead of rallying
+        // Touch devices get a larger buffer to ensure 44px+ screen hit area at default zoom
+        const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+        const hitBuffer = isTouchDevice ? 30 : 20
         for (const building of Object.values(this.sim.buildings)) {
           if (building.ownerId !== 'player') continue
           const btype = BUILDING_TYPES[building.typeId]
           const r = btype?.size ?? 20
-          if (Math.hypot(wx - building.x, wy - building.y) <= r + 20) {
+          if (Math.hypot(wx - building.x, wy - building.y) <= r + hitBuffer) {
+            navigator.vibrate?.(10)
             this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
             return
           }
@@ -230,7 +244,7 @@ export class GameInstance {
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
       (wx: number, wy: number) => {                                    // A + right-click — attack-move
         this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
-        this.renderer.showRallyPing(wx, wy)
+        this.renderer.showRallyPing(wx, wy, 0xff4f7b)  // red ping for attack-move
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
       (wx: number, wy: number) => {                                    // P + right-click — patrol
@@ -245,7 +259,7 @@ export class GameInstance {
         }
         if (speckIds.length === 0) return
         this.sim.inputQueue.push({ type: 'SET_PATROL', ownerId: 'player', speckIds, destX: wx, destY: wy })
-        this.renderer.showRallyPing(wx, wy)
+        this.renderer.showRallyPing(wx, wy, 0xa0d0ff)  // blue ping for patrol
         this.notify('◎ PATROL', '#a0d0ff', 900)
       },
     )
@@ -272,11 +286,16 @@ export class GameInstance {
       }
       this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
     }
+    this.inputHandler.onCommanderAbility = () => this.commanderAbility()  // Y — Battle Roar / Last Stand
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
+      clearSelection: () => {
+        this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
+        this.sim.rallyPoints['player-selected'] = null
+      },
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
@@ -308,6 +327,18 @@ export class GameInstance {
       recallControlGroup: (slot: number) => {
         this.inputHandler.onRecallControlGroup?.(slot)
       },
+      researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
+        this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
+      },
+      selectAll: () => {
+        this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
+      },
+      snapToBase: () => this.snapToBase(),
+      snapToAction: () => this.snapToAction(),
+      commanderAbility: () => this.commanderAbility(),
+      activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      garrison: (buildingId: string) => this.garrison(buildingId),
+      recallGarrison: (buildingId: string) => this.recallGarrison(buildingId),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
@@ -345,12 +376,21 @@ export class GameInstance {
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
+      navigator.vibrate?.([50, 30, 50, 30, 100])
     }, 3000)
 
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
       markFirstGameDone()
-      const hints = [
+      const touch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+      const hints = touch ? [
+        { delay: 1200,  message: '💡 Tap the map to rally your specks!', color: '#aaddff' },
+        { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
+        { delay: 13000, message: '💡 Long-press for attack-move — hold 0.5s!', color: '#ff8c44' },
+        { delay: 22000, message: '💡 Use ⚡ SURGE button — doubles production for 8s!', color: '#ffd700' },
+        { delay: 38000, message: '💡 Double-tap canvas to zoom in/out!', color: '#aaddff' },
+        { delay: 50000, message: '💡 Use 🔧 HEAL to sacrifice 10 specks → repair base!', color: '#64c864' },
+      ] : [
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
@@ -364,6 +404,7 @@ export class GameInstance {
   }
 
   private loop = (now: number) => {
+    if (this.destroyed) return   // a frame queued before destroy() can still fire
     const dt = Math.min(now - this.lastTime, 50)
     this.lastTime = now
 
@@ -383,7 +424,7 @@ export class GameInstance {
       this.camera.x = this.cinematicStartX + (this.cinematicEndX - this.cinematicStartX) * eased
       this.camera.y = this.cinematicStartY + (this.cinematicEndY - this.cinematicStartY) * eased
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect)
+      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -392,7 +433,7 @@ export class GameInstance {
       this.gameOverFreezeMs = Math.max(0, this.gameOverFreezeMs - dt)
       const { shakeX, shakeY } = this.computeShake(dt)
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect)
+      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -453,6 +494,7 @@ export class GameInstance {
           const bua = event.data.baseUnderThreat ?? false
           if (bua && !this.prevBaseUnderThreat) {
             this.notify('⚠ BASE UNDER ATTACK', '#ff3333')
+            navigator.vibrate?.([300, 100, 300])
           }
           this.prevBaseUnderThreat = bua
           const adv = event.data.enemyAdvanceDetected ?? false
@@ -476,6 +518,7 @@ export class GameInstance {
               this.outpostAttackWarnedAt[outpostId] = now
               const name = outpostId.replace('outpost-', '').toUpperCase()
               this.notify(`⬡ ${name} UNDER ATTACK!`, '#ff8c00', 2500)
+              navigator.vibrate?.([150, 50, 150])
             }
           }
           // Clear warnings for outposts that are no longer under attack
@@ -535,6 +578,7 @@ export class GameInstance {
               const count = this.recentKillTimes.length
               const comboColors: Record<number, string> = { 3: '#4af7c4', 5: '#ffd700', 8: '#ff8844', 12: '#cc00ff' }
               const color = count >= 12 ? '#cc00ff' : count >= 8 ? '#ff8844' : count >= 5 ? '#ffd700' : '#4af7c4'
+              navigator.vibrate?.(count >= 8 ? [30, 30, 30] : 25)
               this.notify(`⚡ COMBO ×${count}!`, color, 1500)
             }
             const k = useSpeckWarsStore.getState().kills
@@ -577,12 +621,15 @@ export class GameInstance {
             if (now - this.lastStreakNotifiedAt > 4000) {
               if (killCount >= 20) {
                 this.lastStreakNotifiedAt = now
+                navigator.vibrate?.([25, 30, 40, 30, 25])
                 this.notify('⚡ UNSTOPPABLE! ×' + killCount, '#ffffff')
               } else if (killCount >= 10) {
                 this.lastStreakNotifiedAt = now
+                navigator.vibrate?.([25, 30, 25])
                 this.notify('⚡ RAMPAGE! ×' + killCount, '#ffd700')
               } else if (killCount >= 5) {
                 this.lastStreakNotifiedAt = now
+                navigator.vibrate?.(25)
                 this.notify('⚡ KILLING SPREE ×' + killCount, '#ff8844')
               }
             }
@@ -622,7 +669,13 @@ export class GameInstance {
         }
         if (event.type === 'CAMP_CAPTURED' && event.newOwner === 'player') {
           this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
+          navigator.vibrate?.([20, 30, 20, 30, 20])
           store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
+        }
+        if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
+          const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
+          this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)
+          store.pushKillFeedEntry({ icon: '⚗', label: labels[event.upgrade as keyof typeof labels], color: '#44aaff' })
         }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {
@@ -638,6 +691,9 @@ export class GameInstance {
               : `⬡ ${outpostName} CAPTURED`
             const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
             this.notify(message, color, 2500)
+            if (isPlayerLoss) navigator.vibrate?.(300)
+            else if (isRecapture) navigator.vibrate?.([30, 40, 30, 40, 60])
+            else navigator.vibrate?.([20, 30, 20])
             store.pushKillFeedEntry({ icon: '⬡', label: message.replace('⬡ ', ''), color })
           } else if (event.newOwner === 'ai' && event.previousOwner === 'neutral') {
             const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
@@ -808,7 +864,7 @@ export class GameInstance {
         ghostBuild = { typeId: this.pendingBuild, wx: wpos.x, wy: wpos.y }
       }
     }
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild)
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild, useSpeckWarsStore.getState().fogEnabled)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
@@ -821,8 +877,13 @@ export class GameInstance {
   }
 
   destroy() {
-    if (this.rafId !== null) cancelAnimationFrame(this.rafId)
+    this.destroyed = true
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
+    if (this.onResize) window.removeEventListener('resize', this.onResize)
     this.renderer.destroy()
     this.inputHandler?.destroy()
     useSpeckWarsStore.getState().setGameActions(null)
@@ -921,9 +982,66 @@ export class GameInstance {
     useSpeckWarsStore.getState().addSacrificeUsed()
   }
 
+  garrison(buildingId: string) {
+    const building = this.sim.buildings[buildingId]
+    if (!building || building.ownerId !== 'player') return
+    if (building.typeId !== 'outpost') return
+    const speckIds: string[] = []
+    const useSelection = this.sim.selectedSpeckIds.size > 0
+    for (let i = 0; i < this.sim.speckCount; i++) {
+      if (!this.sim.speckIds[i]) continue
+      const m = this.sim.speckMeta[i]
+      if (!m || m.ownerId !== 'player' || m.isGarrisoned) continue
+      if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
+      speckIds.push(m.id)
+      if (speckIds.length >= 5) break
+    }
+    if (speckIds.length === 0) return
+    this.sim.inputQueue.push({ type: 'GARRISON', ownerId: 'player', buildingId, speckIds })
+    this.notify('GARRISON', '#44aaff', 1200)
+    navigator.vibrate?.([20, 40, 20])
+  }
+
+  recallGarrison(buildingId: string) {
+    this.sim.inputQueue.push({ type: 'RECALL_GARRISON', ownerId: 'player', buildingId })
+    this.notify('RECALL', '#44aaff', 900)
+    navigator.vibrate?.([15, 30])
+  }
+
   setStance(stance: 'aggressive' | 'defensive' | 'hold') {
     this.sim.inputQueue.push({ type: 'SET_STANCE', ownerId: 'player', stance })
     useSpeckWarsStore.getState().setStance(stance)
+  }
+
+  commanderAbility() {
+    // Find the player's commander speck
+    let commanderMeta = null
+    for (let i = 0; i < this.sim.speckCount; i++) {
+      const m = this.sim.speckMeta[i]
+      if (m?.isCommander && m.ownerId === 'player' && this.sim.speckHp[i] > 0) {
+        commanderMeta = m
+        break
+      }
+    }
+    if (!commanderMeta) {
+      this.notify('Commander is down!', '#ff4f7b', 1200)
+      return
+    }
+    const level = commanderMeta.commanderLevel ?? 0
+    if (level < 2) {
+      this.notify('Commander needs rank 2 to use abilities', 'rgba(255,255,255,0.5)', 1500)
+      return
+    }
+    if ((commanderMeta.commanderAbilityCooldown ?? 0) > 0) {
+      const remaining = Math.ceil((commanderMeta.commanderAbilityCooldown ?? 0) / 1000)
+      this.notify(`Battle Roar ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
+      return
+    }
+    this.sim.inputQueue.push({ type: 'COMMANDER_ABILITY', ownerId: 'player' })
+    const label = level >= 3 ? '★★ LAST STAND!' : '★ BATTLE ROAR!'
+    const color = level >= 3 ? '#00ffcc' : '#ffd700'
+    this.notify(label, color, 2000)
+    navigator.vibrate?.([30, 40, 50])
   }
 
   cycleStance() {

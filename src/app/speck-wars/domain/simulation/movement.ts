@@ -1,7 +1,40 @@
-import type { SimulationState } from '../types'
+import type { SimulationState, WallObstacle } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS } from '../constants'
+
+function resolveWallCollisions(
+  nx: number, ny: number,
+  vx: number, vy: number,
+  obstacles: WallObstacle[],
+  radius: number
+): { x: number; y: number; vx: number; vy: number } {
+  let rx = nx, ry = ny, rvx = vx, rvy = vy
+  for (const obs of obstacles) {
+    const left = obs.x - radius
+    const right = obs.x + obs.w + radius
+    const top = obs.y - radius
+    const bottom = obs.y + obs.h + radius
+    if (rx < left || rx > right || ry < top || ry > bottom) continue
+    // Find minimum penetration axis
+    const dLeft   = rx - left
+    const dRight  = right - rx
+    const dTop    = ry - top
+    const dBottom = bottom - ry
+    const minH = Math.min(dLeft, dRight)
+    const minV = Math.min(dTop, dBottom)
+    if (minH <= minV) {
+      // Push out horizontally, kill horizontal velocity
+      rx += dLeft < dRight ? -dLeft : dRight
+      rvx = 0
+    } else {
+      // Push out vertically, kill vertical velocity
+      ry += dTop < dBottom ? -dTop : dBottom
+      rvy = 0
+    }
+  }
+  return { x: rx, y: ry, vx: rvx, vy: rvy }
+}
 
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
 const SEPARATION_FORCE = 120  // strength of push-apart
@@ -27,7 +60,21 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
+    // Garrisoned specks don't move
+    if (meta.isGarrisoned) continue
+
+    // Stunned specks cannot move
+    if ((meta.stunTimer ?? 0) > 0) {
+      speckVx[i] = 0
+      speckVy[i] = 0
+      continue
+    }
+
     const speedMult = (meta.isHero && (meta.heroLevel ?? 0) >= 1) ? 1.15 : 1.0
+    const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
+    const chargeMult = (meta.typeId === 'heavy' && (meta.chargeTimer ?? 0) > 0) ? 1.35 : 1.0
+    const speedBoostMult = (meta.speedBoostTimer ?? 0) > 0 ? 1.5 : 1.0
+    const lastStandMult = (meta.isCommander && (meta.commanderAbilityActive ?? 0) > 0) ? 1.25 : 1.0
 
     // Retreating: flee to nearest friendly building
     if (meta.state === 'retreating') {
@@ -54,10 +101,17 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           const dist = Math.sqrt(nearestDist2)
           const dx = nearestBuilding.x - speckX[i]
           const dy = nearestBuilding.y - speckY[i]
-          speckVx[i] = (dx / dist) * stype.speed * speedMult
-          speckVy[i] = (dy / dist) * stype.speed * speedMult
-          speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-          speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+          speckVx[i] = (dx / dist) * stype.speed * speedMult * afterburnersMult * chargeMult
+          speckVy[i] = (dy / dist) * stype.speed * speedMult * afterburnersMult * chargeMult
+          {
+            const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+            const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+            const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
+            speckX[i] = r.x
+            speckY[i] = r.y
+            speckVx[i] = r.vx
+            speckVy[i] = r.vy
+          }
         }
       }
       continue
@@ -80,13 +134,14 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = target.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed * speedMult
-          ay += (dy / dist) * stype.speed * speedMult
+          ax += (dx / dist) * stype.speed * speedMult * chargeMult
+          ay += (dy / dist) * stype.speed * speedMult * chargeMult
         }
       }
     } else {
       // Attack-move: scan for nearby enemy specks and steer toward them
-      if (meta.attackMoveMode && meta.assignedRallyX !== undefined) {
+      // Stagger scan across ticks — each speck rescans every 4 ticks to cut query volume by 75%
+      if (meta.attackMoveMode && meta.assignedRallyX !== undefined && (i + sim.tick) % 4 === 0) {
         const ATTACK_MOVE_RANGE = 80  // px
         const amR2 = ATTACK_MOVE_RANGE * ATTACK_MOVE_RANGE
         let closestDist2 = Infinity, closestX = 0, closestY = 0
@@ -123,8 +178,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = rally.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed * speedMult
-          ay += (dy / dist) * stype.speed * speedMult
+          ax += (dx / dist) * stype.speed * speedMult * chargeMult
+          ay += (dy / dist) * stype.speed * speedMult * chargeMult
         } else if (meta.patrolDestX !== undefined && meta.patrolOriginX !== undefined) {
           // Arrived at patrol leg — swap origin and destination to bounce back
           const newDestX = meta.patrolOriginX
@@ -152,8 +207,15 @@ export function moveSpecks(sim: SimulationState, dt: number) {
             if (rdist > 0) {
               speckVx[i] = (rdx / rdist) * stype.speed
               speckVy[i] = (rdy / rdist) * stype.speed
-              speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-              speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+              {
+                const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+                const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+                const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
+                speckX[i] = r.x
+                speckY[i] = r.y
+                speckVx[i] = r.vx
+                speckVy[i] = r.vy
+              }
             }
             continue
           }
@@ -183,8 +245,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         if (closestDist2 < Infinity) {
           const dist = Math.sqrt(closestDist2)
           if (dist > stype.attackRange) {
-            ax += ((closestX - speckX[i]) / dist) * stype.speed * speedMult
-            ay += ((closestY - speckY[i]) / dist) * stype.speed * speedMult
+            ax += ((closestX - speckX[i]) / dist) * stype.speed * speedMult * chargeMult
+            ay += ((closestY - speckY[i]) / dist) * stype.speed * speedMult * chargeMult
           }
         }
       }
@@ -204,6 +266,12 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       }
     }
 
+    // Afterburners upgrade: global speed boost
+    if (afterburnersMult !== 1.0 && (ax !== 0 || ay !== 0)) {
+      ax *= afterburnersMult
+      ay *= afterburnersMult
+    }
+
     // Outpost speed aura: boost movement if inside a friendly outpost's aura
     if (ax !== 0 || ay !== 0) {
       const auraR2 = OUTPOST_AURA_RADIUS * OUTPOST_AURA_RADIUS
@@ -219,12 +287,25 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       }
     }
 
+    // Speed boost from commander Last Stand ability
+    if ((speedBoostMult !== 1.0 || lastStandMult !== 1.0) && (ax !== 0 || ay !== 0)) {
+      ax *= speedBoostMult * lastStandMult
+      ay *= speedBoostMult * lastStandMult
+    }
+
     // Simple velocity (no mass — direct velocity override)
     speckVx[i] = ax
     speckVy[i] = ay
 
     // Integrate position
-    speckX[i] = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-    speckY[i] = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+    {
+      const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
+      const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
+      const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
+      speckX[i] = r.x
+      speckY[i] = r.y
+      speckVx[i] = r.vx
+      speckVy[i] = r.vy
+    }
   }
 }

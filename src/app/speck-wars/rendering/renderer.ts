@@ -5,6 +5,7 @@ import { GridLayer } from './layers/grid-layer'
 import { EffectsLayer } from './layers/effects-layer'
 import { StarfieldLayer } from './layers/starfield-layer'
 import { FogLayer } from './layers/fog-layer'
+import type { MaskRenderer } from './layers/fog-layer'
 import { createSpeckTexture } from './textures'
 import type { SimulationState } from '../domain/types'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
@@ -36,9 +37,12 @@ export class Renderer {
   private effectsLayer!: EffectsLayer
   private starfieldLayer!: StarfieldLayer
   private fogLayer!: FogLayer
+  private fogFrameCounter = 0
   private rallyGfx!: Graphics
   private selectionGfx!: Graphics
   private vignetteGfx!: Graphics
+  private ready = false        // layers built — everything below is safe to touch
+  private destroyed = false    // destroy() was called, possibly mid-init
 
   async init(canvas: HTMLCanvasElement) {
     const app = new Application() as PixiApplication
@@ -49,6 +53,13 @@ export class Renderer {
       antialias: false,
       preference: 'webgl',
     })
+    // We were destroyed while app.init() was in flight (React StrictMode remounts the
+    // canvas effect immediately). The app owns a live WebGL context, so tear it down
+    // here — destroy() could not, because it had nothing to tear down yet.
+    if (this.destroyed) {
+      app.destroy()
+      return
+    }
     this.app = app
 
     this.world = new Container()
@@ -60,7 +71,7 @@ export class Renderer {
     this.effectsLayer = new EffectsLayer()
     this.buildingLayer = new BuildingLayer()
     this.speckLayer = new SpeckLayer(texture, PLAYER_COLORS)
-    this.fogLayer = new FogLayer()
+    this.fogLayer = new FogLayer(this.app.renderer as unknown as MaskRenderer)
 
     this.world.addChild(this.starfieldLayer.stage)
     this.world.addChild(this.gridLayer.stage)
@@ -77,15 +88,23 @@ export class Renderer {
 
     this.vignetteGfx = new Graphics()
     this.app.stage.addChild(this.vignetteGfx)
+
+    this.ready = true
   }
 
-  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null): void {
+  /** True once init() has finished building the layers. */
+  get isReady(): boolean {
+    return this.ready
+  }
+
+  render(sim: SimulationState, camera: { x: number; y: number; zoom: number }, dt: number, shakeX = 0, shakeY = 0, dragRect?: { x1: number; y1: number; x2: number; y2: number } | null, ghostBuild?: { typeId: string; wx: number; wy: number } | null, fogEnabled = false): void {
     this.world.position.set(camera.x + shakeX, camera.y + shakeY)
     this.world.scale.set(camera.zoom)
 
     this.buildingLayer.update(sim, PLAYER_COLORS, sim.selectedBuildingId, ghostBuild)
     this.speckLayer.update(sim, sim.selectedSpeckIds)
-    this.fogLayer.update(sim, 'player')
+    this.fogLayer.stage.visible = fogEnabled
+    if (fogEnabled && this.fogFrameCounter++ % 4 === 0) this.fogLayer.update(sim, 'player')
 
     // Process events from this tick
     for (const event of sim.events) {
@@ -206,11 +225,17 @@ export class Renderer {
     }
   }
 
-  showRallyPing(x: number, y: number) {
-    this.effectsLayer.showRallyPing(x, y)
+  showRallyPing(x: number, y: number, color?: number) {
+    this.effectsLayer.showRallyPing(x, y, color)
   }
 
   destroy() {
+    this.destroyed = true
+    // Nothing was built yet — either init() has not run, or it is still awaiting
+    // app.init() and will clean up after itself when it resumes.
+    if (!this.ready) return
+    this.ready = false
+
     this.starfieldLayer.destroy()
     this.gridLayer.destroy()
     this.effectsLayer.destroy()

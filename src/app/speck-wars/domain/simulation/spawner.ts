@@ -1,13 +1,14 @@
 import type { SimulationState, SpeckMeta } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD, CREEP_CAMP_DEFENDER_COUNT, CREEP_CAMP_BOOST_MULT } from '../constants'
+import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD, CREEP_CAMP_DEFENDER_COUNT, CREEP_CAMP_BOOST_MULT, SUPPLY_SOFT_CAP, SUPPLY_HARD_CAP } from '../constants'
 
 // Place a new speck into a recycled or fresh slot — never allocates new arrays
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
   const baseHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
   const upgradeHpBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 2 ? 1 : 0
-  const hp = (baseHp + upgradeHpBonus) * (meta.isHero ? 4 : 1)
+  const carapaceBonus = (sim.players[meta.ownerId]?.outpostUpgrades?.carapace) ? 1 : 0
+  const hp = (baseHp + upgradeHpBonus + carapaceBonus) * (meta.isHero ? 4 : 1)
 
   let slot: number
   if (sim.freeSlots.length > 0) {
@@ -26,6 +27,12 @@ function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, b
   sim.speckHp[slot] = hp
   sim.speckIds[slot] = meta.id
   sim.speckMeta[slot] = meta
+
+  // Track supply for non-neutral owners
+  if (meta.ownerId !== 'neutral' && sim.players[meta.ownerId]) {
+    const cost = SPECK_TYPES[meta.typeId]?.supplyCost ?? 1
+    sim.players[meta.ownerId].supply = (sim.players[meta.ownerId].supply ?? 0) + cost
+  }
 
   sim.events.push({ type: 'SPECK_SPAWNED', speckId: meta.id, buildingId })
 }
@@ -69,7 +76,19 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     building.spawnTimer -= dt
     if (building.spawnTimer > 0) continue
 
-    const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
+    // Supply pressure: non-base buildings halt at hard cap; all buildings slow between soft and hard cap
+    const supplyUsed = sim.players[building.ownerId]?.supply ?? 0
+    const isBase = building.typeId === 'base'
+    if (!isBase && supplyUsed >= SUPPLY_HARD_CAP) {
+      // Outpost spawn halted — reset timer so we check again next tick
+      building.spawnTimer = 500
+      continue
+    }
+    const supplyPressureMult = supplyUsed <= SUPPLY_SOFT_CAP ? 1.0
+      : supplyUsed <= SUPPLY_HARD_CAP ? 1 + ((supplyUsed - SUPPLY_SOFT_CAP) / (SUPPLY_HARD_CAP - SUPPLY_SOFT_CAP)) * 0.6
+      : 1.6  // base at hard cap gets 60% penalty
+
+    const baseInterval = (building.spawnIntervalOverride ?? btype.spawnInterval) * supplyPressureMult
     const hasSurge = building.ownerId === 'player' && sim.surgeDuration > 0
     const hasRallyCry = building.ownerId === 'player' && rallyCryActive
     const upgradeSpawnBonus = sim.players[building.ownerId]?.upgradeLevel && sim.players[building.ownerId].upgradeLevel >= 1 ? 1.1 : 1

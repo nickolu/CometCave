@@ -1,5 +1,5 @@
 import type { SimulationState } from '../types'
-import { SPECK_TYPES } from '../config/speck-types'
+import { SPECK_TYPES, getTypeAdvantage } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { FORTIFY_RADIUS, FORTIFY_TIME, FORTIFY_DAMAGE_BONUS } from '../constants'
 
@@ -59,6 +59,11 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
+    // Garrisoned specks don't fight on the field
+    if (meta.isGarrisoned) continue
+
+    // Stunned specks cannot attack
+    if ((meta.stunTimer ?? 0) > 0) continue
     if (meta.attackCooldown > 0) {
       meta.attackCooldown -= dt
       continue
@@ -69,6 +74,10 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       if (i === j || speckHp[j] <= 0) continue
       const jMeta = speckMeta[j]
       if (!jMeta || jMeta.ownerId === meta.ownerId) continue  // dead slot or friendly
+      // Garrisoned specks cannot be targeted on the field
+      if (jMeta.isGarrisoned) continue
+      // Scout cloak: enemy cloaked scouts cannot be targeted
+      if (jMeta.cloakTimer && jMeta.cloakTimer > 0 && jMeta.ownerId !== meta.ownerId) continue
 
       const dx = speckX[j] - speckX[i]
       const dy = speckY[j] - speckY[i]
@@ -89,7 +98,34 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           }
         }
         const upgradeBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 3 ? 1.15 : 1.0
-        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * commanderBonus
+        const bladesBonus = (sim.players[meta.ownerId]?.outpostUpgrades?.blades) ? 1.15 : 1.0
+        // Flanking bonus: +20% damage when attacking from behind/side
+        // Check if attacker is approaching from behind target's movement direction
+        const tvx = sim.speckVx[j]  // target velocity
+        const tvy = sim.speckVy[j]
+        const targetSpeed2 = tvx * tvx + tvy * tvy
+
+        let flankMult = 1.0
+        if (targetSpeed2 > 25) {  // only applies when target is moving (>5 px/s)
+          // Vector from target to attacker
+          const fdx = sim.speckX[i] - sim.speckX[j]
+          const fdy = sim.speckY[i] - sim.speckY[j]
+          const fdist = Math.sqrt(fdx * fdx + fdy * fdy) || 1
+          // Normalized attack direction (from target's perspective, attacker comes FROM this direction)
+          const adx = fdx / fdist, ady = fdy / fdist
+          // Normalized target velocity direction
+          const tspeed = Math.sqrt(targetSpeed2)
+          const tdx = tvx / tspeed, tdy = tvy / tspeed
+          // Dot product: if positive, attacker is behind/beside the target
+          const dot = adx * tdx + ady * tdy
+          if (dot > 0.17)  // cos(80°) ≈ 0.17 — covers wide flank angle
+            flankMult = 1.2
+        }
+        // Commander Last Stand: invulnerable target cannot be damaged
+        if (jMeta.isCommander && (jMeta.commanderAbilityActive ?? 0) > 0) break
+        const typeAdvMult = getTypeAdvantage(stype.id, jMeta.typeId)
+        const lastStandMult = (meta.isCommander && (meta.commanderAbilityActive ?? 0) > 0) ? 3.0 : 1.0
+        speckHp[j] -= stype.damage * moraleMult(meta.ownerId) * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * bladesBonus * commanderBonus * flankMult * typeAdvMult * lastStandMult
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0
@@ -257,8 +293,11 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       // Outposts are captured, not destroyed — immune to direct combat damage
       if (building.typeId === 'outpost') continue
       const siegeBonus = meta.typeId === 'heavy' ? 1.5 : 1.0
-      building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus
+      const chargeDmgMult = (meta.typeId === 'heavy' && (meta.chargeTimer ?? 0) > 0) ? 1.5 : 1.0
+      building.hp -= stype.damage * moraleMult(meta.ownerId) * siegeBonus * chargeDmgMult
       building.lastDamagedAt = Date.now()
+      // Heavy Charge: set chargeTimer after landing a building attack
+      if (meta.typeId === 'heavy') meta.chargeTimer = 1500
       meta.attackCooldown = stype.attackCooldown
       sim.events.push({ type: 'BUILDING_DAMAGED', buildingId: building.id, hp: building.hp })
 
@@ -342,6 +381,12 @@ export function removeDeadSpecks(sim: SimulationState) {
   for (let i = 0; i < sim.speckCount; i++) {
     if (sim.speckIds[i] !== '' && sim.speckHp[i] <= 0) {
       const deadId = sim.speckIds[i]  // save before clearing
+      const deadMeta = sim.speckMeta[i]
+      // Return supply to owner
+      if (deadMeta && deadMeta.ownerId !== 'neutral' && sim.players[deadMeta.ownerId]) {
+        const cost = SPECK_TYPES[deadMeta.typeId]?.supplyCost ?? 1
+        sim.players[deadMeta.ownerId].supply = Math.max(0, (sim.players[deadMeta.ownerId].supply ?? 0) - cost)
+      }
       sim.selectedSpeckIds.delete(deadId)
       sim.freeSlots.push(i)
       sim.speckIds[i] = ''

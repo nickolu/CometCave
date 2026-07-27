@@ -27,6 +27,14 @@ export interface SpeckMeta {
   commanderXp?: number          // XP earned from nearby kills
   commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
   pulseTimer?: number           // ms until next AoE pulse
+  chargeTimer?: number          // ms of heavy charge burst remaining
+  cloakTimer?: number           // ms of scout cloak remaining (enemy can't target)
+  stunTimer?: number            // ms remaining in stun (Battle Roar / Last Stand)
+  commanderAbilityCooldown?: number   // ms until Battle Roar / Last Stand can fire again
+  commanderAbilityActive?: number     // ms of Level 3 buff remaining (invuln + 3× dmg)
+  speedBoostTimer?: number      // ms of +50% speed boost from commander Last Stand
+  isGarrisoned?: boolean         // true = removed from field, attached to garrison
+  garrisonBuildingId?: string    // which building this speck is garrisoned in
 }
 
 export interface BuildingEntity {
@@ -50,7 +58,9 @@ export interface BuildingEntity {
   sacrificeArrived?: number
   constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
+  garrisonedSpeckIds?: string[] // up to 5 specks garrisoned here
   campResetMs?: number          // ms until camp resets to neutral (when owned)
+  researchedUpgrade?: 'carapace' | 'blades' | 'afterburners'
 }
 
 export interface Player {
@@ -64,7 +74,20 @@ export interface Player {
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
+  outpostUpgrades: {
+    carapace: boolean
+    blades: boolean
+    afterburners: boolean
+  }
   commanderRespawnMs?: number   // ms until commander respawns (undefined = alive or not spawned yet)
+  supply: number                // total supply slots currently in use
+}
+
+export interface WallObstacle {
+  x: number   // left edge (world px)
+  y: number   // top edge (world px)
+  w: number   // width
+  h: number   // height
 }
 
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
@@ -99,6 +122,7 @@ export interface SimulationState {
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
   sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
+  obstacles: WallObstacle[]
 }
 
 export type InputEvent =
@@ -116,6 +140,10 @@ export type InputEvent =
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
   | { type: 'SET_PATROL'; ownerId: string; speckIds: string[]; destX: number; destY: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
+  | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
+  | { type: 'COMMANDER_ABILITY'; ownerId: string }
+  | { type: 'GARRISON'; ownerId: string; buildingId: string; speckIds: string[] }
+  | { type: 'RECALL_GARRISON'; ownerId: string; buildingId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -135,6 +163,7 @@ export type SimEvent =
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
+  | { type: 'OUTPOST_UPGRADE_RESEARCHED'; buildingId: string; ownerId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
   | { type: 'HERO_LEVELED'; ownerId: string; heroLevel: 1 | 2 }
   | { type: 'HERO_DIED'; ownerId: string; kills: number }
   | { type: 'HERO_SPAWNED'; ownerId: string }
@@ -150,6 +179,8 @@ export interface HudData {
     veteranCount: number  // specks with 3+ kills
     eliteCount: number    // specks with 6+ kills
     legendCount: number   // specks with 12+ kills
+    supplyUsed: number    // current supply in use
+    supplyCap: number     // hard supply cap
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
@@ -164,12 +195,13 @@ export interface HudData {
   waveCountdown: number | null
   waveInProgress: boolean
   sacrificeCooldown: number
+  commander: { level: number; abilityCooldown: number; abilityActive: number } | null
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
+  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string; garrisonCount?: number } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]

@@ -343,6 +343,18 @@ export class BuildingLayer {
         this.gfx.lineStyle(0)
       }
 
+      // Garrison indicator: small blue dots above outpost showing garrisoned count
+      if (building.typeId === 'outpost') {
+        const garCount = building.garrisonedSpeckIds?.length ?? 0
+        if (garCount > 0) {
+          for (let g = 0; g < garCount; g++) {
+            this.gfx.beginFill(0x44aaff, 0.85)
+            this.gfx.drawCircle(building.x - (garCount - 1) * 2.5 + g * 5, building.y - r - 8, 2.5)
+            this.gfx.endFill()
+          }
+        }
+      }
+
       // Fortification ring: gold glow when outpost has been held and is fortifying
       if (building.typeId === 'outpost' && building.ownerId !== 'neutral') {
         const fortLevel = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
@@ -419,6 +431,21 @@ export class BuildingLayer {
           this.gfx.lineStyle(0)
         }
       }
+    }
+
+    // Draw terrain wall obstacles
+    for (const obs of sim.obstacles) {
+      this.gfx.beginFill(0x3d3550, 0.9)
+      this.gfx.drawRect(obs.x, obs.y, obs.w, obs.h)
+      this.gfx.endFill()
+      this.gfx.lineStyle(2, 0x7766aa, 0.7)
+      this.gfx.drawRect(obs.x, obs.y, obs.w, obs.h)
+      this.gfx.lineStyle(0)
+      // Highlight ledge on top edge
+      this.gfx.lineStyle(1, 0xffffff, 0.15)
+      this.gfx.moveTo(obs.x + 3, obs.y + 3)
+      this.gfx.lineTo(obs.x + obs.w - 3, obs.y + 3)
+      this.gfx.lineStyle(0)
     }
 
     // Draw placement ghost for pending build

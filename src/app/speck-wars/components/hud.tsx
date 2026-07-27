@@ -1,8 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
+import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
 function colorHex(n: number) {
   return `#${n.toString(16).padStart(6, '0')}`
@@ -19,19 +20,59 @@ export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
   const [controlGroupSizes, setControlGroupSizes] = useState<[number, number, number]>([0, 0, 0])
+  const [touchPatrolActive, setTouchPatrolActive] = useState(false)
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
+  )
+  const [showPortraitHint, setShowPortraitHint] = useState(true)
+  const [minimapExpanded, setMinimapExpanded] = useState(false)
+  const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
+  const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
+  const tapRippleKeyRef = useRef(0)
+  const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
     setWinStreak(getWinStreak())
   }, [])
 
   useEffect(() => {
+    const update = () => {
+      const portrait = window.innerWidth < window.innerHeight
+      setIsPortrait(portrait)
+      if (portrait) setShowPortraitHint(true)  // re-show if user rotates back
+    }
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('orientationchange', update) }
+  }, [])
+
+  // Auto-dismiss portrait hint after 4s
+  useEffect(() => {
+    if (!showPortraitHint) return
+    const t = setTimeout(() => setShowPortraitHint(false), 4000)
+    return () => clearTimeout(t)
+  }, [showPortraitHint])
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Slash' && e.shiftKey) { e.preventDefault(); setShowHelp(h => !h) }
-      if (e.code === 'Escape') setShowHelp(false)
+      if (e.code === 'Escape') { setShowHelp(false); setMinimapExpanded(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  useEffect(() => {
+    if (!isTouchDevice) return
+    const unsub1 = onLongPressStart((x, y) => setLongPressRing({ x, y }))
+    const unsub2 = onLongPressCancel(() => setLongPressRing(null))
+    const unsub3 = onTapRipple((x, y) => {
+      tapRippleKeyRef.current += 1
+      setTapRippleState({ x, y, key: tapRippleKeyRef.current })
+    })
+    return () => { unsub1(); unsub2(); unsub3() }
+  }, [isTouchDevice])
 
   const hud = useSpeckWarsStore(s => s.hud)
   const phase = useSpeckWarsStore(s => s.phase)
@@ -66,6 +107,7 @@ export function HUD() {
     <div style={{
       position: 'absolute', inset: 0, pointerEvents: 'none',
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
+      touchAction: 'manipulation',
     }}>
       <style>{`
         @keyframes pulse-red {
@@ -80,7 +122,26 @@ export function HUD() {
           0% { opacity: 0.8; transform: scale(0.85); }
           100% { opacity: 0; transform: scale(1.6); }
         }
+        @keyframes long-press-ring {
+          from { stroke-dashoffset: 126; }
+          to   { stroke-dashoffset: 0; }
+        }
+        @keyframes tap-ripple-expand {
+          from { transform: scale(1); opacity: 0.8; }
+          to   { transform: scale(4); opacity: 0; }
+        }
       `}</style>
+      {/* Portrait mode hint — shown briefly for touch users in portrait orientation, auto-dismisses */}
+      {isTouchDevice && isPortrait && showPortraitHint && phase === 'playing' && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 6, padding: '6px 14px', fontSize: 12, color: 'rgba(255,255,255,0.7)',
+          letterSpacing: 0.5, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 90,
+        }}>
+          ↺ Rotate to landscape for best experience
+        </div>
+      )}
       {hud?.baseUnderThreat && (
         <div style={{
           position: 'fixed',
@@ -89,18 +150,22 @@ export function HUD() {
           borderRadius: 2,
           pointerEvents: 'none',
           zIndex: 100,
-          animation: 'pulse-red 0.8s ease-in-out infinite alternate',
+          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.8s ease-in-out infinite alternate',
           boxShadow: 'inset 0 0 40px rgba(255, 0, 0, 0.25)',
         }} />
       )}
       {hud?.baseUnderThreat && (
-        <div style={{
-          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
-          padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
-          zIndex: 110, pointerEvents: 'none',
-          animation: 'pulse-red 0.6s ease-in-out infinite alternate',
-        }}>⚠ BASE UNDER ATTACK</div>
+        <button
+          onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(25) }}
+          style={{
+            position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
+            padding: '4px 14px', borderRadius: 6, fontSize: 13, letterSpacing: 1,
+            zIndex: 110, pointerEvents: 'auto', cursor: 'pointer',
+            animation: prefersReducedMotion ? 'none' : 'pulse-red 0.6s ease-in-out infinite alternate',
+            border: 'none', fontFamily: 'monospace',
+          }}
+        >⚠ BASE UNDER ATTACK ↑</button>
       )}
       {(() => {
         const myCount = hud?.players?.player?.speckCount ?? 0
@@ -117,12 +182,16 @@ export function HUD() {
         )
       })()}
       {hud?.enemyAdvanceDetected && (
-        <div style={{
-          position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
-          padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
-          zIndex: 108, pointerEvents: 'none',
-        }}>ENEMY ADVANCING</div>
+        <button
+          onClick={() => { gameActions?.snapToAction?.(); navigator.vibrate?.(20) }}
+          style={{
+            position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
+            padding: '3px 12px', borderRadius: 6, fontSize: 12, letterSpacing: 1,
+            zIndex: 108, pointerEvents: 'auto', cursor: 'pointer',
+            border: 'none', fontFamily: 'monospace',
+          }}
+        >ENEMY ADVANCING ↑</button>
       )}
       {hud?.rallyCryActive && !hud?.baseUnderThreat && (
         <div style={{
@@ -130,7 +199,7 @@ export function HUD() {
           background: 'rgba(255,136,0,0.88)', color: '#fff', fontWeight: 700,
           padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
           zIndex: 107, pointerEvents: 'none',
-          animation: 'pulse-red 0.9s ease-in-out infinite alternate',
+          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.9s ease-in-out infinite alternate',
         }}>★ RALLY CRY — 1.5× SPAWN</div>
       )}
       {hud && (hud.creepCampBoostMs ?? 0) > 0 && phase === 'playing' && (
@@ -152,7 +221,7 @@ export function HUD() {
           <div style={{
             position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at center, transparent 45%, rgba(220,30,30,1) 100%)',
-            animation: `danger-pulse ${isCritical ? '0.5s' : '1s'} ease-in-out infinite alternate`,
+            animation: prefersReducedMotion ? 'none' : `danger-pulse ${isCritical ? '0.5s' : '1s'} ease-in-out infinite alternate`,
             pointerEvents: 'none',
           }} />
         </>
@@ -168,7 +237,7 @@ export function HUD() {
           <div style={{
             position: 'absolute', inset: 0,
             background: 'radial-gradient(ellipse at center, transparent 50%, rgba(20,220,120,1) 100%)',
-            animation: 'win-pulse 1.2s ease-in-out infinite alternate',
+            animation: prefersReducedMotion ? 'none' : 'win-pulse 1.2s ease-in-out infinite alternate',
             pointerEvents: 'none',
           }} />
         </>
@@ -177,7 +246,7 @@ export function HUD() {
       {phase === 'playing' && (
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          display: 'flex', height: 3, pointerEvents: 'none',
+          display: 'flex', height: isTouchDevice ? 6 : 3, pointerEvents: 'none',
         }}>
           {/* Player bar: left edge, grows right */}
           <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', position: 'relative', overflow: 'hidden' }}>
@@ -202,6 +271,54 @@ export function HUD() {
         </div>
       )}
 
+      {/* Supply bars — below HP bars, two-side player/enemy */}
+      {phase === 'playing' && hud && (
+        <div style={{
+          position: 'absolute', top: isTouchDevice ? 6 : 3, left: 0, right: 0,
+          display: 'flex', height: 2, pointerEvents: 'none',
+        }}>
+          {(() => {
+            const supplyUsed = hud.players.player?.supplyUsed ?? 0
+            const supplyCap = hud.players.player?.supplyCap ?? 120
+            const SOFT_CAP = 60
+            const frac = Math.min(1, supplyUsed / supplyCap)
+            const color = supplyUsed >= supplyCap ? '#ff4f7b'
+              : supplyUsed >= SOFT_CAP ? '#ffaa44' : '#4af7c4'
+            return (
+              <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, bottom: 0,
+                  width: `${frac * 100}%`,
+                  background: color,
+                  transition: 'width 0.5s ease, background 0.3s ease',
+                  opacity: 0.7,
+                }} />
+              </div>
+            )
+          })()}
+          <div style={{ width: 2, background: 'rgba(0,0,0,0.6)' }} />
+          {(() => {
+            const supplyUsed = hud.players.ai?.supplyUsed ?? 0
+            const supplyCap = hud.players.ai?.supplyCap ?? 120
+            const SOFT_CAP = 60
+            const frac = Math.min(1, supplyUsed / supplyCap)
+            const color = supplyUsed >= supplyCap ? '#ff4f7b'
+              : supplyUsed >= SOFT_CAP ? '#ffaa44' : '#ff4f7b'
+            return (
+              <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{
+                  position: 'absolute', top: 0, right: 0, bottom: 0,
+                  width: `${frac * 100}%`,
+                  background: color,
+                  transition: 'width 0.5s ease, background 0.3s ease',
+                  opacity: 0.5,
+                }} />
+              </div>
+            )
+          })()}
+        </div>
+      )}
+
       {/* Difficulty badge — top right */}
       {(() => {
         const diffColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
@@ -211,11 +328,11 @@ export function HUD() {
             <span style={{ color, opacity: 0.5, border: `1px solid ${color}`, borderRadius: 3, padding: '2px 6px' }}>
               {difficulty.toUpperCase()}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 8, letterSpacing: 0.5 }}>
+            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5 }}>
               DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
             {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
-              <span style={{ color: '#ffd700', fontSize: 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
+              <span style={{ color: '#ffd700', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
                 {hud.dailyModifier === 'bulwark' ? '⚔ BULWARK' : hud.dailyModifier === 'blitz' ? '⚡ BLITZ' : '🏰 SIEGE'}
               </span>
             )}
@@ -239,45 +356,83 @@ export function HUD() {
                 }
               `}</style>
             )}
-            <div style={{
-              position: 'absolute', top: 110, right: 16,
-              padding: '4px 10px',
-              background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
-              border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
-              borderRadius: 4,
-              fontSize: 10,
-              letterSpacing: 1.5,
-              color: inProgress ? '#ff5050' : '#ffa030',
-              animation: inProgress ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
-            }}>
-              {inProgress ? '⚠ WAVE INCOMING!' : `⚠ WAVE IN ${secs}s`}
-            </div>
+            <button
+              onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(inProgress ? [20, 30, 20] : 15) }}
+              style={{
+                position: 'absolute', top: isTouchDevice ? 175 : 240, right: 16,
+                padding: isTouchDevice ? '8px 12px' : '4px 10px',
+                background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
+                border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
+                borderRadius: 4,
+                fontSize: 10,
+                letterSpacing: 1.5,
+                color: inProgress ? '#ff5050' : '#ffa030',
+                animation: (!prefersReducedMotion && inProgress) ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
+                cursor: 'pointer',
+                fontFamily: 'monospace',
+                minHeight: isTouchDevice ? 44 : undefined,
+                display: 'flex', alignItems: 'center',
+              }}
+            >
+              {inProgress ? '⚠ WAVE INCOMING! ↑' : `⚠ WAVE IN ${secs}s ↑`}
+            </button>
           </>
         )
       })()}
 
       {/* Mini-map — top right, below difficulty badge */}
       {hud && (() => {
-        const SCALE = 120 / 3000  // world→screen
+        const isNarrowDevice = typeof window !== 'undefined' && window.innerWidth < 768
+        const MINIMAP_SIZE = minimapExpanded ? 280 : (isTouchDevice && isNarrowDevice ? 110 : 160)
+        const SCALE = MINIMAP_SIZE / 3000  // world→screen
         return (
           <div style={{
-            position: 'absolute', top: 72, right: 16,
-            width: 120, height: 120,
+            position: 'absolute',
+            top: minimapExpanded ? '50%' : 72,
+            right: minimapExpanded ? '50%' : 16,
+            transform: minimapExpanded ? 'translate(50%, -50%)' : 'none',
+            width: MINIMAP_SIZE, height: MINIMAP_SIZE,
             background: 'rgba(0,0,0,0.55)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 4,
             overflow: 'hidden',
             cursor: 'crosshair',
+            zIndex: minimapExpanded ? 150 : undefined,
           }}>
-            <svg width={120} height={120} style={{ display: 'block' }}
+            {isTouchDevice && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setMinimapExpanded(v => !v); navigator.vibrate?.(8) }}
+                style={{
+                  position: 'absolute',
+                  top: 2, right: 2,
+                  width: 18, height: 18,
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  borderRadius: 3,
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: 10,
+                  lineHeight: '18px',
+                  textAlign: 'center',
+                  padding: 0,
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  pointerEvents: 'auto',
+                }}
+                aria-label={minimapExpanded ? 'Collapse minimap' : 'Expand minimap'}
+              >
+                {minimapExpanded ? '⊖' : '⊕'}
+              </button>
+            )}
+            <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
               onClick={(e) => {
                 if (!gameActions?.rally) return
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
                 const py = e.clientY - rect.top
-                const worldX = (px / 120) * 3000
-                const worldY = (py / 120) * 3000
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.rally(worldX, worldY)
+                if (minimapExpanded) setMinimapExpanded(false)
               }}
               onContextMenu={(e) => {
                 e.preventDefault()
@@ -285,9 +440,22 @@ export function HUD() {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
                 const py = e.clientY - rect.top
-                const worldX = (px / 120) * 3000
-                const worldY = (py / 120) * 3000
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.panCamera(worldX, worldY)
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault()
+                if (!gameActions?.panCamera) return
+                const touch = e.changedTouches[0]
+                if (!touch) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const px = touch.clientX - rect.left
+                const py = touch.clientY - rect.top
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
+                gameActions.panCamera(worldX, worldY)
+                navigator.vibrate?.(15)  // short pulse confirms minimap navigation
               }}
             >
               {/* Speck dots */}
@@ -342,7 +510,7 @@ export function HUD() {
                             strokeWidth={1.5}
                             style={{
                               pointerEvents: 'none',
-                              animation: `minimap-capture-pulse 1.1s ease-out infinite`,
+                              animation: prefersReducedMotion ? 'none' : `minimap-capture-pulse 1.1s ease-out infinite`,
                               transformOrigin: `${bx}px ${by}px`,
                             }}
                           />
@@ -399,22 +567,22 @@ export function HUD() {
       {/* Kill feed — below minimap, top-right */}
       {phase === 'playing' && killFeed.length > 0 && (
         <div style={{
-          position: 'absolute', top: 210, right: 16,
+          position: 'absolute', top: isTouchDevice ? 210 : 250, right: 16,
           display: 'flex', flexDirection: 'column', gap: 3,
           pointerEvents: 'none',
           width: 140,
         }}>
-          {killFeed.map(entry => {
+          {killFeed.slice(0, isTouchDevice ? 3 : 6).map(entry => {
             const age = Date.now() - entry.ts
             const opacity = age > 3000 ? Math.max(0, 1 - (age - 3000) / 1500) : 1
             return (
               <div key={entry.id} style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 9, letterSpacing: 0.5,
+                fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5,
                 opacity,
                 transition: 'opacity 150ms',
               }}>
-                <span style={{ fontSize: 11 }}>{entry.icon}</span>
+                <span style={{ fontSize: isTouchDevice ? 13 : 11 }}>{entry.icon}</span>
                 <span style={{ color: entry.color }}>{entry.label}</span>
               </div>
             )
@@ -425,7 +593,8 @@ export function HUD() {
       {/* Timer + Pause button — top bar */}
       <div style={{
         position: 'absolute', top: 12, left: 0, right: 0,
-        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6,
+        flexWrap: 'wrap', padding: '0 8px',
       }}>
         <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatTime(elapsedMs)}
@@ -456,25 +625,29 @@ export function HUD() {
         </span>
         <button
           onClick={togglePause}
+          aria-label={phase === 'paused' ? 'Resume game' : 'Pause game'}
           style={{
             pointerEvents: 'auto',
-            padding: '4px 14px',
-            fontSize: 12,
+            padding: isTouchDevice ? '8px 10px' : '8px 14px',
+            fontSize: isTouchDevice ? 16 : 12,
             cursor: 'pointer',
             background: 'rgba(0,0,0,0.5)',
             border: '1px solid rgba(255,255,255,0.3)',
             borderRadius: 4,
             color: '#fff',
             letterSpacing: 1,
+            minHeight: 44, minWidth: 44,
           }}
         >
-          {phase === 'paused' ? 'RESUME' : 'PAUSE'}
+          {isTouchDevice
+            ? (phase === 'paused' ? '▶' : '⏸')
+            : (phase === 'paused' ? 'RESUME' : 'PAUSE')}
         </button>
         <button
           onClick={cycleSpeed}
           style={{
             pointerEvents: 'auto',
-            padding: '4px 14px',
+            padding: '8px 14px',
             fontSize: 12,
             cursor: 'pointer',
             background: speed > 1 ? 'rgba(74,247,196,0.15)' : 'rgba(0,0,0,0.5)',
@@ -482,15 +655,16 @@ export function HUD() {
             borderRadius: 4,
             color: speed > 1 ? '#4af7c4' : '#fff',
             letterSpacing: 1,
+            minHeight: 44, minWidth: 44,
           }}
         >
           {speed}×
         </button>
-        {/* Spawn type selector — 3 direct buttons instead of cycle */}
-        {(['basic', 'heavy', 'scout'] as const).map((type, idx) => {
+        {/* Spawn type selector — hidden on touch (bottom-right panel has it) */}
+        {!isTouchDevice && (['basic', 'heavy', 'scout'] as const).map((type, idx) => {
           const active = spawnMode === type
           const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
-          const subtitle = type === 'heavy' ? 'slow · siege' : type === 'scout' ? 'fast · outpost' : 'balanced'
+          const subtitle = type === 'heavy' ? 'slow · siege · ↑basic' : type === 'scout' ? 'fast · flanker · ↑heavy' : 'balanced · ↑scout'
           return (
             <button
               key={type}
@@ -498,8 +672,8 @@ export function HUD() {
               title={`[${idx + 1}] Spawn ${type} — ${subtitle}`}
               style={{
                 pointerEvents: 'auto',
-                padding: '3px 8px',
-                fontSize: 10,
+                padding: '8px 12px',
+                fontSize: 12,
                 cursor: 'pointer',
                 background: active ? `${color}22` : 'rgba(0,0,0,0.5)',
                 border: `1px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
@@ -508,15 +682,16 @@ export function HUD() {
                 marginLeft: idx === 0 ? 0 : -1,
                 lineHeight: 1.3,
                 textAlign: 'center',
+                minHeight: 44,
               }}
             >
               <div style={{ fontWeight: 700, letterSpacing: 0.5 }}>{idx + 1} {type.toUpperCase()}</div>
-              <div style={{ fontSize: 8, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
+              <div style={{ fontSize: 10, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
             </button>
           )
         })}
-        {/* Stance toggle — cycles through aggressive/defensive/hold */}
-        {gameActions?.cycleStance && (() => {
+        {/* Stance toggle — cycles through aggressive/defensive/hold — hidden on touch (bottom-right panel has it) */}
+        {!isTouchDevice && gameActions?.cycleStance && (() => {
           const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
             aggressive: { icon: '⚔', label: 'AGGRO', color: '#ff4f7b', title: '[Z] Aggressive — pursues nearby enemies' },
             defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — holds position more' },
@@ -529,8 +704,8 @@ export function HUD() {
               title={cfg.title}
               style={{
                 pointerEvents: 'auto',
-                padding: '3px 10px',
-                fontSize: 10,
+                padding: '8px 12px',
+                fontSize: 12,
                 cursor: 'pointer',
                 background: `${cfg.color}18`,
                 border: `1px solid ${cfg.color}66`,
@@ -539,25 +714,104 @@ export function HUD() {
                 letterSpacing: 0.5,
                 lineHeight: 1.3,
                 textAlign: 'center',
+                minHeight: 44,
               }}
             >
               <div style={{ fontWeight: 700 }}>{cfg.icon} {cfg.label}</div>
-              <div style={{ fontSize: 8, opacity: 0.7 }}>Z</div>
+              <div style={{ fontSize: 10, opacity: 0.7 }}>Z</div>
             </button>
           )
         })()}
+        {/* Select All button — critical for mobile (no keyboard shortcut available) */}
+        {gameActions?.selectAll && (
+          <button
+            onClick={() => gameActions.selectAll?.()}
+            title="[E] Select all friendly specks"
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: 'rgba(74,247,196,0.12)',
+              border: '1px solid rgba(74,247,196,0.4)',
+              borderRadius: 4,
+              color: '#4af7c4',
+              letterSpacing: 0.5,
+              lineHeight: 1.3,
+              textAlign: 'center',
+              minHeight: 44,
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>⬡ ALL</div>
+            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>E</div>}
+          </button>
+        )}
+        {/* Snap to base button — essential for mobile (no keyboard shortcut) */}
+        {gameActions?.snapToBase && (
+          <button
+            onClick={() => { gameActions.snapToBase?.(); navigator.vibrate?.(20) }}
+            title="[C] Center camera on home base"
+            aria-label="Snap camera to home base"
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: hud?.baseUnderThreat ? 'rgba(255,0,0,0.2)' : 'rgba(74,247,196,0.08)',
+              border: `1px solid ${hud?.baseUnderThreat ? 'rgba(255,60,60,0.8)' : 'rgba(74,247,196,0.3)'}`,
+              borderRadius: 4,
+              color: hud?.baseUnderThreat ? '#ff8080' : 'rgba(74,247,196,0.8)',
+              letterSpacing: 0.5,
+              lineHeight: 1.3,
+              textAlign: 'center',
+              minHeight: 44,
+              animation: hud?.baseUnderThreat && !prefersReducedMotion ? 'pulse-red 0.6s ease-in-out infinite alternate' : 'none',
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>⌂ HOME</div>
+            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>C</div>}
+          </button>
+        )}
+        {/* Snap to battle button — mobile: jump camera to where the fight is (V key) */}
+        {gameActions?.snapToAction && (
+          <button
+            onClick={() => { gameActions.snapToAction?.(); navigator.vibrate?.(20) }}
+            title="[V] Snap camera to active battle"
+            aria-label="Snap camera to battle"
+            style={{
+              pointerEvents: 'auto',
+              padding: '8px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              background: hud?.enemyAdvanceDetected ? 'rgba(255,100,0,0.2)' : 'rgba(255,80,80,0.1)',
+              border: `1px solid ${hud?.enemyAdvanceDetected ? 'rgba(255,120,0,0.8)' : 'rgba(255,80,80,0.35)'}`,
+              borderRadius: 4,
+              color: hud?.enemyAdvanceDetected ? '#ffb060' : 'rgba(255,120,80,0.9)',
+              letterSpacing: 0.5,
+              lineHeight: 1.3,
+              textAlign: 'center',
+              minHeight: 44,
+            }}
+          >
+            <div style={{ fontWeight: 700 }}>⚔ FIGHT</div>
+            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>V</div>}
+          </button>
+        )}
         <button
           onClick={() => setShowHelp(h => !h)}
           title="? — show controls"
+          aria-label="Show controls"
           style={{
             pointerEvents: 'auto',
-            padding: '4px 10px',
-            fontSize: 12,
+            padding: '8px 12px',
+            fontSize: 14,
             cursor: 'pointer',
             background: showHelp ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.5)',
             border: `1px solid ${showHelp ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)'}`,
             borderRadius: 4,
             color: '#fff',
+            minHeight: 44, minWidth: 44,
+            fontWeight: 700,
           }}
         >
           ?
@@ -575,36 +829,89 @@ export function HUD() {
             pointerEvents: 'auto', cursor: 'default',
           }}
         >
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr',
-            gap: '6px 32px',
-            color: 'rgba(255,255,255,0.8)',
-            fontSize: 13,
-            letterSpacing: 0.5,
-            background: 'rgba(0,0,0,0.5)',
-            padding: '24px 32px',
-            borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.15)',
-          }}>
-            <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
-            <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
-            <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
-            <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
-            <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
-            <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-            <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
-            <span>S — stop · H — hold position</span><span>C — center on base</span>
-            <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
-            <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-            <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
-            <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
-            <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
-            <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
-            <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
-            <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-              Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
-            </span>
-          </div>
+          {isTouchDevice ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 12,
+              color: 'rgba(255,255,255,0.8)', fontSize: 13, letterSpacing: 0.5,
+              background: 'rgba(0,0,0,0.5)', padding: '24px 32px',
+              borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)',
+              maxWidth: 320, maxHeight: '80vh', overflowY: 'auto',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#4af7c4', marginBottom: 4 }}>Touch Controls</div>
+              {[
+                ['Tap canvas', 'Rally units to that spot'],
+                ['Double-tap canvas', 'Zoom in / out (toggle)'],
+                ['Long-press canvas', 'Attack Move (aggressive)'],
+                ['Two-finger tap', 'Stop specks in place'],
+                ['Pinch + move', 'Zoom and pan simultaneously'],
+                ['Single-finger drag', 'Pan camera'],
+                ['Tap minimap', 'Navigate camera there'],
+              ].map(([gesture, desc]) => (
+                <div key={gesture} style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                  <span style={{ color: '#ffb450', whiteSpace: 'nowrap' }}>{gesture}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'right' }}>{desc}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 10, marginTop: 4 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 8, letterSpacing: 1 }}>BUTTONS</div>
+                {[
+                  ['⬡ ALL', 'Select all your specks'],
+                  ['⌂ HOME', 'Camera → your base'],
+                  ['⚔ FIGHT', 'Camera → active battle'],
+                  ['★ SURGE', '2× spawn rate for 8s'],
+                  ['🔧 HEAL', 'Sacrifice 10 specks → +15 HP base'],
+                  ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3)'],
+                  ['◎ Patrol', 'Tap Patrol button → tap destination'],
+                  ['⊞ SEL', 'Tap then drag to box-select units'],
+                  ['◆ TURRET', 'Build turret (need 20+ selected)'],
+                  ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
+                  ['1× / 2× / 4×', 'Game speed'],
+                  ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
+                ].map(([btn, desc]) => (
+                  <div key={btn} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 6 }}>
+                    <span style={{ color: '#4af7c4', fontWeight: 600, whiteSpace: 'nowrap' }}>{btn}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'right', fontSize: 12 }}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 2, color: 'rgba(160,220,255,0.6)', fontSize: 11 }}>
+                Tap anywhere to close
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr',
+              gap: '6px 32px',
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: 13,
+              letterSpacing: 0.5,
+              background: 'rgba(0,0,0,0.5)',
+              padding: '24px 32px',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}>
+              <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
+              <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
+              <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
+              <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
+              <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
+              <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
+              <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
+              <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
+              <span>S — stop · H — hold position</span><span>C — center on base</span>
+              <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
+              <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
+              <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
+              <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
+              <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
+              <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
+              <span>Y — Battle Roar (lvl2 Cmdr) / Last Stand (lvl3)</span><span style={{ opacity: 0.5 }}>Commander levels up from nearby kills</span>
+              <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
+              <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
+                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege)
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -638,7 +945,7 @@ export function HUD() {
               `}</style>
             )}
             <div style={{
-              position: 'absolute', top: 48, left: 0, right: 0,
+              position: 'absolute', top: isTouchDevice ? 68 : 48, left: 0, right: 0,
               display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
             }}>
               <span style={{ fontSize: 10, letterSpacing: 1, opacity: 0.5, marginRight: 4 }}>
@@ -646,14 +953,29 @@ export function HUD() {
               </span>
               {dots.map(({ id, color, isUnderAttack, isPlayerOwned, cap, hpFrac }, i) => {
                 const capColor = cap?.side === 'player' ? '#4af7c4' : '#ff4f7b'
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                const building = hud.minimap.buildings.find(b => b.id === id)
+                const canTap = isTouchDevice && !!building && !!gameActions?.panCamera
+                const sharedStyle = {
+                  display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 2,
+                }
+                const touchStyle = canTap ? {
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '6px 8px', minWidth: 36, minHeight: 44, justifyContent: 'center',
+                  borderBottom: '1px dotted rgba(255,255,255,0.2)',
+                } : {}
+                const handleTap = () => {
+                  if (!building) return
+                  gameActions?.panCamera?.(building.x, building.y)
+                  navigator.vibrate?.(15)
+                }
+                const innerContent = (
+                  <>
                     <div style={{
                       width: 10, height: 10,
                       borderRadius: '50%',
                       background: isUnderAttack && isPlayerOwned ? '#ff6b35' : color,
                       boxShadow: color !== '#888888' ? `0 0 6px ${isUnderAttack && isPlayerOwned ? '#ff6b35' : color}` : 'none',
-                      animation: isUnderAttack && isPlayerOwned ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
+                      animation: (!prefersReducedMotion && isUnderAttack && isPlayerOwned) ? 'outpost-alert 0.6s ease-in-out infinite' : 'none',
                     }} />
                     {cap && cap.progress > 0 ? (
                       <div style={{ width: 14, height: 2, background: 'rgba(255,255,255,0.15)', borderRadius: 1 }}>
@@ -686,6 +1008,15 @@ export function HUD() {
                         </div>
                       )
                     })()}
+                  </>
+                )
+                return canTap ? (
+                  <button key={i} onClick={handleTap} style={{ ...sharedStyle, ...touchStyle }}>
+                    {innerContent}
+                  </button>
+                ) : (
+                  <div key={i} style={sharedStyle}>
+                    {innerContent}
                   </div>
                 )
               })}
@@ -727,7 +1058,7 @@ export function HUD() {
               textShadow: `0 0 40px currentColor, 0 0 80px currentColor`,
               letterSpacing: 8,
               lineHeight: 1,
-              animation: 'countdown-pop 0.9s ease-out forwards',
+              animation: prefersReducedMotion ? 'none' : 'countdown-pop 0.9s ease-out forwards',
             }}
           >
             {countdown}
@@ -738,7 +1069,7 @@ export function HUD() {
       {/* Outpost capture/loss notification */}
       {notification && (
         <div style={{
-          position: 'absolute', top: 76, left: 0, right: 0,
+          position: 'absolute', top: isTouchDevice ? 92 : 76, left: 0, right: 0,
           display: 'flex', justifyContent: 'center',
         }}>
           <style>{`
@@ -751,11 +1082,11 @@ export function HUD() {
             key={notification.message + notification.color}
             style={{
               color: notification.color,
-              fontSize: 13,
+              fontSize: isTouchDevice ? 15 : 13,
               fontWeight: 'bold',
               letterSpacing: 2,
               textShadow: `0 0 12px ${notification.color}`,
-              animation: 'notif-in 0.18s ease-out',
+              animation: prefersReducedMotion ? 'none' : 'notif-in 0.18s ease-out',
             }}
           >
             {notification.message}
@@ -784,7 +1115,7 @@ export function HUD() {
 
         return (
           <div style={{
-            position: 'absolute', bottom: 16, left: 0, right: 0,
+            position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0,
             display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
           }}>
             {status && (
@@ -835,10 +1166,11 @@ export function HUD() {
 
       {/* Paused overlay */}
       {phase === 'paused' && (
-        <div style={{
+        <div onClick={togglePause} style={{
           position: 'absolute', inset: 0,
           background: 'rgba(0,0,0,0.55)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+          cursor: 'pointer',
         }}>
           <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
             PAUSED
@@ -846,6 +1178,9 @@ export function HUD() {
           {hud && (() => {
             const playerSpecks = hud.players.player?.speckCount ?? 0
             const aiSpecks = hud.players.ai?.speckCount ?? 0
+            const playerSupply = hud.players.player?.supplyUsed ?? 0
+            const aiSupply = hud.players.ai?.supplyUsed ?? 0
+            const supplyCap = hud.players.player?.supplyCap ?? 120
             const playerBaseHpVal = hud.players.player?.buildingHp['building-player-base'] ?? 0
             const aiBaseHpVal = hud.players.ai?.buildingHp['building-ai-base'] ?? 0
             const playerOutpostCount = hud.players.player?.buildingCount
@@ -874,10 +1209,14 @@ export function HUD() {
             const aiProd = ((1000/800) + aiOutpostCount * (1000/OUTPOST_MS)) * (aiTriple ? 2 : 1)
             return (
               <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px',
+                display: 'grid', gridTemplateColumns: '1fr 1fr',
+                gap: isTouchDevice ? '8px 16px' : '8px 32px',
                 fontSize: 11, letterSpacing: 1, color: 'rgba(255,255,255,0.55)',
-                background: 'rgba(0,0,0,0.3)', padding: '16px 28px', borderRadius: 8,
+                background: 'rgba(0,0,0,0.3)',
+                padding: isTouchDevice ? '12px 16px' : '16px 28px',
+                borderRadius: 8,
                 border: '1px solid rgba(255,255,255,0.08)',
+                maxWidth: isTouchDevice ? 'calc(100vw - 48px)' : undefined,
               }}>
                 <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.8 }}>YOUR ARMY</span>
                 <span style={{ color: colorHex(AI_COLOR), opacity: 0.8 }}>ENEMY ARMY</span>
@@ -887,6 +1226,12 @@ export function HUD() {
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(aiTypes)}</span>
                 <span style={{ fontSize: 10, opacity: 0.6 }}>~{playerProd.toFixed(1)}/s prod</span>
                 <span style={{ fontSize: 10, opacity: 0.6 }}>~{aiProd.toFixed(1)}/s prod</span>
+                <span style={{ fontSize: 10, color: playerSupply >= supplyCap ? '#ff4f7b' : playerSupply >= 60 ? '#ffaa44' : undefined }}>
+                  Supply: {Math.round(playerSupply)}/{supplyCap}
+                </span>
+                <span style={{ fontSize: 10, opacity: 0.5 }}>
+                  Supply: {Math.round(aiSupply)}/{supplyCap}
+                </span>
                 <span>Base: {Math.round(playerBaseHpVal)}HP</span>
                 <span>Base: {Math.round(aiBaseHpVal)}HP</span>
                 <span>Outposts: {playerOutpostCount}</span>
@@ -899,7 +1244,7 @@ export function HUD() {
             )
           })()}
           <button
-            onClick={surrender}
+            onClick={(e) => { e.stopPropagation(); surrender() }}
             style={{
               pointerEvents: 'auto',
               padding: '8px 24px',
@@ -910,10 +1255,14 @@ export function HUD() {
               borderRadius: 4,
               color: 'rgba(255,100,100,0.6)',
               letterSpacing: 1,
+              minHeight: 44,
             }}
           >
             Give Up
           </button>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>
+            Tap anywhere to resume
+          </div>
         </div>
       )}
 
@@ -921,7 +1270,7 @@ export function HUD() {
       {phase === 'playing' && (
         <div style={{
           position: 'absolute',
-          bottom: 70,
+          bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
@@ -931,7 +1280,8 @@ export function HUD() {
           opacity: hud && ((hud.selectedSpeckCount ?? 0) > 0 || hud.selectedBuilding != null) ? 1 : 0,
           transition: 'opacity 150ms ease',
           fontFamily: 'monospace',
-          whiteSpace: 'nowrap',
+          whiteSpace: isTouchDevice ? 'normal' : 'nowrap',
+          maxWidth: isTouchDevice ? 'calc(100vw - 32px)' : undefined,
         }}>
           {/* Build menu — only shows when specks are selected */}
           {(() => {
@@ -953,13 +1303,14 @@ export function HUD() {
                   BUILD
                 </div>
                 <button
-                  onClick={() => { if (canBuild) (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.() }}
+                  onClick={() => { if (canBuild) { (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.(); navigator.vibrate?.(15) } }}
                   style={{
                     width: '100%',
                     background: canBuild ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
                     border: `1px solid ${canBuild ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
                     borderRadius: 4,
-                    padding: '6px 8px',
+                    padding: isTouchDevice ? '10px 8px' : '6px 8px',
+                    minHeight: isTouchDevice ? 44 : undefined,
                     cursor: canBuild ? 'pointer' : 'default',
                     textAlign: 'left',
                     fontFamily: 'monospace',
@@ -1010,18 +1361,26 @@ export function HUD() {
                 border: '1px solid rgba(255,255,255,0.12)',
                 borderRadius: 6,
                 padding: '7px 12px',
-                minWidth: 160,
+                minWidth: isTouchDevice ? 130 : 160,
+                maxWidth: isTouchDevice ? 'min(200px, calc(100vw - 48px))' : undefined,
                 pointerEvents: 'none',
               }}>
-                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
+                <div style={{ fontSize: isTouchDevice ? 11 : 8, letterSpacing: 2, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>
                   {b.typeId.toUpperCase()}
                 </div>
-                <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
+                <div style={{ fontSize: isTouchDevice ? 12 : 9, color: hpColor, letterSpacing: 1, marginBottom: 4 }}>
                   HP {Math.ceil(b.hp)} / {b.maxHp}
                 </div>
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                   <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
                 </div>
+                {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) > 0 && (
+                  <div style={{ fontSize: 10, color: 'rgba(255,215,0,0.65)', letterSpacing: 0.5, marginBottom: 4 }}>
+                    {(b.fortifyDuration ?? 0) >= 20000
+                      ? '⚒ FORTIFIED — +25% DMG nearby'
+                      : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / 20000) * 100)}% fortified`}
+                  </div>
+                )}
                 {b.spawnTypeOverride && (
                   <div style={{ marginTop: 6, fontSize: 11, color: '#aaa' }}>
                     Producing:{' '}
@@ -1033,11 +1392,111 @@ export function HUD() {
                     }}>
                       {b.spawnTypeOverride.toUpperCase()}
                     </span>
-                    <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>
+                    {!isTouchDevice && <span style={{ color: '#666', marginLeft: 6 }}>1/2/3 to change</span>}
                   </div>
                 )}
-                <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
-                  right-click to set rally
+                <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
+                  {isTouchDevice ? 'tap canvas to set rally' : 'right-click to set rally'}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Garrison panel — shown for player-owned outposts */}
+          {hud?.selectedBuilding?.typeId === 'outpost' &&
+           hud.selectedBuilding.ownerId === 'player' &&
+           phase === 'playing' && (() => {
+            const garCount = hud.selectedBuilding!.garrisonCount ?? 0
+            const buildingId = hud.selectedBuilding!.id
+            return (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                background: 'rgba(0,0,0,0.7)', padding: '7px 12px', borderRadius: 8,
+                border: '1px solid rgba(68,170,255,0.25)',
+                pointerEvents: 'auto',
+              }}>
+                <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#44aaff', opacity: 0.8 }}>
+                  GARRISON {garCount}/5
+                </div>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <button
+                    onClick={() => gameActions?.garrison?.(buildingId)}
+                    style={{
+                      padding: '4px 10px', fontSize: 10, letterSpacing: 1,
+                      background: 'rgba(0,0,0,0.5)', border: '1px solid #44aaff44',
+                      color: '#44aaff', cursor: 'pointer', borderRadius: 4,
+                      fontFamily: 'monospace', minHeight: 36,
+                    }}
+                  >
+                    <div>GARRISON</div>
+                    <div style={{ opacity: 0.6, fontSize: 9 }}>selected specks</div>
+                  </button>
+                  {garCount > 0 && (
+                    <button
+                      onClick={() => gameActions?.recallGarrison?.(buildingId)}
+                      style={{
+                        padding: '4px 10px', fontSize: 10, letterSpacing: 1,
+                        background: 'rgba(0,0,0,0.5)', border: '1px solid #ff884444',
+                        color: '#ff8844', cursor: 'pointer', borderRadius: 4,
+                        fontFamily: 'monospace', minHeight: 36,
+                      }}
+                    >
+                      <div>RECALL</div>
+                      <div style={{ opacity: 0.6, fontSize: 9 }}>{garCount} specks</div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Outpost upgrade research panel */}
+          {hud?.selectedBuilding?.typeId === 'outpost' &&
+           hud.selectedBuilding.ownerId === 'player' &&
+           (hud.selectedBuilding.fortifyDuration ?? 0) >= 20000 &&
+           phase === 'playing' && (() => {
+            if (hud.selectedBuilding!.researchedUpgrade) {
+              return (
+                <div style={{
+                  background: 'rgba(0,0,0,0.65)',
+                  border: '1px solid rgba(68,170,255,0.3)',
+                  borderRadius: 6,
+                  padding: '6px 12px',
+                  pointerEvents: 'none',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 10, letterSpacing: 1,
+                  color: '#44aaff',
+                }}>
+                  <span>⚗</span>
+                  <span>{hud.selectedBuilding!.researchedUpgrade!.toUpperCase()}</span>
+                </div>
+              )
+            }
+            const upgrades: Array<{ id: 'carapace' | 'blades' | 'afterburners'; label: string; desc: string; color: string }> = [
+              { id: 'carapace', label: 'CARAPACE', desc: '+1 HP', color: '#44ff88' },
+              { id: 'blades', label: 'BLADES', desc: '+15% DMG', color: '#ff4f7b' },
+              { id: 'afterburners', label: 'AFTERBURNERS', desc: '+15% SPD', color: '#44aaff' },
+            ]
+            return (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                background: 'rgba(0,0,0,0.7)', padding: '8px 12px', borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.15)',
+                pointerEvents: 'auto',
+              }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.5)' }}>⚗ RESEARCH UPGRADE</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {upgrades.map(u => (
+                    <button key={u.id} onClick={() => gameActions?.researchUpgrade?.(hud.selectedBuilding!.id, u.id)} style={{
+                      padding: '4px 10px', fontSize: 10, letterSpacing: 1,
+                      background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
+                      color: u.color, cursor: 'pointer', borderRadius: 4,
+                      fontFamily: 'monospace', minHeight: 44,
+                    }}>
+                      <div>{u.label}</div>
+                      <div style={{ opacity: 0.7 }}>{u.desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
             )
@@ -1053,7 +1512,7 @@ export function HUD() {
             pointerEvents: (hud?.selectedSpeckCount ?? 0) > 0 ? 'auto' : 'none',
           }}>
             <div style={{
-              fontSize: 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
+              fontSize: isTouchDevice ? 11 : 9, letterSpacing: 2, color: '#ffffff', opacity: 0.9, marginBottom: 5,
             }}>
               SELECTED {hud?.selectedSpeckCount ?? 0}
             </div>
@@ -1062,23 +1521,47 @@ export function HUD() {
               .map(([typeId, count]) => (
                 <div key={typeId} style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
+                  fontSize: isTouchDevice ? 11 : 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
                 }}>
                   <span style={{
-                    display: 'inline-block', width: 7, height: 7, flexShrink: 0,
+                    display: 'inline-block',
+                    width: isTouchDevice ? 9 : 7, height: isTouchDevice ? 9 : 7, flexShrink: 0,
                     borderRadius: typeId === 'heavy' ? 1 : '50%',
-                    background: '#4af7c4',
+                    background: typeId === 'heavy' ? '#ffa032' : typeId === 'scout' ? '#50c8ff' : '#4af7c4',
                     transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
                   }} />
                   <span style={{ flex: 1, letterSpacing: 1 }}>
-                    {typeId.charAt(0).toUpperCase() + typeId.slice(1)}
+                    {typeId === 'heavy' ? 'Heavy' : typeId === 'scout' ? 'Dart' : typeId.charAt(0).toUpperCase() + typeId.slice(1)}
                   </span>
                   <span style={{ color: '#ffffff' }}>{count}</span>
                 </div>
               ))
             }
+            {/* Type advantage hint — show counter/weakness for dominant unit type */}
+            {hud?.selectedComposition && (() => {
+              const types = hud.selectedComposition.types
+              const heavy = types['heavy'] ?? 0
+              const scout = types['scout'] ?? 0
+              const basic = types['basic'] ?? 0
+              const total = heavy + scout + basic
+              if (total === 0) return null
+              const dominant = heavy >= scout && heavy >= basic ? 'heavy'
+                : scout >= basic ? 'scout' : 'basic'
+              const hints: Record<string, { beats: string; weak: string; color: string }> = {
+                heavy: { beats: 'Basic', weak: 'Dart', color: '#ffa032' },
+                scout: { beats: 'Heavy', weak: 'Basic', color: '#50c8ff' },
+                basic: { beats: 'Dart', weak: 'Heavy', color: '#4af7c4' },
+              }
+              const h = hints[dominant]
+              return (
+                <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.4)', marginTop: 4, letterSpacing: 0.5, display: 'flex', gap: 6 }}>
+                  <span style={{ color: h.color, opacity: 0.7 }}>▲{h.beats}</span>
+                  <span style={{ opacity: 0.35 }}>▼{h.weak}</span>
+                </div>
+              )
+            })()}
             {hud?.selectedComposition && (hud.selectedComposition.veteranCount > 0 || hud.selectedComposition.eliteCount > 0 || hud.selectedComposition.legendCount > 0) && (
-              <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
+              <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,215,0,0.7)', marginTop: 3, letterSpacing: 1 }}>
                 {hud.selectedComposition.legendCount > 0 && <span style={{ color: '#cc44ff' }}>{`✦✦ ${hud.selectedComposition.legendCount} legend  `}</span>}
                 {hud.selectedComposition.eliteCount > 0 && `✦ ${hud.selectedComposition.eliteCount} elite  `}
                 {hud.selectedComposition.veteranCount > 0 && `⭐ ${hud.selectedComposition.veteranCount} vet`}
@@ -1099,26 +1582,84 @@ export function HUD() {
                 ].map(({ label, key, action }) => (
                   <button
                     key={label}
-                    onClick={() => action?.()}
+                    onClick={() => { navigator.vibrate?.(8); setTouchPatrolActive(false); action?.() }}
                     style={{
                       background: 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.18)',
                       borderRadius: 4,
                       color: '#ddd',
-                      fontSize: 11,
-                      padding: '3px 7px',
+                      fontSize: isTouchDevice ? 13 : 12,
+                      padding: isTouchDevice ? '8px 14px' : '8px 10px',
                       cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 4,
                       userSelect: 'none',
                       fontFamily: 'monospace',
+                      minHeight: 44,
+                      minWidth: isTouchDevice ? 56 : undefined,
                     }}
                   >
                     {label}
-                    <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>
+                    {!isTouchDevice && <span style={{ color: '#888', fontSize: 10 }}>[{key}]</span>}
                   </button>
                 ))}
+                {/* Clear selection button — touch only (desktop uses Escape) */}
+                {isTouchDevice && (
+                  <button
+                    onClick={() => { gameActions?.clearSelection?.(); navigator.vibrate?.(8) }}
+                    title="Clear selection (Escape on desktop)"
+                    style={{
+                      background: 'rgba(255,79,123,0.07)',
+                      border: '1px solid rgba(255,79,123,0.3)',
+                      borderRadius: 4,
+                      color: 'rgba(255,120,120,0.8)',
+                      fontSize: 13,
+                      padding: '8px 14px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      fontFamily: 'monospace',
+                      minHeight: 44,
+                      minWidth: 56,
+                    }}
+                  >
+                    ✗ SEL
+                  </button>
+                )}
+                {/* Patrol button — touch only (desktop uses P key) */}
+                {isTouchDevice && (
+                  <button
+                    onClick={() => {
+                      if (touchPatrolActive) {
+                        setTouchPatrolActive(false)
+                      } else {
+                        gameActions.activatePatrol?.()
+                        setTouchPatrolActive(true)
+                        setTimeout(() => setTouchPatrolActive(false), 5000)
+                      }
+                    }}
+                    title="Patrol: tap target location after pressing"
+                    style={{
+                      background: touchPatrolActive ? 'rgba(160,208,255,0.18)' : 'rgba(255,255,255,0.07)',
+                      border: `1px solid ${touchPatrolActive ? '#a0d0ff' : 'rgba(255,255,255,0.18)'}`,
+                      borderRadius: 4,
+                      color: touchPatrolActive ? '#a0d0ff' : '#ddd',
+                      fontSize: 13,
+                      padding: '8px 14px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      fontFamily: 'monospace',
+                      minHeight: 44,
+                      minWidth: 56,
+                    }}
+                  >
+                    {touchPatrolActive ? '◎ Tap target' : '◎ Patrol'}
+                  </button>
+                )}
               </div>
             )}
+            {/* Touch gesture hint */}
+            {isTouchDevice && <div style={{ marginTop: 6, fontSize: 11, color: '#aaa', letterSpacing: 0.3, textAlign: 'center' }}>
+              Tap: rally &bull; Long-press: attack-move &bull; Double-tap: zoom &bull; 2-finger: zoom+pan
+            </div>}
           </div>
         </div>
       )}
@@ -1126,23 +1667,82 @@ export function HUD() {
       {/* Mobile action buttons — bottom right */}
       {phase === 'playing' && (
         <div style={{
-          position: 'absolute', bottom: 16, right: 16,
+          position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', right: 16,
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
-          {/* Stance indicator */}
-          <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.8, color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4', textAlign: 'right' }}>
+          {/* Supply indicator — above spawn buttons */}
+          {isTouchDevice && hud && (() => {
+            const supplyUsed = hud.players.player?.supplyUsed ?? 0
+            const supplyCap = hud.players.player?.supplyCap ?? 120
+            const SOFT_CAP = 60
+            const atHardCap = supplyUsed >= supplyCap
+            const inPressure = supplyUsed >= SOFT_CAP
+            const color = atHardCap ? '#ff4f7b' : inPressure ? '#ffaa44' : '#4af7c4'
+            return (
+              <div style={{ fontSize: 9, letterSpacing: 1, color, opacity: 0.75, textAlign: 'right', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 32, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, supplyUsed / supplyCap * 100)}%`, height: '100%', background: color, transition: 'width 0.4s' }} />
+                </div>
+                <span style={{ color: atHardCap ? '#ff4f7b' : inPressure ? '#ffaa44' : 'rgba(255,255,255,0.45)' }}>
+                  {atHardCap ? 'SUP CAP!' : inPressure ? `SUP ${Math.round(supplyUsed)}` : `SUP ${Math.round(supplyUsed)}`}
+                </span>
+              </div>
+            )
+          })()}
+          {/* Spawn type quick-select — bottom-right for thumb reach on mobile */}
+          {isTouchDevice && (
+            <div style={{ display: 'flex', gap: 4 }}>
+              {([
+                { type: 'basic' as const, label: 'BASIC', color: 'rgba(255,255,255,0.85)' },
+                { type: 'heavy' as const, label: 'HEAVY', color: '#ffa032' },
+                { type: 'scout' as const, label: 'DART', color: '#50c8ff' },
+              ]).map(({ type, label, color }) => {
+                const active = spawnMode === type
+                return (
+                  <button
+                    key={type}
+                    onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
+                    style={{
+                      padding: '8px 10px', fontSize: 10,
+                      cursor: 'pointer', letterSpacing: 1,
+                      background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
+                      border: active ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 4, color: active ? color : 'rgba(255,255,255,0.35)',
+                      fontFamily: 'monospace', minHeight: 44, minWidth: 52,
+                      fontWeight: active ? 700 : 400,
+                      transition: 'all 0.1s',
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          {/* Stance indicator — tappable on mobile to cycle stance */}
+          <div
+            onClick={isTouchDevice ? (() => { navigator.vibrate?.(12); gameActions?.cycleStance?.() }) : undefined}
+            style={{
+              fontSize: 11, letterSpacing: 1.5, opacity: 0.8,
+              color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4',
+              textAlign: 'right',
+              ...(isTouchDevice ? { cursor: 'pointer', padding: '4px 8px', minHeight: 44, display: 'flex', alignItems: 'center' } : {}),
+            }}
+          >
             {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
-            <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>
+            {isTouchDevice
+              ? <span style={{ opacity: 0.4, marginLeft: 4, fontSize: 9 }}>tap</span>
+              : <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>}
           </div>
           <div style={{
-            display: 'flex', gap: 6,
+            display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end',
           }}>
           <button
-            onClick={() => gameActions.defend?.()}
+            onClick={() => { navigator.vibrate?.(12); gameActions.defend?.() }}
             title="[D] Defend — rally to your base"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(74,247,196,0.08)',
@@ -1157,10 +1757,10 @@ export function HUD() {
             🛡 D
           </button>
           <button
-            onClick={() => gameActions.advance?.()}
+            onClick={() => { navigator.vibrate?.(12); gameActions.advance?.() }}
             title="[N] Advance — rally to nearest outpost"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(255,215,0,0.08)',
@@ -1172,13 +1772,13 @@ export function HUD() {
               fontFamily: 'monospace',
             }}
           >
-            → N
+            {isTouchDevice ? '→ ADV' : '→ N'}
           </button>
           <button
-            onClick={() => gameActions.rush?.()}
+            onClick={() => { navigator.vibrate?.(20); gameActions.rush?.() }}
             title="[B] Rush — attack enemy base"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(255,79,123,0.08)',
@@ -1190,7 +1790,7 @@ export function HUD() {
               fontFamily: 'monospace',
             }}
           >
-            ⚡ B
+            {isTouchDevice ? '⚡ RUSH' : '⚡ B'}
           </button>
           {(() => {
             const surgeActive = (hud?.surgeDuration ?? 0) > 0
@@ -1198,10 +1798,10 @@ export function HUD() {
             const surgeReady = !surgeActive && surgeCd <= 0
             return (
               <button
-                onClick={() => { if (surgeReady) gameActions.surge?.() }}
+                onClick={() => { if (surgeReady) { navigator.vibrate?.(30); gameActions.surge?.() } }}
                 title="[Q] Surge — 2× production for 8s (45s cooldown)"
                 style={{
-                  padding: '6px 10px',
+                  padding: '8px 12px',
                   fontSize: 11,
                   cursor: surgeReady ? 'pointer' : 'default',
                   background: surgeActive ? 'rgba(255,215,0,0.25)' : 'rgba(255,215,0,0.06)',
@@ -1221,8 +1821,8 @@ export function HUD() {
                 {surgeActive
                   ? `★ ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s`
                   : surgeCd > 0
-                    ? `Q ${Math.ceil(surgeCd / 1000)}s`
-                    : '★ Q'}
+                    ? `${isTouchDevice ? 'SURGE' : 'Q'} ${Math.ceil(surgeCd / 1000)}s`
+                    : isTouchDevice ? '⚡ SURGE' : '★ Q'}
               </button>
             )
           })()}
@@ -1233,10 +1833,10 @@ export function HUD() {
             const ready = cd <= 0 && speckCount >= 10 && baseHp < 90
             return (
               <button
-                onClick={() => { if (ready) gameActions.sacrifice?.() }}
+                onClick={() => { if (ready) { navigator.vibrate?.(30); gameActions.sacrifice?.() } }}
                 title="[F] Sacrifice 10 specks → repair +15 HP base (45s cooldown)"
                 style={{
-                  padding: '6px 10px',
+                  padding: '8px 12px',
                   fontSize: 11,
                   cursor: ready ? 'pointer' : 'default',
                   background: ready ? 'rgba(100,200,100,0.12)' : 'rgba(100,200,100,0.04)',
@@ -1249,15 +1849,52 @@ export function HUD() {
                   opacity: ready ? 1 : 0.6,
                 }}
               >
-                {cd > 0 ? `F ${Math.ceil(cd / 1000)}s` : '🔧 F'}
+                {cd > 0 ? `${isTouchDevice ? 'HEAL' : 'F'} ${Math.ceil(cd / 1000)}s` : isTouchDevice ? '🔧 HEAL' : '🔧 F'}
+              </button>
+            )
+          })()}
+          {(() => {
+            const cmd = hud?.commander
+            if (!cmd || cmd.level < 2) return null
+            const cd = cmd.abilityCooldown
+            const active = cmd.abilityActive > 0
+            const ready = cd <= 0 && !active
+            const isLastStand = cmd.level >= 3
+            const baseColor = isLastStand ? '#00ffcc' : '#ffd700'
+            return (
+              <button
+                onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
+                title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? 'invuln + 3× dmg + speed (60s)' : 'stun enemies 80px (20s)'}`}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: 11,
+                  cursor: ready ? 'pointer' : 'default',
+                  background: active ? `${baseColor}33` : ready ? `${baseColor}11` : 'rgba(0,0,0,0.3)',
+                  border: active ? `1px solid ${baseColor}` : ready ? `1px solid ${baseColor}88` : `1px solid ${baseColor}30`,
+                  borderRadius: 20,
+                  color: active ? baseColor : ready ? `${baseColor}cc` : `${baseColor}50`,
+                  letterSpacing: 1,
+                  minHeight: 44,
+                  fontFamily: 'monospace',
+                  opacity: ready || active ? 1 : 0.6,
+                  animation: active && !prefersReducedMotion ? 'pulse-red 0.4s ease-in-out infinite alternate' : 'none',
+                }}
+              >
+                {active
+                  ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
+                  : cd > 0
+                    ? `${isTouchDevice ? (isLastStand ? 'LAST' : 'ROAR') : 'Y'} ${Math.ceil(cd / 1000)}s`
+                    : isTouchDevice
+                      ? `${isLastStand ? '★★ LAST' : '★ ROAR'}`
+                      : `${isLastStand ? '★★' : '★'} Y`}
               </button>
             )
           })()}
           <button
-            onClick={() => gameActions.clearRally?.()}
+            onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
             title="[R] Clear rally"
             style={{
-              padding: '6px 10px',
+              padding: '8px 12px',
               fontSize: 11,
               cursor: 'pointer',
               background: 'rgba(0,0,0,0.4)',
@@ -1351,11 +1988,11 @@ export function HUD() {
         const aiBaseHpFrac = aiBaseHpVal / 100
         const aiBaseColor = aiBaseHpFrac > 0.5 ? '#ff4f7b' : aiBaseHpFrac > 0.2 ? '#ffaa44' : '#ff2200'
         return (
-          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', left: 16, display: 'flex', flexDirection: 'column', gap: 5 }}>
             {/* Force ratio bar */}
             {total >= 4 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 9, letterSpacing: 1, color: colorHex(PLAYER_COLOR), opacity: 0.7, minWidth: 20, textAlign: 'right' }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, letterSpacing: 1, color: colorHex(PLAYER_COLOR), opacity: 0.7, minWidth: 20, textAlign: 'right' }}>
                   {playerSpecks}
                 </span>
                 <div style={{ width: 100, height: 5, background: 'rgba(255,79,123,0.4)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
@@ -1367,7 +2004,7 @@ export function HUD() {
                     transition: 'width 0.2s',
                   }} />
                 </div>
-                <span style={{ fontSize: 9, letterSpacing: 1, color: colorHex(AI_COLOR), opacity: 0.7, minWidth: 20 }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, letterSpacing: 1, color: colorHex(AI_COLOR), opacity: 0.7, minWidth: 20 }}>
                   {aiSpecks}
                 </span>
               </div>
@@ -1375,13 +2012,13 @@ export function HUD() {
             {/* Production rate */}
             {(hud.spawnRates?.player ?? 0) > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 9, color: colorHex(PLAYER_COLOR), opacity: 0.6, minWidth: 20, textAlign: 'right' }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, color: colorHex(PLAYER_COLOR), opacity: 0.6, minWidth: 20, textAlign: 'right' }}>
                   {hud.spawnRates.player}/m
                 </span>
-                <div style={{ width: 100, textAlign: 'center', fontSize: 8, letterSpacing: 0.5, color: 'rgba(255,255,255,0.3)' }}>
+                <div style={{ width: 100, textAlign: 'center', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, color: 'rgba(255,255,255,0.3)' }}>
                   ⚡prod
                 </div>
-                <span style={{ fontSize: 9, color: colorHex(AI_COLOR), opacity: 0.6, minWidth: 20 }}>
+                <span style={{ fontSize: isTouchDevice ? 11 : 9, color: colorHex(AI_COLOR), opacity: 0.6, minWidth: 20 }}>
                   {hud.spawnRates.ai}/m
                 </span>
               </div>
@@ -1402,7 +2039,7 @@ export function HUD() {
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div title={`You: ${playerHeavy}⬡ heavy, ${playerBasic}· basic`} style={{ width: 20, textAlign: 'right' }}>
-                    {playerHeavy > 0 && <span style={{ fontSize: 8, color: '#ffa032', opacity: 0.7 }}>⬡{playerHeavy}</span>}
+                    {playerHeavy > 0 && <span style={{ fontSize: isTouchDevice ? 10 : 8, color: '#ffa032', opacity: 0.7 }}>⬡{playerHeavy}</span>}
                   </div>
                   <div style={{ width: 100, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
                     <div style={{
@@ -1412,7 +2049,7 @@ export function HUD() {
                     }} />
                   </div>
                   <div title={`Enemy: ${aiHeavy}⬡ heavy, ${aiBasic}· basic`} style={{ width: 20 }}>
-                    {aiHeavy > 0 && <span style={{ fontSize: 8, color: '#ff6b6b', opacity: 0.7 }}>⬡{aiHeavy}</span>}
+                    {aiHeavy > 0 && <span style={{ fontSize: isTouchDevice ? 10 : 8, color: '#ff6b6b', opacity: 0.7 }}>⬡{aiHeavy}</span>}
                   </div>
                 </div>
               )
@@ -1424,7 +2061,7 @@ export function HUD() {
               const legends = hud.players.player?.legendCount ?? 0
               if (vets + elites + legends === 0) return null
               return (
-                <div style={{ display: 'flex', gap: 8, fontSize: 9, letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', gap: 8, fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5 }}>
                   {legends > 0 && (
                     <span style={{ color: '#cc44ff', opacity: 0.9 }}>✦✦ {legends} legend</span>
                   )}
@@ -1438,15 +2075,32 @@ export function HUD() {
               )
             })()}
             {/* Kill/loss + enemy base HP */}
-            <div style={{ display: 'flex', gap: 10, fontSize: 10, letterSpacing: 0.5 }}>
+            <div style={{ display: 'flex', gap: 10, fontSize: isTouchDevice ? 12 : 10, letterSpacing: 0.5 }}>
               <span style={{ color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} ↓{losses}</span>
-              {aiBaseHpVal > 0 && (
-                <span style={{ color: aiBaseColor, opacity: 0.8 }}>
-                  ENEMY BASE {Math.round(aiBaseHpFrac * 100)}%
-                </span>
-              )}
+              {aiBaseHpVal > 0 && (() => {
+                const aiBase = hud?.minimap?.buildings?.find(b => b.typeId === 'base' && b.ownerId === 'ai')
+                return (
+                  <span
+                    onClick={isTouchDevice && aiBase ? () => { gameActions?.panCamera?.(aiBase.x, aiBase.y); navigator.vibrate?.(15) } : undefined}
+                    style={{
+                      color: aiBaseColor, opacity: 0.8,
+                      ...(isTouchDevice && aiBase ? { cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' } : {}),
+                    }}
+                    title={isTouchDevice ? 'Tap to jump to enemy base' : undefined}
+                  >
+                    ENEMY BASE {Math.round(aiBaseHpFrac * 100)}%
+                  </span>
+                )
+              })()}
               {playerBaseHpVal > 0 && (
-                <span style={{ color: hpFrac < 0.3 ? '#ff4f7b' : 'rgba(255,255,255,0.4)', opacity: 0.8 }}>
+                <span
+                  onClick={isTouchDevice ? () => { gameActions?.snapToBase?.(); navigator.vibrate?.(15) } : undefined}
+                  style={{
+                    color: hpFrac < 0.3 ? '#ff4f7b' : 'rgba(255,255,255,0.4)', opacity: 0.8,
+                    ...(isTouchDevice ? { cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' } : {}),
+                  }}
+                  title={isTouchDevice ? 'Tap to jump to your base' : undefined}
+                >
                   BASE {Math.round(playerBaseHpVal)}HP
                 </span>
               )}
@@ -1463,7 +2117,7 @@ export function HUD() {
               const tier = tiers[upgradeLevel]
               const nextKills = upgradeLevel === 0 ? 50 : upgradeLevel === 1 ? 150 : upgradeLevel === 2 ? 300 : null
               return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5 }}>
                   {tier ? (
                     <span style={{ color: tier.color, opacity: 0.8 }}>{tier.icon} {tier.label}</span>
                   ) : (
@@ -1478,6 +2132,55 @@ export function HUD() {
           </div>
         )
       })()}
+
+      {/* Long-press ring */}
+      {longPressRing && isTouchDevice && (
+        <svg
+          key={`lp-${longPressRing.x}-${longPressRing.y}`}
+          style={{
+            position: 'fixed',
+            left: longPressRing.x - 24,
+            top: longPressRing.y - 24,
+            width: 48,
+            height: 48,
+            pointerEvents: 'none',
+            zIndex: 200,
+            overflow: 'visible',
+          }}
+        >
+          <circle
+            cx="24" cy="24" r="20"
+            fill="none"
+            stroke="rgba(255, 100, 50, 0.9)"
+            strokeWidth="3"
+            strokeDasharray="126"
+            strokeDashoffset="126"
+            transform="rotate(-90, 24, 24)"
+            style={{ animation: 'long-press-ring 500ms linear forwards' }}
+            onAnimationEnd={() => setLongPressRing(null)}
+          />
+        </svg>
+      )}
+
+      {/* Tap ripple */}
+      {tapRippleState && isTouchDevice && (
+        <div
+          key={tapRippleState.key}
+          style={{
+            position: 'fixed',
+            left: tapRippleState.x - 30,
+            top: tapRippleState.y - 30,
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            border: '2px solid rgba(74, 247, 196, 0.8)',
+            pointerEvents: 'none',
+            zIndex: 200,
+            animation: 'tap-ripple-expand 300ms ease-out forwards',
+          }}
+          onAnimationEnd={() => setTapRippleState(null)}
+        />
+      )}
 
     </div>
   )
