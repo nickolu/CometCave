@@ -76,7 +76,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             🔥 {winStreak} WIN STREAK
           </div>
         )}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
           {difficulties.map(d => {
             const wonToday = hasWonToday(d.key)
             return (
@@ -84,7 +84,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 key={d.key}
                 onClick={() => setDifficulty(d.key)}
                 style={{
-                  padding: '6px 16px',
+                  padding: isTouchDevice ? '8px 20px' : '6px 16px',
                   fontSize: 14,
                   cursor: 'pointer',
                   border: `2px solid ${difficulty === d.key ? d.color : wonToday ? `${d.color}66` : 'rgba(255,255,255,0.2)'}`,
@@ -95,6 +95,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   transition: 'all 0.15s',
                   position: 'relative',
                   minHeight: 44,
+                  flex: isTouchDevice ? '1 1 calc(50% - 8px)' : undefined,
+                  maxWidth: isTouchDevice ? 160 : undefined,
                 }}
               >
                 {d.label}
@@ -240,7 +242,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 title={desc}
                 onClick={() => setMapPreset(key)}
                 style={{
-                  padding: '4px 10px',
+                  padding: isTouchDevice ? '8px 12px' : '4px 10px',
                   fontSize: 11,
                   cursor: 'pointer',
                   border: `1px solid ${mapPreset === key ? '#ffcc44' : 'rgba(255,255,255,0.15)'}`,
@@ -248,18 +250,26 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   background: mapPreset === key ? 'rgba(255,204,68,0.12)' : 'transparent',
                   color: mapPreset === key ? '#ffcc44' : 'rgba(255,255,255,0.4)',
                   letterSpacing: 0.3,
-                  minHeight: 36,
+                  minHeight: isTouchDevice ? 44 : 36,
                   transition: 'all 0.15s',
+                  lineHeight: 1.3,
                 }}
               >
-                {label}
+                <div>{label}</div>
+                {isTouchDevice && <div style={{ fontSize: 9, opacity: 0.5, letterSpacing: 0.5 }}>{desc}</div>}
               </button>
             ))}
           </div>
         </div>
         <button
           onClick={() => setPhase('playing')}
-          style={{ padding: '12px 32px', fontSize: 18, cursor: 'pointer', background: '#4af7c4', border: 'none', borderRadius: 8, fontWeight: 'bold' }}
+          style={{
+            padding: isTouchDevice ? '16px 48px' : '12px 32px',
+            fontSize: isTouchDevice ? 20 : 18,
+            cursor: 'pointer', background: '#4af7c4', border: 'none',
+            borderRadius: 8, fontWeight: 'bold',
+            minHeight: 56, minWidth: isTouchDevice ? 200 : undefined,
+          }}
         >
           Play
         </button>
