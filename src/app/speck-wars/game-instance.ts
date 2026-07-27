@@ -193,7 +193,7 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
-      () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
+      () => { this.surge() },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
       () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type for selected building only
@@ -279,7 +279,7 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
-      surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
+      surge: () => { this.surge() },
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
@@ -987,11 +987,23 @@ export class GameInstance {
   }
 
   surge() {
+    if (this.sim.surgeDuration > 0) return  // already active — do nothing
+    if (this.sim.surgeCooldown > 0) {
+      const remaining = Math.ceil(this.sim.surgeCooldown / 1000)
+      this.notify(`Surge ready in ${remaining}s`, 'rgba(255,215,0,0.65)', 1200)
+      return
+    }
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
     useSpeckWarsStore.getState().addSurgeUsed()
+    this.notify('⚡ SURGE ACTIVE!', '#ffd700')
   }
 
   private sacrifice() {
+    if (this.sim.sacrificeCooldown > 0) {
+      const remaining = Math.ceil(this.sim.sacrificeCooldown / 1000)
+      this.notify(`Sacrifice ready in ${remaining}s`, 'rgba(255,100,100,0.65)', 1200)
+      return
+    }
     const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
     if (!playerBase) return
     const speckCount = this.sim.speckMeta.filter((m, i) => m && m.ownerId === 'player' && this.sim.speckIds[i]).length
