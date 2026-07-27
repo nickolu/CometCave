@@ -914,7 +914,7 @@ export function HUD() {
               <span>E / Ctrl+A — select all · Esc — cancel/deselect</span><span>Arrow keys / W S — pan camera</span>
               <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
               <span style={{ color: 'rgba(74,247,196,0.7)' }}>Left-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-              <span>Garrison btn — post 5 specks at outpost to defend</span><span>Recall btn — release garrisoned specks</span>
+              <span>Garrison btn — post 5 specks: fire at enemies in 180px (75% dmg, veteran bonuses apply)</span><span>Recall btn — release garrisoned specks</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Double-tap canvas → zoom toggle (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>2-finger tap → stop (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
@@ -923,8 +923,9 @@ export function HUD() {
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
               <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
+              <span style={{ color: 'rgba(68,170,255,0.8)' }}>Click owned outpost → RESEARCH after 20s: Carapace +1 HP / Blades +15% DMG / Afterburners +15% SPD</span><span style={{ color: 'rgba(68,170,255,0.5)' }}>global · 1 per outpost</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
-              <span>Y — Battle Roar (lvl2 Cmdr: 5 XP) / Last Stand (lvl3: 15 XP)</span><span style={{ opacity: 0.5 }}>Commander: +1 XP per nearby kill (HUD shows progress)</span>
+              <span>Y — Battle Roar (lvl2 Cmdr: 5 XP) / Last Stand (lvl3: 15 XP)</span><span style={{ opacity: 0.5 }}>Commander: 2× dmg · +1 XP per kill in 150px (HUD shows progress)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>◇ Hero auto-spawns from base — 4× HP, 1.5× dmg, 15s respawn</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hero 5+ kills: +15% spd · 15+ kills: AoE pulse every 3s</span>
