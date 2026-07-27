@@ -210,6 +210,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
           <button
             onClick={() => setFogEnabled(!fogEnabled)}
+            title="Fog of War: hides enemy specks and buildings outside your vision (specks 150px · base 300px · outposts 180px)"
             style={{
               padding: '4px 14px',
               fontSize: 12,
