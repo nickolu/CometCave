@@ -1551,24 +1551,36 @@ export function HUD() {
             </div>
             {hud?.selectedComposition && Object.entries(hud.selectedComposition.types)
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([typeId, count]) => (
-                <div key={typeId} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: isTouchDevice ? 11 : 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
-                }}>
-                  <span style={{
-                    display: 'inline-block',
-                    width: isTouchDevice ? 9 : 7, height: isTouchDevice ? 9 : 7, flexShrink: 0,
-                    borderRadius: typeId === 'heavy' ? 1 : '50%',
-                    background: typeId === 'heavy' ? '#ffa032' : typeId === 'scout' ? '#50c8ff' : '#4af7c4',
-                    transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
-                  }} />
-                  <span style={{ flex: 1, letterSpacing: 1 }}>
-                    {typeId === 'heavy' ? 'Heavy' : typeId === 'scout' ? 'Dart' : typeId.charAt(0).toUpperCase() + typeId.slice(1)}
-                  </span>
-                  <span style={{ color: '#ffffff' }}>{count}</span>
-                </div>
-              ))
+              .map(([typeId, count]) => {
+                const typeColor = typeId === 'heavy' ? '#ffa032' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
+                const typeName = typeId === 'heavy' ? 'Heavy' : typeId === 'scout' ? 'Dart' : typeId.charAt(0).toUpperCase() + typeId.slice(1)
+                return (
+                  <div
+                    key={typeId}
+                    onClick={isTouchDevice ? () => { gameActions?.selectByType?.(typeId); navigator.vibrate?.(12) } : undefined}
+                    title={isTouchDevice ? `Tap to select all ${typeName}s` : undefined}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      fontSize: isTouchDevice ? 11 : 9, color: 'rgba(255,255,255,0.7)', marginBottom: 2,
+                      ...(isTouchDevice ? { cursor: 'pointer', padding: '2px 4px', borderRadius: 3, minHeight: 28, WebkitTapHighlightColor: 'transparent' } : {}),
+                    }}
+                    onPointerDown={isTouchDevice ? e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}22` } : undefined}
+                    onPointerUp={isTouchDevice ? e => { (e.currentTarget as HTMLElement).style.background = '' } : undefined}
+                    onPointerLeave={isTouchDevice ? e => { (e.currentTarget as HTMLElement).style.background = '' } : undefined}
+                  >
+                    <span style={{
+                      display: 'inline-block',
+                      width: isTouchDevice ? 9 : 7, height: isTouchDevice ? 9 : 7, flexShrink: 0,
+                      borderRadius: typeId === 'heavy' ? 1 : '50%',
+                      background: typeColor,
+                      transform: typeId === 'heavy' ? 'rotate(45deg)' : 'none',
+                    }} />
+                    <span style={{ flex: 1, letterSpacing: 1 }}>{typeName}</span>
+                    <span style={{ color: '#ffffff' }}>{count}</span>
+                    {isTouchDevice && <span style={{ fontSize: 9, opacity: 0.35, color: typeColor }}>ALL</span>}
+                  </div>
+                )
+              })
             }
             {/* Type advantage hint — show counter/weakness for dominant unit type */}
             {hud?.selectedComposition && (() => {
