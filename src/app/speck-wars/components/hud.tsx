@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
+import { PLAYER_COLOR, AI_COLOR, DAILY_MODIFIER_LABELS } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
@@ -346,7 +346,10 @@ export function HUD() {
               DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
             {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
-              <span style={{ color: '#ffd700', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right' }}>
+              <span
+                title={DAILY_MODIFIER_LABELS[hud.dailyModifier]}
+                style={{ color: '#ffd700', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right', cursor: 'help' }}
+              >
                 {hud.dailyModifier === 'bulwark' ? '⚔ BULWARK' : hud.dailyModifier === 'blitz' ? '⚡ BLITZ' : '🏰 SIEGE'}
               </span>
             )}
