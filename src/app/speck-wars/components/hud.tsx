@@ -916,7 +916,7 @@ export function HUD() {
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
               <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-              <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
+              <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click rally · right-click pan</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
               <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
