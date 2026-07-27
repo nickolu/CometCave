@@ -1023,7 +1023,10 @@ export class GameInstance {
         const db = (b.x - playerBase.x) ** 2 + (b.y - playerBase.y) ** 2
         return da - db
       })
-    if (targets.length === 0) return
+    if (targets.length === 0) {
+      this.notify('→ All outposts held — press B to rush enemy base', '#ffd700', 2000)
+      return
+    }
     const now = Date.now()
     if (now - this.lastAdvanceMs < 3000 && targets.length > 1) {
       this.lastAdvanceIdx = (this.lastAdvanceIdx + 1) % targets.length
