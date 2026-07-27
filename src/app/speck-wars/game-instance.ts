@@ -49,6 +49,8 @@ export class GameInstance {
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
   private prevCommanderAbilityCooldown = 0
+  private dominationWarnedAt15s = false   // true once "15s left" AI domination warning fires
+  private dominationWarnedAt10s = false   // true once "10s left" AI domination warning fires
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -563,6 +565,25 @@ export class GameInstance {
               this.notify('⬡ ENEMY HAS ALL OUTPOSTS — 60s TO WIN!', '#ff4f7b', 5000)
             }
             this.lastTripleHolder = holder
+            // Reset domination warnings when control changes
+            if (holder !== 'ai') {
+              this.dominationWarnedAt15s = false
+              this.dominationWarnedAt10s = false
+            }
+          }
+          // Domination critical warnings: AI is about to win
+          if (holder === 'ai' && event.data.dominationProgress !== null) {
+            const progress = event.data.dominationProgress
+            const secsLeft = Math.ceil((1 - progress) * 60)
+            if (secsLeft <= 15 && !this.dominationWarnedAt15s) {
+              this.dominationWarnedAt15s = true
+              this.notify(`⬡ ENEMY WINS IN ${secsLeft}s — RECAPTURE NOW!`, '#ff0055', 3000)
+              navigator.vibrate?.([200, 100, 200, 100, 200])
+            } else if (secsLeft <= 10 && !this.dominationWarnedAt10s) {
+              this.dominationWarnedAt10s = true
+              this.notify('⬡ DOMINATION IMMINENT!', '#ff0055', 3000)
+              navigator.vibrate?.([400, 100, 400])
+            }
           }
 
           // Surge cooldown ready notification
