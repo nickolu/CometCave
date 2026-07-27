@@ -1,5 +1,6 @@
 import type { Camera } from '../rendering/camera'
 import { zoomAt, screenToWorld } from '../rendering/camera'
+import { emitLongPressStart, emitLongPressCancel, emitTapRipple } from './touch-feedback'
 
 export class InputHandler {
   private canvas: HTMLCanvasElement
@@ -47,6 +48,8 @@ export class InputHandler {
   private lastPinchDist = 0  // 0 = not pinching
   private pinchVelocity = 0   // zoom factor momentum
   private pinchDecayTimer: ReturnType<typeof requestAnimationFrame> | null = null
+  private lastPinchMidX = 0
+  private lastPinchMidY = 0
   private touchStartX = 0
   private touchStartY = 0
   private isDragSelect = false
@@ -58,6 +61,9 @@ export class InputHandler {
   private lastTapX = 0
   private lastTapY = 0
   private touchPatrolPending = false
+  private twoFingerActive = false      // true while 2 fingers are on canvas
+  private twoFingerMoved = false       // true if pinch changed significantly (not a tap)
+  private twoFingerTapStartDist = 0   // initial pinch distance when 2nd finger touched
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -298,11 +304,23 @@ export class InputHandler {
           this.longPressFired = true
         }
       }, 500)
+      emitLongPressStart(e.touches[0].clientX, e.touches[0].clientY)
     } else if (e.touches.length === 2) {
+      // Cancel any pending long-press from the first finger
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer)
+        this.longPressTimer = null
+      }
       this.isDragging = false
       const dx = e.touches[1].clientX - e.touches[0].clientX
       const dy = e.touches[1].clientY - e.touches[0].clientY
-      this.lastPinchDist = Math.sqrt(dx * dx + dy * dy)
+      const initDist = Math.sqrt(dx * dx + dy * dy)
+      this.lastPinchDist = initDist
+      this.lastPinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      this.lastPinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+      this.twoFingerTapStartDist = initDist
+      this.twoFingerActive = true
+      this.twoFingerMoved = false
     }
   }
 
@@ -313,6 +331,10 @@ export class InputHandler {
       const dx = e.touches[1].clientX - e.touches[0].clientX
       const dy = e.touches[1].clientY - e.touches[0].clientY
       const newDist = Math.sqrt(dx * dx + dy * dy)
+      // If pinch distance changed significantly, this is a pinch not a tap
+      if (Math.abs(newDist - this.twoFingerTapStartDist) > 15) {
+        this.twoFingerMoved = true
+      }
       const rawFactor = newDist / this.lastPinchDist
       const factor = 1 + (rawFactor - 1) * 0.4  // dampen to 40% of raw pinch speed
       const rect = this.canvas.getBoundingClientRect()
@@ -321,6 +343,13 @@ export class InputHandler {
       Object.assign(this.camera, zoomAt(this.camera, mx, my, factor))
       this.lastPinchDist = newDist
       this.pinchVelocity = rawFactor - 1  // positive = zooming in, negative = out
+      // Two-finger pan: track midpoint movement and pan camera accordingly
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+      this.camera.x += midX - this.lastPinchMidX
+      this.camera.y += midY - this.lastPinchMidY
+      this.lastPinchMidX = midX
+      this.lastPinchMidY = midY
     } else if (this.isDragging && e.touches.length === 1) {
       if (e.touches.length === 1) {
         const moveDist = Math.sqrt(
@@ -330,6 +359,7 @@ export class InputHandler {
         if (moveDist > 12 && this.longPressTimer) {
           clearTimeout(this.longPressTimer)
           this.longPressTimer = null
+          emitLongPressCancel()
         }
       }
       this.camera.x += e.touches[0].clientX - this.lastX
@@ -353,6 +383,7 @@ export class InputHandler {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
+      emitLongPressCancel()
     }
     // Tap-to-rally / double-tap-to-zoom: only if long-press didn't fire
     if (!this.longPressFired && this.lastPinchDist === 0 && e.changedTouches.length === 1) {
@@ -374,6 +405,7 @@ export class InputHandler {
             const world = screenToWorld(sx, sy, this.camera)
             navigator.vibrate?.([10, 30, 10, 30, 10])  // triple-pulse for patrol
             this.onPatrol?.(world.x, world.y)
+            emitTapRipple(touch.clientX, touch.clientY)
           } else if (isDoubleTap) {
             // Double-tap: zoom 1.5× toward tap point; if already zoomed in (≥1.5×), return to overview (0.7×)
             const factor = this.camera.zoom >= 1.5 ? (0.7 / this.camera.zoom) : 1.5
@@ -388,10 +420,21 @@ export class InputHandler {
               const world = screenToWorld(sx, sy, this.camera)
               navigator.vibrate?.(18)  // short pulse confirms rally
               this.onRally(world.x, world.y)
+              emitTapRipple(touch.clientX, touch.clientY)
             }
           }
         }
       }
+    }
+    // Two-finger tap → stop selected specks
+    if (this.twoFingerActive && !this.twoFingerMoved && e.touches.length === 0) {
+      navigator.vibrate?.([20, 30, 20])  // double-tap pattern — distinct from rally (18ms) and attack-move ([30,60,30])
+      this.onStop?.()
+    }
+    // Reset two-finger state when all fingers lifted
+    if (e.touches.length === 0) {
+      this.twoFingerActive = false
+      this.twoFingerMoved = false
     }
     this.isDragging = false
     this.longPressFired = false
