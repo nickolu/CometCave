@@ -911,14 +911,14 @@ export function HUD() {
               <span>E / Ctrl+A — select all · Esc — cancel/deselect</span><span>Arrow keys / W S — pan camera</span>
               <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
               <span style={{ color: 'rgba(74,247,196,0.7)' }}>Left-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-              <span>A — attack-move mode (then left-click destination)</span><span>then left-click destination to execute</span>
+              <span>Garrison btn — post 5 specks at outpost to defend</span><span>Recall btn — release garrisoned specks</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
               <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
               <span>1/2/3 — set spawn type</span><span>Minimap — left-click rally · right-click pan</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
-              <span>T — build turret (select 20+ specks first)</span><span>? — this help</span>
+              <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard mode (follow selected)</span>
               <span>Y — Battle Roar (lvl2 Cmdr) / Last Stand (lvl3)</span><span style={{ opacity: 0.5 }}>Commander levels up from nearby kills</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
