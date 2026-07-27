@@ -1254,7 +1254,7 @@ export function HUD() {
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(aiTypes)}</span>
                 <span style={{ fontSize: 10, opacity: 0.6 }}>{((hud.spawnRates?.player ?? 0) / 60).toFixed(1)}/s prod</span>
                 <span style={{ fontSize: 10, opacity: 0.6 }}>{((hud.spawnRates?.ai ?? 0) / 60).toFixed(1)}/s prod</span>
-                <span style={{ fontSize: 10, color: playerSupply >= supplyCap ? '#ff4f7b' : playerSupply >= 60 ? '#ffaa44' : undefined }}>
+                <span title="60+: spawn slows (orange) · 120: outpost spawn stops (red) · heavy costs 3, dart costs 0.5" style={{ fontSize: 10, color: playerSupply >= supplyCap ? '#ff4f7b' : playerSupply >= 60 ? '#ffaa44' : undefined }}>
                   Supply: {Math.round(playerSupply)}/{supplyCap}
                 </span>
                 <span style={{ fontSize: 10, opacity: 0.5 }}>
