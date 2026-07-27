@@ -348,6 +348,7 @@ export class GameInstance {
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
+      navigator.vibrate?.([50, 30, 50, 30, 100])
     }, 3000)
 
     // Show tutorial hints for first-time players
@@ -465,6 +466,7 @@ export class GameInstance {
           const bua = event.data.baseUnderThreat ?? false
           if (bua && !this.prevBaseUnderThreat) {
             this.notify('⚠ BASE UNDER ATTACK', '#ff3333')
+            navigator.vibrate?.([300, 100, 300])
           }
           this.prevBaseUnderThreat = bua
           const adv = event.data.enemyAdvanceDetected ?? false
@@ -488,6 +490,7 @@ export class GameInstance {
               this.outpostAttackWarnedAt[outpostId] = now
               const name = outpostId.replace('outpost-', '').toUpperCase()
               this.notify(`⬡ ${name} UNDER ATTACK!`, '#ff8c00', 2500)
+              navigator.vibrate?.([150, 50, 150])
             }
           }
           // Clear warnings for outposts that are no longer under attack
@@ -638,6 +641,7 @@ export class GameInstance {
         }
         if (event.type === 'CAMP_CAPTURED' && event.newOwner === 'player') {
           this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
+          navigator.vibrate?.([20, 30, 20, 30, 20])
           store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
         }
         if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
@@ -659,6 +663,9 @@ export class GameInstance {
               : `⬡ ${outpostName} CAPTURED`
             const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
             this.notify(message, color, 2500)
+            if (isPlayerLoss) navigator.vibrate?.(300)
+            else if (isRecapture) navigator.vibrate?.([30, 40, 30, 40, 60])
+            else navigator.vibrate?.([20, 30, 20])
             store.pushKillFeedEntry({ icon: '⬡', label: message.replace('⬡ ', ''), color })
           } else if (event.newOwner === 'ai' && event.previousOwner === 'neutral') {
             const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
