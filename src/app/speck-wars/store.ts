@@ -40,9 +40,6 @@ interface SpeckWarsStore {
   losses: number
   addKill: () => void
   addLoss: () => void
-  spawnMode: 'basic' | 'heavy' | 'scout'
-  cycleSpawnMode: () => 'basic' | 'heavy' | 'scout'
-  setSpawnMode: (mode: 'basic' | 'heavy' | 'scout') => void
   peakArmySize: number
   setPeakArmySize: (n: number) => void
   peakVeteranCount: number
@@ -104,16 +101,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   losses: 0,
   addKill: () => set(s => ({ kills: s.kills + 1 })),
   addLoss: () => set(s => ({ losses: s.losses + 1 })),
-  spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
-  cycleSpawnMode: () => {
-    let next: 'basic' | 'heavy' | 'scout' = 'basic'
-    set(s => {
-      next = s.spawnMode === 'basic' ? 'heavy' : s.spawnMode === 'heavy' ? 'scout' : 'basic'
-      return { spawnMode: next }
-    })
-    return next
-  },
-  setSpawnMode: mode => set({ spawnMode: mode }),
   peakArmySize: 0,
   setPeakArmySize: n => set(s => ({ peakArmySize: Math.max(s.peakArmySize, n) })),
   peakVeteranCount: 0,
@@ -167,7 +154,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     notification: null,
     kills: 0,
     losses: 0,
-    spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
     isNewBest: false,
     peakArmySize: 0,
     peakVeteranCount: 0,
