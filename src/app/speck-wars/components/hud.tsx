@@ -64,10 +64,6 @@ export function HUD() {
   }, [touchSelectActive])
 
   useEffect(() => {
-    if (!hud?.selectedBuilding) setBuildingPanelExpanded(false)
-  }, [hud?.selectedBuilding])
-
-  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Slash' && e.shiftKey) { e.preventDefault(); setShowHelp(h => !h) }
       if (e.code === 'Escape') { setShowHelp(false); setMinimapExpanded(false) }
@@ -102,6 +98,11 @@ export function HUD() {
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
   const stance = useSpeckWarsStore(s => s.stance)
+
+  // Auto-collapse building drawer when building is deselected
+  useEffect(() => {
+    if (!hud?.selectedBuilding) setBuildingPanelExpanded(false)
+  }, [hud?.selectedBuilding])
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
