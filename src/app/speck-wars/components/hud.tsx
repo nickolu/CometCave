@@ -19,6 +19,7 @@ function formatTime(ms: number): string {
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
+  const [controlGroupSizes, setControlGroupSizes] = useState<[number, number, number]>([0, 0, 0])
   const [touchPatrolActive, setTouchPatrolActive] = useState(false)
   const [touchSelectActive, setTouchSelectActive] = useState(false)
   const [isPortrait, setIsPortrait] = useState(() =>
@@ -1984,6 +1985,71 @@ export function HUD() {
             ✕ R
           </button>
           </div>
+          {/* Control group buttons — touch only */}
+          {isTouchDevice && (() => {
+            const selectedSpeckCount = hud?.selectedSpeckCount ?? 0
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, marginTop: 4 }}>
+                <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>GROUPS</div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {([0, 1, 2] as const).map((i) => {
+                    const slot = i + 1
+                    const savedCount = controlGroupSizes[i]
+                    const isSaveMode = selectedSpeckCount > 0
+                    const isEmpty = savedCount === 0
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => {
+                          if (isSaveMode) {
+                            gameActions?.saveControlGroup?.(slot)
+                            setControlGroupSizes(prev => {
+                              const n = [...prev] as [number, number, number]
+                              n[i] = selectedSpeckCount
+                              return n
+                            })
+                            navigator.vibrate?.([10, 30, 10])
+                          } else {
+                            if (isEmpty) return
+                            gameActions?.recallControlGroup?.(slot)
+                            navigator.vibrate?.(15)
+                          }
+                        }}
+                        style={{
+                          pointerEvents: 'auto',
+                          padding: '8px',
+                          fontSize: 10,
+                          cursor: isSaveMode ? 'pointer' : isEmpty ? 'default' : 'pointer',
+                          minHeight: 44,
+                          minWidth: 48,
+                          borderRadius: 4,
+                          fontFamily: 'monospace',
+                          letterSpacing: 0.5,
+                          textAlign: 'center',
+                          lineHeight: 1.3,
+                          opacity: !isSaveMode && isEmpty ? 0.4 : 1,
+                          background: isSaveMode
+                            ? 'rgba(74,247,196,0.08)'
+                            : 'rgba(0,0,0,0.35)',
+                          border: isSaveMode
+                            ? '1px solid rgba(74,247,196,0.6)'
+                            : isEmpty
+                              ? '1px solid rgba(255,255,255,0.1)'
+                              : '1px solid rgba(255,255,255,0.3)',
+                          color: isSaveMode ? '#4af7c4' : isEmpty ? 'rgba(255,255,255,0.3)' : '#fff',
+                        }}
+                      >
+                        {isSaveMode
+                          ? <><div style={{ fontWeight: 700 }}>SAVE</div><div>G{slot}</div></>
+                          : <><div style={{ fontWeight: 700 }}>G{slot}</div><div style={{ fontSize: 9, opacity: 0.7 }}>({savedCount})</div></>
+                        }
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 

@@ -23,8 +23,8 @@ export class InputHandler {
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
   private onSacrifice?: () => void
-  private onSaveControlGroup?: (slot: number) => void
-  private onRecallControlGroup?: (slot: number) => void
+  public onSaveControlGroup?: (slot: number) => void
+  public onRecallControlGroup?: (slot: number) => void
   private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
   private isPanDragging = false   // middle-mouse only
   private isRightDragging = false

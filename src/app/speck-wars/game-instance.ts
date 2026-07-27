@@ -266,6 +266,26 @@ export class GameInstance {
     this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
+    this.inputHandler.onSaveControlGroup = (slot: number) => {
+      const saved = [...this.sim.selectedSpeckIds]
+      this.controlGroups.set(slot, saved)
+      if (saved.length > 0) {
+        this.notify(`★ Group ${slot} — ${saved.length} specks`, '#4af7c4', 900)
+      }
+    }
+    this.inputHandler.onRecallControlGroup = (slot: number) => {
+      const saved = this.controlGroups.get(slot)
+      if (!saved || saved.length === 0) return
+      const aliveIds = new Set<string>()
+      for (let i = 0; i < this.sim.speckCount; i++) {
+        if (this.sim.speckIds[i] && this.sim.speckMeta[i]) aliveIds.add(this.sim.speckIds[i])
+      }
+      this.sim.selectedSpeckIds.clear()
+      for (const id of saved) {
+        if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
+      }
+      this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+    }
     this.inputHandler.onCommanderAbility = () => this.commanderAbility()  // Y — Battle Roar / Last Stand
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -301,6 +321,12 @@ export class GameInstance {
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
       cycleStance: () => this.cycleStance(),
+      saveControlGroup: (slot: number) => {
+        this.inputHandler.onSaveControlGroup?.(slot)
+      },
+      recallControlGroup: (slot: number) => {
+        this.inputHandler.onRecallControlGroup?.(slot)
+      },
       researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
         this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
       },
