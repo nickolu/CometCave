@@ -1801,7 +1801,29 @@ export function HUD() {
           })()}
           {(() => {
             const cmd = hud?.commander
-            if (!cmd || cmd.level < 2) return null
+            const respawnMs = hud?.commanderRespawnMs ?? 0
+            if (!cmd || cmd.level < 2) {
+              if (respawnMs > 0) {
+                return (
+                  <div style={{
+                    padding: '8px 12px',
+                    fontSize: 11,
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(255,215,0,0.25)',
+                    borderRadius: 20,
+                    color: 'rgba(255,215,0,0.5)',
+                    letterSpacing: 1,
+                    fontFamily: 'monospace',
+                    minHeight: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}>
+                    ★ {Math.ceil(respawnMs / 1000)}s
+                  </div>
+                )
+              }
+              return null
+            }
             const cd = cmd.abilityCooldown
             const active = cmd.abilityActive > 0
             const ready = cd <= 0 && !active

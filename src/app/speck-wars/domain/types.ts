@@ -189,6 +189,7 @@ export interface HudData {
   waveInProgress: boolean
   sacrificeCooldown: number
   commander: { level: number; abilityCooldown: number; abilityActive: number } | null
+  commanderRespawnMs: number   // ms until player commander respawns; 0 if alive or not yet spawned
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean

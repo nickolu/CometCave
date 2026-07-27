@@ -756,5 +756,5 @@ function emitHudUpdate(sim: SimulationState) {
     }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, commander, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, commander, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding, commanderRespawnMs: sim.heroRespawnTimer['player'] ?? 0 } })
 }
