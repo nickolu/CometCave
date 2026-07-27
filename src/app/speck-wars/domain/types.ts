@@ -33,6 +33,8 @@ export interface SpeckMeta {
   commanderAbilityCooldown?: number   // ms until Battle Roar / Last Stand can fire again
   commanderAbilityActive?: number     // ms of Level 3 buff remaining (invuln + 3× dmg)
   speedBoostTimer?: number      // ms of +50% speed boost from commander Last Stand
+  isGarrisoned?: boolean         // true = removed from field, attached to garrison
+  garrisonBuildingId?: string    // which building this speck is garrisoned in
 }
 
 export interface BuildingEntity {
@@ -56,6 +58,7 @@ export interface BuildingEntity {
   sacrificeArrived?: number
   constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
+  garrisonedSpeckIds?: string[] // up to 5 specks garrisoned here
   campResetMs?: number          // ms until camp resets to neutral (when owned)
   researchedUpgrade?: 'carapace' | 'blades' | 'afterburners'
 }
@@ -139,6 +142,8 @@ export type InputEvent =
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
   | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
   | { type: 'COMMANDER_ABILITY'; ownerId: string }
+  | { type: 'GARRISON'; ownerId: string; buildingId: string; speckIds: string[] }
+  | { type: 'RECALL_GARRISON'; ownerId: string; buildingId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -196,7 +201,7 @@ export interface HudData {
   rallyCryActive: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string } | null
+  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string; garrisonCount?: number } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]
