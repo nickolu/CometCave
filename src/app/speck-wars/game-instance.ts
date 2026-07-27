@@ -54,6 +54,7 @@ export class GameInstance {
   private dominationWarnedAt10s = false         // true once "10s left" AI domination warning fires
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
+  private prevWaveInProgress = false
   private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
@@ -616,6 +617,13 @@ export class GameInstance {
             this.notify(`⚠ WAVE IN ${secs}s — PREPARE DEFENSES`, '#ff6b35', 2500)
           }
           this.prevWaveCountdown = waveCd
+
+          // Wave cleared notification
+          if (this.prevWaveInProgress && !waveInProg) {
+            const waveNum = event.data.waveNumber > 0 ? ` ${event.data.waveNumber}` : ''
+            this.notify(`✓ WAVE${waveNum} CLEARED`, '#44dd88', 2000)
+          }
+          this.prevWaveInProgress = waveInProg
 
           // Research available notification: outpost held 20s+ unlocks upgrade research
           const RESEARCH_FORTIFY_THRESHOLD = 20000 / 30000  // 0.667 — matches tick.ts gate

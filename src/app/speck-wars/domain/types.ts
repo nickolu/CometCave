@@ -115,6 +115,7 @@ export interface SimulationState {
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
+  waveNumber: number             // current wave count (0 = not started)
   sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
   obstacles: WallObstacle[]
 }
@@ -187,6 +188,7 @@ export interface HudData {
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null
   waveInProgress: boolean
+  waveNumber: number
   sacrificeCooldown: number
   commander: { level: number; abilityCooldown: number; abilityActive: number } | null
   commanderRespawnMs: number   // ms until player commander respawns; 0 if alive or not yet spawned
