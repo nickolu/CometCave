@@ -98,8 +98,6 @@ export function HUD() {
   const kills = useSpeckWarsStore(s => s.kills)
   const losses = useSpeckWarsStore(s => s.losses)
   const killFeed = useSpeckWarsStore(s => s.killFeed)
-  const spawnMode = useSpeckWarsStore(s => s.spawnMode)
-  const setSpawnMode = useSpeckWarsStore(s => s.setSpawnMode)
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
@@ -703,36 +701,7 @@ export function HUD() {
         >
           {speed}×
         </button>
-        {/* Spawn type selector — hidden on touch (bottom-right panel has it) */}
-        {!isTouchDevice && (['basic', 'heavy', 'scout'] as const).map((type, idx) => {
-          const active = spawnMode === type
-          const color = type === 'heavy' ? '#ffa032' : type === 'scout' ? '#50c8ff' : '#ffffff'
-          const subtitle = type === 'heavy' ? 'slow · siege · ↑basic' : type === 'scout' ? 'fast · flanker · ↑heavy' : 'balanced · ↑scout'
-          return (
-            <button
-              key={type}
-              onClick={() => gameActions?.setSpawnType?.(type)}
-              title={`[${idx + 1}] Spawn ${type} — ${subtitle}`}
-              style={{
-                pointerEvents: 'auto',
-                padding: '8px 12px',
-                fontSize: 12,
-                cursor: 'pointer',
-                background: active ? `${color}22` : 'rgba(0,0,0,0.5)',
-                border: `1px solid ${active ? color : 'rgba(255,255,255,0.2)'}`,
-                borderRadius: idx === 0 ? '4px 0 0 4px' : idx === 2 ? '0 4px 4px 0' : '0',
-                color: active ? color : 'rgba(255,255,255,0.4)',
-                marginLeft: idx === 0 ? 0 : -1,
-                lineHeight: 1.3,
-                textAlign: 'center',
-                minHeight: 44,
-              }}
-            >
-              <div style={{ fontWeight: 700, letterSpacing: 0.5 }}>{idx + 1} {type.toUpperCase()}</div>
-              <div style={{ fontSize: 10, opacity: 0.7, letterSpacing: 0.3 }}>{subtitle}</div>
-            </button>
-          )
-        })}
+        {/* Spawn type selector removed — set per-building in the building panel */}
         {/* Stance toggle — cycles through aggressive/defensive/hold — hidden on touch (bottom-right panel has it) */}
         {!isTouchDevice && gameActions?.cycleStance && (() => {
           const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
@@ -1244,7 +1213,7 @@ export function HUD() {
               return parts.join(', ')
             }
             // Production rate estimate
-            const BASE_MS = spawnMode === 'heavy' ? 1800 : spawnMode === 'scout' ? 500 : 800
+            const BASE_MS = 800 // base interval for 'basic' type; spawn type is now set per-building
             const OUTPOST_MS = 1200
             const playerTriple = hud.tripleOutpostOwner === 'player'
             const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)
@@ -1353,7 +1322,6 @@ export function HUD() {
                       : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / 20000) * 100)}% fortified`}
                   </div>
                 )}
-                {/* Spawn type selector */}
                 {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && (
                   <div style={{ marginTop: 6 }}>
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>SPAWNING</div>
@@ -1370,7 +1338,7 @@ export function HUD() {
                             onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
                             style={{
                               flex: 1,
-                              padding: isTouchDevice ? '6px 0' : '3px 0',
+                              padding: isTouchDevice ? '6px 4px' : '3px 7px',
                               fontSize: isTouchDevice ? 10 : 8,
                               cursor: 'pointer', letterSpacing: 0.5,
                               background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
@@ -1380,6 +1348,7 @@ export function HUD() {
                               fontFamily: 'monospace',
                               minHeight: isTouchDevice ? 40 : 24,
                               fontWeight: active ? 700 : 400,
+                              pointerEvents: 'auto',
                             }}
                           >
                             {label}
@@ -1692,36 +1661,7 @@ export function HUD() {
               </div>
             )
           })()}
-          {/* Spawn type quick-select — bottom-right for thumb reach on mobile */}
-          {isTouchDevice && (
-            <div style={{ display: 'flex', gap: 4 }}>
-              {([
-                { type: 'basic' as const, label: 'BASIC', color: 'rgba(255,255,255,0.85)' },
-                { type: 'heavy' as const, label: 'HEAVY', color: '#ffa032' },
-                { type: 'scout' as const, label: 'DART', color: '#50c8ff' },
-              ]).map(({ type, label, color }) => {
-                const active = spawnMode === type
-                return (
-                  <button
-                    key={type}
-                    onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
-                    style={{
-                      padding: '8px 10px', fontSize: 10,
-                      cursor: 'pointer', letterSpacing: 1,
-                      background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
-                      border: active ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.15)',
-                      borderRadius: 4, color: active ? color : 'rgba(255,255,255,0.35)',
-                      fontFamily: 'monospace', minHeight: 44, minWidth: 52,
-                      fontWeight: active ? 700 : 400,
-                      transition: 'all 0.1s',
-                    }}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
-          )}
+          {/* Spawn type quick-select removed — set per-building via building panel */}
           {/* Stance indicator — tappable on mobile to cycle stance */}
           <div
             onClick={isTouchDevice ? (() => { navigator.vibrate?.(12); gameActions?.cycleStance?.() }) : undefined}

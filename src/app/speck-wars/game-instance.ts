@@ -167,11 +167,7 @@ export class GameInstance {
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => this.clearRally(),                             // R — clear rally
-      () => {                                              // H — cycle spawn mode
-        const next = useSpeckWarsStore.getState().cycleSpawnMode()
-        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
-        this.notify(`Spawn: ${next.toUpperCase()}`, next === 'heavy' ? '#ff8844' : '#4af7c4', 1200)
-      },
+      () => {},                                            // H — (was: cycle spawn mode; now per-building only via panel)
       () => {                                              // C — recenter camera on player base
         const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
         if (!base) return
@@ -198,17 +194,17 @@ export class GameInstance {
       () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
       () => { this.snapToBase() },                                          // H — snap camera to home base
-      (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
+      (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type for selected building only
         const selectedBuildingId = this.sim.selectedBuildingId
+        if (!selectedBuildingId) return  // per-building only; select a base/outpost first
         this.sim.inputQueue.push({
           type: 'SET_SPAWN_TYPE',
           ownerId: 'player',
           speckTypeId: typeId,
-          buildingId: selectedBuildingId ?? undefined,
+          buildingId: selectedBuildingId,
         })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
-        this.notify(label, color, 1200)
+        this.notify(`→ ${typeId.toUpperCase()}`, color, 900)
       },
       () => {                                                           // X — cycle game speed
         useSpeckWarsStore.getState().cycleSpeed()
@@ -301,15 +297,15 @@ export class GameInstance {
       sacrifice: () => { this.sacrifice() },
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
         const selectedBuildingId = this.sim.selectedBuildingId
+        if (!selectedBuildingId) return
         this.sim.inputQueue.push({
           type: 'SET_SPAWN_TYPE',
           ownerId: 'player',
           speckTypeId: typeId,
-          buildingId: selectedBuildingId ?? undefined,
+          buildingId: selectedBuildingId,
         })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
-        this.notify(label, color, 1200)
+        this.notify(`→ ${typeId.toUpperCase()}`, color, 900)
       },
       buildTurret: () => this.enterBuildMode('turret'),
       panCamera: (wx: number, wy: number) => {
