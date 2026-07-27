@@ -140,11 +140,14 @@ export class GameInstance {
         }
 
         // Check if click hit a player building — select it instead of rallying
+        // Touch devices get a larger buffer to ensure 44px+ screen hit area at default zoom
+        const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+        const hitBuffer = isTouchDevice ? 30 : 20
         for (const building of Object.values(this.sim.buildings)) {
           if (building.ownerId !== 'player') continue
           const btype = BUILDING_TYPES[building.typeId]
           const r = btype?.size ?? 20
-          if (Math.hypot(wx - building.x, wy - building.y) <= r + 20) {
+          if (Math.hypot(wx - building.x, wy - building.y) <= r + hitBuffer) {
             navigator.vibrate?.(10)
             this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
             return
