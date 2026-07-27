@@ -853,11 +853,11 @@ export class GameInstance {
         }
         if (event.type === 'HERO_LEVELED' && event.ownerId === 'player') {
           if (event.heroLevel === 1) {
-            this.notify('⚔ COMMANDER BLOODED — +15% SPEED', '#ffd700', 3000)
+            this.notify('⚔ HERO BLOODED — +15% SPEED', '#ffd700', 3000)
           } else if (event.heroLevel === 2) {
-            this.notify('⚔ COMMANDER EMPOWERED — AoE PULSE ACTIVE', '#ffd700', 3000)
+            this.notify('⚔ HERO EMPOWERED — AoE PULSE ACTIVE', '#ffd700', 3000)
           }
-          store.pushKillFeedEntry({ icon: '⚔', label: 'COMMANDER LEVELS UP', color: '#ffd700' })
+          store.pushKillFeedEntry({ icon: '⚔', label: 'HERO LEVELS UP', color: '#ffd700' })
         }
         if (event.type === 'HERO_DIED' && event.ownerId === 'player') {
           this.notify('⚔ HERO FALLEN — respawning', '#ff8844', 3000)
@@ -867,7 +867,7 @@ export class GameInstance {
           this.notify('⚔ HERO REBORN', '#88ffdd', 2000)
         }
         if (event.type === 'COMMANDER_LEVEL_UP' && event.ownerId === 'player') {
-          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — AoE PULSE' : '🌟 COMMANDER LVL 3 — SPEED AURA'
+          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — BATTLE ROAR UNLOCKED' : '🌟 COMMANDER LVL 3 — LAST STAND UNLOCKED'
           this.notify(label, '#ffd700', 4000)
           store.pushKillFeedEntry({ icon: '⭐', label: label.split(' — ')[0].replace('⚡ ', '').replace('🌟 ', ''), color: '#ffd700' })
         }
