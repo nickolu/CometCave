@@ -1818,6 +1818,33 @@ export function HUD() {
                   </div>
                 )
               }
+              // Commander alive but not yet level 2 — show XP progress toward Battle Roar
+              if (cmd) {
+                const xp = cmd.xp ?? 0
+                return (
+                  <div style={{
+                    padding: '6px 10px',
+                    fontSize: 9,
+                    background: 'rgba(0,0,0,0.25)',
+                    border: '1px solid rgba(255,215,0,0.15)',
+                    borderRadius: 16,
+                    color: 'rgba(255,215,0,0.45)',
+                    letterSpacing: 0.5,
+                    fontFamily: 'monospace',
+                    minHeight: 36,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 2,
+                  }}>
+                    <span>⭐ CMDR {xp}/5 XP</span>
+                    <div style={{ width: 40, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                      <div style={{ width: `${Math.min(1, xp / 5) * 100}%`, height: '100%', background: '#ffd700', borderRadius: 1 }} />
+                    </div>
+                  </div>
+                )
+              }
               return null
             }
             const cd = cmd.abilityCooldown
@@ -1826,32 +1853,39 @@ export function HUD() {
             const isLastStand = cmd.level >= 3
             const baseColor = isLastStand ? '#00ffcc' : '#ffd700'
             return (
-              <button
-                onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
-                title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? '5s: invuln + 3× dmg + nearby speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: 11,
-                  cursor: ready ? 'pointer' : 'default',
-                  background: active ? `${baseColor}33` : ready ? `${baseColor}11` : 'rgba(0,0,0,0.3)',
-                  border: active ? `1px solid ${baseColor}` : ready ? `1px solid ${baseColor}88` : `1px solid ${baseColor}30`,
-                  borderRadius: 20,
-                  color: active ? baseColor : ready ? `${baseColor}cc` : `${baseColor}50`,
-                  letterSpacing: 1,
-                  minHeight: 44,
-                  fontFamily: 'monospace',
-                  opacity: ready || active ? 1 : 0.6,
-                  animation: active && !prefersReducedMotion ? 'pulse-red 0.4s ease-in-out infinite alternate' : 'none',
-                }}
-              >
-                {active
-                  ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
-                  : cd > 0
-                    ? `${isTouchDevice ? (isLastStand ? 'LAST' : 'ROAR') : 'Y'} ${Math.ceil(cd / 1000)}s`
-                    : isTouchDevice
-                      ? `${isLastStand ? '★★ LAST' : '★ ROAR'}`
-                      : `${isLastStand ? '★★' : '★'} Y`}
-              </button>
+              <>
+                <button
+                  onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
+                  title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? '5s: invuln + 3× dmg + nearby speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: 11,
+                    cursor: ready ? 'pointer' : 'default',
+                    background: active ? `${baseColor}33` : ready ? `${baseColor}11` : 'rgba(0,0,0,0.3)',
+                    border: active ? `1px solid ${baseColor}` : ready ? `1px solid ${baseColor}88` : `1px solid ${baseColor}30`,
+                    borderRadius: 20,
+                    color: active ? baseColor : ready ? `${baseColor}cc` : `${baseColor}50`,
+                    letterSpacing: 1,
+                    minHeight: 44,
+                    fontFamily: 'monospace',
+                    opacity: ready || active ? 1 : 0.6,
+                    animation: active && !prefersReducedMotion ? 'pulse-red 0.4s ease-in-out infinite alternate' : 'none',
+                  }}
+                >
+                  {active
+                    ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
+                    : cd > 0
+                      ? `${isTouchDevice ? (isLastStand ? 'LAST' : 'ROAR') : 'Y'} ${Math.ceil(cd / 1000)}s`
+                      : isTouchDevice
+                        ? `${isLastStand ? '★★ LAST' : '★ ROAR'}`
+                        : `${isLastStand ? '★★' : '★'} Y`}
+                </button>
+                {cmd.level === 2 && (
+                  <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.4)', letterSpacing: 0.5, textAlign: 'center', marginTop: 2 }}>
+                    {(cmd.xp ?? 0)}/15 Last Stand
+                  </div>
+                )}
+              </>
             )
           })()}
           <button
