@@ -894,13 +894,13 @@ export function HUD() {
               borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.15)',
             }}>
-              <span>Right-click — move · Left-click — deselect</span><span>Space — pause</span>
-              <span>Left-drag — box select specks</span><span>Middle-drag — pan camera</span>
+              <span>Left-click — move/rally · Left-drag — box select</span><span>Space — pause</span>
+              <span>A + left-click — attack-move · P + left-click — patrol</span><span>Middle-drag — pan camera</span>
               <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
-              <span>E / Ctrl+A — select all · Esc — cancel/clear</span><span>Arrow keys / W S — pan camera</span>
+              <span>E / Ctrl+A — select all · Esc — cancel/deselect</span><span>Arrow keys / W S — pan camera</span>
               <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
-              <span style={{ color: 'rgba(74,247,196,0.7)' }}>Right-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-              <span>A — attack-move modifier · P — patrol modifier</span><span>A/P + right-click — attack-move / patrol</span>
+              <span style={{ color: 'rgba(74,247,196,0.7)' }}>Left-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
+              <span>A — attack-move mode · P — patrol mode</span><span>then left-click destination to execute</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance to outpost · D — defend base</span><span>B — rush enemy base</span>
@@ -1424,7 +1424,7 @@ export function HUD() {
                   </div>
                 )}
                 <div style={{ fontSize: isTouchDevice ? 10 : 8, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>
-                  {isTouchDevice ? 'tap canvas to set rally' : 'right-click to set rally'}
+                  {isTouchDevice ? 'tap canvas to set rally' : 'left-click canvas to set rally'}
                 </div>
               </div>
             )

@@ -229,16 +229,22 @@ export class InputHandler {
         const world = screenToWorld(sx, sy, this.camera)
         this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
       } else {
-        if (this.pendingBuildActive) {
-          // In build placement mode: left-click places the building
-          const rect = this.canvas.getBoundingClientRect()
-          const sx = e.clientX - rect.left
-          const sy = e.clientY - rect.top
-          const world = screenToWorld(sx, sy, this.camera)
-          this.onRally?.(world.x, world.y)
+        // Left-click tap — issue command (StarCraft model)
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.clientX - rect.left
+        const sy = e.clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        if (this.pendingModifier === 'attack') {
+          this.onAttackMove?.(world.x, world.y)
+          this.pendingModifier = 'none'
+          if (this.canvas) this.canvas.style.cursor = 'default'
+        } else if (this.pendingModifier === 'patrol') {
+          this.onPatrol?.(world.x, world.y)
+          this.pendingModifier = 'none'
+          if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
-          // Normal left-click: deselect all
-          this.onClearSelect?.()
+          // Default: move/rally command (selects building if clicked on one, otherwise sets rally)
+          this.onRally?.(world.x, world.y)
         }
       }
       return
@@ -246,25 +252,7 @@ export class InputHandler {
 
     if (e.button === 2) {
       this.isRightDragging = false
-    }
-    if (e.button === 2 && dist < 5) {
-      // Right-click: issue move, attack-move, or patrol command
-      const rect = this.canvas.getBoundingClientRect()
-      const sx = e.clientX - rect.left
-      const sy = e.clientY - rect.top
-      const world = screenToWorld(sx, sy, this.camera)
-      if (this.pendingModifier === 'attack') {
-        this.onAttackMove?.(world.x, world.y)
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else if (this.pendingModifier === 'patrol') {
-        this.onPatrol?.(world.x, world.y)
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else {
-        this.onRally?.(world.x, world.y)
-      }
-      return
+      // Right-click no longer issues commands (use left-click, StarCraft-style)
     }
 
     this.isDragging = false
