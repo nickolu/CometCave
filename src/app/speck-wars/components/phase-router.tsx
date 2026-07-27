@@ -455,8 +455,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
         {won && (
-          <div style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: stars === 3 ? '0 0 20px #ffd700' : 'none' }}>
+          <div title={stars === 3 ? '3 stars: base HP > 75%' : stars === 2 ? '2 stars: base HP > 50%' : '1 star: base HP ≤ 50%'} style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: stars === 3 ? '0 0 20px #ffd700' : 'none' }}>
             {'★'.repeat(stars)}{'☆'.repeat(3 - stars)}
+          </div>
+        )}
+        {won && stars < 3 && (
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'rgba(255,215,0,0.4)', marginTop: -6 }}>
+            {stars === 2 ? 'finish >75% HP for ★★★' : 'finish >50% HP for ★★'}
           </div>
         )}
         {won && isNewBest && (
