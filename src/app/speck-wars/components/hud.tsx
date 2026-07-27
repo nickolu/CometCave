@@ -927,7 +927,7 @@ export function HUD() {
               <span>Y — Battle Roar (lvl2 Cmdr) / Last Stand (lvl3)</span><span style={{ opacity: 0.5 }}>Commander levels up from nearby kills</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50/150/300 kills → BLOODED/HARDENED/VETERAN ARMY upgrades</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts 60s = domination win
+                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts → +2× base production + 60s = domination win
               </span>
             </div>
           )}
@@ -1866,7 +1866,7 @@ export function HUD() {
               <>
                 <button
                   onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
-                  title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? '5s: invuln + 3× dmg + nearby speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
+                  title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? 'stun enemies 1.5s + 5s: invuln + 3× dmg + ally speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
                   style={{
                     padding: '8px 12px',
                     fontSize: 11,
