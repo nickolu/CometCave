@@ -289,7 +289,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             <span>🖱 Click — rally specks</span>
             <span>Space — pause / ? — help</span>
             <span>Drag — box select specks</span>
-            <span>1/2/3 — spawn basic/heavy/scout</span>
+            <span>1/2/3 — spawn basic/heavy/dart</span>
+            <span style={{ gridColumn: 'span 2', color: 'rgba(255,255,255,0.2)' }}>↳ heavy beats basic · dart beats heavy · basic beats dart</span>
             <span>Q — surge (2× spawn 8s)</span>
             <span>V — snap to battle</span>
             <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
@@ -323,7 +324,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         {(() => {
           const tips = isTouchDevice ? [
             'Capture outposts to boost your production.',
-            'Scouts auto-target outposts — tap the Scout spawn button (3rd) for fast flanking.',
+            'Dart specks auto-target outposts — tap the Dart button (3rd) for fast flanking.',
+            'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s for a combat bonus.',
             'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
@@ -338,7 +340,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Elite specks (6+ kills) get a white diamond ring and deal +30% damage.',
           ] : [
             'Capture outposts to boost your production.',
-            'Scouts (3) auto-target outposts — fast but fragile.',
+            'Dart specks (3) auto-target outposts — fast but fragile.',
+            'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s for a combat bonus.',
             'Surge (Q) doubles production for 8s — use it before big pushes.',
