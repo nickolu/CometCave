@@ -60,10 +60,10 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   }, [phase])
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
-    { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI, relaxed' },
+    { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI · player spawn bonus' },
     { key: 'medium', label: 'Medium', color: '#ffcc44', desc: 'standard challenge' },
-    { key: 'hard', label: 'Hard', color: '#ff4f7b', desc: 'fast AI, high pressure' },
-    { key: 'very-hard', label: 'Brutal', color: '#cc00ff', desc: 'overwhelming flood' },
+    { key: 'hard', label: 'Hard', color: '#ff4f7b', desc: 'fast AI · waves enabled' },
+    { key: 'very-hard', label: 'Brutal', color: '#cc00ff', desc: 'relentless flood · waves' },
   ]
 
   if (phase === 'menu') {
