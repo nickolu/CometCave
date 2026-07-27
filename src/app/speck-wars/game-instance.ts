@@ -553,10 +553,12 @@ export class GameInstance {
           const holder = event.data.tripleOutpostOwner ?? null
           if (holder !== this.lastTripleHolder) {
             if (holder === 'player') {
-              this.notify('⬡ TRIPLE OUTPOST! 2× PRODUCTION ACTIVE', '#ffd700', 4000)
+              this.notify('⬡ TRIPLE OUTPOST — 2× PRODUCTION + DOMINATION IN 60s!', '#ffd700', 5000)
             } else if (holder === 'ai' && this.lastTripleHolder !== null) {
               // AI reclaimed triple — only notify if player had just lost it
-              this.notify('⬡ ENEMY HAS ALL OUTPOSTS!', '#ff4f7b', 3000)
+              this.notify('⬡ ENEMY DOMINATES — 60s TO WIN! RECAPTURE!', '#ff4f7b', 5000)
+            } else if (holder === 'ai') {
+              this.notify('⬡ ENEMY HAS ALL OUTPOSTS — 60s TO WIN!', '#ff4f7b', 5000)
             }
             this.lastTripleHolder = holder
           }
