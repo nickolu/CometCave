@@ -337,6 +337,9 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      selectBuilding: (buildingId: string) => {
+        this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId })
+      },
       garrison: (buildingId: string) => this.garrison(buildingId),
       recallGarrison: (buildingId: string) => this.recallGarrison(buildingId),
     })
