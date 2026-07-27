@@ -763,7 +763,7 @@ function emitHudUpdate(sim: SimulationState) {
   }
 
   // Commander state for player HUD
-  let commander: { level: number; abilityCooldown: number; abilityActive: number } | null = null
+  let commander: { level: number; abilityCooldown: number; abilityActive: number; xp: number } | null = null
   for (let i = 0; i < sim.speckCount; i++) {
     const m = sim.speckMeta[i]
     if (m?.isCommander && m.ownerId === 'player' && sim.speckHp[i] > 0) {
@@ -771,6 +771,7 @@ function emitHudUpdate(sim: SimulationState) {
         level: m.commanderLevel ?? 0,
         abilityCooldown: m.commanderAbilityCooldown ?? 0,
         abilityActive: m.commanderAbilityActive ?? 0,
+        xp: m.commanderXp ?? 0,
       }
       break
     }
