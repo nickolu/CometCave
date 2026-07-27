@@ -1368,6 +1368,54 @@ export function HUD() {
             )
           })()}
 
+          {/* Garrison panel — shown for player-owned outposts */}
+          {hud?.selectedBuilding?.typeId === 'outpost' &&
+           hud.selectedBuilding.ownerId === 'player' &&
+           phase === 'playing' && (() => {
+            const garCount = hud.selectedBuilding!.garrisonCount ?? 0
+            const buildingId = hud.selectedBuilding!.id
+            return (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                background: 'rgba(0,0,0,0.7)', padding: '7px 12px', borderRadius: 8,
+                border: '1px solid rgba(68,170,255,0.25)',
+                pointerEvents: 'auto',
+              }}>
+                <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#44aaff', opacity: 0.8 }}>
+                  GARRISON {garCount}/5
+                </div>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <button
+                    onClick={() => gameActions?.garrison?.(buildingId)}
+                    style={{
+                      padding: '4px 10px', fontSize: 10, letterSpacing: 1,
+                      background: 'rgba(0,0,0,0.5)', border: '1px solid #44aaff44',
+                      color: '#44aaff', cursor: 'pointer', borderRadius: 4,
+                      fontFamily: 'monospace', minHeight: 36,
+                    }}
+                  >
+                    <div>GARRISON</div>
+                    <div style={{ opacity: 0.6, fontSize: 9 }}>selected specks</div>
+                  </button>
+                  {garCount > 0 && (
+                    <button
+                      onClick={() => gameActions?.recallGarrison?.(buildingId)}
+                      style={{
+                        padding: '4px 10px', fontSize: 10, letterSpacing: 1,
+                        background: 'rgba(0,0,0,0.5)', border: '1px solid #ff884444',
+                        color: '#ff8844', cursor: 'pointer', borderRadius: 4,
+                        fontFamily: 'monospace', minHeight: 36,
+                      }}
+                    >
+                      <div>RECALL</div>
+                      <div style={{ opacity: 0.6, fontSize: 9 }}>{garCount} specks</div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Outpost upgrade research panel */}
           {hud?.selectedBuilding?.typeId === 'outpost' &&
            hud.selectedBuilding.ownerId === 'player' &&
