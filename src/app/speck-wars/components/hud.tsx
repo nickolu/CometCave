@@ -1234,14 +1234,7 @@ export function HUD() {
               if (parts.length === 0) return '—'
               return parts.join(', ')
             }
-            // Production rate estimate
-            const BASE_MS = 800 // base interval for 'basic' type; spawn type is now set per-building
-            const OUTPOST_MS = 1200
-            const playerTriple = hud.tripleOutpostOwner === 'player'
             const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)
-            const aiTriple = hud.tripleOutpostOwner === 'ai'
-            const playerProd = ((1000/BASE_MS) + playerOutpostCount * (1000/OUTPOST_MS)) * (playerTriple ? 2 : 1)
-            const aiProd = ((1000/800) + aiOutpostCount * (1000/OUTPOST_MS)) * (aiTriple ? 2 : 1)
             return (
               <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 1fr',
@@ -1259,8 +1252,8 @@ export function HUD() {
                 <span>{aiSpecks} specks</span>
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(playerTypes)}</span>
                 <span style={{ fontSize: 10, opacity: 0.7 }}>{fmtTypes(aiTypes)}</span>
-                <span style={{ fontSize: 10, opacity: 0.6 }}>~{playerProd.toFixed(1)}/s prod</span>
-                <span style={{ fontSize: 10, opacity: 0.6 }}>~{aiProd.toFixed(1)}/s prod</span>
+                <span style={{ fontSize: 10, opacity: 0.6 }}>{((hud.spawnRates?.player ?? 0) / 60).toFixed(1)}/s prod</span>
+                <span style={{ fontSize: 10, opacity: 0.6 }}>{((hud.spawnRates?.ai ?? 0) / 60).toFixed(1)}/s prod</span>
                 <span style={{ fontSize: 10, color: playerSupply >= supplyCap ? '#ff4f7b' : playerSupply >= 60 ? '#ffaa44' : undefined }}>
                   Supply: {Math.round(playerSupply)}/{supplyCap}
                 </span>
