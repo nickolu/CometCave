@@ -330,19 +330,26 @@ export function HUD() {
                 }
               `}</style>
             )}
-            <div style={{
-              position: 'absolute', top: isTouchDevice ? 175 : 240, right: 16,
-              padding: '4px 10px',
-              background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
-              border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
-              borderRadius: 4,
-              fontSize: 10,
-              letterSpacing: 1.5,
-              color: inProgress ? '#ff5050' : '#ffa030',
-              animation: (!prefersReducedMotion && inProgress) ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
-            }}>
-              {inProgress ? '⚠ WAVE INCOMING!' : `⚠ WAVE IN ${secs}s`}
-            </div>
+            <button
+              onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(inProgress ? [20, 30, 20] : 15) }}
+              style={{
+                position: 'absolute', top: isTouchDevice ? 175 : 240, right: 16,
+                padding: isTouchDevice ? '8px 12px' : '4px 10px',
+                background: inProgress ? 'rgba(255,80,80,0.25)' : 'rgba(255,140,0,0.15)',
+                border: `1px solid ${inProgress ? 'rgba(255,80,80,0.6)' : 'rgba(255,140,0,0.5)'}`,
+                borderRadius: 4,
+                fontSize: 10,
+                letterSpacing: 1.5,
+                color: inProgress ? '#ff5050' : '#ffa030',
+                animation: (!prefersReducedMotion && inProgress) ? 'danger-pulse 0.6s ease-in-out infinite alternate' : 'none',
+                cursor: 'pointer',
+                fontFamily: 'monospace',
+                minHeight: isTouchDevice ? 44 : undefined,
+                display: 'flex', alignItems: 'center',
+              }}
+            >
+              {inProgress ? '⚠ WAVE INCOMING! ↑' : `⚠ WAVE IN ${secs}s ↑`}
+            </button>
           </>
         )
       })()}
@@ -1213,13 +1220,14 @@ export function HUD() {
                   BUILD
                 </div>
                 <button
-                  onClick={() => { if (canBuild) (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.() }}
+                  onClick={() => { if (canBuild) { (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.(); navigator.vibrate?.(15) } }}
                   style={{
                     width: '100%',
                     background: canBuild ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)',
                     border: `1px solid ${canBuild ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
                     borderRadius: 4,
-                    padding: '6px 8px',
+                    padding: isTouchDevice ? '10px 8px' : '6px 8px',
+                    minHeight: isTouchDevice ? 44 : undefined,
                     cursor: canBuild ? 'pointer' : 'default',
                     textAlign: 'left',
                     fontFamily: 'monospace',
