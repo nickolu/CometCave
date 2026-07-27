@@ -655,13 +655,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             borderTop: '1px solid rgba(255,255,255,0.08)',
           } : {}),
         }}>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
             onClick={resetGame}
             style={{
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: accentColor, border: 'none', borderRadius: 8,
-              fontWeight: 'bold', color: '#000',
+              fontWeight: 'bold', color: '#000', minHeight: 52,
             }}
           >
             Play Again
@@ -671,7 +671,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             style={{
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: 'transparent', border: `2px solid ${accentColor}`,
-              borderRadius: 8, color: accentColor,
+              borderRadius: 8, color: accentColor, minHeight: 52,
             }}
           >
             {copied ? 'Copied!' : 'Share'}
@@ -682,7 +682,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               padding: '12px 28px', fontSize: 16, cursor: 'pointer',
               background: 'transparent', border: '2px solid rgba(255,255,255,0.3)',
               borderRadius: 8, color: 'rgba(255,255,255,0.7)', textDecoration: 'none',
-              display: 'flex', alignItems: 'center',
+              display: 'flex', alignItems: 'center', minHeight: 52,
             }}
           >
             ← Cave
@@ -702,7 +702,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               background: 'transparent',
               border: `1px solid ${nextDiff.color}`,
               borderRadius: 6, color: nextDiff.color, opacity: 0.8,
-              letterSpacing: 1,
+              letterSpacing: 1, minHeight: isTouchDevice ? 44 : undefined,
             }}
           >
             Try {nextDiff.label} →
