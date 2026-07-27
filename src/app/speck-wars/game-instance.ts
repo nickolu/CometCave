@@ -55,6 +55,7 @@ export class GameInstance {
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
+  private prevAtSupplyCap = false              // notify once when player first hits hard supply cap
   private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
@@ -548,6 +549,12 @@ export class GameInstance {
             this.enemySurgeWarnedAt = now
             this.notify('⚠ ENEMY SURGE!', '#ff6b35', 2500)
           }
+          // Supply cap notification: fires once when player first hits hard cap (outpost spawn halts)
+          const atSupplyCap = (event.data.players.player?.supplyUsed ?? 0) >= (event.data.players.player?.supplyCap ?? 120)
+          if (atSupplyCap && !this.prevAtSupplyCap) {
+            this.notify('⚠ SUPPLY CAP — outpost spawn halted (use basic/dart)', '#ffaa44', 3500)
+          }
+          this.prevAtSupplyCap = atSupplyCap
           // Outpost HP critical: player outpost < 20% max HP (50)
           const OUTPOST_MAX_HP = 50
           const OUTPOST_CRITICAL_HP = OUTPOST_MAX_HP * 0.2  // 10 HP
