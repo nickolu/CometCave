@@ -128,7 +128,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     const next = s.killFeed.filter(e => e.ts > cutoff)
     return next.length === s.killFeed.length ? s : { killFeed: next }
   }),
-  stance: 'defensive' as 'aggressive' | 'defensive' | 'hold',
+  stance: 'aggressive' as 'aggressive' | 'defensive' | 'hold',
   setStance: stance => set({ stance }),
   aiPersonality: null,
   setAiPersonality: p => set({ aiPersonality: p }),
@@ -164,7 +164,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     outpostsCaptured: 0,
     killFeed: [],
     aiPersonality: null,
-    stance: 'defensive' as 'aggressive' | 'defensive' | 'hold',
+    stance: 'aggressive' as 'aggressive' | 'defensive' | 'hold',
     difficulty: s.difficulty,
   })),
 }))

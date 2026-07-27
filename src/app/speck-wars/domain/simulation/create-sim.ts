@@ -94,7 +94,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const player: Player = {
     id: 'player', name: 'Player',
     color: PLAYER_COLOR, isAI: false, isDefeated: false, stockpile: {},
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
+    totalKills: 0, upgradeLevel: 0, stance: 'aggressive', creepCampBoostMs: 0,
     outpostUpgrades: { carapace: false, blades: false, afterburners: false },
     supply: 0,
   }
