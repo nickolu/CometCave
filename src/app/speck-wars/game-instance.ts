@@ -404,7 +404,8 @@ export class GameInstance {
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
         { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/scout)', color: '#aaddff' },
-        { delay: 45000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
+        { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
+        { delay: 50000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
         setTimeout(() => this.notify(message, color, 3000), delay)
@@ -820,7 +821,7 @@ export class GameInstance {
           this.notify('✦ ELITE SPECK! +35% DAMAGE', '#ffffff', 2500)
         }
         if (event.type === 'SPECK_LEGEND' && event.ownerId === 'player') {
-          this.notify('✦✦ LEGEND BORN! ✦✦', '#cc44ff', 3000)
+          this.notify('✦✦ LEGEND BORN — +50% DMG + AoE SPLASH! ✦✦', '#cc44ff', 3500)
           store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
         }
         if (event.type === 'UPGRADE_UNLOCKED' && event.ownerId === 'player') {
