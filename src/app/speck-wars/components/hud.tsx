@@ -25,6 +25,7 @@ export function HUD() {
     typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
   )
   const [showPortraitHint, setShowPortraitHint] = useState(true)
+  const [minimapExpanded, setMinimapExpanded] = useState(false)
   const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
   const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
   const tapRippleKeyRef = useRef(0)
@@ -63,7 +64,7 @@ export function HUD() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Slash' && e.shiftKey) { e.preventDefault(); setShowHelp(h => !h) }
-      if (e.code === 'Escape') setShowHelp(false)
+      if (e.code === 'Escape') { setShowHelp(false); setMinimapExpanded(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -388,18 +389,46 @@ export function HUD() {
       {/* Mini-map — top right, below difficulty badge */}
       {hud && (() => {
         const isNarrowDevice = typeof window !== 'undefined' && window.innerWidth < 768
-        const MINIMAP_SIZE = isTouchDevice && isNarrowDevice ? 110 : 160
+        const MINIMAP_SIZE = minimapExpanded ? 280 : (isTouchDevice && isNarrowDevice ? 110 : 160)
         const SCALE = MINIMAP_SIZE / 3000  // world→screen
         return (
           <div style={{
-            position: 'absolute', top: 72, right: 16,
+            position: 'absolute',
+            top: minimapExpanded ? '50%' : 72,
+            right: minimapExpanded ? '50%' : 16,
+            transform: minimapExpanded ? 'translate(50%, -50%)' : 'none',
             width: MINIMAP_SIZE, height: MINIMAP_SIZE,
             background: 'rgba(0,0,0,0.55)',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: 4,
             overflow: 'hidden',
             cursor: 'crosshair',
+            zIndex: minimapExpanded ? 150 : undefined,
           }}>
+            {isTouchDevice && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setMinimapExpanded(v => !v); navigator.vibrate?.(8) }}
+                style={{
+                  position: 'absolute',
+                  top: 2, right: 2,
+                  width: 18, height: 18,
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  borderRadius: 3,
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: 10,
+                  lineHeight: '18px',
+                  textAlign: 'center',
+                  padding: 0,
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  pointerEvents: 'auto',
+                }}
+                aria-label={minimapExpanded ? 'Collapse minimap' : 'Expand minimap'}
+              >
+                {minimapExpanded ? '⊖' : '⊕'}
+              </button>
+            )}
             <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
               onClick={(e) => {
                 if (!gameActions?.rally) return
@@ -409,6 +438,7 @@ export function HUD() {
                 const worldX = (px / MINIMAP_SIZE) * 3000
                 const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.rally(worldX, worldY)
+                if (minimapExpanded) setMinimapExpanded(false)
               }}
               onContextMenu={(e) => {
                 e.preventDefault()
