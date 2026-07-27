@@ -896,17 +896,11 @@ export class GameInstance {
       }
     }
 
-    // Detect AI spawn mode changes and notify player
+    // Track AI spawn mode (notification handled by AI_SPAWN_SWITCH event to avoid duplicates)
     if (store.phase === 'playing') {
       const aiBase = this.sim.buildings['building-ai-base']
       const aiSpawnMode = aiBase?.spawnTypeOverride ?? 'basic'
-      if (aiSpawnMode !== this.lastAiSpawnMode && this.elapsedMs > 5000) {
-        this.lastAiSpawnMode = aiSpawnMode
-        if (aiSpawnMode === 'heavy') {
-          this.notify('⬡ ENEMY BUILDING TANKS', '#ffaa55', 2000)
-        }
-        // No notification when switching back to basic — less alarming
-      }
+      if (aiSpawnMode !== this.lastAiSpawnMode) this.lastAiSpawnMode = aiSpawnMode
     }
 
     // Idle army nudge: remind player to rally when specks sit idle
