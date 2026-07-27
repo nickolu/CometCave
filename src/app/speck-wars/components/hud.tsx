@@ -1,8 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
+import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
 function colorHex(n: number) {
   return `#${n.toString(16).padStart(6, '0')}`
@@ -23,6 +24,9 @@ export function HUD() {
     typeof window !== 'undefined' ? window.innerWidth < window.innerHeight : false
   )
   const [showPortraitHint, setShowPortraitHint] = useState(true)
+  const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
+  const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
+  const tapRippleKeyRef = useRef(0)
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -56,6 +60,17 @@ export function HUD() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  useEffect(() => {
+    if (!isTouchDevice) return
+    const unsub1 = onLongPressStart((x, y) => setLongPressRing({ x, y }))
+    const unsub2 = onLongPressCancel(() => setLongPressRing(null))
+    const unsub3 = onTapRipple((x, y) => {
+      tapRippleKeyRef.current += 1
+      setTapRippleState({ x, y, key: tapRippleKeyRef.current })
+    })
+    return () => { unsub1(); unsub2(); unsub3() }
+  }, [isTouchDevice])
 
   const hud = useSpeckWarsStore(s => s.hud)
   const phase = useSpeckWarsStore(s => s.phase)
@@ -103,6 +118,14 @@ export function HUD() {
         @keyframes minimap-capture-pulse {
           0% { opacity: 0.8; transform: scale(0.85); }
           100% { opacity: 0; transform: scale(1.6); }
+        }
+        @keyframes long-press-ring {
+          from { stroke-dashoffset: 126; }
+          to   { stroke-dashoffset: 0; }
+        }
+        @keyframes tap-ripple-expand {
+          from { transform: scale(1); opacity: 0.8; }
+          to   { transform: scale(4); opacity: 0; }
         }
       `}</style>
       {/* Portrait mode hint — shown briefly for touch users in portrait orientation, auto-dismisses */}
@@ -1962,6 +1985,55 @@ export function HUD() {
           </div>
         )
       })()}
+
+      {/* Long-press ring */}
+      {longPressRing && isTouchDevice && (
+        <svg
+          key={`lp-${longPressRing.x}-${longPressRing.y}`}
+          style={{
+            position: 'fixed',
+            left: longPressRing.x - 24,
+            top: longPressRing.y - 24,
+            width: 48,
+            height: 48,
+            pointerEvents: 'none',
+            zIndex: 200,
+            overflow: 'visible',
+          }}
+        >
+          <circle
+            cx="24" cy="24" r="20"
+            fill="none"
+            stroke="rgba(255, 100, 50, 0.9)"
+            strokeWidth="3"
+            strokeDasharray="126"
+            strokeDashoffset="126"
+            transform="rotate(-90, 24, 24)"
+            style={{ animation: 'long-press-ring 500ms linear forwards' }}
+            onAnimationEnd={() => setLongPressRing(null)}
+          />
+        </svg>
+      )}
+
+      {/* Tap ripple */}
+      {tapRippleState && isTouchDevice && (
+        <div
+          key={tapRippleState.key}
+          style={{
+            position: 'fixed',
+            left: tapRippleState.x - 30,
+            top: tapRippleState.y - 30,
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            border: '2px solid rgba(74, 247, 196, 0.8)',
+            pointerEvents: 'none',
+            zIndex: 200,
+            animation: 'tap-ripple-expand 300ms ease-out forwards',
+          }}
+          onAnimationEnd={() => setTapRippleState(null)}
+        />
+      )}
 
     </div>
   )
