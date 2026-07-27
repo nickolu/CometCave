@@ -567,7 +567,6 @@ export class GameInstance {
           }
 
           // Research available notification: outpost held 20s+ unlocks upgrade research
-          const playerBuildingHp = event.data.players.player?.buildingHp ?? {}
           const RESEARCH_FORTIFY_THRESHOLD = 20000 / 30000  // 0.667 — matches tick.ts gate
           for (const [outpostId, fortLevel] of Object.entries(event.data.outpostFortify ?? {})) {
             if (!(outpostId in playerBuildingHp)) {
