@@ -391,7 +391,10 @@ export function HUD() {
                 display: 'flex', alignItems: 'center',
               }}
             >
-              {inProgress ? '⚠ WAVE INCOMING! ↑' : `⚠ WAVE IN ${secs}s ↑`}
+              {(() => {
+                const waveNum = hud.waveNumber > 0 ? ` ${hud.waveNumber}` : ''
+                return inProgress ? `⚠ WAVE${waveNum} INCOMING! ↑` : `⚠ WAVE${waveNum} IN ${secs}s ↑`
+              })()}
             </button>
           </>
         )

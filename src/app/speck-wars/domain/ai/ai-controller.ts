@@ -37,6 +37,7 @@ export class AIController {
       }
       if (this.waveTimer <= 0) {
         this.waveNumber++
+        sim.waveNumber = this.waveNumber
         this.waveRemainingMs = 15000
         this.waveTimer = 90000
         sim.events.push({ type: 'AI_WAVE_START', waveNumber: this.waveNumber })
