@@ -1094,13 +1094,13 @@ export class GameInstance {
     }
     if (speckIds.length === 0) return
     this.sim.inputQueue.push({ type: 'GARRISON', ownerId: 'player', buildingId, speckIds })
-    this.notify('GARRISON', '#44aaff', 1200)
+    this.notify(`⊡ GARRISONED ${speckIds.length} SPECK${speckIds.length !== 1 ? 'S' : ''}`, '#44aaff', 1200)
     navigator.vibrate?.([20, 40, 20])
   }
 
   recallGarrison(buildingId: string) {
     this.sim.inputQueue.push({ type: 'RECALL_GARRISON', ownerId: 'player', buildingId })
-    this.notify('RECALL', '#44aaff', 900)
+    this.notify('⊡ GARRISON RECALLED', '#44aaff', 900)
     navigator.vibrate?.([15, 30])
   }
 
