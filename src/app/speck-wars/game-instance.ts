@@ -1139,7 +1139,8 @@ export class GameInstance {
     }
     if ((commanderMeta.commanderAbilityCooldown ?? 0) > 0) {
       const remaining = Math.ceil((commanderMeta.commanderAbilityCooldown ?? 0) / 1000)
-      this.notify(`Battle Roar ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
+      const abilityName = level >= 3 ? 'Last Stand' : 'Battle Roar'
+      this.notify(`${abilityName} ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
       return
     }
     this.sim.inputQueue.push({ type: 'COMMANDER_ABILITY', ownerId: 'player' })
