@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { PLAYER_COLOR, AI_COLOR, DAILY_MODIFIER_LABELS } from '../domain/constants'
+import { PLAYER_COLOR, AI_COLOR, DAILY_MODIFIER_LABELS, FORTIFY_TIME } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
@@ -1336,9 +1336,9 @@ export function HUD() {
                 {/* Fortify status */}
                 {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) > 0 && (
                   <div style={{ fontSize: 10, color: 'rgba(255,215,0,0.65)', letterSpacing: 0.5, marginBottom: 4 }}>
-                    {(b.fortifyDuration ?? 0) >= 20000
+                    {(b.fortifyDuration ?? 0) >= FORTIFY_TIME
                       ? '⚒ FORTIFIED — +25% DMG nearby'
-                      : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / 20000) * 100)}% fortified`}
+                      : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / FORTIFY_TIME) * 100)}% fortified`}
                   </div>
                 )}
                 {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && (
