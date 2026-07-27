@@ -44,7 +44,10 @@ export function updateGarrison(sim: SimulationState, dt: number) {
       }
 
       if (nearestI < 0) continue
-      const damage = stype.damage * GARRISON_DAMAGE_MULT
+      const player = sim.players[building.ownerId]
+      const bladesBonus = player?.outpostUpgrades?.blades ? 1.15 : 1.0
+      const veteranBonus = garrisonedMeta.kills >= 12 ? 1.50 : garrisonedMeta.kills >= 6 ? 1.35 : garrisonedMeta.kills >= 3 ? 1.20 : 1.0
+      const damage = stype.damage * GARRISON_DAMAGE_MULT * bladesBonus * veteranBonus
       sim.speckHp[nearestI] -= damage
     }
   }
