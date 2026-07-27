@@ -932,7 +932,7 @@ export function HUD() {
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>◇ Hero auto-spawns from base — 4× HP, 1.5× dmg, 15s respawn</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hero 5+ kills: +15% spd · 15+ kills: AoE pulse every 3s</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts → +2× base production + 60s = domination win
+                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts → +2× base production + 60s = domination win · army cap: 120 specks (outpost spawn halts above cap)
               </span>
             </div>
           )}
