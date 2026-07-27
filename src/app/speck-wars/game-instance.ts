@@ -140,11 +140,14 @@ export class GameInstance {
         }
 
         // Check if click hit a player building — select it instead of rallying
+        // Touch devices get a larger buffer to ensure 44px+ screen hit area at default zoom
+        const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+        const hitBuffer = isTouchDevice ? 30 : 20
         for (const building of Object.values(this.sim.buildings)) {
           if (building.ownerId !== 'player') continue
           const btype = BUILDING_TYPES[building.typeId]
           const r = btype?.size ?? 20
-          if (Math.hypot(wx - building.x, wy - building.y) <= r + 20) {
+          if (Math.hypot(wx - building.x, wy - building.y) <= r + hitBuffer) {
             navigator.vibrate?.(10)
             this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
             return
@@ -269,6 +272,10 @@ export class GameInstance {
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
       rush: () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },
       clearRally: () => this.clearRally(),
+      clearSelection: () => {
+        this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
+        this.sim.rallyPoints['player-selected'] = null
+      },
       surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
@@ -307,6 +314,8 @@ export class GameInstance {
       selectBuilding: (buildingId: string) => {
         this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId })
       },
+      garrison: (buildingId: string) => this.garrison(buildingId),
+      recallGarrison: (buildingId: string) => this.recallGarrison(buildingId),
     })
     // Cinematic intro: start zoomed out to show full world
     const W = this.canvas.clientWidth
@@ -344,12 +353,21 @@ export class GameInstance {
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
+      navigator.vibrate?.([50, 30, 50, 30, 100])
     }, 3000)
 
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
       markFirstGameDone()
-      const hints = [
+      const touch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+      const hints = touch ? [
+        { delay: 1200,  message: '💡 Tap the map to rally your specks!', color: '#aaddff' },
+        { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
+        { delay: 13000, message: '💡 Long-press for attack-move — hold 0.5s!', color: '#ff8c44' },
+        { delay: 22000, message: '💡 Use ⚡ SURGE button — doubles production for 8s!', color: '#ffd700' },
+        { delay: 38000, message: '💡 Double-tap canvas to zoom in/out!', color: '#aaddff' },
+        { delay: 50000, message: '💡 Use 🔧 HEAL to sacrifice 10 specks → repair base!', color: '#64c864' },
+      ] : [
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
@@ -453,6 +471,7 @@ export class GameInstance {
           const bua = event.data.baseUnderThreat ?? false
           if (bua && !this.prevBaseUnderThreat) {
             this.notify('⚠ BASE UNDER ATTACK', '#ff3333')
+            navigator.vibrate?.([300, 100, 300])
           }
           this.prevBaseUnderThreat = bua
           const adv = event.data.enemyAdvanceDetected ?? false
@@ -476,6 +495,7 @@ export class GameInstance {
               this.outpostAttackWarnedAt[outpostId] = now
               const name = outpostId.replace('outpost-', '').toUpperCase()
               this.notify(`⬡ ${name} UNDER ATTACK!`, '#ff8c00', 2500)
+              navigator.vibrate?.([150, 50, 150])
             }
           }
           // Clear warnings for outposts that are no longer under attack
@@ -626,6 +646,7 @@ export class GameInstance {
         }
         if (event.type === 'CAMP_CAPTURED' && event.newOwner === 'player') {
           this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
+          navigator.vibrate?.([20, 30, 20, 30, 20])
           store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
         }
         if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
@@ -647,6 +668,9 @@ export class GameInstance {
               : `⬡ ${outpostName} CAPTURED`
             const color = isPlayerLoss ? '#ff4f7b' : isRecapture ? '#ffd700' : '#4af7c4'
             this.notify(message, color, 2500)
+            if (isPlayerLoss) navigator.vibrate?.(300)
+            else if (isRecapture) navigator.vibrate?.([30, 40, 30, 40, 60])
+            else navigator.vibrate?.([20, 30, 20])
             store.pushKillFeedEntry({ icon: '⬡', label: message.replace('⬡ ', ''), color })
           } else if (event.newOwner === 'ai' && event.previousOwner === 'neutral') {
             const outpostName = event.outpostId.replace('outpost-', '').toUpperCase()
@@ -933,6 +957,32 @@ export class GameInstance {
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
     useSpeckWarsStore.getState().addSacrificeUsed()
+  }
+
+  garrison(buildingId: string) {
+    const building = this.sim.buildings[buildingId]
+    if (!building || building.ownerId !== 'player') return
+    if (building.typeId !== 'outpost') return
+    const speckIds: string[] = []
+    const useSelection = this.sim.selectedSpeckIds.size > 0
+    for (let i = 0; i < this.sim.speckCount; i++) {
+      if (!this.sim.speckIds[i]) continue
+      const m = this.sim.speckMeta[i]
+      if (!m || m.ownerId !== 'player' || m.isGarrisoned) continue
+      if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
+      speckIds.push(m.id)
+      if (speckIds.length >= 5) break
+    }
+    if (speckIds.length === 0) return
+    this.sim.inputQueue.push({ type: 'GARRISON', ownerId: 'player', buildingId, speckIds })
+    this.notify('GARRISON', '#44aaff', 1200)
+    navigator.vibrate?.([20, 40, 20])
+  }
+
+  recallGarrison(buildingId: string) {
+    this.sim.inputQueue.push({ type: 'RECALL_GARRISON', ownerId: 'player', buildingId })
+    this.notify('RECALL', '#44aaff', 900)
+    navigator.vibrate?.([15, 30])
   }
 
   setStance(stance: 'aggressive' | 'defensive' | 'hold') {

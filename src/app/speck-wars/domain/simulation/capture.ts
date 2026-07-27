@@ -63,6 +63,19 @@ export function updateCapture(sim: SimulationState, dt: number) {
       // Clear previous owner's rally — new owner should not inherit it
       building.rallyPoint = null
 
+      // Kill garrisoned specks when outpost is captured
+      const garrison = building.garrisonedSpeckIds ?? []
+      for (const id of garrison) {
+        for (let i = 0; i < sim.speckCount; i++) {
+          if (sim.speckMeta[i]?.id === id) {
+            sim.speckIds[i] = ''
+            sim.speckMeta[i] = null
+            break
+          }
+        }
+      }
+      building.garrisonedSpeckIds = []
+
       if (building.typeId === 'outpost') {
         building.fortifyDuration = 0
         sim.events.push({

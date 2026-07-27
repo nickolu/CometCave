@@ -19,6 +19,7 @@ const games: readonly { title: string; icon: string; href: string; description: 
   { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Create unique AI-powered avatars from your photos' },
   { title: 'Storybook Factory', icon: 'auto_stories', href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, description: 'Create illustrated comic books and storybooks from your pictures' },
   { title: 'Speck Wars', icon: 'bug_report', href: ROUTE_CONSTANTS.SPECK_WARS, description: 'Command your specks to capture enemy bases in this real-time strategy micro-battle' },
+  { title: 'Disneyland Hunt', icon: 'search', href: ROUTE_CONSTANTS.DISNEYLAND_HUNT, description: 'Scavenger hunt checklist for your Disneyland visit — track finds, earn bonus stars' },
 ]
 
 export default function Home() {
