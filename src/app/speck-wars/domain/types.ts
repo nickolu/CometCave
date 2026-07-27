@@ -176,6 +176,7 @@ export interface HudData {
     legendCount: number   // specks with 12+ kills
     supplyUsed: number    // current supply in use
     supplyCap: number     // hard supply cap
+    outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean }
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
