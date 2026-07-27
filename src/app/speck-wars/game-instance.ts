@@ -49,6 +49,7 @@ export class GameInstance {
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
   private prevCommanderAbilityCooldown = 0
+  private prevCommanderRespawnMs = 0
   private dominationWarnedAt15s = false         // true once "15s left" AI domination warning fires
   private dominationWarnedAt10s = false         // true once "10s left" AI domination warning fires
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
@@ -638,11 +639,18 @@ export class GameInstance {
           // Commander ability cooldown ready notification
           const cmdData = event.data.commander
           const cmdCd = cmdData?.abilityCooldown ?? 0
-          const commanderAlive = cmdData !== null && (event.data.commanderRespawnMs ?? 0) === 0
+          const respawnMs = event.data.commanderRespawnMs ?? 0
+          const commanderAlive = cmdData !== null && respawnMs === 0
           if (commanderAlive && cmdCd === 0 && this.prevCommanderAbilityCooldown > 0) {
             this.notify('★ ABILITY READY', 'rgba(255,215,0,0.85)', 2000)
           }
           this.prevCommanderAbilityCooldown = commanderAlive ? cmdCd : 0
+
+          // Commander respawn notification
+          if (respawnMs === 0 && this.prevCommanderRespawnMs > 0) {
+            this.notify('⚔ COMMANDER REBORN', '#4af7c4', 2000)
+          }
+          this.prevCommanderRespawnMs = respawnMs
 
         }
         if (event.type === 'SPECK_DIED') {
@@ -852,11 +860,11 @@ export class GameInstance {
           store.pushKillFeedEntry({ icon: '⚔', label: 'COMMANDER LEVELS UP', color: '#ffd700' })
         }
         if (event.type === 'HERO_DIED' && event.ownerId === 'player') {
-          this.notify('⚔ COMMANDER FALLEN — RESPAWNING IN 15s', '#ff4f7b', 4000)
-          store.pushKillFeedEntry({ icon: '†', label: `COMMANDER FALLEN (${event.kills} kills)`, color: '#ff4f7b' })
+          this.notify('⚔ HERO FALLEN — respawning', '#ff8844', 3000)
+          store.pushKillFeedEntry({ icon: '†', label: `HERO FALLEN (${event.kills} kills)`, color: '#ff8844' })
         }
         if (event.type === 'HERO_SPAWNED' && event.ownerId === 'player') {
-          this.notify('⚔ COMMANDER REBORN', '#4af7c4', 2000)
+          this.notify('⚔ HERO REBORN', '#88ffdd', 2000)
         }
         if (event.type === 'COMMANDER_LEVEL_UP' && event.ownerId === 'player') {
           const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — AoE PULSE' : '🌟 COMMANDER LVL 3 — SPEED AURA'
