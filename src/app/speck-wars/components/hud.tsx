@@ -108,7 +108,7 @@ export function HUD() {
       {/* Portrait mode hint — shown briefly for touch users in portrait orientation, auto-dismisses */}
       {isTouchDevice && isPortrait && showPortraitHint && phase === 'playing' && (
         <div style={{
-          position: 'absolute', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', bottom: 'calc(60px + env(safe-area-inset-bottom, 0px))', left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.2)',
           borderRadius: 6, padding: '6px 14px', fontSize: 12, color: 'rgba(255,255,255,0.7)',
           letterSpacing: 0.5, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 90,
@@ -1056,7 +1056,7 @@ export function HUD() {
 
         return (
           <div style={{
-            position: 'absolute', bottom: 16, left: 0, right: 0,
+            position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', left: 0, right: 0,
             display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12,
           }}>
             {status && (
@@ -1211,7 +1211,7 @@ export function HUD() {
       {phase === 'playing' && (
         <div style={{
           position: 'absolute',
-          bottom: 70,
+          bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
@@ -1560,7 +1560,7 @@ export function HUD() {
       {/* Mobile action buttons — bottom right */}
       {phase === 'playing' && (
         <div style={{
-          position: 'absolute', bottom: 16, right: 16,
+          position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', right: 16,
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
@@ -1816,7 +1816,7 @@ export function HUD() {
         const aiBaseHpFrac = aiBaseHpVal / 100
         const aiBaseColor = aiBaseHpFrac > 0.5 ? '#ff4f7b' : aiBaseHpFrac > 0.2 ? '#ffaa44' : '#ff2200'
         return (
-          <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ position: 'absolute', bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))', left: 16, display: 'flex', flexDirection: 'column', gap: 5 }}>
             {/* Force ratio bar */}
             {total >= 4 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
