@@ -250,7 +250,7 @@ export class GameInstance {
       },
       () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
-      (wx: number, wy: number) => {                                    // A + right-click — attack-move
+      (wx: number, wy: number) => {                                    // A + left-click — attack-move
         this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy, 0xff4f7b)  // red ping for attack-move
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
@@ -407,7 +407,7 @@ export class GameInstance {
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
-        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/scout)', color: '#aaddff' },
+        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/dart)', color: '#aaddff' },
         { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
         { delay: 50000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]

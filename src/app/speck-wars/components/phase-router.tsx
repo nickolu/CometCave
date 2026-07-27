@@ -292,7 +292,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             <span>Drag — box select specks</span>
             <span>1/2/3 — spawn basic/heavy/dart</span>
             <span style={{ gridColumn: 'span 2', color: 'rgba(255,255,255,0.2)' }}>↳ heavy beats basic · dart beats heavy · basic beats dart</span>
-            <span>Q — surge (2× spawn 8s)</span>
+            <span>Q — surge (2× spawn 8s · 45s CD)</span>
             <span>V — snap to recent kills</span>
             <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
             <span>X — speed · E — all · Esc — clear</span>
@@ -328,17 +328,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Dart specks auto-target outposts — tap the Dart button (3rd) for fast flanking.',
             'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
-            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
             'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
             'Tap canvas to rally · long-press canvas to attack-move (aggressive advance).',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
-            'Heavy specks deal 2× damage but produce 2× slower.',
+            'Heavy specks deal 2× damage but cost 3 supply vs 1 for basic (cap: 120). Mix types wisely.',
             'Tap ⚔ FIGHT to snap the camera to where the fighting is happening.',
             'Tap ? in-game to see all touch controls.',
             'Tap ⬡ ALL to select all your specks, then tap canvas to rally them together.',
             'Long-press canvas then lift — specks fight enemies on the way (attack-move).',
             'Tap Hold in the unit panel to make selected specks defend a position.',
-            'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
+            'Elite specks (6+ kills): +35% damage and deal AoE splash nearby. Legend (12+): +50% and larger splash.',
             'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
             'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
             'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
@@ -347,17 +347,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Dart specks (3) auto-target outposts — fast but fragile.',
             'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
-            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
             'Surge (Q) doubles production for 8s — use it before big pushes.',
             'Drag to box-select specks, then click anywhere to rally only your selection.',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
-            'Heavy specks deal 2× damage but produce 2× slower.',
+            'Heavy specks deal 2× damage but produce 2× slower — and cost 3 supply vs 1 for basic (cap: 120). Mix types wisely.',
             'V key snaps the camera to recent kill positions — find the heat of battle.',
             'Press ? in-game to see all hotkeys.',
             'Control groups: box-select specks, Ctrl+4 to save, press 4 to recall.',
-            'Hold A then right-click to issue an attack-move — specks fight enemies en route.',
+            'Hold A then left-click to issue an attack-move — specks fight enemies en route.',
             'H key makes selected specks hold position — great for defending a chokepoint.',
-            'Elite specks (6+ kills) get a white diamond ring and deal +35% damage.',
+            'Elite specks (6+ kills): +35% damage and deal AoE splash nearby. Legend (12+): +50% and larger splash.',
             'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
             'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
             'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
