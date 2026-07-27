@@ -1866,7 +1866,7 @@ export function HUD() {
               <>
                 <button
                   onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
-                  title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? '5s: invuln + 3× dmg + nearby speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
+                  title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? 'stun enemies 1.5s + 5s: invuln + 3× dmg + ally speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
                   style={{
                     padding: '8px 12px',
                     fontSize: 11,
