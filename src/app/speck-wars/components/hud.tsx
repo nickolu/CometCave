@@ -1384,14 +1384,14 @@ export function HUD() {
                   const garCount = b.garrisonCount ?? 0
                   return (
                     <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 10 }}>
-                      <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#44aaff', opacity: 0.8, marginBottom: 5 }}>
-                        GARRISON {garCount}/5
+                      <div style={{ fontSize: 10, letterSpacing: 1.5, color: garCount >= 5 ? '#ff8844' : '#44aaff', opacity: 0.8, marginBottom: 5 }}>
+                        GARRISON {garCount}/5{garCount >= 5 ? ' · FULL' : ''}
                       </div>
                       <div style={{ display: 'flex', gap: 5 }}>
-                        <button onClick={() => gameActions?.garrison?.(b.id)} style={{
+                        <button onClick={() => gameActions?.garrison?.(b.id)} disabled={garCount >= 5} style={{
                           flex: 1, padding: '4px 8px', fontSize: 10, letterSpacing: 1,
-                          background: 'rgba(0,0,0,0.5)', border: '1px solid #44aaff44',
-                          color: '#44aaff', cursor: 'pointer', borderRadius: 4,
+                          background: 'rgba(0,0,0,0.5)', border: `1px solid ${garCount >= 5 ? 'rgba(255,136,68,0.15)' : '#44aaff44'}`,
+                          color: garCount >= 5 ? 'rgba(255,136,68,0.35)' : '#44aaff', cursor: garCount >= 5 ? 'default' : 'pointer', borderRadius: 4,
                           fontFamily: 'monospace', minHeight: 36,
                         }}>
                           <div>GARRISON</div>
