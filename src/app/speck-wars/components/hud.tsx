@@ -712,7 +712,7 @@ export function HUD() {
         {!isTouchDevice && gameActions?.cycleStance && (() => {
           const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
             aggressive: { icon: '⚔', label: 'AGGRO', color: '#ff4f7b', title: '[Z] Aggressive — pursues nearby enemies' },
-            defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — holds position more' },
+            defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — 40px aggro range (vs 150px aggressive)' },
             hold:       { icon: '⛨', label: 'HOLD',   color: '#aaaaaa', title: '[Z] Hold — only attacks at melee range' },
           }
           const cfg = stanceConfig[stance] ?? stanceConfig.defensive
@@ -919,7 +919,7 @@ export function HUD() {
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
               <span>Q — surge (2× spawn 8s)</span><span>V — snap camera to battle</span>
-              <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click rally · right-click pan</span>
+              <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
               <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
