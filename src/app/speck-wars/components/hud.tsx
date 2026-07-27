@@ -760,10 +760,11 @@ export function HUD() {
           <button
             onClick={() => gameActions.selectAll?.()}
             title="[E] Select all friendly specks"
+            aria-label="Select all friendly specks"
             style={{
               pointerEvents: 'auto',
-              padding: '8px 12px',
-              fontSize: 12,
+              padding: isTouchDevice ? '8px 10px' : '8px 12px',
+              fontSize: isTouchDevice ? 16 : 12,
               cursor: 'pointer',
               background: 'rgba(74,247,196,0.12)',
               border: '1px solid rgba(74,247,196,0.4)',
@@ -773,10 +774,10 @@ export function HUD() {
               lineHeight: 1.3,
               textAlign: 'center',
               minHeight: 44,
+              minWidth: isTouchDevice ? 44 : undefined,
             }}
           >
-            <div style={{ fontWeight: 700 }}>⬡ ALL</div>
-            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>E</div>}
+            {isTouchDevice ? '⬡' : <><div style={{ fontWeight: 700 }}>⬡ ALL</div><div style={{ fontSize: 8, opacity: 0.7 }}>E</div></>}
           </button>
         )}
         {/* Snap to base button — essential for mobile (no keyboard shortcut) */}
@@ -787,8 +788,8 @@ export function HUD() {
             aria-label="Snap camera to home base"
             style={{
               pointerEvents: 'auto',
-              padding: '8px 12px',
-              fontSize: 12,
+              padding: isTouchDevice ? '8px 10px' : '8px 12px',
+              fontSize: isTouchDevice ? 16 : 12,
               cursor: 'pointer',
               background: hud?.baseUnderThreat ? 'rgba(255,0,0,0.2)' : 'rgba(74,247,196,0.08)',
               border: `1px solid ${hud?.baseUnderThreat ? 'rgba(255,60,60,0.8)' : 'rgba(74,247,196,0.3)'}`,
@@ -798,11 +799,11 @@ export function HUD() {
               lineHeight: 1.3,
               textAlign: 'center',
               minHeight: 44,
+              minWidth: isTouchDevice ? 44 : undefined,
               animation: hud?.baseUnderThreat && !prefersReducedMotion ? 'pulse-red 0.6s ease-in-out infinite alternate' : 'none',
             }}
           >
-            <div style={{ fontWeight: 700 }}>⌂ HOME</div>
-            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>C</div>}
+            {isTouchDevice ? '⌂' : <><div style={{ fontWeight: 700 }}>⌂ HOME</div><div style={{ fontSize: 8, opacity: 0.7 }}>C</div></>}
           </button>
         )}
         {/* Snap to battle button — mobile: jump camera to where the fight is (V key) */}
@@ -813,8 +814,8 @@ export function HUD() {
             aria-label="Snap camera to battle"
             style={{
               pointerEvents: 'auto',
-              padding: '8px 12px',
-              fontSize: 12,
+              padding: isTouchDevice ? '8px 10px' : '8px 12px',
+              fontSize: isTouchDevice ? 16 : 12,
               cursor: 'pointer',
               background: hud?.enemyAdvanceDetected ? 'rgba(255,100,0,0.2)' : 'rgba(255,80,80,0.1)',
               border: `1px solid ${hud?.enemyAdvanceDetected ? 'rgba(255,120,0,0.8)' : 'rgba(255,80,80,0.35)'}`,
@@ -824,10 +825,10 @@ export function HUD() {
               lineHeight: 1.3,
               textAlign: 'center',
               minHeight: 44,
+              minWidth: isTouchDevice ? 44 : undefined,
             }}
           >
-            <div style={{ fontWeight: 700 }}>⚔ FIGHT</div>
-            {!isTouchDevice && <div style={{ fontSize: 8, opacity: 0.7 }}>V</div>}
+            {isTouchDevice ? '⚔' : <><div style={{ fontWeight: 700 }}>⚔ FIGHT</div><div style={{ fontSize: 8, opacity: 0.7 }}>V</div></>}
           </button>
         )}
         <button
