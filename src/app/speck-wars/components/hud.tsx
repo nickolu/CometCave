@@ -101,7 +101,6 @@ export function HUD() {
   const aiBaseHp = hud?.players.ai?.buildingHp['building-ai-base']
   const aiHpFrac = aiBaseHp !== undefined ? aiBaseHp / BASE_MAX_HP : 1
   const isWinning = phase === 'playing' && aiHpFrac < 0.2 && aiHpFrac > 0  // enemy near death
-  const isTouchDevice = typeof window !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window)
 
   return (
     <div style={{
