@@ -54,7 +54,6 @@ export class GameInstance {
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
-  private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -618,22 +617,6 @@ export class GameInstance {
             this.notify(`✓ WAVE${waveNum} CLEARED`, '#44dd88', 2000)
           }
           this.prevWaveInProgress = waveInProg
-
-          // Research available notification: outpost held 20s+ unlocks upgrade research
-          const RESEARCH_FORTIFY_THRESHOLD = 20000 / 30000  // 0.667 — matches tick.ts gate
-          for (const [outpostId, fortLevel] of Object.entries(event.data.outpostFortify ?? {})) {
-            if (!(outpostId in playerBuildingHp)) {
-              // Lost the outpost — reset so we can re-notify if recaptured
-              this.fortifyResearchNotified.delete(outpostId)
-              continue
-            }
-            if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
-              this.fortifyResearchNotified.add(outpostId)
-              const name = outpostId.replace('outpost-', '').toUpperCase()
-              const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
-              this.notify(`⚗ ${name} OUTPOST — research available! (${isTouchDevice ? 'tap outpost' : 'click outpost'} to research)`, '#44aaff', 3500)
-            }
-          }
 
           // Surge cooldown ready notification
           const surgeCd = event.data.surgeCooldown ?? 0

@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 
@@ -64,16 +64,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 7a-pre. Creep camp timers: boost decay, camp reset
   updateCreepCamps(sim, dt)
-
-  // 7a. Fortification: outposts held continuously accumulate a combat bonus
-  for (const building of Object.values(sim.buildings)) {
-    if (building.typeId !== 'outpost') continue
-    if (building.ownerId === 'neutral') { building.fortifyDuration = 0; continue }
-    // Pause fortification while actively under capture
-    const underCapture = (building.captureProgress ?? 0) > 0 && building.captureSide && building.captureSide !== building.ownerId
-    if (underCapture) continue
-    building.fortifyDuration = Math.min(FORTIFY_TIME, (building.fortifyDuration ?? 0) + dt)
-  }
 
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
@@ -432,7 +422,6 @@ function consumeInputs(sim: SimulationState) {
       if (!player || !building) continue
       if (building.ownerId !== event.ownerId) continue
       if (building.typeId !== 'outpost') continue
-      if ((building.fortifyDuration ?? 0) < 20000) continue  // must hold 20s first
       if (building.researchedUpgrade) continue  // outpost already researched
       if (player.outpostUpgrades[event.upgrade]) continue  // already have this upgrade globally
       building.researchedUpgrade = event.upgrade
@@ -563,12 +552,6 @@ function emitHudUpdate(sim: SimulationState) {
     aiRallyPoint: sim.rallyPoints['ai'] ?? null,
   }
 
-  const outpostFortify: Record<string, number> = {}
-  for (const building of Object.values(sim.buildings)) {
-    if (building.typeId !== 'outpost') continue
-    outpostFortify[building.id] = Math.min(1, (building.fortifyDuration ?? 0) / FORTIFY_TIME)
-  }
-
   let baseUnderThreat = false
   const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
   if (playerBase) {
@@ -625,11 +608,11 @@ function emitHudUpdate(sim: SimulationState) {
     selectedComposition = { types, veteranCount: selVet, eliteCount: selElite, legendCount: selLegend }
   }
 
-  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string } | null = null
+  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; researchedUpgrade?: string } | null = null
   if (sim.selectedBuildingId) {
     const b = sim.buildings[sim.selectedBuildingId]
-    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade }
+    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, researchedUpgrade: b.researchedUpgrade }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
 }

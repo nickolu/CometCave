@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { PLAYER_COLOR, AI_COLOR, DAILY_MODIFIER_LABELS, FORTIFY_TIME } from '../domain/constants'
+import { PLAYER_COLOR, AI_COLOR, DAILY_MODIFIER_LABELS } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
@@ -971,20 +971,6 @@ export function HUD() {
                         }} />
                       </div>
                     ) : null}
-                    {/* Fortification indicator — gold bar for player-owned outposts with fortify progress */}
-                    {(() => {
-                      if (!isPlayerOwned) return null
-                      const level = hud.outpostFortify?.[id] ?? 0
-                      if (level <= 0) return null
-                      return (
-                        <div style={{ width: 14, height: 2, background: 'rgba(255,215,0,0.15)', borderRadius: 1 }}>
-                          <div style={{
-                            width: `${Math.round(level * 100)}%`,
-                            height: '100%', background: '#ffd700', borderRadius: 1, opacity: 0.7,
-                          }} />
-                        </div>
-                      )
-                    })()}
                   </>
                 )
                 return canTap ? (
@@ -1279,14 +1265,6 @@ export function HUD() {
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                   <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
                 </div>
-                {/* Fortify status */}
-                {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) > 0 && (
-                  <div style={{ fontSize: 10, color: 'rgba(255,215,0,0.65)', letterSpacing: 0.5, marginBottom: 4 }}>
-                    {(b.fortifyDuration ?? 0) >= FORTIFY_TIME
-                      ? '⚒ FORTIFIED — +25% DMG nearby'
-                      : `⚒ ${Math.round(((b.fortifyDuration ?? 0) / FORTIFY_TIME) * 100)}% fortified`}
-                  </div>
-                )}
                 {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && (
                   <div style={{ marginTop: 6 }}>
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>SPAWNING</div>
@@ -1329,7 +1307,7 @@ export function HUD() {
                   {isTouchDevice ? 'tap canvas to set rally' : 'left-click canvas to set rally'}
                 </div>
                 {/* Research panel */}
-                {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) >= 20000 && (() => {
+                {b.typeId === 'outpost' && b.ownerId === 'player' && (() => {
                   if (b.researchedUpgrade) {
                     const researchDescs: Record<string, string> = { carapace: '+1 HP', blades: '+15% DMG', afterburners: '+15% SPD' }
                     return (
