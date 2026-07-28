@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 html {
-  overflow-y: scroll;
+  overflow-y: auto;
+  overflow-x: clip;
 }
 
 body {
