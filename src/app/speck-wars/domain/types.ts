@@ -10,6 +10,10 @@ export interface SpeckMeta {
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
+  homeBuildingId?: string  // building that produced this speck. While set the speck is under
+                           // "standing orders": it musters at that building's rally point (or at
+                           // the building itself) and never picks its own objective. Cleared by
+                           // any direct command — move, attack-move, stop, hold, build.
   holdPosition?: boolean   // true = don't move, don't attack, wait for new order
   attackMoveMode?: boolean          // true = A-click move; engage enemy specks en route
   attackMoveTargetX?: number        // temporary target speck position while attack-moving

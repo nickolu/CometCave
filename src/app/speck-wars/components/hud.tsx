@@ -461,10 +461,12 @@ export function HUD() {
                   gameActions?.selectBuilding?.(nearBuilding.id)
                   return
                 }
-                if (!gameActions?.rally) return
+                if (!gameActions?.commandAt) return
                 const worldX = (px / MINIMAP_SIZE) * 3000
                 const worldY = (py / MINIMAP_SIZE) * 3000
-                gameActions.rally(worldX, worldY)
+                // Same meaning as a click on the world: rally the selected building's production,
+                // or move the current selection. Never commands specks that weren't selected.
+                gameActions.commandAt(worldX, worldY)
                 if (minimapExpanded) setMinimapExpanded(false)
               }}
               onContextMenu={(e) => {
@@ -858,7 +860,8 @@ export function HUD() {
             }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: '#4af7c4', marginBottom: 4 }}>Touch Controls</div>
               {[
-                ['Tap canvas', 'Rally units to that spot'],
+                ['Tap building, then canvas', 'Set where its new specks gather'],
+                ['Tap canvas', 'Move your selected specks there'],
                 ['Double-tap canvas', 'Zoom in / out (toggle)'],
                 ['Long-press canvas', 'Attack Move (aggressive)'],
                 ['Two-finger tap', 'Stop specks in place'],
@@ -909,6 +912,7 @@ export function HUD() {
               borderRadius: 8,
               border: '1px solid rgba(255,255,255,0.15)',
             }}>
+              <span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks gather at the building that made them and hold</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Click a building → click the map = its rally point</span>
               <span>Left-click — move/rally · Left-drag — box select</span><span>Space — pause</span>
               <span>A + left-click — attack-move</span><span>Middle-drag — pan camera</span>
               <span>Ctrl+scroll — zoom · scroll — pan</span><span>R — clear rally</span>
