@@ -42,7 +42,6 @@ export class GameInstance {
   private lastAiSpawnMode: string = 'basic'  // track AI spawn mode changes
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
   private recentPlayerCaptureTimes: number[] = []  // timestamps of recent player captures
-  private retreatWarnedAt = -20000          // allow retreat warning after 20s
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
@@ -708,19 +707,7 @@ export class GameInstance {
         }
       }
 
-      // Retreat wave warning: 10+ player specks retreating = notify
-      const nowTs = Date.now()
-      if (nowTs - this.retreatWarnedAt > 15000) {
-        let retreatingCount = 0
-        for (let i = 0; i < this.sim.speckCount; i++) {
-          const m = this.sim.speckMeta[i]
-          if (m && m.ownerId === 'player' && m.state === 'retreating') retreatingCount++
-        }
-        if (retreatingCount >= 10) {
-          this.retreatWarnedAt = nowTs
-          this.notify(`⚡ ${retreatingCount} SPECKS RETREATING!`, '#ff8844', 2000)
-        }
-      }
+
     }
 
     // Track AI spawn mode (notification handled by AI_SPAWN_SWITCH event to avoid duplicates)
