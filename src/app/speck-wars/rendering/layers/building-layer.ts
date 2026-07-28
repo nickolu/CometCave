@@ -49,96 +49,61 @@ export class BuildingLayer {
 
       // Turret: special rendering path
       if (isTurret) {
-        if (building.underConstruction) {
-          // Ghost: faint pulsing circle + sacrifice progress ring + countdown arc
-          const ghostPulse = 0.3 + 0.2 * Math.sin(now / 600)
-          this.gfx.beginFill(color, ghostPulse * 0.4)
-          this.gfx.drawCircle(building.x, building.y, r)
-          this.gfx.endFill()
-          this.gfx.lineStyle(1.5, color, ghostPulse)
-          this.gfx.drawCircle(building.x, building.y, r)
-          this.gfx.lineStyle(0)
-
-          // Sacrifice progress: how many specks have arrived / required
-          const required = building.sacrificeRequired ?? 1
-          const arrived = building.sacrificeArrived ?? 0
-          const sacrificeFrac = Math.min(1, arrived / required)
-          if (sacrificeFrac > 0) {
-            const startAngle = -Math.PI / 2
-            const endAngle = startAngle + Math.PI * 2 * sacrificeFrac
-            this.gfx.lineStyle(2.5, 0xffd700, 0.8)
-            this.gfx.moveTo(building.x + (r + 6) * Math.cos(startAngle), building.y + (r + 6) * Math.sin(startAngle))
-            this.gfx.arc(building.x, building.y, r + 6, startAngle, endAngle)
-            this.gfx.lineStyle(0)
+        // Live turret: diamond shape
+        const s = r
+        this.gfx.beginFill(color, 0.9)
+        this.gfx.drawPolygon([
+          building.x, building.y - s,
+          building.x + s, building.y,
+          building.x, building.y + s,
+          building.x - s, building.y,
+        ])
+        this.gfx.endFill()
+        // Damage flash
+        const flashTs = this.flashMap.get(building.id)
+        if (flashTs !== undefined) {
+          const elapsed = now - flashTs
+          if (elapsed < FLASH_DURATION) {
+            const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
+            this.gfx.beginFill(0xff2222, alpha)
+            this.gfx.drawPolygon([
+              building.x, building.y - s,
+              building.x + s, building.y,
+              building.x, building.y + s,
+              building.x - s, building.y,
+            ])
+            this.gfx.endFill()
+          } else {
+            this.flashMap.delete(building.id)
           }
-
-          // Construction timer arc (after all specks arrived, 2s countdown)
-          if (building.constructionTimer !== undefined && building.constructionTimer > 0) {
-            const timerFrac = 1 - building.constructionTimer / 2000
-            const startAngle = -Math.PI / 2
-            const endAngle = startAngle + Math.PI * 2 * timerFrac
-            this.gfx.lineStyle(2, 0xffffff, 0.6)
-            this.gfx.moveTo(building.x + (r - 4) * Math.cos(startAngle), building.y + (r - 4) * Math.sin(startAngle))
-            this.gfx.arc(building.x, building.y, r - 4, startAngle, endAngle)
-            this.gfx.lineStyle(0)
-          }
-        } else {
-          // Live turret: diamond shape
-          const s = r
-          this.gfx.beginFill(color, 0.9)
-          this.gfx.drawPolygon([
-            building.x, building.y - s,
-            building.x + s, building.y,
-            building.x, building.y + s,
-            building.x - s, building.y,
-          ])
-          this.gfx.endFill()
-          // Damage flash
-          const flashTs = this.flashMap.get(building.id)
-          if (flashTs !== undefined) {
-            const elapsed = now - flashTs
-            if (elapsed < FLASH_DURATION) {
-              const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
-              this.gfx.beginFill(0xff2222, alpha)
-              this.gfx.drawPolygon([
-                building.x, building.y - s,
-                building.x + s, building.y,
-                building.x, building.y + s,
-                building.x - s, building.y,
-              ])
-              this.gfx.endFill()
-            } else {
-              this.flashMap.delete(building.id)
-            }
-          }
-          // Stroke
-          this.gfx.lineStyle(2, 0xffffff, 0.4)
-          this.gfx.drawPolygon([
-            building.x, building.y - s,
-            building.x + s, building.y,
-            building.x, building.y + s,
-            building.x - s, building.y,
-          ])
-          this.gfx.lineStyle(0)
-          // Pulse ring
-          const pulse = Math.sin(now / 800) * 0.3 + 0.7
-          this.gfx.lineStyle(2, color, pulse * 0.4)
-          this.gfx.drawCircle(building.x, building.y, r + 8)
-          this.gfx.lineStyle(0)
-          // HP bar
-          const barW = r * 2
-          const barH = 4
-          const barX = building.x - r
-          const barY = building.y - r - 10
-          const hpFrac = building.hp / building.maxHp
-          this.gfx.beginFill(0x333333)
-          this.gfx.drawRect(barX, barY, barW, barH)
-          this.gfx.endFill()
-          this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
-          this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
-          this.gfx.endFill()
-          // Attack range ring suppressed — shown only during ghost placement preview
         }
+        // Stroke
+        this.gfx.lineStyle(2, 0xffffff, 0.4)
+        this.gfx.drawPolygon([
+          building.x, building.y - s,
+          building.x + s, building.y,
+          building.x, building.y + s,
+          building.x - s, building.y,
+        ])
+        this.gfx.lineStyle(0)
+        // Pulse ring
+        const pulse = Math.sin(now / 800) * 0.3 + 0.7
+        this.gfx.lineStyle(2, color, pulse * 0.4)
+        this.gfx.drawCircle(building.x, building.y, r + 8)
+        this.gfx.lineStyle(0)
+        // HP bar
+        const barW = r * 2
+        const barH = 4
+        const barX = building.x - r
+        const barY = building.y - r - 10
+        const hpFrac = building.hp / building.maxHp
+        this.gfx.beginFill(0x333333)
+        this.gfx.drawRect(barX, barY, barW, barH)
+        this.gfx.endFill()
+        this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
+        this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
+        this.gfx.endFill()
+        // Attack range ring suppressed — shown only during ghost placement preview
         continue
       }
 

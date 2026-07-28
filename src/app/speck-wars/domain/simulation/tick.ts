@@ -8,7 +8,6 @@ import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
 import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, DOMINATION_TIME } from '../constants'
-import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
@@ -19,9 +18,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 2. Spawn new specks from buildings
   updateSpawners(sim, dt)
-
-  // 2a. Construction: absorb sacrificing specks, count down build timer
-  updateConstruction(sim, dt)
 
   // 2b. Turrets: fire missiles at nearby enemies
   updateTurrets(sim, dt)
@@ -72,7 +68,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7d. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
-  if (sim.sacrificeCooldown > 0) sim.sacrificeCooldown = Math.max(0, sim.sacrificeCooldown - dt)
 
   // 8. Check win/loss + domination timer
   checkVictory(sim)
@@ -321,78 +316,9 @@ function consumeInputs(sim: SimulationState) {
         sim.rallyPoints['player-selected'] = null
       }
     }
-    if (event.type === 'BUILD') {
-      const btype = BUILDING_TYPES[event.buildingTypeId]
-      if (!btype) continue
-      const sacrificeCost = btype.sacrificeCost ?? 0
-      // Count how many player specks are selected (or all if no selection)
-      let selectedCount = 0
-      const useSelection = sim.selectedSpeckIds.size > 0
-      for (let i = 0; i < sim.speckCount; i++) {
-        if (!sim.speckIds[i]) continue
-        const m = sim.speckMeta[i]
-        if (!m || m.ownerId !== event.ownerId) continue
-        if (useSelection && !sim.selectedSpeckIds.has(m.id)) continue
-        selectedCount++
-      }
-      if (selectedCount < sacrificeCost) continue  // not enough specks
-      // Create the construction site
-      const buildId = `building-${event.ownerId}-turret-${sim.tick}`
-      sim.buildings[buildId] = {
-        id: buildId,
-        typeId: event.buildingTypeId,
-        ownerId: event.ownerId,
-        x: event.x, y: event.y,
-        hp: btype.maxHp, maxHp: btype.maxHp,
-        spawnTimer: 0,
-        underConstruction: true,
-        sacrificeRequired: sacrificeCost,
-        sacrificeArrived: 0,
-      }
-      // Send selected (or all) specks to march
-      let sent = 0
-      for (let i = 0; i < sim.speckCount; i++) {
-        if (sent >= sacrificeCost) break
-        if (!sim.speckIds[i]) continue
-        const m = sim.speckMeta[i]
-        if (!m || m.ownerId !== event.ownerId) continue
-        if (useSelection && !sim.selectedSpeckIds.has(m.id)) continue
-        m.constructTargetId = buildId
-        m.assignedRallyX = event.x
-        m.assignedRallyY = event.y
-        m.homeBuildingId = undefined
-        m.holdPosition = false
-        sent++
-      }
-      // Clear selection after dispatching
-      sim.selectedSpeckIds.clear()
-      sim.rallyPoints['player-selected'] = null
-    }
     if (event.type === 'SET_STANCE') {
       const p = sim.players[event.ownerId]
       if (p) p.stance = event.stance
-    }
-    if (event.type === 'SACRIFICE') {
-      if (sim.sacrificeCooldown > 0) continue
-      const building = sim.buildings[event.buildingId]
-      if (!building || building.ownerId !== event.ownerId || building.typeId !== 'base') continue
-      // Collect player specks, sorted by lowest HP first (weakest give their life)
-      const candidates: Array<{ i: number; hp: number }> = []
-      for (let i = 0; i < sim.speckCount; i++) {
-        if (!sim.speckIds[i]) continue
-        const m = sim.speckMeta[i]
-        if (!m || m.ownerId !== event.ownerId) continue
-        candidates.push({ i, hp: sim.speckHp[i] })
-      }
-      if (candidates.length < event.count) continue  // not enough specks
-      candidates.sort((a, b) => a.hp - b.hp)
-      const toSacrifice = candidates.slice(0, event.count)
-      for (const { i } of toSacrifice) {
-        sim.events.push({ type: 'SPECK_DIED', speckId: sim.speckIds[i], x: sim.speckX[i], y: sim.speckY[i], killedOwnerId: event.ownerId, killerOwnerId: event.ownerId })
-        sim.speckHp[i] = 0  // mark for removeDeadSpecks
-      }
-      building.hp = Math.min(building.maxHp, building.hp + event.count * 1.5)  // 10 specks → +15 HP
-      sim.sacrificeCooldown = 20000
     }
   }
   sim.inputQueue = []
@@ -557,5 +483,5 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, selectedBuilding } })
 }

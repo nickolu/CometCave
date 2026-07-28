@@ -177,7 +177,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     waveCountdown: null,
     waveInProgress: false,
     waveNumber: 0,
-    sacrificeCooldown: 0,
     obstacles,
   }
 
