@@ -310,12 +310,6 @@ export function removeDeadSpecks(sim: SimulationState) {
   for (let i = 0; i < sim.speckCount; i++) {
     if (sim.speckIds[i] !== '' && sim.speckHp[i] <= 0) {
       const deadId = sim.speckIds[i]  // save before clearing
-      const deadMeta = sim.speckMeta[i]
-      // Return supply to owner
-      if (deadMeta && deadMeta.ownerId !== 'neutral' && sim.players[deadMeta.ownerId]) {
-        const cost = SPECK_TYPES[deadMeta.typeId]?.supplyCost ?? 1
-        sim.players[deadMeta.ownerId].supply = Math.max(0, (sim.players[deadMeta.ownerId].supply ?? 0) - cost)
-      }
       sim.selectedSpeckIds.delete(deadId)
       sim.freeSlots.push(i)
       sim.speckIds[i] = ''

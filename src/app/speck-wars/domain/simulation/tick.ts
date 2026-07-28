@@ -8,7 +8,7 @@ import { updateUnitAbilities } from './unit-abilities'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP, DOMINATION_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 import { updateGarrison } from './garrison'
@@ -606,7 +606,7 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number; outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean } }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean } }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
@@ -630,8 +630,6 @@ function emitHudUpdate(sim: SimulationState) {
       veteranCount,
       eliteCount,
       legendCount,
-      supplyUsed: sim.players[pid]?.supply ?? 0,
-      supplyCap: SUPPLY_HARD_CAP,
       outpostUpgrades: { ...(sim.players[pid].outpostUpgrades ?? { carapace: false, blades: false, afterburners: false }) },
     }
   }
