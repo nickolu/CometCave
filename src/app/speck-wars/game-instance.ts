@@ -3,7 +3,7 @@ import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
 import { Renderer } from './rendering/renderer'
-import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
+import { createCamera, clampCamera } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
@@ -61,7 +61,6 @@ export class GameInstance {
   private cinematicEndZoom = 1
   private cinematicTotalMs = 3000
   private gameOverFreezeMs = 0  // freeze sim during dramatic game-over delay
-  private pendingBuild: string | null = null  // building type ID awaiting placement click
   private killFeedKillAt = 0    // last time we pushed a kill entry
   private killFeedLossAt = 0    // last time we pushed a loss entry
   private onResize: (() => void) | null = null
@@ -115,32 +114,6 @@ export class GameInstance {
       this.canvas,
       this.camera,
       (wx, wy) => {
-        // Build placement mode: place the pending building at the clicked location
-        if (this.pendingBuild) {
-          const typeId = this.pendingBuild
-          const btype = BUILDING_TYPES[typeId]
-          const cost = btype?.sacrificeCost ?? 0
-          // Guard against silent build failure: check speck count before placing
-          const useSelection = this.sim.selectedSpeckIds.size > 0
-          let available = 0
-          for (let i = 0; i < this.sim.speckCount; i++) {
-            if (!this.sim.speckIds[i]) continue
-            const m = this.sim.speckMeta[i]
-            if (!m || m.ownerId !== 'player') continue
-            if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
-            available++
-          }
-          if (available < cost) {
-            this.notify(`Need ${cost} specks to build (have ${available})`, '#ff4f7b', 2000)
-            return  // stay in build mode so player can gather more specks
-          }
-          this.pendingBuild = null
-          this.inputHandler?.setPendingBuildActive(false)
-          this.sim.inputQueue.push({ type: 'BUILD', ownerId: 'player', buildingTypeId: typeId, x: wx, y: wy })
-          this.notify('◆ TURRET PLACED', '#ffd700', 1500)
-          return
-        }
-
         // Check if click hit a player building — select it instead of rallying
         // Touch devices get a larger buffer to ensure 44px+ screen hit area at default zoom
         const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
@@ -174,13 +147,7 @@ export class GameInstance {
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
-      () => {                                                          // Escape — clear selection / cancel build mode
-        if (this.pendingBuild) {
-          this.pendingBuild = null
-          this.inputHandler?.setPendingBuildActive(false)
-          this.notify('Build cancelled', '#aaaaaa', 800)
-          return
-        }
+      () => {                                                          // Escape — clear selection
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
@@ -210,7 +177,6 @@ export class GameInstance {
       () => {                                                           // E — select all specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
       },
-      () => { this.sacrifice() },                                       // F — sacrifice specks to repair base
       (slot: number) => {                                               // Ctrl+4-9 — save control group
         const saved = [...this.sim.selectedSpeckIds]
         this.controlGroups.set(slot, saved)
@@ -240,7 +206,6 @@ export class GameInstance {
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
     )
-    this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
     this.inputHandler.onSaveControlGroup = (slot: number) => {
@@ -274,7 +239,6 @@ export class GameInstance {
       },
       surge: () => { this.surge() },
       rally: (x: number, y: number) => this.rally(x, y),
-      sacrifice: () => { this.sacrifice() },
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
         const selectedBuildingId = this.sim.selectedBuildingId
         if (!selectedBuildingId) return
@@ -287,7 +251,6 @@ export class GameInstance {
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
         this.notify(`→ ${typeId.toUpperCase()}`, color, 900)
       },
-      buildTurret: () => this.enterBuildMode('turret'),
       panCamera: (wx: number, wy: number) => {
         this.camera.x = this.canvas.clientWidth / 2 - wx * this.camera.zoom
         this.camera.y = this.canvas.clientHeight / 2 - wy * this.camera.zoom
@@ -387,14 +350,12 @@ export class GameInstance {
         { delay: 13000, message: '💡 Long-press for attack-move — hold 0.5s!', color: '#ff8c44' },
         { delay: 22000, message: '💡 Use ⚡ SURGE button — doubles production for 8s!', color: '#ffd700' },
         { delay: 38000, message: '💡 Double-tap canvas to zoom in/out!', color: '#aaddff' },
-        { delay: 50000, message: '💡 Use 🔧 HEAL to sacrifice 10 specks → repair base!', color: '#64c864' },
       ] : [
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
         { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/dart)', color: '#aaddff' },
         { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
-        { delay: 50000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
         setTimeout(() => this.notify(message, color, 3000), delay)
@@ -670,19 +631,6 @@ export class GameInstance {
             this.notify('⚠ BASE UNDER ATTACK!', '#ff4f7b', 2500)
           }
         }
-        if (event.type === 'CAMP_CAPTURED') {
-          if (event.newOwner === 'player') {
-            this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
-            navigator.vibrate?.([20, 30, 20, 30, 20])
-            store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
-          } else if (event.newOwner === 'ai') {
-            this.notify('⚠ ENEMY SEIZED CAMP — +25% THEIR SPAWN FOR 30s', '#ff4444', 2500)
-            store.pushKillFeedEntry({ icon: '◈', label: 'ENEMY CAMP SEIZED', color: '#ff4444' })
-          }
-        }
-        if (event.type === 'CAMP_RESET' && event.previousOwner === 'player') {
-          this.notify('◈ CAMP RESET — defenders respawned', '#ff9933', 2000)
-        }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {
             store.addOutpostCaptured()
@@ -824,15 +772,7 @@ export class GameInstance {
 
     const { shakeX, shakeY } = this.computeShake(dt)
     const dragRect = this.inputHandler.getDragRect()
-    let ghostBuild: { typeId: string; wx: number; wy: number } | null = null
-    if (this.pendingBuild) {
-      const mouse = this.inputHandler.getMouseScreenPos()
-      if (mouse) {
-        const wpos = screenToWorld(mouse.x, mouse.y, this.camera)
-        ghostBuild = { typeId: this.pendingBuild, wx: wpos.x, wy: wpos.y }
-      }
-    }
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild, useSpeckWarsStore.getState().fogEnabled)
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
     this.rafId = requestAnimationFrame(this.loop)
   }
 
@@ -966,24 +906,6 @@ export class GameInstance {
     this.notify('⚡ SURGE ACTIVE!', '#ffd700')
   }
 
-  private sacrifice() {
-    if (this.sim.sacrificeCooldown > 0) {
-      const remaining = Math.ceil(this.sim.sacrificeCooldown / 1000)
-      this.notify(`Sacrifice ready in ${remaining}s`, 'rgba(255,100,100,0.65)', 1200)
-      return
-    }
-    const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-    if (!playerBase) return
-    const speckCount = this.sim.speckMeta.filter((m, i) => m && m.ownerId === 'player' && this.sim.speckIds[i]).length
-    if (speckCount < 10) {
-      this.notify('Not enough specks to sacrifice!', '#ff4f7b', 1500)
-      return
-    }
-    this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
-    useSpeckWarsStore.getState().addSacrificeUsed()
-    this.notify('⟡ SACRIFICE — +15 BASE HP (ready in 20s)', '#ff8844', 1800)
-  }
-
   setStance(stance: 'aggressive' | 'defensive' | 'hold') {
     this.sim.inputQueue.push({ type: 'SET_STANCE', ownerId: 'player', stance })
     useSpeckWarsStore.getState().setStance(stance)
@@ -999,12 +921,6 @@ export class GameInstance {
     const labels: Record<string, string> = { aggressive: 'AGGRO', defensive: 'DEF', hold: 'HOLD' }
     const colors: Record<string, string> = { aggressive: '#ff4f7b', defensive: '#4af7c4', hold: '#aaaaaa' }
     this.notify(`Stance: ${labels[next]}`, colors[next], 1200)
-  }
-
-  enterBuildMode(buildingTypeId: string) {
-    this.pendingBuild = buildingTypeId
-    this.inputHandler?.setPendingBuildActive(true)
-    this.notify('◆ CLICK TO PLACE TURRET', '#ffd700', 3000)
   }
 
   snapToAction() {

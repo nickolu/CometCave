@@ -30,29 +30,6 @@ function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, b
 
 let speckCounter = 0
 
-export function spawnCampDefenders(sim: SimulationState, campId: string) {
-  const camp = sim.buildings[campId]
-  if (!camp) return
-  for (let i = 0; i < CREEP_CAMP_DEFENDER_COUNT; i++) {
-    const angle = (Math.PI * 2 * i) / CREEP_CAMP_DEFENDER_COUNT
-    const r = 30
-    const sx = camp.x + Math.cos(angle) * r
-    const sy = camp.y + Math.sin(angle) * r
-    const meta: SpeckMeta = {
-      id: `speck-${++speckCounter}`,
-      typeId: 'defender',
-      ownerId: 'neutral',
-      state: 'idle',
-      targetId: null,
-      attackCooldown: 0,
-      kills: 0,
-      assignedRallyX: camp.x,
-      assignedRallyY: camp.y,
-    }
-    addSpeck(sim, meta, sx, sy, campId)
-  }
-}
-
 export function updateSpawners(sim: SimulationState, dt: number) {
   for (const building of Object.values(sim.buildings)) {
     if (building.ownerId === 'neutral') continue

@@ -1,7 +1,7 @@
 import { Graphics, Container } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
-import { NEUTRAL_COLOR, CREEP_CAMP_ZONE_RADIUS } from '../../domain/constants'
+import { NEUTRAL_COLOR } from '../../domain/constants'
 
 function hexPoints(x: number, y: number, r: number): number[] {
   const pts: number[] = []
@@ -46,116 +46,12 @@ export class BuildingLayer {
 
       const isOutpost = building.typeId === 'outpost'
       const isTurret = building.typeId === 'turret'
-      const isCreepCamp = building.typeId === 'creep_camp'
 
       // Turret: special rendering path
       if (isTurret) {
-        if (building.underConstruction) {
-          // Ghost: faint pulsing circle + sacrifice progress ring + countdown arc
-          const ghostPulse = 0.3 + 0.2 * Math.sin(now / 600)
-          this.gfx.beginFill(color, ghostPulse * 0.4)
-          this.gfx.drawCircle(building.x, building.y, r)
-          this.gfx.endFill()
-          this.gfx.lineStyle(1.5, color, ghostPulse)
-          this.gfx.drawCircle(building.x, building.y, r)
-          this.gfx.lineStyle(0)
-
-          // Sacrifice progress: how many specks have arrived / required
-          const required = building.sacrificeRequired ?? 1
-          const arrived = building.sacrificeArrived ?? 0
-          const sacrificeFrac = Math.min(1, arrived / required)
-          if (sacrificeFrac > 0) {
-            const startAngle = -Math.PI / 2
-            const endAngle = startAngle + Math.PI * 2 * sacrificeFrac
-            this.gfx.lineStyle(2.5, 0xffd700, 0.8)
-            this.gfx.moveTo(building.x + (r + 6) * Math.cos(startAngle), building.y + (r + 6) * Math.sin(startAngle))
-            this.gfx.arc(building.x, building.y, r + 6, startAngle, endAngle)
-            this.gfx.lineStyle(0)
-          }
-
-          // Construction timer arc (after all specks arrived, 2s countdown)
-          if (building.constructionTimer !== undefined && building.constructionTimer > 0) {
-            const timerFrac = 1 - building.constructionTimer / 2000
-            const startAngle = -Math.PI / 2
-            const endAngle = startAngle + Math.PI * 2 * timerFrac
-            this.gfx.lineStyle(2, 0xffffff, 0.6)
-            this.gfx.moveTo(building.x + (r - 4) * Math.cos(startAngle), building.y + (r - 4) * Math.sin(startAngle))
-            this.gfx.arc(building.x, building.y, r - 4, startAngle, endAngle)
-            this.gfx.lineStyle(0)
-          }
-        } else {
-          // Live turret: diamond shape
-          const s = r
-          this.gfx.beginFill(color, 0.9)
-          this.gfx.drawPolygon([
-            building.x, building.y - s,
-            building.x + s, building.y,
-            building.x, building.y + s,
-            building.x - s, building.y,
-          ])
-          this.gfx.endFill()
-          // Damage flash
-          const flashTs = this.flashMap.get(building.id)
-          if (flashTs !== undefined) {
-            const elapsed = now - flashTs
-            if (elapsed < FLASH_DURATION) {
-              const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
-              this.gfx.beginFill(0xff2222, alpha)
-              this.gfx.drawPolygon([
-                building.x, building.y - s,
-                building.x + s, building.y,
-                building.x, building.y + s,
-                building.x - s, building.y,
-              ])
-              this.gfx.endFill()
-            } else {
-              this.flashMap.delete(building.id)
-            }
-          }
-          // Stroke
-          this.gfx.lineStyle(2, 0xffffff, 0.4)
-          this.gfx.drawPolygon([
-            building.x, building.y - s,
-            building.x + s, building.y,
-            building.x, building.y + s,
-            building.x - s, building.y,
-          ])
-          this.gfx.lineStyle(0)
-          // Pulse ring
-          const pulse = Math.sin(now / 800) * 0.3 + 0.7
-          this.gfx.lineStyle(2, color, pulse * 0.4)
-          this.gfx.drawCircle(building.x, building.y, r + 8)
-          this.gfx.lineStyle(0)
-          // HP bar
-          const barW = r * 2
-          const barH = 4
-          const barX = building.x - r
-          const barY = building.y - r - 10
-          const hpFrac = building.hp / building.maxHp
-          this.gfx.beginFill(0x333333)
-          this.gfx.drawRect(barX, barY, barW, barH)
-          this.gfx.endFill()
-          this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
-          this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
-          this.gfx.endFill()
-          // Attack range ring suppressed — shown only during ghost placement preview
-        }
-        continue
-      }
-
-      // Creep camp: diamond shape with amber accent when neutral
-      if (isCreepCamp) {
-        const campColor = building.ownerId === 'neutral' ? 0xff9933 : color
+        // Live turret: diamond shape
         const s = r
-        // Faint zone circle showing leash radius when neutral
-        if (building.ownerId === 'neutral') {
-          const zonePulse = 0.12 + 0.06 * Math.sin(now / 1800)
-          this.gfx.lineStyle(1, 0xff9933, zonePulse)
-          this.gfx.drawCircle(building.x, building.y, CREEP_CAMP_ZONE_RADIUS)
-          this.gfx.lineStyle(0)
-        }
-        // Filled diamond
-        this.gfx.beginFill(campColor, 0.85)
+        this.gfx.beginFill(color, 0.9)
         this.gfx.drawPolygon([
           building.x, building.y - s,
           building.x + s, building.y,
@@ -163,10 +59,10 @@ export class BuildingLayer {
           building.x - s, building.y,
         ])
         this.gfx.endFill()
-        // Damage flash overlay
-        const campFlashTs = this.flashMap.get(building.id)
-        if (campFlashTs !== undefined) {
-          const elapsed = now - campFlashTs
+        // Damage flash
+        const flashTs = this.flashMap.get(building.id)
+        if (flashTs !== undefined) {
+          const elapsed = now - flashTs
           if (elapsed < FLASH_DURATION) {
             const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
             this.gfx.beginFill(0xff2222, alpha)
@@ -191,32 +87,23 @@ export class BuildingLayer {
         ])
         this.gfx.lineStyle(0)
         // Pulse ring
-        const campPulse = Math.sin(now / 800) * 0.3 + 0.7
-        this.gfx.lineStyle(2, campColor, campPulse * 0.4)
+        const pulse = Math.sin(now / 800) * 0.3 + 0.7
+        this.gfx.lineStyle(2, color, pulse * 0.4)
         this.gfx.drawCircle(building.x, building.y, r + 8)
         this.gfx.lineStyle(0)
         // HP bar
-        const campBarW = r * 2
-        const campBarH = 4
-        const campBarX = building.x - r
-        const campBarY = building.y - r - 10
-        const campHpFrac = building.hp / building.maxHp
+        const barW = r * 2
+        const barH = 4
+        const barX = building.x - r
+        const barY = building.y - r - 10
+        const hpFrac = building.hp / building.maxHp
         this.gfx.beginFill(0x333333)
-        this.gfx.drawRect(campBarX, campBarY, campBarW, campBarH)
+        this.gfx.drawRect(barX, barY, barW, barH)
         this.gfx.endFill()
-        this.gfx.beginFill(campHpFrac > 0.5 ? 0x44ff88 : 0xff4444)
-        this.gfx.drawRect(campBarX, campBarY, campBarW * campHpFrac, campBarH)
+        this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
+        this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
         this.gfx.endFill()
-        // Capture progress arc
-        if (building.captureProgress && building.captureProgress > 0 && building.captureSide) {
-          const capColor = playerColors[building.captureSide] ?? 0xffffff
-          this.gfx.lineStyle(3, capColor, 0.9)
-          const startAngle = -Math.PI / 2
-          const endAngle = startAngle + Math.PI * 2 * building.captureProgress
-          this.gfx.moveTo(building.x + (r + 12) * Math.cos(startAngle), building.y + (r + 12) * Math.sin(startAngle))
-          this.gfx.arc(building.x, building.y, r + 12, startAngle, endAngle)
-          this.gfx.lineStyle(0)
-        }
+        // Attack range ring suppressed — shown only during ghost placement preview
         continue
       }
 

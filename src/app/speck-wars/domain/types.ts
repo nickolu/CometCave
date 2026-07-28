@@ -4,7 +4,7 @@ export interface SpeckMeta {
   id: string
   typeId: string
   ownerId: string
-  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'sacrificing' | 'retreating' | 'holding'
+  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'retreating' | 'holding'
   targetId: string | null
   attackCooldown: number   // ms remaining until next attack
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
@@ -18,7 +18,6 @@ export interface SpeckMeta {
   attackMoveMode?: boolean          // true = A-click move; engage enemy specks en route
   attackMoveTargetX?: number        // temporary target speck position while attack-moving
   attackMoveTargetY?: number
-  constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
 }
 
@@ -35,12 +34,7 @@ export interface BuildingEntity {
   captureSide?: string | null   // which player is currently winning capture
   lastDamagedAt?: number        // Date.now() timestamp of last damage taken (for regen cooldown)
   rallyPoint?: { x: number; y: number } | null  // per-building rally; specks auto-march here on spawn
-  underConstruction?: boolean
-  sacrificeRequired?: number
-  sacrificeArrived?: number
-  constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
-  campResetMs?: number          // ms until camp resets to neutral (when owned)
 }
 
 export interface Player {
@@ -50,7 +44,6 @@ export interface Player {
   isAI: boolean
   isDefeated: boolean
   stance: 'aggressive' | 'defensive' | 'hold'
-  creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
 }
 
 export interface WallObstacle {
@@ -90,7 +83,6 @@ export interface SimulationState {
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
   waveNumber: number             // current wave count (0 = not started)
-  sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
   obstacles: WallObstacle[]
 }
 
@@ -98,8 +90,6 @@ export type InputEvent =
   | { type: 'RALLY'; ownerId: string; x: number; y: number }
   | { type: 'ATTACK_MOVE'; ownerId: string; x: number; y: number }
   | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string; buildingId?: string }
-  | { type: 'BUILD'; ownerId: string; buildingTypeId: string; x: number; y: number }
-  | { type: 'SACRIFICE'; ownerId: string; buildingId: string; typeId: string; count: number }
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
   | { type: 'CLEAR_SELECT'; ownerId: string }
   | { type: 'SURGE'; ownerId: string }
@@ -124,7 +114,6 @@ export type SimEvent =
   | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
   | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
-  | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
   | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
 
@@ -149,7 +138,6 @@ export interface HudData {
   waveCountdown: number | null
   waveInProgress: boolean
   waveNumber: number
-  sacrificeCooldown: number
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
