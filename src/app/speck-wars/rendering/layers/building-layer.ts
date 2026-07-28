@@ -317,8 +317,7 @@ export class BuildingLayer {
       // Spawn timer progress arc (clockwise fill inside building, shows time to next spawn)
       if (building.ownerId !== 'neutral' && btype?.spawnInterval) {
         const totalInterval = building.spawnIntervalOverride ?? btype.spawnInterval
-        const effectiveInterval = building.tripleOutpostBonus ? totalInterval / 2 : totalInterval
-        const progress = Math.max(0, Math.min(1, 1 - building.spawnTimer / effectiveInterval))
+        const progress = Math.max(0, Math.min(1, 1 - building.spawnTimer / totalInterval))
         if (progress > 0) {
           const startAngle = -Math.PI / 2
           const endAngle = startAngle + Math.PI * 2 * progress

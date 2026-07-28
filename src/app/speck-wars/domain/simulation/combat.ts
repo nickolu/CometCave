@@ -42,9 +42,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
             if (level > 0) { fortifyBonus = 1 + FORTIFY_DAMAGE_BONUS * level; break }
           }
         }
-        const upgradeBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 3 ? 1.15 : 1.0
         const typeAdvMult = getTypeAdvantage(stype.id, jMeta.typeId)
-        speckHp[j] -= stype.damage * veteranBonus * fortifyBonus * upgradeBonus * typeAdvMult
+        speckHp[j] -= stype.damage * veteranBonus * fortifyBonus * typeAdvMult
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0
@@ -69,16 +68,6 @@ export function resolveCombat(sim: SimulationState, dt: number) {
                 if (meta.kills === 3) sim.events.push({ type: 'SPECK_VETERAN', speckId: speckIds[i], ownerId: meta.ownerId })
                 if (meta.kills === 6) sim.events.push({ type: 'SPECK_ELITE', speckId: speckIds[i], ownerId: meta.ownerId })
                 if (meta.kills === 12) sim.events.push({ type: 'SPECK_LEGEND', speckId: speckIds[i], ownerId: meta.ownerId })
-                // Kill milestone upgrades (splash kill)
-                const splashKillerPlayer = sim.players[meta.ownerId]
-                if (splashKillerPlayer) {
-                  splashKillerPlayer.totalKills++
-                  const splashNewLevel = splashKillerPlayer.totalKills >= 300 ? 3 : splashKillerPlayer.totalKills >= 150 ? 2 : splashKillerPlayer.totalKills >= 50 ? 1 : 0
-                  if (splashNewLevel > splashKillerPlayer.upgradeLevel) {
-                    splashKillerPlayer.upgradeLevel = splashNewLevel as 0 | 1 | 2 | 3
-                    sim.events.push({ type: 'UPGRADE_UNLOCKED', ownerId: meta.ownerId, level: splashNewLevel as 1 | 2 | 3 })
-                  }
-                }
               }
             }
           }
@@ -111,16 +100,6 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           }
           if (meta.kills === 12) {
             sim.events.push({ type: 'SPECK_LEGEND', speckId: speckIds[i], ownerId: meta.ownerId })
-          }
-          // Kill milestone upgrades
-          const killerPlayer = sim.players[meta.ownerId]
-          if (killerPlayer) {
-            killerPlayer.totalKills++
-            const newLevel = killerPlayer.totalKills >= 300 ? 3 : killerPlayer.totalKills >= 150 ? 2 : killerPlayer.totalKills >= 50 ? 1 : 0
-            if (newLevel > killerPlayer.upgradeLevel) {
-              killerPlayer.upgradeLevel = newLevel as 0 | 1 | 2 | 3
-              sim.events.push({ type: 'UPGRADE_UNLOCKED', ownerId: meta.ownerId, level: newLevel as 1 | 2 | 3 })
-            }
           }
         }
         break  // one attack per cooldown

@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 
@@ -78,10 +78,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
 
-  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
-  updateTripleOutpostBonus(sim)
-
-  // 7d. Surge timers
+  // 7c. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
   if (sim.sacrificeCooldown > 0) sim.sacrificeCooldown = Math.max(0, sim.sacrificeCooldown - dt)
@@ -203,20 +200,6 @@ function updateCreepCamps(sim: SimulationState, dt: number) {
       // Force the speck to return to camp
       meta.state = 'moving'
       meta.targetId = null
-    }
-  }
-}
-
-function updateTripleOutpostBonus(sim: SimulationState) {
-  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
-  if (outposts.length === 0) return
-
-  for (const [pid] of Object.entries(sim.players)) {
-    if (pid === 'neutral') continue
-    const ownsAll = outposts.every(o => o.ownerId === pid)
-    for (const building of Object.values(sim.buildings)) {
-      if (building.ownerId !== pid || building.typeId !== 'base') continue
-      building.tripleOutpostBonus = ownsAll
     }
   }
 }
@@ -484,21 +467,8 @@ function emitHudUpdate(sim: SimulationState) {
     .filter(b => b.typeId === 'outpost' && b.ownerId !== 'neutral' && b.captureProgress && b.captureProgress > 0 && b.captureSide && b.captureSide !== b.ownerId)
     .map(b => b.id)
 
-  // Which player (if any) owns all outposts and has the triple bonus
-  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
-  let tripleOutpostOwner: string | null = null
-  if (outposts.length > 0) {
-    for (const [pid] of Object.entries(sim.players)) {
-      if (pid === 'neutral') continue
-      if (outposts.every(o => o.ownerId === pid)) { tripleOutpostOwner = pid; break }
-    }
-  }
-
-  const dominationProgress: number | null = tripleOutpostOwner !== null
-    ? Math.min(1, sim.dominationTimer / DOMINATION_TIME)
-    : null
-
   // Capture progress for each outpost
+  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
   const captureInfo: Record<string, { progress: number; side: string } | null> = {}
   for (const o of outposts) {
     captureInfo[o.id] = (o.captureProgress && o.captureSide)
@@ -507,23 +477,17 @@ function emitHudUpdate(sim: SimulationState) {
   }
 
   // Compute effective spawn rate (specks/min) for each player
-  const playerBaseBuilding = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-  const rallyCryActive = playerBaseBuilding
-    ? playerBaseBuilding.hp / playerBaseBuilding.maxHp < RALLY_CRY_HP_THRESHOLD
-    : false
-
   const spawnRates: Record<string, number> = {}
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     let totalRate = 0
     const hasSurge = pid === 'player' && sim.surgeDuration > 0
-    const hasRallyCry = pid === 'player' && rallyCryActive
     for (const building of Object.values(sim.buildings)) {
       if (building.ownerId !== pid) continue
       const btype = BUILDING_TYPES[building.typeId]
       if (!btype?.spawnTypeId) continue
       const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
-      const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1)
+      const divisor = (hasSurge ? 2 : 1)
       const effectiveInterval = baseInterval / divisor
       totalRate += (btype.spawnCount ?? 1) * 60000 / effectiveInterval
     }
@@ -617,5 +581,5 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0 }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
 }

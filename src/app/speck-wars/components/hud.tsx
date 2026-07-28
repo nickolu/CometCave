@@ -207,18 +207,9 @@ export function HUD() {
           }}
         >ENEMY ADVANCING ↑</button>
       )}
-      {hud?.rallyCryActive && !hud?.baseUnderThreat && (
-        <div style={{
-          position: 'fixed', top: 108, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(255,136,0,0.88)', color: '#fff', fontWeight: 700,
-          padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
-          zIndex: 107, pointerEvents: 'none',
-          animation: prefersReducedMotion ? 'none' : 'pulse-red 0.9s ease-in-out infinite alternate',
-        }}>★ RALLY CRY — 1.5× SPAWN</div>
-      )}
       {hud && (hud.creepCampBoostMs ?? 0) > 0 && phase === 'playing' && (
         <div style={{
-          position: 'fixed', top: hud.rallyCryActive ? 138 : 108, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', top: 108, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(255,200,50,0.85)', color: '#000', fontWeight: 700,
           padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
           zIndex: 106, pointerEvents: 'none',
@@ -997,39 +988,6 @@ export function HUD() {
               })}
             </div>
           </>
-        )
-      })()}
-
-      {/* Triple outpost production bonus + domination countdown */}
-      {hud?.tripleOutpostOwner && phase === 'playing' && (() => {
-        const isPlayer = hud.tripleOutpostOwner === 'player'
-        const progress = hud.dominationProgress ?? 0
-        const secsLeft = Math.ceil((1 - progress) * 60)
-        return (
-          <div style={{
-            position: 'absolute', top: 100, left: 0, right: 0,
-            display: 'flex', justifyContent: 'center', pointerEvents: 'none',
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <span style={{
-                fontSize: 11, letterSpacing: 2, fontWeight: 'bold',
-                color: isPlayer ? '#ffd700' : '#ff4f7b',
-                textShadow: `0 0 8px ${isPlayer ? '#ffd700' : '#ff4f7b'}`,
-                background: 'rgba(0,0,0,0.4)', padding: '2px 10px', borderRadius: 4,
-              }}>
-                {isPlayer ? `⬡ +PROD · DOMINATION ${secsLeft}s` : `⚠ ENEMY DOMINATING ${secsLeft}s`}
-              </span>
-              {progress > 0 && (
-                <div style={{ width: 120, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${progress * 100}%`, height: '100%',
-                    background: isPlayer ? '#ffd700' : '#ff4f7b',
-                    transition: 'width 0.5s linear',
-                  }} />
-                </div>
-              )}
-            </div>
-          </div>
         )
       })()}
 
@@ -1869,30 +1827,6 @@ export function HUD() {
                 </span>
               )}
             </div>
-            {/* Army upgrade tier */}
-            {kills >= 20 && (() => {
-              const upgradeLevel = kills >= 300 ? 3 : kills >= 150 ? 2 : kills >= 50 ? 1 : 0
-              const tiers: Array<{ icon: string; label: string; color: string } | null> = [
-                null,
-                { icon: '⚡', label: 'BLOODED', color: '#88ffaa' },
-                { icon: '🛡', label: 'HARDENED', color: '#44aaff' },
-                { icon: '🔥', label: 'VETERAN ARMY', color: '#ff8844' },
-              ]
-              const tier = tiers[upgradeLevel]
-              const nextKills = upgradeLevel === 0 ? 50 : upgradeLevel === 1 ? 150 : upgradeLevel === 2 ? 300 : null
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: isTouchDevice ? 11 : 9, letterSpacing: 0.5 }}>
-                  {tier ? (
-                    <span style={{ color: tier.color, opacity: 0.8 }}>{tier.icon} {tier.label}</span>
-                  ) : (
-                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>army upgrade: {kills}/50</span>
-                  )}
-                  {tier && nextKills && (
-                    <span style={{ color: 'rgba(255,255,255,0.25)' }}>→ {nextKills} kills</span>
-                  )}
-                </div>
-              )
-            })()}
           </div>
         )
       })()}

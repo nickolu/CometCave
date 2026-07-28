@@ -31,7 +31,6 @@ export interface BuildingEntity {
   spawnTimer: number       // ms until next spawn
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
-  tripleOutpostBonus?: boolean    // true when owner controls all outposts (2× spawn)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
   fortifyDuration?: number      // ms continuously held — resets on capture
@@ -51,8 +50,6 @@ export interface Player {
   color: number            // pixi hex e.g. 0x4af7c4
   isAI: boolean
   isDefeated: boolean
-  totalKills: number           // cumulative kills for upgrade milestones
-  upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
 }
@@ -129,7 +126,6 @@ export type SimEvent =
   | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
-  | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
   | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
 
@@ -144,8 +140,6 @@ export interface HudData {
     legendCount: number   // specks with 12+ kills
   }>
   attackedBuildingIds: string[]
-  tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
-  dominationProgress: number | null  // 0..1 fraction of DOMINATION_TIME elapsed; null if no triple holder
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
@@ -159,7 +153,6 @@ export interface HudData {
   sacrificeCooldown: number
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
-  rallyCryActive: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number } | null
