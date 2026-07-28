@@ -3,8 +3,7 @@ import { SPECK_TYPES } from '../config/speck-types'
 import { updateSpawners, spawnCampDefenders } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
-import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
-import { updateUnitAbilities } from './unit-abilities'
+import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
@@ -60,12 +59,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
-
-  // 6a. Hero abilities (AoE pulse for level 2 Commanders)
-  updateHeroAbilities(sim, dt)
-
-  // 6b. Unit type abilities: tick stun and commander timers
-  updateUnitAbilities(sim, dt)
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
@@ -449,48 +442,6 @@ function consumeInputs(sim: SimulationState) {
       player.outpostUpgrades[event.upgrade] = true
       sim.events.push({ type: 'OUTPOST_UPGRADE_RESEARCHED', buildingId: event.buildingId, ownerId: event.ownerId, upgrade: event.upgrade })
     }
-    if (event.type === 'COMMANDER_ABILITY') {
-      const ROAR_RADIUS = 80
-      const STUN_DURATION = 1500    // ms
-      const ROAR_COOLDOWN = 20000   // ms
-      const LAST_STAND_COOLDOWN = 60000
-      const LAST_STAND_DURATION = 5000
-      const r2 = ROAR_RADIUS * ROAR_RADIUS
-      // Find the owner's commander
-      let cmdIdx = -1
-      for (let i = 0; i < sim.speckCount; i++) {
-        const m = sim.speckMeta[i]
-        if (m?.isCommander && m.ownerId === event.ownerId && sim.speckHp[i] > 0) { cmdIdx = i; break }
-      }
-      if (cmdIdx < 0) continue
-      const cmdMeta = sim.speckMeta[cmdIdx]!
-      const level = cmdMeta.commanderLevel ?? 0
-      if (level < 2) continue
-      if ((cmdMeta.commanderAbilityCooldown ?? 0) > 0) continue
-      const cx = sim.speckX[cmdIdx], cy = sim.speckY[cmdIdx]
-      // Stun enemies within radius
-      for (let j = 0; j < sim.speckCount; j++) {
-        const jm = sim.speckMeta[j]
-        if (!jm || jm.ownerId === event.ownerId || sim.speckHp[j] <= 0) continue
-        const dx = sim.speckX[j] - cx, dy = sim.speckY[j] - cy
-        if (dx * dx + dy * dy <= r2) jm.stunTimer = STUN_DURATION
-      }
-      if (level >= 3) {
-        // Last Stand: commander invulnerable + 3× dmg; nearby friends speed boost
-        cmdMeta.commanderAbilityActive = LAST_STAND_DURATION
-        cmdMeta.commanderAbilityCooldown = LAST_STAND_COOLDOWN
-        for (let j = 0; j < sim.speckCount; j++) {
-          if (j === cmdIdx) continue
-          const jm = sim.speckMeta[j]
-          if (!jm || jm.ownerId !== event.ownerId || sim.speckHp[j] <= 0) continue
-          const dx = sim.speckX[j] - cx, dy = sim.speckY[j] - cy
-          if (dx * dx + dy * dy <= r2) jm.speedBoostTimer = LAST_STAND_DURATION
-        }
-      } else {
-        // Battle Roar: stun only, shorter cooldown
-        cmdMeta.commanderAbilityCooldown = ROAR_COOLDOWN
-      }
-    }
     if (event.type === 'GARRISON') {
       const building = sim.buildings[event.buildingId]
       if (!building || building.ownerId !== event.ownerId) continue
@@ -727,20 +678,5 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade, garrisonCount: b.garrisonedSpeckIds?.length ?? 0 }
   }
 
-  // Commander state for player HUD
-  let commander: { level: number; abilityCooldown: number; abilityActive: number; xp: number } | null = null
-  for (let i = 0; i < sim.speckCount; i++) {
-    const m = sim.speckMeta[i]
-    if (m?.isCommander && m.ownerId === 'player' && sim.speckHp[i] > 0) {
-      commander = {
-        level: m.commanderLevel ?? 0,
-        abilityCooldown: m.commanderAbilityCooldown ?? 0,
-        abilityActive: m.commanderAbilityActive ?? 0,
-        xp: m.commanderXp ?? 0,
-      }
-      break
-    }
-  }
-
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, commander, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding, commanderRespawnMs: sim.players['player']?.commanderRespawnMs ?? 0, heroRespawnMs: sim.heroRespawnTimer['player'] ?? 0 } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
 }
