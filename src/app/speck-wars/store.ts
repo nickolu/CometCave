@@ -57,16 +57,14 @@ interface SpeckWarsStore {
   killFeed: KillFeedEntry[]
   pushKillFeedEntry: (entry: Omit<KillFeedEntry, 'id' | 'ts'>) => void
   pruneKillFeed: () => void
-  stance: 'aggressive' | 'defensive' | 'hold'
-  setStance: (s: 'aggressive' | 'defensive' | 'hold') => void
   aiPersonality: AIPersonality | null
   setAiPersonality: (p: AIPersonality) => void
   fogEnabled: boolean
   setFogEnabled: (v: boolean) => void
   mapPreset: MapPreset
   setMapPreset: (p: MapPreset) => void
-  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; cycleStance: (() => void) | null; saveControlGroup?: ((slot: number) => void) | null; recallControlGroup?: ((slot: number) => void) | null; selectAll?: (() => void) | null; snapToBase?: (() => void) | null; snapToAction?: (() => void) | null; activatePatrol?: (() => void) | null; activateSelectMode?: (() => void) | null; selectByType?: ((typeId: string) => void) | null; selectBuilding?: ((buildingId: string) => void) | null; commandAt?: ((x: number, y: number) => void) | null; clearSelection?: (() => void) | null }
-  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; cycleStance: () => void; saveControlGroup?: (slot: number) => void; recallControlGroup?: (slot: number) => void; selectAll?: () => void; snapToBase?: () => void; snapToAction?: () => void; activatePatrol?: () => void; activateSelectMode?: () => void; selectByType?: (typeId: string) => void; selectBuilding?: (buildingId: string) => void; commandAt?: (x: number, y: number) => void; clearSelection?: () => void } | null) => void
+  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; saveControlGroup?: ((slot: number) => void) | null; recallControlGroup?: ((slot: number) => void) | null; selectAll?: (() => void) | null; snapToBase?: (() => void) | null; snapToAction?: (() => void) | null; activatePatrol?: (() => void) | null; activateSelectMode?: (() => void) | null; selectByType?: ((typeId: string) => void) | null; selectBuilding?: ((buildingId: string) => void) | null; commandAt?: ((x: number, y: number) => void) | null; clearSelection?: (() => void) | null }
+  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; saveControlGroup?: (slot: number) => void; recallControlGroup?: (slot: number) => void; selectAll?: () => void; snapToBase?: () => void; snapToAction?: () => void; activatePatrol?: () => void; activateSelectMode?: () => void; selectByType?: (typeId: string) => void; selectBuilding?: (buildingId: string) => void; commandAt?: (x: number, y: number) => void; clearSelection?: () => void } | null) => void
   surrender: () => void
   resetGame: () => void
 }
@@ -124,16 +122,14 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     const next = s.killFeed.filter(e => e.ts > cutoff)
     return next.length === s.killFeed.length ? s : { killFeed: next }
   }),
-  stance: 'aggressive' as 'aggressive' | 'defensive' | 'hold',
-  setStance: stance => set({ stance }),
   aiPersonality: null,
   setAiPersonality: p => set({ aiPersonality: p }),
   fogEnabled: false,
   setFogEnabled: v => set({ fogEnabled: v }),
   mapPreset: 'random' as MapPreset,
   setMapPreset: p => set({ mapPreset: p }),
-  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null },
-  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null } }),
+  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null },
+  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null } }),
   surrender: () => {
     const s = get()
     resetWinStreak()
@@ -159,7 +155,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     outpostsCaptured: 0,
     killFeed: [],
     aiPersonality: null,
-    stance: 'aggressive' as 'aggressive' | 'defensive' | 'hold',
     difficulty: s.difficulty,
   })),
 }))

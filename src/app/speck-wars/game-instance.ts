@@ -205,7 +205,6 @@ export class GameInstance {
       },
     )
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
-    this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
     this.inputHandler.onSaveControlGroup = (slot: number) => {
       const saved = [...this.sim.selectedSpeckIds]
       this.controlGroups.set(slot, saved)
@@ -257,7 +256,6 @@ export class GameInstance {
       stop: () => this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }),
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
-      cycleStance: () => this.cycleStance(),
       saveControlGroup: (slot: number) => {
         this.inputHandler.onSaveControlGroup?.(slot)
       },
@@ -883,23 +881,6 @@ export class GameInstance {
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
     useSpeckWarsStore.getState().addSurgeUsed()
     this.notify('⚡ SURGE ACTIVE!', '#ffd700')
-  }
-
-  setStance(stance: 'aggressive' | 'defensive' | 'hold') {
-    this.sim.inputQueue.push({ type: 'SET_STANCE', ownerId: 'player', stance })
-    useSpeckWarsStore.getState().setStance(stance)
-  }
-
-  cycleStance() {
-    const current = useSpeckWarsStore.getState().stance
-    const next: 'aggressive' | 'defensive' | 'hold' =
-      current === 'aggressive' ? 'defensive'
-      : current === 'defensive' ? 'hold'
-      : 'aggressive'
-    this.setStance(next)
-    const labels: Record<string, string> = { aggressive: 'AGGRO', defensive: 'DEF', hold: 'HOLD' }
-    const colors: Record<string, string> = { aggressive: '#ff4f7b', defensive: '#4af7c4', hold: '#aaaaaa' }
-    this.notify(`Stance: ${labels[next]}`, colors[next], 1200)
   }
 
   snapToAction() {

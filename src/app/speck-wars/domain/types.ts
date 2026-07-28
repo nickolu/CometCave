@@ -43,7 +43,6 @@ export interface Player {
   color: number            // pixi hex e.g. 0x4af7c4
   isAI: boolean
   isDefeated: boolean
-  stance: 'aggressive' | 'defensive' | 'hold'
 }
 
 export interface WallObstacle {
@@ -96,7 +95,6 @@ export type InputEvent =
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
-  | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
