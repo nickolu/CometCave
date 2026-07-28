@@ -164,24 +164,7 @@ export class GameInstance {
           }
         }
 
-        // If a building is selected and owned by player, set its rally point
-        if (this.sim.selectedBuildingId) {
-          const selBuilding = this.sim.buildings[this.sim.selectedBuildingId]
-          if (selBuilding && selBuilding.ownerId === 'player') {
-            this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
-            this.renderer.showRallyPing(wx, wy)
-            return
-          }
-        }
-
-        // If units are selected, move them to clicked location
-        if (this.sim.selectedSpeckIds.size > 0) {
-          this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
-          this.renderer.showRallyPing(wx, wy)
-          return
-        }
-
-        // Nothing selected — do nothing
+        this.commandAt(wx, wy)
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => this.clearRally(),                             // R — clear rally
@@ -359,6 +342,7 @@ export class GameInstance {
       selectBuilding: (buildingId: string) => {
         this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId })
       },
+      commandAt: (x: number, y: number) => this.commandAt(x, y),
       garrison: (buildingId: string) => this.garrison(buildingId),
       recallGarrison: (buildingId: string) => this.recallGarrison(buildingId),
     })
@@ -1016,6 +1000,24 @@ export class GameInstance {
   rally(x: number, y: number) {
     this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x, y })
     this.renderer.showRallyPing(x, y)
+  }
+
+  // "Point at a place" — the meaning of a click on the world or the minimap. A selected building
+  // sends its production there; otherwise a selection moves; with nothing selected the click is
+  // ignored, so specks are never sent anywhere the player didn't explicitly aim them.
+  commandAt(wx: number, wy: number) {
+    if (this.sim.selectedBuildingId) {
+      const selBuilding = this.sim.buildings[this.sim.selectedBuildingId]
+      if (selBuilding && selBuilding.ownerId === 'player') {
+        this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
+        this.renderer.showRallyPing(wx, wy)
+        return
+      }
+    }
+    if (this.sim.selectedSpeckIds.size > 0) {
+      this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
+      this.renderer.showRallyPing(wx, wy)
+    }
   }
 
   defend() {

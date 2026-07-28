@@ -5,7 +5,6 @@ export const GRID_COLS = Math.ceil(WORLD_WIDTH / GRID_CELL_SIZE)
 export const GRID_ROWS = Math.ceil(WORLD_HEIGHT / GRID_CELL_SIZE)
 export const HUD_UPDATE_INTERVAL = 10    // ticks
 export const BASE_HP = 100
-export const BASE_SIZE = 40
 export const PLAYER_BASE_X = 600
 export const PLAYER_BASE_Y = 1500
 export const AI_BASE_X = 2400
@@ -15,7 +14,6 @@ export const AI_COLOR = 0xff4f7b
 export const MAX_SPECKS = 15000
 
 export const OUTPOST_SIZE = 20
-export const OUTPOST_SPAWN_INTERVAL = 1200   // ms per speck — fast enough to make outpost control strategically decisive
 export const CAPTURE_RADIUS = 100            // px — specks within this distance count toward capture
 export const CAPTURE_TIME = 5000             // ms to fully capture
 export const CREEP_CAMP_DEFENDER_COUNT = 6
@@ -50,8 +48,6 @@ export const MAP_LAYOUTS = [
     { id: 'outpost-right', x: 2050, y: 1500 },
   ],
 ] as const
-
-export const OUTPOST_POSITIONS = MAP_LAYOUTS[0]  // default — overridden by createSim seed
 
 // Human-readable names for each map layout (index matches MAP_LAYOUTS)
 export const MAP_LAYOUT_NAMES: string[] = ['Triangle', 'Corridor', 'Wings']

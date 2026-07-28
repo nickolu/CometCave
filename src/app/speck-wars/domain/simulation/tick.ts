@@ -1,6 +1,6 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
-import { updateSpawners, spawnCampDefenders, spawnCommander } from './spawner'
+import { updateSpawners, spawnCampDefenders } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
@@ -90,7 +90,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   regenBuildingHp(sim, dt)
 
   // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
-  updateTripleOutpostBonus(sim, dt)
+  updateTripleOutpostBonus(sim)
 
   // 7d. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
@@ -218,50 +218,10 @@ function updateCreepCamps(sim: SimulationState, dt: number) {
   }
 }
 
-function updateCommanders(sim: SimulationState, dt: number) {
-  const PULSE_RANGE = 50
-  const PULSE_DAMAGE = 0.5
-  const PULSE_PERIOD = 3000
-
-  // Tick commanderRespawnMs for each player and respawn when ready
-  for (const [pid, player] of Object.entries(sim.players)) {
-    if ((player.commanderRespawnMs ?? 0) > 0) {
-      player.commanderRespawnMs = Math.max(0, (player.commanderRespawnMs ?? 0) - dt)
-      if (player.commanderRespawnMs <= 0) {
-        player.commanderRespawnMs = undefined
-        spawnCommander(sim, pid)
-      }
-    }
-  }
-
-  // AoE pulse for Level 2+ commanders
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta?.isCommander || sim.speckHp[i] <= 0) continue
-    if ((meta.commanderLevel ?? 0) < 2) continue
-
-    meta.pulseTimer = Math.max(0, (meta.pulseTimer ?? PULSE_PERIOD) - dt)
-    if (meta.pulseTimer <= 0) {
-      meta.pulseTimer = PULSE_PERIOD
-      const pr2 = PULSE_RANGE * PULSE_RANGE
-      for (let j = 0; j < sim.speckCount; j++) {
-        const jm = sim.speckMeta[j]
-        if (!jm || jm.ownerId === meta.ownerId || sim.speckHp[j] <= 0) continue
-        const dx = sim.speckX[j] - sim.speckX[i]
-        const dy = sim.speckY[j] - sim.speckY[i]
-        if (dx * dx + dy * dy <= pr2) {
-          sim.speckHp[j] -= PULSE_DAMAGE
-        }
-      }
-    }
-  }
-}
-
-function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
+function updateTripleOutpostBonus(sim: SimulationState) {
   const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
   if (outposts.length === 0) return
 
-  let tripleHolder: string | null = null
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     const ownsAll = outposts.every(o => o.ownerId === pid)
@@ -269,27 +229,29 @@ function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
       if (building.ownerId !== pid || building.typeId !== 'base') continue
       building.tripleOutpostBonus = ownsAll
     }
-    if (ownsAll) tripleHolder = pid
   }
-
 }
 
 function consumeInputs(sim: SimulationState) {
   for (const event of sim.inputQueue) {
     if (event.type === 'RALLY') {
-      const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
-      if (hasSelection) {
-        sim.rallyPoints['player-selected'] = { x: event.x, y: event.y }
-        // Stamp individual rally on each selected speck — persists after deselection
+      if (event.ownerId === 'player') {
+        // With a selection this moves that group; with none it is an army-wide order from the
+        // Defend / Advance / Rush / Guard verbs. A bare map click never gets here — game-instance
+        // drops it when nothing is selected, so specks are never moved by accident.
+        const useSelection = sim.selectedSpeckIds.size > 0
+        sim.rallyPoints['player-selected'] = useSelection ? { x: event.x, y: event.y } : null
         for (let i = 0; i < sim.speckCount; i++) {
           const meta = sim.speckMeta[i]
-          if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
+          if (!meta || !sim.speckIds[i] || meta.ownerId !== 'player') continue
+          if (useSelection && !sim.selectedSpeckIds.has(meta.id)) continue
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
+          meta.homeBuildingId = undefined  // a direct order outranks the spawn building's rally
           meta.holdPosition = false  // clear hold when a new rally is issued
           meta.attackMoveMode = false  // normal move cancels attack-move
         }
-      } else if (event.ownerId !== 'player') {
+      } else {
         // AI (and any non-player owner): keep global rally logic
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
       }
@@ -304,6 +266,7 @@ function consumeInputs(sim: SimulationState) {
           if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
+          meta.homeBuildingId = undefined
           meta.holdPosition = false
           meta.targetId = null
           meta.state = 'moving'
@@ -316,18 +279,15 @@ function consumeInputs(sim: SimulationState) {
           if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
+          meta.homeBuildingId = undefined
           meta.holdPosition = false
           meta.targetId = null
           meta.state = 'moving'
           meta.attackMoveMode = true
         }
-        if (event.ownerId === 'player') {
-          for (const building of Object.values(sim.buildings)) {
-            if (building.ownerId === 'player') {
-              building.rallyPoint = { x: event.x, y: event.y }
-            }
-          }
-        }
+        // Deliberately does NOT repoint every building's rally: an attack-move commits the army
+        // that exists now, it does not silently redirect production forever. Spawn destinations
+        // are only ever changed by selecting a building (SET_BUILDING_RALLY).
       }
     }
     if (event.type === 'SET_SPAWN_TYPE') {
@@ -377,21 +337,10 @@ function consumeInputs(sim: SimulationState) {
       const building = sim.buildings[event.buildingId]
       if (!building || building.ownerId !== event.ownerId) continue
       building.rallyPoint = { x: event.x, y: event.y }
-      // Send specks that are currently resting at this building to the new rally point.
-      // A speck is "resting at the building" if its assignedRallyX/Y is within 40px of the building.
-      const REST_RADIUS = 40
-      for (let i = 0; i < sim.speckCount; i++) {
-        const meta = sim.speckMeta[i]
-        if (!meta || meta.ownerId !== event.ownerId) continue
-        if (meta.assignedRallyX === undefined || meta.assignedRallyY === undefined) continue
-        const rdx = meta.assignedRallyX - building.x
-        const rdy = meta.assignedRallyY - building.y
-        if (Math.abs(rdx) <= REST_RADIUS && Math.abs(rdy) <= REST_RADIUS) {
-          meta.assignedRallyX = event.x
-          meta.assignedRallyY = event.y
-          meta.attackMoveMode = false
-        }
-      }
+      // Everyone still under this building's standing orders — the specks mustered at it plus
+      // every future spawn — follows automatically: speck-ai.ts re-reads the rally from
+      // homeBuildingId each tick. Specks given a direct order elsewhere have already dropped that
+      // link and are deliberately left where the player put them.
     }
     if (event.type === 'SURGE') {
       if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
@@ -408,6 +357,7 @@ function consumeInputs(sim: SimulationState) {
         if (sim.selectedSpeckIds.size > 0 && !isSelected) continue
         meta.assignedRallyX = undefined
         meta.assignedRallyY = undefined
+        meta.homeBuildingId = undefined  // stop means stop here, not "walk back to your building"
         meta.targetId = null
         meta.holdPosition = false
         meta.attackMoveMode = false
@@ -426,6 +376,7 @@ function consumeInputs(sim: SimulationState) {
         if (sim.selectedSpeckIds.size > 0 && !isSelected) continue
         meta.assignedRallyX = undefined
         meta.assignedRallyY = undefined
+        meta.homeBuildingId = undefined
         meta.targetId = null
         meta.holdPosition = true
         meta.attackMoveMode = false
@@ -459,7 +410,6 @@ function consumeInputs(sim: SimulationState) {
         x: event.x, y: event.y,
         hp: btype.maxHp, maxHp: btype.maxHp,
         spawnTimer: 0,
-        inputBuffer: {},
         underConstruction: true,
         sacrificeRequired: sacrificeCost,
         sacrificeArrived: 0,
@@ -475,6 +425,7 @@ function consumeInputs(sim: SimulationState) {
         m.constructTargetId = buildId
         m.assignedRallyX = event.x
         m.assignedRallyY = event.y
+        m.homeBuildingId = undefined
         m.holdPosition = false
         sent++
       }
@@ -573,6 +524,10 @@ function consumeInputs(sim: SimulationState) {
         m.isGarrisoned = false
         m.garrisonBuildingId = undefined
         m.state = 'attacking'
+        // Recalled specks join this outpost's muster, so they follow its rally like fresh spawns
+        m.homeBuildingId = building.id
+        m.assignedRallyX = building.rallyPoint?.x ?? building.x
+        m.assignedRallyY = building.rallyPoint?.y ?? building.y
         // Place recalled specks at the outpost position
         sim.speckX[i] = building.x + (Math.random() - 0.5) * 40
         sim.speckY[i] = building.y + (Math.random() - 0.5) * 40

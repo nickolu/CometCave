@@ -1,9 +1,13 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
+import { getHomeBuilding, getMusterRadius } from './muster'
 
 const RALLY_ARRIVAL_THRESHOLD = 30   // px — how close before speck is considered "arrived"
 const ATTACK_MOVE_PROXIMITY = 100    // px — attack enemy buildings within this range while moving to rally
 const DEFENDER_PRIORITY_RANGE = 100 // px — clear enemy specks this close before attacking buildings
+const GUARD_ENGAGE_RANGE = 130      // px — a waiting player speck attacks enemy buildings this close.
+                                    // Wider than ATTACK_MOVE_PROXIMITY so a group rallied onto an
+                                    // enemy structure keeps hitting it after it stops marching.
 
 export function runSpeckAI(sim: SimulationState) {
   const { speckIds, speckX, speckY, speckMeta, buildings } = sim
@@ -84,19 +88,28 @@ export function runSpeckAI(sim: SimulationState) {
       continue
     }
 
-    // Selection-aware rally: selected player specks use 'player-selected' rally;
-    // unselected specks with an active selection use no rally (auto-target)
+    // Rally resolution.
+    //  - A player speck still under standing orders reads its home building's rally live, so
+    //    changing that rally redirects everyone waiting there on the next tick.
+    //  - A direct command clears homeBuildingId and stamps assignedRallyX/Y, which then wins.
+    //  - AI and neutral owners keep the old global-rally behavior untouched.
     const getEffectiveRally = () => {
       if (meta.ownerId !== 'player') return sim.rallyPoints[meta.ownerId]
-      // Individual sub-group rally takes priority — persists across deselection
+      const home = getHomeBuilding(sim, meta)
+      if (home) {
+        const rp = home.rallyPoint ?? { x: home.x, y: home.y }
+        meta.assignedRallyX = rp.x   // keep in sync — movement.ts steers by the stamped anchor
+        meta.assignedRallyY = rp.y
+        return rp
+      }
+      meta.homeBuildingId = undefined  // home lost — hold the last anchor instead of wandering
+      // The last direct order, which persists across deselection. There is deliberately no global
+      // player rally fallback: a speck with no home and no order stands still, so STOP can't be
+      // undone by a rally point the player set minutes ago somewhere else.
       if (meta.assignedRallyX !== undefined && meta.assignedRallyY !== undefined) {
         return { x: meta.assignedRallyX, y: meta.assignedRallyY }
       }
-      const hasSelection = sim.selectedSpeckIds.size > 0
-      if (!hasSelection) return sim.rallyPoints['player']
-      const isSelected = sim.selectedSpeckIds.has(meta.id)
-      if (isSelected) return sim.rallyPoints['player-selected'] ?? sim.rallyPoints['player']
-      return null  // unselected specks: no rally, auto-target normally
+      return null
     }
     const rally = getEffectiveRally()
 
@@ -105,7 +118,10 @@ export function runSpeckAI(sim: SimulationState) {
       const dx = rally.x - speckX[i]
       const dy = rally.y - speckY[i]
       const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist > RALLY_ARRIVAL_THRESHOLD) {
+      const arrivalThreshold = meta.ownerId === 'player'
+        ? getMusterRadius(sim, meta) + 8   // matches where movement.ts stops seeking, plus slack
+        : RALLY_ARRIVAL_THRESHOLD
+      if (dist > arrivalThreshold) {
         // Attack-move: find enemy building within proximity rather than pure move
         let closeTarget: string | null = null
         let closeDist = Infinity
@@ -124,8 +140,9 @@ export function runSpeckAI(sim: SimulationState) {
         meta.state = 'moving'
         continue
       }
-      // Arrived at individual rally — clear assignment so speck reverts to normal AI
-      if (meta.assignedRallyX !== undefined) {
+      // Arrived. Player specks keep the anchor and hold it — they never choose their own next
+      // objective (see the guard block below). AI specks clear it and revert to normal AI.
+      if (meta.ownerId !== 'player' && meta.assignedRallyX !== undefined) {
         meta.assignedRallyX = undefined
         meta.assignedRallyY = undefined
       }
@@ -150,6 +167,29 @@ export function runSpeckAI(sim: SimulationState) {
     }
 
     if (meta.targetId) continue  // already has a valid target
+
+    // Player specks never choose their own objective. Once a speck is standing where it was told
+    // to stand — its spawn building, that building's rally point, or the last direct order — it
+    // only engages what comes to it. Marching on the nearest enemy building unprompted is AI-only
+    // behavior; for the player that is what the rally point is for.
+    if (meta.ownerId === 'player') {
+      let guardTarget: string | null = null
+      let guardDist = Infinity
+      for (const [bid, building] of Object.entries(buildings)) {
+        if (building.ownerId === meta.ownerId) continue   // skip friendly
+        if (building.ownerId === 'neutral') continue      // skip neutral — only capture those
+        const bdx = building.x - speckX[i]
+        const bdy = building.y - speckY[i]
+        const bdist = Math.sqrt(bdx * bdx + bdy * bdy)
+        if (bdist < GUARD_ENGAGE_RANGE && bdist < guardDist) {
+          guardDist = bdist
+          guardTarget = bid
+        }
+      }
+      meta.targetId = guardTarget
+      meta.state = guardTarget ? 'moving' : 'idle'
+      continue
+    }
 
     // Find nearest enemy building
     let nearest: string | null = null

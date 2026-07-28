@@ -2,6 +2,7 @@ import type { SimulationState, WallObstacle } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
 import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS } from '../constants'
+import { getMusterRadius } from './muster'
 
 function resolveWallCollisions(
   nx: number, ny: number,
@@ -39,6 +40,8 @@ function resolveWallCollisions(
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
 const SEPARATION_FORCE = 120  // strength of push-apart
 const AURA_SPEED_MULT = 1.35  // 35% speed boost inside outpost aura
+const GUARD_BUBBLE = 90              // px — how far a waiting player speck will step off its anchor
+const GUARD_BUBBLE_AGGRESSIVE = 160  // px — same, on aggressive stance
 
 export function moveSpecks(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckVx, speckVy, speckMeta, buildings, spatialGrid } = sim
@@ -178,7 +181,47 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dx = rally.x - speckX[i]
         const dy = rally.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
-        if (dist > stype.attackRange) {
+        // Attack-move steers at a moving enemy, so only a real rally counts as an anchor to hold.
+        const anchored = meta.ownerId === 'player' && meta.attackMoveTargetX === undefined
+        // Player specks stop short of the anchor and let separation spread them into a ring,
+        // instead of grinding into a single pixel on top of the building or rally flag.
+        const stopRadius = anchored ? getMusterRadius(sim, meta) : stype.attackRange
+
+        // Guarding: a player speck standing on its anchor steps out to meet enemies inside a
+        // bubble around that anchor. The bubble is measured from the anchor rather than from the
+        // speck, so a guard can be drawn a bounded distance off station and never kited away.
+        let guarding = false
+        if (anchored && dist <= GUARD_BUBBLE_AGGRESSIVE) {
+          const stance = sim.players[meta.ownerId]?.stance ?? 'defensive'
+          const bubble = stance === 'hold' ? 0 : stance === 'aggressive' ? GUARD_BUBBLE_AGGRESSIVE : GUARD_BUBBLE
+          if (bubble > 0 && dist <= bubble) {
+            const bubble2 = bubble * bubble
+            let closestDist2 = Infinity, closestX = 0, closestY = 0
+            const guardNeighbors = spatialGrid.query(speckX[i], speckY[i])
+            for (const j of guardNeighbors) {
+              if (i === j || !speckIds[j]) continue
+              const jMeta = speckMeta[j]
+              if (!jMeta || jMeta.ownerId === meta.ownerId || jMeta.isGarrisoned) continue
+              const edx = speckX[j] - rally.x
+              const edy = speckY[j] - rally.y
+              if (edx * edx + edy * edy > bubble2) continue   // outside the bubble — not our fight
+              const sdx = speckX[j] - speckX[i]
+              const sdy = speckY[j] - speckY[i]
+              const d2 = sdx * sdx + sdy * sdy
+              if (d2 < closestDist2) { closestDist2 = d2; closestX = speckX[j]; closestY = speckY[j] }
+            }
+            if (closestDist2 < Infinity) {
+              guarding = true
+              const d = Math.sqrt(closestDist2)
+              if (d > stype.attackRange) {
+                ax += ((closestX - speckX[i]) / d) * stype.speed * speedMult
+                ay += ((closestY - speckY[i]) / d) * stype.speed * speedMult
+              }
+            }
+          }
+        }
+
+        if (!guarding && dist > stopRadius) {
           ax += (dx / dist) * stype.speed * speedMult
           ay += (dy / dist) * stype.speed * speedMult
         }

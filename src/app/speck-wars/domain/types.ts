@@ -10,6 +10,10 @@ export interface SpeckMeta {
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
+  homeBuildingId?: string  // building that produced this speck. While set the speck is under
+                           // "standing orders": it musters at that building's rally point (or at
+                           // the building itself) and never picks its own objective. Cleared by
+                           // any direct command — move, attack-move, stop, hold, build.
   holdPosition?: boolean   // true = don't move, don't attack, wait for new order
   attackMoveMode?: boolean          // true = A-click move; engage enemy specks en route
   attackMoveTargetX?: number        // temporary target speck position while attack-moving
@@ -41,7 +45,6 @@ export interface BuildingEntity {
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
   tripleOutpostBonus?: boolean    // true when owner controls all outposts (2× spawn)
-  inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
   fortifyDuration?: number      // ms continuously held — resets on capture
@@ -63,7 +66,6 @@ export interface Player {
   color: number            // pixi hex e.g. 0x4af7c4
   isAI: boolean
   isDefeated: boolean
-  stockpile: Record<string, number>  // typeId → count (resource form)
   totalKills: number           // cumulative kills for upgrade milestones
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
@@ -86,7 +88,6 @@ export interface WallObstacle {
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
 export interface SimulationState {
   tick: number
-  rngState: number
 
   players: Record<string, Player>
   buildings: Record<string, BuildingEntity>
