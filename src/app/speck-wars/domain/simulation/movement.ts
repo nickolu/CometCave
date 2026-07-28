@@ -66,17 +66,7 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     // Garrisoned specks don't move
     if (meta.isGarrisoned) continue
 
-    // Stunned specks cannot move
-    if ((meta.stunTimer ?? 0) > 0) {
-      speckVx[i] = 0
-      speckVy[i] = 0
-      continue
-    }
-
-    const speedMult = (meta.isHero && (meta.heroLevel ?? 0) >= 1) ? 1.15 : 1.0
     const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
-    const speedBoostMult = (meta.speedBoostTimer ?? 0) > 0 ? 1.5 : 1.0
-    const lastStandMult = (meta.isCommander && (meta.commanderAbilityActive ?? 0) > 0) ? 1.25 : 1.0
 
     // Retreating: flee to nearest friendly building
     if (meta.state === 'retreating') {
@@ -103,8 +93,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           const dist = Math.sqrt(nearestDist2)
           const dx = nearestBuilding.x - speckX[i]
           const dy = nearestBuilding.y - speckY[i]
-          speckVx[i] = (dx / dist) * stype.speed * speedMult * afterburnersMult
-          speckVy[i] = (dy / dist) * stype.speed * speedMult * afterburnersMult
+          speckVx[i] = (dx / dist) * stype.speed * afterburnersMult
+          speckVy[i] = (dy / dist) * stype.speed * afterburnersMult
           {
             const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
             const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
@@ -136,8 +126,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = target.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed * speedMult
-          ay += (dy / dist) * stype.speed * speedMult
+          ax += (dx / dist) * stype.speed
+          ay += (dy / dist) * stype.speed
         }
       }
     } else {
@@ -214,16 +204,16 @@ export function moveSpecks(sim: SimulationState, dt: number) {
               guarding = true
               const d = Math.sqrt(closestDist2)
               if (d > stype.attackRange) {
-                ax += ((closestX - speckX[i]) / d) * stype.speed * speedMult
-                ay += ((closestY - speckY[i]) / d) * stype.speed * speedMult
+                ax += ((closestX - speckX[i]) / d) * stype.speed
+                ay += ((closestY - speckY[i]) / d) * stype.speed
               }
             }
           }
         }
 
         if (!guarding && dist > stopRadius) {
-          ax += (dx / dist) * stype.speed * speedMult
-          ay += (dy / dist) * stype.speed * speedMult
+          ax += (dx / dist) * stype.speed
+          ay += (dy / dist) * stype.speed
         }
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
@@ -279,8 +269,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         if (closestDist2 < Infinity) {
           const dist = Math.sqrt(closestDist2)
           if (dist > stype.attackRange) {
-            ax += ((closestX - speckX[i]) / dist) * stype.speed * speedMult
-            ay += ((closestY - speckY[i]) / dist) * stype.speed * speedMult
+            ax += ((closestX - speckX[i]) / dist) * stype.speed
+            ay += ((closestY - speckY[i]) / dist) * stype.speed
           }
         }
       }
@@ -319,12 +309,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           break
         }
       }
-    }
-
-    // Speed boost from commander Last Stand ability
-    if ((speedBoostMult !== 1.0 || lastStandMult !== 1.0) && (ax !== 0 || ay !== 0)) {
-      ax *= speedBoostMult * lastStandMult
-      ay *= speedBoostMult * lastStandMult
     }
 
     // Simple velocity (no mass — direct velocity override)

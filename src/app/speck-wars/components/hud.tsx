@@ -882,10 +882,8 @@ export function HUD() {
               <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
               <span style={{ color: 'rgba(68,170,255,0.8)' }}>Click owned outpost → RESEARCH after 20s: Carapace +1 HP / Blades +15% DMG / Afterburners +15% SPD</span><span style={{ color: 'rgba(68,170,255,0.5)' }}>global · 1 per outpost</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
-              <span>Y — Battle Roar (lvl2 Cmdr: 5 XP) / Last Stand (lvl3: 15 XP)</span><span style={{ opacity: 0.5 }}>Commander: 2× dmg · +1 XP per kill in 150px (HUD shows progress)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
-              <span style={{ color: 'rgba(160,220,255,0.7)' }}>◇ Hero auto-spawns from base — 4× HP, 1.5× dmg, 15s respawn</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hero 5+ kills: +15% spd · 15+ kills: AoE pulse every 3s</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
                 Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts → +2× base production + 60s = domination win · army cap: 120 specks (outpost spawn halts above cap)
@@ -1736,127 +1734,6 @@ export function HUD() {
               >
                 {cd > 0 ? `${isTouchDevice ? 'HEAL' : 'F'} ${Math.ceil(cd / 1000)}s` : isTouchDevice ? '🔧 HEAL' : '🔧 F'}
               </button>
-            )
-          })()}
-          {(() => {
-            const cmd = hud?.commander
-            const respawnMs = hud?.commanderRespawnMs ?? 0
-            if (!cmd || cmd.level < 2) {
-              if (respawnMs > 0) {
-                return (
-                  <div style={{
-                    padding: '8px 12px',
-                    fontSize: 11,
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '1px solid rgba(255,215,0,0.25)',
-                    borderRadius: 20,
-                    color: 'rgba(255,215,0,0.5)',
-                    letterSpacing: 1,
-                    fontFamily: 'monospace',
-                    minHeight: 44,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}>
-                    ★ {Math.ceil(respawnMs / 1000)}s
-                  </div>
-                )
-              }
-              // Commander alive but not yet level 2 — show XP progress toward Battle Roar
-              if (cmd) {
-                const xp = cmd.xp ?? 0
-                return (
-                  <div style={{
-                    padding: '6px 10px',
-                    fontSize: 9,
-                    background: 'rgba(0,0,0,0.25)',
-                    border: '1px solid rgba(255,215,0,0.15)',
-                    borderRadius: 16,
-                    color: 'rgba(255,215,0,0.45)',
-                    letterSpacing: 0.5,
-                    fontFamily: 'monospace',
-                    minHeight: 36,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 2,
-                  }}>
-                    <span>⭐ CMDR {xp}/5 XP</span>
-                    <div style={{ width: 40, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
-                      <div style={{ width: `${Math.min(1, xp / 5) * 100}%`, height: '100%', background: '#ffd700', borderRadius: 1 }} />
-                    </div>
-                  </div>
-                )
-              }
-              return null
-            }
-            const cd = cmd.abilityCooldown
-            const active = cmd.abilityActive > 0
-            const ready = cd <= 0 && !active
-            const isLastStand = cmd.level >= 3
-            const baseColor = isLastStand ? '#00ffcc' : '#ffd700'
-            return (
-              <>
-                <button
-                  onClick={() => { if (ready) { navigator.vibrate?.([30, 40, 50]); gameActions.commanderAbility?.() } }}
-                  title={`[Y] ${isLastStand ? 'Last Stand' : 'Battle Roar'} — ${isLastStand ? 'stun enemies 1.5s + 5s: invuln + 3× dmg + ally speed · 60s CD' : 'stun 1.5s in 80px · 20s CD'}`}
-                  style={{
-                    padding: '8px 12px',
-                    fontSize: 11,
-                    cursor: ready ? 'pointer' : 'default',
-                    background: active ? `${baseColor}33` : ready ? `${baseColor}11` : 'rgba(0,0,0,0.3)',
-                    border: active ? `1px solid ${baseColor}` : ready ? `1px solid ${baseColor}88` : `1px solid ${baseColor}30`,
-                    borderRadius: 20,
-                    color: active ? baseColor : ready ? `${baseColor}cc` : `${baseColor}50`,
-                    letterSpacing: 1,
-                    minHeight: 44,
-                    fontFamily: 'monospace',
-                    opacity: ready || active ? 1 : 0.6,
-                    animation: active && !prefersReducedMotion ? 'pulse-red 0.4s ease-in-out infinite alternate' : 'none',
-                  }}
-                >
-                  {active
-                    ? `${isLastStand ? '★★' : '★'} ${Math.ceil(cmd.abilityActive / 1000)}s`
-                    : cd > 0
-                      ? `${isTouchDevice ? (isLastStand ? 'LAST' : 'ROAR') : 'Y'} ${Math.ceil(cd / 1000)}s`
-                      : isTouchDevice
-                        ? `${isLastStand ? '★★ LAST' : '★ ROAR'}`
-                        : `${isLastStand ? '★★' : '★'} Y`}
-                </button>
-                {cmd.level === 2 && (
-                  <div style={{ fontSize: 8, color: 'rgba(255,215,0,0.4)', letterSpacing: 0.5, textAlign: 'center', marginTop: 2 }}>
-                    {(cmd.xp ?? 0)}/15 Last Stand
-                  </div>
-                )}
-              </>
-            )
-          })()}
-          {(() => {
-            const heroRespawnMs = hud?.heroRespawnMs ?? 0
-            if (heroRespawnMs <= 0) return null
-            return (
-              <div
-                title="Hero is respawning — will rejoin your forces shortly"
-                style={{
-                  padding: '6px 10px',
-                  fontSize: 9,
-                  background: 'rgba(255,215,0,0.05)',
-                  border: '1px solid rgba(255,215,0,0.2)',
-                  borderRadius: 16,
-                  color: 'rgba(255,215,0,0.5)',
-                  letterSpacing: 0.5,
-                  fontFamily: 'monospace',
-                  minHeight: 36,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 2,
-                }}
-              >
-                <span>◇ HERO</span>
-                <span>{Math.ceil(heroRespawnMs / 1000)}s</span>
-              </div>
             )
           })()}
           <button
