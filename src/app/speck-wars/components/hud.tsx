@@ -775,7 +775,6 @@ export function HUD() {
                   ['⌂ HOME', 'Camera → your base'],
                   ['⚔ FIGHT', 'Camera → active battle'],
                   ['★ SURGE', '2× spawn rate for 8s'],
-                  ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3) · Cmdr: 2× dmg'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
                   ['1× / 2× / 4×', 'Game speed'],
                   ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
@@ -817,9 +816,9 @@ export function HUD() {
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>? — this help</span>
               <span>G — guard: rally to nearest friendly outpost</span>
-              <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
+              <span style={{ color: 'rgba(160,220,255,0.7)', gridColumn: '1/-1' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-                Daily map seed changes each day · layout changes per difficulty · hold all 3 outposts → +2× base production + 60s = domination win · army cap: 120 specks (outpost spawn halts above cap)
+                Daily map seed changes each day · layout changes per difficulty · army cap: 120 specks (outpost spawn halts above cap)
               </span>
             </div>
           )}
