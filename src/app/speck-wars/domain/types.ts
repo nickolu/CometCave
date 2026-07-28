@@ -33,7 +33,6 @@ export interface BuildingEntity {
   spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
-  fortifyDuration?: number      // ms continuously held — resets on capture
   lastDamagedAt?: number        // Date.now() timestamp of last damage taken (for regen cooldown)
   rallyPoint?: { x: number; y: number } | null  // per-building rally; specks auto-march here on spawn
   underConstruction?: boolean
@@ -154,8 +153,7 @@ export interface HudData {
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
-  outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number } | null
+  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]

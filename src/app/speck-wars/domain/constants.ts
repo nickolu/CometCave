@@ -22,7 +22,6 @@ export const CREEP_CAMP_RESET_MS = 90000        // ms before captured camp reset
 export const CREEP_CAMP_BOOST_MS = 30000        // ms of +25% spawn boost
 export const CREEP_CAMP_BOOST_MULT = 1.25       // spawn speed multiplier from boost
 export const NEUTRAL_COLOR = 0x888888
-export const OUTPOST_AURA_RADIUS = 160  // px — specks within this radius of a friendly outpost move faster
 export const DOMINATION_TIME = 60000   // ms — hold all 3 outposts this long to win by domination
 
 // Three map layouts — one is picked per game using the daily seed.
@@ -50,10 +49,6 @@ export const MAP_LAYOUTS = [
 
 // Human-readable names for each map layout (index matches MAP_LAYOUTS)
 export const MAP_LAYOUT_NAMES: string[] = ['Triangle', 'Corridor', 'Wings']
-
-export const FORTIFY_TIME = 30000        // ms to reach full fortification
-export const FORTIFY_RADIUS = 200        // px — combat bonus applies within this radius
-export const FORTIFY_DAMAGE_BONUS = 0.25 // max damage multiplier bonus when fully fortified
 
 // Fog of war
 export const FOG_ALPHA = 0.85

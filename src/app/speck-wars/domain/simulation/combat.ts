@@ -1,7 +1,6 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES, getTypeAdvantage } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { FORTIFY_RADIUS, FORTIFY_TIME, FORTIFY_DAMAGE_BONUS } from '../constants'
 
 export function resolveCombat(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckHp, speckMeta, buildings, spatialGrid } = sim
@@ -31,19 +30,8 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       const dist = Math.sqrt(dx * dx + dy * dy)
       if (dist <= stype.attackRange) {
         const veteranBonus = meta.kills >= 12 ? 1.50 : meta.kills >= 6 ? 1.35 : meta.kills >= 3 ? 1.20 : 1.0  // legend +50%, elite +35%, veteran +20%
-        // Fortification bonus: if attacker is near a friendly fortified outpost, deal extra damage
-        let fortifyBonus = 1.0
-        for (const b of Object.values(buildings)) {
-          if (b.typeId !== 'outpost' || b.ownerId !== meta.ownerId) continue
-          const fdx = speckX[i] - b.x
-          const fdy = speckY[i] - b.y
-          if (fdx * fdx + fdy * fdy <= FORTIFY_RADIUS * FORTIFY_RADIUS) {
-            const level = Math.min(1, (b.fortifyDuration ?? 0) / FORTIFY_TIME)
-            if (level > 0) { fortifyBonus = 1 + FORTIFY_DAMAGE_BONUS * level; break }
-          }
-        }
         const typeAdvMult = getTypeAdvantage(stype.id, jMeta.typeId)
-        speckHp[j] -= stype.damage * veteranBonus * fortifyBonus * typeAdvMult
+        speckHp[j] -= stype.damage * veteranBonus * typeAdvMult
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0
