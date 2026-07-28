@@ -1,7 +1,7 @@
 import type { SimulationState, WallObstacle } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { WORLD_WIDTH, WORLD_HEIGHT, OUTPOST_AURA_RADIUS, CREEP_CAMP_ZONE_RADIUS } from '../constants'
+import { WORLD_WIDTH, WORLD_HEIGHT, CREEP_CAMP_ZONE_RADIUS } from '../constants'
 import { getMusterRadius } from './muster'
 
 function resolveWallCollisions(
@@ -39,7 +39,6 @@ function resolveWallCollisions(
 
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
 const SEPARATION_FORCE = 120  // strength of push-apart
-const AURA_SPEED_MULT = 1.35  // 35% speed boost inside outpost aura
 const GUARD_BUBBLE = 90              // px — how far a waiting player speck will step off its anchor
 const GUARD_BUBBLE_AGGRESSIVE = 160  // px — same, on aggressive stance
 
@@ -285,20 +284,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       }
     }
 
-    // Outpost speed aura: boost movement if inside a friendly outpost's aura
-    if (ax !== 0 || ay !== 0) {
-      const auraR2 = OUTPOST_AURA_RADIUS * OUTPOST_AURA_RADIUS
-      for (const building of outposts) {
-        if (building.ownerId !== meta.ownerId) continue
-        const bdx = speckX[i] - building.x
-        const bdy = speckY[i] - building.y
-        if (bdx * bdx + bdy * bdy < auraR2) {
-          ax *= AURA_SPEED_MULT
-          ay *= AURA_SPEED_MULT
-          break
-        }
-      }
-    }
 
     // Simple velocity (no mass — direct velocity override)
     speckVx[i] = ax
