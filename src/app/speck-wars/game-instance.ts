@@ -9,7 +9,7 @@ import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak, hasSeenVeteranTip, markVeteranTipSeen } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
-import { DAILY_MODIFIER_LABELS, SUPPLY_SOFT_CAP } from './domain/constants'
+import { DAILY_MODIFIER_LABELS } from './domain/constants'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -54,8 +54,6 @@ export class GameInstance {
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
-  private prevAtSupplyCap = false              // notify once when player first hits hard supply cap
-  private prevAtSoftCap = false               // notify once when player first hits soft supply cap
   private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
@@ -546,19 +544,6 @@ export class GameInstance {
             this.enemySurgeWarnedAt = now
             this.notify('⚠ ENEMY SURGE!', '#ff6b35', 2500)
           }
-          // Supply cap notifications: soft cap = spawn slows, hard cap = outpost spawn halts
-          const playerSupplyUsed = event.data.players.player?.supplyUsed ?? 0
-          const playerSupplyCap = event.data.players.player?.supplyCap ?? 120
-          const atSoftCap = playerSupplyUsed >= SUPPLY_SOFT_CAP
-          const atSupplyCap = playerSupplyUsed >= playerSupplyCap
-          if (atSoftCap && !this.prevAtSoftCap && !atSupplyCap) {
-            this.notify('⚡ SUPPLY SOFT CAP — spawn slowing (reduce heavies or capture outposts)', '#ffaa44', 3500)
-          }
-          if (atSupplyCap && !this.prevAtSupplyCap) {
-            this.notify('⚠ SUPPLY CAP — outpost spawn halted (use basic/dart)', '#ff4f7b', 3500)
-          }
-          this.prevAtSoftCap = atSoftCap
-          this.prevAtSupplyCap = atSupplyCap
           // Outpost HP critical: player outpost < 20% max HP (50)
           const OUTPOST_MAX_HP = 50
           const OUTPOST_CRITICAL_HP = OUTPOST_MAX_HP * 0.2  // 10 HP

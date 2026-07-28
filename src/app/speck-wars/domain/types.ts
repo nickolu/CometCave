@@ -64,7 +64,6 @@ export interface Player {
     blades: boolean
     afterburners: boolean
   }
-  supply: number                // total supply slots currently in use
 }
 
 export interface WallObstacle {
@@ -156,8 +155,6 @@ export interface HudData {
     veteranCount: number  // specks with 3+ kills
     eliteCount: number    // specks with 6+ kills
     legendCount: number   // specks with 12+ kills
-    supplyUsed: number    // current supply in use
-    supplyCap: number     // hard supply cap
     outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean }
   }>
   attackedBuildingIds: string[]
