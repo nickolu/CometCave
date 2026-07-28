@@ -1,6 +1,5 @@
 import type { SimulationState, Player, BuildingEntity, WallObstacle } from '../types'
-import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, MAP_LAYOUTS, DAILY_MODIFIER_POOL } from '../constants'
-import type { DailyModifier } from '../constants'
+import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_COLOR, BASE_HP, MAX_SPECKS, NEUTRAL_COLOR, MAP_LAYOUTS } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty, MapPreset } from '../../store'
@@ -123,27 +122,10 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     }
   }
 
-  // Pick daily modifier — after layout and jitter RNG calls
-  const modifierIndex = Math.floor(rng() * DAILY_MODIFIER_POOL.length)
-  const dailyModifier: DailyModifier = DAILY_MODIFIER_POOL[modifierIndex]
-
-  // Generate obstacles AFTER modifier pick to avoid shifting existing RNG sequence
+  // Generate obstacles after layout and jitter RNG calls
   const obstacles = mapPreset === 'random'
     ? generateObstacles(rng)
     : (MAP_PRESET_OBSTACLES[mapPreset] ?? [])
-
-  // Apply static modifier effects
-  if (dailyModifier === 'bulwark') {
-    playerBase.hp = BASE_HP * 2
-    playerBase.maxHp = BASE_HP * 2
-    aiBase.hp = BASE_HP * 2
-    aiBase.maxHp = BASE_HP * 2
-  }
-  if (dailyModifier === 'blitz') {
-    const DEFAULT_BASE_INTERVAL = 800  // BUILDING_TYPES.base.spawnInterval
-    playerBase.spawnIntervalOverride = (playerBase.spawnIntervalOverride ?? DEFAULT_BASE_INTERVAL) * 0.65
-    aiBase.spawnIntervalOverride = (aiBase.spawnIntervalOverride ?? DEFAULT_BASE_INTERVAL) * 0.65
-  }
 
   // NOTE: `seed` governs setup only — map layout, outpost jitter, daily modifier, obstacles.
   // Everything after createSim (spawner.ts, tick.ts, ai-controller.ts) calls raw Math.random(),
@@ -173,7 +155,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     dominationTimer: 0,
     surgeDuration: 0,
     surgeCooldown: 0,
-    dailyModifier,
     waveCountdown: null,
     waveInProgress: false,
     waveNumber: 0,

@@ -31,7 +31,7 @@ export function updateCapture(sim: SimulationState, dt: number) {
         const hasEnemyProgress = (building.captureProgress ?? 0) > 0 &&
           building.captureSide && building.captureSide !== topOwner
         if (hasEnemyProgress) {
-          const captureTimeMs = sim.dailyModifier === 'siege' ? CAPTURE_TIME * 2 : CAPTURE_TIME
+          const captureTimeMs = CAPTURE_TIME
           building.captureProgress = Math.max(0, (building.captureProgress ?? 0) - (dt / captureTimeMs) * 0.5)
           if ((building.captureProgress ?? 0) <= 0) building.captureSide = null
         }
@@ -49,7 +49,7 @@ export function updateCapture(sim: SimulationState, dt: number) {
     }
 
     // Flat timer: any presence captures at constant rate
-    const captureTimeMs = sim.dailyModifier === 'siege' ? CAPTURE_TIME * 2 : CAPTURE_TIME
+    const captureTimeMs = CAPTURE_TIME
     building.captureProgress = (building.captureProgress ?? 0) + (dt / captureTimeMs)
     if ((building.captureProgress ?? 0) >= 1) {
       const previousOwner = building.ownerId

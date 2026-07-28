@@ -79,7 +79,6 @@ export interface SimulationState {
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
-  dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
   waveNumber: number             // current wave count (0 = not started)
@@ -132,7 +131,6 @@ export interface HudData {
   selectedSpeckCount: number   // 0 when no selection active
   selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number } | null
   spawnRates: Record<string, number>   // playerId → effective specks/min
-  dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null
   waveInProgress: boolean
   waveNumber: number

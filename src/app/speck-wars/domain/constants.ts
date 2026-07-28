@@ -52,16 +52,3 @@ export const FOG_VISION_SPECK = 150     // px vision radius per speck (coarse ce
 export const FOG_VISION_BASE = 300      // px vision radius around player base
 export const FOG_VISION_BUILDING = 180  // px vision radius around owned outposts/buildings
 
-export type DailyModifier = 'standard' | 'bulwark' | 'blitz' | 'siege'
-
-// Weighted array: standard appears 2× more often than others
-export const DAILY_MODIFIER_POOL: DailyModifier[] = [
-  'standard', 'standard', 'bulwark', 'blitz', 'siege'
-]
-
-export const DAILY_MODIFIER_LABELS: Record<DailyModifier, string> = {
-  standard: '',
-  bulwark:  '⚔ BULWARK — bases have 2× HP',
-  blitz:    '⚡ BLITZ — 1.5× production speed',
-  siege:    '🏰 SIEGE — outposts take 2× longer to capture',
-}
