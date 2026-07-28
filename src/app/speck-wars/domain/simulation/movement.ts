@@ -61,47 +61,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
-    // Retreating: flee to nearest friendly building
-    if (meta.state === 'retreating') {
-      let nearestBuilding = null
-      let nearestDist2 = Infinity
-      for (const b of Object.values(buildings)) {
-        if (b.ownerId !== meta.ownerId) continue
-        const dx = b.x - speckX[i]
-        const dy = b.y - speckY[i]
-        const d2 = dx * dx + dy * dy
-        if (d2 < nearestDist2) {
-          nearestDist2 = d2
-          nearestBuilding = b
-        }
-      }
-      if (nearestBuilding) {
-        const btype = BUILDING_TYPES[nearestBuilding.typeId]
-        const bRadius = btype?.size ?? 20
-        if (nearestDist2 <= bRadius * bRadius) {
-          // Retreating specks: stop movement, let regenRetreatingSpecks handle idle transition
-          sim.speckVx[i] = 0
-          sim.speckVy[i] = 0
-        } else {
-          const dist = Math.sqrt(nearestDist2)
-          const dx = nearestBuilding.x - speckX[i]
-          const dy = nearestBuilding.y - speckY[i]
-          speckVx[i] = (dx / dist) * stype.speed
-          speckVy[i] = (dy / dist) * stype.speed
-          {
-            const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
-            const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
-            const r = resolveWallCollisions(nx, ny, speckVx[i], speckVy[i], sim.obstacles, 4)
-            speckX[i] = r.x
-            speckY[i] = r.y
-            speckVx[i] = r.vx
-            speckVy[i] = r.vy
-          }
-        }
-      }
-      continue
-    }
-
     // Holding: stay in place; combat.ts still resolves attacks for adjacent enemies
     if (meta.state === 'holding') {
       speckVx[i] = 0

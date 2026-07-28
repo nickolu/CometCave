@@ -40,18 +40,12 @@ export class GameInstance {
   private lastIdleNudge = -30000         // allow nudge immediately if idle at game start
   private cachedPlayerSpeckCount = 0    // updated from HUD_UPDATE
   private lastAiSpawnMode: string = 'basic'  // track AI spawn mode changes
-  private lastTripleHolder: string | null = null  // track triple-outpost ownership changes
-  private rallyCryFired = false               // one-time Rally Cry notification per game
   private firstVeteranNotifiedAt = -30000   // allow veteran notification immediately
   private recentPlayerCaptureTimes: number[] = []  // timestamps of recent player captures
-  private retreatWarnedAt = -20000          // allow retreat warning after 20s
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
-  private dominationWarnedAt15s = false         // true once "15s left" AI domination warning fires
-  private dominationWarnedAt10s = false         // true once "10s left" AI domination warning fires
-  private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
   private controlGroups = new Map<number, string[]>()
@@ -511,52 +505,6 @@ export class GameInstance {
               store.pushKillFeedEntry({ icon: '🏗', label: `${name} critical`, color: '#ff2200' })
             }
           }
-          // Triple outpost notification: fire when ownership of all 3 outposts changes hands
-          const holder = event.data.tripleOutpostOwner ?? null
-          if (holder !== this.lastTripleHolder) {
-            if (holder === 'player') {
-              this.notify('⬡ TRIPLE OUTPOST — 2× PRODUCTION + DOMINATION IN 60s!', '#ffd700', 5000)
-            } else if (holder === 'ai' && this.lastTripleHolder !== null) {
-              // AI reclaimed triple — only notify if player had just lost it
-              this.notify('⬡ ENEMY DOMINATES — 60s TO WIN! RECAPTURE!', '#ff4f7b', 5000)
-            } else if (holder === 'ai') {
-              this.notify('⬡ ENEMY HAS ALL OUTPOSTS — 60s TO WIN!', '#ff4f7b', 5000)
-            }
-            this.lastTripleHolder = holder
-            // Reset domination warnings when control changes
-            if (holder !== 'ai') {
-              this.dominationWarnedAt15s = false
-              this.dominationWarnedAt10s = false
-            }
-            if (holder !== 'player') {
-              this.dominationPlayerWarnedAt15s = false
-            }
-          }
-          // Domination critical warnings: AI is about to win
-          if (holder === 'ai' && event.data.dominationProgress !== null) {
-            const progress = event.data.dominationProgress
-            const secsLeft = Math.ceil((1 - progress) * 60)
-            if (secsLeft <= 15 && !this.dominationWarnedAt15s) {
-              this.dominationWarnedAt15s = true
-              this.notify(`⬡ ENEMY WINS IN ${secsLeft}s — RECAPTURE NOW!`, '#ff0055', 3000)
-              navigator.vibrate?.([200, 100, 200, 100, 200])
-            } else if (secsLeft <= 10 && !this.dominationWarnedAt10s) {
-              this.dominationWarnedAt10s = true
-              this.notify('⬡ DOMINATION IMMINENT!', '#ff0055', 3000)
-              navigator.vibrate?.([400, 100, 400])
-            }
-          }
-          // Domination win approaching: player is about to win
-          if (holder === 'player' && event.data.dominationProgress !== null) {
-            const progress = event.data.dominationProgress
-            const secsLeft = Math.ceil((1 - progress) * 60)
-            if (secsLeft <= 15 && !this.dominationPlayerWarnedAt15s) {
-              this.dominationPlayerWarnedAt15s = true
-              this.notify(`⬡ DOMINATION IN ${secsLeft}s — HOLD THE LINE!`, '#ffd700', 3000)
-              navigator.vibrate?.([100, 50, 100])
-            }
-          }
-
           // Wave pre-warning: fire a toast 30s before each AI wave
           const waveCd = event.data.waveCountdown ?? null
           const waveInProg = event.data.waveInProgress ?? false
@@ -679,14 +627,6 @@ export class GameInstance {
             this.baseAttackWarnedAt = now
             this.notify('⚠ BASE UNDER ATTACK!', '#ff4f7b', 2500)
           }
-          // Rally Cry: one-time notification when base drops to 25% HP
-          if (!this.rallyCryFired) {
-            const playerBase = this.sim.buildings['building-player-base']
-            if (playerBase && playerBase.hp / playerBase.maxHp < 0.25) {
-              this.rallyCryFired = true
-              setTimeout(() => this.notify('🔥 RALLY CRY! 1.5× PRODUCTION!', '#ff8844', 3000), 500)
-            }
-          }
         }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {
@@ -744,15 +684,6 @@ export class GameInstance {
           this.notify('✦✦ LEGEND BORN — +50% DMG + AoE SPLASH! ✦✦', '#cc44ff', 3500)
           store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
         }
-        if (event.type === 'UPGRADE_UNLOCKED' && event.ownerId === 'player') {
-          const messages = [
-            '',
-            '⚡ BLOODED — Spawn Speed +10%',
-            '🛡 HARDENED — Units +1 HP',
-            '🔥 VETERAN ARMY — Damage +15%',
-          ]
-          this.notify(messages[event.level], '#ffd700', 3000)
-        }
         if (event.type === 'VETERAN_FALLEN') {
           const isLegend = event.kills >= 12
           const isElite = event.kills >= 6
@@ -774,19 +705,7 @@ export class GameInstance {
         }
       }
 
-      // Retreat wave warning: 10+ player specks retreating = notify
-      const nowTs = Date.now()
-      if (nowTs - this.retreatWarnedAt > 15000) {
-        let retreatingCount = 0
-        for (let i = 0; i < this.sim.speckCount; i++) {
-          const m = this.sim.speckMeta[i]
-          if (m && m.ownerId === 'player' && m.state === 'retreating') retreatingCount++
-        }
-        if (retreatingCount >= 10) {
-          this.retreatWarnedAt = nowTs
-          this.notify(`⚡ ${retreatingCount} SPECKS RETREATING!`, '#ff8844', 2000)
-        }
-      }
+
     }
 
     // Track AI spawn mode (notification handled by AI_SPAWN_SWITCH event to avoid duplicates)

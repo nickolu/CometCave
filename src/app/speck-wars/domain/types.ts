@@ -4,7 +4,7 @@ export interface SpeckMeta {
   id: string
   typeId: string
   ownerId: string
-  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'retreating' | 'holding'
+  state: 'idle' | 'moving' | 'attacking' | 'carrying' | 'holding'
   targetId: string | null
   attackCooldown: number   // ms remaining until next attack
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
@@ -30,7 +30,6 @@ export interface BuildingEntity {
   spawnTimer: number       // ms until next spawn
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
-  tripleOutpostBonus?: boolean    // true when owner controls all outposts (2× spawn)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
   lastDamagedAt?: number        // Date.now() timestamp of last damage taken (for regen cooldown)
@@ -44,8 +43,6 @@ export interface Player {
   color: number            // pixi hex e.g. 0x4af7c4
   isAI: boolean
   isDefeated: boolean
-  totalKills: number           // cumulative kills for upgrade milestones
-  upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
 }
 
 export interface WallObstacle {
@@ -115,7 +112,6 @@ export type SimEvent =
   | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
   | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
-  | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
 
 export interface HudData {
   players: Record<string, {
@@ -128,8 +124,6 @@ export interface HudData {
     legendCount: number   // specks with 12+ kills
   }>
   attackedBuildingIds: string[]
-  tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
-  dominationProgress: number | null  // 0..1 fraction of DOMINATION_TIME elapsed; null if no triple holder
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
   surgeDuration: number    // ms remaining in active surge
   surgeCooldown: number    // ms remaining before surge can be used again
@@ -142,7 +136,6 @@ export interface HudData {
   waveNumber: number
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
-  rallyCryActive: boolean
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]

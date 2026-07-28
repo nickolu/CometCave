@@ -7,7 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, DOMINATION_TIME } from '../constants'
+import { HUD_UPDATE_INTERVAL, DOMINATION_TIME } from '../constants'
 import { updateTurrets } from './turret'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
@@ -36,22 +36,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     sim.selectedBuildingId = null
   }
 
-  // 5b. Mark low-HP specks as retreating
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta || sim.speckHp[i] <= 0) continue
-    if (meta.state === 'retreating') continue  // already retreating
-    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
-    if (sim.speckHp[i] / maxHp < 0.25) {
-      meta.state = 'retreating'
-      meta.targetId = null
-    }
-  }
-
-  // 5c. Heal retreating specks that have reached a friendly building
-  regenRetreatingSpecks(sim, dt)
-
-
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
 
@@ -62,10 +46,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
 
-  // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
-  updateTripleOutpostBonus(sim)
-
-  // 7d. Surge timers
+  // 7c. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
 
@@ -97,41 +78,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   return sim
 }
 
-function regenRetreatingSpecks(sim: SimulationState, dt: number) {
-  const dtSec = dt / 1000
-  const REGEN_RATE = 2  // HP per second while sheltering at base
-  const REENGAGE_THRESHOLD = 0.75  // re-engage when HP is at 75% of max
-
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta || meta.state !== 'retreating') continue
-    if (sim.speckHp[i] <= 0) continue
-
-    // Only heal if within range of a friendly building
-    let nearFriendly = false
-    for (const building of Object.values(sim.buildings)) {
-      if (building.ownerId !== meta.ownerId) continue
-      const bsize = BUILDING_TYPES[building.typeId]?.size ?? 40
-      const dx = sim.speckX[i] - building.x
-      const dy = sim.speckY[i] - building.y
-      if (dx * dx + dy * dy <= (bsize + 30) * (bsize + 30)) {
-        nearFriendly = true
-        break
-      }
-    }
-
-    if (!nearFriendly) continue
-
-    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
-    sim.speckHp[i] = Math.min(maxHp, sim.speckHp[i] + REGEN_RATE * dtSec)
-
-    // Re-engage once healed enough
-    if (sim.speckHp[i] >= maxHp * REENGAGE_THRESHOLD) {
-      meta.state = 'idle'
-    }
-  }
-}
-
 function regenBuildingHp(sim: SimulationState, dt: number) {
   const dtSec = dt / 1000
   const REGEN_COOLDOWN_MS = 5000
@@ -148,19 +94,6 @@ function regenBuildingHp(sim: SimulationState, dt: number) {
   }
 }
 
-function updateTripleOutpostBonus(sim: SimulationState) {
-  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
-  if (outposts.length === 0) return
-
-  for (const [pid] of Object.entries(sim.players)) {
-    if (pid === 'neutral') continue
-    const ownsAll = outposts.every(o => o.ownerId === pid)
-    for (const building of Object.values(sim.buildings)) {
-      if (building.ownerId !== pid || building.typeId !== 'base') continue
-      building.tripleOutpostBonus = ownsAll
-    }
-  }
-}
 
 function consumeInputs(sim: SimulationState) {
   for (const event of sim.inputQueue) {
@@ -352,21 +285,8 @@ function emitHudUpdate(sim: SimulationState) {
     .filter(b => b.typeId === 'outpost' && b.ownerId !== 'neutral' && b.captureProgress && b.captureProgress > 0 && b.captureSide && b.captureSide !== b.ownerId)
     .map(b => b.id)
 
-  // Which player (if any) owns all outposts and has the triple bonus
-  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
-  let tripleOutpostOwner: string | null = null
-  if (outposts.length > 0) {
-    for (const [pid] of Object.entries(sim.players)) {
-      if (pid === 'neutral') continue
-      if (outposts.every(o => o.ownerId === pid)) { tripleOutpostOwner = pid; break }
-    }
-  }
-
-  const dominationProgress: number | null = tripleOutpostOwner !== null
-    ? Math.min(1, sim.dominationTimer / DOMINATION_TIME)
-    : null
-
   // Capture progress for each outpost
+  const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
   const captureInfo: Record<string, { progress: number; side: string } | null> = {}
   for (const o of outposts) {
     captureInfo[o.id] = (o.captureProgress && o.captureSide)
@@ -375,23 +295,17 @@ function emitHudUpdate(sim: SimulationState) {
   }
 
   // Compute effective spawn rate (specks/min) for each player
-  const playerBaseBuilding = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-  const rallyCryActive = playerBaseBuilding
-    ? playerBaseBuilding.hp / playerBaseBuilding.maxHp < RALLY_CRY_HP_THRESHOLD
-    : false
-
   const spawnRates: Record<string, number> = {}
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     let totalRate = 0
     const hasSurge = pid === 'player' && sim.surgeDuration > 0
-    const hasRallyCry = pid === 'player' && rallyCryActive
     for (const building of Object.values(sim.buildings)) {
       if (building.ownerId !== pid) continue
       const btype = BUILDING_TYPES[building.typeId]
       if (!btype?.spawnTypeId) continue
       const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
-      const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1)
+      const divisor = (hasSurge ? 2 : 1)
       const effectiveInterval = baseInterval / divisor
       totalRate += (btype.spawnCount ?? 1) * 60000 / effectiveInterval
     }
@@ -479,5 +393,5 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding } })
 }
