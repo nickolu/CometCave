@@ -166,16 +166,24 @@ export class GameInstance {
           }
         }
 
-        // If a building is selected, set its rally point
+        // If a building is selected and owned by player, set its rally point
         if (this.sim.selectedBuildingId) {
-          this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
+          const selBuilding = this.sim.buildings[this.sim.selectedBuildingId]
+          if (selBuilding && selBuilding.ownerId === 'player') {
+            this.sim.inputQueue.push({ type: 'SET_BUILDING_RALLY', ownerId: 'player', buildingId: this.sim.selectedBuildingId, x: wx, y: wy })
+            this.renderer.showRallyPing(wx, wy)
+            return
+          }
+        }
+
+        // If units are selected, move them to clicked location
+        if (this.sim.selectedSpeckIds.size > 0) {
+          this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
           this.renderer.showRallyPing(wx, wy)
           return
         }
 
-        // Default: global rally for all units
-        this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x: wx, y: wy })
-        this.renderer.showRallyPing(wx, wy)
+        // Nothing selected — do nothing
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => this.clearRally(),                             // R — clear rally
