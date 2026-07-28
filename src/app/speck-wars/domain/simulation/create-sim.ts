@@ -4,7 +4,7 @@ import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty, MapPreset } from '../../store'
-import { spawnCampDefenders, spawnCommander } from './spawner'
+import { spawnCampDefenders } from './spawner'
 
 // Preset obstacle layouts — world is 3000×3000, player base at (600,1500), AI base at (2400,1500)
 const MAP_PRESET_OBSTACLES: Partial<Record<MapPreset, WallObstacle[]>> = {
@@ -188,7 +188,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     selectedSpeckIds: new Set<string>(),
     selectedBuildingId: null,
     spatialGrid: new SpatialGrid(),
-    heroRespawnTimer: { player: 0, ai: 0 },
     dominationTimer: 0,
     surgeDuration: 0,
     surgeCooldown: 0,
@@ -204,10 +203,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   for (const pos of campPositions) {
     spawnCampDefenders(sim, pos.id)
   }
-
-  // Spawn one commander per side
-  spawnCommander(sim, 'player')
-  spawnCommander(sim, 'ai')
 
   return sim
 }
