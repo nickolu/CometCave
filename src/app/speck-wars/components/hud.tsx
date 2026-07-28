@@ -871,8 +871,7 @@ export function HUD() {
               <span>E / Ctrl+A — select all · Esc — cancel/deselect</span><span>Arrow keys / W S — pan camera</span>
               <span>Ctrl+4-9 — save group</span><span>4-9 — recall group</span>
               <span style={{ color: 'rgba(74,247,196,0.7)' }}>Left-click with group selected → moves selected only</span><span style={{ color: 'rgba(74,247,196,0.7)' }}>Specks engage enemies en route (attack-move)</span>
-              <span>Garrison btn — post 5 specks: fire at enemies in 180px (75% dmg, veteran bonuses apply)</span><span>Recall btn — release garrisoned specks</span>
-              <span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
+<span style={{ color: 'rgba(255,180,80,0.75)' }}>Long-press canvas → Attack Move (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>Tap canvas → Rally (mobile)</span>
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Double-tap canvas → zoom toggle (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>2-finger tap → stop (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
@@ -1331,39 +1330,6 @@ export function HUD() {
                 <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.5 }}>
                   {isTouchDevice ? 'tap canvas to set rally' : 'left-click canvas to set rally'}
                 </div>
-                {/* Garrison panel */}
-                {b.typeId === 'outpost' && b.ownerId === 'player' && (() => {
-                  const garCount = b.garrisonCount ?? 0
-                  return (
-                    <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 10 }}>
-                      <div style={{ fontSize: 10, letterSpacing: 1.5, color: garCount >= 5 ? '#ff8844' : '#44aaff', opacity: 0.8, marginBottom: 5 }}>
-                        GARRISON {garCount}/5{garCount >= 5 ? ' · FULL' : ''}
-                      </div>
-                      <div style={{ display: 'flex', gap: 5 }}>
-                        <button onClick={() => gameActions?.garrison?.(b.id)} disabled={garCount >= 5} style={{
-                          flex: 1, padding: '4px 8px', fontSize: 10, letterSpacing: 1,
-                          background: 'rgba(0,0,0,0.5)', border: `1px solid ${garCount >= 5 ? 'rgba(255,136,68,0.15)' : '#44aaff44'}`,
-                          color: garCount >= 5 ? 'rgba(255,136,68,0.35)' : '#44aaff', cursor: garCount >= 5 ? 'default' : 'pointer', borderRadius: 4,
-                          fontFamily: 'monospace', minHeight: 36,
-                        }}>
-                          <div>GARRISON</div>
-                          <div style={{ opacity: 0.6, fontSize: 9 }}>selected specks</div>
-                        </button>
-                        {garCount > 0 && (
-                          <button onClick={() => gameActions?.recallGarrison?.(b.id)} style={{
-                            flex: 1, padding: '4px 8px', fontSize: 10, letterSpacing: 1,
-                            background: 'rgba(0,0,0,0.5)', border: '1px solid #ff884444',
-                            color: '#ff8844', cursor: 'pointer', borderRadius: 4,
-                            fontFamily: 'monospace', minHeight: 36,
-                          }}>
-                            <div>RECALL</div>
-                            <div style={{ opacity: 0.6, fontSize: 9 }}>{garCount} specks</div>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })()}
                 {/* Research panel */}
                 {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) >= 20000 && (() => {
                   if (b.researchedUpgrade) {

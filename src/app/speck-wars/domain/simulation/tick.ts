@@ -11,7 +11,6 @@ import { BUILDING_TYPES } from '../config/building-types'
 import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
-import { updateGarrison } from './garrison'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -69,9 +68,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
-
-  // 7-garrison. Garrisoned specks fire at nearby enemies
-  updateGarrison(sim, dt)
 
   // 7a-pre. Creep camp timers: boost decay, camp reset
   updateCreepCamps(sim, dt)
@@ -492,48 +488,6 @@ function consumeInputs(sim: SimulationState) {
         cmdMeta.commanderAbilityCooldown = ROAR_COOLDOWN
       }
     }
-    if (event.type === 'GARRISON') {
-      const building = sim.buildings[event.buildingId]
-      if (!building || building.ownerId !== event.ownerId) continue
-      if (building.typeId !== 'outpost') continue
-      const MAX_GARRISON = 5
-      if (!building.garrisonedSpeckIds) building.garrisonedSpeckIds = []
-
-      for (const id of event.speckIds) {
-        if (building.garrisonedSpeckIds.length >= MAX_GARRISON) break
-        for (let i = 0; i < sim.speckCount; i++) {
-          if (sim.speckMeta[i]?.id !== id) continue
-          const m = sim.speckMeta[i]!
-          if (m.ownerId !== event.ownerId) continue
-          if (m.isGarrisoned) continue
-          m.isGarrisoned = true
-          m.garrisonBuildingId = event.buildingId
-          m.state = 'holding'
-          building.garrisonedSpeckIds.push(id)
-          break
-        }
-      }
-    }
-    if (event.type === 'RECALL_GARRISON') {
-      const building = sim.buildings[event.buildingId]
-      if (!building || building.ownerId !== event.ownerId) continue
-      const garrison = building.garrisonedSpeckIds ?? []
-      for (let i = 0; i < sim.speckCount; i++) {
-        const m = sim.speckMeta[i]
-        if (!m || !garrison.includes(m.id)) continue
-        m.isGarrisoned = false
-        m.garrisonBuildingId = undefined
-        m.state = 'attacking'
-        // Recalled specks join this outpost's muster, so they follow its rally like fresh spawns
-        m.homeBuildingId = building.id
-        m.assignedRallyX = building.rallyPoint?.x ?? building.x
-        m.assignedRallyY = building.rallyPoint?.y ?? building.y
-        // Place recalled specks at the outpost position
-        sim.speckX[i] = building.x + (Math.random() - 0.5) * 40
-        sim.speckY[i] = building.y + (Math.random() - 0.5) * 40
-      }
-      building.garrisonedSpeckIds = []
-    }
     if (event.type === 'SACRIFICE') {
       if (sim.sacrificeCooldown > 0) continue
       const building = sim.buildings[event.buildingId]
@@ -720,10 +674,10 @@ function emitHudUpdate(sim: SimulationState) {
     selectedComposition = { types, veteranCount: selVet, eliteCount: selElite, legendCount: selLegend }
   }
 
-  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string; garrisonCount?: number } | null = null
+  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string } | null = null
   if (sim.selectedBuildingId) {
     const b = sim.buildings[sim.selectedBuildingId]
-    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade, garrisonCount: b.garrisonedSpeckIds?.length ?? 0 }
+    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade }
   }
 
   // Commander state for player HUD

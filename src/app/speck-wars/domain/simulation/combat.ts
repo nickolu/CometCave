@@ -15,9 +15,6 @@ export function resolveCombat(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
-    // Garrisoned specks don't fight on the field
-    if (meta.isGarrisoned) continue
-
     // Stunned specks cannot attack
     if ((meta.stunTimer ?? 0) > 0) continue
     if (meta.attackCooldown > 0) {
@@ -30,8 +27,6 @@ export function resolveCombat(sim: SimulationState, dt: number) {
       if (i === j || speckHp[j] <= 0) continue
       const jMeta = speckMeta[j]
       if (!jMeta || jMeta.ownerId === meta.ownerId) continue  // dead slot or friendly
-      // Garrisoned specks cannot be targeted on the field
-      if (jMeta.isGarrisoned) continue
 
       const dx = speckX[j] - speckX[i]
       const dy = speckY[j] - speckY[i]
