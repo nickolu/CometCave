@@ -52,12 +52,11 @@ export function resolveCombat(sim: SimulationState, dt: number) {
           }
         }
         const upgradeBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 3 ? 1.15 : 1.0
-        const bladesBonus = (sim.players[meta.ownerId]?.outpostUpgrades?.blades) ? 1.15 : 1.0
         // Commander Last Stand: invulnerable target cannot be damaged
         if (jMeta.isCommander && (jMeta.commanderAbilityActive ?? 0) > 0) break
         const typeAdvMult = getTypeAdvantage(stype.id, jMeta.typeId)
         const lastStandMult = (meta.isCommander && (meta.commanderAbilityActive ?? 0) > 0) ? 3.0 : 1.0
-        speckHp[j] -= stype.damage * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * bladesBonus * commanderBonus * typeAdvMult * lastStandMult
+        speckHp[j] -= stype.damage * veteranBonus * heroBonus * fortifyBonus * upgradeBonus * commanderBonus * typeAdvMult * lastStandMult
         // Elite/Legend splash damage — inspired by CoH veteran abilities (issue #2145)
         // Elite (6+ kills): 18px radius, 50% damage; Legend (12+ kills): 28px radius, 75% damage
         const splashRadius = meta.kills >= 12 ? 28 : meta.kills >= 6 ? 18 : 0

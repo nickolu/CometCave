@@ -437,19 +437,6 @@ function consumeInputs(sim: SimulationState) {
       const p = sim.players[event.ownerId]
       if (p) p.stance = event.stance
     }
-    if (event.type === 'RESEARCH_UPGRADE') {
-      const player = sim.players[event.ownerId]
-      const building = sim.buildings[event.buildingId]
-      if (!player || !building) continue
-      if (building.ownerId !== event.ownerId) continue
-      if (building.typeId !== 'outpost') continue
-      if ((building.fortifyDuration ?? 0) < 20000) continue  // must hold 20s first
-      if (building.researchedUpgrade) continue  // outpost already researched
-      if (player.outpostUpgrades[event.upgrade]) continue  // already have this upgrade globally
-      building.researchedUpgrade = event.upgrade
-      player.outpostUpgrades[event.upgrade] = true
-      sim.events.push({ type: 'OUTPOST_UPGRADE_RESEARCHED', buildingId: event.buildingId, ownerId: event.ownerId, upgrade: event.upgrade })
-    }
     if (event.type === 'COMMANDER_ABILITY') {
       const ROAR_RADIUS = 80
       const STUN_DURATION = 1500    // ms
@@ -561,7 +548,7 @@ function consumeInputs(sim: SimulationState) {
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean } }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
@@ -585,7 +572,6 @@ function emitHudUpdate(sim: SimulationState) {
       veteranCount,
       eliteCount,
       legendCount,
-      outpostUpgrades: { ...(sim.players[pid].outpostUpgrades ?? { carapace: false, blades: false, afterburners: false }) },
     }
   }
   // Buildings that are owned but actively being captured by the enemy
@@ -720,10 +706,10 @@ function emitHudUpdate(sim: SimulationState) {
     selectedComposition = { types, veteranCount: selVet, eliteCount: selElite, legendCount: selLegend }
   }
 
-  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; researchedUpgrade?: string; garrisonCount?: number } | null = null
+  let selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; garrisonCount?: number } | null = null
   if (sim.selectedBuildingId) {
     const b = sim.buildings[sim.selectedBuildingId]
-    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, researchedUpgrade: b.researchedUpgrade, garrisonCount: b.garrisonedSpeckIds?.length ?? 0 }
+    if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride, fortifyDuration: b.fortifyDuration ?? 0, garrisonCount: b.garrisonedSpeckIds?.length ?? 0 }
   }
 
   // Commander state for player HUD
