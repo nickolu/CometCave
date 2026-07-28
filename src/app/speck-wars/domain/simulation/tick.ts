@@ -289,17 +289,11 @@ function consumeInputs(sim: SimulationState) {
           meta.holdPosition = false  // clear hold when a new rally is issued
           meta.attackMoveMode = false  // normal move cancels attack-move
         }
-      } else {
+      } else if (event.ownerId !== 'player') {
+        // AI (and any non-player owner): keep global rally logic
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
-        // Update per-building rally for all player buildings
-        if (event.ownerId === 'player') {
-          for (const building of Object.values(sim.buildings)) {
-            if (building.ownerId === 'player') {
-              building.rallyPoint = { x: event.x, y: event.y }
-            }
-          }
-        }
       }
+      // Player with no selection: do nothing — player rally is per-building only (SET_BUILDING_RALLY)
     }
     if (event.type === 'ATTACK_MOVE') {
       const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
@@ -383,6 +377,21 @@ function consumeInputs(sim: SimulationState) {
       const building = sim.buildings[event.buildingId]
       if (!building || building.ownerId !== event.ownerId) continue
       building.rallyPoint = { x: event.x, y: event.y }
+      // Send specks that are currently resting at this building to the new rally point.
+      // A speck is "resting at the building" if its assignedRallyX/Y is within 40px of the building.
+      const REST_RADIUS = 40
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || meta.ownerId !== event.ownerId) continue
+        if (meta.assignedRallyX === undefined || meta.assignedRallyY === undefined) continue
+        const rdx = meta.assignedRallyX - building.x
+        const rdy = meta.assignedRallyY - building.y
+        if (Math.abs(rdx) <= REST_RADIUS && Math.abs(rdy) <= REST_RADIUS) {
+          meta.assignedRallyX = event.x
+          meta.assignedRallyY = event.y
+          meta.attackMoveMode = false
+        }
+      }
     }
     if (event.type === 'SURGE') {
       if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
