@@ -316,10 +316,6 @@ function consumeInputs(sim: SimulationState) {
         sim.rallyPoints['player-selected'] = null
       }
     }
-    if (event.type === 'SET_STANCE') {
-      const p = sim.players[event.ownerId]
-      if (p) p.stance = event.stance
-    }
   }
   sim.inputQueue = []
 }

@@ -40,7 +40,6 @@ function resolveWallCollisions(
 const SEPARATION_RADIUS = 8   // px — keep specks this far apart
 const SEPARATION_FORCE = 120  // strength of push-apart
 const GUARD_BUBBLE = 90              // px — how far a waiting player speck will step off its anchor
-const GUARD_BUBBLE_AGGRESSIVE = 160  // px — same, on aggressive stance
 
 export function moveSpecks(sim: SimulationState, dt: number) {
   const { speckIds, speckX, speckY, speckVx, speckVy, speckMeta, buildings, spatialGrid } = sim
@@ -175,10 +174,9 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         // bubble around that anchor. The bubble is measured from the anchor rather than from the
         // speck, so a guard can be drawn a bounded distance off station and never kited away.
         let guarding = false
-        if (anchored && dist <= GUARD_BUBBLE_AGGRESSIVE) {
-          const stance = sim.players[meta.ownerId]?.stance ?? 'defensive'
-          const bubble = stance === 'hold' ? 0 : stance === 'aggressive' ? GUARD_BUBBLE_AGGRESSIVE : GUARD_BUBBLE
-          if (bubble > 0 && dist <= bubble) {
+        if (anchored && dist <= GUARD_BUBBLE) {
+          const bubble = GUARD_BUBBLE
+          if (dist <= bubble) {
             const bubble2 = bubble * bubble
             let closestDist2 = Infinity, closestX = 0, closestY = 0
             const guardNeighbors = spatialGrid.query(speckX[i], speckY[i])
@@ -212,11 +210,7 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
 
-        // Aggro range is determined by owner stance; AI uses a fixed 120px default
-        const playerStance = sim.players[meta.ownerId]?.stance ?? 'defensive'
-        const AGGRO_RANGE = playerStance === 'hold' ? 0
-          : playerStance === 'aggressive' ? 150
-          : meta.ownerId === 'player' ? 40 : 120  // defensive/default
+        const AGGRO_RANGE = 80  // fixed flat range for all units
         const aggroR2 = AGGRO_RANGE * AGGRO_RANGE
         let closestDist2 = Infinity, closestX = 0, closestY = 0
         const neighbors = spatialGrid.query(speckX[i], speckY[i])

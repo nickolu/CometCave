@@ -96,7 +96,6 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
-  const stance = useSpeckWarsStore(s => s.stance)
 
   // Auto-collapse building drawer when building is deselected
   useEffect(() => {
@@ -654,38 +653,6 @@ export function HUD() {
           {speed}×
         </button>
         {/* Spawn type selector removed — set per-building in the building panel */}
-        {/* Stance toggle — cycles through aggressive/defensive/hold — hidden on touch (bottom-right panel has it) */}
-        {!isTouchDevice && gameActions?.cycleStance && (() => {
-          const stanceConfig: Record<string, { icon: string; label: string; color: string; title: string }> = {
-            aggressive: { icon: '⚔', label: 'AGGRO', color: '#ff4f7b', title: '[Z] Aggressive — pursues nearby enemies' },
-            defensive:  { icon: '🛡', label: 'DEF',   color: '#4af7c4', title: '[Z] Defensive — 40px aggro range (vs 150px aggressive)' },
-            hold:       { icon: '⛨', label: 'HOLD',   color: '#aaaaaa', title: '[Z] Hold — only attacks at melee range' },
-          }
-          const cfg = stanceConfig[stance] ?? stanceConfig.defensive
-          return (
-            <button
-              onClick={gameActions.cycleStance ?? undefined}
-              title={cfg.title}
-              style={{
-                pointerEvents: 'auto',
-                padding: '8px 12px',
-                fontSize: 12,
-                cursor: 'pointer',
-                background: `${cfg.color}18`,
-                border: `1px solid ${cfg.color}66`,
-                borderRadius: 4,
-                color: cfg.color,
-                letterSpacing: 0.5,
-                lineHeight: 1.3,
-                textAlign: 'center',
-                minHeight: 44,
-              }}
-            >
-              <div style={{ fontWeight: 700 }}>{cfg.icon} {cfg.label}</div>
-              <div style={{ fontSize: 10, opacity: 0.7 }}>Z</div>
-            </button>
-          )
-        })()}
         {/* Select All button — critical for mobile (no keyboard shortcut available) */}
         {gameActions?.selectAll && (
           <button
@@ -827,7 +794,6 @@ export function HUD() {
                   ['★ SURGE', '2× spawn rate for 8s'],
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3) · Cmdr: 2× dmg'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
-                  ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
                   ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
                 ].map(([btn, desc]) => (
@@ -867,7 +833,7 @@ export function HUD() {
               <span>Q — surge (2× spawn 8s · 45s CD)</span><span>V — snap to recent kills</span>
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>? — this help</span>
-              <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
+              <span>G — guard: rally to nearest friendly outpost</span><span></span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
@@ -1454,21 +1420,6 @@ export function HUD() {
           pointerEvents: 'auto',
         }}>
           {/* Spawn type quick-select removed — set per-building via building panel */}
-          {/* Stance indicator — tappable on mobile to cycle stance */}
-          <div
-            onClick={isTouchDevice ? (() => { navigator.vibrate?.(12); gameActions?.cycleStance?.() }) : undefined}
-            style={{
-              fontSize: 11, letterSpacing: 1.5, opacity: 0.8,
-              color: stance === 'aggressive' ? '#ff4f7b' : stance === 'hold' ? '#aaaaaa' : '#4af7c4',
-              textAlign: 'right',
-              ...(isTouchDevice ? { cursor: 'pointer', padding: '4px 8px', minHeight: 44, display: 'flex', alignItems: 'center' } : {}),
-            }}
-          >
-            {stance === 'aggressive' ? 'AGGRO' : stance === 'hold' ? 'HOLD' : 'DEF'}
-            {isTouchDevice
-              ? <span style={{ opacity: 0.4, marginLeft: 4, fontSize: 9 }}>tap</span>
-              : <span style={{ opacity: 0.5, marginLeft: 4 }}>[Z]</span>}
-          </div>
           <div style={{
             display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end',
           }}>
