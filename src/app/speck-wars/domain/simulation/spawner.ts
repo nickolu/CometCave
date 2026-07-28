@@ -1,7 +1,7 @@
 import type { SimulationState, SpeckMeta } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { MAX_SPECKS, CREEP_CAMP_DEFENDER_COUNT, CREEP_CAMP_BOOST_MULT } from '../constants'
+import { MAX_SPECKS } from '../constants'
 
 // Place a new speck into a recycled or fresh slot — never allocates new arrays
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
@@ -42,8 +42,7 @@ export function updateSpawners(sim: SimulationState, dt: number) {
 
     const baseInterval = (building.spawnIntervalOverride ?? btype.spawnInterval)
     const hasSurge = building.ownerId === 'player' && sim.surgeDuration > 0
-    const hasCampBoost = (sim.players[building.ownerId]?.creepCampBoostMs ?? 0) > 0
-    const divisor = (hasSurge ? 2 : 1) * (hasCampBoost ? CREEP_CAMP_BOOST_MULT : 1)
+    const divisor = (hasSurge ? 2 : 1)
     building.spawnTimer = baseInterval / divisor
 
     for (let i = 0; i < btype.spawnCount; i++) {
