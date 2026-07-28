@@ -216,14 +216,6 @@ export function HUD() {
           animation: prefersReducedMotion ? 'none' : 'pulse-red 0.9s ease-in-out infinite alternate',
         }}>★ RALLY CRY — 1.5× SPAWN</div>
       )}
-      {hud && (hud.creepCampBoostMs ?? 0) > 0 && phase === 'playing' && (
-        <div style={{
-          position: 'fixed', top: hud.rallyCryActive ? 138 : 108, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(255,200,50,0.85)', color: '#000', fontWeight: 700,
-          padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
-          zIndex: 106, pointerEvents: 'none',
-        }}>🏕 CAMP BOOST +25% SPAWN — {Math.ceil((hud.creepCampBoostMs ?? 0) / 1000)}s</div>
-      )}
       {isDanger && (
         <>
           <style>{`

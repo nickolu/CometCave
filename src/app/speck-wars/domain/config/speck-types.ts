@@ -36,13 +36,6 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     size: 2, productionTime: 0,
     abilities: ['die_on_impact'],
   },
-  defender: {
-    id: 'defender', name: 'Defender',
-    hp: 3, damage: 1.5, speed: 50,
-    attackRange: 25, attackCooldown: 900,
-    size: 5, productionTime: 0,
-    abilities: [],
-  },
 }
 
 /**

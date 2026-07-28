@@ -42,7 +42,6 @@ export interface BuildingEntity {
   sacrificeArrived?: number
   constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
-  campResetMs?: number          // ms until camp resets to neutral (when owned)
 }
 
 export interface Player {
@@ -54,7 +53,6 @@ export interface Player {
   totalKills: number           // cumulative kills for upgrade milestones
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
-  creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
 }
 
 export interface WallObstacle {
@@ -130,8 +128,6 @@ export type SimEvent =
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
-  | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
-  | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
 
 export interface HudData {
   players: Record<string, {
@@ -160,7 +156,6 @@ export interface HudData {
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean
-  creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number } | null
   minimap: {
