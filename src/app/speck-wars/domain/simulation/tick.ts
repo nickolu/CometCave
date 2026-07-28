@@ -36,22 +36,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     sim.selectedBuildingId = null
   }
 
-  // 5b. Mark low-HP specks as retreating
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta || sim.speckHp[i] <= 0) continue
-    if (meta.state === 'retreating') continue  // already retreating
-    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
-    if (sim.speckHp[i] / maxHp < 0.25) {
-      meta.state = 'retreating'
-      meta.targetId = null
-    }
-  }
-
-  // 5c. Heal retreating specks that have reached a friendly building
-  regenRetreatingSpecks(sim, dt)
-
-
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
 
@@ -95,41 +79,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   if (sim.tick % HUD_UPDATE_INTERVAL === 0) emitHudUpdate(sim)
 
   return sim
-}
-
-function regenRetreatingSpecks(sim: SimulationState, dt: number) {
-  const dtSec = dt / 1000
-  const REGEN_RATE = 2  // HP per second while sheltering at base
-  const REENGAGE_THRESHOLD = 0.75  // re-engage when HP is at 75% of max
-
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta || meta.state !== 'retreating') continue
-    if (sim.speckHp[i] <= 0) continue
-
-    // Only heal if within range of a friendly building
-    let nearFriendly = false
-    for (const building of Object.values(sim.buildings)) {
-      if (building.ownerId !== meta.ownerId) continue
-      const bsize = BUILDING_TYPES[building.typeId]?.size ?? 40
-      const dx = sim.speckX[i] - building.x
-      const dy = sim.speckY[i] - building.y
-      if (dx * dx + dy * dy <= (bsize + 30) * (bsize + 30)) {
-        nearFriendly = true
-        break
-      }
-    }
-
-    if (!nearFriendly) continue
-
-    const maxHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
-    sim.speckHp[i] = Math.min(maxHp, sim.speckHp[i] + REGEN_RATE * dtSec)
-
-    // Re-engage once healed enough
-    if (sim.speckHp[i] >= maxHp * REENGAGE_THRESHOLD) {
-      meta.state = 'idle'
-    }
-  }
 }
 
 function regenBuildingHp(sim: SimulationState, dt: number) {
