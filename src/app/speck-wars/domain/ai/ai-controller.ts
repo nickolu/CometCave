@@ -4,25 +4,19 @@ export type AIPersonality = 'aggressive' | 'macro' | 'balanced'
 
 export class AIController {
   private playerId: string
-  private tickInterval: number
   private readonly baseTickInterval: number
   private lastDecisionTick: number = 0
   private personality: AIPersonality
   private decisionCount: number = 0
   private spawnMode: 'basic' | 'heavy' | 'scout' = 'basic'
-  private lastStandTriggered = false
   private spawnModeCountdown: number = 0  // ticks until next spawn mode decision
-  private dominanceTimer: number = 0  // ms enemy has held a 3:1 count advantage
   private waveTimer: number  // ms until next wave
   private waveRemainingMs = 0  // ms left in active wave (0 = not in wave)
   private waveNumber = 0       // which wave this is (1, 2, 3...)
   private waveEnabled: boolean  // only hard/very-hard get waves
-  private adaptiveDominanceDuration = 0  // ms player has dominated ≥3:1
-  private adaptiveBaseInterval: number | null = null  // captured baseline spawn interval
 
-  constructor(playerId: string, tickInterval: number = 30, personality: AIPersonality = 'balanced', private readonly adaptiveEnabled: boolean = false) {
+  constructor(playerId: string, tickInterval: number = 30, personality: AIPersonality = 'balanced') {
     this.playerId = playerId
-    this.tickInterval = tickInterval
     this.baseTickInterval = tickInterval
     this.personality = personality
     this.waveTimer = 90000 + Math.random() * 30000  // stagger first wave: 90-120s
@@ -47,28 +41,7 @@ export class AIController {
       sim.waveInProgress = this.waveRemainingMs > 0
     }
 
-    // Adaptive difficulty: if the enemy holds a 3:1 speck advantage for 30s, speed up AI decisions
-    let aiCount = 0, enemyCount = 0
-    for (let i = 0; i < sim.speckCount; i++) {
-      if (!sim.speckIds[i]) continue
-      const m = sim.speckMeta[i]
-      if (!m) continue
-      if (m.ownerId === this.playerId) aiCount++
-      else if (m.ownerId !== 'neutral') enemyCount++
-    }
-    if (enemyCount >= 3 * aiCount && aiCount > 0) {
-      this.dominanceTimer += dt
-      if (this.dominanceTimer > 30000) {
-        // Enemy has dominated for 30s — reduce tick interval by 25% (floor at 75% of base)
-        const floor = Math.max(Math.floor(this.baseTickInterval * 0.75), 4)
-        this.tickInterval = Math.max(Math.floor(this.tickInterval * 0.75), floor)
-      }
-    } else {
-      this.dominanceTimer = 0
-      this.tickInterval = this.baseTickInterval
-    }
-
-    if (sim.tick - this.lastDecisionTick < this.tickInterval) return
+    if (sim.tick - this.lastDecisionTick < this.baseTickInterval) return
     this.lastDecisionTick = sim.tick
 
     if (sim.players[this.playerId]?.isDefeated) return
@@ -115,20 +88,6 @@ export class AIController {
     // Defensive rally: when AI base is low HP, sometimes pull back to defend
     const myBaseHpFrac = (myBase?.hp ?? 100) / (myBase?.maxHp ?? 100)
 
-    // Last stand: AI base below 20% — all-out desperate assault, ignoring personality
-    if (myBaseHpFrac < 0.2) {
-      if (!this.lastStandTriggered) {
-        this.lastStandTriggered = true
-        sim.events.push({ type: 'AI_LAST_STAND' })
-      }
-      const playerBase = Object.values(sim.buildings).find(b => b.ownerId !== this.playerId && b.ownerId !== 'neutral' && b.typeId === 'base')
-      if (playerBase) {
-        sim.rallyPoints[this.playerId] = { x: playerBase.x, y: playerBase.y }
-        sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: this.playerId, speckTypeId: 'heavy' })
-      }
-      return
-    }
-
     if (!forceBaseRush && myBaseHpFrac < 0.6 && myBase) {
       const defendChance = this.personality === 'aggressive'
         ? (myBaseHpFrac < 0.3 ? 0.35 : 0.15)   // aggressive defends reluctantly
@@ -147,34 +106,6 @@ export class AIController {
       if (enemyBase) {
         sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: this.playerId, x: enemyBase.x, y: enemyBase.y })
         return
-      }
-    }
-
-    // Adaptive difficulty: gradually speed up AI spawns when player dominates
-    if (this.adaptiveEnabled) {
-      let playerCount = 0, aiCount = 0
-      for (let i = 0; i < sim.speckCount; i++) {
-        const m = sim.speckMeta[i]
-        if (!m) continue
-        if (m.ownerId === 'player') playerCount++
-        else if (m.ownerId === 'ai') aiCount++
-      }
-      const ratio = aiCount > 0 ? playerCount / aiCount : (playerCount > 0 ? 9 : 1)
-      if (ratio >= 3.0) {
-        this.adaptiveDominanceDuration = Math.min(45_000, this.adaptiveDominanceDuration + dt)
-      } else {
-        this.adaptiveDominanceDuration = Math.max(0, this.adaptiveDominanceDuration - dt * 0.5)
-      }
-      const boostFraction = this.adaptiveDominanceDuration / 45_000  // 0 → 1 over 45s
-      if (boostFraction > 0) {
-        const aiBase = Object.values(sim.buildings).find(b => b.ownerId === 'ai' && b.typeId === 'base')
-        if (aiBase) {
-          if (this.adaptiveBaseInterval === null) {
-            this.adaptiveBaseInterval = aiBase.spawnIntervalOverride ?? 800
-          }
-          const speedMult = 1 + boostFraction * 0.3  // up to 30% faster
-          aiBase.spawnIntervalOverride = Math.max(400, this.adaptiveBaseInterval / speedMult)
-        }
       }
     }
 
