@@ -123,18 +123,16 @@ export function updateSpawners(sim: SimulationState, dt: number) {
           sim.events.push({ type: 'HERO_SPAWNED', ownerId: building.ownerId })
         }
       }
-      // Auto-assign the building's per-building rally point so the speck marches there on spawn.
-      // Non-AI player specks always get an explicit assignedRallyX/Y so they never fall through
-      // to the global rally lookup in movement.ts.
+      // Standing orders: a player speck stays tied to the building that made it and musters at
+      // that building's rally point — or at the building itself when no rally is set — until the
+      // player commands it. speck-ai.ts re-reads the rally from homeBuildingId every tick, so
+      // setting a rally later redirects everyone still waiting there; the anchor is stamped here
+      // too so the speck's very first movement tick already has a destination.
       if (building.ownerId !== 'ai') {
+        meta.homeBuildingId = building.id
         const sourceBuildingRally = building.rallyPoint
-        if (sourceBuildingRally) {
-          meta.assignedRallyX = sourceBuildingRally.x
-          meta.assignedRallyY = sourceBuildingRally.y
-        } else {
-          meta.assignedRallyX = building.x
-          meta.assignedRallyY = building.y
-        }
+        meta.assignedRallyX = sourceBuildingRally ? sourceBuildingRally.x : building.x
+        meta.assignedRallyY = sourceBuildingRally ? sourceBuildingRally.y : building.y
       } else {
         // AI: keep existing behavior — use per-building rally if set
         const sourceBuildingRally = building.rallyPoint

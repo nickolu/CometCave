@@ -287,7 +287,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             textAlign: 'left',
             maxWidth: 320,
           }}>
-            <span>🖱 Click — rally specks</span>
+            <span>🖱 Click building → click map — set its rally</span>
             <span>Space — pause / ? — help</span>
             <span>Drag — box select specks</span>
             <span>1/2/3 — spawn basic/heavy/dart</span>
@@ -311,7 +311,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             fontSize: 11, letterSpacing: 0.5,
             textAlign: 'left', maxWidth: 320,
           }}>
-            <span>👆 Tap canvas — rally specks</span>
+            <span>👆 Tap building → tap map — set its rally</span>
             <span>⏸ Pause button — pause game</span>
             <span>👆 Long-press canvas — attack-move</span>
             <span>⬡ ALL button — select all specks</span>
@@ -325,12 +325,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         {(() => {
           const tips = isTouchDevice ? [
             'Capture outposts to boost your production.',
-            'Dart specks auto-target outposts — tap the Dart button (3rd) for fast flanking.',
+            'Your specks gather at the building that made them — tap a building, then tap the map to send them somewhere.',
             'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
             'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
-            'Tap canvas to rally · long-press canvas to attack-move (aggressive advance).',
+            'Select specks, then tap the map to move them · long-press to attack-move (fight en route).',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
             'Heavy specks deal 2× damage but cost 3 supply vs 1 for basic (cap: 120). Mix types wisely.',
             'Tap ⚔ FIGHT to snap the camera to where the fighting is happening.',
@@ -344,7 +344,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
           ] : [
             'Capture outposts to boost your production.',
-            'Dart specks (3) auto-target outposts — fast but fragile.',
+            'Your specks gather at the building that made them — click a building, then click the map to set its rally point.',
             'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
