@@ -1,6 +1,6 @@
 import type { SimulationState } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
-import { updateSpawners, spawnCampDefenders, spawnCommander } from './spawner'
+import { updateSpawners, spawnCampDefenders } from './spawner'
 import { runSpeckAI } from './speck-ai'
 import { moveSpecks } from './movement'
 import { resolveCombat, removeDeadSpecks, updateHeroAbilities } from './combat'
@@ -90,7 +90,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   regenBuildingHp(sim, dt)
 
   // 7c. Triple outpost bonus — control all 3 outposts = 2× base spawn speed
-  updateTripleOutpostBonus(sim, dt)
+  updateTripleOutpostBonus(sim)
 
   // 7d. Surge timers
   if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
@@ -218,50 +218,10 @@ function updateCreepCamps(sim: SimulationState, dt: number) {
   }
 }
 
-function updateCommanders(sim: SimulationState, dt: number) {
-  const PULSE_RANGE = 50
-  const PULSE_DAMAGE = 0.5
-  const PULSE_PERIOD = 3000
-
-  // Tick commanderRespawnMs for each player and respawn when ready
-  for (const [pid, player] of Object.entries(sim.players)) {
-    if ((player.commanderRespawnMs ?? 0) > 0) {
-      player.commanderRespawnMs = Math.max(0, (player.commanderRespawnMs ?? 0) - dt)
-      if (player.commanderRespawnMs <= 0) {
-        player.commanderRespawnMs = undefined
-        spawnCommander(sim, pid)
-      }
-    }
-  }
-
-  // AoE pulse for Level 2+ commanders
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta?.isCommander || sim.speckHp[i] <= 0) continue
-    if ((meta.commanderLevel ?? 0) < 2) continue
-
-    meta.pulseTimer = Math.max(0, (meta.pulseTimer ?? PULSE_PERIOD) - dt)
-    if (meta.pulseTimer <= 0) {
-      meta.pulseTimer = PULSE_PERIOD
-      const pr2 = PULSE_RANGE * PULSE_RANGE
-      for (let j = 0; j < sim.speckCount; j++) {
-        const jm = sim.speckMeta[j]
-        if (!jm || jm.ownerId === meta.ownerId || sim.speckHp[j] <= 0) continue
-        const dx = sim.speckX[j] - sim.speckX[i]
-        const dy = sim.speckY[j] - sim.speckY[i]
-        if (dx * dx + dy * dy <= pr2) {
-          sim.speckHp[j] -= PULSE_DAMAGE
-        }
-      }
-    }
-  }
-}
-
-function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
+function updateTripleOutpostBonus(sim: SimulationState) {
   const outposts = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
   if (outposts.length === 0) return
 
-  let tripleHolder: string | null = null
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     const ownsAll = outposts.every(o => o.ownerId === pid)
@@ -269,9 +229,7 @@ function updateTripleOutpostBonus(sim: SimulationState, dt: number) {
       if (building.ownerId !== pid || building.typeId !== 'base') continue
       building.tripleOutpostBonus = ownsAll
     }
-    if (ownsAll) tripleHolder = pid
   }
-
 }
 
 function consumeInputs(sim: SimulationState) {
@@ -451,7 +409,6 @@ function consumeInputs(sim: SimulationState) {
         x: event.x, y: event.y,
         hp: btype.maxHp, maxHp: btype.maxHp,
         spawnTimer: 0,
-        inputBuffer: {},
         underConstruction: true,
         sacrificeRequired: sacrificeCost,
         sacrificeArrived: 0,

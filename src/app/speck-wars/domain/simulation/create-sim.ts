@@ -78,7 +78,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     hp: BASE_HP, maxHp: BASE_HP,
     spawnTimer: 0,
     spawnIntervalOverride: playerSpawnInterval[difficulty],
-    inputBuffer: {},
   }
   const aiBase: BuildingEntity = {
     id: 'building-ai-base',
@@ -88,26 +87,25 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     hp: BASE_HP, maxHp: BASE_HP,
     spawnTimer: 0,
     spawnIntervalOverride: aiSpawnInterval[difficulty],
-    inputBuffer: {},
   }
 
   const player: Player = {
     id: 'player', name: 'Player',
-    color: PLAYER_COLOR, isAI: false, isDefeated: false, stockpile: {},
+    color: PLAYER_COLOR, isAI: false, isDefeated: false,
     totalKills: 0, upgradeLevel: 0, stance: 'aggressive', creepCampBoostMs: 0,
     outpostUpgrades: { carapace: false, blades: false, afterburners: false },
     supply: 0,
   }
   const ai: Player = {
     id: 'ai', name: 'AI',
-    color: AI_COLOR, isAI: true, isDefeated: false, stockpile: {},
+    color: AI_COLOR, isAI: true, isDefeated: false,
     totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
     outpostUpgrades: { carapace: false, blades: false, afterburners: false },
     supply: 0,
   }
   const neutral: Player = {
     id: 'neutral', name: 'Neutral',
-    color: NEUTRAL_COLOR, isAI: false, isDefeated: false, stockpile: {},
+    color: NEUTRAL_COLOR, isAI: false, isDefeated: false,
     totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
     outpostUpgrades: { carapace: false, blades: false, afterburners: false },
     supply: 0,
@@ -129,7 +127,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
       x: pos.x + jx, y: pos.y + jy,
       hp: 50, maxHp: 50,
       spawnTimer: 0,
-      inputBuffer: {},
     }
   }
 
@@ -147,7 +144,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
       x: pos.x, y: pos.y,
       hp: 40, maxHp: 40,
       spawnTimer: 0,
-      inputBuffer: {},
     }
   }
 
@@ -173,9 +169,14 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     aiBase.spawnIntervalOverride = (aiBase.spawnIntervalOverride ?? DEFAULT_BASE_INTERVAL) * 0.65
   }
 
+  // NOTE: `seed` governs setup only — map layout, outpost jitter, daily modifier, obstacles.
+  // Everything after createSim (spawner.ts, tick.ts, ai-controller.ts) calls raw Math.random(),
+  // so the same seed produces a different outcome every run. There are no replays and no
+  // seed-pinned regression tests; balance must be measured as an average over many games.
+  // Making the run reproducible means routing those calls through a seeded PRNG — a real
+  // project, not a drive-by fix.
   const sim: SimulationState = {
     tick: 0,
-    rngState: seed,
     players: { player, ai, neutral },
     buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings, ...campBuildings },
     speckIds: new Array(MAX_SPECKS).fill(''),

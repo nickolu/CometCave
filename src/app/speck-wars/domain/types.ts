@@ -45,7 +45,6 @@ export interface BuildingEntity {
   spawnIntervalOverride?: number  // overrides BUILDING_TYPES spawnInterval when set
   spawnTypeOverride?: string      // overrides BUILDING_TYPES spawnTypeId when set
   tripleOutpostBonus?: boolean    // true when owner controls all outposts (2× spawn)
-  inputBuffer: Record<string, number>  // typeId → count (sacrifice system, future)
   captureProgress?: number      // 0..1 progress toward capture for captureSide
   captureSide?: string | null   // which player is currently winning capture
   fortifyDuration?: number      // ms continuously held — resets on capture
@@ -67,7 +66,6 @@ export interface Player {
   color: number            // pixi hex e.g. 0x4af7c4
   isAI: boolean
   isDefeated: boolean
-  stockpile: Record<string, number>  // typeId → count (resource form)
   totalKills: number           // cumulative kills for upgrade milestones
   upgradeLevel: 0 | 1 | 2 | 3 // 0=none, 1=spawn+10%, 2=+1HP, 3=+15% dmg
   stance: 'aggressive' | 'defensive' | 'hold'
@@ -91,7 +89,6 @@ export interface WallObstacle {
 // SOA (Structure of Arrays) for hot speck data — cache-friendly for tight loops
 export interface SimulationState {
   tick: number
-  rngState: number
 
   players: Record<string, Player>
   buildings: Record<string, BuildingEntity>
