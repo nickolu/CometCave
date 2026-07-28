@@ -20,17 +20,6 @@ export interface SpeckMeta {
   attackMoveTargetY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
-  isHero?: boolean           // true if this speck is the Commander
-  heroLevel?: 0 | 1 | 2     // 0=base, 1=BLOODED, 2=EMPOWERED
-  abilityTimer?: number      // ms until next AoE pulse (level 2 only)
-  isCommander?: boolean         // this speck is the owner's hero unit
-  commanderXp?: number          // XP earned from nearby kills
-  commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
-  pulseTimer?: number           // ms until next AoE pulse
-  stunTimer?: number            // ms remaining in stun (Battle Roar / Last Stand)
-  commanderAbilityCooldown?: number   // ms until Battle Roar / Last Stand can fire again
-  commanderAbilityActive?: number     // ms of Level 3 buff remaining (invuln + 3× dmg)
-  speedBoostTimer?: number      // ms of +50% speed boost from commander Last Stand
 }
 
 export interface BuildingEntity {
@@ -72,7 +61,6 @@ export interface Player {
     blades: boolean
     afterburners: boolean
   }
-  commanderRespawnMs?: number   // ms until commander respawns (undefined = alive or not spawned yet)
 }
 
 export interface WallObstacle {
@@ -105,7 +93,6 @@ export interface SimulationState {
   selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
   selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid
-  heroRespawnTimer: Record<string, number>  // playerId → ms until respawn (0 = alive/none)
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
@@ -132,7 +119,6 @@ export type InputEvent =
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
   | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
-  | { type: 'COMMANDER_ABILITY'; ownerId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -154,11 +140,6 @@ export type SimEvent =
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
   | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
   | { type: 'OUTPOST_UPGRADE_RESEARCHED'; buildingId: string; ownerId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
-  | { type: 'HERO_LEVELED'; ownerId: string; heroLevel: 1 | 2 }
-  | { type: 'HERO_DIED'; ownerId: string; kills: number }
-  | { type: 'HERO_SPAWNED'; ownerId: string }
-  | { type: 'COMMANDER_LEVEL_UP'; ownerId: string; level: 2 | 3 }
-  | { type: 'COMMANDER_DIED'; ownerId: string; xp: number }
 
 export interface HudData {
   players: Record<string, {
@@ -185,9 +166,6 @@ export interface HudData {
   waveInProgress: boolean
   waveNumber: number
   sacrificeCooldown: number
-  commander: { level: number; abilityCooldown: number; abilityActive: number; xp: number } | null
-  commanderRespawnMs: number   // ms until player commander respawns; 0 if alive or not yet spawned
-  heroRespawnMs: number        // ms until player hero respawns; 0 if alive or not yet spawned
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean

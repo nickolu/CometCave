@@ -49,8 +49,6 @@ export class GameInstance {
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
   private prevSurgeCooldown = 0
-  private prevCommanderAbilityCooldown = 0
-  private prevCommanderRespawnMs = 0
   private dominationWarnedAt15s = false         // true once "15s left" AI domination warning fires
   private dominationWarnedAt10s = false         // true once "10s left" AI domination warning fires
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
@@ -271,7 +269,6 @@ export class GameInstance {
       }
       this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
     }
-    this.inputHandler.onCommanderAbility = () => this.commanderAbility()  // Y — Battle Roar / Last Stand
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
       advance: () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },
@@ -320,7 +317,6 @@ export class GameInstance {
       },
       snapToBase: () => this.snapToBase(),
       snapToAction: () => this.snapToAction(),
-      commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
       activateSelectMode: () => this.inputHandler.activateTouchSelectMode(),
       selectByType: (typeId: string) => {
@@ -647,22 +643,6 @@ export class GameInstance {
           }
           this.prevSurgeCooldown = surgeCd
 
-          // Commander ability cooldown ready notification
-          const cmdData = event.data.commander
-          const cmdCd = cmdData?.abilityCooldown ?? 0
-          const respawnMs = event.data.commanderRespawnMs ?? 0
-          const commanderAlive = cmdData !== null && respawnMs === 0
-          if (commanderAlive && cmdCd === 0 && this.prevCommanderAbilityCooldown > 0) {
-            this.notify('★ ABILITY READY', 'rgba(255,215,0,0.85)', 2000)
-          }
-          this.prevCommanderAbilityCooldown = commanderAlive ? cmdCd : 0
-
-          // Commander respawn notification
-          if (respawnMs === 0 && this.prevCommanderRespawnMs > 0) {
-            this.notify('⚔ COMMANDER REBORN', '#4af7c4', 2000)
-          }
-          this.prevCommanderRespawnMs = respawnMs
-
         }
         if (event.type === 'SPECK_DIED') {
           if (event.killedOwnerId === 'ai' && event.killerOwnerId === 'player') {
@@ -870,30 +850,6 @@ export class GameInstance {
 
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
-        }
-        if (event.type === 'HERO_LEVELED' && event.ownerId === 'player') {
-          if (event.heroLevel === 1) {
-            this.notify('⚔ HERO BLOODED — +15% SPEED', '#ffd700', 3000)
-          } else if (event.heroLevel === 2) {
-            this.notify('⚔ HERO EMPOWERED — AoE PULSE ACTIVE', '#ffd700', 3000)
-          }
-          store.pushKillFeedEntry({ icon: '⚔', label: 'HERO LEVELS UP', color: '#ffd700' })
-        }
-        if (event.type === 'HERO_DIED' && event.ownerId === 'player') {
-          this.notify('⚔ HERO FALLEN — respawning', '#ff8844', 3000)
-          store.pushKillFeedEntry({ icon: '†', label: `HERO FALLEN (${event.kills} kills)`, color: '#ff8844' })
-        }
-        if (event.type === 'HERO_SPAWNED' && event.ownerId === 'player') {
-          this.notify('⚔ HERO REBORN', '#88ffdd', 2000)
-        }
-        if (event.type === 'COMMANDER_LEVEL_UP' && event.ownerId === 'player') {
-          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — BATTLE ROAR UNLOCKED' : '🌟 COMMANDER LVL 3 — LAST STAND UNLOCKED'
-          this.notify(label, '#ffd700', 4000)
-          store.pushKillFeedEntry({ icon: '⭐', label: label.split(' — ')[0].replace('⚡ ', '').replace('🌟 ', ''), color: '#ffd700' })
-        }
-        if (event.type === 'COMMANDER_DIED' && event.ownerId === 'player') {
-          this.notify('💀 COMMANDER FALLEN — respawning in 15s', '#ff6600', 3000)
-          store.pushKillFeedEntry({ icon: '💀', label: 'COMMANDER FALLEN', color: '#ff6600' })
         }
       }
 
@@ -1124,38 +1080,6 @@ export class GameInstance {
   setStance(stance: 'aggressive' | 'defensive' | 'hold') {
     this.sim.inputQueue.push({ type: 'SET_STANCE', ownerId: 'player', stance })
     useSpeckWarsStore.getState().setStance(stance)
-  }
-
-  commanderAbility() {
-    // Find the player's commander speck
-    let commanderMeta = null
-    for (let i = 0; i < this.sim.speckCount; i++) {
-      const m = this.sim.speckMeta[i]
-      if (m?.isCommander && m.ownerId === 'player' && this.sim.speckHp[i] > 0) {
-        commanderMeta = m
-        break
-      }
-    }
-    if (!commanderMeta) {
-      this.notify('Commander is down!', '#ff4f7b', 1200)
-      return
-    }
-    const level = commanderMeta.commanderLevel ?? 0
-    if (level < 2) {
-      this.notify('Commander needs rank 2 to use abilities', 'rgba(255,255,255,0.5)', 1500)
-      return
-    }
-    if ((commanderMeta.commanderAbilityCooldown ?? 0) > 0) {
-      const remaining = Math.ceil((commanderMeta.commanderAbilityCooldown ?? 0) / 1000)
-      const abilityName = level >= 3 ? 'Last Stand' : 'Battle Roar'
-      this.notify(`${abilityName} ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
-      return
-    }
-    this.sim.inputQueue.push({ type: 'COMMANDER_ABILITY', ownerId: 'player' })
-    const label = level >= 3 ? '★★ LAST STAND!' : '★ BATTLE ROAR!'
-    const color = level >= 3 ? '#00ffcc' : '#ffd700'
-    this.notify(label, color, 2000)
-    navigator.vibrate?.([30, 40, 50])
   }
 
   cycleStance() {
