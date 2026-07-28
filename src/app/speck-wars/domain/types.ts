@@ -20,8 +20,6 @@ export interface SpeckMeta {
   attackMoveTargetY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
-  isGarrisoned?: boolean         // true = removed from field, attached to garrison
-  garrisonBuildingId?: string    // which building this speck is garrisoned in
 }
 
 export interface BuildingEntity {
@@ -44,7 +42,6 @@ export interface BuildingEntity {
   sacrificeArrived?: number
   constructionTimer?: number    // ms remaining after all specks arrive
   fireTimer?: number            // ms until next shot
-  garrisonedSpeckIds?: string[] // up to 5 specks garrisoned here
   campResetMs?: number          // ms until camp resets to neutral (when owned)
 }
 
@@ -115,8 +112,6 @@ export type InputEvent =
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
-  | { type: 'GARRISON'; ownerId: string; buildingId: string; speckIds: string[] }
-  | { type: 'RECALL_GARRISON'; ownerId: string; buildingId: string }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -167,7 +162,7 @@ export interface HudData {
   rallyCryActive: boolean
   creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   outpostFortify: Record<string, number>  // outpostId → 0..1 fortification level
-  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number; garrisonCount?: number } | null
+  selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string; fortifyDuration?: number } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]
