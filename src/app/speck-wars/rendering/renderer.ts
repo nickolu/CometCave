@@ -137,10 +137,13 @@ export class Renderer {
     }
     this.effectsLayer.update(dt)
 
-    // Rally point marker + dashed line from base to rally
+    // Rally point marker: draw for selected player building's rally point only
     this.rallyGfx.clear()
-    const rp = sim.rallyPoints['player']
-    if (rp) {
+    const selectedBuilding = sim.selectedBuildingId ? sim.buildings[sim.selectedBuildingId] : null
+    const rp = (selectedBuilding && selectedBuilding.ownerId === 'player' && selectedBuilding.rallyPoint)
+      ? selectedBuilding.rallyPoint
+      : null
+    if (rp && selectedBuilding) {
       const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400)
       const alpha = 0.5 + 0.5 * pulse
       this.rallyGfx.lineStyle(2, PLAYER_COLOR, alpha)
@@ -153,30 +156,27 @@ export class Renderer {
       this.rallyGfx.drawCircle(rp.x, rp.y, 14)
       this.rallyGfx.lineStyle(0)
 
-      // Dashed line from player base to rally point (only if far enough apart)
-      const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-      if (playerBase) {
-        const dx = rp.x - playerBase.x
-        const dy = rp.y - playerBase.y
-        const len = Math.sqrt(dx * dx + dy * dy)
-        if (len > 80) {
-          const nx = dx / len, ny = dy / len
-          const dashLen = 8, gapLen = 6
-          this.rallyGfx.lineStyle(1, PLAYER_COLOR, 0.22)
-          const dashCycle = dashLen + gapLen
-          const marchOffset = (Date.now() / 80) % dashCycle  // ~1.75 cycles/sec
-          let d = (playerBase === null ? 0 : 46) - marchOffset  // animated march toward rally
-          while (d < len - 24) {
-            const x1 = playerBase.x + nx * d
-            const y1 = playerBase.y + ny * d
-            const x2 = playerBase.x + nx * Math.min(d + dashLen, len - 24)
-            const y2 = playerBase.y + ny * Math.min(d + dashLen, len - 24)
-            this.rallyGfx.moveTo(x1, y1)
-            this.rallyGfx.lineTo(x2, y2)
-            d += dashLen + gapLen
-          }
-          this.rallyGfx.lineStyle(0)
+      // Dashed line from the selected building to its rally point (only if far enough apart)
+      const dx = rp.x - selectedBuilding.x
+      const dy = rp.y - selectedBuilding.y
+      const len = Math.sqrt(dx * dx + dy * dy)
+      if (len > 80) {
+        const nx = dx / len, ny = dy / len
+        const dashLen = 8, gapLen = 6
+        this.rallyGfx.lineStyle(1, PLAYER_COLOR, 0.22)
+        const dashCycle = dashLen + gapLen
+        const marchOffset = (Date.now() / 80) % dashCycle  // ~1.75 cycles/sec
+        let d = 46 - marchOffset  // animated march toward rally
+        while (d < len - 24) {
+          const x1 = selectedBuilding.x + nx * d
+          const y1 = selectedBuilding.y + ny * d
+          const x2 = selectedBuilding.x + nx * Math.min(d + dashLen, len - 24)
+          const y2 = selectedBuilding.y + ny * Math.min(d + dashLen, len - 24)
+          this.rallyGfx.moveTo(x1, y1)
+          this.rallyGfx.lineTo(x2, y2)
+          d += dashLen + gapLen
         }
+        this.rallyGfx.lineStyle(0)
       }
     }
 

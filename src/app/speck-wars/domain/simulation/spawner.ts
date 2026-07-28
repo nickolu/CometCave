@@ -123,11 +123,25 @@ export function updateSpawners(sim: SimulationState, dt: number) {
           sim.events.push({ type: 'HERO_SPAWNED', ownerId: building.ownerId })
         }
       }
-      // Auto-assign the building's per-building rally point so the speck marches there on spawn
-      const sourceBuildingRally = building.rallyPoint
-      if (sourceBuildingRally) {
-        meta.assignedRallyX = sourceBuildingRally.x
-        meta.assignedRallyY = sourceBuildingRally.y
+      // Auto-assign the building's per-building rally point so the speck marches there on spawn.
+      // Non-AI player specks always get an explicit assignedRallyX/Y so they never fall through
+      // to the global rally lookup in movement.ts.
+      if (building.ownerId !== 'ai') {
+        const sourceBuildingRally = building.rallyPoint
+        if (sourceBuildingRally) {
+          meta.assignedRallyX = sourceBuildingRally.x
+          meta.assignedRallyY = sourceBuildingRally.y
+        } else {
+          meta.assignedRallyX = building.x
+          meta.assignedRallyY = building.y
+        }
+      } else {
+        // AI: keep existing behavior — use per-building rally if set
+        const sourceBuildingRally = building.rallyPoint
+        if (sourceBuildingRally) {
+          meta.assignedRallyX = sourceBuildingRally.x
+          meta.assignedRallyY = sourceBuildingRally.y
+        }
       }
       addSpeck(sim, meta, sx, sy, building.id)
     }

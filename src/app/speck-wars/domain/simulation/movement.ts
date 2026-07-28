@@ -171,7 +171,9 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         ? { x: meta.attackMoveTargetX, y: meta.attackMoveTargetY! }
         : (meta.assignedRallyX !== undefined)
         ? { x: meta.assignedRallyX, y: meta.assignedRallyY! }
-        : sim.rallyPoints[meta.ownerId]
+        // Player specks always have assignedRallyX/Y set at spawn — skip global rally for them.
+        // AI and other owners may still use the global rally point as a fallback.
+        : (meta.ownerId !== 'player' ? sim.rallyPoints[meta.ownerId] : null)
       if (rally) {
         const dx = rally.x - speckX[i]
         const dy = rally.y - speckY[i]
