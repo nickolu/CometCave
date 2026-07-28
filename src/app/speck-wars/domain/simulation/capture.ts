@@ -64,7 +64,6 @@ export function updateCapture(sim: SimulationState, dt: number) {
       building.rallyPoint = null
 
       if (building.typeId === 'outpost') {
-        building.fortifyDuration = 0
         sim.events.push({
           type: 'OUTPOST_CAPTURED',
           outpostId: building.id,
