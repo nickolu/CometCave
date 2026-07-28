@@ -63,9 +63,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
-    // Garrisoned specks don't move
-    if (meta.isGarrisoned) continue
-
     const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
 
     // Retreating: flee to nearest friendly building
@@ -191,7 +188,7 @@ export function moveSpecks(sim: SimulationState, dt: number) {
             for (const j of guardNeighbors) {
               if (i === j || !speckIds[j]) continue
               const jMeta = speckMeta[j]
-              if (!jMeta || jMeta.ownerId === meta.ownerId || jMeta.isGarrisoned) continue
+              if (!jMeta || jMeta.ownerId === meta.ownerId) continue
               const edx = speckX[j] - rally.x
               const edy = speckY[j] - rally.y
               if (edx * edx + edy * edy > bubble2) continue   // outside the bubble — not our fight
