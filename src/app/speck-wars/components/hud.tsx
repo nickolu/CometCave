@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
-import { PLAYER_COLOR, AI_COLOR, DAILY_MODIFIER_LABELS } from '../domain/constants'
+import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
@@ -280,14 +280,6 @@ export function HUD() {
             <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5 }}>
               DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
             </span>
-            {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
-              <span
-                title={DAILY_MODIFIER_LABELS[hud.dailyModifier]}
-                style={{ color: '#ffd700', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5, opacity: 0.7, textAlign: 'right', cursor: 'help' }}
-              >
-                {hud.dailyModifier === 'bulwark' ? '⚔ BULWARK' : hud.dailyModifier === 'blitz' ? '⚡ BLITZ' : '🏰 SIEGE'}
-              </span>
-            )}
           </div>
         )
       })()}
@@ -863,7 +855,7 @@ export function HUD() {
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
-                Daily map seed changes each day · modifier shown top-right (bulwark/blitz/siege) · hold all 3 outposts → +2× base production + 60s = domination win · army cap: 120 specks (outpost spawn halts above cap)
+                Daily map seed changes each day · layout changes per difficulty · hold all 3 outposts → +2× base production + 60s = domination win · army cap: 120 specks (outpost spawn halts above cap)
               </span>
             </div>
           )}

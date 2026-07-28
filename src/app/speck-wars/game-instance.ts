@@ -9,7 +9,6 @@ import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak, hasSeenVeteranTip, markVeteranTipSeen } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
-import { DAILY_MODIFIER_LABELS } from './domain/constants'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -331,13 +330,6 @@ export class GameInstance {
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
       navigator.vibrate?.([50, 30, 50, 30, 100])
     }, 3000)
-
-    // Announce daily modifier so players know the active rule change
-    if (this.sim.dailyModifier !== 'standard') {
-      const modColor = this.sim.dailyModifier === 'bulwark' ? '#44aaff'
-        : this.sim.dailyModifier === 'blitz' ? '#ffd700' : '#ff8844'
-      setTimeout(() => this.notify(`📅 ${DAILY_MODIFIER_LABELS[this.sim.dailyModifier]}`, modColor, 4000), 3600)
-    }
 
     // Show tutorial hints for first-time players
     if (isFirstGame()) {

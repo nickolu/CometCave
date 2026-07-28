@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
 import { getDailyInfo } from '../lib/daily-modifier'
-import { DAILY_MODIFIER_LABELS } from '../domain/constants'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
@@ -123,11 +122,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             )
           })}
         </div>
-        {/* Daily info row — map layout + modifier badge */}
+        {/* Daily info row — map layout */}
         {(() => {
-          const { modifier, layoutName } = getDailyInfo(difficulty)
-          const color = modifier === 'bulwark' ? '#44aaff' : modifier === 'blitz' ? '#ffd700' : modifier === 'siege' ? '#ff8844' : 'rgba(255,255,255,0.25)'
-          const label = modifier !== 'standard' ? DAILY_MODIFIER_LABELS[modifier] : null
+          const { layoutName } = getDailyInfo(difficulty)
           return (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 2 }}>
               <div style={{
@@ -138,16 +135,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               }}>
                 ⬡ {layoutName}
               </div>
-              {label && (
-                <div style={{
-                  fontSize: 10, letterSpacing: 1,
-                  color,
-                  border: `1px solid ${color}44`,
-                  padding: '3px 8px', borderRadius: 4,
-                }}>
-                  {label}
-                </div>
-              )}
             </div>
           )
         })()}
@@ -404,13 +391,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
-    const modifier = hud?.dailyModifier && hud.dailyModifier !== 'standard' ? ` [${hud.dailyModifier.toUpperCase()}]` : ''
     const { layoutName } = getDailyInfo(difficulty)
     const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
     const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff${peakArmySize > 0 ? ` · peak ${peakArmySize}` : ''}`
     const shareText = won
-      ? `${starStr} Speck Wars ${today} [${layoutName}]${modifier}\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
-      : `${starStr} Speck Wars ${today} [${layoutName}]${modifier}\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
+      ? `${starStr} Speck Wars ${today} [${layoutName}]\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
+      : `${starStr} Speck Wars ${today} [${layoutName}]\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -493,18 +479,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           }}>
             ⬡ {layoutName}
           </span>
-          {hud?.dailyModifier && hud.dailyModifier !== 'standard' && (
-            <span style={{
-              fontSize: 11, letterSpacing: 1.5,
-              color: hud.dailyModifier === 'bulwark' ? '#44aaff'
-                : hud.dailyModifier === 'blitz' ? '#ffd700'
-                : '#ff8844',
-              border: `1px solid ${hud.dailyModifier === 'bulwark' ? '#44aaff44' : hud.dailyModifier === 'blitz' ? '#ffd70044' : '#ff884444'}`,
-              padding: '2px 8px', borderRadius: 4,
-            }}>
-              {hud.dailyModifier.toUpperCase()}
-            </span>
-          )}
         </div>
 
         {aiPersonality && aiPersonality !== 'balanced' && (difficulty === 'hard' || difficulty === 'very-hard') && (
@@ -583,7 +557,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         {/* Contextual tactical tip */}
         {(() => {
           const eff = kills + losses > 0 ? kills / (kills + losses) : 0
-          const modifier = hud?.dailyModifier ?? 'standard'
           let tip: string | null = null
 
           if (won && elapsedMs < 180000) {
@@ -602,8 +575,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             tip = isTouchDevice
               ? 'Tip: Tap ★ SURGE for 2× production 8s. Use it when you\'re behind!'
               : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
-          } else if (won && modifier === 'siege') {
-            tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
           }
 
           if (!tip) return null
