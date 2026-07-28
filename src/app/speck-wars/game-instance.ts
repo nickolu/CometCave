@@ -84,10 +84,9 @@ export class GameInstance {
       // very-hard: no balanced — pure pressure or macro domination
       return Math.random() < 0.55 ? 'aggressive' : 'macro'
     }
-    const adaptiveEnabled = difficulty === 'easy' || difficulty === 'medium'
     const personality = aiPersonality()
     useSpeckWarsStore.getState().setAiPersonality(personality)
-    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, personality, adaptiveEnabled)
+    this.aiController = new AIController('ai', aiTickInterval[difficulty] ?? 15, personality)
   }
 
   private onVisibilityChange = () => {
@@ -688,10 +687,6 @@ export class GameInstance {
           const color = waveColors[(event.waveNumber - 1) % waveColors.length]
           this.notify(`⚠ WAVE ${event.waveNumber} ASSAULT!`, color, 3000)
         }
-        if (event.type === 'AI_LAST_STAND') {
-          this.notify('⚠ ENEMY LAST STAND — desperate all-in push!', '#ff4444', 3500)
-        }
-
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
         }

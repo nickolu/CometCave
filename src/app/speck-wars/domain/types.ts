@@ -109,7 +109,6 @@ export type SimEvent =
   | { type: 'SPECK_LEGEND'; speckId: string; ownerId: string }
   | { type: 'AI_WAVE_START'; waveNumber: number }
   | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
-  | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
 
 export interface HudData {
