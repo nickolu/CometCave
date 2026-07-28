@@ -4,7 +4,6 @@ import type { DailyModifier } from '../constants'
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty, MapPreset } from '../../store'
-import { spawnCampDefenders } from './spawner'
 
 // Preset obstacle layouts — world is 3000×3000, player base at (600,1500), AI base at (2400,1500)
 const MAP_PRESET_OBSTACLES: Partial<Record<MapPreset, WallObstacle[]>> = {
@@ -92,17 +91,17 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const player: Player = {
     id: 'player', name: 'Player',
     color: PLAYER_COLOR, isAI: false, isDefeated: false,
-    totalKills: 0, upgradeLevel: 0, stance: 'aggressive', creepCampBoostMs: 0,
+    totalKills: 0, upgradeLevel: 0, stance: 'aggressive',
   }
   const ai: Player = {
     id: 'ai', name: 'AI',
     color: AI_COLOR, isAI: true, isDefeated: false,
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
   }
   const neutral: Player = {
     id: 'neutral', name: 'Neutral',
     color: NEUTRAL_COLOR, isAI: false, isDefeated: false,
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
+    totalKills: 0, upgradeLevel: 0, stance: 'defensive',
   }
 
   const JITTER = 150  // ± px of positional variation per game
@@ -120,23 +119,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
       ownerId: 'neutral',
       x: pos.x + jx, y: pos.y + jy,
       hp: 50, maxHp: 50,
-      spawnTimer: 0,
-    }
-  }
-
-  // Add creep camps at fixed positions
-  const campPositions = [
-    { id: 'camp-north', x: 1100, y: 900 },
-    { id: 'camp-south', x: 1900, y: 2100 },
-  ]
-  const campBuildings: Record<string, BuildingEntity> = {}
-  for (const pos of campPositions) {
-    campBuildings[pos.id] = {
-      id: pos.id,
-      typeId: 'creep_camp',
-      ownerId: 'neutral',
-      x: pos.x, y: pos.y,
-      hp: 40, maxHp: 40,
       spawnTimer: 0,
     }
   }
@@ -172,7 +154,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const sim: SimulationState = {
     tick: 0,
     players: { player, ai, neutral },
-    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings, ...campBuildings },
+    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings },
     speckIds: new Array(MAX_SPECKS).fill(''),
     speckX: new Float32Array(MAX_SPECKS),
     speckY: new Float32Array(MAX_SPECKS),
@@ -197,11 +179,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     waveNumber: 0,
     sacrificeCooldown: 0,
     obstacles,
-  }
-
-  // Spawn initial defenders for each creep camp
-  for (const pos of campPositions) {
-    spawnCampDefenders(sim, pos.id)
   }
 
   return sim

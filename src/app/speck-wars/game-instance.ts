@@ -729,19 +729,6 @@ export class GameInstance {
             }
           }
         }
-        if (event.type === 'CAMP_CAPTURED') {
-          if (event.newOwner === 'player') {
-            this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
-            navigator.vibrate?.([20, 30, 20, 30, 20])
-            store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
-          } else if (event.newOwner === 'ai') {
-            this.notify('⚠ ENEMY SEIZED CAMP — +25% THEIR SPAWN FOR 30s', '#ff4444', 2500)
-            store.pushKillFeedEntry({ icon: '◈', label: 'ENEMY CAMP SEIZED', color: '#ff4444' })
-          }
-        }
-        if (event.type === 'CAMP_RESET' && event.previousOwner === 'player') {
-          this.notify('◈ CAMP RESET — defenders respawned', '#ff9933', 2000)
-        }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {
             store.addOutpostCaptured()

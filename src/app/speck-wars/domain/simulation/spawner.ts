@@ -1,7 +1,7 @@
 import type { SimulationState, SpeckMeta } from '../types'
 import { SPECK_TYPES } from '../config/speck-types'
 import { BUILDING_TYPES } from '../config/building-types'
-import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD, CREEP_CAMP_DEFENDER_COUNT, CREEP_CAMP_BOOST_MULT } from '../constants'
+import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD } from '../constants'
 
 // Place a new speck into a recycled or fresh slot — never allocates new arrays
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
@@ -32,29 +32,6 @@ function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, b
 
 let speckCounter = 0
 
-export function spawnCampDefenders(sim: SimulationState, campId: string) {
-  const camp = sim.buildings[campId]
-  if (!camp) return
-  for (let i = 0; i < CREEP_CAMP_DEFENDER_COUNT; i++) {
-    const angle = (Math.PI * 2 * i) / CREEP_CAMP_DEFENDER_COUNT
-    const r = 30
-    const sx = camp.x + Math.cos(angle) * r
-    const sy = camp.y + Math.sin(angle) * r
-    const meta: SpeckMeta = {
-      id: `speck-${++speckCounter}`,
-      typeId: 'defender',
-      ownerId: 'neutral',
-      state: 'idle',
-      targetId: null,
-      attackCooldown: 0,
-      kills: 0,
-      assignedRallyX: camp.x,
-      assignedRallyY: camp.y,
-    }
-    addSpeck(sim, meta, sx, sy, campId)
-  }
-}
-
 export function updateSpawners(sim: SimulationState, dt: number) {
   // Rally Cry: player base at critical HP spawns 1.5× faster (desperation comeback bonus)
   const playerBase = Object.values(sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
@@ -73,8 +50,7 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     const hasSurge = building.ownerId === 'player' && sim.surgeDuration > 0
     const hasRallyCry = building.ownerId === 'player' && rallyCryActive
     const upgradeSpawnBonus = sim.players[building.ownerId]?.upgradeLevel && sim.players[building.ownerId].upgradeLevel >= 1 ? 1.1 : 1
-    const hasCampBoost = (sim.players[building.ownerId]?.creepCampBoostMs ?? 0) > 0
-    const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1) * upgradeSpawnBonus * (hasCampBoost ? CREEP_CAMP_BOOST_MULT : 1)
+    const divisor = (building.tripleOutpostBonus ? 2 : 1) * (hasSurge ? 2 : 1) * (hasRallyCry ? 1.5 : 1) * upgradeSpawnBonus
     building.spawnTimer = baseInterval / divisor
 
     for (let i = 0; i < btype.spawnCount; i++) {

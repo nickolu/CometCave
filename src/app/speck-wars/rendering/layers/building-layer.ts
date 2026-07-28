@@ -1,7 +1,7 @@
 import { Graphics, Container } from 'pixi.js'
 import type { SimulationState } from '../../domain/types'
 import { BUILDING_TYPES } from '../../domain/config/building-types'
-import { NEUTRAL_COLOR, CREEP_CAMP_ZONE_RADIUS } from '../../domain/constants'
+import { NEUTRAL_COLOR } from '../../domain/constants'
 
 function hexPoints(x: number, y: number, r: number): number[] {
   const pts: number[] = []
@@ -46,7 +46,6 @@ export class BuildingLayer {
 
       const isOutpost = building.typeId === 'outpost'
       const isTurret = building.typeId === 'turret'
-      const isCreepCamp = building.typeId === 'creep_camp'
 
       // Turret: special rendering path
       if (isTurret) {
@@ -139,83 +138,6 @@ export class BuildingLayer {
           this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
           this.gfx.endFill()
           // Attack range ring suppressed — shown only during ghost placement preview
-        }
-        continue
-      }
-
-      // Creep camp: diamond shape with amber accent when neutral
-      if (isCreepCamp) {
-        const campColor = building.ownerId === 'neutral' ? 0xff9933 : color
-        const s = r
-        // Faint zone circle showing leash radius when neutral
-        if (building.ownerId === 'neutral') {
-          const zonePulse = 0.12 + 0.06 * Math.sin(now / 1800)
-          this.gfx.lineStyle(1, 0xff9933, zonePulse)
-          this.gfx.drawCircle(building.x, building.y, CREEP_CAMP_ZONE_RADIUS)
-          this.gfx.lineStyle(0)
-        }
-        // Filled diamond
-        this.gfx.beginFill(campColor, 0.85)
-        this.gfx.drawPolygon([
-          building.x, building.y - s,
-          building.x + s, building.y,
-          building.x, building.y + s,
-          building.x - s, building.y,
-        ])
-        this.gfx.endFill()
-        // Damage flash overlay
-        const campFlashTs = this.flashMap.get(building.id)
-        if (campFlashTs !== undefined) {
-          const elapsed = now - campFlashTs
-          if (elapsed < FLASH_DURATION) {
-            const alpha = (1 - elapsed / FLASH_DURATION) * 0.7
-            this.gfx.beginFill(0xff2222, alpha)
-            this.gfx.drawPolygon([
-              building.x, building.y - s,
-              building.x + s, building.y,
-              building.x, building.y + s,
-              building.x - s, building.y,
-            ])
-            this.gfx.endFill()
-          } else {
-            this.flashMap.delete(building.id)
-          }
-        }
-        // Stroke
-        this.gfx.lineStyle(2, 0xffffff, 0.4)
-        this.gfx.drawPolygon([
-          building.x, building.y - s,
-          building.x + s, building.y,
-          building.x, building.y + s,
-          building.x - s, building.y,
-        ])
-        this.gfx.lineStyle(0)
-        // Pulse ring
-        const campPulse = Math.sin(now / 800) * 0.3 + 0.7
-        this.gfx.lineStyle(2, campColor, campPulse * 0.4)
-        this.gfx.drawCircle(building.x, building.y, r + 8)
-        this.gfx.lineStyle(0)
-        // HP bar
-        const campBarW = r * 2
-        const campBarH = 4
-        const campBarX = building.x - r
-        const campBarY = building.y - r - 10
-        const campHpFrac = building.hp / building.maxHp
-        this.gfx.beginFill(0x333333)
-        this.gfx.drawRect(campBarX, campBarY, campBarW, campBarH)
-        this.gfx.endFill()
-        this.gfx.beginFill(campHpFrac > 0.5 ? 0x44ff88 : 0xff4444)
-        this.gfx.drawRect(campBarX, campBarY, campBarW * campHpFrac, campBarH)
-        this.gfx.endFill()
-        // Capture progress arc
-        if (building.captureProgress && building.captureProgress > 0 && building.captureSide) {
-          const capColor = playerColors[building.captureSide] ?? 0xffffff
-          this.gfx.lineStyle(3, capColor, 0.9)
-          const startAngle = -Math.PI / 2
-          const endAngle = startAngle + Math.PI * 2 * building.captureProgress
-          this.gfx.moveTo(building.x + (r + 12) * Math.cos(startAngle), building.y + (r + 12) * Math.sin(startAngle))
-          this.gfx.arc(building.x, building.y, r + 12, startAngle, endAngle)
-          this.gfx.lineStyle(0)
         }
         continue
       }
