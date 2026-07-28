@@ -8,7 +8,7 @@ import { updateUnitAbilities } from './unit-abilities'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP } from '../constants'
+import { HUD_UPDATE_INTERVAL, RALLY_CRY_HP_THRESHOLD, FORTIFY_TIME, CREEP_CAMP_ZONE_RADIUS, SUPPLY_HARD_CAP, DOMINATION_TIME } from '../constants'
 import { updateConstruction } from './construction'
 import { updateTurrets } from './turret'
 import { updateGarrison } from './garrison'
@@ -51,8 +51,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     if (sim.speckHp[i] / maxHp < 0.25) {
       meta.state = 'retreating'
       meta.targetId = null
-      // Scout Cloak: scouts become untargetable for 2000ms when retreating
-      if (meta.typeId === 'scout') meta.cloakTimer = 2000
     }
   }
 
@@ -66,7 +64,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 6a. Hero abilities (AoE pulse for level 2 Commanders)
   updateHeroAbilities(sim, dt)
 
-  // 6b. Unit type abilities: tick chargeTimer (heavy) and cloakTimer (scout)
+  // 6b. Unit type abilities: tick stun and commander timers
   updateUnitAbilities(sim, dt)
 
   // 7. Update outpost capture progress
@@ -99,8 +97,26 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
   if (sim.sacrificeCooldown > 0) sim.sacrificeCooldown = Math.max(0, sim.sacrificeCooldown - dt)
 
-  // 8. Check win/loss
+  // 8. Check win/loss + domination timer
   checkVictory(sim)
+
+  // Domination: hold all 3 outposts for DOMINATION_TIME ms to win
+  const outpostsForDom = Object.values(sim.buildings).filter(b => b.typeId === 'outpost')
+  let domOwner: string | null = null
+  if (outpostsForDom.length > 0) {
+    for (const [pid] of Object.entries(sim.players)) {
+      if (pid === 'neutral') continue
+      if (outpostsForDom.every(o => o.ownerId === pid)) { domOwner = pid; break }
+    }
+  }
+  if (domOwner !== null) {
+    sim.dominationTimer += dt
+    if (sim.dominationTimer >= DOMINATION_TIME) {
+      sim.events.push({ type: 'GAME_OVER', winnerId: domOwner, victoryType: 'domination' })
+    }
+  } else {
+    sim.dominationTimer = 0
+  }
 
   // 9. Emit HUD update every N ticks
   sim.tick++
@@ -176,6 +192,7 @@ function updateCreepCamps(sim: SimulationState, dt: number) {
     building.campResetMs = (building.campResetMs ?? 0) - dt
     if (building.campResetMs <= 0) {
       building.campResetMs = 0
+      sim.events.push({ type: 'CAMP_RESET', campId: building.id, previousOwner: building.ownerId })
       building.ownerId = 'neutral'
       building.hp = building.maxHp
       building.captureProgress = 0
@@ -270,11 +287,6 @@ function consumeInputs(sim: SimulationState) {
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
           meta.holdPosition = false  // clear hold when a new rally is issued
-          // Rally cancels patrol and attack-move mode
-          meta.patrolOriginX = undefined
-          meta.patrolOriginY = undefined
-          meta.patrolDestX = undefined
-          meta.patrolDestY = undefined
           meta.attackMoveMode = false  // normal move cancels attack-move
         }
       } else {
@@ -391,10 +403,6 @@ function consumeInputs(sim: SimulationState) {
         meta.holdPosition = false
         meta.attackMoveMode = false
         meta.state = 'idle'
-        meta.patrolOriginX = undefined
-        meta.patrolOriginY = undefined
-        meta.patrolDestX = undefined
-        meta.patrolDestY = undefined
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
@@ -413,29 +421,9 @@ function consumeInputs(sim: SimulationState) {
         meta.holdPosition = true
         meta.attackMoveMode = false
         meta.state = 'holding'
-        meta.patrolOriginX = undefined
-        meta.patrolOriginY = undefined
-        meta.patrolDestX = undefined
-        meta.patrolDestY = undefined
       }
       if (event.ownerId === 'player') {
         sim.rallyPoints['player-selected'] = null
-      }
-    }
-    if (event.type === 'SET_PATROL') {
-      const destSet = new Set(event.speckIds)
-      for (let i = 0; i < sim.speckCount; i++) {
-        const meta = sim.speckMeta[i]
-        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
-        if (!destSet.has(meta.id)) continue
-        meta.patrolOriginX = sim.speckX[i]
-        meta.patrolOriginY = sim.speckY[i]
-        meta.patrolDestX = event.destX
-        meta.patrolDestY = event.destY
-        meta.assignedRallyX = event.destX
-        meta.assignedRallyY = event.destY
-        meta.holdPosition = false
-        meta.state = 'moving'
       }
     }
     if (event.type === 'BUILD') {
@@ -484,22 +472,6 @@ function consumeInputs(sim: SimulationState) {
       // Clear selection after dispatching
       sim.selectedSpeckIds.clear()
       sim.rallyPoints['player-selected'] = null
-    }
-    if (event.type === 'SET_PATROL') {
-      const destSet = new Set(event.speckIds)
-      for (let i = 0; i < sim.speckCount; i++) {
-        const meta = sim.speckMeta[i]
-        if (!meta || !sim.speckIds[i] || meta.ownerId !== event.ownerId) continue
-        if (!destSet.has(meta.id)) continue
-        meta.patrolOriginX = sim.speckX[i]
-        meta.patrolOriginY = sim.speckY[i]
-        meta.patrolDestX = event.destX
-        meta.patrolDestY = event.destY
-        meta.assignedRallyX = event.destX
-        meta.assignedRallyY = event.destY
-        meta.holdPosition = false
-        meta.state = 'moving'
-      }
     }
     if (event.type === 'SET_STANCE') {
       const p = sim.players[event.ownerId]
@@ -618,14 +590,14 @@ function consumeInputs(sim: SimulationState) {
         sim.speckHp[i] = 0  // mark for removeDeadSpecks
       }
       building.hp = Math.min(building.maxHp, building.hp + event.count * 1.5)  // 10 specks → +15 HP
-      sim.sacrificeCooldown = 45000
+      sim.sacrificeCooldown = 20000
     }
   }
   sim.inputQueue = []
 }
 
 function emitHudUpdate(sim: SimulationState) {
-  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number }> = {}
+  const data: Record<string, { speckCount: number; buildingCount: number; buildingHp: Record<string, number>; speckTypes: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number; supplyUsed: number; supplyCap: number; outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean } }> = {}
   for (const [pid] of Object.entries(sim.players)) {
     const myBuildings = Object.values(sim.buildings).filter(b => b.ownerId === pid)
     let liveCount = 0
@@ -651,6 +623,7 @@ function emitHudUpdate(sim: SimulationState) {
       legendCount,
       supplyUsed: sim.players[pid]?.supply ?? 0,
       supplyCap: SUPPLY_HARD_CAP,
+      outpostUpgrades: { ...(sim.players[pid].outpostUpgrades ?? { carapace: false, blades: false, afterburners: false }) },
     }
   }
   // Buildings that are owned but actively being captured by the enemy
@@ -668,7 +641,9 @@ function emitHudUpdate(sim: SimulationState) {
     }
   }
 
-  const dominationProgress: number | null = null
+  const dominationProgress: number | null = tripleOutpostOwner !== null
+    ? Math.min(1, sim.dominationTimer / DOMINATION_TIME)
+    : null
 
   // Capture progress for each outpost
   const captureInfo: Record<string, { progress: number; side: string } | null> = {}
@@ -790,7 +765,7 @@ function emitHudUpdate(sim: SimulationState) {
   }
 
   // Commander state for player HUD
-  let commander: { level: number; abilityCooldown: number; abilityActive: number } | null = null
+  let commander: { level: number; abilityCooldown: number; abilityActive: number; xp: number } | null = null
   for (let i = 0; i < sim.speckCount; i++) {
     const m = sim.speckMeta[i]
     if (m?.isCommander && m.ownerId === 'player' && sim.speckHp[i] > 0) {
@@ -798,10 +773,11 @@ function emitHudUpdate(sim: SimulationState) {
         level: m.commanderLevel ?? 0,
         abilityCooldown: m.commanderAbilityCooldown ?? 0,
         abilityActive: m.commanderAbilityActive ?? 0,
+        xp: m.commanderXp ?? 0,
       }
       break
     }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, sacrificeCooldown: sim.sacrificeCooldown, commander, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, tripleOutpostOwner, dominationProgress, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, outpostFortify, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, sacrificeCooldown: sim.sacrificeCooldown, commander, baseUnderThreat, enemyAdvanceDetected, rallyCryActive, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding, commanderRespawnMs: sim.players['player']?.commanderRespawnMs ?? 0, heroRespawnMs: sim.heroRespawnTimer['player'] ?? 0 } })
 }

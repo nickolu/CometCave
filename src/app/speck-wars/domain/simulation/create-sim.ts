@@ -56,16 +56,16 @@ function generateObstacles(rng: () => number): WallObstacle[] {
 }
 
 const aiSpawnInterval: Record<Difficulty, number> = {
-  easy: 2000,
-  medium: 800,
-  hard: 400,
-  'very-hard': 180,  // blazing spawn rate — AI floods the map
+  easy: 4400,
+  medium: 1800,
+  hard: 900,
+  'very-hard': 400,
 }
 
 const playerSpawnInterval: Record<Difficulty, number | undefined> = {
-  easy: 550,         // faster on easy — the AI is already slow, this ensures clear advantage
-  medium: undefined, // use default (800ms)
-  hard: undefined,   // use default (800ms) — player skill must compensate
+  easy: 1200,        // faster on easy — the AI is already slow, this ensures clear advantage
+  medium: undefined, // use default (1800ms from building-types)
+  hard: undefined,   // use default (1800ms) — player skill must compensate
   'very-hard': undefined,  // same as hard — no advantage
 }
 
@@ -94,7 +94,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const player: Player = {
     id: 'player', name: 'Player',
     color: PLAYER_COLOR, isAI: false, isDefeated: false, stockpile: {},
-    totalKills: 0, upgradeLevel: 0, stance: 'defensive', creepCampBoostMs: 0,
+    totalKills: 0, upgradeLevel: 0, stance: 'aggressive', creepCampBoostMs: 0,
     outpostUpgrades: { carapace: false, blades: false, afterburners: false },
     supply: 0,
   }
@@ -200,6 +200,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     dailyModifier,
     waveCountdown: null,
     waveInProgress: false,
+    waveNumber: 0,
     sacrificeCooldown: 0,
     obstacles,
   }

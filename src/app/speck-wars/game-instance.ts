@@ -9,6 +9,7 @@ import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak, hasSeenVeteranTip, markVeteranTipSeen } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
+import { DAILY_MODIFIER_LABELS, SUPPLY_SOFT_CAP } from './domain/constants'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -47,6 +48,17 @@ export class GameInstance {
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
+  private prevSurgeCooldown = 0
+  private prevCommanderAbilityCooldown = 0
+  private prevCommanderRespawnMs = 0
+  private dominationWarnedAt15s = false         // true once "15s left" AI domination warning fires
+  private dominationWarnedAt10s = false         // true once "10s left" AI domination warning fires
+  private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
+  private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
+  private prevWaveInProgress = false
+  private prevAtSupplyCap = false              // notify once when player first hits hard supply cap
+  private prevAtSoftCap = false               // notify once when player first hits soft supply cap
+  private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -167,11 +179,7 @@ export class GameInstance {
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
       () => this.clearRally(),                             // R — clear rally
-      () => {                                              // H — cycle spawn mode
-        const next = useSpeckWarsStore.getState().cycleSpawnMode()
-        this.sim.inputQueue.push({ type: 'SET_SPAWN_TYPE', ownerId: 'player', speckTypeId: next })
-        this.notify(`Spawn: ${next.toUpperCase()}`, next === 'heavy' ? '#ff8844' : '#4af7c4', 1200)
-      },
+      () => {},                                            // H — (was: cycle spawn mode; now per-building only via panel)
       () => {                                              // C — recenter camera on player base
         const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
         if (!base) return
@@ -195,20 +203,23 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
-      () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },  // Q — production surge
+      () => { this.surge() },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
       () => { this.snapToBase() },                                          // H — snap camera to home base
-      (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type directly
+      (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type for selected building only
         const selectedBuildingId = this.sim.selectedBuildingId
+        if (!selectedBuildingId) {
+          this.notify('Click your base or an outpost first', 'rgba(255,255,255,0.45)', 1200)
+          return
+        }
         this.sim.inputQueue.push({
           type: 'SET_SPAWN_TYPE',
           ownerId: 'player',
           speckTypeId: typeId,
-          buildingId: selectedBuildingId ?? undefined,
+          buildingId: selectedBuildingId,
         })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
-        this.notify(label, color, 1200)
+        this.notify(`→ ${typeId.toUpperCase()}`, color, 900)
       },
       () => {                                                           // X — cycle game speed
         useSpeckWarsStore.getState().cycleSpeed()
@@ -242,30 +253,35 @@ export class GameInstance {
       },
       () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
       () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
-      (wx: number, wy: number) => {                                    // A + right-click — attack-move
+      (wx: number, wy: number) => {                                    // A + left-click — attack-move
         this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy, 0xff4f7b)  // red ping for attack-move
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
-      },
-      (wx: number, wy: number) => {                                    // P + right-click — patrol
-        const speckIds: string[] = []
-        const useSelection = this.sim.selectedSpeckIds.size > 0
-        for (let i = 0; i < this.sim.speckCount; i++) {
-          if (!this.sim.speckIds[i]) continue
-          const m = this.sim.speckMeta[i]
-          if (!m || m.ownerId !== 'player') continue
-          if (useSelection && !this.sim.selectedSpeckIds.has(m.id)) continue
-          speckIds.push(m.id)
-        }
-        if (speckIds.length === 0) return
-        this.sim.inputQueue.push({ type: 'SET_PATROL', ownerId: 'player', speckIds, destX: wx, destY: wy })
-        this.renderer.showRallyPing(wx, wy, 0xa0d0ff)  // blue ping for patrol
-        this.notify('◎ PATROL', '#a0d0ff', 900)
       },
     )
     this.inputHandler.onBuildTurret = () => this.enterBuildMode('turret')  // T — enter turret build mode
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onCycleStance = () => this.cycleStance()  // Z — cycle stance
+    this.inputHandler.onSaveControlGroup = (slot: number) => {
+      const saved = [...this.sim.selectedSpeckIds]
+      this.controlGroups.set(slot, saved)
+      if (saved.length > 0) {
+        this.notify(`★ Group ${slot} — ${saved.length} specks`, '#4af7c4', 900)
+      }
+    }
+    this.inputHandler.onRecallControlGroup = (slot: number) => {
+      const saved = this.controlGroups.get(slot)
+      if (!saved || saved.length === 0) return
+      const aliveIds = new Set<string>()
+      for (let i = 0; i < this.sim.speckCount; i++) {
+        if (this.sim.speckIds[i] && this.sim.speckMeta[i]) aliveIds.add(this.sim.speckIds[i])
+      }
+      this.sim.selectedSpeckIds.clear()
+      for (const id of saved) {
+        if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
+      }
+      this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+    }
     this.inputHandler.onCommanderAbility = () => this.commanderAbility()  // Y — Battle Roar / Last Stand
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -276,20 +292,20 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
-      surge: () => { this.surge(); this.notify('⚡ SURGE ACTIVE!', '#ffd700') },
+      surge: () => { this.surge() },
       rally: (x: number, y: number) => this.rally(x, y),
       sacrifice: () => { this.sacrifice() },
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
         const selectedBuildingId = this.sim.selectedBuildingId
+        if (!selectedBuildingId) return
         this.sim.inputQueue.push({
           type: 'SET_SPAWN_TYPE',
           ownerId: 'player',
           speckTypeId: typeId,
-          buildingId: selectedBuildingId ?? undefined,
+          buildingId: selectedBuildingId,
         })
         const color = typeId === 'heavy' ? '#ff8844' : typeId === 'scout' ? '#50c8ff' : '#4af7c4'
-        const label = selectedBuildingId ? `Building → ${typeId.toUpperCase()}` : `All → ${typeId.toUpperCase()}`
-        this.notify(label, color, 1200)
+        this.notify(`→ ${typeId.toUpperCase()}`, color, 900)
       },
       buildTurret: () => this.enterBuildMode('turret'),
       panCamera: (wx: number, wy: number) => {
@@ -301,6 +317,12 @@ export class GameInstance {
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
       cycleStance: () => this.cycleStance(),
+      saveControlGroup: (slot: number) => {
+        this.inputHandler.onSaveControlGroup?.(slot)
+      },
+      recallControlGroup: (slot: number) => {
+        this.inputHandler.onRecallControlGroup?.(slot)
+      },
       researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
         this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
       },
@@ -311,6 +333,23 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       commanderAbility: () => this.commanderAbility(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
+      activateSelectMode: () => this.inputHandler.activateTouchSelectMode(),
+      selectByType: (typeId: string) => {
+        this.sim.selectedSpeckIds.clear()
+        let count = 0
+        for (let i = 0; i < this.sim.speckCount; i++) {
+          const m = this.sim.speckMeta[i]
+          if (m && m.ownerId === 'player' && m.typeId === typeId) {
+            this.sim.selectedSpeckIds.add(m.id)
+            count++
+          }
+        }
+        this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+        if (count > 0) {
+          const label = typeId === 'heavy' ? 'Heavies' : typeId === 'scout' ? 'Darts' : 'Basics'
+          this.notify(`Selected all ${label} (${count})`, '#4af7c4', 900)
+        }
+      },
       selectBuilding: (buildingId: string) => {
         this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId })
       },
@@ -356,6 +395,13 @@ export class GameInstance {
       navigator.vibrate?.([50, 30, 50, 30, 100])
     }, 3000)
 
+    // Announce daily modifier so players know the active rule change
+    if (this.sim.dailyModifier !== 'standard') {
+      const modColor = this.sim.dailyModifier === 'bulwark' ? '#44aaff'
+        : this.sim.dailyModifier === 'blitz' ? '#ffd700' : '#ff8844'
+      setTimeout(() => this.notify(`📅 ${DAILY_MODIFIER_LABELS[this.sim.dailyModifier]}`, modColor, 4000), 3600)
+    }
+
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
       markFirstGameDone()
@@ -371,8 +417,9 @@ export class GameInstance {
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
-        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/scout)', color: '#aaddff' },
-        { delay: 45000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
+        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/dart)', color: '#aaddff' },
+        { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
+        { delay: 50000, message: '💡 Press F to sacrifice 10 specks and repair your base!', color: '#64c864' },
       ]
       for (const { delay, message, color } of hints) {
         setTimeout(() => this.notify(message, color, 3000), delay)
@@ -511,6 +558,19 @@ export class GameInstance {
             this.enemySurgeWarnedAt = now
             this.notify('⚠ ENEMY SURGE!', '#ff6b35', 2500)
           }
+          // Supply cap notifications: soft cap = spawn slows, hard cap = outpost spawn halts
+          const playerSupplyUsed = event.data.players.player?.supplyUsed ?? 0
+          const playerSupplyCap = event.data.players.player?.supplyCap ?? 120
+          const atSoftCap = playerSupplyUsed >= SUPPLY_SOFT_CAP
+          const atSupplyCap = playerSupplyUsed >= playerSupplyCap
+          if (atSoftCap && !this.prevAtSoftCap && !atSupplyCap) {
+            this.notify('⚡ SUPPLY SOFT CAP — spawn slowing (reduce heavies or capture outposts)', '#ffaa44', 3500)
+          }
+          if (atSupplyCap && !this.prevAtSupplyCap) {
+            this.notify('⚠ SUPPLY CAP — outpost spawn halted (use basic/dart)', '#ff4f7b', 3500)
+          }
+          this.prevAtSoftCap = atSoftCap
+          this.prevAtSupplyCap = atSupplyCap
           // Outpost HP critical: player outpost < 20% max HP (50)
           const OUTPOST_MAX_HP = 50
           const OUTPOST_CRITICAL_HP = OUTPOST_MAX_HP * 0.2  // 10 HP
@@ -529,14 +589,104 @@ export class GameInstance {
           const holder = event.data.tripleOutpostOwner ?? null
           if (holder !== this.lastTripleHolder) {
             if (holder === 'player') {
-              this.notify('⬡ TRIPLE OUTPOST! 2× PRODUCTION ACTIVE', '#ffd700', 4000)
+              this.notify('⬡ TRIPLE OUTPOST — 2× PRODUCTION + DOMINATION IN 60s!', '#ffd700', 5000)
             } else if (holder === 'ai' && this.lastTripleHolder !== null) {
               // AI reclaimed triple — only notify if player had just lost it
-              this.notify('⬡ ENEMY HAS ALL OUTPOSTS!', '#ff4f7b', 3000)
+              this.notify('⬡ ENEMY DOMINATES — 60s TO WIN! RECAPTURE!', '#ff4f7b', 5000)
+            } else if (holder === 'ai') {
+              this.notify('⬡ ENEMY HAS ALL OUTPOSTS — 60s TO WIN!', '#ff4f7b', 5000)
             }
             this.lastTripleHolder = holder
+            // Reset domination warnings when control changes
+            if (holder !== 'ai') {
+              this.dominationWarnedAt15s = false
+              this.dominationWarnedAt10s = false
+            }
+            if (holder !== 'player') {
+              this.dominationPlayerWarnedAt15s = false
+            }
+          }
+          // Domination critical warnings: AI is about to win
+          if (holder === 'ai' && event.data.dominationProgress !== null) {
+            const progress = event.data.dominationProgress
+            const secsLeft = Math.ceil((1 - progress) * 60)
+            if (secsLeft <= 15 && !this.dominationWarnedAt15s) {
+              this.dominationWarnedAt15s = true
+              this.notify(`⬡ ENEMY WINS IN ${secsLeft}s — RECAPTURE NOW!`, '#ff0055', 3000)
+              navigator.vibrate?.([200, 100, 200, 100, 200])
+            } else if (secsLeft <= 10 && !this.dominationWarnedAt10s) {
+              this.dominationWarnedAt10s = true
+              this.notify('⬡ DOMINATION IMMINENT!', '#ff0055', 3000)
+              navigator.vibrate?.([400, 100, 400])
+            }
+          }
+          // Domination win approaching: player is about to win
+          if (holder === 'player' && event.data.dominationProgress !== null) {
+            const progress = event.data.dominationProgress
+            const secsLeft = Math.ceil((1 - progress) * 60)
+            if (secsLeft <= 15 && !this.dominationPlayerWarnedAt15s) {
+              this.dominationPlayerWarnedAt15s = true
+              this.notify(`⬡ DOMINATION IN ${secsLeft}s — HOLD THE LINE!`, '#ffd700', 3000)
+              navigator.vibrate?.([100, 50, 100])
+            }
           }
 
+          // Wave pre-warning: fire a toast 30s before each AI wave
+          const waveCd = event.data.waveCountdown ?? null
+          const waveInProg = event.data.waveInProgress ?? false
+          if (!waveInProg && waveCd !== null && waveCd < 30000
+              && (this.prevWaveCountdown === null || this.prevWaveCountdown >= 30000)) {
+            const secs = Math.ceil(waveCd / 1000)
+            this.notify(`⚠ WAVE IN ${secs}s — PREPARE DEFENSES`, '#ff6b35', 2500)
+          }
+          this.prevWaveCountdown = waveCd
+
+          // Wave cleared notification
+          if (this.prevWaveInProgress && !waveInProg) {
+            const waveNum = event.data.waveNumber > 0 ? ` ${event.data.waveNumber}` : ''
+            this.notify(`✓ WAVE${waveNum} CLEARED`, '#44dd88', 2000)
+          }
+          this.prevWaveInProgress = waveInProg
+
+          // Research available notification: outpost held 20s+ unlocks upgrade research
+          const RESEARCH_FORTIFY_THRESHOLD = 20000 / 30000  // 0.667 — matches tick.ts gate
+          for (const [outpostId, fortLevel] of Object.entries(event.data.outpostFortify ?? {})) {
+            if (!(outpostId in playerBuildingHp)) {
+              // Lost the outpost — reset so we can re-notify if recaptured
+              this.fortifyResearchNotified.delete(outpostId)
+              continue
+            }
+            if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
+              this.fortifyResearchNotified.add(outpostId)
+              const name = outpostId.replace('outpost-', '').toUpperCase()
+              const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+              this.notify(`⚗ ${name} OUTPOST — research available! (${isTouchDevice ? 'tap outpost' : 'click outpost'} to research)`, '#44aaff', 3500)
+            }
+          }
+
+          // Surge cooldown ready notification
+          const surgeCd = event.data.surgeCooldown ?? 0
+          const surgeActive = (event.data.surgeDuration ?? 0) > 0
+          if (!surgeActive && surgeCd === 0 && this.prevSurgeCooldown > 0) {
+            this.notify('⚡ SURGE READY', '#ffd700', 2000)
+          }
+          this.prevSurgeCooldown = surgeCd
+
+          // Commander ability cooldown ready notification
+          const cmdData = event.data.commander
+          const cmdCd = cmdData?.abilityCooldown ?? 0
+          const respawnMs = event.data.commanderRespawnMs ?? 0
+          const commanderAlive = cmdData !== null && respawnMs === 0
+          if (commanderAlive && cmdCd === 0 && this.prevCommanderAbilityCooldown > 0) {
+            this.notify('★ ABILITY READY', 'rgba(255,215,0,0.85)', 2000)
+          }
+          this.prevCommanderAbilityCooldown = commanderAlive ? cmdCd : 0
+
+          // Commander respawn notification
+          if (respawnMs === 0 && this.prevCommanderRespawnMs > 0) {
+            this.notify('⚔ COMMANDER REBORN', '#4af7c4', 2000)
+          }
+          this.prevCommanderRespawnMs = respawnMs
 
         }
         if (event.type === 'SPECK_DIED') {
@@ -644,10 +794,18 @@ export class GameInstance {
             }
           }
         }
-        if (event.type === 'CAMP_CAPTURED' && event.newOwner === 'player') {
-          this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
-          navigator.vibrate?.([20, 30, 20, 30, 20])
-          store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
+        if (event.type === 'CAMP_CAPTURED') {
+          if (event.newOwner === 'player') {
+            this.notify('◈ CAMP SEIZED! +25% SPAWN FOR 30s', '#ff9933', 3000)
+            navigator.vibrate?.([20, 30, 20, 30, 20])
+            store.pushKillFeedEntry({ icon: '◈', label: 'CAMP SEIZED', color: '#ff9933' })
+          } else if (event.newOwner === 'ai') {
+            this.notify('⚠ ENEMY SEIZED CAMP — +25% THEIR SPAWN FOR 30s', '#ff4444', 2500)
+            store.pushKillFeedEntry({ icon: '◈', label: 'ENEMY CAMP SEIZED', color: '#ff4444' })
+          }
+        }
+        if (event.type === 'CAMP_RESET' && event.previousOwner === 'player') {
+          this.notify('◈ CAMP RESET — defenders respawned', '#ff9933', 2000)
         }
         if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
           const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
@@ -704,9 +862,10 @@ export class GameInstance {
         }
         if (event.type === 'SPECK_ELITE' && event.ownerId === 'player') {
           this.notify('✦ ELITE SPECK! +35% DAMAGE', '#ffffff', 2500)
+          store.pushKillFeedEntry({ icon: '✦', label: 'ELITE SPECK', color: '#ffd700' })
         }
         if (event.type === 'SPECK_LEGEND' && event.ownerId === 'player') {
-          this.notify('✦✦ LEGEND BORN! ✦✦', '#cc44ff', 3000)
+          this.notify('✦✦ LEGEND BORN — +50% DMG + AoE SPLASH! ✦✦', '#cc44ff', 3500)
           store.pushKillFeedEntry({ icon: '✦✦', label: 'LEGEND BORN', color: '#cc44ff' })
         }
         if (event.type === 'UPGRADE_UNLOCKED' && event.ownerId === 'player') {
@@ -723,7 +882,7 @@ export class GameInstance {
           const isElite = event.kills >= 6
           const label = isLegend ? '✦✦ LEGEND FALLEN' : isElite ? '✦ ELITE FALLEN' : '⭐ VETERAN FALLEN'
           const color = isLegend ? '#cc44ff' : isElite ? '#ff8844' : '#ffcc00'
-          this.notify(label, color)
+          this.notify(label, color, 2500)
         }
         if (event.type === 'AI_WAVE_START') {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
@@ -731,7 +890,7 @@ export class GameInstance {
           this.notify(`⚠ WAVE ${event.waveNumber} ASSAULT!`, color, 3000)
         }
         if (event.type === 'AI_LAST_STAND') {
-          this.notify('⚠ ENEMY LAST STAND', '#ff4444')
+          this.notify('⚠ ENEMY LAST STAND — desperate all-in push!', '#ff4444', 3500)
         }
 
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
@@ -739,21 +898,21 @@ export class GameInstance {
         }
         if (event.type === 'HERO_LEVELED' && event.ownerId === 'player') {
           if (event.heroLevel === 1) {
-            this.notify('⚔ COMMANDER BLOODED — +15% SPEED', '#ffd700', 3000)
+            this.notify('⚔ HERO BLOODED — +15% SPEED', '#ffd700', 3000)
           } else if (event.heroLevel === 2) {
-            this.notify('⚔ COMMANDER EMPOWERED — AoE PULSE ACTIVE', '#ffd700', 3000)
+            this.notify('⚔ HERO EMPOWERED — AoE PULSE ACTIVE', '#ffd700', 3000)
           }
-          store.pushKillFeedEntry({ icon: '⚔', label: 'COMMANDER LEVELS UP', color: '#ffd700' })
+          store.pushKillFeedEntry({ icon: '⚔', label: 'HERO LEVELS UP', color: '#ffd700' })
         }
         if (event.type === 'HERO_DIED' && event.ownerId === 'player') {
-          this.notify('⚔ COMMANDER FALLEN — RESPAWNING IN 15s', '#ff4f7b', 4000)
-          store.pushKillFeedEntry({ icon: '†', label: `COMMANDER FALLEN (${event.kills} kills)`, color: '#ff4f7b' })
+          this.notify('⚔ HERO FALLEN — respawning', '#ff8844', 3000)
+          store.pushKillFeedEntry({ icon: '†', label: `HERO FALLEN (${event.kills} kills)`, color: '#ff8844' })
         }
         if (event.type === 'HERO_SPAWNED' && event.ownerId === 'player') {
-          this.notify('⚔ COMMANDER REBORN', '#4af7c4', 2000)
+          this.notify('⚔ HERO REBORN', '#88ffdd', 2000)
         }
         if (event.type === 'COMMANDER_LEVEL_UP' && event.ownerId === 'player') {
-          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — AoE PULSE' : '🌟 COMMANDER LVL 3 — SPEED AURA'
+          const label = event.level === 2 ? '⚡ COMMANDER LVL 2 — BATTLE ROAR UNLOCKED' : '🌟 COMMANDER LVL 3 — LAST STAND UNLOCKED'
           this.notify(label, '#ffd700', 4000)
           store.pushKillFeedEntry({ icon: '⭐', label: label.split(' — ')[0].replace('⚡ ', '').replace('🌟 ', ''), color: '#ffd700' })
         }
@@ -778,17 +937,11 @@ export class GameInstance {
       }
     }
 
-    // Detect AI spawn mode changes and notify player
+    // Track AI spawn mode (notification handled by AI_SPAWN_SWITCH event to avoid duplicates)
     if (store.phase === 'playing') {
       const aiBase = this.sim.buildings['building-ai-base']
       const aiSpawnMode = aiBase?.spawnTypeOverride ?? 'basic'
-      if (aiSpawnMode !== this.lastAiSpawnMode && this.elapsedMs > 5000) {
-        this.lastAiSpawnMode = aiSpawnMode
-        if (aiSpawnMode === 'heavy') {
-          this.notify('⬡ ENEMY BUILDING TANKS', '#ffaa55', 2000)
-        }
-        // No notification when switching back to basic — less alarming
-      }
+      if (aiSpawnMode !== this.lastAiSpawnMode) this.lastAiSpawnMode = aiSpawnMode
     }
 
     // Idle army nudge: remind player to rally when specks sit idle
@@ -887,7 +1040,10 @@ export class GameInstance {
         const db = (b.x - playerBase.x) ** 2 + (b.y - playerBase.y) ** 2
         return da - db
       })
-    if (targets.length === 0) return
+    if (targets.length === 0) {
+      this.notify('→ All outposts held — press B to rush enemy base', '#ffd700', 2000)
+      return
+    }
     const now = Date.now()
     if (now - this.lastAdvanceMs < 3000 && targets.length > 1) {
       this.lastAdvanceIdx = (this.lastAdvanceIdx + 1) % targets.length
@@ -943,11 +1099,23 @@ export class GameInstance {
   }
 
   surge() {
+    if (this.sim.surgeDuration > 0) return  // already active — do nothing
+    if (this.sim.surgeCooldown > 0) {
+      const remaining = Math.ceil(this.sim.surgeCooldown / 1000)
+      this.notify(`Surge ready in ${remaining}s`, 'rgba(255,215,0,0.65)', 1200)
+      return
+    }
     this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
     useSpeckWarsStore.getState().addSurgeUsed()
+    this.notify('⚡ SURGE ACTIVE!', '#ffd700')
   }
 
   private sacrifice() {
+    if (this.sim.sacrificeCooldown > 0) {
+      const remaining = Math.ceil(this.sim.sacrificeCooldown / 1000)
+      this.notify(`Sacrifice ready in ${remaining}s`, 'rgba(255,100,100,0.65)', 1200)
+      return
+    }
     const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
     if (!playerBase) return
     const speckCount = this.sim.speckMeta.filter((m, i) => m && m.ownerId === 'player' && this.sim.speckIds[i]).length
@@ -957,6 +1125,7 @@ export class GameInstance {
     }
     this.sim.inputQueue.push({ type: 'SACRIFICE', ownerId: 'player', buildingId: playerBase.id, typeId: 'basic', count: 10 })
     useSpeckWarsStore.getState().addSacrificeUsed()
+    this.notify('⟡ SACRIFICE — +15 BASE HP (ready in 20s)', '#ff8844', 1800)
   }
 
   garrison(buildingId: string) {
@@ -975,13 +1144,13 @@ export class GameInstance {
     }
     if (speckIds.length === 0) return
     this.sim.inputQueue.push({ type: 'GARRISON', ownerId: 'player', buildingId, speckIds })
-    this.notify('GARRISON', '#44aaff', 1200)
+    this.notify(`⊡ GARRISONED ${speckIds.length} SPECK${speckIds.length !== 1 ? 'S' : ''}`, '#44aaff', 1200)
     navigator.vibrate?.([20, 40, 20])
   }
 
   recallGarrison(buildingId: string) {
     this.sim.inputQueue.push({ type: 'RECALL_GARRISON', ownerId: 'player', buildingId })
-    this.notify('RECALL', '#44aaff', 900)
+    this.notify('⊡ GARRISON RECALLED', '#44aaff', 900)
     navigator.vibrate?.([15, 30])
   }
 
@@ -1011,7 +1180,8 @@ export class GameInstance {
     }
     if ((commanderMeta.commanderAbilityCooldown ?? 0) > 0) {
       const remaining = Math.ceil((commanderMeta.commanderAbilityCooldown ?? 0) / 1000)
-      this.notify(`Battle Roar ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
+      const abilityName = level >= 3 ? 'Last Stand' : 'Battle Roar'
+      this.notify(`${abilityName} ready in ${remaining}s`, 'rgba(255,180,0,0.7)', 1200)
       return
     }
     this.sim.inputQueue.push({ type: 'COMMANDER_ABILITY', ownerId: 'player' })

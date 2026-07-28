@@ -72,7 +72,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
 
     const speedMult = (meta.isHero && (meta.heroLevel ?? 0) >= 1) ? 1.15 : 1.0
     const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
-    const chargeMult = (meta.typeId === 'heavy' && (meta.chargeTimer ?? 0) > 0) ? 1.35 : 1.0
     const speedBoostMult = (meta.speedBoostTimer ?? 0) > 0 ? 1.5 : 1.0
     const lastStandMult = (meta.isCommander && (meta.commanderAbilityActive ?? 0) > 0) ? 1.25 : 1.0
 
@@ -101,8 +100,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           const dist = Math.sqrt(nearestDist2)
           const dx = nearestBuilding.x - speckX[i]
           const dy = nearestBuilding.y - speckY[i]
-          speckVx[i] = (dx / dist) * stype.speed * speedMult * afterburnersMult * chargeMult
-          speckVy[i] = (dy / dist) * stype.speed * speedMult * afterburnersMult * chargeMult
+          speckVx[i] = (dx / dist) * stype.speed * speedMult * afterburnersMult
+          speckVy[i] = (dy / dist) * stype.speed * speedMult * afterburnersMult
           {
             const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
             const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
@@ -134,8 +133,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = target.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed * speedMult * chargeMult
-          ay += (dy / dist) * stype.speed * speedMult * chargeMult
+          ax += (dx / dist) * stype.speed * speedMult
+          ay += (dy / dist) * stype.speed * speedMult
         }
       }
     } else {
@@ -178,18 +177,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         const dy = rally.y - speckY[i]
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist > stype.attackRange) {
-          ax += (dx / dist) * stype.speed * speedMult * chargeMult
-          ay += (dy / dist) * stype.speed * speedMult * chargeMult
-        } else if (meta.patrolDestX !== undefined && meta.patrolOriginX !== undefined) {
-          // Arrived at patrol leg — swap origin and destination to bounce back
-          const newDestX = meta.patrolOriginX
-          const newDestY = meta.patrolOriginY!
-          meta.patrolOriginX = meta.patrolDestX
-          meta.patrolOriginY = meta.patrolDestY!
-          meta.patrolDestX = newDestX
-          meta.patrolDestY = newDestY
-          meta.assignedRallyX = newDestX
-          meta.assignedRallyY = newDestY
+          ax += (dx / dist) * stype.speed * speedMult
+          ay += (dy / dist) * stype.speed * speedMult
         }
       } else {
         // Idle aggression: no target, no rally — pursue nearest enemy speck within detection range
@@ -245,8 +234,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
         if (closestDist2 < Infinity) {
           const dist = Math.sqrt(closestDist2)
           if (dist > stype.attackRange) {
-            ax += ((closestX - speckX[i]) / dist) * stype.speed * speedMult * chargeMult
-            ay += ((closestY - speckY[i]) / dist) * stype.speed * speedMult * chargeMult
+            ax += ((closestX - speckX[i]) / dist) * stype.speed * speedMult
+            ay += ((closestY - speckY[i]) / dist) * stype.speed * speedMult
           }
         }
       }

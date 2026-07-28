@@ -23,16 +23,15 @@ export class InputHandler {
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
   private onSacrifice?: () => void
-  private onSaveControlGroup?: (slot: number) => void
-  private onRecallControlGroup?: (slot: number) => void
-  private pendingModifier: 'none' | 'attack' | 'patrol' = 'none'
+  public onSaveControlGroup?: (slot: number) => void
+  public onRecallControlGroup?: (slot: number) => void
+  private pendingModifier: 'none' | 'attack' = 'none'
   private isPanDragging = false   // middle-mouse only
   private isRightDragging = false
   private pendingBuildActive = false
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
-  private onPatrol?: (worldX: number, worldY: number) => void
   public onBuildTurret?: () => void
   public onGuard?: () => void
   public onCycleStance?: () => void
@@ -61,6 +60,11 @@ export class InputHandler {
   private lastTapX = 0
   private lastTapY = 0
   private touchPatrolPending = false
+  private touchSelectMode = false
+  private panVelocityX = 0   // px/frame at time of finger lift
+  private panVelocityY = 0
+  private panInertiaTimer: ReturnType<typeof requestAnimationFrame> | null = null
+  private lastMoveTime = 0   // timestamp of last touchmove for velocity calc
   private twoFingerActive = false      // true while 2 fingers are on canvas
   private twoFingerMoved = false       // true if pinch changed significantly (not a tap)
   private twoFingerTapStartDist = 0   // initial pinch distance when 2nd finger touched
@@ -91,7 +95,6 @@ export class InputHandler {
     onStop?: () => void,
     onHold?: () => void,
     onAttackMove?: (worldX: number, worldY: number) => void,
-    onPatrol?: (worldX: number, worldY: number) => void,
   ) {
     this.canvas = canvas
     this.camera = camera
@@ -118,7 +121,6 @@ export class InputHandler {
     this.onStop = onStop
     this.onHold = onHold
     this.onAttackMove = onAttackMove
-    this.onPatrol = onPatrol
     this.attach()
   }
 
@@ -224,16 +226,18 @@ export class InputHandler {
         const world = screenToWorld(sx, sy, this.camera)
         this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
       } else {
-        if (this.pendingBuildActive) {
-          // In build placement mode: left-click places the building
-          const rect = this.canvas.getBoundingClientRect()
-          const sx = e.clientX - rect.left
-          const sy = e.clientY - rect.top
-          const world = screenToWorld(sx, sy, this.camera)
-          this.onRally?.(world.x, world.y)
+        // Left-click tap — issue command (StarCraft model)
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.clientX - rect.left
+        const sy = e.clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        if (this.pendingModifier === 'attack') {
+          this.onAttackMove?.(world.x, world.y)
+          this.pendingModifier = 'none'
+          if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
-          // Normal left-click: deselect all
-          this.onClearSelect?.()
+          // Default: move/rally command (selects building if clicked on one, otherwise sets rally)
+          this.onRally?.(world.x, world.y)
         }
       }
       return
@@ -242,55 +246,68 @@ export class InputHandler {
     if (e.button === 2) {
       this.isRightDragging = false
     }
-    if (e.button === 2 && dist < 5) {
-      // Right-click: issue move, attack-move, or patrol command
-      const rect = this.canvas.getBoundingClientRect()
-      const sx = e.clientX - rect.left
-      const sy = e.clientY - rect.top
-      const world = screenToWorld(sx, sy, this.camera)
-      if (this.pendingModifier === 'attack') {
-        this.onAttackMove?.(world.x, world.y)
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else if (this.pendingModifier === 'patrol') {
-        this.onPatrol?.(world.x, world.y)
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else {
-        this.onRally?.(world.x, world.y)
-      }
-      return
-    }
 
     this.isDragging = false
   }
 
   private onWheel = (e: WheelEvent) => {
     e.preventDefault()
-    if (e.ctrlKey) {
-      // Pinch-to-zoom (trackpad) or Ctrl+scroll — zoom toward cursor
-      const factor = e.deltaY < 0 ? 1.1 : 0.9
-      const rect = this.canvas.getBoundingClientRect()
-      const sx = e.clientX - rect.left
-      const sy = e.clientY - rect.top
-      Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
-    } else {
-      // Two-finger swipe (trackpad) or scroll wheel — pan camera
+    const rect = this.canvas.getBoundingClientRect()
+    const sx = e.clientX - rect.left
+    const sy = e.clientY - rect.top
+    if (e.shiftKey) {
+      // Shift+scroll — pan camera
       this.camera.x -= e.deltaX
       this.camera.y -= e.deltaY
+    } else if (!e.ctrlKey && e.deltaX !== 0) {
+      // Two-finger trackpad horizontal swipe — pan camera
+      this.camera.x -= e.deltaX
+      this.camera.y -= e.deltaY
+    } else {
+      // Default: scroll wheel zooms toward cursor (ctrlKey = trackpad pinch, also zooms)
+      if (e.deltaY !== 0) {
+        const factor = e.deltaY < 0 ? 1.1 : 0.9
+        Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
+      }
     }
   }
 
   private onTouchStart = (e: TouchEvent) => {
     // Prevent browser context menu and text selection on long-press (requires passive:false)
     e.preventDefault()
+    // Cancel any ongoing pan inertia so new touch takes full control
+    if (this.panInertiaTimer !== null) {
+      cancelAnimationFrame(this.panInertiaTimer)
+      this.panInertiaTimer = null
+      this.panVelocityX = 0
+      this.panVelocityY = 0
+    }
     if (e.touches.length === 1) {
+      if (this.touchSelectMode) {
+        clearTimeout(this.longPressTimer!)
+        this.longPressTimer = null
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.touches[0].clientX - rect.left
+        const sy = e.touches[0].clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        this.mouseDownX = e.touches[0].clientX
+        this.mouseDownY = e.touches[0].clientY
+        this.mouseX = sx
+        this.mouseY = sy
+        this.isDragSelect = true
+        this.dragSelectStartWorldX = world.x
+        this.dragSelectStartWorldY = world.y
+        this.touchStartX = e.touches[0].clientX
+        this.touchStartY = e.touches[0].clientY
+        return
+      }
       this.isDragging = true
       this.lastPinchDist = 0
       this.lastX = e.touches[0].clientX
       this.lastY = e.touches[0].clientY
       this.touchStartX = e.touches[0].clientX
       this.touchStartY = e.touches[0].clientY
+      this.lastMoveTime = performance.now()
       this.longPressFired = false
       // Long-press: if finger stays >500ms without moving, fire attack-move
       this.longPressTimer = setTimeout(() => {
@@ -350,6 +367,10 @@ export class InputHandler {
       this.camera.y += midY - this.lastPinchMidY
       this.lastPinchMidX = midX
       this.lastPinchMidY = midY
+    } else if (e.touches.length === 1 && this.touchSelectMode && this.isDragSelect) {
+      const rect = this.canvas.getBoundingClientRect()
+      this.mouseX = e.touches[0].clientX - rect.left
+      this.mouseY = e.touches[0].clientY - rect.top
     } else if (this.isDragging && e.touches.length === 1) {
       if (e.touches.length === 1) {
         const moveDist = Math.sqrt(
@@ -362,14 +383,46 @@ export class InputHandler {
           emitLongPressCancel()
         }
       }
-      this.camera.x += e.touches[0].clientX - this.lastX
-      this.camera.y += e.touches[0].clientY - this.lastY
+      const dx = e.touches[0].clientX - this.lastX
+      const dy = e.touches[0].clientY - this.lastY
+      this.camera.x += dx
+      this.camera.y += dy
+      // Track velocity for inertia (exponential smoothing keeps it stable)
+      const now = performance.now()
+      const dt = Math.min(50, now - this.lastMoveTime)  // clamp to 50ms max gap
+      if (dt > 0) {
+        const alpha = 0.6  // blend factor (higher = more responsive, less smooth)
+        this.panVelocityX = alpha * (dx / dt * 16.67) + (1 - alpha) * this.panVelocityX
+        this.panVelocityY = alpha * (dy / dt * 16.67) + (1 - alpha) * this.panVelocityY
+      }
+      this.lastMoveTime = now
       this.lastX = e.touches[0].clientX
       this.lastY = e.touches[0].clientY
     }
   }
 
   private onTouchEnd = (e: TouchEvent) => {
+    if (this.touchSelectMode) {
+      this.touchSelectMode = false
+      this.isDragSelect = false
+      clearTimeout(this.longPressTimer!)
+      this.longPressTimer = null
+      const touch = e.changedTouches[0]
+      const rect = this.canvas.getBoundingClientRect()
+      const sx = touch.clientX - rect.left
+      const sy = touch.clientY - rect.top
+      const world = screenToWorld(sx, sy, this.camera)
+      const dx = touch.clientX - this.touchStartX
+      const dy = touch.clientY - this.touchStartY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist > 10) {
+        this.onBoxSelect?.(this.dragSelectStartWorldX, this.dragSelectStartWorldY, world.x, world.y)
+      } else {
+        // Treat small movement as tap → rally
+        this.onRally?.(world.x, world.y)
+      }
+      return
+    }
     // Launch pinch inertia when second finger lifts
     if (e.touches.length < 2 && this.lastPinchDist > 0) {
       if (this.pinchDecayTimer) cancelAnimationFrame(this.pinchDecayTimer)
@@ -399,14 +452,7 @@ export class InputHandler {
           const tapDx = touch.clientX - this.lastTapX
           const tapDy = touch.clientY - this.lastTapY
           const isDoubleTap = now - this.lastTapTime < 300 && Math.sqrt(tapDx * tapDx + tapDy * tapDy) < 40
-          if (this.touchPatrolPending) {
-            // Touch patrol mode: one-shot — fire patrol to this location
-            this.touchPatrolPending = false
-            const world = screenToWorld(sx, sy, this.camera)
-            navigator.vibrate?.([10, 30, 10, 30, 10])  // triple-pulse for patrol
-            this.onPatrol?.(world.x, world.y)
-            emitTapRipple(touch.clientX, touch.clientY)
-          } else if (isDoubleTap) {
+          if (isDoubleTap) {
             // Double-tap: zoom 1.5× toward tap point; if already zoomed in (≥1.5×), return to overview (0.7×)
             const factor = this.camera.zoom >= 1.5 ? (0.7 / this.camera.zoom) : 1.5
             Object.assign(this.camera, zoomAt(this.camera, sx, sy, factor))
@@ -438,6 +484,34 @@ export class InputHandler {
     }
     this.isDragging = false
     this.longPressFired = false
+    // Launch pan inertia if finger was moving at lift (drag, not a tap)
+    const wasDragging = Math.sqrt(
+      (e.changedTouches[0]?.clientX - this.touchStartX) ** 2 +
+      (e.changedTouches[0]?.clientY - this.touchStartY) ** 2
+    ) > 12
+    if (wasDragging && (Math.abs(this.panVelocityX) > 1 || Math.abs(this.panVelocityY) > 1)) {
+      if (this.panInertiaTimer !== null) cancelAnimationFrame(this.panInertiaTimer)
+      this.applyPanInertia()
+    } else {
+      this.panVelocityX = 0
+      this.panVelocityY = 0
+    }
+  }
+
+  private applyPanInertia = () => {
+    const DECAY = 0.88  // 88% velocity retained each frame (~16ms)
+    const THRESHOLD = 0.3  // stop when velocity below this
+    this.camera.x += this.panVelocityX
+    this.camera.y += this.panVelocityY
+    this.panVelocityX *= DECAY
+    this.panVelocityY *= DECAY
+    if (Math.abs(this.panVelocityX) > THRESHOLD || Math.abs(this.panVelocityY) > THRESHOLD) {
+      this.panInertiaTimer = requestAnimationFrame(this.applyPanInertia)
+    } else {
+      this.panVelocityX = 0
+      this.panVelocityY = 0
+      this.panInertiaTimer = null
+    }
   }
 
   private applyPinchInertia = () => {
@@ -496,14 +570,6 @@ export class InputHandler {
         this.pendingModifier = 'attack'
         if (this.canvas) this.canvas.style.cursor = 'crosshair'
       }
-    } else if (e.code === 'KeyP') {
-      if (this.pendingModifier === 'patrol') {
-        this.pendingModifier = 'none'
-        if (this.canvas) this.canvas.style.cursor = 'default'
-      } else {
-        this.pendingModifier = 'patrol'
-        if (this.canvas) this.canvas.style.cursor = 'cell'
-      }
     } else if (e.code === 'KeyS') {
       this.onStop?.()
     } else if (e.code === 'KeyT') {
@@ -554,6 +620,15 @@ export class InputHandler {
     return this.touchPatrolPending
   }
 
+  activateTouchSelectMode() {
+    this.touchSelectMode = true
+    this.isDragSelect = false
+  }
+
+  isTouchSelectModePending() {
+    return this.touchSelectMode
+  }
+
   getDragRect(): { x1: number; y1: number; x2: number; y2: number } | null {
     if (!this.isDragSelect) return null
     const rect = this.canvas.getBoundingClientRect()
@@ -578,6 +653,10 @@ export class InputHandler {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
+    }
+    if (this.panInertiaTimer !== null) {
+      cancelAnimationFrame(this.panInertiaTimer)
+      this.panInertiaTimer = null
     }
     if (this.pinchDecayTimer) { cancelAnimationFrame(this.pinchDecayTimer); this.pinchDecayTimer = null }
     this.canvas.removeEventListener('mousedown', this.onMouseDown)

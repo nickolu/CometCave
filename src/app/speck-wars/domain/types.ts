@@ -16,10 +16,6 @@ export interface SpeckMeta {
   attackMoveTargetY?: number
   constructTargetId?: string | null   // building ID this speck is marching to sacrifice
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
-  patrolOriginX?: number  // patrol: leg start X (swaps with dest on arrival)
-  patrolOriginY?: number  // patrol: leg start Y
-  patrolDestX?: number    // patrol: leg destination X
-  patrolDestY?: number    // patrol: leg destination Y
   isHero?: boolean           // true if this speck is the Commander
   heroLevel?: 0 | 1 | 2     // 0=base, 1=BLOODED, 2=EMPOWERED
   abilityTimer?: number      // ms until next AoE pulse (level 2 only)
@@ -27,8 +23,6 @@ export interface SpeckMeta {
   commanderXp?: number          // XP earned from nearby kills
   commanderLevel?: 0 | 1 | 2 | 3  // 0=base, 1=unused, 2=pulse, 3=aura
   pulseTimer?: number           // ms until next AoE pulse
-  chargeTimer?: number          // ms of heavy charge burst remaining
-  cloakTimer?: number           // ms of scout cloak remaining (enemy can't target)
   stunTimer?: number            // ms remaining in stun (Battle Roar / Last Stand)
   commanderAbilityCooldown?: number   // ms until Battle Roar / Last Stand can fire again
   commanderAbilityActive?: number     // ms of Level 3 buff remaining (invuln + 3× dmg)
@@ -121,6 +115,7 @@ export interface SimulationState {
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
+  waveNumber: number             // current wave count (0 = not started)
   sacrificeCooldown: number   // ms remaining before sacrifice can be used again, 0 = ready
   obstacles: WallObstacle[]
 }
@@ -138,7 +133,6 @@ export type InputEvent =
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
-  | { type: 'SET_PATROL'; ownerId: string; speckIds: string[]; destX: number; destY: number }
   | { type: 'SET_STANCE'; ownerId: string; stance: 'aggressive' | 'defensive' | 'hold' }
   | { type: 'RESEARCH_UPGRADE'; ownerId: string; buildingId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
   | { type: 'COMMANDER_ABILITY'; ownerId: string }
@@ -150,7 +144,7 @@ export type SimEvent =
   | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
   | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string; x: number; y: number }
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
-  | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'surrender' }
+  | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'surrender' | 'domination' }
   | { type: 'HUD_UPDATE'; data: HudData }
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
   | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
@@ -163,6 +157,7 @@ export type SimEvent =
   | { type: 'CONSTRUCTION_COMPLETE'; buildingId: string; x: number; y: number }
   | { type: 'UPGRADE_UNLOCKED'; ownerId: string; level: 1 | 2 | 3 }
   | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
+  | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
   | { type: 'OUTPOST_UPGRADE_RESEARCHED'; buildingId: string; ownerId: string; upgrade: 'carapace' | 'blades' | 'afterburners' }
   | { type: 'HERO_LEVELED'; ownerId: string; heroLevel: 1 | 2 }
   | { type: 'HERO_DIED'; ownerId: string; kills: number }
@@ -181,6 +176,7 @@ export interface HudData {
     legendCount: number   // specks with 12+ kills
     supplyUsed: number    // current supply in use
     supplyCap: number     // hard supply cap
+    outpostUpgrades: { carapace: boolean; blades: boolean; afterburners: boolean }
   }>
   attackedBuildingIds: string[]
   tripleOutpostOwner: string | null  // player ID who owns all 3 outposts, or null
@@ -194,8 +190,11 @@ export interface HudData {
   dailyModifier: 'standard' | 'bulwark' | 'blitz' | 'siege'
   waveCountdown: number | null
   waveInProgress: boolean
+  waveNumber: number
   sacrificeCooldown: number
-  commander: { level: number; abilityCooldown: number; abilityActive: number } | null
+  commander: { level: number; abilityCooldown: number; abilityActive: number; xp: number } | null
+  commanderRespawnMs: number   // ms until player commander respawns; 0 if alive or not yet spawned
+  heroRespawnMs: number        // ms until player hero respawns; 0 if alive or not yet spawned
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
   rallyCryActive: boolean

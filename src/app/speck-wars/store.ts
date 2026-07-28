@@ -24,8 +24,8 @@ interface SpeckWarsStore {
   setCountdown: (n: number | null) => void
   winnerId: string | null
   setWinnerId: (id: string) => void
-  victoryType: 'destruction' | 'surrender' | null
-  setVictoryType: (t: 'destruction' | 'surrender') => void
+  victoryType: 'destruction' | 'surrender' | 'domination' | null
+  setVictoryType: (t: 'destruction' | 'surrender' | 'domination') => void
   hud: HudData | null
   setHud: (data: HudData) => void
   difficulty: Difficulty
@@ -40,9 +40,6 @@ interface SpeckWarsStore {
   losses: number
   addKill: () => void
   addLoss: () => void
-  spawnMode: 'basic' | 'heavy' | 'scout'
-  cycleSpawnMode: () => 'basic' | 'heavy' | 'scout'
-  setSpawnMode: (mode: 'basic' | 'heavy' | 'scout') => void
   peakArmySize: number
   setPeakArmySize: (n: number) => void
   peakVeteranCount: number
@@ -70,8 +67,8 @@ interface SpeckWarsStore {
   setFogEnabled: (v: boolean) => void
   mapPreset: MapPreset
   setMapPreset: (p: MapPreset) => void
-  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; buildTurret?: (() => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; cycleStance: (() => void) | null; researchUpgrade?: ((buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => void) | null; selectAll?: (() => void) | null; snapToBase?: (() => void) | null; snapToAction?: (() => void) | null; commanderAbility?: (() => void) | null; activatePatrol?: (() => void) | null; selectBuilding?: ((buildingId: string) => void) | null; clearSelection?: (() => void) | null; garrison?: ((buildingId: string) => void) | null; recallGarrison?: ((buildingId: string) => void) | null }
-  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; buildTurret?: () => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; cycleStance: () => void; researchUpgrade?: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => void; selectAll?: () => void; snapToBase?: () => void; snapToAction?: () => void; commanderAbility?: () => void; activatePatrol?: () => void; selectBuilding?: (buildingId: string) => void; clearSelection?: () => void; garrison?: (buildingId: string) => void; recallGarrison?: (buildingId: string) => void } | null) => void
+  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; sacrifice: (() => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; buildTurret?: (() => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; cycleStance: (() => void) | null; saveControlGroup?: ((slot: number) => void) | null; recallControlGroup?: ((slot: number) => void) | null; researchUpgrade?: ((buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => void) | null; selectAll?: (() => void) | null; snapToBase?: (() => void) | null; snapToAction?: (() => void) | null; commanderAbility?: (() => void) | null; activatePatrol?: (() => void) | null; activateSelectMode?: (() => void) | null; selectByType?: ((typeId: string) => void) | null; selectBuilding?: ((buildingId: string) => void) | null; clearSelection?: (() => void) | null; garrison?: ((buildingId: string) => void) | null; recallGarrison?: ((buildingId: string) => void) | null }
+  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; sacrifice: () => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; buildTurret?: () => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; cycleStance: () => void; saveControlGroup?: (slot: number) => void; recallControlGroup?: (slot: number) => void; researchUpgrade?: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => void; selectAll?: () => void; snapToBase?: () => void; snapToAction?: () => void; commanderAbility?: () => void; activatePatrol?: () => void; activateSelectMode?: () => void; selectByType?: (typeId: string) => void; selectBuilding?: (buildingId: string) => void; clearSelection?: () => void; garrison?: (buildingId: string) => void; recallGarrison?: (buildingId: string) => void } | null) => void
   surrender: () => void
   resetGame: () => void
 }
@@ -104,16 +101,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   losses: 0,
   addKill: () => set(s => ({ kills: s.kills + 1 })),
   addLoss: () => set(s => ({ losses: s.losses + 1 })),
-  spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
-  cycleSpawnMode: () => {
-    let next: 'basic' | 'heavy' | 'scout' = 'basic'
-    set(s => {
-      next = s.spawnMode === 'basic' ? 'heavy' : s.spawnMode === 'heavy' ? 'scout' : 'basic'
-      return { spawnMode: next }
-    })
-    return next
-  },
-  setSpawnMode: mode => set({ spawnMode: mode }),
   peakArmySize: 0,
   setPeakArmySize: n => set(s => ({ peakArmySize: Math.max(s.peakArmySize, n) })),
   peakVeteranCount: 0,
@@ -141,7 +128,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     const next = s.killFeed.filter(e => e.ts > cutoff)
     return next.length === s.killFeed.length ? s : { killFeed: next }
   }),
-  stance: 'defensive' as 'aggressive' | 'defensive' | 'hold',
+  stance: 'aggressive' as 'aggressive' | 'defensive' | 'hold',
   setStance: stance => set({ stance }),
   aiPersonality: null,
   setAiPersonality: p => set({ aiPersonality: p }),
@@ -149,8 +136,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setFogEnabled: v => set({ fogEnabled: v }),
   mapPreset: 'random' as MapPreset,
   setMapPreset: p => set({ mapPreset: p }),
-  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, researchUpgrade: null, selectAll: null, snapToBase: null, snapToAction: null, commanderAbility: null, activatePatrol: null, selectBuilding: null, clearSelection: null, garrison: null, recallGarrison: null },
-  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, researchUpgrade: null, selectAll: null, snapToBase: null, snapToAction: null, commanderAbility: null, activatePatrol: null, selectBuilding: null, clearSelection: null, garrison: null, recallGarrison: null } }),
+  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, saveControlGroup: null, recallControlGroup: null, researchUpgrade: null, selectAll: null, snapToBase: null, snapToAction: null, commanderAbility: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, clearSelection: null, garrison: null, recallGarrison: null },
+  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, sacrifice: null, setSpawnType: null, buildTurret: null, panCamera: null, stop: null, hold: null, guard: null, cycleStance: null, saveControlGroup: null, recallControlGroup: null, researchUpgrade: null, selectAll: null, snapToBase: null, snapToAction: null, commanderAbility: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, clearSelection: null, garrison: null, recallGarrison: null } }),
   surrender: () => {
     const s = get()
     resetWinStreak()
@@ -167,7 +154,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     notification: null,
     kills: 0,
     losses: 0,
-    spawnMode: 'basic' as 'basic' | 'heavy' | 'scout',
     isNewBest: false,
     peakArmySize: 0,
     peakVeteranCount: 0,
@@ -178,7 +164,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     outpostsCaptured: 0,
     killFeed: [],
     aiPersonality: null,
-    stance: 'defensive' as 'aggressive' | 'defensive' | 'hold',
+    stance: 'aggressive' as 'aggressive' | 'defensive' | 'hold',
     difficulty: s.difficulty,
   })),
 }))

@@ -78,18 +78,10 @@ export class SpeckLayer {
             this.attackAnimByIndex.delete(i)
           }
         }
-        // Heavy Charge: scale to 1.4x briefly when chargeTimer is fresh (> 1400ms remaining)
-        if (typeMeta?.typeId === 'heavy' && typeMeta.chargeTimer && typeMeta.chargeTimer > 1400) {
-          scaleBoost = Math.max(scaleBoost, 1.4)
-        }
         spriteList[j].scale.set((stype ? stype.size / 4 : 0.75) * scaleBoost)
         // Fade speck as it takes damage — full HP = 1.0, near death = 0.35
         const hpFrac = stype ? Math.max(0, sim.speckHp[i] / stype.hp) : 1
         spriteList[j].alpha = 0.35 + 0.65 * hpFrac
-        // Scout cloak: override alpha to 0.25 when cloaked
-        if (typeMeta?.cloakTimer && typeMeta.cloakTimer > 0) {
-          spriteList[j].alpha = 0.25
-        }
 
         // Hero Commander: gold diamond + HP ring rendered before veteran/elite/legend rings
         if (typeMeta?.isHero) {
@@ -188,34 +180,6 @@ export class SpeckLayer {
             const critPulse = 0.5 + 0.5 * Math.sin(now / 120)  // fast pulse ~8Hz
             this.gfx.lineStyle(1.2, 0xff2222, critAlpha * critPulse)
             this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], stype.size / 4 + 2)
-            this.gfx.lineStyle(0)
-          }
-          // Heavy Charge: orange/red glow ring during charge burst
-          if (typeMeta?.chargeTimer && typeMeta.chargeTimer > 0) {
-            const chargeRadius = (stype ? stype.size / 4 : 0.75) + 4
-            this.gfx.lineStyle(2, 0xff6600, spriteList[j].alpha * 0.9)
-            this.gfx.drawCircle(sim.speckX[i], sim.speckY[i], chargeRadius)
-            this.gfx.lineStyle(0)
-          }
-        }
-
-        // Scout Cloak: dashed ring indicator (4 short arc segments) when cloaked
-        if (typeMeta?.typeId === 'scout' && typeMeta.cloakTimer && typeMeta.cloakTimer > 0) {
-          const cloakRadius = (stype ? stype.size / 4 : 0.75) + 5
-          const cx = sim.speckX[i]
-          const cy = sim.speckY[i]
-          // Draw 4 short arc segments approximated as short line segments
-          const segCount = 4
-          const arcLen = Math.PI / 6  // each arc segment spans ~30 degrees
-          for (let s = 0; s < segCount; s++) {
-            const startAngle = (s / segCount) * Math.PI * 2
-            const steps = 4
-            this.gfx.lineStyle(1, 0xaaddff, 0.7)
-            this.gfx.moveTo(cx + Math.cos(startAngle) * cloakRadius, cy + Math.sin(startAngle) * cloakRadius)
-            for (let k = 1; k <= steps; k++) {
-              const a = startAngle + (k / steps) * arcLen
-              this.gfx.lineTo(cx + Math.cos(a) * cloakRadius, cy + Math.sin(a) * cloakRadius)
-            }
             this.gfx.lineStyle(0)
           }
         }

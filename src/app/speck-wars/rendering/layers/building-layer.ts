@@ -138,10 +138,7 @@ export class BuildingLayer {
           this.gfx.beginFill(hpFrac > 0.5 ? 0x44ff88 : 0xff4444)
           this.gfx.drawRect(barX, barY, barW * hpFrac, barH)
           this.gfx.endFill()
-          // Attack range ring (faint)
-          this.gfx.lineStyle(1, color, 0.06)
-          this.gfx.drawCircle(building.x, building.y, 220)
-          this.gfx.lineStyle(0)
+          // Attack range ring suppressed — shown only during ghost placement preview
         }
         continue
       }

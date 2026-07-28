@@ -60,17 +60,17 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   }, [phase])
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
-    { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI, relaxed' },
+    { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI · player spawn bonus' },
     { key: 'medium', label: 'Medium', color: '#ffcc44', desc: 'standard challenge' },
-    { key: 'hard', label: 'Hard', color: '#ff4f7b', desc: 'fast AI, high pressure' },
-    { key: 'very-hard', label: 'Brutal', color: '#cc00ff', desc: 'overwhelming flood' },
+    { key: 'hard', label: 'Hard', color: '#ff4f7b', desc: 'fast AI · waves enabled' },
+    { key: 'very-hard', label: 'Brutal', color: '#cc00ff', desc: 'relentless flood · waves' },
   ]
 
   if (phase === 'menu') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, overflowY: 'auto', padding: '16px 0' }}>
         <h1 style={{ color: '#fff', fontSize: 48, margin: 0 }}>Speck Wars</h1>
-        <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base. Last base standing wins.</p>
+        <p style={{ color: '#aaa', margin: 0 }}>Destroy the enemy base — or hold all 3 outposts for 60 seconds.</p>
         {winStreak >= 2 && (
           <div style={{ color: '#ffd700', fontSize: 14, letterSpacing: 2, fontWeight: 'bold' }}>
             🔥 {winStreak} WIN STREAK
@@ -210,6 +210,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
           <button
             onClick={() => setFogEnabled(!fogEnabled)}
+            title="Fog of War: hides enemy specks and buildings outside your vision (specks 150px · base 300px · outposts 180px)"
             style={{
               padding: '4px 14px',
               fontSize: 12,
@@ -289,13 +290,15 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             <span>🖱 Click — rally specks</span>
             <span>Space — pause / ? — help</span>
             <span>Drag — box select specks</span>
-            <span>1/2/3 — spawn basic/heavy/scout</span>
-            <span>Q — surge (2× spawn 8s)</span>
-            <span>V — snap to battle</span>
+            <span>1/2/3 — spawn basic/heavy/dart</span>
+            <span style={{ gridColumn: 'span 2', color: 'rgba(255,255,255,0.2)' }}>↳ heavy beats basic · dart beats heavy · basic beats dart</span>
+            <span>Q — surge (2× spawn 8s · 45s CD)</span>
+            <span>V — snap to recent kills</span>
             <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
             <span>X — speed · E — all · Esc — clear</span>
             <span>Ctrl+4-9 save group · 4-9 recall</span>
-            <span>Minimap — left-click rally · right-click pan</span>
+            <span>Minimap — left-click to rally</span>
+            <span>Scroll — zoom · Shift+scroll — pan</span>
             <span>Arrow keys / W S — pan</span>
           </div>
         )}
@@ -322,34 +325,42 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         {(() => {
           const tips = isTouchDevice ? [
             'Capture outposts to boost your production.',
-            'Scouts auto-target outposts — tap the Scout spawn button (3rd) for fast flanking.',
+            'Dart specks auto-target outposts — tap the Dart button (3rd) for fast flanking.',
+            'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
-            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
             'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
             'Tap canvas to rally · long-press canvas to attack-move (aggressive advance).',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
-            'Heavy specks deal 2× damage but produce 2× slower.',
+            'Heavy specks deal 2× damage but cost 3 supply vs 1 for basic (cap: 120). Mix types wisely.',
             'Tap ⚔ FIGHT to snap the camera to where the fighting is happening.',
             'Tap ? in-game to see all touch controls.',
             'Tap ⬡ ALL to select all your specks, then tap canvas to rally them together.',
             'Long-press canvas then lift — specks fight enemies on the way (attack-move).',
             'Tap Hold in the unit panel to make selected specks defend a position.',
-            'Elite specks (6+ kills) get a white diamond ring and deal +30% damage.',
+            'Elite specks (6+ kills): +35% damage and deal AoE splash nearby. Legend (12+): +50% and larger splash.',
+            'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
+            'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
+            'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
           ] : [
             'Capture outposts to boost your production.',
-            'Scouts (3) auto-target outposts — fast but fragile.',
+            'Dart specks (3) auto-target outposts — fast but fragile.',
+            'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
-            'Fortify outposts by holding them 30s for a combat bonus.',
+            'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
             'Surge (Q) doubles production for 8s — use it before big pushes.',
             'Drag to box-select specks, then click anywhere to rally only your selection.',
             'Rally Cry: base below 25% HP activates 1.5× spawn automatically.',
-            'Heavy specks deal 2× damage but produce 2× slower.',
-            'V key snaps the camera to where fighting is happening.',
+            'Heavy specks deal 2× damage but produce 2× slower — and cost 3 supply vs 1 for basic (cap: 120). Mix types wisely.',
+            'V key snaps the camera to recent kill positions — find the heat of battle.',
             'Press ? in-game to see all hotkeys.',
             'Control groups: box-select specks, Ctrl+4 to save, press 4 to recall.',
-            'Hold A then right-click to issue an attack-move — specks fight enemies en route.',
+            'Hold A then left-click to issue an attack-move — specks fight enemies en route.',
             'H key makes selected specks hold position — great for defending a chokepoint.',
-            'Elite specks (6+ kills) get a white diamond ring and deal +30% damage.',
+            'Elite specks (6+ kills): +35% damage and deal AoE splash nearby. Legend (12+): +50% and larger splash.',
+            'Friendly outposts give a +35% speed boost to nearby specks — holding them accelerates your attacks.',
+            'A ◇ Hero auto-spawns from your base — 4× HP and 1.5× damage. Keep it alive; it gets stronger with kills.',
+            'Outposts regen 2 HP/s when not under attack — fall back, let them heal, then re-contest.',
           ]
           const tip = tips[Math.floor(Date.now() / 86400000) % tips.length]
           return (
@@ -437,11 +448,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               textTransform: 'uppercase',
             }}>
               {victoryType === 'surrender' ? '🏳 Surrendered'
+                : victoryType === 'domination' ? '⬡ by Domination'
                 : '💥 by Destruction'}
             </div>
             <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.35, color: '#fff' }}>
               {won
-                ? 'destroyed the enemy base'
+                ? victoryType === 'domination' ? 'held all outposts for 60 seconds' : 'destroyed the enemy base'
                 : victoryType === 'surrender'
                   ? 'you chose to give up'
                   : 'your base was destroyed'
@@ -450,8 +462,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
         {won && (
-          <div style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: stars === 3 ? '0 0 20px #ffd700' : 'none' }}>
+          <div title={stars === 3 ? '3 stars: base HP > 75%' : stars === 2 ? '2 stars: base HP > 50%' : '1 star: base HP ≤ 50%'} style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: stars === 3 ? '0 0 20px #ffd700' : 'none' }}>
             {'★'.repeat(stars)}{'☆'.repeat(3 - stars)}
+          </div>
+        )}
+        {won && stars < 3 && (
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'rgba(255,215,0,0.4)', marginTop: -6 }}>
+            {stars === 2 ? 'finish >75% HP for ★★★' : 'finish >50% HP for ★★'}
           </div>
         )}
         {won && isNewBest && (
@@ -582,8 +599,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
           } else if (!won && kills < 30) {
             tip = isTouchDevice
-              ? 'Tip: Scouts are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
-              : 'Tip: Scouts are fast and great for outpost rushes — press 3 to switch spawn type.'
+              ? 'Tip: Dart specks are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
+              : 'Tip: Dart specks are fast for outpost rushes — press 3 to switch spawn type.'
           } else if (!won && eff < 0.4) {
             tip = isTouchDevice
               ? 'Tip: Heavy specks deal 2× damage — switch to Heavy spawn during big fights.'
@@ -594,7 +611,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
           } else if (!won) {
             tip = isTouchDevice
-              ? 'Tip: Tap 🔧 SACR to sacrifice 10 specks and repair your base when HP is critical.'
+              ? 'Tip: Tap 🔧 HEAL to sacrifice 10 specks and repair your base when HP is critical.'
               : 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
           } else if (won && modifier === 'siege') {
             tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
