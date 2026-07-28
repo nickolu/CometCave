@@ -22,7 +22,6 @@ export class InputHandler {
   private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
   private onCycleSpeed?: () => void
   private onSelectAll?: () => void
-  private onSacrifice?: () => void
   public onSaveControlGroup?: (slot: number) => void
   public onRecallControlGroup?: (slot: number) => void
   private pendingModifier: 'none' | 'attack' = 'none'
@@ -32,7 +31,6 @@ export class InputHandler {
   private onStop?: () => void
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
-  public onBuildTurret?: () => void
   public onGuard?: () => void
   public onCycleStance?: () => void
   private heldKeys = new Set<string>()
@@ -88,7 +86,6 @@ export class InputHandler {
     onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
     onCycleSpeed?: () => void,
     onSelectAll?: () => void,
-    onSacrifice?: () => void,
     onSaveControlGroup?: (slot: number) => void,
     onRecallControlGroup?: (slot: number) => void,
     onStop?: () => void,
@@ -114,7 +111,6 @@ export class InputHandler {
     this.onSetSpawnType = onSetSpawnType
     this.onCycleSpeed = onCycleSpeed
     this.onSelectAll = onSelectAll
-    this.onSacrifice = onSacrifice
     this.onSaveControlGroup = onSaveControlGroup
     this.onRecallControlGroup = onRecallControlGroup
     this.onStop = onStop
@@ -571,8 +567,6 @@ export class InputHandler {
       }
     } else if (e.code === 'KeyS') {
       this.onStop?.()
-    } else if (e.code === 'KeyT') {
-      this.onBuildTurret?.()
     } else if (e.code === 'KeyN') {
       this.onAdvanceOutpost?.()
     } else if (e.code === 'KeyB') {
@@ -595,8 +589,6 @@ export class InputHandler {
       this.onCycleSpeed?.()
     } else if (e.code === 'KeyE') {
       this.onSelectAll?.()
-    } else if (e.code === 'KeyF') {
-      this.onSacrifice?.()
     } else if (['Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)) {
       const slot = parseInt(e.code.replace('Digit', ''))
       if (e.ctrlKey) {

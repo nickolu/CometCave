@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -550,14 +550,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {(surgesUsed > 0 || sacrificesUsed > 0) && (
+        {surgesUsed > 0 && (
           <div style={{ display: 'flex', gap: 20, color: 'rgba(255,255,255,0.4)', fontSize: 12, letterSpacing: 0.5 }}>
-            {surgesUsed > 0 && (
-              <span>⚡ {surgesUsed} surge{surgesUsed !== 1 ? 's' : ''}</span>
-            )}
-            {sacrificesUsed > 0 && (
-              <span>☯ {sacrificesUsed} sacrifice{sacrificesUsed !== 1 ? 's' : ''}</span>
-            )}
+            <span>⚡ {surgesUsed} surge{surgesUsed !== 1 ? 's' : ''}</span>
           </div>
         )}
 
@@ -609,10 +604,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             tip = isTouchDevice
               ? 'Tip: Tap ★ SURGE for 2× production 8s. Use it when you\'re behind!'
               : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
-          } else if (!won) {
-            tip = isTouchDevice
-              ? 'Tip: Tap 🔧 HEAL to sacrifice 10 specks and repair your base when HP is critical.'
-              : 'Tip: Press F to sacrifice 10 specks and repair your base when HP is critical.'
           } else if (won && modifier === 'siege') {
             tip = '⬡ Siege modifier won — outposts were twice as hard to capture. Nice patience!'
           }

@@ -825,10 +825,8 @@ export function HUD() {
                   ['⌂ HOME', 'Camera → your base'],
                   ['⚔ FIGHT', 'Camera → active battle'],
                   ['★ SURGE', '2× spawn rate for 8s'],
-                  ['🔧 HEAL', 'Sacrifice 10 specks → +15 HP base'],
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3) · Cmdr: 2× dmg'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
-                  ['◆ TURRET', 'Build turret (need 20+ selected)'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
                   ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
@@ -868,8 +866,7 @@ export function HUD() {
               <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
               <span>Q — surge (2× spawn 8s · 45s CD)</span><span>V — snap to recent kills</span>
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
-              <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
-              <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
+              <span>X — cycle speed (1×/2×/4×)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
@@ -1378,40 +1375,6 @@ export function HUD() {
                     {!isTouchDevice && <span style={{ fontSize: 7, color: '#888', letterSpacing: 0.5 }}>[{key}]</span>}
                   </button>
                 ))}
-                {/* Turret build button */}
-                {(() => {
-                  const selectedCount = hud?.selectedSpeckCount ?? 0
-                  const TURRET_COST = 20
-                  const canBuild = selectedCount >= TURRET_COST
-                  const barFill = Math.min(1, selectedCount / TURRET_COST)
-                  return (
-                    <button
-                      onClick={() => { if (canBuild) { (gameActions as { buildTurret?: () => void } | null)?.buildTurret?.(); navigator.vibrate?.(15) } }}
-                      title={canBuild ? 'Build Turret' : `Build Turret (${selectedCount}/${TURRET_COST})`}
-                      style={{
-                        width: 44, height: 44, borderRadius: 8,
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        gap: 1,
-                        background: canBuild ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${canBuild ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                        color: canBuild ? '#ffd700' : 'rgba(255,255,255,0.3)',
-                        fontSize: 14, cursor: canBuild ? 'pointer' : 'default',
-                        opacity: canBuild ? 1 : 0.55,
-                        pointerEvents: 'auto', flexShrink: 0, position: 'relative', overflow: 'hidden',
-                      }}
-                    >
-                      <span>◆</span>
-                      {!canBuild && (
-                        <div style={{
-                          position: 'absolute', bottom: 0, left: 0,
-                          height: 2, width: `${barFill * 100}%`,
-                          background: '#4af7c4', transition: 'width 200ms',
-                        }} />
-                      )}
-                      {!isTouchDevice && <span style={{ fontSize: 7, color: canBuild ? '#ffd700aa' : '#888', letterSpacing: 0.5 }}>BLD</span>}
-                    </button>
-                  )
-                })()}
                 {/* Touch-only utility buttons */}
                 {isTouchDevice && (
                   <>
@@ -1594,33 +1557,6 @@ export function HUD() {
                   : surgeCd > 0
                     ? `${isTouchDevice ? 'SURGE' : 'Q'} ${Math.ceil(surgeCd / 1000)}s`
                     : isTouchDevice ? '⚡ SURGE' : '★ Q'}
-              </button>
-            )
-          })()}
-          {(() => {
-            const cd = hud?.sacrificeCooldown ?? 0
-            const speckCount = hud?.players.player?.speckCount ?? 0
-            const baseHp = hud?.players.player?.buildingHp['building-player-base'] ?? 100
-            const ready = cd <= 0 && speckCount >= 10 && baseHp < 90
-            return (
-              <button
-                onClick={() => { if (ready) { navigator.vibrate?.(30); gameActions.sacrifice?.() } }}
-                title="[F] Sacrifice 10 specks → repair +15 HP base (20s cooldown)"
-                style={{
-                  padding: '8px 12px',
-                  fontSize: 11,
-                  cursor: ready ? 'pointer' : 'default',
-                  background: ready ? 'rgba(100,200,100,0.12)' : 'rgba(100,200,100,0.04)',
-                  border: ready ? '1px solid rgba(100,200,100,0.5)' : '1px solid rgba(100,200,100,0.15)',
-                  borderRadius: 20,
-                  color: ready ? '#64c864' : 'rgba(100,200,100,0.35)',
-                  letterSpacing: 1,
-                  minHeight: 44,
-                  fontFamily: 'monospace',
-                  opacity: ready ? 1 : 0.6,
-                }}
-              >
-                {cd > 0 ? `${isTouchDevice ? 'HEAL' : 'F'} ${Math.ceil(cd / 1000)}s` : isTouchDevice ? '🔧 HEAL' : '🔧 F'}
               </button>
             )
           })()}

@@ -37,7 +37,6 @@ function spawnMissile(sim: SimulationState, bx: number, by: number, ownerId: str
 export function updateTurrets(sim: SimulationState, dt: number) {
   for (const building of Object.values(sim.buildings)) {
     if (building.typeId !== 'turret') continue
-    if (building.underConstruction) continue
     if (building.ownerId === 'neutral') continue
 
     const btype = BUILDING_TYPES['turret']
