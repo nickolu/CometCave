@@ -3,7 +3,6 @@ export interface SpeckTypeDefinition {
   hp: number; damage: number; speed: number
   attackRange: number; attackCooldown: number
   size: number; productionTime: number
-  supplyCost: number  // supply slots consumed while alive
   abilities: string[]
   recipe?: { inputs: Array<{ typeId: string; count: number }>; location: string }
 }
@@ -14,7 +13,6 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     hp: 1, damage: 1, speed: 64,
     attackRange: 6, attackCooldown: 500,
     size: 3, productionTime: 800,
-    supplyCost: 1,
     abilities: [],
   },
   heavy: {
@@ -22,7 +20,6 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     hp: 5, damage: 2, speed: 48,
     attackRange: 8, attackCooldown: 700,
     size: 6, productionTime: 1800,
-    supplyCost: 3,
     abilities: [],
   },
   scout: {
@@ -30,7 +27,6 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     hp: 1, damage: 0.5, speed: 120,
     attackRange: 4, attackCooldown: 600,
     size: 2, productionTime: 500,
-    supplyCost: 0.5,
     abilities: [],
   },
   missile: {
@@ -38,7 +34,6 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     hp: 1, damage: 1, speed: 220,
     attackRange: 6, attackCooldown: 0,
     size: 2, productionTime: 0,
-    supplyCost: 0,
     abilities: ['die_on_impact'],
   },
   defender: {
@@ -46,7 +41,6 @@ export const SPECK_TYPES: Record<string, SpeckTypeDefinition> = {
     hp: 3, damage: 1.5, speed: 50,
     attackRange: 25, attackCooldown: 900,
     size: 5, productionTime: 0,
-    supplyCost: 1,
     abilities: [],
   },
 }
