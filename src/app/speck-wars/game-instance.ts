@@ -308,9 +308,6 @@ export class GameInstance {
       recallControlGroup: (slot: number) => {
         this.inputHandler.onRecallControlGroup?.(slot)
       },
-      researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
-        this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
-      },
       selectAll: () => {
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
       },
@@ -744,11 +741,6 @@ export class GameInstance {
         }
         if (event.type === 'CAMP_RESET' && event.previousOwner === 'player') {
           this.notify('◈ CAMP RESET — defenders respawned', '#ff9933', 2000)
-        }
-        if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
-          const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
-          this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)
-          store.pushKillFeedEntry({ icon: '⚗', label: labels[event.upgrade as keyof typeof labels], color: '#44aaff' })
         }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {

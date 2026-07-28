@@ -7,8 +7,7 @@ import { MAX_SPECKS, RALLY_CRY_HP_THRESHOLD, CREEP_CAMP_DEFENDER_COUNT, CREEP_CA
 function addSpeck(sim: SimulationState, meta: SpeckMeta, x: number, y: number, buildingId: string) {
   const baseHp = SPECK_TYPES[meta.typeId]?.hp ?? 1
   const upgradeHpBonus = (sim.players[meta.ownerId]?.upgradeLevel ?? 0) >= 2 ? 1 : 0
-  const carapaceBonus = (sim.players[meta.ownerId]?.outpostUpgrades?.carapace) ? 1 : 0
-  const hp = baseHp + upgradeHpBonus + carapaceBonus
+  const hp = baseHp + upgradeHpBonus
 
   let slot: number
   if (sim.freeSlots.length > 0) {

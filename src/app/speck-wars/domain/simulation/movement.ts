@@ -62,8 +62,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
     const stype = SPECK_TYPES[meta.typeId]
     if (!stype) continue
 
-    const afterburnersMult = (sim.players[meta.ownerId]?.outpostUpgrades?.afterburners) ? 1.15 : 1.0
-
     // Retreating: flee to nearest friendly building
     if (meta.state === 'retreating') {
       let nearestBuilding = null
@@ -89,8 +87,8 @@ export function moveSpecks(sim: SimulationState, dt: number) {
           const dist = Math.sqrt(nearestDist2)
           const dx = nearestBuilding.x - speckX[i]
           const dy = nearestBuilding.y - speckY[i]
-          speckVx[i] = (dx / dist) * stype.speed * afterburnersMult
-          speckVy[i] = (dy / dist) * stype.speed * afterburnersMult
+          speckVx[i] = (dx / dist) * stype.speed
+          speckVy[i] = (dy / dist) * stype.speed
           {
             const nx = Math.max(0, Math.min(WORLD_WIDTH, speckX[i] + speckVx[i] * dtSec))
             const ny = Math.max(0, Math.min(WORLD_HEIGHT, speckY[i] + speckVy[i] * dtSec))
@@ -286,11 +284,6 @@ export function moveSpecks(sim: SimulationState, dt: number) {
       }
     }
 
-    // Afterburners upgrade: global speed boost
-    if (afterburnersMult !== 1.0 && (ax !== 0 || ay !== 0)) {
-      ax *= afterburnersMult
-      ay *= afterburnersMult
-    }
 
     // Simple velocity (no mass — direct velocity override)
     speckVx[i] = ax
