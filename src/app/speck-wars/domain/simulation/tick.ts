@@ -7,8 +7,7 @@ import { resolveCombat, removeDeadSpecks } from './combat'
 import { checkVictory } from './victory'
 import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
-import { HUD_UPDATE_INTERVAL, CREEP_CAMP_ZONE_RADIUS, DOMINATION_TIME } from '../constants'
-import { updateConstruction } from './construction'
+import { HUD_UPDATE_INTERVAL, DOMINATION_TIME } from '../constants'
 import { updateTurrets } from './turret'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
@@ -146,47 +145,6 @@ function regenBuildingHp(sim: SimulationState, dt: number) {
   }
 }
 
-function updateCreepCamps(sim: SimulationState, dt: number) {
-  // Tick boost timers for all players
-  for (const player of Object.values(sim.players)) {
-    if (player.creepCampBoostMs > 0) {
-      player.creepCampBoostMs = Math.max(0, player.creepCampBoostMs - dt)
-    }
-  }
-
-  // Tick camp reset timers and handle reset
-  for (const building of Object.values(sim.buildings)) {
-    if (building.typeId !== 'creep_camp') continue
-    if (building.ownerId === 'neutral') continue
-    if ((building.campResetMs ?? 0) <= 0) continue
-    building.campResetMs = (building.campResetMs ?? 0) - dt
-    if (building.campResetMs <= 0) {
-      building.campResetMs = 0
-      sim.events.push({ type: 'CAMP_RESET', campId: building.id, previousOwner: building.ownerId })
-      building.ownerId = 'neutral'
-      building.hp = building.maxHp
-      building.captureProgress = 0
-      building.captureSide = undefined
-      spawnCampDefenders(sim, building.id)
-    }
-  }
-
-  // Leash defenders: pull back defenders that have strayed too far from their camp
-  const leashR2 = CREEP_CAMP_ZONE_RADIUS * CREEP_CAMP_ZONE_RADIUS
-  for (let i = 0; i < sim.speckCount; i++) {
-    const meta = sim.speckMeta[i]
-    if (!meta || meta.typeId !== 'defender') continue
-    if (meta.assignedRallyX === undefined || meta.assignedRallyY === undefined) continue
-    const dx = sim.speckX[i] - meta.assignedRallyX
-    const dy = sim.speckY[i] - meta.assignedRallyY
-    const dist2 = dx * dx + dy * dy
-    if (dist2 > leashR2 * 2.25) {  // > 1.5× leash radius
-      // Force the speck to return to camp
-      meta.state = 'moving'
-      meta.targetId = null
-    }
-  }
-}
 
 function consumeInputs(sim: SimulationState) {
   for (const event of sim.inputQueue) {
@@ -490,5 +448,5 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, creepCampBoostMs: sim.players['player']?.creepCampBoostMs ?? 0, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, dailyModifier: sim.dailyModifier, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding } })
 }

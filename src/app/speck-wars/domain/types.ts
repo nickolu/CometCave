@@ -114,8 +114,6 @@ export type SimEvent =
   | { type: 'VETERAN_FALLEN'; speckId: string; ownerId: string; kills: number; x: number; y: number }
   | { type: 'AI_LAST_STAND' }
   | { type: 'AI_SPAWN_SWITCH'; speckTypeId: 'basic' | 'heavy' | 'scout' }
-  | { type: 'CAMP_CAPTURED'; campId: string; newOwner: string }
-  | { type: 'CAMP_RESET'; campId: string; previousOwner: string }
 
 export interface HudData {
   players: Record<string, {
@@ -140,7 +138,6 @@ export interface HudData {
   waveNumber: number
   baseUnderThreat: boolean
   enemyAdvanceDetected: boolean
-  creepCampBoostMs: number     // ms of +25% spawn boost remaining (from captured creep camp)
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]

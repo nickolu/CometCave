@@ -207,14 +207,6 @@ export function HUD() {
           }}
         >ENEMY ADVANCING ↑</button>
       )}
-      {hud && (hud.creepCampBoostMs ?? 0) > 0 && phase === 'playing' && (
-        <div style={{
-          position: 'fixed', top: 108, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(255,200,50,0.85)', color: '#000', fontWeight: 700,
-          padding: '3px 12px', borderRadius: 6, fontSize: 11, letterSpacing: 1,
-          zIndex: 106, pointerEvents: 'none',
-        }}>🏕 CAMP BOOST +25% SPAWN — {Math.ceil((hud.creepCampBoostMs ?? 0) / 1000)}s</div>
-      )}
       {isDanger && (
         <>
           <style>{`
@@ -867,7 +859,7 @@ export function HUD() {
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>? — this help</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
-              <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
+              <span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Hold outpost 30s → FORTIFIED: +25% DMG to specks within 200px</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
