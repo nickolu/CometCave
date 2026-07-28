@@ -54,7 +54,6 @@ export class GameInstance {
   private dominationPlayerWarnedAt15s = false   // true once "15s left" player domination win warning fires
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
-  private fortifyResearchNotified = new Set<string>()  // outpost IDs for which research-ready was notified
   private controlGroups = new Map<number, string[]>()
   private lastAdvanceMs = 0
   private lastAdvanceIdx = 0
@@ -308,9 +307,6 @@ export class GameInstance {
       },
       recallControlGroup: (slot: number) => {
         this.inputHandler.onRecallControlGroup?.(slot)
-      },
-      researchUpgrade: (buildingId: string, upgrade: 'carapace' | 'blades' | 'afterburners') => {
-        this.sim.inputQueue.push({ type: 'RESEARCH_UPGRADE', ownerId: 'player', buildingId, upgrade })
       },
       selectAll: () => {
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1: -1, y1: -1, x2: 3001, y2: 3001 })
@@ -619,22 +615,6 @@ export class GameInstance {
           }
           this.prevWaveInProgress = waveInProg
 
-          // Research available notification: outpost held 20s+ unlocks upgrade research
-          const RESEARCH_FORTIFY_THRESHOLD = 20000 / 30000  // 0.667 — matches tick.ts gate
-          for (const [outpostId, fortLevel] of Object.entries(event.data.outpostFortify ?? {})) {
-            if (!(outpostId in playerBuildingHp)) {
-              // Lost the outpost — reset so we can re-notify if recaptured
-              this.fortifyResearchNotified.delete(outpostId)
-              continue
-            }
-            if (fortLevel >= RESEARCH_FORTIFY_THRESHOLD && !this.fortifyResearchNotified.has(outpostId)) {
-              this.fortifyResearchNotified.add(outpostId)
-              const name = outpostId.replace('outpost-', '').toUpperCase()
-              const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
-              this.notify(`⚗ ${name} OUTPOST — research available! (${isTouchDevice ? 'tap outpost' : 'click outpost'} to research)`, '#44aaff', 3500)
-            }
-          }
-
           // Surge cooldown ready notification
           const surgeCd = event.data.surgeCooldown ?? 0
           const surgeActive = (event.data.surgeDuration ?? 0) > 0
@@ -761,11 +741,6 @@ export class GameInstance {
         }
         if (event.type === 'CAMP_RESET' && event.previousOwner === 'player') {
           this.notify('◈ CAMP RESET — defenders respawned', '#ff9933', 2000)
-        }
-        if (event.type === 'OUTPOST_UPGRADE_RESEARCHED' && event.ownerId === 'player') {
-          const labels = { carapace: 'CARAPACE — +1 HP', blades: 'BLADES — +15% DMG', afterburners: 'AFTERBURNERS — +15% SPD' }
-          this.notify(`⚗ ${labels[event.upgrade as keyof typeof labels]}`, '#44aaff', 3000)
-          store.pushKillFeedEntry({ icon: '⚗', label: labels[event.upgrade as keyof typeof labels], color: '#44aaff' })
         }
         if (event.type === 'OUTPOST_CAPTURED') {
           if (event.newOwner === 'player') {

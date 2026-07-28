@@ -837,7 +837,6 @@ export function HUD() {
                   ['★ Y', 'Battle Roar (lvl2) / Last Stand (lvl3) · Cmdr: 2× dmg'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
                   ['◆ TURRET', 'Build turret (need 20+ selected)'],
-                  ['Tap outpost (20s held)', 'RESEARCH: Carapace +1HP / Blades +15%DMG / Afterburners +15%SPD'],
                   ['Z', 'Cycle stance (Aggressive / Defensive / Hold)'],
                   ['1× / 2× / 4×', 'Game speed'],
                   ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
@@ -879,7 +878,6 @@ export function HUD() {
               <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
               <span>X — cycle speed (1×/2×/4×)</span><span>F — sacrifice 10 specks → +15 HP</span>
               <span>T — build turret (costs 20 selected specks)</span><span>? — this help</span>
-              <span style={{ color: 'rgba(68,170,255,0.8)' }}>Click owned outpost → RESEARCH after 20s: Carapace +1 HP / Blades +15% DMG / Afterburners +15% SPD</span><span style={{ color: 'rgba(68,170,255,0.5)' }}>global · 1 per outpost</span>
               <span>Z — cycle stance (Aggressive/Defensive/Hold)</span><span>G — guard: rally to nearest friendly outpost</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>2 creep camps on each map — contest to earn +25% spawn for 30s</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>50 kills: BLOODED +10% spawn · 150: HARDENED +1 HP · 300: VETERAN ARMY +15% dmg</span>
               <span style={{ color: 'rgba(160,220,255,0.7)' }}>Friendly outposts give +35% speed to specks within 160px</span><span style={{ color: 'rgba(160,220,255,0.7)' }}>Base below 25% HP → Rally Cry: +1.5× spawn (auto)</span>
@@ -1328,52 +1326,6 @@ export function HUD() {
                 <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.5 }}>
                   {isTouchDevice ? 'tap canvas to set rally' : 'left-click canvas to set rally'}
                 </div>
-                {/* Research panel */}
-                {b.typeId === 'outpost' && b.ownerId === 'player' && (b.fortifyDuration ?? 0) >= 20000 && (() => {
-                  if (b.researchedUpgrade) {
-                    const researchDescs: Record<string, string> = { carapace: '+1 HP', blades: '+15% DMG', afterburners: '+15% SPD' }
-                    return (
-                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, letterSpacing: 1, color: '#44aaff' }}>
-                        <span>⚗</span><span>{b.researchedUpgrade.toUpperCase()} — all units {researchDescs[b.researchedUpgrade] ?? 'buffed'}</span>
-                      </div>
-                    )
-                  }
-                  const globalUpgrades = hud.players.player?.outpostUpgrades ?? { carapace: false, blades: false, afterburners: false }
-                  const upgrades: Array<{ id: 'carapace' | 'blades' | 'afterburners'; label: string; desc: string; color: string }> = [
-                    { id: 'carapace', label: 'CARAPACE', desc: '+1 HP', color: '#44ff88' },
-                    { id: 'blades', label: 'BLADES', desc: '+15% DMG', color: '#ff4f7b' },
-                    { id: 'afterburners', label: 'AFTRBRN', desc: '+15% SPD', color: '#44aaff' },
-                  ]
-                  return (
-                    <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                        <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.45)' }}>⚗ RESEARCH</div>
-                        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>global · pick 1</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {upgrades.map(u => (
-                          <button
-                            key={u.id}
-                            onClick={() => gameActions?.researchUpgrade?.(b.id, u.id)}
-                            disabled={globalUpgrades[u.id]}
-                            title={globalUpgrades[u.id] ? `${u.label} already active globally` : `${u.label}: ${u.desc} for all units`}
-                            style={{
-                              flex: 1, padding: '4px 4px', fontSize: 9, letterSpacing: 0.5,
-                              background: 'rgba(0,0,0,0.5)', border: `1px solid ${u.color}44`,
-                              color: u.color, borderRadius: 4,
-                              fontFamily: 'monospace', minHeight: 40,
-                              opacity: globalUpgrades[u.id] ? 0.35 : 1,
-                              cursor: globalUpgrades[u.id] ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            <div>{u.label}</div>
-                            <div style={{ opacity: 0.7, fontSize: 8 }}>{u.desc}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })()}
               </div>
             )
           })()}
