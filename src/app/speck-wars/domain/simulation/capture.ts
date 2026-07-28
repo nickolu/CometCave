@@ -32,15 +32,14 @@ export function updateCapture(sim: SimulationState, dt: number) {
           building.captureSide && building.captureSide !== topOwner
         if (hasEnemyProgress) {
           const captureTimeMs = sim.dailyModifier === 'siege' ? CAPTURE_TIME * 2 : CAPTURE_TIME
-          const reverseSpeed = Math.min(1.5, (topCount - secondCount) / 5)
-          building.captureProgress = Math.max(0, (building.captureProgress ?? 0) - (dt / captureTimeMs) * reverseSpeed * 0.5)
+          building.captureProgress = Math.max(0, (building.captureProgress ?? 0) - (dt / captureTimeMs) * 0.5)
           if ((building.captureProgress ?? 0) <= 0) building.captureSide = null
         }
       }
       continue  // never allow capture completion when contested
     }
 
-    const [dominantOwner, dominantCount] = sides[0]
+    const [dominantOwner] = sides[0]
     if (dominantOwner === building.ownerId) continue  // already owned by them
 
     // Start or continue capture
@@ -49,10 +48,9 @@ export function updateCapture(sim: SimulationState, dt: number) {
       building.captureProgress = 0
     }
 
-    // Scale capture speed with speck count: 5 specks = 1×, capped at 3× (15 specks)
+    // Flat timer: any presence captures at constant rate
     const captureTimeMs = sim.dailyModifier === 'siege' ? CAPTURE_TIME * 2 : CAPTURE_TIME
-    const captureSpeed = Math.min(3, dominantCount / 5)
-    building.captureProgress = (building.captureProgress ?? 0) + (dt / captureTimeMs) * captureSpeed
+    building.captureProgress = (building.captureProgress ?? 0) + (dt / captureTimeMs)
     if ((building.captureProgress ?? 0) >= 1) {
       const previousOwner = building.ownerId
       building.ownerId = dominantOwner
