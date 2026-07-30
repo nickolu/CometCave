@@ -501,7 +501,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           {!won && levelConfig && (
             <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)', textAlign: 'center', lineHeight: 1.8 }}>
               <div>next time: win at...</div>
-              <div>★ any hp &nbsp;·&nbsp; ★★ {Math.round(levelConfig.starThresholds.two * 100)}%+ &nbsp;·&nbsp; ★★★ {Math.round(levelConfig.starThresholds.three * 100)}%+</div>
+              <div>
+                <span aria-hidden="true">★</span><span className="sr-only">1 star</span>{' any hp \u00a0·\u00a0 '}
+                <span aria-hidden="true">★★</span><span className="sr-only">2 stars</span>{` ${Math.round(levelConfig.starThresholds.two * 100)}%+ \u00a0·\u00a0 `}
+                <span aria-hidden="true">★★★</span><span className="sr-only">3 stars</span>{` ${Math.round(levelConfig.starThresholds.three * 100)}%+`}
+              </div>
             </div>
           )}
           {won && (
