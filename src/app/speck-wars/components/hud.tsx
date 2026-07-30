@@ -664,6 +664,7 @@ export function HUD() {
         </button>
         <button
           onClick={cycleSpeed}
+          aria-label={`Game speed ${speed}× — click to cycle`}
           style={{
             pointerEvents: 'auto',
             padding: '8px 14px',
