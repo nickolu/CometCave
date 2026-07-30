@@ -1376,6 +1376,7 @@ export function HUD() {
                     key={label}
                     onClick={() => { navigator.vibrate?.(8); action() }}
                     title={`${label} [${key}]`}
+                    aria-label={`${label} [${key}]`}
                     style={{
                       width: 44, height: 44, borderRadius: 8,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -1396,6 +1397,7 @@ export function HUD() {
                     <button
                       onClick={() => { gameActions?.clearSelection?.(); navigator.vibrate?.(8) }}
                       title="Clear selection"
+                      aria-label="Clear selection"
                       style={{
                         width: 44, height: 44, borderRadius: 8,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1412,6 +1414,8 @@ export function HUD() {
                         if (next) { navigator.vibrate?.([10, 20, 10]); gameActions?.activateSelectMode?.() }
                       }}
                       title="Drag-select"
+                      aria-label="Drag-select mode"
+                      aria-pressed={touchSelectActive}
                       style={{
                         width: 44, height: 44, borderRadius: 8,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
