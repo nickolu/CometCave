@@ -148,6 +148,7 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     winnerId: null,
     victoryType: null,
     hud: null,
+    countdown: null,
     elapsedMs: 0,
     speed: 1 as 1 | 2 | 4,
     notification: null,
