@@ -464,6 +464,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               {'★'.repeat(displayStars)}{'☆'.repeat(3 - displayStars)}
             </div>
           )}
+          {won && levelConfig && displayStars < 3 && (
+            <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', marginTop: 2, textAlign: 'center' }}>
+              {displayStars === 2
+                ? `for ★★★: survive at ${Math.round(levelConfig.starThresholds.three * 100)}%+ hp`
+                : `for ★★: ${Math.round(levelConfig.starThresholds.two * 100)}%+ hp · for ★★★: ${Math.round(levelConfig.starThresholds.three * 100)}%+ hp`
+              }
+            </div>
+          )}
         </div>
 
         {/* Achievement chips */}
