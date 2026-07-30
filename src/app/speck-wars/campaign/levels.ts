@@ -145,6 +145,25 @@ export function saveLevelStars(levelId: number, stars: number): void {
   } catch {}
 }
 
+export function getLevelBestTime(levelId: number): number | null {
+  try {
+    const raw = localStorage.getItem(`speckwars-level-${levelId}-time`)
+    const n = raw ? parseInt(raw, 10) : NaN
+    return isNaN(n) ? null : n
+  } catch { return null }
+}
+
+export function saveLevelBestTime(levelId: number, ms: number): boolean {
+  try {
+    const prev = getLevelBestTime(levelId)
+    if (prev === null || ms < prev) {
+      localStorage.setItem(`speckwars-level-${levelId}-time`, String(ms))
+      return true
+    }
+    return false
+  } catch { return false }
+}
+
 // Level 1 is always unlocked. Level N requires at least 1 star on level N-1.
 export function isLevelUnlocked(levelId: number): boolean {
   if (levelId <= 1) return true

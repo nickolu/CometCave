@@ -7,7 +7,7 @@ import { getDailyInfo } from '../lib/daily-modifier'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
-import { LEVELS, saveLevelStars } from '../campaign/levels'
+import { LEVELS, saveLevelStars, getLevelBestTime, saveLevelBestTime } from '../campaign/levels'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, hud, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
@@ -81,7 +81,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         : baseHpFrac >= levelCfg.starThresholds.two ? 2 : 1)
       : 0
     saveLevelStars(campaignLevel, starsEarned)
-  }, [phase, campaignLevel, winnerId, hud])
+    if (won) saveLevelBestTime(campaignLevel, elapsedMs)
+  }, [phase, campaignLevel, winnerId, hud, elapsedMs])
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI · player spawn bonus' },
@@ -522,6 +523,18 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               </>
             )}
           </div>
+          {levelConfig && (() => {
+            const bestMs = getLevelBestTime(campaignLevel!)
+            if (!bestMs) return null
+            const bSec = Math.floor(bestMs / 1000)
+            const bMM = String(Math.floor(bSec / 60)).padStart(2, '0')
+            const bSS = String(bSec % 60).padStart(2, '0')
+            return (
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: 1 }}>
+                level best: {bMM}:{bSS}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Tier 3: Primary actions */}
