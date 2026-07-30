@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
-import { LEVELS } from '../campaign/levels'
+import { LEVELS, getLevelBestTime } from '../campaign/levels'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
 function colorHex(n: number) {
@@ -618,7 +618,7 @@ export function HUD() {
         <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatTime(elapsedMs)}
           {(() => {
-            const pb = getBestTime(difficulty)
+            const pb = campaignLevel !== null ? getLevelBestTime(campaignLevel) : getBestTime(difficulty)
             if (!pb) return null
             const ahead = pb - elapsedMs
             return (
