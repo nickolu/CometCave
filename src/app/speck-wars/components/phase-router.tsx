@@ -541,8 +541,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               </span>
             )}
             {starImprovedFrom !== null && levelConfig && (
-              <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.5)', padding: '3px 10px', borderRadius: 20 }}>
-                {'★'.repeat(starImprovedFrom)}{'☆'.repeat(3 - starImprovedFrom)} → {'★'.repeat(displayStars)}
+              <span
+                aria-label={`Star rating improved: ${starImprovedFrom} to ${displayStars} stars`}
+                style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.5)', padding: '3px 10px', borderRadius: 20 }}
+              >
+                <span aria-hidden="true">{'★'.repeat(starImprovedFrom)}{'☆'.repeat(3 - starImprovedFrom)} → {'★'.repeat(displayStars)}</span>
               </span>
             )}
           </div>
