@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useSpeckWarsStore } from './store'
 import { LEVELS, getLevelStars, getLevelBestTime, isLevelUnlocked } from './campaign/levels'
 
@@ -12,15 +12,14 @@ const DIFF_LABELS: Record<string, string> = { easy: 'Easy', medium: 'Medium', ha
 export default function SpeckWarsCampaignPage() {
   const router = useRouter()
   const { setCampaignLevel, resetGame } = useSpeckWarsStore()
-  const [stars, setStars] = useState<Record<number, number>>({})
-  const [copied, setCopied] = useState(false)
-  const [hoveredLevel, setHoveredLevel] = useState<number | null>(null)
-
-  useEffect(() => {
+  const [stars, setStars] = useState<Record<number, number>>(() => {
+    if (typeof localStorage === 'undefined') return {}
     const s: Record<number, number> = {}
     for (const l of LEVELS) s[l.id] = getLevelStars(l.id)
-    setStars(s)
-  }, [])
+    return s
+  })
+  const [copied, setCopied] = useState(false)
+  const [hoveredLevel, setHoveredLevel] = useState<number | null>(null)
 
   const handlePlay = (levelId: number) => {
     resetGame()
