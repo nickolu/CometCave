@@ -144,6 +144,14 @@ export function HUD() {
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
       touchAction: 'manipulation',
     }}>
+      {/* Visually-hidden live region so screen readers announce game notifications */}
+      <div
+        aria-live="assertive"
+        aria-atomic="true"
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
+      >
+        {notification?.message ?? ''}
+      </div>
       <style>{`
         @keyframes pulse-red {
           from { opacity: 0.5; }
@@ -1046,6 +1054,7 @@ export function HUD() {
           `}</style>
           <span
             key={notification.message + notification.color}
+            aria-hidden="true"
             style={{
               color: notification.color,
               fontSize: isTouchDevice ? 15 : 13,
