@@ -1,4 +1,4 @@
-import type { Difficulty } from '../store'
+import type { Difficulty, MapPreset } from '../store'
 
 export interface LevelConfig {
   id: number
@@ -7,6 +7,7 @@ export interface LevelConfig {
   difficulty: Difficulty
   seed: number            // fixed seed for consistent layout
   outpostCount: number    // 0 = no outposts
+  mapPreset?: MapPreset   // terrain preset; defaults to 'open' if omitted
   preSpawn: {
     player: number        // basic units pre-spawned for player
     ai: number            // basic units pre-spawned for AI
@@ -25,8 +26,108 @@ export const LEVELS: LevelConfig[] = [
     difficulty: 'easy',
     seed: 1001,
     outpostCount: 0,
+    mapPreset: 'open',
     preSpawn: { player: 15, ai: 5 },
     starThresholds: { three: 0.75, two: 0.40 },
+  },
+  {
+    id: 2,
+    name: 'Middle Ground',
+    flavor: 'One outpost between you. Whoever holds it wins.',
+    difficulty: 'easy',
+    seed: 1002,
+    outpostCount: 1,
+    mapPreset: 'open',
+    preSpawn: { player: 12, ai: 5 },
+    starThresholds: { three: 0.70, two: 0.35 },
+  },
+  {
+    id: 3,
+    name: 'The Chokepoint',
+    flavor: 'One narrow pass. Patience wins the canyon.',
+    difficulty: 'medium',
+    seed: 1003,
+    outpostCount: 0,
+    mapPreset: 'canyon',
+    preSpawn: { player: 10, ai: 10 },
+    starThresholds: { three: 0.65, two: 0.30 },
+  },
+  {
+    id: 4,
+    name: 'Forward Command',
+    flavor: 'Push your rally past the midline. Make them play your game.',
+    difficulty: 'medium',
+    seed: 1004,
+    outpostCount: 1,
+    mapPreset: 'pillars',
+    preSpawn: { player: 8, ai: 8 },
+    starThresholds: { three: 0.60, two: 0.28 },
+  },
+  {
+    id: 5,
+    name: 'Two Fronts',
+    flavor: 'Two outposts. One army. Choose which fights are worth having.',
+    difficulty: 'medium',
+    seed: 1005,
+    outpostCount: 2,
+    mapPreset: 'open',
+    preSpawn: { player: 6, ai: 6 },
+    starThresholds: { three: 0.60, two: 0.25 },
+  },
+  {
+    id: 6,
+    name: 'The Crossing',
+    flavor: 'One gap in the river wall. Control the crossing, control the game.',
+    difficulty: 'hard',
+    seed: 1006,
+    outpostCount: 0,
+    mapPreset: 'river',
+    preSpawn: { player: 8, ai: 8 },
+    starThresholds: { three: 0.55, two: 0.25 },
+  },
+  {
+    id: 7,
+    name: 'Surge',
+    flavor: 'They outpace you. Wait for the right moment — then burst.',
+    difficulty: 'hard',
+    seed: 1007,
+    outpostCount: 1,
+    mapPreset: 'walls',
+    preSpawn: { player: 5, ai: 10 },
+    starThresholds: { three: 0.55, two: 0.22 },
+  },
+  {
+    id: 8,
+    name: 'Full Board',
+    flavor: 'Three prizes. The board is full. Everything is contested.',
+    difficulty: 'hard',
+    seed: 1008,
+    outpostCount: 3,
+    mapPreset: 'walls',
+    preSpawn: { player: 5, ai: 5 },
+    starThresholds: { three: 0.50, two: 0.20 },
+  },
+  {
+    id: 9,
+    name: 'Outnumbered',
+    flavor: 'They start with more. Work smarter, not harder.',
+    difficulty: 'hard',
+    seed: 1009,
+    outpostCount: 3,
+    mapPreset: 'pillars',
+    preSpawn: { player: 3, ai: 18 },
+    starThresholds: { three: 0.45, two: 0.18 },
+  },
+  {
+    id: 10,
+    name: 'Endgame',
+    flavor: 'No favors. No head start. Just you against the apex threat.',
+    difficulty: 'very-hard',
+    seed: 1010,
+    outpostCount: 3,
+    mapPreset: 'random',
+    preSpawn: { player: 0, ai: 0 },
+    starThresholds: { three: 0.40, two: 0.15 },
   },
 ]
 

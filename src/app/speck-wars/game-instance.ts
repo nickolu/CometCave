@@ -78,7 +78,7 @@ export class GameInstance {
       const levelConfig = LEVELS.find(l => l.id === campaignLevel)
       if (levelConfig) {
         difficulty = levelConfig.difficulty
-        sim = createSim(levelConfig.seed, levelConfig.difficulty, 'open', levelConfig.outpostCount)
+        sim = createSim(levelConfig.seed, levelConfig.difficulty, levelConfig.mapPreset ?? 'open', levelConfig.outpostCount)
         preSpawnUnits(sim, 'player', levelConfig.preSpawn.player)
         preSpawnUnits(sim, 'ai', levelConfig.preSpawn.ai)
       } else {
