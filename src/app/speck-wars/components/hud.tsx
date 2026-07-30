@@ -349,6 +349,9 @@ export function HUD() {
             )}
             <button
               onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(inProgress ? [20, 30, 20] : 15) }}
+              aria-label={inProgress
+                ? `Wave ${hud.waveNumber > 0 ? hud.waveNumber : ''} incoming — click to snap to base`.trim()
+                : `Wave in ${Math.ceil((hud.waveCountdown ?? 0) / 1000)} seconds — click to prepare`}
               style={{
                 position: 'absolute', top: isTouchDevice ? 175 : 240, right: 16,
                 padding: isTouchDevice ? '8px 12px' : '4px 10px',
