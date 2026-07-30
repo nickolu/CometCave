@@ -2,12 +2,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSpeckWarsStore } from '../store'
-import { getBestTime, getWinStreak, hasWonToday, getLifetimeStats } from '../lib/personal-best'
+import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
 import { getDailyInfo } from '../lib/daily-modifier'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
-import { LEVELS, getLevelStars, saveLevelStars } from '../campaign/levels'
+import { LEVELS, saveLevelStars } from '../campaign/levels'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, hud, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
