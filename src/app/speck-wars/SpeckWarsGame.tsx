@@ -30,6 +30,7 @@ function usePortraitMode() {
 function PortraitNudge() {
   const [dismissed, setDismissed] = useState(false)
   const isPortrait = usePortraitMode()
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   // Auto-show again if user rotates back to portrait after dismissing
   const wasDismissedInPortrait = useRef(false)
@@ -55,10 +56,10 @@ function PortraitNudge() {
         pointerEvents: 'auto',
       }}
     >
-      {/* Rotate icon — CSS-animated */}
+      {/* Rotate icon — CSS-animated, disabled under prefers-reduced-motion */}
       <div style={{
         fontSize: 64,
-        animation: 'speckRotateHint 2s ease-in-out infinite',
+        animation: prefersReducedMotion ? 'none' : 'speckRotateHint 2s ease-in-out infinite',
       }}>
         📱
       </div>
