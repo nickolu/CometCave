@@ -143,7 +143,9 @@ export default function SpeckWarsCampaignPage() {
               onMouseEnter={() => setHoveredLevel(levelNum)}
               onMouseLeave={() => setHoveredLevel(null)}
               title={level && unlocked ? `${level.name} — ${level.flavor}` : undefined}
-              aria-label={level ? (unlocked ? `Play level ${levelNum}: ${level.name}` : `Level ${levelNum} locked — beat level ${levelNum - 1} first`) : `Level ${levelNum}`}
+              aria-label={level ? (unlocked
+                ? `Play level ${levelNum}: ${level.name} — ${DIFF_LABELS[level.difficulty]}${level.outpostCount > 0 ? ` — ${level.outpostCount} outpost${level.outpostCount > 1 ? 's' : ''}` : ''}${levelStars > 0 ? ` — ${levelStars} of 3 stars` : ''}`
+                : `Level ${levelNum} locked — beat level ${levelNum - 1} first`) : `Level ${levelNum}`}
               style={{
                 width: 120, height: 140,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
