@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
+import { LEVELS } from '../campaign/levels'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
 function colorHex(n: number) {
@@ -27,6 +28,7 @@ export function HUD() {
   const [showPortraitHint, setShowPortraitHint] = useState(true)
   const [minimapExpanded, setMinimapExpanded] = useState(false)
   const [buildingPanelExpanded, setBuildingPanelExpanded] = useState(false)
+  const [showLevelIntro, setShowLevelIntro] = useState(false)
   const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
   const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
   const tapRippleKeyRef = useRef(0)
@@ -96,11 +98,23 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
+  const campaignLevel = useSpeckWarsStore(s => s.campaignLevel)
 
   // Auto-collapse building drawer when building is deselected
   useEffect(() => {
     if (!hud?.selectedBuilding) setBuildingPanelExpanded(false)
   }, [hud?.selectedBuilding])
+
+  // Show level intro when a campaign level starts playing
+  useEffect(() => {
+    if (phase === 'playing' && campaignLevel !== null) {
+      setShowLevelIntro(true)
+      const t = setTimeout(() => setShowLevelIntro(false), 4000)
+      return () => clearTimeout(t)
+    } else {
+      setShowLevelIntro(false)
+    }
+  }, [phase, campaignLevel])
 
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
@@ -918,6 +932,36 @@ export function HUD() {
               })}
             </div>
           </>
+        )
+      })()}
+
+      {/* Campaign level intro overlay — shows flavor text for ~4s at level start */}
+      {showLevelIntro && campaignLevel !== null && (() => {
+        const lvl = LEVELS.find(l => l.id === campaignLevel)
+        if (!lvl) return null
+        return (
+          <div
+            onClick={() => setShowLevelIntro(false)}
+            style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 10, pointerEvents: 'auto', zIndex: 80,
+              background: 'rgba(8,8,16,0.72)',
+            }}
+          >
+            <div style={{ fontSize: 10, letterSpacing: 4, color: 'rgba(0,255,194,0.5)', textTransform: 'uppercase' }}>
+              Level {String(campaignLevel).padStart(2, '0')}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: 2, textAlign: 'center', maxWidth: 280 }}>
+              {lvl.name}
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.5, textAlign: 'center', maxWidth: 260, lineHeight: 1.6, fontStyle: 'italic' }}>
+              {lvl.flavor}
+            </div>
+            <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>
+              TAP TO SKIP
+            </div>
+          </div>
         )
       })()}
 
