@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
+import { LEVELS } from '../campaign/levels'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
 function colorHex(n: number) {
@@ -96,6 +97,7 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
+  const campaignLevel = useSpeckWarsStore(s => s.campaignLevel)
 
   // Auto-collapse building drawer when building is deselected
   useEffect(() => {
@@ -571,6 +573,20 @@ export function HUD() {
         display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6,
         flexWrap: 'wrap', padding: '0 8px',
       }}>
+        {campaignLevel !== null && (() => {
+          const lvl = LEVELS.find(l => l.id === campaignLevel)
+          if (!lvl) return null
+          return (
+            <span style={{
+              fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase',
+              color: 'rgba(0,255,194,0.5)',
+              border: '1px solid rgba(0,255,194,0.2)',
+              borderRadius: 3, padding: '1px 6px',
+            }}>
+              {String(campaignLevel).padStart(2, '0')} · {lvl.name}
+            </span>
+          )
+        })()}
         <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatTime(elapsedMs)}
           {(() => {
