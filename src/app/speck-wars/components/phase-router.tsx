@@ -459,6 +459,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               LEVEL {campaignLevel} · {levelConfig.name.toUpperCase()}
             </div>
           )}
+          {!won && levelConfig && (
+            <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)', textAlign: 'center', lineHeight: 1.8 }}>
+              <div>next time: win at...</div>
+              <div>★ any hp &nbsp;·&nbsp; ★★ {Math.round(levelConfig.starThresholds.two * 100)}%+ &nbsp;·&nbsp; ★★★ {Math.round(levelConfig.starThresholds.three * 100)}%+</div>
+            </div>
+          )}
           {won && (
             <div style={{ fontSize: 44, letterSpacing: 6, color: '#ffd700', textShadow: displayStars === 3 ? '0 0 28px #ffd700' : 'none', marginTop: 4 }}>
               {'★'.repeat(displayStars)}{'☆'.repeat(3 - displayStars)}
