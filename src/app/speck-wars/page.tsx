@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { useSpeckWarsStore } from './store'
 import { LEVELS, getLevelStars } from './campaign/levels'
 
-// Show 8 level slots total (1 real + 7 locked placeholders)
-const TOTAL_SLOTS = 8
+// Show 10 level slots total
+const TOTAL_SLOTS = 10
 
 export default function SpeckWarsCampaignPage() {
   const router = useRouter()
