@@ -120,6 +120,14 @@ export function HUD() {
     }
   }, [phase, campaignLevel])
 
+  // Allow keyboard dismiss of level intro (desktop players expect any key to skip)
+  useEffect(() => {
+    if (!showLevelIntro) return
+    const onKey = () => setShowLevelIntro(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showLevelIntro])
+
   const BASE_MAX_HP = 100
   const playerBaseHp = hud?.players.player?.buildingHp['building-player-base']
   const hpFrac = playerBaseHp !== undefined ? playerBaseHp / BASE_MAX_HP : 1
@@ -990,7 +998,7 @@ export function HUD() {
               {lvl.flavor}
             </div>
             <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>
-              TAP TO SKIP
+              {isTouchDevice ? 'TAP TO SKIP' : 'CLICK OR PRESS ANY KEY TO SKIP'}
             </div>
           </div>
         )
