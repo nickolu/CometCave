@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
 import { getDailyInfo } from '../lib/daily-modifier'
@@ -7,15 +8,24 @@ import { DAILY_MODIFIER_LABELS } from '../domain/constants'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
+import { LEVELS, getLevelStars, saveLevelStars } from '../campaign/levels'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, sacrificesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const { user } = useAuth()
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+  const router = useRouter()
+
+  // Auto-start when launched from campaign
+  useEffect(() => {
+    if (phase === 'menu' && campaignLevel !== null) {
+      setPhase('playing')
+    }
+  }, [phase, campaignLevel, setPhase])
 
   useEffect(() => {
     if (phase === 'menu') {
@@ -58,6 +68,21 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       navigator.vibrate?.([200, 60, 80])  // heavy thud then short pulse: loss
     }
   }, [phase])
+
+  // Save campaign stars when victory/defeat reached
+  useEffect(() => {
+    if ((phase !== 'victory' && phase !== 'defeat') || campaignLevel === null) return
+    const won = winnerId === 'player'
+    const playerBaseHp = hud?.players?.player?.buildingHp?.['building-player-base'] ?? 0
+    const baseHpFrac = playerBaseHp / 100
+    const levelCfg = LEVELS.find(l => l.id === campaignLevel)
+    if (!levelCfg) return
+    const starsEarned = won
+      ? (baseHpFrac >= levelCfg.starThresholds.three ? 3
+        : baseHpFrac >= levelCfg.starThresholds.two ? 2 : 1)
+      : 0
+    saveLevelStars(campaignLevel, starsEarned)
+  }, [phase, campaignLevel, winnerId, hud])
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
     { key: 'easy', label: 'Easy', color: '#44ff88', desc: 'slow AI · player spawn bonus' },
@@ -397,6 +422,13 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       ? baseHpFrac > 0.75 ? 3 : baseHpFrac > 0.5 ? 2 : 1
       : 0
 
+    // Campaign mode: level config and star tracking
+    const levelConfig = campaignLevel ? LEVELS.find(l => l.id === campaignLevel) ?? null : null
+    const campaignStarsEarned = won && levelConfig
+      ? (baseHpFrac >= levelConfig.starThresholds.three ? 3
+        : baseHpFrac >= levelConfig.starThresholds.two ? 2 : 1)
+      : 0
+
     const nextDifficulty: Partial<Record<string, { key: Difficulty; label: string; color: string }>> = {
       easy:   { key: 'medium',    label: 'Medium', color: '#ffcc44' },
       medium: { key: 'hard',      label: 'Hard',   color: '#ff4f7b' },
@@ -440,6 +472,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         <h1 style={{ color: accentColor, fontSize: isTouchDevice ? 44 : 64, margin: 0, letterSpacing: 4 }}>
           {won ? 'VICTORY' : 'DEFEATED'}
         </h1>
+        {levelConfig && (
+          <div style={{ fontSize: 13, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+            Level {campaignLevel} — {levelConfig.name}
+          </div>
+        )}
         {victoryType && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div style={{
@@ -462,13 +499,19 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           </div>
         )}
         {won && (
-          <div title={stars === 3 ? '3 stars: base HP > 75%' : stars === 2 ? '2 stars: base HP > 50%' : '1 star: base HP ≤ 50%'} style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: stars === 3 ? '0 0 20px #ffd700' : 'none' }}>
-            {'★'.repeat(stars)}{'☆'.repeat(3 - stars)}
+          <div title={
+            levelConfig
+              ? (campaignStarsEarned === 3 ? `3 stars: base HP > ${Math.round(levelConfig.starThresholds.three * 100)}%` : campaignStarsEarned === 2 ? `2 stars: base HP > ${Math.round(levelConfig.starThresholds.two * 100)}%` : '1 star')
+              : (stars === 3 ? '3 stars: base HP > 75%' : stars === 2 ? '2 stars: base HP > 50%' : '1 star: base HP ≤ 50%')
+          } style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: (levelConfig ? campaignStarsEarned : stars) === 3 ? '0 0 20px #ffd700' : 'none' }}>
+            {'★'.repeat(levelConfig ? campaignStarsEarned : stars)}{'☆'.repeat(3 - (levelConfig ? campaignStarsEarned : stars))}
           </div>
         )}
-        {won && stars < 3 && (
+        {won && (levelConfig ? campaignStarsEarned : stars) < 3 && (
           <div style={{ fontSize: 9, letterSpacing: 1, color: 'rgba(255,215,0,0.4)', marginTop: -6 }}>
-            {stars === 2 ? 'finish >75% HP for ★★★' : 'finish >50% HP for ★★'}
+            {(levelConfig ? campaignStarsEarned : stars) === 2
+              ? `finish >${Math.round((levelConfig?.starThresholds.three ?? 0.75) * 100)}% HP for ★★★`
+              : `finish >${Math.round((levelConfig?.starThresholds.two ?? 0.50) * 100)}% HP for ★★`}
           </div>
         )}
         {won && isNewBest && (
@@ -685,6 +728,22 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           >
             Play Again
           </button>
+          {campaignLevel !== null && (
+            <button
+              onClick={() => {
+                resetGame()
+                setCampaignLevel(null)
+                router.push('/speck-wars')
+              }}
+              style={{
+                padding: '12px 28px', fontSize: 16, cursor: 'pointer',
+                background: 'transparent', border: `2px solid ${accentColor}`,
+                borderRadius: 8, color: accentColor, minHeight: 52,
+              }}
+            >
+              Back to Campaign
+            </button>
+          )}
           <button
             onClick={handleShare}
             style={{
