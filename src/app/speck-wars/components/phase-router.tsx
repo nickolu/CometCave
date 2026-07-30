@@ -404,8 +404,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const timeStr = `${mm}:${ss}`
 
     const difficultyColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
-    const diffLabel = difficulty === 'very-hard' ? 'Brutal' : difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
-    const diffColor = difficultyColors[difficulty]
     const playerBaseHp = hud?.players?.player?.buildingHp?.['building-player-base'] ?? 0
     const baseHpFrac = playerBaseHp / 100
     const stars = won
@@ -414,6 +412,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
     // Campaign mode: level config and star tracking
     const levelConfig = campaignLevel ? LEVELS.find(l => l.id === campaignLevel) ?? null : null
+    const effectiveDifficulty = levelConfig?.difficulty ?? difficulty
+    const diffLabel = effectiveDifficulty === 'very-hard' ? 'Brutal' : effectiveDifficulty.charAt(0).toUpperCase() + effectiveDifficulty.slice(1)
+    const diffColor = difficultyColors[effectiveDifficulty]
     const campaignStarsEarned = won && levelConfig
       ? (baseHpFrac >= levelConfig.starThresholds.three ? 3
         : baseHpFrac >= levelConfig.starThresholds.two ? 2 : 1)
