@@ -270,6 +270,16 @@ export function HUD() {
               background: hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.25 ? '#ffcc44' : '#ff4f7b',
               transition: 'width 0.3s ease, background 0.5s ease',
             }} />
+            {campaignLevel !== null && (() => {
+              const lvl = LEVELS.find(l => l.id === campaignLevel)
+              if (!lvl) return null
+              return (
+                <>
+                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${lvl.starThresholds.three * 100}%`, width: 1, background: 'rgba(255,215,0,0.85)', zIndex: 2 }} />
+                  <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${lvl.starThresholds.two * 100}%`, width: 1, background: 'rgba(255,255,255,0.35)', zIndex: 2 }} />
+                </>
+              )
+            })()}
           </div>
           {/* 1px gap in center */}
           <div style={{ width: 2, background: 'rgba(0,0,0,0.8)' }} />
