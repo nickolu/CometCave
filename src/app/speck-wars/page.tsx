@@ -2,18 +2,20 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useSpeckWarsStore } from './store'
-import { LEVELS, getLevelStars } from './campaign/levels'
+import { LEVELS, getLevelStars, isLevelUnlocked } from './campaign/levels'
 
-// Show 10 level slots total
-const TOTAL_SLOTS = 10
+// Show as many slots as there are defined levels
+const TOTAL_SLOTS = LEVELS.length
 
 export default function SpeckWarsCampaignPage() {
   const router = useRouter()
   const { setCampaignLevel, resetGame } = useSpeckWarsStore()
-  const [stars, setStars] = useState<number[]>([])
+  const [stars, setStars] = useState<Record<number, number>>({})
 
   useEffect(() => {
-    setStars(LEVELS.map(l => getLevelStars(l.id)))
+    const s: Record<number, number> = {}
+    for (const l of LEVELS) s[l.id] = getLevelStars(l.id)
+    setStars(s)
   }, [])
 
   const handlePlay = (levelId: number) => {
@@ -33,8 +35,8 @@ export default function SpeckWarsCampaignPage() {
         {Array.from({ length: TOTAL_SLOTS }, (_, i) => {
           const levelNum = i + 1
           const level = LEVELS.find(l => l.id === levelNum)
-          const levelStars = level ? (stars[i] ?? 0) : 0
-          const unlocked = !!level
+          const levelStars = stars[levelNum] ?? 0
+          const unlocked = !!level && isLevelUnlocked(levelNum)
 
           return (
             <button
@@ -64,6 +66,12 @@ export default function SpeckWarsCampaignPage() {
                       <span key={s} style={{ color: s < levelStars ? '#ffd700' : 'rgba(255,255,255,0.15)' }}>&#9733;</span>
                     ))}
                   </div>
+                </>
+              ) : level ? (
+                <>
+                  <div style={{ fontSize: 20, opacity: 0.2 }}>&#128274;</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.2)', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.12)', letterSpacing: 0.5 }}>beat {levelNum - 1} first</div>
                 </>
               ) : (
                 <div style={{ fontSize: 20, opacity: 0.2 }}>&#128274;</div>
