@@ -1165,9 +1165,6 @@ export function HUD() {
             const aiSpecks = hud.players.ai?.speckCount ?? 0
             const playerBaseHpVal = hud.players.player?.buildingHp['building-player-base'] ?? 0
             const aiBaseHpVal = hud.players.ai?.buildingHp['building-ai-base'] ?? 0
-            const playerOutpostCount = hud.players.player?.buildingCount
-              ? hud.players.player.buildingCount - 1  // subtract base
-              : 0
             const playerTypes = hud.players.player?.speckTypes ?? {}
             const aiTypes = hud.players.ai?.speckTypes ?? {}
             const fmtTypes = (t: Record<string, number>) => {
@@ -1181,7 +1178,6 @@ export function HUD() {
               if (parts.length === 0) return '—'
               return parts.join(', ')
             }
-            const aiOutpostCount = Math.max(0, (hud.players.ai?.buildingCount ?? 0) - 1)
             return (
               <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 1fr',
@@ -1203,8 +1199,7 @@ export function HUD() {
                 <span style={{ fontSize: 10, opacity: 0.6 }}>{((hud.spawnRates?.ai ?? 0) / 60).toFixed(1)}/s prod</span>
                 <span>Base: {Math.round(playerBaseHpVal)}HP</span>
                 <span>Base: {Math.round(aiBaseHpVal)}HP</span>
-                <span>Outposts: {playerOutpostCount}</span>
-                <span>Outposts: {aiOutpostCount}</span>
+
                 <span style={{ gridColumn: '1/-1', textAlign: 'center', color: colorHex(PLAYER_COLOR), opacity: 0.7 }}>↑{kills} kills · {losses} lost</span>
                 <span style={{ gridColumn: '1/-1', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 4 }}>
                   {formatTime(elapsedMs)} elapsed
