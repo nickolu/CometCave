@@ -1581,6 +1581,11 @@ export function HUD() {
                     return (
                       <button
                         key={slot}
+                        aria-label={isSaveMode
+                          ? `Save group ${slot} (${selectedSpeckCount} specks)`
+                          : isEmpty
+                            ? `Group ${slot} — empty`
+                            : `Recall group ${slot} (${savedCount} specks)`}
                         onClick={() => {
                           if (isSaveMode) {
                             gameActions?.saveControlGroup?.(slot)
