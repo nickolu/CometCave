@@ -54,13 +54,21 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault()
+        // Capture campaign level before resetGame() clears it
+        const lvl = useSpeckWarsStore.getState().campaignLevel
         resetGame()
-        setPhase('playing')
+        if (lvl !== null) {
+          // Campaign mode: restore level and let auto-start effect handle it
+          setCampaignLevel(lvl)
+        } else {
+          // Skirmish mode: start directly
+          setPhase('playing')
+        }
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, resetGame, setPhase])
+  }, [phase, resetGame, setPhase, setCampaignLevel])
 
   useEffect(() => {
     if (phase === 'victory') {
