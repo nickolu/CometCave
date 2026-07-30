@@ -14,6 +14,7 @@ export default function SpeckWarsCampaignPage() {
   const { setCampaignLevel, resetGame } = useSpeckWarsStore()
   const [stars, setStars] = useState<Record<number, number>>({})
   const [copied, setCopied] = useState(false)
+  const [hoveredLevel, setHoveredLevel] = useState<number | null>(null)
 
   useEffect(() => {
     const s: Record<number, number> = {}
@@ -131,6 +132,8 @@ export default function SpeckWarsCampaignPage() {
           const level = LEVELS.find(l => l.id === levelNum)
           const levelStars = stars[levelNum] ?? 0
           const unlocked = !!level && isLevelUnlocked(levelNum)
+          const isHovered = hoveredLevel === levelNum
+          const isNext = levelNum === nextLevel?.id
 
           return (
             <button
@@ -138,11 +141,13 @@ export default function SpeckWarsCampaignPage() {
               type="button"
               disabled={!unlocked}
               onClick={() => unlocked && handlePlay(levelNum)}
+              onMouseEnter={() => setHoveredLevel(levelNum)}
+              onMouseLeave={() => setHoveredLevel(null)}
               style={{
                 width: 120, height: 140,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                background: unlocked ? 'rgba(0,255,194,0.06)' : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${unlocked ? 'rgba(0,255,194,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                background: isNext ? 'rgba(0,255,194,0.12)' : isHovered && unlocked ? 'rgba(0,255,194,0.09)' : unlocked ? 'rgba(0,255,194,0.06)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${isNext ? 'rgba(0,255,194,0.8)' : isHovered && unlocked ? 'rgba(0,255,194,0.55)' : unlocked ? 'rgba(0,255,194,0.3)' : 'rgba(255,255,255,0.06)'}`,
                 borderRadius: 12,
                 cursor: unlocked ? 'pointer' : 'default',
                 padding: 12,
@@ -155,6 +160,7 @@ export default function SpeckWarsCampaignPage() {
               {unlocked && level ? (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
+                  {level.outpostCount > 0 && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>⬡ {level.outpostCount}</div>}
                   <div style={{
                     fontSize: 8, letterSpacing: 1, textTransform: 'uppercase',
                     color: DIFF_COLORS[level.difficulty],
@@ -168,6 +174,7 @@ export default function SpeckWarsCampaignPage() {
                       <span key={s} style={{ color: s < levelStars ? '#ffd700' : 'rgba(255,255,255,0.15)' }}>&#9733;</span>
                     ))}
                   </div>
+                  {isNext && <div style={{ fontSize: 8, letterSpacing: 2, color: '#00ffc2', opacity: 0.7 }}>▶ NEXT</div>}
                 </>
               ) : level ? (
                 <>
