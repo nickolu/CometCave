@@ -173,7 +173,6 @@ export default function SpeckWarsCampaignPage() {
               {unlocked && level ? (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
-                  {level.outpostCount > 0 && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>{level.outpostCount} outpost{level.outpostCount !== 1 ? 's' : ''}</div>}
                   <div style={{
                     fontSize: 8, letterSpacing: 1, textTransform: 'uppercase',
                     color: DIFF_COLORS[level.difficulty],

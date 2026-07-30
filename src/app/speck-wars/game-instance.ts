@@ -804,6 +804,12 @@ export class GameInstance {
     useSpeckWarsStore.getState().setGameActions(null)
   }
 
+  panCameraTo(wx: number, wy: number) {
+    this.camera.x = this.canvas.clientWidth / 2 - wx * this.camera.zoom
+    this.camera.y = this.canvas.clientHeight / 2 - wy * this.camera.zoom
+    clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
+  }
+
   rally(x: number, y: number) {
     this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x, y })
     this.renderer.showRallyPing(x, y)
