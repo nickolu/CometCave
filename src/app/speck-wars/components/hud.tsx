@@ -105,10 +105,14 @@ export function HUD() {
     if (!hud?.selectedBuilding) setBuildingPanelExpanded(false)
   }, [hud?.selectedBuilding])
 
-  // Show level intro when a campaign level starts playing
+  // Show level intro when a campaign level starts playing (only on first play of each level)
   useEffect(() => {
     if (phase === 'playing' && campaignLevel !== null) {
+      const seenKey = `speckwars-level-${campaignLevel}-intro-seen`
+      const alreadySeen = typeof localStorage !== 'undefined' && localStorage.getItem(seenKey)
+      if (alreadySeen) return
       setShowLevelIntro(true)
+      try { localStorage.setItem(seenKey, '1') } catch {}
       const t = setTimeout(() => setShowLevelIntro(false), 4000)
       return () => clearTimeout(t)
     } else {
