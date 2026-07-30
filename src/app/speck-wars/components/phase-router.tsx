@@ -16,6 +16,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const [winStreak, setWinStreak] = useState(0)
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const [starImprovedFrom, setStarImprovedFrom] = useState<number | null>(null)
+  const [isNewLevelBest, setIsNewLevelBest] = useState(false)
   const { user } = useAuth()
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const router = useRouter()
@@ -83,7 +84,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       : 0
     const prevStars = getLevelStars(campaignLevel)
     saveLevelStars(campaignLevel, starsEarned)
-    if (won) saveLevelBestTime(campaignLevel, elapsedMs)
+    const newLevelBest = won ? saveLevelBestTime(campaignLevel, elapsedMs) : false
+    setIsNewLevelBest(newLevelBest)
     if (won && starsEarned > prevStars && prevStars > 0) setStarImprovedFrom(prevStars)
     else setStarImprovedFrom(null)
   }, [phase, campaignLevel, winnerId, hud, elapsedMs])
@@ -490,11 +492,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Achievement chips */}
-        {won && (isNewBest || winStreak >= 2 || starImprovedFrom !== null) && (
+        {won && (isNewBest || isNewLevelBest || winStreak >= 2 || starImprovedFrom !== null) && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {isNewBest && (
+            {(isNewBest || isNewLevelBest) && (
               <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.5)', padding: '3px 10px', borderRadius: 20 }}>
-                NEW BEST TIME
+                {isNewLevelBest ? 'LEVEL BEST TIME' : 'NEW BEST TIME'}
               </span>
             )}
             {winStreak >= 2 && (
