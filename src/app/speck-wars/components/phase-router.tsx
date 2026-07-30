@@ -487,6 +487,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               }
             </div>
           )}
+          {won && levelConfig && !nextCampaignLevel && (
+            <div style={{ fontSize: 10, letterSpacing: 3, color: 'rgba(255,215,0,0.65)', marginTop: 2 }}>
+              ✦ CAMPAIGN COMPLETE ✦
+            </div>
+          )}
         </div>
 
         {/* Achievement chips */}
