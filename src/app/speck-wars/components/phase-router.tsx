@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSpeckWarsStore } from '../store'
 import { getBestTime, getWinStreak, getRecentResults, hasWonToday, getLifetimeStats } from '../lib/personal-best'
@@ -17,6 +17,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
   const [starImprovedFrom, setStarImprovedFrom] = useState<number | null>(null)
   const [isNewLevelBest, setIsNewLevelBest] = useState(false)
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null)
   const { user } = useAuth()
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const router = useRouter()
@@ -75,6 +76,15 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       navigator.vibrate?.([40, 80, 40, 80, 120])  // ascending triple-pulse: celebration
     } else if (phase === 'defeat') {
       navigator.vibrate?.([200, 60, 80])  // heavy thud then short pulse: loss
+    }
+  }, [phase])
+
+  // Move focus to the result heading when end screen appears (interaction-models.md § 3)
+  useEffect(() => {
+    if (phase === 'victory' || phase === 'defeat') {
+      // Delay until after the game-over freeze animation so the heading exists in the DOM
+      const t = setTimeout(() => resultHeadingRef.current?.focus(), 1500)
+      return () => clearTimeout(t)
     }
   }, [phase])
 
@@ -470,7 +480,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
         {/* Tier 1: Outcome → Stars */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <h1 style={{ color: accentColor, fontSize: isTouchDevice ? 52 : 72, margin: 0, letterSpacing: 4, lineHeight: 1 }}>
+          <h1
+            ref={resultHeadingRef}
+            tabIndex={-1}
+            style={{ color: accentColor, fontSize: isTouchDevice ? 52 : 72, margin: 0, letterSpacing: 4, lineHeight: 1, outline: 'none' }}
+          >
             {won ? 'VICTORY' : 'DEFEATED'}
           </h1>
           {levelConfig && (
