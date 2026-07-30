@@ -56,7 +56,7 @@ export default function RootLayout({
           />
         </head>
         <body className={`${plusJakartaSans.variable} ${beVietnamPro.variable} ${lexend.variable} ${beVietnamPro.className}`}>
-          <div id="site-wrapper" className="min-h-dvh flex flex-col bg-surface-dim text-on-surface relative overflow-x-hidden">
+          <div id="site-wrapper" className="min-h-dvh flex flex-col bg-surface-dim text-on-surface relative overflow-x-clip">
             <AmbientOrbs palette={['primary', 'secondary', 'tertiary']} intensity="medium" />
             <LayoutShell nav={<TopNavBar />} footer={<Footer />}>
               {children}
