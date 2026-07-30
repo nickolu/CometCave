@@ -197,9 +197,14 @@ export default function SpeckWarsCampaignPage() {
         })}
       </div>
 
-      <a href="/speck-wars/skirmish" style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', letterSpacing: 1, textDecoration: 'none', marginTop: 16 }}>
-        Sandbox &rarr;
-      </a>
+      <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginTop: 16 }}>
+        <a href="/" style={{ fontSize: 11, color: 'rgba(255,255,255,0.15)', letterSpacing: 1, textDecoration: 'none' }}>
+          &larr; Cave
+        </a>
+        <a href="/speck-wars/skirmish" style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', letterSpacing: 1, textDecoration: 'none' }}>
+          Sandbox &rarr;
+        </a>
+      </div>
     </div>
   )
 }
