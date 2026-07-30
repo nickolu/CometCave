@@ -20,6 +20,7 @@ export default function SpeckWarsCampaignPage() {
   })
   const [copied, setCopied] = useState(false)
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null)
+  const [focusedLevel, setFocusedLevel] = useState<number | null>(null)
 
   const handlePlay = (levelId: number) => {
     resetGame()
@@ -138,7 +139,7 @@ export default function SpeckWarsCampaignPage() {
           const level = LEVELS.find(l => l.id === levelNum)
           const levelStars = stars[levelNum] ?? 0
           const unlocked = !!level && isLevelUnlocked(levelNum)
-          const isHovered = hoveredLevel === levelNum
+          const isHovered = hoveredLevel === levelNum || focusedLevel === levelNum
           const isNext = levelNum === nextLevel?.id
 
           return (
@@ -149,6 +150,8 @@ export default function SpeckWarsCampaignPage() {
               onClick={() => unlocked && handlePlay(levelNum)}
               onMouseEnter={() => setHoveredLevel(levelNum)}
               onMouseLeave={() => setHoveredLevel(null)}
+              onFocus={() => setFocusedLevel(levelNum)}
+              onBlur={() => setFocusedLevel(null)}
               title={level && unlocked ? `${level.name} — ${level.flavor}` : undefined}
               aria-label={level ? (unlocked ? `Play level ${levelNum}: ${level.name}` : `Level ${levelNum} locked — beat level ${levelNum - 1} first`) : `Level ${levelNum}`}
               style={{
