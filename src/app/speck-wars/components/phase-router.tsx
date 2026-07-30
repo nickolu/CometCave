@@ -505,15 +505,18 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             </div>
           )}
           {won && (
-            <div style={{ fontSize: 44, letterSpacing: 6, color: '#ffd700', textShadow: displayStars === 3 ? '0 0 28px #ffd700' : 'none', marginTop: 4 }}>
-              {'★'.repeat(displayStars)}{'☆'.repeat(3 - displayStars)}
+            <div
+              aria-label={`${displayStars} of 3 stars`}
+              style={{ fontSize: 44, letterSpacing: 6, color: '#ffd700', textShadow: displayStars === 3 ? '0 0 28px #ffd700' : 'none', marginTop: 4 }}
+            >
+              <span aria-hidden="true">{'★'.repeat(displayStars)}{'☆'.repeat(3 - displayStars)}</span>
             </div>
           )}
           {won && levelConfig && displayStars < 3 && (
             <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', marginTop: 2, textAlign: 'center' }}>
               {displayStars === 2
-                ? `for ★★★: survive at ${Math.round(levelConfig.starThresholds.three * 100)}%+ hp`
-                : `for ★★: ${Math.round(levelConfig.starThresholds.two * 100)}%+ hp · for ★★★: ${Math.round(levelConfig.starThresholds.three * 100)}%+ hp`
+                ? <><span aria-hidden="true">★★★</span><span className="sr-only">3 stars</span>{`: survive at ${Math.round(levelConfig.starThresholds.three * 100)}%+ hp`}</>
+                : <><span aria-hidden="true">★★</span><span className="sr-only">2 stars</span>{`: ${Math.round(levelConfig.starThresholds.two * 100)}%+ hp · `}<span aria-hidden="true">★★★</span><span className="sr-only">3 stars</span>{`: ${Math.round(levelConfig.starThresholds.three * 100)}%+ hp`}</>
               }
             </div>
           )}
