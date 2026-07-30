@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { LEVELS, getLevelStars, saveLevelStars } from '../campaign/levels'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, hud, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
