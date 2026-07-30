@@ -29,6 +29,12 @@ export default function SpeckWarsCampaignPage() {
 
   const totalStars = Object.values(stars).reduce((sum, s) => sum + s, 0)
   const allLevelsBeaten = LEVELS.length > 0 && LEVELS.every(l => (stars[l.id] ?? 0) >= 1)
+  const nextLevel = !allLevelsBeaten && Object.keys(stars).length > 0
+    ? LEVELS.find(l => {
+        const isUnlocked = l.id === 1 || (stars[l.id - 1] ?? 0) >= 1
+        return isUnlocked && (stars[l.id] ?? 0) === 0
+      }) ?? null
+    : null
 
   const handleShare = async () => {
     const text = `I beat all 10 Speck Wars campaign levels — ${totalStars}/${MAX_STARS} stars. Can you conquer the campaign?`
@@ -64,6 +70,19 @@ export default function SpeckWarsCampaignPage() {
           </div>
         )}
       </div>
+
+      {nextLevel !== null && totalStars > 0 && (
+        <button
+          onClick={() => handlePlay(nextLevel.id)}
+          style={{
+            padding: '14px 36px', fontSize: 15, fontWeight: 700, letterSpacing: 2,
+            cursor: 'pointer', background: '#00ffc2', border: 'none', borderRadius: 10,
+            color: '#050510', textTransform: 'uppercase',
+          }}
+        >
+          Continue → {String(nextLevel.id).padStart(2, '0')} · {nextLevel.name}
+        </button>
+      )}
 
       {allLevelsBeaten && (
         <div style={{
