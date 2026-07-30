@@ -7,7 +7,7 @@ import { getDailyInfo } from '../lib/daily-modifier'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
-import { LEVELS, saveLevelStars, getLevelBestTime, saveLevelBestTime } from '../campaign/levels'
+import { LEVELS, saveLevelStars, getLevelStars, getLevelBestTime, saveLevelBestTime } from '../campaign/levels'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, hud, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
@@ -15,6 +15,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
+  const [starImprovedFrom, setStarImprovedFrom] = useState<number | null>(null)
   const { user } = useAuth()
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const router = useRouter()
@@ -80,8 +81,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       ? (baseHpFrac >= levelCfg.starThresholds.three ? 3
         : baseHpFrac >= levelCfg.starThresholds.two ? 2 : 1)
       : 0
+    const prevStars = getLevelStars(campaignLevel)
     saveLevelStars(campaignLevel, starsEarned)
     if (won) saveLevelBestTime(campaignLevel, elapsedMs)
+    if (won && starsEarned > prevStars && prevStars > 0) setStarImprovedFrom(prevStars)
+    else setStarImprovedFrom(null)
   }, [phase, campaignLevel, winnerId, hud, elapsedMs])
 
   const difficulties: Array<{ key: 'easy' | 'medium' | 'hard' | 'very-hard'; label: string; color: string; desc: string }> = [
@@ -482,7 +486,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Achievement chips */}
-        {won && (isNewBest || winStreak >= 2) && (
+        {won && (isNewBest || winStreak >= 2 || starImprovedFrom !== null) && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isNewBest && (
               <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.5)', padding: '3px 10px', borderRadius: 20 }}>
@@ -492,6 +496,11 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             {winStreak >= 2 && (
               <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.3)', padding: '3px 10px', borderRadius: 20 }}>
                 🔥 {winStreak}-WIN STREAK
+              </span>
+            )}
+            {starImprovedFrom !== null && levelConfig && (
+              <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.5)', padding: '3px 10px', borderRadius: 20 }}>
+                {'★'.repeat(starImprovedFrom)}{'☆'.repeat(3 - starImprovedFrom)} → {'★'.repeat(displayStars)}
               </span>
             )}
           </div>
