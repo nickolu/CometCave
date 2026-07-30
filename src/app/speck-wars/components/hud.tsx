@@ -1475,6 +1475,7 @@ export function HUD() {
           <button
             onClick={() => { navigator.vibrate?.(12); gameActions.defend?.() }}
             title="[D] Defend — rally to your base"
+            aria-label="Defend — rally to your base [D]"
             style={{
               padding: '8px 12px',
               fontSize: 11,
@@ -1493,6 +1494,7 @@ export function HUD() {
           <button
             onClick={() => { navigator.vibrate?.(12); gameActions.advance?.() }}
             title="[N] Advance — rally to nearest outpost"
+            aria-label="Advance — rally to nearest outpost [N]"
             style={{
               padding: '8px 12px',
               fontSize: 11,
@@ -1511,6 +1513,7 @@ export function HUD() {
           <button
             onClick={() => { navigator.vibrate?.(20); gameActions.rush?.() }}
             title="[B] Rush — attack enemy base"
+            aria-label="Rush — attack enemy base [B]"
             style={{
               padding: '8px 12px',
               fontSize: 11,
@@ -1534,6 +1537,7 @@ export function HUD() {
               <button
                 onClick={() => { if (surgeReady) { navigator.vibrate?.(30); gameActions.surge?.() } }}
                 title="[Q] Surge — 2× production for 8s (45s cooldown)"
+                aria-label={surgeActive ? `Surge active — ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s remaining` : surgeCd > 0 ? `Surge on cooldown — ${Math.ceil(surgeCd / 1000)}s` : 'Surge — 2× production for 8s [Q]'}
                 style={{
                   padding: '8px 12px',
                   fontSize: 11,
@@ -1563,6 +1567,7 @@ export function HUD() {
           <button
             onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
             title="[R] Clear rally"
+            aria-label="Clear rally point [R]"
             style={{
               padding: '8px 12px',
               fontSize: 11,
