@@ -20,6 +20,7 @@ export default function SpeckWarsCampaignPage() {
   })
   const [copied, setCopied] = useState(false)
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null)
+  const [focusedLevel, setFocusedLevel] = useState<number | null>(null)
 
   const handlePlay = (levelId: number) => {
     resetGame()
@@ -55,10 +56,17 @@ export default function SpeckWarsCampaignPage() {
         <div style={{ fontSize: 14, letterSpacing: 4, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>CAMPAIGN</div>
         {totalStars > 0 && (
           <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: 13, color: '#ffd700', letterSpacing: 1 }}>
-              &#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.4)' }}>/ {MAX_STARS}</span>
+            <div aria-label={`${totalStars} of ${MAX_STARS} stars`} style={{ fontSize: 13, color: '#ffd700', letterSpacing: 1 }}>
+              <span aria-hidden="true">&#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.4)' }}>/ {MAX_STARS}</span></span>
             </div>
-            <div style={{ width: 180, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+            <div
+              role="progressbar"
+              aria-valuenow={totalStars}
+              aria-valuemin={0}
+              aria-valuemax={MAX_STARS}
+              aria-label={`Star progress: ${totalStars} of ${MAX_STARS}`}
+              style={{ width: 180, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}
+            >
               <div style={{
                 height: '100%',
                 width: `${(totalStars / MAX_STARS) * 100}%`,
@@ -98,8 +106,8 @@ export default function SpeckWarsCampaignPage() {
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
             You carved through all ten worlds.
           </div>
-          <div style={{ fontSize: 18, color: '#ffd700', letterSpacing: 1, textShadow: totalStars === MAX_STARS ? '0 0 20px #ffd700' : 'none' }}>
-            &#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.35)', fontSize: 14 }}>/ {MAX_STARS}</span>
+          <div aria-label={`${totalStars} of ${MAX_STARS} stars`} style={{ fontSize: 18, color: '#ffd700', letterSpacing: 1, textShadow: totalStars === MAX_STARS ? '0 0 20px #ffd700' : 'none' }}>
+            <span aria-hidden="true">&#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.35)', fontSize: 14 }}>/ {MAX_STARS}</span></span>
           </div>
           {totalStars < MAX_STARS && (
             <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,215,0,0.3)' }}>
@@ -131,7 +139,7 @@ export default function SpeckWarsCampaignPage() {
           const level = LEVELS.find(l => l.id === levelNum)
           const levelStars = stars[levelNum] ?? 0
           const unlocked = !!level && isLevelUnlocked(levelNum)
-          const isHovered = hoveredLevel === levelNum
+          const isHovered = hoveredLevel === levelNum || focusedLevel === levelNum
           const isNext = levelNum === nextLevel?.id
 
           return (
@@ -142,6 +150,8 @@ export default function SpeckWarsCampaignPage() {
               onClick={() => unlocked && handlePlay(levelNum)}
               onMouseEnter={() => setHoveredLevel(levelNum)}
               onMouseLeave={() => setHoveredLevel(null)}
+              onFocus={() => setFocusedLevel(levelNum)}
+              onBlur={() => setFocusedLevel(null)}
               title={level && unlocked ? `${level.name} — ${level.flavor}` : undefined}
               aria-label={level ? (unlocked
                 ? `Play level ${levelNum}: ${level.name} — ${DIFF_LABELS[level.difficulty]}${level.outpostCount > 0 ? ` — ${level.outpostCount} outpost${level.outpostCount > 1 ? 's' : ''}` : ''}${levelStars > 0 ? ` — ${levelStars} of 3 stars` : ''}`
