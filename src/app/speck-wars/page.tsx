@@ -6,6 +6,8 @@ import { LEVELS, getLevelStars, isLevelUnlocked } from './campaign/levels'
 
 // Show as many slots as there are defined levels
 const TOTAL_SLOTS = LEVELS.length
+const DIFF_COLORS: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
+const DIFF_LABELS: Record<string, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard', 'very-hard': 'Brutal' }
 
 export default function SpeckWarsCampaignPage() {
   const router = useRouter()
@@ -61,7 +63,15 @@ export default function SpeckWarsCampaignPage() {
               {unlocked && level ? (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
-                  <div style={{ fontSize: 14, letterSpacing: 2, marginTop: 4 }}>
+                  <div style={{
+                    fontSize: 8, letterSpacing: 1, textTransform: 'uppercase',
+                    color: DIFF_COLORS[level.difficulty],
+                    border: `1px solid ${DIFF_COLORS[level.difficulty]}55`,
+                    padding: '1px 6px', borderRadius: 3,
+                  }}>
+                    {DIFF_LABELS[level.difficulty]}
+                  </div>
+                  <div style={{ fontSize: 14, letterSpacing: 2 }}>
                     {Array.from({ length: 3 }, (_, s) => (
                       <span key={s} style={{ color: s < levelStars ? '#ffd700' : 'rgba(255,255,255,0.15)' }}>&#9733;</span>
                     ))}
