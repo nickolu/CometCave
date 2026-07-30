@@ -1214,6 +1214,7 @@ export function HUD() {
           })()}
           <button
             onClick={(e) => { e.stopPropagation(); surrender() }}
+            aria-label="Give up — end the game and go to defeat screen"
             style={{
               pointerEvents: 'auto',
               padding: '8px 24px',
