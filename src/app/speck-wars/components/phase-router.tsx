@@ -419,7 +419,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
 
     const { layoutName } = getDailyInfo(difficulty)
     const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
-    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
+    const starStr = won ? '★'.repeat(displayStars) + '☆'.repeat(3 - displayStars) : '✗✗✗'
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff`
     const shareText = won
