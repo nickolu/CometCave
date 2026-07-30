@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useSpeckWarsStore } from './store'
-import { LEVELS, getLevelStars, isLevelUnlocked } from './campaign/levels'
+import { LEVELS, getLevelStars, getLevelBestTime, isLevelUnlocked } from './campaign/levels'
 
 const TOTAL_SLOTS = LEVELS.length
 const MAX_STARS = LEVELS.length * 3
@@ -174,6 +174,14 @@ export default function SpeckWarsCampaignPage() {
                       <span key={s} style={{ color: s < levelStars ? '#ffd700' : 'rgba(255,255,255,0.15)' }}>&#9733;</span>
                     ))}
                   </div>
+                  {isHovered && levelStars > 0 && (() => {
+                    const bestMs = getLevelBestTime(levelNum)
+                    if (!bestMs) return null
+                    const bSec = Math.floor(bestMs / 1000)
+                    const bMM = String(Math.floor(bSec / 60)).padStart(2, '0')
+                    const bSS = String(bSec % 60).padStart(2, '0')
+                    return <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.5 }}>⏱ {bMM}:{bSS}</div>
+                  })()}
                   {isNext && <div style={{ fontSize: 8, letterSpacing: 2, color: '#00ffc2', opacity: 0.7 }}>▶ NEXT</div>}
                 </>
               ) : level ? (
