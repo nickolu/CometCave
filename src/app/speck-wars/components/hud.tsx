@@ -825,8 +825,8 @@ export function HUD() {
         </div>
       )}
 
-      {/* Outpost ownership indicator dots */}
-      {hud && (() => {
+      {/* Outpost ownership indicator dots — hidden when no outposts exist on map */}
+      {hud && hud.minimap.buildings.some(b => b.typeId === 'outpost') && (() => {
         const OUTPOST_IDS = ['outpost-top', 'outpost-left', 'outpost-right'] as const
         const attacked = new Set(hud.attackedBuildingIds ?? [])
         const captureInfo = hud.captureInfo ?? {}
