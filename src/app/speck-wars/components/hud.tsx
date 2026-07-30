@@ -410,6 +410,7 @@ export function HUD() {
               </button>
             )}
             <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
+              aria-label="Minimap — click to set rally point"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
