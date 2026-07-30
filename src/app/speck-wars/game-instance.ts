@@ -346,9 +346,10 @@ export class GameInstance {
     // Freeze the sim for the countdown duration
     this.cinematicMs = 3000  // 3 seconds total
     useSpeckWarsStore.getState().setCountdown(3)
-    setTimeout(() => useSpeckWarsStore.getState().setCountdown(2), 1000)
-    setTimeout(() => useSpeckWarsStore.getState().setCountdown(1), 2000)
+    setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(2) }, 1000)
+    setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(1) }, 2000)
     setTimeout(() => {
+      if (this.destroyed) return
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
@@ -373,7 +374,7 @@ export class GameInstance {
         { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
       ]
       for (const { delay, message, color } of hints) {
-        setTimeout(() => this.notify(message, color, 3000), delay)
+        setTimeout(() => { if (!this.destroyed) this.notify(message, color, 3000) }, delay)
       }
     }
   }
@@ -440,6 +441,7 @@ export class GameInstance {
           })
           const elapsedAtEnd = this.elapsedMs
           setTimeout(() => {
+            if (this.destroyed) return
             const s = useSpeckWarsStore.getState()
             const isCampaign = s.campaignLevel !== null
             if (won) {
@@ -944,7 +946,7 @@ export class GameInstance {
     const gen = ++this.notifGen
     useSpeckWarsStore.getState().setNotification({ message, color })
     setTimeout(() => {
-      if (this.notifGen === gen) useSpeckWarsStore.getState().setNotification(null)
+      if (!this.destroyed && this.notifGen === gen) useSpeckWarsStore.getState().setNotification(null)
     }, durationMs)
   }
 
