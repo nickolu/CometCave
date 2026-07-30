@@ -501,6 +501,12 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                 <span style={{ color: 'rgba(255,255,255,0.4)' }}>{effPct}%</span>
               </>
             )}
+            {won && levelConfig && (
+              <>
+                <span style={{ opacity: 0.3 }}>·</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>🏠 {Math.round(baseHpFrac * 100)}% hp</span>
+              </>
+            )}
           </div>
         </div>
 
