@@ -7,10 +7,10 @@ import { getDailyInfo } from '../lib/daily-modifier'
 import type { Difficulty } from '../store'
 import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
-import { LEVELS, getLevelStars, saveLevelStars } from '../campaign/levels'
+import { LEVELS, saveLevelStars } from '../campaign/levels'
 
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
-  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, victoryType, hud, peakArmySize, outpostsCaptured, aiPersonality, peakVeteranCount, peakEliteCount, peakLegendCount, surgesUsed, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
+  const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, hud, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
@@ -413,19 +413,14 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       ? (baseHpFrac >= levelConfig.starThresholds.three ? 3
         : baseHpFrac >= levelConfig.starThresholds.two ? 2 : 1)
       : 0
+    const displayStars = levelConfig ? campaignStarsEarned : stars
+    const nextCampaignLevel = campaignLevel !== null ? LEVELS.find(l => l.id === campaignLevel + 1) ?? null : null
 
-    const nextDifficulty: Partial<Record<string, { key: Difficulty; label: string; color: string }>> = {
-      easy:   { key: 'medium',    label: 'Medium', color: '#ffcc44' },
-      medium: { key: 'hard',      label: 'Hard',   color: '#ff4f7b' },
-      hard:   { key: 'very-hard', label: 'Brutal', color: '#cc00ff' },
-    }
-    const nextDiff = won ? nextDifficulty[difficulty] : null
-
-    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
     const { layoutName } = getDailyInfo(difficulty)
     const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
-    const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff${peakArmySize > 0 ? ` · peak ${peakArmySize}` : ''}`
+    const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
+    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff`
     const shareText = won
       ? `${starStr} Speck Wars ${today} [${layoutName}]\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
       : `${starStr} Speck Wars ${today} [${layoutName}]\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
@@ -450,253 +445,93 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: isTouchDevice ? 'flex-start' : 'center', height: '100%', gap: isTouchDevice ? 10 : 20,
-        fontFamily: 'monospace', overflowY: 'auto', padding: isTouchDevice ? '12px 0 80px' : '16px 0',
+        justifyContent: 'center', height: '100%', gap: 20,
+        fontFamily: 'monospace', overflowY: 'auto', padding: '24px 16px',
       }}>
-        <h1 style={{ color: accentColor, fontSize: isTouchDevice ? 44 : 64, margin: 0, letterSpacing: 4 }}>
-          {won ? 'VICTORY' : 'DEFEATED'}
-        </h1>
-        {levelConfig && (
-          <div style={{ fontSize: 13, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
-            Level {campaignLevel} — {levelConfig.name}
-          </div>
-        )}
-        {victoryType && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <div style={{
-              fontSize: 12, letterSpacing: 3, opacity: 0.6,
-              color: accentColor,
-              textTransform: 'uppercase',
-            }}>
-              {victoryType === 'surrender' ? '🏳 Surrendered'
-                : victoryType === 'domination' ? '⬡ by Domination'
-                : '💥 by Destruction'}
+
+        {/* Tier 1: Outcome → Stars */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <h1 style={{ color: accentColor, fontSize: isTouchDevice ? 52 : 72, margin: 0, letterSpacing: 4, lineHeight: 1 }}>
+            {won ? 'VICTORY' : 'DEFEATED'}
+          </h1>
+          {levelConfig && (
+            <div style={{ fontSize: 11, letterSpacing: 3, color: 'rgba(255,255,255,0.35)' }}>
+              LEVEL {campaignLevel} · {levelConfig.name.toUpperCase()}
             </div>
-            <div style={{ fontSize: 10, letterSpacing: 1, opacity: 0.35, color: '#fff' }}>
-              {won
-                ? victoryType === 'domination' ? 'held all outposts for 60 seconds' : 'destroyed the enemy base'
-                : victoryType === 'surrender'
-                  ? 'you chose to give up'
-                  : 'your base was destroyed'
-              }
+          )}
+          {won && (
+            <div style={{ fontSize: 44, letterSpacing: 6, color: '#ffd700', textShadow: displayStars === 3 ? '0 0 28px #ffd700' : 'none', marginTop: 4 }}>
+              {'★'.repeat(displayStars)}{'☆'.repeat(3 - displayStars)}
             </div>
-          </div>
-        )}
-        {won && (
-          <div title={
-            levelConfig
-              ? (campaignStarsEarned === 3 ? `3 stars: base HP > ${Math.round(levelConfig.starThresholds.three * 100)}%` : campaignStarsEarned === 2 ? `2 stars: base HP > ${Math.round(levelConfig.starThresholds.two * 100)}%` : '1 star')
-              : (stars === 3 ? '3 stars: base HP > 75%' : stars === 2 ? '2 stars: base HP > 50%' : '1 star: base HP ≤ 50%')
-          } style={{ fontSize: 28, letterSpacing: 4, color: '#ffd700', textShadow: (levelConfig ? campaignStarsEarned : stars) === 3 ? '0 0 20px #ffd700' : 'none' }}>
-            {'★'.repeat(levelConfig ? campaignStarsEarned : stars)}{'☆'.repeat(3 - (levelConfig ? campaignStarsEarned : stars))}
-          </div>
-        )}
-        {won && (levelConfig ? campaignStarsEarned : stars) < 3 && (
-          <div style={{ fontSize: 9, letterSpacing: 1, color: 'rgba(255,215,0,0.4)', marginTop: -6 }}>
-            {(levelConfig ? campaignStarsEarned : stars) === 2
-              ? `finish >${Math.round((levelConfig?.starThresholds.three ?? 0.75) * 100)}% HP for ★★★`
-              : `finish >${Math.round((levelConfig?.starThresholds.two ?? 0.50) * 100)}% HP for ★★`}
-          </div>
-        )}
-        {won && isNewBest && (
-          <div style={{ color: '#ffd700', fontSize: 14, letterSpacing: 3, fontWeight: 'bold', textShadow: '0 0 16px #ffd700' }}>
-            NEW BEST TIME
-          </div>
-        )}
-        {won && winStreak >= 2 && (
-          <div style={{ color: '#ffd700', fontSize: 13, letterSpacing: 2 }}>
-            🔥 {winStreak}-WIN STREAK
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <span>⏱ {timeStr}</span>
-          <span style={{ color: diffColor, fontWeight: 'bold', border: `1px solid ${diffColor}`, padding: '2px 10px', borderRadius: 4 }}>
-            {diffLabel}
-          </span>
-          <span style={{
-            fontSize: 10, letterSpacing: 1,
-            color: 'rgba(255,255,255,0.3)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            padding: '2px 8px', borderRadius: 4,
-          }}>
-            ⬡ {layoutName}
-          </span>
-        </div>
-
-        {aiPersonality && aiPersonality !== 'balanced' && (difficulty === 'hard' || difficulty === 'very-hard') && (
-          <div style={{ fontSize: 10, letterSpacing: 2, opacity: 0.4, color: '#fff', textTransform: 'uppercase' }}>
-            {aiPersonality === 'aggressive' ? '⚡ aggressive AI — frequent base rushes'
-              : '🏭 macro AI — outpost economy focus'}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
-          <span style={{ color: '#4af7c4' }}>↑ {kills} killed</span>
-          <span style={{ color: '#ff4f7b' }}>↓ {losses} lost</span>
-          {kills + losses > 0 && (
-            <span style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {Math.round((kills / (kills + losses)) * 100)}% efficiency
-            </span>
           )}
         </div>
 
-        {(peakArmySize > 0 || outpostsCaptured > 0) && (
-          <div style={{ display: 'flex', gap: 28, color: 'rgba(255,255,255,0.45)', fontSize: 12, letterSpacing: 0.5 }}>
-            {peakArmySize > 0 && (
-              <span>⚔ peak {peakArmySize} specks</span>
-            )}
-            {outpostsCaptured > 0 && (
-              <span>⬡ {outpostsCaptured} outpost{outpostsCaptured !== 1 ? 's' : ''} captured</span>
-            )}
-          </div>
-        )}
-        {(peakVeteranCount > 0 || peakEliteCount > 0 || peakLegendCount > 0) && (
-          <div style={{ display: 'flex', gap: 20, color: 'rgba(255,255,255,0.45)', fontSize: 12, letterSpacing: 0.5 }}>
-            {peakLegendCount > 0 && (
-              <span style={{ color: '#cc44ff', opacity: 0.8 }}>✦✦ {peakLegendCount} legend{peakLegendCount !== 1 ? 's' : ''}</span>
-            )}
-            {peakEliteCount > 0 && (
-              <span style={{ color: '#ffffff', opacity: 0.7 }}>✦ {peakEliteCount} elite{peakEliteCount !== 1 ? 's' : ''}</span>
-            )}
-            {peakVeteranCount > 0 && (
-              <span style={{ color: '#ffd700', opacity: 0.65 }}>⭐ {peakVeteranCount} veteran{peakVeteranCount !== 1 ? 's' : ''}</span>
-            )}
-          </div>
-        )}
-
-        {surgesUsed > 0 && (
-          <div style={{ display: 'flex', gap: 20, color: 'rgba(255,255,255,0.4)', fontSize: 12, letterSpacing: 0.5 }}>
-            <span>⚡ {surgesUsed} surge{surgesUsed !== 1 ? 's' : ''}</span>
-          </div>
-        )}
-
-        {/* Recent run history for this difficulty */}
-        {(() => {
-          const history = getRecentResults(difficulty)
-          if (history.length < 2) return null
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.3)' }}>
-                RECENT ({difficulty.toUpperCase()})
+        {/* Achievement chips */}
+        {won && (isNewBest || winStreak >= 2) && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {isNewBest && (
+              <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.5)', padding: '3px 10px', borderRadius: 20 }}>
+                NEW BEST TIME
               </span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {history.map((r, i) => {
-                  const mm = String(Math.floor(Math.floor(r.timeMs / 1000) / 60)).padStart(2, '0')
-                  const ss = String(Math.floor(r.timeMs / 1000) % 60).padStart(2, '0')
-                  return (
-                    <div key={i} title={`${r.won ? 'Win' : 'Loss'} — ${mm}:${ss} — ${r.kills} kills`} style={{
-                      width: 10, height: 10, borderRadius: '50%',
-                      background: r.won ? '#4af7c4' : '#ff4f7b',
-                      opacity: i === 0 ? 1 : 0.4 + (history.length - i) / history.length * 0.4,
-                    }} />
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })()}
-
-        {/* Contextual tactical tip */}
-        {(() => {
-          const eff = kills + losses > 0 ? kills / (kills + losses) : 0
-          let tip: string | null = null
-
-          if (won && elapsedMs < 180000) {
-            tip = difficulty === 'very-hard' ? '⚡ Incredible! That was master-level play.' : 'That was fast! Try a harder difficulty for more of a challenge.'
-          } else if (won && difficulty !== 'very-hard' && stars === 3) {
-            tip = `Perfect stars on ${diffLabel}! Ready to try ${nextDiff?.label ?? 'the next level'}?`
-          } else if (!won && kills < 30) {
-            tip = isTouchDevice
-              ? 'Tip: Dart specks are fast for outpost rushes — tap the 3rd spawn button (dart icon).'
-              : 'Tip: Dart specks are fast for outpost rushes — press 3 to switch spawn type.'
-          } else if (!won && eff < 0.4) {
-            tip = isTouchDevice
-              ? 'Tip: Heavy specks deal 2× damage — switch to Heavy spawn during big fights.'
-              : 'Tip: Heavy specks deal 2× damage — switch with key 2 during big fights.'
-          } else if (!won && elapsedMs > 300000) {
-            tip = isTouchDevice
-              ? 'Tip: Tap ★ SURGE for 2× production 8s. Use it when you\'re behind!'
-              : 'Tip: Press Q for Surge — doubles production for 8s. Use it when you\'re behind!'
-          }
-
-          if (!tip) return null
-          return (
-            <div style={{
-              maxWidth: 340, textAlign: 'center',
-              fontSize: 11, letterSpacing: 0.5,
-              color: 'rgba(255,255,255,0.5)',
-              fontStyle: 'italic',
-              padding: '8px 16px',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 6,
-              background: 'rgba(255,255,255,0.03)',
-            }}>
-              {tip}
-            </div>
-          )
-        })()}
-
-        {/* Sign-up CTA — shared pact: show for unauthenticated users at end of session */}
-        {!user && (
-          <div style={{
-            maxWidth: 320, textAlign: 'center',
-            padding: '10px 18px',
-            border: '1px solid rgba(74,247,196,0.18)',
-            borderRadius: 6,
-            background: 'rgba(74,247,196,0.04)',
-          }}>
-            <div style={{ fontSize: 11, letterSpacing: 1, color: 'rgba(74,247,196,0.8)', marginBottom: 6 }}>
-              {won && winStreak >= 2
-                ? `Your ${winStreak}-win streak deserves a record.`
-                : won
-                  ? 'Track your wins and best times.'
-                  : 'Log your battles. Climb the ranks.'}
-            </div>
-            <Link
-              href="/auth?redirect=/speck-wars"
-              style={{
-                display: 'inline-block',
-                fontSize: 10, letterSpacing: 2,
-                color: '#4af7c4', textTransform: 'uppercase',
-                textDecoration: 'none', opacity: 0.85,
-              }}
-            >
-              Create account →
-            </Link>
+            )}
+            {winStreak >= 2 && (
+              <span style={{ fontSize: 10, letterSpacing: 2, color: '#ffd700', border: '1px solid rgba(255,215,0,0.3)', padding: '3px 10px', borderRadius: 20 }}>
+                🔥 {winStreak}-WIN STREAK
+              </span>
+            )}
           </div>
         )}
 
+        {/* Tier 2: Time · Difficulty · Map / Kills · Lost · Eff */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <span>⏱ {timeStr}</span>
+            <span style={{ opacity: 0.3 }}>·</span>
+            <span style={{ color: diffColor }}>{diffLabel}</span>
+            <span style={{ opacity: 0.3 }}>·</span>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12 }}>{layoutName}</span>
+          </div>
+          <div style={{ fontSize: 13, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <span style={{ color: '#4af7c4' }}>⚔ {kills}</span>
+            <span style={{ opacity: 0.3 }}>·</span>
+            <span style={{ color: '#ff4f7b' }}>↓ {losses}</span>
+            {kills + losses > 0 && (
+              <>
+                <span style={{ opacity: 0.3 }}>·</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{effPct}%</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Tier 3: Primary actions */}
         <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 8,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           ...(isTouchDevice ? {
             position: 'sticky', bottom: 0,
             background: 'rgba(0,0,0,0.92)',
-            padding: '10px 0 12px',
+            padding: '10px 16px 14px',
             width: '100%',
             borderTop: '1px solid rgba(255,255,255,0.08)',
           } : {}),
         }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={resetGame}
-            style={{
-              padding: '12px 28px', fontSize: 16, cursor: 'pointer',
-              background: accentColor, border: 'none', borderRadius: 8,
-              fontWeight: 'bold', color: '#000', minHeight: 52,
-            }}
-          >
-            Play Again
-          </button>
-          {campaignLevel !== null && won && (() => {
-            const nextLevel = LEVELS.find(l => l.id === campaignLevel + 1)
-            if (!nextLevel) return null
-            // Winning the current level always unlocks the next one
-            return (
+          {/* Primary row */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              onClick={resetGame}
+              style={{
+                padding: '12px 28px', fontSize: 16, cursor: 'pointer',
+                background: accentColor, border: 'none', borderRadius: 8,
+                fontWeight: 'bold', color: '#000', minHeight: 52,
+              }}
+            >
+              Play Again
+            </button>
+            {won && nextCampaignLevel && (
               <button
                 onClick={() => {
                   resetGame()
-                  setCampaignLevel(nextLevel.id)
+                  setCampaignLevel(nextCampaignLevel.id)
                   setPhase('playing')
                 }}
                 style={{
@@ -705,67 +540,74 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   borderRadius: 8, color: '#000', fontWeight: 'bold', minHeight: 52,
                 }}
               >
-                Level {nextLevel.id} →
+                Level {nextCampaignLevel.id} →
               </button>
-            )
-          })()}
-          {campaignLevel !== null && (
+            )}
+          </div>
+          {/* Secondary row */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {campaignLevel !== null && (
+              <button
+                onClick={() => { resetGame(); setCampaignLevel(null); router.push('/speck-wars') }}
+                style={{
+                  padding: '8px 18px', fontSize: 13, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6, color: 'rgba(255,255,255,0.55)', minHeight: 44,
+                }}
+              >
+                Campaign
+              </button>
+            )}
             <button
-              onClick={() => {
-                resetGame()
-                setCampaignLevel(null)
-                router.push('/speck-wars')
-              }}
+              onClick={handleShare}
               style={{
-                padding: '12px 28px', fontSize: 16, cursor: 'pointer',
-                background: 'transparent', border: `2px solid ${accentColor}`,
-                borderRadius: 8, color: accentColor, minHeight: 52,
+                padding: '8px 18px', fontSize: 13, cursor: 'pointer',
+                background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 6, color: 'rgba(255,255,255,0.55)', minHeight: 44,
               }}
             >
-              Back to Campaign
+              {copied ? 'Copied!' : 'Share'}
             </button>
-          )}
-          <button
-            onClick={handleShare}
-            style={{
-              padding: '12px 28px', fontSize: 16, cursor: 'pointer',
-              background: 'transparent', border: `2px solid ${accentColor}`,
-              borderRadius: 8, color: accentColor, minHeight: 52,
-            }}
-          >
-            {copied ? 'Copied!' : 'Share'}
-          </button>
-          <a
-            href="/"
-            style={{
-              padding: '12px 28px', fontSize: 16, cursor: 'pointer',
-              background: 'transparent', border: '2px solid rgba(255,255,255,0.3)',
-              borderRadius: 8, color: 'rgba(255,255,255,0.7)', textDecoration: 'none',
-              display: 'flex', alignItems: 'center', minHeight: 52,
-            }}
-          >
-            ← Cave
-          </a>
+            <a
+              href="/"
+              style={{
+                padding: '8px 18px', fontSize: 13,
+                background: 'transparent', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 6, color: 'rgba(255,255,255,0.35)', textDecoration: 'none',
+                display: 'flex', alignItems: 'center', minHeight: 44,
+              }}
+            >
+              ← Cave
+            </a>
           </div>
           {!isTouchDevice && (
-            <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.25)' }}>
+            <span style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.2)' }}>
               Enter / Space — play again
             </span>
           )}
         </div>
-        {nextDiff && (
-          <button
-            onClick={() => { setDifficulty(nextDiff.key); resetGame(); setPhase('playing') }}
-            style={{
-              padding: '8px 24px', fontSize: 13, cursor: 'pointer',
-              background: 'transparent',
-              border: `1px solid ${nextDiff.color}`,
-              borderRadius: 6, color: nextDiff.color, opacity: 0.8,
-              letterSpacing: 1, minHeight: isTouchDevice ? 44 : undefined,
-            }}
-          >
-            Try {nextDiff.label} →
-          </button>
+
+        {/* Sign-up CTA — earned value, shown last */}
+        {!user && (
+          <div style={{
+            maxWidth: 280, textAlign: 'center',
+            padding: '8px 16px',
+            border: '1px solid rgba(74,247,196,0.12)',
+            borderRadius: 6,
+          }}>
+            <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(74,247,196,0.65)', marginBottom: 5 }}>
+              {won && winStreak >= 2
+                ? `Your ${winStreak}-win streak deserves a record.`
+                : won ? 'Track your wins and best times.'
+                : 'Log your battles. Climb the ranks.'}
+            </div>
+            <Link
+              href="/auth?redirect=/speck-wars"
+              style={{ display: 'inline-block', fontSize: 10, letterSpacing: 2, color: '#4af7c4', textTransform: 'uppercase', textDecoration: 'none', opacity: 0.8 }}
+            >
+              Create account →
+            </Link>
+          </div>
         )}
       </div>
     )
