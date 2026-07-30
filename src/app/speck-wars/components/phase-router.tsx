@@ -429,9 +429,10 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const starStr = won ? '★'.repeat(displayStars) + '☆'.repeat(3 - displayStars) : '✗✗✗'
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     const statsLine = `⚔ ${kills} kills · ${losses} lost · ${effPct}% eff`
+    const levelLabel = levelConfig ? `Level ${String(campaignLevel).padStart(2, '0')} · ${levelConfig.name}` : `[${layoutName}]`
     const shareText = won
-      ? `${starStr} Speck Wars ${today} [${layoutName}]\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
-      : `${starStr} Speck Wars ${today} [${layoutName}]\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
+      ? `${starStr} Speck Wars ${today} ${levelLabel}\nVICTORY in ${timeStr} (${diffLabel})\n${statsLine}\nCan you do better? `
+      : `${starStr} Speck Wars ${today} ${levelLabel}\nDEFEATED in ${timeStr} (${diffLabel})\n${statsLine}\nThink you can win? `
 
     const handleShare = async () => {
       const url = typeof window !== 'undefined' ? window.location.href : ''
