@@ -132,6 +132,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               <button
                 key={d.key}
                 onClick={() => setDifficulty(d.key)}
+                aria-pressed={difficulty === d.key}
+                aria-label={`${d.label} — ${d.desc}${wonToday ? ', won today' : ''}`}
                 style={{
                   padding: isTouchDevice ? '8px 20px' : '6px 16px',
                   fontSize: 14,
@@ -160,7 +162,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   {d.desc}
                 </span>
                 {wonToday && (
-                  <span style={{
+                  <span aria-hidden="true" style={{
                     position: 'absolute', top: -6, right: -6,
                     fontSize: 10, background: d.color, color: '#000',
                     borderRadius: '50%', width: 14, height: 14,
