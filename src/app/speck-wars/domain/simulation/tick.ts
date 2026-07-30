@@ -38,6 +38,7 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 6. Remove dead specks (compact arrays)
   removeDeadSpecks(sim)
+  pruneCommandGroups(sim)
 
   // 7. Update outpost capture progress
   updateCapture(sim, dt)
@@ -99,26 +100,28 @@ function consumeInputs(sim: SimulationState) {
   for (const event of sim.inputQueue) {
     if (event.type === 'RALLY') {
       if (event.ownerId === 'player') {
-        // With a selection this moves that group; with none it is an army-wide order from the
-        // Defend / Advance / Rush / Guard verbs. A bare map click never gets here — game-instance
-        // drops it when nothing is selected, so specks are never moved by accident.
-        const useSelection = sim.selectedSpeckIds.size > 0
-        sim.rallyPoints['player-selected'] = useSelection ? { x: event.x, y: event.y } : null
+        // Require an explicit selection — bare map click has already been converted to CLEAR_SELECT
+        // by the input layer, and Defend/Advance/Rush/Guard only issue RALLY when something is selected.
+        if (sim.selectedSpeckIds.size === 0) continue
+        sim.nextCommandGroupId++
+        const groupId = sim.nextCommandGroupId
+        sim.commandGroupRallies.set(groupId, { x: event.x, y: event.y })
+        sim.rallyPoints['player-selected'] = { x: event.x, y: event.y }
         for (let i = 0; i < sim.speckCount; i++) {
           const meta = sim.speckMeta[i]
           if (!meta || !sim.speckIds[i] || meta.ownerId !== 'player') continue
-          if (useSelection && !sim.selectedSpeckIds.has(meta.id)) continue
+          if (!sim.selectedSpeckIds.has(meta.id)) continue
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
-          meta.homeBuildingId = undefined  // a direct order outranks the spawn building's rally
-          meta.holdPosition = false  // clear hold when a new rally is issued
-          meta.attackMoveMode = false  // normal move cancels attack-move
+          meta.commandGroupId = groupId
+          meta.homeBuildingId = undefined
+          meta.holdPosition = false
+          meta.attackMoveMode = false
         }
       } else {
         // AI (and any non-player owner): keep global rally logic
         sim.rallyPoints[event.ownerId] = { x: event.x, y: event.y }
       }
-      // Player with no selection: do nothing — player rally is per-building only (SET_BUILDING_RALLY)
     }
     if (event.type === 'ATTACK_MOVE') {
       const hasSelection = event.ownerId === 'player' && sim.selectedSpeckIds.size > 0
@@ -180,6 +183,8 @@ function consumeInputs(sim: SimulationState) {
       }
       // Selected specks initially use the same rally as unselected
       sim.rallyPoints['player-selected'] = sim.rallyPoints['player']
+      // Mutual exclusion: selecting specks always clears any building selection
+      sim.selectedBuildingId = null
     }
     if (event.type === 'CLEAR_SELECT') {
       sim.selectedSpeckIds.clear()
@@ -212,6 +217,7 @@ function consumeInputs(sim: SimulationState) {
       }
     }
     if (event.type === 'STOP') {
+      if (event.ownerId === 'player' && sim.selectedSpeckIds.size === 0) continue
       // Stop selected specks: clear their assigned rally and targeting, enter idle
       for (let i = 0; i < sim.speckCount; i++) {
         const meta = sim.speckMeta[i]
@@ -231,6 +237,7 @@ function consumeInputs(sim: SimulationState) {
       }
     }
     if (event.type === 'HOLD') {
+      if (event.ownerId === 'player' && sim.selectedSpeckIds.size === 0) continue
       // Hold position: selected specks stop and don't attack
       for (let i = 0; i < sim.speckCount; i++) {
         const meta = sim.speckMeta[i]
@@ -394,4 +401,16 @@ function emitHudUpdate(sim: SimulationState) {
   }
 
   sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding } })
+}
+
+function pruneCommandGroups(sim: SimulationState) {
+  if (sim.commandGroupRallies.size === 0) return
+  const liveGroups = new Set<number>()
+  for (let i = 0; i < sim.speckCount; i++) {
+    const meta = sim.speckMeta[i]
+    if (meta?.commandGroupId !== undefined) liveGroups.add(meta.commandGroupId)
+  }
+  for (const gid of sim.commandGroupRallies.keys()) {
+    if (!liveGroups.has(gid)) sim.commandGroupRallies.delete(gid)
+  }
 }
