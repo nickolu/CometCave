@@ -688,6 +688,27 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           >
             Play Again
           </button>
+          {campaignLevel !== null && won && (() => {
+            const nextLevel = LEVELS.find(l => l.id === campaignLevel + 1)
+            if (!nextLevel) return null
+            // Winning the current level always unlocks the next one
+            return (
+              <button
+                onClick={() => {
+                  resetGame()
+                  setCampaignLevel(nextLevel.id)
+                  setPhase('playing')
+                }}
+                style={{
+                  padding: '12px 28px', fontSize: 16, cursor: 'pointer',
+                  background: accentColor, border: `2px solid ${accentColor}`,
+                  borderRadius: 8, color: '#000', fontWeight: 'bold', minHeight: 52,
+                }}
+              >
+                Level {nextLevel.id} →
+              </button>
+            )
+          })()}
           {campaignLevel !== null && (
             <button
               onClick={() => {
