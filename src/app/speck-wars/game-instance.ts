@@ -125,7 +125,6 @@ export class GameInstance {
   }
 
   async start() {
-    console.log('GameInstance started')
     document.addEventListener('visibilitychange', this.onVisibilityChange)
     this.onResize = () => { clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight) }
     window.addEventListener('resize', this.onResize)
@@ -803,7 +802,6 @@ export class GameInstance {
     this.renderer.destroy()
     this.inputHandler?.destroy()
     useSpeckWarsStore.getState().setGameActions(null)
-    console.log('GameInstance destroyed')
   }
 
   rally(x: number, y: number) {
