@@ -973,8 +973,15 @@ export function HUD() {
                     ) : null}
                   </>
                 )
+                const outpostLabel = (() => {
+                  const name = id.replace('outpost-', '')
+                  const owner = isPlayerOwned ? 'yours' : color === '#888888' ? 'neutral' : 'enemy'
+                  const attack = isUnderAttack && isPlayerOwned ? ', under attack' : ''
+                  const capStr = cap && cap.progress > 0 ? `, capturing ${Math.round(cap.progress * 100)}%` : ''
+                  return `${name} outpost — ${owner}${attack}${capStr} — tap to pan camera`
+                })()
                 return canTap ? (
-                  <button key={i} onClick={handleTap} style={{ ...sharedStyle, ...touchStyle }}>
+                  <button key={i} onClick={handleTap} aria-label={outpostLabel} style={{ ...sharedStyle, ...touchStyle }}>
                     {innerContent}
                   </button>
                 ) : (
