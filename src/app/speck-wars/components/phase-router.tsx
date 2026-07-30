@@ -248,6 +248,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setFogEnabled(!fogEnabled)}
             title="Fog of War: hides enemy specks and buildings outside your vision (specks 150px · base 300px · outposts 180px)"
+            aria-label={fogEnabled ? 'Fog of War: ON — click to disable' : 'Fog of War: OFF — click to enable'}
+            aria-pressed={fogEnabled}
             style={{
               padding: '4px 14px',
               fontSize: 12,
@@ -278,6 +280,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
               <button
                 key={key}
                 title={desc}
+                aria-label={`${label.replace(/^[^\w]*/, '')} map — ${desc}${mapPreset === key ? ' (selected)' : ''}`}
+                aria-pressed={mapPreset === key}
                 onClick={() => setMapPreset(key)}
                 style={{
                   padding: isTouchDevice ? '8px 12px' : '4px 10px',
