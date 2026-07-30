@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSpeckWarsStore } from '../store'
 import { PLAYER_COLOR, AI_COLOR } from '../domain/constants'
 import { getBestTime, getWinStreak } from '../lib/personal-best'
-import { LEVELS } from '../campaign/levels'
+import { LEVELS, getLevelBestTime } from '../campaign/levels'
 import { onLongPressStart, onLongPressCancel, onTapRipple } from '../input/touch-feedback'
 
 function colorHex(n: number) {
@@ -298,14 +298,16 @@ export function HUD() {
       {/* Difficulty badge — top right */}
       {(() => {
         const diffColors: Record<string, string> = { easy: '#44ff88', medium: '#ffcc44', hard: '#ff4f7b', 'very-hard': '#cc00ff' }
-        const color = diffColors[difficulty] ?? '#ffffff'
+        const lvl = campaignLevel !== null ? LEVELS.find(l => l.id === campaignLevel) : null
+        const effectiveDiff = lvl?.difficulty ?? difficulty
+        const color = diffColors[effectiveDiff] ?? '#ffffff'
         return (
           <div style={{ position: 'absolute', top: 12, right: 16, fontSize: 10, letterSpacing: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
             <span style={{ color, opacity: 0.5, border: `1px solid ${color}`, borderRadius: 3, padding: '2px 6px' }}>
-              {difficulty.toUpperCase()}
+              {effectiveDiff.toUpperCase()}
             </span>
             <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: isTouchDevice ? 10 : 8, letterSpacing: 0.5 }}>
-              DAILY MAP · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+              {lvl ? 'CAMPAIGN' : `DAILY MAP · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}`}
             </span>
           </div>
         )
@@ -616,7 +618,7 @@ export function HUD() {
         <span style={{ fontSize: 15, letterSpacing: 2, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 6 }}>
           {formatTime(elapsedMs)}
           {(() => {
-            const pb = getBestTime(difficulty)
+            const pb = campaignLevel !== null ? getLevelBestTime(campaignLevel) : getBestTime(difficulty)
             if (!pb) return null
             const ahead = pb - elapsedMs
             return (
