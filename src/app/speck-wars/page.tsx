@@ -6,6 +6,7 @@ import { LEVELS, getLevelStars, isLevelUnlocked } from './campaign/levels'
 
 // Show as many slots as there are defined levels
 const TOTAL_SLOTS = LEVELS.length
+const MAX_STARS = LEVELS.length * 3
 
 export default function SpeckWarsCampaignPage() {
   const router = useRouter()
@@ -24,11 +25,29 @@ export default function SpeckWarsCampaignPage() {
     router.push('/speck-wars/play')
   }
 
+  const totalStars = Object.values(stars).reduce((sum, s) => sum + s, 0)
+
   return (
     <div style={{ minHeight: '100dvh', background: '#080810', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: 24 }}>
       <div style={{ textAlign: 'center' }}>
         <h1 style={{ fontSize: 48, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: 2 }}>SPECK WARS</h1>
         <div style={{ fontSize: 14, letterSpacing: 4, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>CAMPAIGN</div>
+        {totalStars > 0 && (
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 13, color: '#ffd700', letterSpacing: 1 }}>
+              &#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.4)' }}>/ {MAX_STARS}</span>
+            </div>
+            <div style={{ width: 180, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${(totalStars / MAX_STARS) * 100}%`,
+                background: totalStars === MAX_STARS ? '#ffd700' : 'rgba(255,215,0,0.6)',
+                borderRadius: 2,
+                transition: 'width 0.4s ease',
+              }} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', maxWidth: 600 }}>
