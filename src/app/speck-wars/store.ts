@@ -137,7 +137,10 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   surrender: () => {
     const s = get()
     resetWinStreak()
-    recordGameResult(s.difficulty, false, s.elapsedMs, s.kills)
+    // Only record skirmish stats — campaign surrenders must not pollute per-difficulty history
+    if (s.campaignLevel === null) {
+      recordGameResult(s.difficulty, false, s.elapsedMs, s.kills)
+    }
     set({ phase: 'defeat', winnerId: 'ai', victoryType: 'surrender', isNewBest: false })
   },
   resetGame: () => set(s => ({
