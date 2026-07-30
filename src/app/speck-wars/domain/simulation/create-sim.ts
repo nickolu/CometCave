@@ -3,6 +3,7 @@ import { PLAYER_BASE_X, PLAYER_BASE_Y, AI_BASE_X, AI_BASE_Y, PLAYER_COLOR, AI_CO
 import { SpatialGrid } from './spatial-grid'
 import { mulberry32 } from './prng'
 import type { Difficulty, MapPreset } from '../../store'
+import { SPECK_TYPES } from '../config/speck-types'
 
 // Preset obstacle layouts — world is 3000×3000, player base at (600,1500), AI base at (2400,1500)
 const MAP_PRESET_OBSTACLES: Partial<Record<MapPreset, WallObstacle[]>> = {
@@ -67,7 +68,7 @@ const playerSpawnInterval: Record<Difficulty, number | undefined> = {
   'very-hard': undefined,  // same as hard — no advantage
 }
 
-export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium', mapPreset: MapPreset = 'random'): SimulationState {
+export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium', mapPreset: MapPreset = 'random', outpostCount: number = 3): SimulationState {
   const playerBase: BuildingEntity = {
     id: 'building-player-base',
     typeId: 'base',
@@ -106,7 +107,8 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   const layoutIndex = Math.floor(rng() * MAP_LAYOUTS.length)
   const outpostPositions = MAP_LAYOUTS[layoutIndex]
   const outpostBuildings: Record<string, BuildingEntity> = {}
-  for (const pos of outpostPositions) {
+  const limitedOutpostPositions = outpostCount > 0 ? outpostPositions.slice(0, outpostCount) : []
+  for (const pos of limitedOutpostPositions) {
     const jx = (rng() * 2 - 1) * JITTER
     const jy = (rng() * 2 - 1) * JITTER
     outpostBuildings[pos.id] = {
@@ -159,4 +161,58 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   }
 
   return sim
+}
+
+export function preSpawnUnits(
+  sim: SimulationState,
+  ownerId: string,
+  count: number,
+  typeId: 'basic' | 'heavy' | 'scout' = 'basic'
+): void {
+  // Find the owner's base building
+  const base = Object.values(sim.buildings).find(
+    b => b.ownerId === ownerId && b.typeId === 'base'
+  )
+  if (!base) return
+
+  const stype = SPECK_TYPES[typeId]
+
+  for (let i = 0; i < count; i++) {
+    // Scatter units in a radius around the base
+    const angle = (i / count) * Math.PI * 2
+    const radius = 40 + Math.random() * 20
+    const x = base.x + Math.cos(angle) * radius
+    const y = base.y + Math.sin(angle) * radius
+
+    // Find a free slot in the SoA arrays (prefer recycled free slots)
+    let slot: number
+    if (sim.freeSlots.length > 0) {
+      slot = sim.freeSlots.pop()!
+    } else if (sim.speckCount < MAX_SPECKS) {
+      slot = sim.speckCount
+      sim.speckCount++
+    } else {
+      break  // at capacity
+    }
+
+    const id = `pre-${ownerId}-${i}-${Date.now()}`
+    sim.speckIds[slot] = id
+    sim.speckX[slot] = x
+    sim.speckY[slot] = y
+    sim.speckVx[slot] = 0
+    sim.speckVy[slot] = 0
+    sim.speckHp[slot] = stype?.hp ?? 1
+
+    sim.speckMeta[slot] = {
+      id,
+      ownerId,
+      typeId,
+      state: 'idle',
+      targetId: null,
+      attackCooldown: 0,
+      kills: 0,
+      assignedRallyX: base.x,
+      assignedRallyY: base.y,
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { createSim } from './domain/simulation/create-sim'
+import { createSim, preSpawnUnits } from './domain/simulation/create-sim'
 import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
@@ -9,6 +9,7 @@ import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak, hasSeenVeteranTip, markVeteranTipSeen } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
+import { LEVELS } from './campaign/levels'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -65,14 +66,41 @@ export class GameInstance {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    const difficulty = useSpeckWarsStore.getState().difficulty
-    const mapPreset = useSpeckWarsStore.getState().mapPreset
+    const storeState = useSpeckWarsStore.getState()
+    const campaignLevel = storeState.campaignLevel
     const aiTickInterval: Record<string, number> = { easy: 60, medium: 30, hard: 15, 'very-hard': 6 }
-    const now = new Date()
-    const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
-    const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
-    const dailySeed = dateKey * 1000 + diffHash
-    this.sim = createSim(dailySeed, difficulty, mapPreset)
+
+    let difficulty = storeState.difficulty
+    let sim: SimulationState
+
+    if (campaignLevel !== null) {
+      // Campaign mode: use level config
+      const levelConfig = LEVELS.find(l => l.id === campaignLevel)
+      if (levelConfig) {
+        difficulty = levelConfig.difficulty
+        sim = createSim(levelConfig.seed, levelConfig.difficulty, 'open', levelConfig.outpostCount)
+        preSpawnUnits(sim, 'player', levelConfig.preSpawn.player)
+        preSpawnUnits(sim, 'ai', levelConfig.preSpawn.ai)
+      } else {
+        // Fallback: treat as skirmish
+        const mapPreset = storeState.mapPreset
+        const now = new Date()
+        const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
+        const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+        const dailySeed = dateKey * 1000 + diffHash
+        sim = createSim(dailySeed, difficulty, mapPreset)
+      }
+    } else {
+      // Skirmish/free play mode
+      const mapPreset = storeState.mapPreset
+      const now = new Date()
+      const dateKey = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate()
+      const diffHash = [...difficulty].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+      const dailySeed = dateKey * 1000 + diffHash
+      sim = createSim(dailySeed, difficulty, mapPreset)
+    }
+
+    this.sim = sim
     this.renderer = new Renderer()
     this.camera = createCamera(canvas.clientWidth, canvas.clientHeight)
     const aiPersonality = (): AIPersonality => {
