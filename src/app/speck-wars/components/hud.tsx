@@ -995,8 +995,8 @@ export function HUD() {
         )
       })()}
 
-      {/* Cinematic countdown overlay */}
-      {countdown !== null && (
+      {/* Cinematic countdown overlay — hidden while level intro is showing */}
+      {countdown !== null && !showLevelIntro && (
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
