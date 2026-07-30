@@ -538,7 +538,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
           {/* Primary row */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
-              onClick={resetGame}
+              onClick={() => { const lvl = campaignLevel; resetGame(); if (lvl !== null) setCampaignLevel(lvl) }}
               style={{
                 padding: '12px 28px', fontSize: 16, cursor: 'pointer',
                 background: accentColor, border: 'none', borderRadius: 8,
