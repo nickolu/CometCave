@@ -144,6 +144,14 @@ export function HUD() {
       fontFamily: 'monospace', fontSize: 13, color: '#fff',
       touchAction: 'manipulation',
     }}>
+      {/* Visually-hidden live region so screen readers announce game notifications */}
+      <div
+        aria-live="assertive"
+        aria-atomic="true"
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
+      >
+        {notification?.message ?? ''}
+      </div>
       <style>{`
         @keyframes pulse-red {
           from { opacity: 0.5; }
@@ -196,6 +204,7 @@ export function HUD() {
       {hud?.baseUnderThreat && (
         <button
           onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(25) }}
+          aria-label="Base under attack — click to snap to base"
           style={{
             position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
             background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
@@ -223,6 +232,7 @@ export function HUD() {
       {hud?.enemyAdvanceDetected && (
         <button
           onClick={() => { gameActions?.snapToAction?.(); navigator.vibrate?.(20) }}
+          aria-label="Enemy advancing — click to snap to action"
           style={{
             position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
             background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
@@ -339,6 +349,9 @@ export function HUD() {
             )}
             <button
               onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(inProgress ? [20, 30, 20] : 15) }}
+              aria-label={inProgress
+                ? `Wave ${hud.waveNumber > 0 ? hud.waveNumber : ''} incoming — click to snap to base`.trim()
+                : `Wave in ${Math.ceil((hud.waveCountdown ?? 0) / 1000)} seconds — click to prepare`}
               style={{
                 position: 'absolute', top: isTouchDevice ? 175 : 240, right: 16,
                 padding: isTouchDevice ? '8px 12px' : '4px 10px',
@@ -408,6 +421,7 @@ export function HUD() {
               </button>
             )}
             <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
+              aria-label="Minimap — click to set rally point"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
@@ -959,8 +973,15 @@ export function HUD() {
                     ) : null}
                   </>
                 )
+                const outpostLabel = (() => {
+                  const name = id.replace('outpost-', '')
+                  const owner = isPlayerOwned ? 'yours' : color === '#888888' ? 'neutral' : 'enemy'
+                  const attack = isUnderAttack && isPlayerOwned ? ', under attack' : ''
+                  const capStr = cap && cap.progress > 0 ? `, capturing ${Math.round(cap.progress * 100)}%` : ''
+                  return `${name} outpost — ${owner}${attack}${capStr} — tap to pan camera`
+                })()
                 return canTap ? (
-                  <button key={i} onClick={handleTap} style={{ ...sharedStyle, ...touchStyle }}>
+                  <button key={i} onClick={handleTap} aria-label={outpostLabel} style={{ ...sharedStyle, ...touchStyle }}>
                     {innerContent}
                   </button>
                 ) : (
@@ -1043,6 +1064,7 @@ export function HUD() {
           `}</style>
           <span
             key={notification.message + notification.color}
+            aria-hidden="true"
             style={{
               color: notification.color,
               fontSize: isTouchDevice ? 15 : 13,
@@ -1208,7 +1230,7 @@ export function HUD() {
             Give Up
           </button>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>
-            Tap anywhere to resume
+            {isTouchDevice ? 'Tap anywhere to resume' : 'Click or press Space to resume'}
           </div>
         </div>
       )}
@@ -1262,6 +1284,8 @@ export function HUD() {
                           <button
                             key={type}
                             title={title}
+                            aria-label={`${title}${active ? ' (selected)' : ''}`}
+                            aria-pressed={active}
                             onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
                             style={{
                               flex: 1,
@@ -1322,6 +1346,8 @@ export function HUD() {
               return (
                 <button
                   onClick={() => { setBuildingPanelExpanded(v => !v); navigator.vibrate?.(8) }}
+                  aria-label={`${b.typeId.toUpperCase()} building — ${buildingPanelExpanded ? 'close' : 'open'} panel`}
+                  aria-pressed={buildingPanelExpanded}
                   style={{
                     height: 36, borderRadius: 18, padding: '0 12px',
                     display: 'flex', alignItems: 'center', gap: 5,
@@ -1584,6 +1610,11 @@ export function HUD() {
                     return (
                       <button
                         key={slot}
+                        aria-label={isSaveMode
+                          ? `Save group ${slot} (${selectedSpeckCount} specks)`
+                          : isEmpty
+                            ? `Group ${slot} — empty`
+                            : `Recall group ${slot} (${savedCount} specks)`}
                         onClick={() => {
                           if (isSaveMode) {
                             gameActions?.saveControlGroup?.(slot)
@@ -1792,7 +1823,7 @@ export function HUD() {
             strokeDasharray="126"
             strokeDashoffset="126"
             transform="rotate(-90, 24, 24)"
-            style={{ animation: 'long-press-ring 500ms linear forwards' }}
+            style={{ animation: prefersReducedMotion ? 'none' : 'long-press-ring 500ms linear forwards' }}
             onAnimationEnd={() => setLongPressRing(null)}
           />
         </svg>
@@ -1812,7 +1843,7 @@ export function HUD() {
             border: '2px solid rgba(74, 247, 196, 0.8)',
             pointerEvents: 'none',
             zIndex: 200,
-            animation: 'tap-ripple-expand 300ms ease-out forwards',
+            animation: prefersReducedMotion ? 'none' : 'tap-ripple-expand 300ms ease-out forwards',
           }}
           onAnimationEnd={() => setTapRippleState(null)}
         />
