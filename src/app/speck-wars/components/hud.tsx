@@ -1220,7 +1220,7 @@ export function HUD() {
             Give Up
           </button>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>
-            Tap anywhere to resume
+            {isTouchDevice ? 'Tap anywhere to resume' : 'Click or press Space to resume'}
           </div>
         </div>
       )}
