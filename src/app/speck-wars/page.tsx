@@ -50,7 +50,7 @@ export default function SpeckWarsCampaignPage() {
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#080810', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: 24 }}>
+    <div style={{ flex: 1, background: '#080810', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: 24 }}>
       <div style={{ textAlign: 'center' }}>
         <h1 style={{ fontSize: 48, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: 2 }}>SPECK WARS</h1>
         <div style={{ fontSize: 14, letterSpacing: 4, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>CAMPAIGN</div>
@@ -173,7 +173,6 @@ export default function SpeckWarsCampaignPage() {
               {unlocked && level ? (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
-                  {level.outpostCount > 0 && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>{level.outpostCount} outpost{level.outpostCount !== 1 ? 's' : ''}</div>}
                   <div style={{
                     fontSize: 8, letterSpacing: 1, textTransform: 'uppercase',
                     color: DIFF_COLORS[level.difficulty],

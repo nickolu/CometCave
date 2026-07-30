@@ -4,7 +4,12 @@ import { usePathname } from 'next/navigation'
 import { ROUTE_CONSTANTS } from '@/app/route-constants'
 import type { ReactNode } from 'react'
 
-const IMMERSIVE_ROUTES = [ROUTE_CONSTANTS.COMET_CARDS, ROUTE_CONSTANTS.SPECK_WARS]
+const IMMERSIVE_ROUTES = [
+  ROUTE_CONSTANTS.COMET_CARDS,
+  ROUTE_CONSTANTS.SPECK_WARS,
+  `${ROUTE_CONSTANTS.SPECK_WARS}/play`,
+  `${ROUTE_CONSTANTS.SPECK_WARS}/skirmish`,
+]
 
 export function LayoutShell({
   children,

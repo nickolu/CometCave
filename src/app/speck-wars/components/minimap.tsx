@@ -153,13 +153,63 @@ export function Minimap({ gameRef }: MinimapProps) {
     return () => cancelAnimationFrame(rafId)
   }, [gameRef])
 
+  const isDragging = useRef(false)
+  const didDrag = useRef(false)
+
+  const getWorldCoords = (clientX: number, clientY: number, rect: DOMRect) => {
+    const mx = clientX - rect.left
+    const my = clientY - rect.top
+    return { wx: mx / SCALE_X, wy: my / SCALE_Y }
+  }
+
+  const handleMouseDown = () => {
+    isDragging.current = true
+    didDrag.current = false
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging.current) return
+    const game = gameRef.current
+    if (!game) return
+    didDrag.current = true
+    const rect = e.currentTarget.getBoundingClientRect()
+    const { wx, wy } = getWorldCoords(e.clientX, e.clientY, rect)
+    game.panCameraTo(wx, wy)
+  }
+
+  const handleMouseUp = () => {
+    isDragging.current = false
+  }
+
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (didDrag.current) return
     const game = gameRef.current
     if (!game) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const mx = e.clientX - rect.left
-    const my = e.clientY - rect.top
-    game.rally(mx / SCALE_X, my / SCALE_Y)
+    const { wx, wy } = getWorldCoords(e.clientX, e.clientY, rect)
+    game.panCameraTo(wx, wy)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    isDragging.current = true
+    didDrag.current = false
+    e.preventDefault()
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const game = gameRef.current
+    if (!game || !isDragging.current) return
+    didDrag.current = true
+    const touch = e.touches[0]
+    if (!touch) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const { wx, wy } = getWorldCoords(touch.clientX, touch.clientY, rect)
+    game.panCameraTo(wx, wy)
+    e.preventDefault()
+  }
+
+  const handleTouchEnd = () => {
+    isDragging.current = false
   }
 
   return (
@@ -167,9 +217,16 @@ export function Minimap({ gameRef }: MinimapProps) {
       ref={canvasRef}
       width={MAP_W}
       height={MAP_H}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onClick={handleClick}
-      title="Click to set rally point"
-      aria-label="Minimap — click to set rally point"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      title="Click or drag to pan camera"
+      aria-label="Minimap — click or drag to pan camera"
       style={{
         position: 'absolute',
         bottom: 16,
@@ -179,6 +236,7 @@ export function Minimap({ gameRef }: MinimapProps) {
         borderRadius: 4,
         imageRendering: 'pixelated',
         cursor: 'crosshair',
+        touchAction: 'none',
       }}
     />
   )
