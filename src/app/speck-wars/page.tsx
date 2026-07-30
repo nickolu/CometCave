@@ -133,7 +133,7 @@ export default function SpeckWarsCampaignPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', maxWidth: 600 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12, width: '100%', maxWidth: 660 }}>
         {Array.from({ length: TOTAL_SLOTS }, (_, i) => {
           const levelNum = i + 1
           const level = LEVELS.find(l => l.id === levelNum)
@@ -157,7 +157,7 @@ export default function SpeckWarsCampaignPage() {
                 ? `Play level ${levelNum}: ${level.name} — ${DIFF_LABELS[level.difficulty]}${level.outpostCount > 0 ? ` — ${level.outpostCount} outpost${level.outpostCount > 1 ? 's' : ''}` : ''}${levelStars > 0 ? ` — ${levelStars} of 3 stars` : ''}`
                 : `Level ${levelNum} locked — beat level ${levelNum - 1} first`) : `Level ${levelNum}`}
               style={{
-                width: 120, height: 140,
+                width: '100%', height: 140,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
                 background: isNext ? 'rgba(0,255,194,0.12)' : isHovered && unlocked ? 'rgba(0,255,194,0.09)' : unlocked ? 'rgba(0,255,194,0.06)' : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${isNext ? 'rgba(0,255,194,0.8)' : isHovered && unlocked ? 'rgba(0,255,194,0.55)' : unlocked ? 'rgba(0,255,194,0.3)' : 'rgba(255,255,255,0.06)'}`,
@@ -173,7 +173,7 @@ export default function SpeckWarsCampaignPage() {
               {unlocked && level ? (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
-                  {level.outpostCount > 0 && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>⬡ {level.outpostCount}</div>}
+                  {level.outpostCount > 0 && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.5 }}>{level.outpostCount} outpost{level.outpostCount !== 1 ? 's' : ''}</div>}
                   <div style={{
                     fontSize: 8, letterSpacing: 1, textTransform: 'uppercase',
                     color: DIFF_COLORS[level.difficulty],
