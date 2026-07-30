@@ -196,6 +196,7 @@ export function HUD() {
       {hud?.baseUnderThreat && (
         <button
           onClick={() => { gameActions?.snapToBase?.(); navigator.vibrate?.(25) }}
+          aria-label="Base under attack — click to snap to base"
           style={{
             position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
             background: 'rgba(200,0,0,0.9)', color: '#fff', fontWeight: 700,
@@ -223,6 +224,7 @@ export function HUD() {
       {hud?.enemyAdvanceDetected && (
         <button
           onClick={() => { gameActions?.snapToAction?.(); navigator.vibrate?.(20) }}
+          aria-label="Enemy advancing — click to snap to action"
           style={{
             position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)',
             background: 'rgba(200,80,0,0.88)', color: '#ffe0c0', fontWeight: 700,
@@ -1262,6 +1264,8 @@ export function HUD() {
                           <button
                             key={type}
                             title={title}
+                            aria-label={`${title}${active ? ' (selected)' : ''}`}
+                            aria-pressed={active}
                             onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
                             style={{
                               flex: 1,
@@ -1322,6 +1326,8 @@ export function HUD() {
               return (
                 <button
                   onClick={() => { setBuildingPanelExpanded(v => !v); navigator.vibrate?.(8) }}
+                  aria-label={`${b.typeId.toUpperCase()} building — ${buildingPanelExpanded ? 'close' : 'open'} panel`}
+                  aria-pressed={buildingPanelExpanded}
                   style={{
                     height: 36, borderRadius: 18, padding: '0 12px',
                     display: 'flex', alignItems: 'center', gap: 5,
@@ -1783,7 +1789,7 @@ export function HUD() {
             strokeDasharray="126"
             strokeDashoffset="126"
             transform="rotate(-90, 24, 24)"
-            style={{ animation: 'long-press-ring 500ms linear forwards' }}
+            style={{ animation: prefersReducedMotion ? 'none' : 'long-press-ring 500ms linear forwards' }}
             onAnimationEnd={() => setLongPressRing(null)}
           />
         </svg>
@@ -1803,7 +1809,7 @@ export function HUD() {
             border: '2px solid rgba(74, 247, 196, 0.8)',
             pointerEvents: 'none',
             zIndex: 200,
-            animation: 'tap-ripple-expand 300ms ease-out forwards',
+            animation: prefersReducedMotion ? 'none' : 'tap-ripple-expand 300ms ease-out forwards',
           }}
           onAnimationEnd={() => setTapRippleState(null)}
         />
