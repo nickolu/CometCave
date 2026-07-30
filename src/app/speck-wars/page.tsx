@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { useSpeckWarsStore } from './store'
 import { LEVELS, getLevelStars, isLevelUnlocked } from './campaign/levels'
 
-// Show as many slots as there are defined levels
 const TOTAL_SLOTS = LEVELS.length
+const MAX_STARS = LEVELS.length * 3
 
 export default function SpeckWarsCampaignPage() {
   const router = useRouter()
   const { setCampaignLevel, resetGame } = useSpeckWarsStore()
   const [stars, setStars] = useState<Record<number, number>>({})
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const s: Record<number, number> = {}
@@ -24,12 +25,84 @@ export default function SpeckWarsCampaignPage() {
     router.push('/speck-wars/play')
   }
 
+  const totalStars = Object.values(stars).reduce((sum, s) => sum + s, 0)
+  const allLevelsBeaten = LEVELS.length > 0 && LEVELS.every(l => (stars[l.id] ?? 0) >= 1)
+
+  const handleShare = async () => {
+    const text = `I beat all 10 Speck Wars campaign levels — ${totalStars}/${MAX_STARS} stars. Can you conquer the campaign?`
+    const url = typeof window !== 'undefined' ? window.location.href : ''
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: 'Speck Wars', text, url }) } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(`${text} ${url}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100dvh', background: '#080810', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: 24 }}>
       <div style={{ textAlign: 'center' }}>
         <h1 style={{ fontSize: 48, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: 2 }}>SPECK WARS</h1>
         <div style={{ fontSize: 14, letterSpacing: 4, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>CAMPAIGN</div>
+        {totalStars > 0 && (
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 13, color: '#ffd700', letterSpacing: 1 }}>
+              &#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.4)' }}>/ {MAX_STARS}</span>
+            </div>
+            <div style={{ width: 180, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${(totalStars / MAX_STARS) * 100}%`,
+                background: totalStars === MAX_STARS ? '#ffd700' : 'rgba(255,215,0,0.6)',
+                borderRadius: 2,
+                transition: 'width 0.4s ease',
+              }} />
+            </div>
+          </div>
+        )}
       </div>
+
+      {allLevelsBeaten && (
+        <div style={{
+          textAlign: 'center',
+          padding: '20px 32px',
+          border: '1px solid rgba(255,215,0,0.25)',
+          borderRadius: 16,
+          background: 'rgba(255,215,0,0.04)',
+          maxWidth: 340,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+        }}>
+          <div style={{ fontSize: 11, letterSpacing: 4, color: 'rgba(255,215,0,0.5)' }}>✦ CAMPAIGN COMPLETE ✦</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+            You carved through all ten worlds.
+          </div>
+          <div style={{ fontSize: 18, color: '#ffd700', letterSpacing: 1, textShadow: totalStars === MAX_STARS ? '0 0 20px #ffd700' : 'none' }}>
+            &#9733; {totalStars} <span style={{ color: 'rgba(255,215,0,0.35)', fontSize: 14 }}>/ {MAX_STARS}</span>
+          </div>
+          {totalStars < MAX_STARS && (
+            <div style={{ fontSize: 10, letterSpacing: 1, color: 'rgba(255,215,0,0.3)' }}>
+              {totalStars}/{MAX_STARS} stars — replay levels to collect them all
+            </div>
+          )}
+          {totalStars === MAX_STARS && (
+            <div style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(255,215,0,0.6)' }}>
+              ALL STARS COLLECTED
+            </div>
+          )}
+          <button
+            onClick={handleShare}
+            style={{
+              marginTop: 4, padding: '8px 20px', fontSize: 11, letterSpacing: 2,
+              cursor: 'pointer', background: 'transparent',
+              border: '1px solid rgba(255,215,0,0.35)', borderRadius: 6,
+              color: 'rgba(255,215,0,0.7)', textTransform: 'uppercase',
+            }}
+          >
+            {copied ? 'Copied!' : 'Share →'}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', maxWidth: 600 }}>
         {Array.from({ length: TOTAL_SLOTS }, (_, i) => {
