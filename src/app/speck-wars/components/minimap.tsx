@@ -169,6 +169,7 @@ export function Minimap({ gameRef }: MinimapProps) {
       height={MAP_H}
       onClick={handleClick}
       title="Click to set rally point"
+      aria-label="Minimap — click to set rally point"
       style={{
         position: 'absolute',
         bottom: 16,
