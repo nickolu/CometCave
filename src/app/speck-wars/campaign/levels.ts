@@ -43,3 +43,9 @@ export function saveLevelStars(levelId: number, stars: number): void {
     if (stars > existing) localStorage.setItem(`speckwars-level-${levelId}-stars`, String(stars))
   } catch {}
 }
+
+// Level 1 is always unlocked. Level N requires at least 1 star on level N-1.
+export function isLevelUnlocked(levelId: number): boolean {
+  if (levelId <= 1) return true
+  return getLevelStars(levelId - 1) >= 1
+}
