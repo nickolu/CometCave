@@ -417,7 +417,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const displayStars = levelConfig ? campaignStarsEarned : stars
     const nextCampaignLevel = campaignLevel !== null ? LEVELS.find(l => l.id === campaignLevel + 1) ?? null : null
 
-    const { layoutName } = getDailyInfo(difficulty)
+    const { layoutName: skirmishLayoutName } = getDailyInfo(difficulty)
+    const campaignPresetNames: Record<string, string> = { open: 'Open Field', canyon: 'Canyon', pillars: 'Pillars', river: 'River', walls: 'Walls', random: 'Random' }
+    const layoutName = levelConfig?.mapPreset ? (campaignPresetNames[levelConfig.mapPreset] ?? levelConfig.mapPreset) : skirmishLayoutName
     const effPct = kills + losses > 0 ? Math.round((kills / (kills + losses)) * 100) : 0
     const starStr = won ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '✗✗✗'
     const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
