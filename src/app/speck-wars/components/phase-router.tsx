@@ -433,7 +433,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
     const playerBaseHp = hud?.players?.player?.buildingHp?.['building-player-base'] ?? 0
     const baseHpFrac = playerBaseHp / 100
     const stars = won
-      ? baseHpFrac > 0.75 ? 3 : baseHpFrac > 0.5 ? 2 : 1
+      ? baseHpFrac >= 0.75 ? 3 : baseHpFrac >= 0.5 ? 2 : 1
       : 0
 
     // Campaign mode: level config and star tracking
@@ -646,7 +646,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
                   borderRadius: 6, color: 'rgba(255,255,255,0.55)', minHeight: 44,
                 }}
               >
-                Campaign
+                ← Campaign
               </button>
             )}
             <button
