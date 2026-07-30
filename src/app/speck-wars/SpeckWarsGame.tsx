@@ -118,6 +118,7 @@ function GameCanvas() {
     // canvas. React StrictMode mounts, tears down and remounts this effect in
     // development, so that path is hit on every dev page load.
     const canvas = document.createElement('canvas')
+    canvas.setAttribute('aria-hidden', 'true')  // purely visual — HUD handles screen-reader interaction
     canvas.style.display = 'block'
     canvas.style.width = '100%'
     canvas.style.height = '100%'
@@ -170,7 +171,7 @@ export function SpeckWarsGame() {
   }, [])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div role="application" aria-label="Speck Wars" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <PhaseRouter>
         {(phase === 'playing' || phase === 'paused') && <GameCanvas />}
       </PhaseRouter>
