@@ -239,6 +239,14 @@ export class InputHandler {
 
     if (e.button === 2) {
       this.isRightDragging = false
+      // Right-click tap (not a pan-drag): issue move/rally command
+      if (dist < 10) {
+        const rect = this.canvas.getBoundingClientRect()
+        const sx = e.clientX - rect.left
+        const sy = e.clientY - rect.top
+        const world = screenToWorld(sx, sy, this.camera)
+        this.onRally?.(world.x, world.y)
+      }
     }
 
     this.isDragging = false
