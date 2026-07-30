@@ -442,18 +442,26 @@ export class GameInstance {
           const elapsedAtEnd = this.elapsedMs
           setTimeout(() => {
             const s = useSpeckWarsStore.getState()
+            const isCampaign = s.campaignLevel !== null
             if (won) {
-              const isNew = recordBestTime(s.difficulty, elapsedAtEnd)
               incrementWinStreak()
-              recordGameResult(s.difficulty, true, elapsedAtEnd, s.kills)
               updateLifetimeStats(s.kills, getWinStreak())
-              markWonToday(s.difficulty)
-              s.setIsNewBest(isNew)
+              if (!isCampaign) {
+                // Skirmish only: record against difficulty PB and mark day as won
+                const isNew = recordBestTime(s.difficulty, elapsedAtEnd)
+                recordGameResult(s.difficulty, true, elapsedAtEnd, s.kills)
+                markWonToday(s.difficulty)
+                s.setIsNewBest(isNew)
+              } else {
+                s.setIsNewBest(false)
+              }
               s.setPhase('victory')
             } else {
               resetWinStreak()
-              recordGameResult(s.difficulty, false, elapsedAtEnd, s.kills)
               updateLifetimeStats(s.kills, getWinStreak())
+              if (!isCampaign) {
+                recordGameResult(s.difficulty, false, elapsedAtEnd, s.kills)
+              }
               s.setIsNewBest(false)
               s.setPhase('defeat')
             }
