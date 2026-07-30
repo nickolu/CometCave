@@ -59,7 +59,6 @@ export default function SpeckWarsCampaignPage() {
               {unlocked && level ? (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{level.name}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.4 }}>{level.flavor}</div>
                   <div style={{ fontSize: 14, letterSpacing: 2, marginTop: 4 }}>
                     {Array.from({ length: 3 }, (_, s) => (
                       <span key={s} style={{ color: s < levelStars ? '#ffd700' : 'rgba(255,255,255,0.15)' }}>&#9733;</span>
