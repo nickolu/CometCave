@@ -24,4 +24,24 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     spawnInterval: 2700, spawnCount: 1,
     hpRegen: 2,  // 2 HP/sec when not under attack
   },
+  turret: {
+    id: 'turret', name: 'Turret',
+    maxHp: 35, size: 16,
+    spawnTypeId: null,
+    spawnInterval: 0, spawnCount: 0,
+    attackRange: 260,
+    fireInterval: 900,
+  },
+  scoutPost: {
+    id: 'scoutPost', name: 'Scout Post',
+    maxHp: 22, size: 14,
+    spawnTypeId: 'scout',
+    spawnInterval: 3500, spawnCount: 1,
+  },
+  heavyForge: {
+    id: 'heavyForge', name: 'Heavy Forge',
+    maxHp: 28, size: 16,
+    spawnTypeId: 'heavy',
+    spawnInterval: 5000, spawnCount: 1,
+  },
 }

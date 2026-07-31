@@ -38,7 +38,7 @@ export default function SpeckWarsCampaignPage() {
     : null
 
   const handleShare = async () => {
-    const text = `I beat all 10 Speck Wars campaign levels — ${totalStars}/${MAX_STARS} stars. Can you conquer the campaign?`
+    const text = `I beat all 11 Speck Wars campaign levels — ${totalStars}/${MAX_STARS} stars. Can you conquer the campaign?`
     const url = typeof window !== 'undefined' ? window.location.href : ''
     if (typeof navigator !== 'undefined' && navigator.share) {
       try { await navigator.share({ title: 'Speck Wars', text, url }) } catch { /* cancelled */ }

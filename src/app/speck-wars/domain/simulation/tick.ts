@@ -72,6 +72,13 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     sim.dominationTimer = 0
   }
 
+  // Survival win: on survival levels, winning enough waves beats the level
+  if (sim.survivalWinWaves !== null &&
+      sim.waveNumber >= sim.survivalWinWaves &&
+      !sim.waveInProgress) {
+    sim.events.push({ type: 'GAME_OVER', winnerId: 'player', victoryType: 'survival' })
+  }
+
   // 9. Emit HUD update every N ticks
   sim.tick++
   if (sim.tick % HUD_UPDATE_INTERVAL === 0) emitHudUpdate(sim)
@@ -230,6 +237,31 @@ function consumeInputs(sim: SimulationState) {
         sim.surgeDuration = 8000
         sim.surgeCooldown = 45000
       }
+    }
+    if (event.type === 'BUILD_STRUCTURE') {
+      if (event.ownerId !== 'player') continue
+      if (sim.turretBudget <= 0) continue
+      const btype = BUILDING_TYPES[event.typeId]
+      if (!btype) continue  // unknown type, skip
+      // Don't allow placing on top of an existing building (within 60px)
+      const tooClose = Object.values(sim.buildings).some(b => {
+        const dx = b.x - event.x, dy = b.y - event.y
+        return dx * dx + dy * dy < 60 * 60
+      })
+      if (tooClose) continue
+      const buildingId = `building-player-${event.typeId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+      sim.buildings[buildingId] = {
+        id: buildingId,
+        typeId: event.typeId,
+        ownerId: 'player',
+        x: event.x,
+        y: event.y,
+        hp: btype.maxHp,
+        maxHp: btype.maxHp,
+        spawnTimer: 0,
+        fireTimer: 0,
+      }
+      sim.turretBudget--
     }
     if (event.type === 'STOP') {
       if (event.ownerId === 'player' && sim.selectedSpeckIds.size === 0) continue
@@ -415,7 +447,7 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, turretBudget: sim.turretBudget, buildModeEnabled: sim.turretBudget >= 0 && sim.survivalWinWaves !== null } })
 }
 
 function pruneCommandGroups(sim: SimulationState) {
