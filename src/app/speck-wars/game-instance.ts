@@ -3,13 +3,14 @@ import { tick } from './domain/simulation/tick'
 import type { SimulationState } from './domain/types'
 import { useSpeckWarsStore } from './store'
 import { Renderer } from './rendering/renderer'
-import { createCamera, clampCamera } from './rendering/camera'
+import { createCamera, clampCamera, screenToWorld } from './rendering/camera'
 import { InputHandler } from './input/input-handler'
 import type { Camera } from './rendering/camera'
 import { AIController, type AIPersonality } from './domain/ai/ai-controller'
 import { recordBestTime, incrementWinStreak, resetWinStreak, isFirstGame, markFirstGameDone, recordGameResult, markWonToday, updateLifetimeStats, getWinStreak, hasSeenVeteranTip, markVeteranTipSeen } from './lib/personal-best'
 import { BUILDING_TYPES } from './domain/config/building-types'
 import { LEVELS } from './campaign/levels'
+import type { LevelConfig } from './campaign/levels'
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -63,6 +64,8 @@ export class GameInstance {
   private killFeedKillAt = 0    // last time we pushed a kill entry
   private killFeedLossAt = 0    // last time we pushed a loss entry
   private onResize: (() => void) | null = null
+  private buildModeActive = false
+  private levelConfig: LevelConfig | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -78,9 +81,16 @@ export class GameInstance {
       const levelConfig = LEVELS.find(l => l.id === campaignLevel)
       if (levelConfig) {
         difficulty = levelConfig.difficulty
+        this.levelConfig = levelConfig
         sim = createSim(levelConfig.seed, levelConfig.difficulty, levelConfig.mapPreset ?? 'open', levelConfig.outpostCount)
         preSpawnUnits(sim, 'player', levelConfig.preSpawn.player)
         preSpawnUnits(sim, 'ai', levelConfig.preSpawn.ai)
+        if (levelConfig.survivalWaves) {
+          sim.survivalWinWaves = levelConfig.survivalWaves
+        }
+        if (levelConfig.turretBudget) {
+          sim.turretBudget = levelConfig.turretBudget
+        }
       } else {
         // Fallback: treat as skirmish
         const mapPreset = storeState.mapPreset
@@ -171,9 +181,20 @@ export class GameInstance {
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
-      () => {                                                          // Escape — clear selection
-        this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
-        this.sim.rallyPoints['player-selected'] = null
+      () => {                                                          // Escape/left-click — clear selection or place turret
+        if (this.buildModeActive) {
+          // In build mode, left-click places a turret at the mouse world position
+          const mousePos = this.inputHandler.getMouseScreenPos()
+          if (mousePos) {
+            const { x: wx, y: wy } = screenToWorld(mousePos.x, mousePos.y, this.camera)
+            this.sim.inputQueue.push({ type: 'BUILD_TURRET', ownerId: 'player', x: wx, y: wy })
+          }
+          this.buildModeActive = false
+          if (this.canvas) this.canvas.style.cursor = 'default'
+        } else {
+          this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
+          this.sim.rallyPoints['player-selected'] = null
+        }
       },
       () => { this.surge() },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
@@ -295,6 +316,12 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
       activateSelectMode: () => this.inputHandler.activateTouchSelectMode(),
+      activateBuildMode: () => {
+        if (this.sim.turretBudget <= 0) return
+        this.buildModeActive = true
+        if (this.canvas) this.canvas.style.cursor = 'crosshair'
+        this.notify('Click to place turret', '#ff8844', 1500)
+      },
       selectByType: (typeId: string) => {
         this.sim.selectedSpeckIds.clear()
         let count = 0
@@ -400,7 +427,13 @@ export class GameInstance {
       this.camera.x = this.cinematicStartX + (this.cinematicEndX - this.cinematicStartX) * eased
       this.camera.y = this.cinematicStartY + (this.cinematicEndY - this.cinematicStartY) * eased
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
+      const ghostBuildCinematic = this.buildModeActive ? (() => {
+        const mp = this.inputHandler.getMouseScreenPos()
+        if (!mp) return null
+        const { x: wx, y: wy } = screenToWorld(mp.x, mp.y, this.camera)
+        return { typeId: 'turret', wx, wy }
+      })() : null
+      this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect, ghostBuildCinematic, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -409,7 +442,13 @@ export class GameInstance {
       this.gameOverFreezeMs = Math.max(0, this.gameOverFreezeMs - dt)
       const { shakeX, shakeY } = this.computeShake(dt)
       const dragRect = this.inputHandler.getDragRect()
-      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
+      const ghostBuildFreeze = this.buildModeActive ? (() => {
+        const mp = this.inputHandler.getMouseScreenPos()
+        if (!mp) return null
+        const { x: wx, y: wy } = screenToWorld(mp.x, mp.y, this.camera)
+        return { typeId: 'turret', wx, wy }
+      })() : null
+      this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuildFreeze, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
       return
     }
@@ -723,6 +762,13 @@ export class GameInstance {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
           const color = waveColors[(event.waveNumber - 1) % waveColors.length]
           this.notify(`⚠ WAVE ${event.waveNumber} ASSAULT!`, color, 3000)
+          if (this.levelConfig?.allowTurrets) {
+            // Reward: earn one more turret to place after each wave starts
+            if (this.sim.turretBudget < 8) {  // cap at 8 total
+              this.sim.turretBudget++
+              this.notify('⬡ Turret ready (+1)', '#ff8844', 1800)
+            }
+          }
         }
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')
@@ -781,7 +827,14 @@ export class GameInstance {
 
     const { shakeX, shakeY } = this.computeShake(dt)
     const dragRect = this.inputHandler.getDragRect()
-    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, null, useSpeckWarsStore.getState().fogEnabled)
+    // Compute ghost build position for turret placement preview
+    const ghostBuild = this.buildModeActive ? (() => {
+      const mp = this.inputHandler.getMouseScreenPos()
+      if (!mp) return null
+      const { x: wx, y: wy } = screenToWorld(mp.x, mp.y, this.camera)
+      return { typeId: 'turret', wx, wy }
+    })() : null
+    this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild, useSpeckWarsStore.getState().fogEnabled)
     this.rafId = requestAnimationFrame(this.loop)
   }
 

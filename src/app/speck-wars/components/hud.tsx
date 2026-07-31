@@ -1571,6 +1571,28 @@ export function HUD() {
               </button>
             )
           })()}
+          {(hud?.turretBudget ?? 0) > 0 && (
+            <button
+              onClick={() => { navigator.vibrate?.(12); gameActions?.activateBuildMode?.() }}
+              title="Place turret — click to enter build mode"
+              aria-label={`Build turret — ${hud?.turretBudget ?? 0} placement${(hud?.turretBudget ?? 0) !== 1 ? 's' : ''} remaining`}
+              style={{
+                padding: '8px 12px',
+                fontSize: 11,
+                cursor: 'pointer',
+                background: 'rgba(255,136,68,0.12)',
+                border: '1px solid rgba(255,136,68,0.55)',
+                borderRadius: 20,
+                color: '#ff8844',
+                letterSpacing: 1,
+                minHeight: 44,
+                fontFamily: 'monospace',
+                fontWeight: 700,
+              }}
+            >
+              ⬡ Turret ({hud?.turretBudget ?? 0})
+            </button>
+          )}
           <button
             onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
             title="[R] Clear rally"

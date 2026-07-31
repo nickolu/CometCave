@@ -16,6 +16,9 @@ export interface LevelConfig {
     three: number         // e.g. 0.75 = 75% HP remaining
     two: number
   }
+  allowTurrets?: boolean        // enables turret placement UI this level
+  turretBudget?: number         // starting turret placement budget (default 0)
+  survivalWaves?: number        // win when waveNumber reaches this (null = no survival win)
 }
 
 export const LEVELS: LevelConfig[] = [
@@ -128,6 +131,20 @@ export const LEVELS: LevelConfig[] = [
     mapPreset: 'random',
     preSpawn: { player: 0, ai: 0 },
     starThresholds: { three: 0.40, two: 0.15 },
+  },
+  {
+    id: 11,
+    name: 'Last Stand',
+    flavor: 'No reinforcements are coming. Hold the line or fall.',
+    difficulty: 'very-hard',
+    seed: 1111,
+    outpostCount: 0,
+    mapPreset: 'pillars',
+    preSpawn: { player: 20, ai: 0 },
+    starThresholds: { three: 0.65, two: 0.30 },
+    allowTurrets: true,
+    turretBudget: 3,
+    survivalWaves: 10,
   },
 ]
 

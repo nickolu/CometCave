@@ -24,4 +24,12 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     spawnInterval: 2700, spawnCount: 1,
     hpRegen: 2,  // 2 HP/sec when not under attack
   },
+  turret: {
+    id: 'turret', name: 'Turret',
+    maxHp: 35, size: 16,
+    spawnTypeId: null,
+    spawnInterval: 0, spawnCount: 0,
+    attackRange: 260,
+    fireInterval: 900,
+  },
 }

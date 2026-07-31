@@ -81,6 +81,8 @@ export interface SimulationState {
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
   surgeDuration: number      // ms remaining in active surge, 0 = inactive
   surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
+  survivalWinWaves: number | null   // non-null on survival levels; win when waveNumber reaches this
+  turretBudget: number              // turrets remaining to place (0 = no turrets available)
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
   waveNumber: number             // current wave count (0 = not started)
@@ -98,13 +100,14 @@ export type InputEvent =
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
+  | { type: 'BUILD_TURRET'; ownerId: string; x: number; y: number }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
   | { type: 'BUILDING_DAMAGED'; buildingId: string; hp: number }
   | { type: 'BUILDING_DESTROYED'; buildingId: string; ownerId: string; x: number; y: number }
   | { type: 'SPECK_SPAWNED'; speckId: string; buildingId: string }
-  | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'surrender' | 'domination' }
+  | { type: 'GAME_OVER'; winnerId: string; victoryType: 'destruction' | 'surrender' | 'domination' | 'survival' }
   | { type: 'HUD_UPDATE'; data: HudData }
   | { type: 'OUTPOST_CAPTURED'; outpostId: string; newOwner: string; previousOwner: string }
   | { type: 'SPECK_VETERAN'; speckId: string; ownerId: string }
@@ -135,6 +138,7 @@ export interface HudData {
   waveInProgress: boolean
   waveNumber: number
   baseUnderThreat: boolean
+  turretBudget: number   // current build budget; 0 when turrets not available
   enemyAdvanceDetected: boolean
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {
