@@ -348,27 +348,30 @@ export class GameInstance {
       },
       commandAt: (x: number, y: number) => this.commandAt(x, y),
     })
-    // Cinematic intro: start zoomed out to show full world
+    // Cinematic intro: start on player base, zoom out to reveal full map
     const W = this.canvas.clientWidth
     const H = this.canvas.clientHeight
     const WORLD_SIZE = 3000
     const minZoom = Math.min(W / WORLD_SIZE, H / WORLD_SIZE) * 0.9
-    // Snap camera to show full map
-    this.camera.zoom = minZoom
-    this.camera.x = W / 2 - (WORLD_SIZE / 2) * minZoom
-    this.camera.y = H / 2 - (WORLD_SIZE / 2) * minZoom
-    // Find player base for zoom-in target
+    // Start zoomed in on player base
     const playerBase = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
-    const targetZoom = 1.0
-    const targetX = playerBase ? W / 2 - playerBase.x * targetZoom : W / 2 - (WORLD_SIZE / 2) * targetZoom
-    const targetY = playerBase ? H / 2 - playerBase.y * targetZoom : H / 2 - (WORLD_SIZE / 2) * targetZoom
+    const startZoom = 1.0
+    const startX = playerBase ? W / 2 - playerBase.x * startZoom : W / 2 - (WORLD_SIZE / 2) * startZoom
+    const startY = playerBase ? H / 2 - playerBase.y * startZoom : H / 2 - (WORLD_SIZE / 2) * startZoom
+    this.camera.zoom = startZoom
+    this.camera.x = startX
+    this.camera.y = startY
+    // End zoomed out to show full map centered on world
+    const endZoom = minZoom
+    const endX = W / 2 - (WORLD_SIZE / 2) * minZoom
+    const endY = H / 2 - (WORLD_SIZE / 2) * minZoom
     // Store cinematic keyframes
-    this.cinematicStartX = this.camera.x
-    this.cinematicStartY = this.camera.y
-    this.cinematicStartZoom = this.camera.zoom
-    this.cinematicEndX = targetX
-    this.cinematicEndY = targetY
-    this.cinematicEndZoom = targetZoom
+    this.cinematicStartX = startX
+    this.cinematicStartY = startY
+    this.cinematicStartZoom = startZoom
+    this.cinematicEndX = endX
+    this.cinematicEndY = endY
+    this.cinematicEndZoom = endZoom
     this.cinematicTotalMs = 3000
 
     this.lastTime = performance.now()
