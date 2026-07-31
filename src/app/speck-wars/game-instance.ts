@@ -64,7 +64,7 @@ export class GameInstance {
   private killFeedKillAt = 0    // last time we pushed a kill entry
   private killFeedLossAt = 0    // last time we pushed a loss entry
   private onResize: (() => void) | null = null
-  private buildModeActive = false
+  private buildModeTypeId: string | null = null
   private levelConfig: LevelConfig | null = null
 
   constructor(canvas: HTMLCanvasElement) {
@@ -181,15 +181,15 @@ export class GameInstance {
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
-      () => {                                                          // Escape/left-click — clear selection or place turret
-        if (this.buildModeActive) {
-          // In build mode, left-click places a turret at the mouse world position
+      () => {                                                          // Escape/left-click — clear selection or place structure
+        if (this.buildModeTypeId) {
+          // In build mode, left-click places a structure at the mouse world position
           const mousePos = this.inputHandler.getMouseScreenPos()
           if (mousePos) {
             const { x: wx, y: wy } = screenToWorld(mousePos.x, mousePos.y, this.camera)
-            this.sim.inputQueue.push({ type: 'BUILD_TURRET', ownerId: 'player', x: wx, y: wy })
+            this.sim.inputQueue.push({ type: 'BUILD_STRUCTURE', ownerId: 'player', typeId: this.buildModeTypeId, x: wx, y: wy })
           }
-          this.buildModeActive = false
+          this.buildModeTypeId = null
           if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
           this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
@@ -316,11 +316,16 @@ export class GameInstance {
       snapToAction: () => this.snapToAction(),
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
       activateSelectMode: () => this.inputHandler.activateTouchSelectMode(),
-      activateBuildMode: () => {
+      activateBuildMode: (typeId: string) => {
         if (this.sim.turretBudget <= 0) return
-        this.buildModeActive = true
+        this.buildModeTypeId = typeId
         if (this.canvas) this.canvas.style.cursor = 'crosshair'
-        this.notify('Click to place turret', '#ff8844', 1500)
+        const labels: Record<string, string> = {
+          turret: 'Click to place Turret',
+          scoutPost: 'Click to place Scout Post',
+          heavyForge: 'Click to place Heavy Forge',
+        }
+        this.notify(labels[typeId] ?? 'Click to place', '#ff8844', 1500)
       },
       selectByType: (typeId: string) => {
         this.sim.selectedSpeckIds.clear()
@@ -427,11 +432,11 @@ export class GameInstance {
       this.camera.x = this.cinematicStartX + (this.cinematicEndX - this.cinematicStartX) * eased
       this.camera.y = this.cinematicStartY + (this.cinematicEndY - this.cinematicStartY) * eased
       const dragRect = this.inputHandler.getDragRect()
-      const ghostBuildCinematic = this.buildModeActive ? (() => {
+      const ghostBuildCinematic = this.buildModeTypeId ? (() => {
         const mp = this.inputHandler.getMouseScreenPos()
         if (!mp) return null
         const { x: wx, y: wy } = screenToWorld(mp.x, mp.y, this.camera)
-        return { typeId: 'turret', wx, wy }
+        return { typeId: this.buildModeTypeId!, wx, wy }
       })() : null
       this.renderer.render(this.sim, this.camera, dt, 0, 0, dragRect, ghostBuildCinematic, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
@@ -442,11 +447,11 @@ export class GameInstance {
       this.gameOverFreezeMs = Math.max(0, this.gameOverFreezeMs - dt)
       const { shakeX, shakeY } = this.computeShake(dt)
       const dragRect = this.inputHandler.getDragRect()
-      const ghostBuildFreeze = this.buildModeActive ? (() => {
+      const ghostBuildFreeze = this.buildModeTypeId ? (() => {
         const mp = this.inputHandler.getMouseScreenPos()
         if (!mp) return null
         const { x: wx, y: wy } = screenToWorld(mp.x, mp.y, this.camera)
-        return { typeId: 'turret', wx, wy }
+        return { typeId: this.buildModeTypeId!, wx, wy }
       })() : null
       this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuildFreeze, useSpeckWarsStore.getState().fogEnabled)
       this.rafId = requestAnimationFrame(this.loop)
@@ -827,12 +832,12 @@ export class GameInstance {
 
     const { shakeX, shakeY } = this.computeShake(dt)
     const dragRect = this.inputHandler.getDragRect()
-    // Compute ghost build position for turret placement preview
-    const ghostBuild = this.buildModeActive ? (() => {
+    // Compute ghost build position for structure placement preview
+    const ghostBuild = this.buildModeTypeId ? (() => {
       const mp = this.inputHandler.getMouseScreenPos()
       if (!mp) return null
       const { x: wx, y: wy } = screenToWorld(mp.x, mp.y, this.camera)
-      return { typeId: 'turret', wx, wy }
+      return { typeId: this.buildModeTypeId!, wx, wy }
     })() : null
     this.renderer.render(this.sim, this.camera, dt, shakeX, shakeY, dragRect, ghostBuild, useSpeckWarsStore.getState().fogEnabled)
     this.rafId = requestAnimationFrame(this.loop)

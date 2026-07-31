@@ -100,7 +100,7 @@ export type InputEvent =
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
   | { type: 'SET_BUILDING_RALLY'; ownerId: string; buildingId: string; x: number; y: number }
-  | { type: 'BUILD_TURRET'; ownerId: string; x: number; y: number }
+  | { type: 'BUILD_STRUCTURE'; ownerId: string; typeId: string; x: number; y: number }
 
 export type SimEvent =
   | { type: 'SPECK_DIED'; speckId: string; x: number; y: number; killedOwnerId: string; killerOwnerId: string }
@@ -139,6 +139,7 @@ export interface HudData {
   waveNumber: number
   baseUnderThreat: boolean
   turretBudget: number   // current build budget; 0 when turrets not available
+  buildModeEnabled: boolean
   enemyAdvanceDetected: boolean
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
   minimap: {

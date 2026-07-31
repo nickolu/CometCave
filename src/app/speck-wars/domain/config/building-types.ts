@@ -32,4 +32,16 @@ export const BUILDING_TYPES: Record<string, BuildingTypeDefinition> = {
     attackRange: 260,
     fireInterval: 900,
   },
+  scoutPost: {
+    id: 'scoutPost', name: 'Scout Post',
+    maxHp: 22, size: 14,
+    spawnTypeId: 'scout',
+    spawnInterval: 3500, spawnCount: 1,
+  },
+  heavyForge: {
+    id: 'heavyForge', name: 'Heavy Forge',
+    maxHp: 28, size: 16,
+    spawnTypeId: 'heavy',
+    spawnInterval: 5000, spawnCount: 1,
+  },
 }

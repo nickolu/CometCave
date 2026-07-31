@@ -135,7 +135,7 @@ export const LEVELS: LevelConfig[] = [
   {
     id: 11,
     name: 'Last Stand',
-    flavor: 'No reinforcements are coming. Hold the line or fall.',
+    flavor: 'No reinforcements. Build your line. Survive what comes.',
     difficulty: 'very-hard',
     seed: 1111,
     outpostCount: 0,
@@ -143,7 +143,7 @@ export const LEVELS: LevelConfig[] = [
     preSpawn: { player: 20, ai: 0 },
     starThresholds: { three: 0.65, two: 0.30 },
     allowTurrets: true,
-    turretBudget: 3,
+    turretBudget: 4,
     survivalWaves: 10,
   },
 ]

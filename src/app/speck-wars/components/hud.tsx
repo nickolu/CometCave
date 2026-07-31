@@ -1266,7 +1266,7 @@ export function HUD() {
                 <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
                   <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
                 </div>
-                {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && (
+                {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && !hud?.buildModeEnabled && (
                   <div style={{ marginTop: 6 }}>
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>SPAWNING</div>
                     <div style={{ display: 'flex', gap: 3 }}>
@@ -1571,27 +1571,45 @@ export function HUD() {
               </button>
             )
           })()}
-          {(hud?.turretBudget ?? 0) > 0 && (
-            <button
-              onClick={() => { navigator.vibrate?.(12); gameActions?.activateBuildMode?.() }}
-              title="Place turret — click to enter build mode"
-              aria-label={`Build turret — ${hud?.turretBudget ?? 0} placement${(hud?.turretBudget ?? 0) !== 1 ? 's' : ''} remaining`}
-              style={{
-                padding: '8px 12px',
-                fontSize: 11,
-                cursor: 'pointer',
-                background: 'rgba(255,136,68,0.12)',
-                border: '1px solid rgba(255,136,68,0.55)',
-                borderRadius: 20,
-                color: '#ff8844',
-                letterSpacing: 1,
-                minHeight: 44,
-                fontFamily: 'monospace',
-                fontWeight: 700,
-              }}
-            >
-              ⬡ Turret ({hud?.turretBudget ?? 0})
-            </button>
+          {hud?.buildModeEnabled && (
+            <>
+              <span style={{ fontSize: 9, color: 'rgba(255,180,80,0.7)', fontFamily: 'monospace', letterSpacing: 0.5, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+                Builds: {hud?.turretBudget ?? 0}
+              </span>
+              {([
+                { typeId: 'turret',     label: '⬡ Turret',     bg: 'rgba(255,136,68,0.12)',  border: 'rgba(255,136,68,0.55)',  color: '#ff8844', title: 'Place Turret — ranged defense' },
+                { typeId: 'scoutPost',  label: '⟩ Scout Post', bg: 'rgba(80,200,255,0.10)',  border: 'rgba(80,200,255,0.50)',  color: '#50c8ff', title: 'Place Scout Post — spawns fast scouts' },
+                { typeId: 'heavyForge', label: '▣ Heavy Forge', bg: 'rgba(255,80,60,0.10)',  border: 'rgba(255,100,60,0.50)',  color: '#ff6644', title: 'Place Heavy Forge — spawns tanky heavies' },
+              ] as const).map(({ typeId, label, bg, border, color, title }) => {
+                const disabled = (hud?.turretBudget ?? 0) <= 0
+                return (
+                  <button
+                    key={typeId}
+                    onClick={() => { if (!disabled) { navigator.vibrate?.(12); gameActions?.activateBuildMode?.(typeId) } }}
+                    title={title}
+                    aria-label={`${title} — ${hud?.turretBudget ?? 0} placement${(hud?.turretBudget ?? 0) !== 1 ? 's' : ''} remaining`}
+                    disabled={disabled}
+                    style={{
+                      padding: '8px 10px',
+                      fontSize: 10,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      background: disabled ? 'rgba(0,0,0,0.2)' : bg,
+                      border: `1px solid ${disabled ? 'rgba(255,255,255,0.12)' : border}`,
+                      borderRadius: 20,
+                      color: disabled ? 'rgba(255,255,255,0.3)' : color,
+                      letterSpacing: 0.8,
+                      minHeight: 44,
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      opacity: disabled ? 0.5 : 1,
+                      pointerEvents: 'auto',
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </>
           )}
           <button
             onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
