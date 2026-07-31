@@ -231,6 +231,23 @@ export class GameInstance {
       },
     )
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
+    this.inputHandler.onTap = (wx, wy) => {
+      // Left-click: select a player building if tapped, otherwise deselect
+      const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+      const hitBuffer = isTouchDevice ? 30 : 20
+      for (const building of Object.values(this.sim.buildings)) {
+        if (building.ownerId !== 'player') continue
+        const btype = BUILDING_TYPES[building.typeId]
+        const r = (btype?.size ?? 20) + hitBuffer
+        if (Math.hypot(wx - building.x, wy - building.y) <= r) {
+          navigator.vibrate?.(10)
+          this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
+          return
+        }
+      }
+      this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
+      this.sim.rallyPoints['player-selected'] = null
+    }
     this.inputHandler.onSaveControlGroup = (slot: number) => {
       const saved = [...this.sim.selectedSpeckIds]
       this.controlGroups.set(slot, saved)

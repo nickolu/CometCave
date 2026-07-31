@@ -32,6 +32,7 @@ export class InputHandler {
   private onHold?: () => void
   private onAttackMove?: (worldX: number, worldY: number) => void
   public onGuard?: () => void
+  public onTap?: (worldX: number, worldY: number) => void
   private heldKeys = new Set<string>()
   private isDragging = false
   private lastX = 0
@@ -230,8 +231,8 @@ export class InputHandler {
           this.pendingModifier = 'none'
           if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
-          // Left-click on canvas = deselect (right-click is the command/move action)
-          this.onClearSelect?.()
+          // Left-click on canvas: onTap handles building hit-test + deselect
+          this.onTap?.(world.x, world.y)
         }
       }
       return

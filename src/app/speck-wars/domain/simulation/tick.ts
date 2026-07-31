@@ -183,8 +183,23 @@ function consumeInputs(sim: SimulationState) {
       }
       // Selected specks initially use the same rally as unselected
       sim.rallyPoints['player-selected'] = sim.rallyPoints['player']
-      // Mutual exclusion: selecting specks always clears any building selection
-      sim.selectedBuildingId = null
+      if (sim.selectedSpeckIds.size > 0) {
+        // Mutual exclusion: selecting specks always clears any building selection
+        sim.selectedBuildingId = null
+      } else {
+        // No specks in box — fall back to selecting an overlapping player building
+        const cx = (minX + maxX) / 2
+        const cy = (minY + maxY) / 2
+        for (const b of Object.values(sim.buildings)) {
+          if (b.ownerId !== event.ownerId) continue
+          const btype = BUILDING_TYPES[b.typeId]
+          const r = (btype?.size ?? 20) + 40
+          if (Math.hypot(cx - b.x, cy - b.y) <= r) {
+            sim.selectedBuildingId = b.id
+            break
+          }
+        }
+      }
     }
     if (event.type === 'CLEAR_SELECT') {
       sim.selectedSpeckIds.clear()
