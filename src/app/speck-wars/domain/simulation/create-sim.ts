@@ -148,6 +148,8 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     inputQueue: [],
     events: [],
     rallyPoints: { player: null, ai: null, 'player-selected': null },
+    nextCommandGroupId: 0,
+    commandGroupRallies: new Map(),
     selectedSpeckIds: new Set<string>(),
     selectedBuildingId: null,
     spatialGrid: new SpatialGrid(),

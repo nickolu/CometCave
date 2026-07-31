@@ -230,8 +230,8 @@ export class InputHandler {
           this.pendingModifier = 'none'
           if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
-          // Default: move/rally command (selects building if clicked on one, otherwise sets rally)
-          this.onRally?.(world.x, world.y)
+          // Left-click on canvas = deselect (right-click is the command/move action)
+          this.onClearSelect?.()
         }
       }
       return

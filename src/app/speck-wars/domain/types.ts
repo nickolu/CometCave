@@ -10,6 +10,7 @@ export interface SpeckMeta {
   kills: number            // enemies killed; 3+ = veteran (gold ring, +20% damage)
   assignedRallyX?: number  // individual sub-group rally — persists after deselection
   assignedRallyY?: number
+  commandGroupId?: number     // which move order this speck belongs to; set each time it receives a RALLY command
   homeBuildingId?: string  // building that produced this speck. While set the speck is under
                            // "standing orders": it musters at that building's rally point (or at
                            // the building itself) and never picks its own objective. Cleared by
@@ -72,6 +73,8 @@ export interface SimulationState {
   inputQueue: InputEvent[]
   events: SimEvent[]
   rallyPoints: Record<string, { x: number; y: number } | null>
+  nextCommandGroupId: number          // monotonic counter; incremented each time a new RALLY is issued to a selection
+  commandGroupRallies: Map<number, { x: number; y: number }>  // groupId → world-space destination
   selectedSpeckIds: Set<string>  // IDs of player specks currently in selection
   selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid

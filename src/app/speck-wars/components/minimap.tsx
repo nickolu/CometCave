@@ -94,18 +94,26 @@ export function Minimap({ gameRef }: MinimapProps) {
         }
       }
 
-      // Draw rally point
-      const rp = sim.rallyPoints['player']
-      if (rp) {
-        const rx = rp.x * SCALE_X
-        const ry = rp.y * SCALE_Y
-        ctx.strokeStyle = playerColor
+      // Draw command group rally markers (numbered crosshairs)
+      if (sim.commandGroupRallies.size > 0) {
         ctx.lineWidth = 1.5
-        ctx.globalAlpha = 0.7
-        ctx.beginPath()
-        ctx.moveTo(rx - 4, ry); ctx.lineTo(rx + 4, ry)
-        ctx.moveTo(rx, ry - 4); ctx.lineTo(rx, ry + 4)
-        ctx.stroke()
+        for (const [groupId, rally] of sim.commandGroupRallies) {
+          const rx = rally.x * SCALE_X
+          const ry = rally.y * SCALE_Y
+          ctx.strokeStyle = playerColor
+          ctx.globalAlpha = 0.8
+          ctx.beginPath()
+          ctx.moveTo(rx - 4, ry); ctx.lineTo(rx + 4, ry)
+          ctx.moveTo(rx, ry - 4); ctx.lineTo(rx, ry + 4)
+          ctx.stroke()
+          // Number badge
+          ctx.globalAlpha = 0.9
+          ctx.fillStyle = playerColor
+          ctx.font = 'bold 7px monospace'
+          ctx.textAlign = 'left'
+          ctx.textBaseline = 'top'
+          ctx.fillText(String(groupId), rx + 4, ry - 8)
+        }
         ctx.globalAlpha = 1
       }
 

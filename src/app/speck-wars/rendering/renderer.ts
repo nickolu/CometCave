@@ -1,4 +1,4 @@
-import { Application, Container, Graphics } from 'pixi.js'
+import { Application, Container, Graphics, Text } from 'pixi.js'
 import { SpeckLayer } from './layers/speck-layer'
 import { BuildingLayer } from './layers/building-layer'
 import { GridLayer } from './layers/grid-layer'
@@ -39,6 +39,7 @@ export class Renderer {
   private fogLayer!: FogLayer
   private fogFrameCounter = 0
   private rallyGfx!: Graphics
+  private commandGroupLabels: Map<number, Text> = new Map()
   private selectionGfx!: Graphics
   private vignetteGfx!: Graphics
   private ready = false        // layers built — everything below is safe to touch
@@ -177,6 +178,41 @@ export class Renderer {
       }
     }
 
+    // Command group rally markers — one numbered crosshair per active move order
+    const groupPulse = 0.5 + 0.5 * Math.sin(Date.now() / 400)
+    const groupAlpha = 0.4 + 0.5 * groupPulse
+    // Remove labels for groups that no longer exist
+    for (const [gid, label] of this.commandGroupLabels) {
+      if (!sim.commandGroupRallies.has(gid)) {
+        this.world.removeChild(label)
+        this.commandGroupLabels.delete(gid)
+      }
+    }
+
+    // Add/update markers for current groups
+    for (const [groupId, rally] of sim.commandGroupRallies) {
+      const { x: gx, y: gy } = rally
+      const s = 8
+      this.rallyGfx.lineStyle(1.5, PLAYER_COLOR, groupAlpha)
+      this.rallyGfx.moveTo(gx - s, gy); this.rallyGfx.lineTo(gx + s, gy)
+      this.rallyGfx.moveTo(gx, gy - s); this.rallyGfx.lineTo(gx, gy + s)
+      this.rallyGfx.lineStyle(1, PLAYER_COLOR, groupAlpha * 0.5)
+      this.rallyGfx.drawCircle(gx, gy, 11)
+      this.rallyGfx.lineStyle(0)
+
+      // Number label
+      let label = this.commandGroupLabels.get(groupId)
+      if (!label) {
+        label = new Text(String(groupId), { fontSize: 9, fill: PLAYER_COLOR, fontWeight: '700' })
+        this.world.addChild(label)
+        this.commandGroupLabels.set(groupId, label)
+      } else {
+        label.text = String(groupId)
+      }
+      label.position.set(gx + 12, gy - 16)
+      label.alpha = groupAlpha
+    }
+
     // Draw drag-selection box (screen space)
     this.selectionGfx.clear()
     if (dragRect) {
@@ -242,6 +278,10 @@ export class Renderer {
     this.rallyGfx.destroy()
     this.selectionGfx.destroy()
     this.vignetteGfx.destroy()
+    for (const label of this.commandGroupLabels.values()) {
+      this.world.removeChild(label)
+    }
+    this.commandGroupLabels.clear()
     this.app.destroy()
   }
 }
