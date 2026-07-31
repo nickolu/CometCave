@@ -24,6 +24,7 @@ export class InputHandler {
   private onSelectAll?: () => void
   public onSaveControlGroup?: (slot: number) => void
   public onRecallControlGroup?: (slot: number) => void
+  public onTap?: (worldX: number, worldY: number) => void
   private pendingModifier: 'none' | 'attack' = 'none'
   private isPanDragging = false   // middle-mouse only
   private isRightDragging = false
@@ -230,8 +231,12 @@ export class InputHandler {
           this.pendingModifier = 'none'
           if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
-          // Left-click on canvas = deselect (right-click is the command/move action)
-          this.onClearSelect?.()
+          // Left-click tap: hit-test buildings first; if nothing found, deselect
+          if (this.onTap) {
+            this.onTap(world.x, world.y)
+          } else {
+            this.onClearSelect?.()
+          }
         }
       }
       return

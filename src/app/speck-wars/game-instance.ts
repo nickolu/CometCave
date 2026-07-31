@@ -231,6 +231,7 @@ export class GameInstance {
       },
     )
     this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
+    this.inputHandler.onTap = (wx, wy) => this.tapAt(wx, wy)
     this.inputHandler.onSaveControlGroup = (slot: number) => {
       const saved = [...this.sim.selectedSpeckIds]
       this.controlGroups.set(slot, saved)
@@ -815,6 +816,23 @@ export class GameInstance {
   rally(x: number, y: number) {
     this.sim.inputQueue.push({ type: 'RALLY', ownerId: 'player', x, y })
     this.renderer.showRallyPing(x, y)
+  }
+
+  // Left-click tap on canvas: select a player building if one is near the click point;
+  // otherwise clear all selection (deselect empty space).
+  tapAt(wx: number, wy: number) {
+    const BUILDING_HIT_RADIUS = 60 // world px — generous for usability
+    for (const building of Object.values(this.sim.buildings)) {
+      if (building.ownerId !== 'player') continue
+      const dx = building.x - wx
+      const dy = building.y - wy
+      if (dx * dx + dy * dy <= BUILDING_HIT_RADIUS * BUILDING_HIT_RADIUS) {
+        this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId: building.id })
+        return
+      }
+    }
+    // Nothing hit — deselect everything
+    this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
   }
 
   // "Point at a place" — the meaning of a click on the world or the minimap. A selected building
