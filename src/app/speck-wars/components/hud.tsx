@@ -27,7 +27,6 @@ export function HUD() {
   )
   const [showPortraitHint, setShowPortraitHint] = useState(true)
   const [minimapExpanded, setMinimapExpanded] = useState(false)
-  const [buildingPanelExpanded, setBuildingPanelExpanded] = useState(false)
   const [showLevelIntro, setShowLevelIntro] = useState(false)
   const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
   const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
@@ -1234,85 +1233,6 @@ export function HUD() {
       {/* Action bar — slim 52px strip at the bottom, replaces stacked command panels */}
       {phase === 'playing' && (
         <>
-          {/* Building drawer — slides up above the bar when expanded */}
-          {hud?.selectedBuilding && buildingPanelExpanded && (() => {
-            const b = hud.selectedBuilding!
-            const hpFrac = b.hp / b.maxHp
-            const hpColor = hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.2 ? '#ffaa44' : '#ff4f7b'
-            return (
-              <div style={{
-                position: 'absolute',
-                bottom: 'calc(52px + env(safe-area-inset-bottom, 0px))',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 'min(360px, calc(100vw - 32px))',
-                background: 'rgba(0,0,0,0.88)',
-                border: '1px solid rgba(255,255,255,0.13)',
-                borderBottom: 'none',
-                borderRadius: '10px 10px 0 0',
-                padding: '12px 16px',
-                fontFamily: 'monospace',
-                animation: prefersReducedMotion ? undefined : 'panel-slide-up 150ms ease',
-                zIndex: 10,
-                pointerEvents: 'auto',
-              }}>
-                {/* Type + HP */}
-                <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>
-                  {b.typeId.toUpperCase()}
-                </div>
-                <div style={{ fontSize: 9, color: hpColor, letterSpacing: 1, marginBottom: 3 }}>
-                  HP {Math.ceil(b.hp)} / {b.maxHp}
-                </div>
-                <div style={{ height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
-                  <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
-                </div>
-                {(b.typeId === 'base' || b.typeId === 'outpost') && b.ownerId === 'player' && !hud?.buildModeEnabled && (
-                  <div style={{ marginTop: 6 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>SPAWNING</div>
-                    <div style={{ display: 'flex', gap: 3 }}>
-                      {([
-                        { type: 'basic', label: isTouchDevice ? 'BSC' : '1 BASIC', color: '#4af7c4', title: 'Basic — balanced, beats Dart' },
-                        { type: 'heavy', label: isTouchDevice ? 'HVY' : '2 HEAVY', color: '#ff8844', title: 'Heavy — 5× HP, 2× damage, slow spawn, beats Basic' },
-                        { type: 'scout', label: isTouchDevice ? 'DRT' : '3 DART', color: '#50c8ff', title: 'Dart — 2× speed, half damage, fast spawn, beats Heavy' },
-                      ] as const).map(({ type, label, color, title }) => {
-                        const active = (b.spawnTypeOverride ?? 'basic') === type
-                        return (
-                          <button
-                            key={type}
-                            title={title}
-                            aria-label={`${title}${active ? ' (selected)' : ''}`}
-                            aria-pressed={active}
-                            onClick={() => { navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
-                            style={{
-                              flex: 1,
-                              padding: isTouchDevice ? '6px 4px' : '3px 7px',
-                              fontSize: isTouchDevice ? 10 : 8,
-                              cursor: 'pointer', letterSpacing: 0.5,
-                              background: active ? `${color}22` : 'rgba(0,0,0,0.35)',
-                              border: `1px solid ${active ? color : 'rgba(255,255,255,0.15)'}`,
-                              borderRadius: 3,
-                              color: active ? color : 'rgba(255,255,255,0.4)',
-                              fontFamily: 'monospace',
-                              minHeight: isTouchDevice ? 40 : 24,
-                              fontWeight: active ? 700 : 400,
-                              pointerEvents: 'auto',
-                            }}
-                          >
-                            {label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-                {/* Rally hint */}
-                <div style={{ marginTop: 8, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: 0.5 }}>
-                  {isTouchDevice ? 'tap canvas to set rally' : 'left-click canvas to set rally'}
-                </div>
-              </div>
-            )
-          })()}
-
           {/* 52px action bar */}
           <div style={{
             position: 'absolute',
@@ -1334,36 +1254,105 @@ export function HUD() {
             zIndex: 5,
             borderTop: '1px solid rgba(255,255,255,0.07)',
           }}>
-            {/* Building chip */}
+            {/* Building info chip — always visible when building selected */}
             {hud?.selectedBuilding && (() => {
               const b = hud.selectedBuilding!
               const hpFrac = b.hp / b.maxHp
               const hpColor = hpFrac > 0.5 ? '#4af7c4' : hpFrac > 0.2 ? '#ffaa44' : '#ff4f7b'
               return (
-                <button
-                  onClick={() => { setBuildingPanelExpanded(v => !v); navigator.vibrate?.(8) }}
-                  aria-label={`${b.typeId.toUpperCase()} building — ${buildingPanelExpanded ? 'close' : 'open'} panel`}
-                  aria-pressed={buildingPanelExpanded}
-                  style={{
-                    height: 36, borderRadius: 18, padding: '0 12px',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    background: buildingPanelExpanded ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.45)',
-                    border: `1px solid ${buildingPanelExpanded ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'}`,
-                    fontSize: 10, letterSpacing: 1,
-                    color: 'rgba(255,255,255,0.85)',
-                    cursor: 'pointer', pointerEvents: 'auto',
-                    fontFamily: 'monospace', flexShrink: 0,
-                    transition: 'background 150ms, border-color 150ms',
-                  }}
-                >
+                <div style={{
+                  height: 36, borderRadius: 18, padding: '0 10px',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(0,0,0,0.45)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  fontSize: 10, letterSpacing: 1,
+                  color: 'rgba(255,255,255,0.85)',
+                  fontFamily: 'monospace', flexShrink: 0,
+                }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: hpColor, flexShrink: 0 }} />
                   <span>{b.typeId.toUpperCase()}</span>
-                  <span style={{ fontSize: 8, opacity: 0.5 }}>{buildingPanelExpanded ? '▲' : '▼'}</span>
-                </button>
+                  <div style={{ width: 32, height: 3, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ height: '100%', width: `${hpFrac * 100}%`, background: hpColor, borderRadius: 2, transition: 'width 150ms' }} />
+                  </div>
+                  <button
+                    onClick={() => { gameActions?.clearSelection?.(); navigator.vibrate?.(8) }}
+                    title="Deselect building"
+                    aria-label="Deselect building"
+                    style={{
+                      width: 18, height: 18, borderRadius: 9,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(255,79,123,0.12)',
+                      border: '1px solid rgba(255,79,123,0.35)',
+                      color: 'rgba(255,120,120,0.8)',
+                      fontSize: 10, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                      lineHeight: 1, padding: 0,
+                    }}
+                  >✗</button>
+                </div>
               )
             })()}
             {/* Center spacer */}
             <div style={{ flex: 1 }} />
+            {/* Building action buttons — when building selected */}
+            {hud?.selectedBuilding && (() => {
+              const b = hud.selectedBuilding!
+              const canSpawn = b.typeId === 'base' || b.typeId === 'outpost' || b.typeId === 'scoutPost' || b.typeId === 'heavyForge'
+              const spawnButtons = canSpawn ? ([
+                { type: 'basic' as const, label: 'BASIC', icon: '●', key: '1', color: '#4af7c4', title: 'Basic — balanced, beats Dart', enabled: b.typeId === 'base' || b.typeId === 'outpost' },
+                { type: 'heavy' as const, label: 'HEAVY', icon: '◆', key: '2', color: '#ff8844', title: 'Heavy — 5× HP, 2× damage, slow spawn, beats Basic', enabled: b.typeId === 'base' || b.typeId === 'outpost' || b.typeId === 'heavyForge' },
+                { type: 'scout' as const, label: 'SCOUT', icon: '◇', key: '3', color: '#50c8ff', title: 'Dart — 2× speed, half damage, fast spawn, beats Heavy', enabled: b.typeId === 'base' || b.typeId === 'outpost' || b.typeId === 'scoutPost' },
+              ]) : []
+              return (
+                <>
+                  {spawnButtons.map(({ type, label, icon, key, color, title, enabled }) => {
+                    const active = (b.spawnTypeOverride ?? 'basic') === type
+                    return (
+                      <button
+                        key={type}
+                        title={`${title} [${key}]`}
+                        aria-label={`${label}${active ? ' (selected)' : ''}${!enabled ? ' (unavailable)' : ''} [${key}]`}
+                        aria-pressed={active}
+                        onClick={() => { if (!enabled) return; navigator.vibrate?.(8); gameActions?.setSpawnType?.(type) }}
+                        style={{
+                          width: 44, height: 44, borderRadius: 8,
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          gap: 1,
+                          background: active ? `${color}22` : 'rgba(255,255,255,0.07)',
+                          border: `1px solid ${active ? color : 'rgba(255,255,255,0.15)'}`,
+                          color: active ? color : enabled ? '#ddd' : 'rgba(255,255,255,0.25)',
+                          fontSize: 13,
+                          cursor: enabled ? 'pointer' : 'default',
+                          pointerEvents: 'auto',
+                          flexShrink: 0,
+                          fontWeight: active ? 700 : 400,
+                          opacity: enabled ? 1 : 0.4,
+                        }}
+                      >
+                        <span>{icon}</span>
+                        {!isTouchDevice && <span style={{ fontSize: 7, color: active ? color : '#888', letterSpacing: 0.5 }}>[{key}]</span>}
+                      </button>
+                    )
+                  })}
+                  <button
+                    title="Rally — right-click to set rally point [R]"
+                    aria-label="Rally — right-click to set rally point [R]"
+                    onClick={() => { navigator.vibrate?.(8); gameActions?.buildingRallyHint?.() }}
+                    style={{
+                      width: 44, height: 44, borderRadius: 8,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      gap: 1,
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: '#ddd', fontSize: 13,
+                      cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                    }}
+                  >
+                    <span>⚑</span>
+                    {!isTouchDevice && <span style={{ fontSize: 7, color: '#888', letterSpacing: 0.5 }}>[R]</span>}
+                  </button>
+                </>
+              )
+            })()}
             {/* Action buttons — when specks selected */}
             {(hud?.selectedSpeckCount ?? 0) > 0 && (
               <>
@@ -1434,7 +1423,7 @@ export function HUD() {
             )}
             {/* Right spacer */}
             <div style={{ flex: 1 }} />
-            {/* Selection count chip */}
+            {/* Selection count chip — units only */}
             {(hud?.selectedSpeckCount ?? 0) > 0 && (
               <div style={{
                 height: 36, borderRadius: 18, padding: '0 12px',

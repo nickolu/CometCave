@@ -166,7 +166,13 @@ export class GameInstance {
         this.commandAt(wx, wy)
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
-      () => this.clearRally(),                             // R — clear rally
+      () => {                                              // R — rally hint if building selected, else clear rally
+        if (this.sim.selectedBuildingId) {
+          this.notify('Right-click to set rally point', 'rgba(255,255,255,0.5)', 1200)
+        } else {
+          this.clearRally()
+        }
+      },
       () => {},                                            // H — (was: cycle spawn mode; now per-building only via panel)
       () => {                                              // C — recenter camera on player base
         const base = Object.values(this.sim.buildings).find(b => b.ownerId === 'player' && b.typeId === 'base')
@@ -174,10 +180,10 @@ export class GameInstance {
         this.camera.x = this.canvas.clientWidth / 2 - base.x * this.camera.zoom
         this.camera.y = this.canvas.clientHeight / 2 - base.y * this.camera.zoom
       },
-      () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },   // D — defend (rally to player base)
+      () => { if (this.sim.selectedBuildingId) return; this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },   // D — defend (rally to player base)
       () => { /* onAdvance — no longer called by key; A key now sets pendingModifier in input-handler */ },
-      () => { this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // N — advance to nearest outpost
-      () => { this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
+      () => { if (this.sim.selectedBuildingId) return; this.advance(); this.notify('→ ADVANCE', '#ffd700') },  // N — advance to nearest outpost
+      () => { if (this.sim.selectedBuildingId) return; this.rush(); this.notify('⚡ RUSH!', '#ff4f7b') },      // B — rush enemy base
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
@@ -243,15 +249,15 @@ export class GameInstance {
         }
         this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
       },
-      () => { this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
-      () => { this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
+      () => { if (this.sim.selectedBuildingId) return; this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }); this.notify('■ STOP', '#aaaaaa', 700) },   // S — stop
+      () => { if (this.sim.selectedBuildingId) return; this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }); this.notify('⊡ HOLD', '#aaaaaa', 700) },  // H — hold
       (wx: number, wy: number) => {                                    // A + left-click — attack-move
         this.sim.inputQueue.push({ type: 'ATTACK_MOVE', ownerId: 'player', x: wx, y: wy })
         this.renderer.showRallyPing(wx, wy, 0xff4f7b)  // red ping for attack-move
         this.notify('⚔ ATTACK MOVE!', '#ff4f7b', 900)
       },
     )
-    this.inputHandler.onGuard = () => { this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
+    this.inputHandler.onGuard = () => { if (this.sim.selectedBuildingId) return; this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onTap = (wx, wy) => {
       // Left-click: select a player building if tapped, otherwise deselect
       const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
@@ -320,6 +326,7 @@ export class GameInstance {
       stop: () => this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }),
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
+      buildingRallyHint: () => this.notify('Right-click to set rally point', 'rgba(255,255,255,0.5)', 1200),
       saveControlGroup: (slot: number) => {
         this.inputHandler.onSaveControlGroup?.(slot)
       },
