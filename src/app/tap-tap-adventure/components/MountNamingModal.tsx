@@ -42,7 +42,12 @@ export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalP
       <div className="absolute inset-0 bg-black/60" onClick={handleSkip} />
 
       {/* Content */}
-      <div className="relative z-10 bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4 w-full">
+      <div
+        className="relative z-10 bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4 w-full"
+        role="dialog"
+        aria-modal="true"
+        aria-label="New Mount"
+      >
         <h2 className="text-2xl font-bold text-amber-400 mb-1">New Mount!</h2>
         <p className="text-slate-400 text-sm mb-5">Would you like to give it a name?</p>
 

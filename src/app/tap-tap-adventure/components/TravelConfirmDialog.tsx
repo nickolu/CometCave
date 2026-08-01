@@ -37,6 +37,9 @@ export function TravelConfirmDialog({ region, onConfirm, onCancel }: TravelConfi
     >
       <div
         className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg max-w-sm w-full p-5 space-y-4 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Travel to ${region.name}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
