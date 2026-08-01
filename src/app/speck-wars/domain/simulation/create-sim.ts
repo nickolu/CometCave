@@ -161,8 +161,6 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     selectedBuildingId: null,
     spatialGrid: new SpatialGrid(),
     dominationTimer: 0,
-    surgeDuration: 0,
-    surgeCooldown: 0,
     survivalWinWaves: null,
     turretBudget: 0,
     waveCountdown: null,

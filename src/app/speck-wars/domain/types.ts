@@ -80,8 +80,6 @@ export interface SimulationState {
   selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
-  surgeDuration: number      // ms remaining in active surge, 0 = inactive
-  surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
   survivalWinWaves: number | null   // non-null on survival levels; win when waveNumber reaches this
   turretBudget: number              // turrets remaining to place (0 = no turrets available)
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
@@ -111,7 +109,6 @@ export type InputEvent =
   | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string; buildingId?: string }
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
   | { type: 'CLEAR_SELECT'; ownerId: string }
-  | { type: 'SURGE'; ownerId: string }
   | { type: 'STOP'; ownerId: string }
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
@@ -145,8 +142,6 @@ export interface HudData {
   }>
   attackedBuildingIds: string[]
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
-  surgeDuration: number    // ms remaining in active surge
-  surgeCooldown: number    // ms remaining before surge can be used again
   selectedSpeckCount: number   // 0 when no selection active
   selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number } | null
   spawnRates: Record<string, number>   // playerId → effective specks/min

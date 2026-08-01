@@ -108,10 +108,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
 
-  // 7c. Surge timers
-  if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
-  if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
-
   // 8. Check win/loss + domination timer
   checkVictory(sim)
 
@@ -287,12 +283,6 @@ function consumeInputs(sim: SimulationState) {
       // homeBuildingId each tick. Specks given a direct order elsewhere have already dropped that
       // link and are deliberately left where the player put them.
     }
-    if (event.type === 'SURGE') {
-      if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
-        sim.surgeDuration = 8000
-        sim.surgeCooldown = 45000
-      }
-    }
     if (event.type === 'BUILD_STRUCTURE') {
       if (event.ownerId !== 'player') continue
       const SACRIFICE_COST = 20
@@ -433,14 +423,11 @@ function emitHudUpdate(sim: SimulationState) {
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     let totalRate = 0
-    const hasSurge = pid === 'player' && sim.surgeDuration > 0
     for (const building of Object.values(sim.buildings)) {
       if (building.ownerId !== pid) continue
       const btype = BUILDING_TYPES[building.typeId]
       if (!btype?.spawnTypeId) continue
-      const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
-      const divisor = (hasSurge ? 2 : 1)
-      const effectiveInterval = baseInterval / divisor
+      const effectiveInterval = building.spawnIntervalOverride ?? btype.spawnInterval
       totalRate += (btype.spawnCount ?? 1) * 60000 / effectiveInterval
     }
     spawnRates[pid] = Math.round(totalRate)
@@ -527,7 +514,7 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
 }
 
 function pruneCommandGroups(sim: SimulationState) {

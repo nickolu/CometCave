@@ -857,7 +857,6 @@ export function HUD() {
                   ['⬡ ALL', 'Select all your specks'],
                   ['⌂ HOME', 'Camera → your base'],
                   ['⚔ FIGHT', 'Camera → active battle'],
-                  ['★ SURGE', '2× spawn rate for 8s'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
                   ['1× / 2× / 4×', 'Game speed'],
                   ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
@@ -895,10 +894,9 @@ export function HUD() {
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Double-tap canvas → zoom toggle (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>2-finger tap → stop (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
-              <span>Q — surge (2× spawn 8s · 45s CD)</span><span>V — snap to recent kills</span>
-              <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
-              <span>X — cycle speed (1×/2×/4×)</span><span>? — this help</span>
-              <span>G — guard: rally to nearest friendly outpost</span>
+              <span>V — snap to recent kills</span><span>1/2/3 — set spawn type (click building first)</span>
+              <span>Minimap — left-click to rally</span><span>X — cycle speed (1×/2×/4×)</span>
+              <span>? — this help</span><span>G — guard: rally to nearest friendly outpost</span>
               <span style={{ color: 'rgba(160,220,255,0.7)', gridColumn: '1/-1' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
                 Daily map seed changes each day · layout changes per difficulty · army cap: 120 specks (outpost spawn halts above cap)
@@ -1583,46 +1581,6 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
-          {/* Spawn type quick-select removed — set per-building via building panel */}
-          <div style={{
-            display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end',
-          }}>
-          {(() => {
-            const surgeActive = (hud?.surgeDuration ?? 0) > 0
-            const surgeCd = hud?.surgeCooldown ?? 0
-            const surgeReady = !surgeActive && surgeCd <= 0
-            return (
-              <button
-                onClick={() => { if (surgeReady) { navigator.vibrate?.(30); gameActions.surge?.() } }}
-                title="[Q] Surge — 2× production for 8s (45s cooldown)"
-                aria-label={surgeActive ? `Surge active — ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s remaining` : surgeCd > 0 ? `Surge on cooldown — ${Math.ceil(surgeCd / 1000)}s` : 'Surge — 2× production for 8s [Q]'}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: 11,
-                  cursor: surgeReady ? 'pointer' : 'default',
-                  background: surgeActive ? 'rgba(255,215,0,0.25)' : 'rgba(255,215,0,0.06)',
-                  border: surgeActive
-                    ? '1px solid rgba(255,215,0,0.9)'
-                    : surgeReady
-                      ? '1px solid rgba(255,215,0,0.4)'
-                      : '1px solid rgba(255,215,0,0.15)',
-                  borderRadius: 20,
-                  color: surgeActive ? '#ffd700' : surgeReady ? '#c8a800' : 'rgba(200,168,0,0.4)',
-                  letterSpacing: 1,
-                  minHeight: 44,
-                  fontFamily: 'monospace',
-                  opacity: surgeReady || surgeActive ? 1 : 0.6,
-                }}
-              >
-                {surgeActive
-                  ? `★ ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s`
-                  : surgeCd > 0
-                    ? `${isTouchDevice ? 'SURGE' : 'Q'} ${Math.ceil(surgeCd / 1000)}s`
-                    : isTouchDevice ? '⚡ SURGE' : '★ Q'}
-              </button>
-            )
-          })()}
-          </div>
           {/* Control group buttons — touch only */}
           {isTouchDevice && (() => {
             const selectedSpeckCount = hud?.selectedSpeckCount ?? 0

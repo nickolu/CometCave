@@ -48,8 +48,6 @@ interface SpeckWarsStore {
   setPeakEliteCount: (n: number) => void
   peakLegendCount: number
   setPeakLegendCount: (n: number) => void
-  surgesUsed: number
-  addSurgeUsed: () => void
   outpostsCaptured: number
   addOutpostCaptured: () => void
   isNewBest: boolean
@@ -63,8 +61,8 @@ interface SpeckWarsStore {
   setFogEnabled: (v: boolean) => void
   mapPreset: MapPreset
   setMapPreset: (p: MapPreset) => void
-  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; surge: (() => void) | null; rally: ((x: number, y: number) => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; saveControlGroup?: ((slot: number) => void) | null; recallControlGroup?: ((slot: number) => void) | null; selectAll?: (() => void) | null; snapToBase?: (() => void) | null; snapToAction?: (() => void) | null; activatePatrol?: (() => void) | null; activateSelectMode?: (() => void) | null; selectByType?: ((typeId: string) => void) | null; selectBuilding?: ((buildingId: string) => void) | null; commandAt?: ((x: number, y: number) => void) | null; clearSelection?: (() => void) | null; activateBuildMode?: ((typeId: string) => void) | null; buildingRallyHint?: (() => void) | null }
-  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; surge: () => void; rally: (x: number, y: number) => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; saveControlGroup?: (slot: number) => void; recallControlGroup?: (slot: number) => void; selectAll?: () => void; snapToBase?: () => void; snapToAction?: () => void; activatePatrol?: () => void; activateSelectMode?: () => void; selectByType?: (typeId: string) => void; selectBuilding?: (buildingId: string) => void; commandAt?: (x: number, y: number) => void; clearSelection?: () => void; activateBuildMode?: (typeId: string) => void; buildingRallyHint?: () => void } | null) => void
+  gameActions: { defend: (() => void) | null; advance: (() => void) | null; rush: (() => void) | null; clearRally: (() => void) | null; rally: ((x: number, y: number) => void) | null; setSpawnType: ((type: 'basic' | 'heavy' | 'scout') => void) | null; panCamera: ((x: number, y: number) => void) | null; stop: (() => void) | null; hold: (() => void) | null; guard: (() => void) | null; saveControlGroup?: ((slot: number) => void) | null; recallControlGroup?: ((slot: number) => void) | null; selectAll?: (() => void) | null; snapToBase?: (() => void) | null; snapToAction?: (() => void) | null; activatePatrol?: (() => void) | null; activateSelectMode?: (() => void) | null; selectByType?: ((typeId: string) => void) | null; selectBuilding?: ((buildingId: string) => void) | null; commandAt?: ((x: number, y: number) => void) | null; clearSelection?: (() => void) | null; activateBuildMode?: ((typeId: string) => void) | null; buildingRallyHint?: (() => void) | null }
+  setGameActions: (actions: { defend: () => void; advance: () => void; rush: () => void; clearRally: () => void; rally: (x: number, y: number) => void; setSpawnType: (type: 'basic' | 'heavy' | 'scout') => void; panCamera: (x: number, y: number) => void; stop: () => void; hold: () => void; guard: () => void; saveControlGroup?: (slot: number) => void; recallControlGroup?: (slot: number) => void; selectAll?: () => void; snapToBase?: () => void; snapToAction?: () => void; activatePatrol?: () => void; activateSelectMode?: () => void; selectByType?: (typeId: string) => void; selectBuilding?: (buildingId: string) => void; commandAt?: (x: number, y: number) => void; clearSelection?: () => void; activateBuildMode?: (typeId: string) => void; buildingRallyHint?: () => void } | null) => void
   campaignLevel: number | null   // null = skirmish/free play
   setCampaignLevel: (n: number | null) => void
   surrender: () => void
@@ -109,8 +107,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setPeakEliteCount: n => set(s => ({ peakEliteCount: Math.max(s.peakEliteCount, n) })),
   peakLegendCount: 0,
   setPeakLegendCount: n => set(s => ({ peakLegendCount: Math.max(s.peakLegendCount, n) })),
-  surgesUsed: 0,
-  addSurgeUsed: () => set(s => ({ surgesUsed: s.surgesUsed + 1 })),
   outpostsCaptured: 0,
   addOutpostCaptured: () => set(s => ({ outpostsCaptured: s.outpostsCaptured + 1 })),
   isNewBest: false,
@@ -132,8 +128,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setFogEnabled: v => set({ fogEnabled: v }),
   mapPreset: 'random' as MapPreset,
   setMapPreset: p => set({ mapPreset: p }),
-  gameActions: { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null, activateBuildMode: null },
-  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null, activateBuildMode: null } }),
+  gameActions: { defend: null, advance: null, rush: null, clearRally: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null, activateBuildMode: null },
+  setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null, activateBuildMode: null } }),
   campaignLevel: null,
   setCampaignLevel: n => set({ campaignLevel: n }),
   buildMenuOpen: false,
@@ -163,7 +159,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     peakVeteranCount: 0,
     peakEliteCount: 0,
     peakLegendCount: 0,
-    surgesUsed: 0,
     outpostsCaptured: 0,
     killFeed: [],
     aiPersonality: null,

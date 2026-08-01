@@ -16,7 +16,6 @@ export class InputHandler {
   private onRush?: () => void
   private onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void
   private onClearSelect?: () => void
-  private onSurge?: () => void
   private onSnapToAction?: () => void
   private onSnapToBase?: () => void
   private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
@@ -82,7 +81,6 @@ export class InputHandler {
     onRush?: () => void,
     onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void,
     onClearSelect?: () => void,
-    onSurge?: () => void,
     onSnapToAction?: () => void,
     onSnapToBase?: () => void,
     onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
@@ -107,7 +105,6 @@ export class InputHandler {
     this.onRush = onRush
     this.onBoxSelect = onBoxSelect
     this.onClearSelect = onClearSelect
-    this.onSurge = onSurge
     this.onSnapToAction = onSnapToAction
     this.onSnapToBase = onSnapToBase
     this.onSetSpawnType = onSetSpawnType
@@ -589,8 +586,6 @@ export class InputHandler {
       if (this.onBuildMenu) { this.onBuildMenu() } else { this.onRush?.() }
     } else if (e.code === 'KeyT') {
       this.onBuildTurret?.()
-    } else if (e.code === 'KeyQ') {
-      this.onSurge?.()
     } else if (e.code === 'KeyV') {
       this.onSnapToAction?.()
     } else if (e.code === 'Digit1') {

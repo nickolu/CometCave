@@ -41,9 +41,7 @@ export function updateSpawners(sim: SimulationState, dt: number) {
     if (building.spawnTimer > 0) continue
 
     const baseInterval = (building.spawnIntervalOverride ?? btype.spawnInterval)
-    const hasSurge = building.ownerId === 'player' && sim.surgeDuration > 0
-    const divisor = (hasSurge ? 2 : 1)
-    building.spawnTimer = baseInterval / divisor
+    building.spawnTimer = baseInterval
 
     for (let i = 0; i < btype.spawnCount; i++) {
       // Spawn just outside the building radius with slight random offset
