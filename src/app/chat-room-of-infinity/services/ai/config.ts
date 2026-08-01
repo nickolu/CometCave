@@ -9,7 +9,7 @@ export function getAIServiceConfig(): AIServiceConfig {
 
   return {
     apiKey,
-    model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+    model: process.env.OPENAI_MODEL || 'gpt-4o',
     temperature: 0.7,
     maxTokens: 150,
   }

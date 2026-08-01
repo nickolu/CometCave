@@ -155,7 +155,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       respondingCharacters,
     })
-  } catch {
+  } catch (error) {
+    console.error('[conversationManager] Unhandled error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
