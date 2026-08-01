@@ -35,7 +35,15 @@ export class OpenAIService implements AIService {
       max_tokens: 100,
       response_format: { type: 'json_object' },
     })
-    return JSON.parse(response.choices[0].message.content || '')
+    const content = response.choices[0].message.content
+    if (!content) {
+      return { safe: true, reason: '' }
+    }
+    try {
+      return JSON.parse(content)
+    } catch {
+      return { safe: true, reason: '' }
+    }
   }
 
   async generateResponse(messages: Message[]): Promise<string> {

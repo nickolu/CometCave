@@ -19,6 +19,7 @@ import {
 } from '@mui/material'
 import { FormEvent, useEffect, useState } from 'react'
 
+import { useCharacterGenerator } from '@/app/chat-room-of-infinity/api/hooks'
 import { useStore } from '@/app/chat-room-of-infinity/store'
 import { Character } from '@/app/chat-room-of-infinity/types'
 
@@ -32,7 +33,10 @@ export default function UserSelector() {
     updateCustomCharacterForm,
     saveCustomCharacter,
     loadSampleCharacters,
+    addAvailableCharacter,
   } = useStore()
+
+  const generateCharacter = useCharacterGenerator()
 
   const [generationPrompt, setGenerationPrompt] = useState('')
   const [showGenerateForm, setShowGenerateForm] = useState(false)
@@ -58,9 +62,18 @@ export default function UserSelector() {
     }
   }
 
-  const handleGenerateMore = () => {
-    // TODO: Implement character generation
-    console.log('Generating with prompt:', generationPrompt)
+  const handleGenerateMore = async () => {
+    try {
+      const result = await generateCharacter.mutateAsync({
+        previousCharacters: availableCharacters,
+        criteria: generationPrompt,
+      })
+      result.newCharacters.forEach(char => addAvailableCharacter(char))
+      setGenerationPrompt('')
+      setShowGenerateForm(false)
+    } catch {
+      // generation failed silently — button stays active for retry
+    }
   }
 
   const handleCustomSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -125,7 +138,7 @@ export default function UserSelector() {
               onClick={() => handleCharacterSelect(character.id)}
             >
               <ListItemAvatar>
-                <Avatar>{character.name[0]}</Avatar>
+                <Avatar>{(character.name?.[0] ?? '?').toUpperCase()}</Avatar>
               </ListItemAvatar>
               <ListItemText primary={character.name} secondary={character.description} />
             </ListItem>
@@ -156,12 +169,13 @@ export default function UserSelector() {
                 />
                 <Button
                   variant="contained"
+                  disabled={generateCharacter.isPending}
                   onClick={() => {
                     handleGenerateMore()
-                    setShowGenerateForm(false)
+                    // Don't collapse immediately — wait for success in handleGenerateMore
                   }}
                 >
-                  Generate
+                  {generateCharacter.isPending ? 'Generating...' : 'Generate'}
                 </Button>
               </Box>
             </Box>
