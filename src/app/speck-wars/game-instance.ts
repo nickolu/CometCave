@@ -18,6 +18,7 @@ export class GameInstance {
   private renderer: Renderer
   private rafId: number | null = null
   private destroyed = false
+  private pendingTimeouts: ReturnType<typeof setTimeout>[] = []
   private lastTime: number = 0
   private camera: Camera
   private inputHandler!: InputHandler
@@ -429,15 +430,15 @@ export class GameInstance {
     // Freeze the sim for the countdown duration
     this.cinematicMs = 3000  // 3 seconds total
     useSpeckWarsStore.getState().setCountdown(3)
-    setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(2) }, 1000)
-    setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(1) }, 2000)
-    setTimeout(() => {
+    this.pendingTimeouts.push(setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(2) }, 1000))
+    this.pendingTimeouts.push(setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(1) }, 2000))
+    this.pendingTimeouts.push(setTimeout(() => {
       if (this.destroyed) return
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
       navigator.vibrate?.([50, 30, 50, 30, 100])
-    }, 3000)
+    }, 3000))
 
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
@@ -457,7 +458,7 @@ export class GameInstance {
         { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
       ]
       for (const { delay, message, color } of hints) {
-        setTimeout(() => { if (!this.destroyed) this.notify(message, color, 3000) }, delay)
+        this.pendingTimeouts.push(setTimeout(() => { if (!this.destroyed) this.notify(message, color, 3000) }, delay))
       }
     }
   }
@@ -535,7 +536,7 @@ export class GameInstance {
             color: isComeback ? '#ffd700' : won ? '#4af7c4' : '#ff4f7b',
           })
           const elapsedAtEnd = this.elapsedMs
-          setTimeout(() => {
+          this.pendingTimeouts.push(setTimeout(() => {
             if (this.destroyed) return
             const s = useSpeckWarsStore.getState()
             const isCampaign = s.campaignLevel !== null
@@ -561,7 +562,7 @@ export class GameInstance {
               s.setIsNewBest(false)
               s.setPhase('defeat')
             }
-          }, 1400)
+          }, 1400))
         }
         if (event.type === 'HUD_UPDATE') {
           const cameraViewport = {
@@ -897,6 +898,8 @@ export class GameInstance {
 
   destroy() {
     this.destroyed = true
+    for (const id of this.pendingTimeouts) clearTimeout(id)
+    this.pendingTimeouts = []
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
@@ -1059,9 +1062,9 @@ export class GameInstance {
   private notify(message: string, color: string, durationMs = 1200) {
     const gen = ++this.notifGen
     useSpeckWarsStore.getState().setNotification({ message, color })
-    setTimeout(() => {
+    this.pendingTimeouts.push(setTimeout(() => {
       if (!this.destroyed && this.notifGen === gen) useSpeckWarsStore.getState().setNotification(null)
-    }, durationMs)
+    }, durationMs))
   }
 
   getSim(): SimulationState {
