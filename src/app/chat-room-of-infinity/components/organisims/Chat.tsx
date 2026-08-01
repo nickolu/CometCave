@@ -95,7 +95,7 @@ export default function Chat() {
           top: '12px',
         }}
       >
-        <IconButton onClick={handleMenuOpen} size="small">
+        <IconButton onClick={handleMenuOpen} size="small" aria-label="Open chat menu">
           <MoreVert />
         </IconButton>
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
@@ -187,6 +187,7 @@ export default function Chat() {
       <Fade in={showScrollButton}>
         <IconButton
           onClick={scrollToBottom}
+          aria-label="Scroll to bottom"
           sx={{
             position: 'absolute',
             bottom: 100,
@@ -242,7 +243,7 @@ export default function Chat() {
               },
             }}
           />
-          <IconButton onClick={handleSend} color="primary" disabled={isSubmitting}>
+          <IconButton onClick={handleSend} color="primary" disabled={isSubmitting} aria-label="Send message">
             <Send />
           </IconButton>
         </Box>
