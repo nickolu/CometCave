@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { SecretWordChat } from '@/app/secret-word/components/SecretWordChat'
 import { SecretWordEnd } from '@/app/secret-word/components/SecretWordEnd'
@@ -53,6 +53,13 @@ function SecretWordGameContent() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE)
   const generateWord = useGenerateWord()
   const getAIResponse = useAIResponse()
+  const aiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (aiTimerRef.current != null) clearTimeout(aiTimerRef.current)
+    }
+  }, [])
 
   // Check for forbidden words in messages
   const checkForForbiddenWords = (message: string, playerId: 'player' | 'ai') => {
@@ -193,7 +200,7 @@ function SecretWordGameContent() {
     if (nextTurn === 'ai') {
       const delay = 1000 + Math.random() * 2000 // 1-3 seconds delay for natural feel
 
-      setTimeout(async () => {
+      aiTimerRef.current = setTimeout(async () => {
         try {
           const aiResponseResult = await getAIResponse.mutateAsync({
             playerMessage: content,
