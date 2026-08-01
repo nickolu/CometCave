@@ -393,6 +393,12 @@ export class GameInstance {
       },
       selectBuilding: (buildingId: string) => {
         this.sim.inputQueue.push({ type: 'SELECT_BUILDING', ownerId: 'player', buildingId })
+        const building = this.sim.buildings[buildingId]
+        if (building) {
+          this.camera.x = this.canvas.clientWidth / 2 - building.x * this.camera.zoom
+          this.camera.y = this.canvas.clientHeight / 2 - building.y * this.camera.zoom
+          clampCamera(this.camera, this.canvas.clientWidth, this.canvas.clientHeight)
+        }
       },
       commandAt: (x: number, y: number) => this.commandAt(x, y),
     })

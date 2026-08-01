@@ -1095,6 +1095,61 @@ export function HUD() {
         </div>
       )}
 
+      {/* Building quick-select bar — centered above footer */}
+      {phase === 'playing' && (hud?.playerBuildings?.length ?? 0) > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: 6,
+          pointerEvents: 'auto',
+          zIndex: 20,
+        }}>
+          {hud!.playerBuildings.map((b, i) => {
+            const isSelected = hud?.selectedBuilding?.id === b.id
+            const hpFrac = b.hp / b.maxHp
+            const hpColor = hpFrac > 0.5 ? '#4caf50' : hpFrac > 0.2 ? '#ff9800' : '#f44336'
+            return (
+              <button
+                key={b.id}
+                onClick={() => { navigator.vibrate?.(8); selectBuilding?.(b.id) }}
+                title={`${b.name} [Ctrl+${i + 1}]`}
+                aria-label={`Select ${b.name} (Ctrl+${i + 1})`}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 2,
+                  width: 50, height: 50,
+                  background: isSelected ? 'rgba(100,180,255,0.25)' : 'rgba(0,0,0,0.6)',
+                  border: `1px solid ${isSelected ? 'rgba(100,180,255,0.7)' : 'rgba(255,255,255,0.2)'}`,
+                  borderRadius: 8,
+                  color: isSelected ? '#7ec8ff' : '#ccc',
+                  fontSize: 10,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  padding: 0,
+                  fontFamily: 'monospace',
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 0.3 }}>
+                  {b.name.slice(0, 4).toUpperCase()}
+                </span>
+                {/* HP bar */}
+                <div style={{ width: 32, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ width: `${hpFrac * 100}%`, height: '100%', background: hpColor, borderRadius: 2 }} />
+                </div>
+                {!isTouchDevice && (
+                  <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.3 }}>
+                    ^{i + 1}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* Battle status indicator + morale badge */}
       {hud && phase === 'playing' && (() => {
         const playerSpecks = hud.players.player?.speckCount ?? 0
