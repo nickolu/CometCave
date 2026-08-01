@@ -185,8 +185,16 @@ export class InputHandler {
 
   private onMouseMove = (e: MouseEvent) => {
     const rect = this.canvas.getBoundingClientRect()
-    this.mouseX = e.clientX - rect.left
-    this.mouseY = e.clientY - rect.top
+    // Only track position for edge-panning when cursor is directly over the canvas,
+    // not over HUD overlay elements (buttons, panels, etc.). The -1 sentinel causes
+    // getEdgePanDelta to return {dx:0,dy:0} via its early-exit guard.
+    if (e.target === this.canvas) {
+      this.mouseX = e.clientX - rect.left
+      this.mouseY = e.clientY - rect.top
+    } else {
+      this.mouseX = -1
+      this.mouseY = -1
+    }
     if (this.isPanDragging) {
       this.camera.x += e.clientX - this.lastX
       this.camera.y += e.clientY - this.lastY
