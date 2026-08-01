@@ -19,7 +19,7 @@ export default function ChatMessage({ message }: Props) {
         mb: 2,
       }}
     >
-      {!isSelf && <Avatar sx={{ mr: 1 }}>{message.character.name[0]}</Avatar>}
+      {!isSelf && <Avatar sx={{ mr: 1 }}>{message.character.name?.[0] ?? '?'}</Avatar>}
       <Box
         sx={{
           maxWidth: '70%',
@@ -36,7 +36,7 @@ export default function ChatMessage({ message }: Props) {
         )}
         <Typography variant="body1">{message.message}</Typography>
       </Box>
-      {isSelf && <Avatar sx={{ ml: 1 }}>{message.character.name[0]}</Avatar>}
+      {isSelf && <Avatar sx={{ ml: 1 }}>{message.character.name?.[0] ?? '?'}</Avatar>}
     </Box>
   )
 }
