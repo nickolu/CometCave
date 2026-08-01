@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { List } from '@/app/tap-tap-adventure/components/ui/list'
@@ -38,6 +38,12 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [detailItem, setDetailItem] = useState<Item | null>(null)
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  useEffect(() => {
+    if (!feedbackMessage) return
+    const id = setTimeout(() => setFeedbackMessage(null), 3000)
+    return () => clearTimeout(id)
+  }, [feedbackMessage])
+
   const character = useGameStore(s => s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId))
   const newItemIds = useGameStore(s => s.gameState.newItemIds ?? [])
   const clearNewItemId = useGameStore(s => s.clearNewItemId)
@@ -47,7 +53,6 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
     const result = useGameStore.getState().useItem(item.id)
     if (result) {
       setFeedbackMessage(result.message)
-      setTimeout(() => setFeedbackMessage(null), 3000)
     }
   }, [])
 
@@ -55,7 +60,6 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
     const slot = getEquipmentSlot(item)
     useGameStore.getState().equipItem(item.id, slot)
     setFeedbackMessage(`Equipped ${item.name} in ${slot} slot`)
-    setTimeout(() => setFeedbackMessage(null), 3000)
   }, [])
 
   const handleLearnSpell = useCallback((item: Item) => {
@@ -65,7 +69,6 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
         soundEngine.playSpellLearn()
       }
       setFeedbackMessage(result.message)
-      setTimeout(() => setFeedbackMessage(null), 3000)
     }
   }, [])
 
@@ -391,6 +394,9 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       </div>
       {detailItem && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Item details"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setDetailItem(null)}
         >

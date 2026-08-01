@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
@@ -32,6 +32,17 @@ export function ExplorationSpellsPanel() {
   const [schoolFilter, setSchoolFilter] = useState<string>('all')
   const [sortByMana, setSortByMana] = useState(false)
 
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => { if (feedbackTimerRef.current != null) clearTimeout(feedbackTimerRef.current) }
+  }, [])
+
+  useEffect(() => {
+    if (!feedbackMessage) return
+    const id = setTimeout(() => setFeedbackMessage(null), 3000)
+    return () => clearTimeout(id)
+  }, [feedbackMessage])
+
   const spellbook = character?.spellbook ?? []
   const explorationSpells = spellbook
     .filter(s => s.explorationEffect)
@@ -45,7 +56,6 @@ export function ExplorationSpellsPanel() {
     if (result) {
       setFeedbackMessage(result.message)
       setFeedbackSuccess(result.success)
-      setTimeout(() => setFeedbackMessage(null), 3000)
     }
   }, [castExplorationSpell])
 

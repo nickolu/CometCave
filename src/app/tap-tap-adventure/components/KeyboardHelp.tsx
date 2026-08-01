@@ -38,7 +38,7 @@ interface KeyboardHelpProps {
 
 export function KeyboardHelp({ onClose }: KeyboardHelpProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+    <div role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative bg-[#161723] border border-[#3a3c56] rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl"

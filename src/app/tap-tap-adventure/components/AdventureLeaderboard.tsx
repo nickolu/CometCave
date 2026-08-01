@@ -233,7 +233,7 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
 
       {/* Name dialog */}
       {showNameDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+        <div role="dialog" aria-modal="true" aria-label="Set player name" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-md bg-[#1a1b2e] border border-[#3a3c56] rounded-lg p-6 flex flex-col gap-4">
             <h3 className="text-xl font-bold text-amber-400 text-center">
               {playerName ? 'Change Player Name' : 'Set Player Name'}
