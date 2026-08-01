@@ -134,7 +134,7 @@ export class InputHandler {
     window.addEventListener('touchend', this.onTouchEnd)
     window.addEventListener('keydown', this.onKeyDown)
     window.addEventListener('keyup', this.onKeyUp)
-    window.addEventListener('blur', () => this.heldKeys.clear())
+    window.addEventListener('blur', this.onBlur)
     this.canvas.addEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.addEventListener('mouseleave', this.onMouseLeave)
   }
@@ -144,6 +144,8 @@ export class InputHandler {
     this.mouseX = e.clientX - rect.left
     this.mouseY = e.clientY - rect.top
   }
+
+  private onBlur = () => this.heldKeys.clear()
 
   private onMouseLeave = () => { this.mouseX = -1; this.mouseY = -1 }
 
@@ -672,6 +674,7 @@ export class InputHandler {
     window.removeEventListener('touchend', this.onTouchEnd)
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
+    window.removeEventListener('blur', this.onBlur)
     this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.removeEventListener('mouseleave', this.onMouseLeave)
   }
