@@ -180,10 +180,9 @@ export function TriviaGame({ onFinish, onFlee, date: dateProp }: { onFinish: (re
     const storageKey = `trivia-rated-${q.id}`
     if (localStorage.getItem(storageKey)) return
 
-    localStorage.setItem(storageKey, rating)
+    // Optimistic UI update
     setQuestionRating(rating)
 
-    // Fire-and-forget — don't await
     fetch('/api/v1/trivia/rate-question', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -198,7 +197,11 @@ export function TriviaGame({ onFinish, onFlee, date: dateProp }: { onFinish: (re
         difficulty: q.difficulty,
         category: q.category,
       }),
-    }).catch(() => {}) // swallow errors — best effort
+    })
+      .then((res) => {
+        if (res.ok) localStorage.setItem(storageKey, rating)
+      })
+      .catch(() => {}) // best effort — if server fails, user can retry
   }
 
   const nextQuestion = useCallback(() => {
