@@ -38,6 +38,9 @@ export function LevelUpCelebration({ level, onDismiss }: LevelUpCelebrationProps
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Level up!"
       className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { CRAFTING_RECIPES, CraftingRecipe } from '@/app/tap-tap-adventure/config/craftingRecipes'
 import { canCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
@@ -101,6 +101,12 @@ export function CraftingPanel() {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [feedbackSuccess, setFeedbackSuccess] = useState(false)
 
+  useEffect(() => {
+    if (!feedbackMessage) return
+    const id = setTimeout(() => setFeedbackMessage(null), 3000)
+    return () => clearTimeout(id)
+  }, [feedbackMessage])
+
   const character = useGameStore(s =>
     s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId)
   )
@@ -122,7 +128,6 @@ export function CraftingPanel() {
     if (result) {
       setFeedbackSuccess(result.success)
       setFeedbackMessage(result.message)
-      setTimeout(() => setFeedbackMessage(null), 3000)
     }
   }
 
