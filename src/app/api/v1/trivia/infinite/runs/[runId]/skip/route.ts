@@ -16,7 +16,12 @@ export async function POST(
   try {
     const body = await request.json();
     const { questionId } = body;
-    await recordSkip(auth.claims.uid, runId, questionId ?? '');
+
+    if (!questionId || typeof questionId !== 'string') {
+      return NextResponse.json({ error: 'questionId is required.' }, { status: 400 });
+    }
+
+    await recordSkip(auth.claims.uid, runId, questionId);
 
     // Return the correct answer and community stats so the client can show them
     let correctAnswer: string | null = null;
