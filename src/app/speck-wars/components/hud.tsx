@@ -79,24 +79,6 @@ export function HUD() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Ctrl+1–9: quick-select building by position in the footer bar
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!e.ctrlKey) return
-      const digit = parseInt(e.code.replace('Digit', ''))
-      if (isNaN(digit) || digit < 1 || digit > 9) return
-      const buildings = hud?.playerBuildings
-      if (!buildings) return
-      const target = buildings[digit - 1]
-      if (!target) return
-      e.preventDefault()
-      navigator.vibrate?.(8)
-      gameActions?.selectBuilding?.(target.id)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [hud?.playerBuildings, gameActions])
-
   useEffect(() => {
     if (!isTouchDevice) return
     const unsub1 = onLongPressStart((x, y) => setLongPressRing({ x, y }))
@@ -122,6 +104,25 @@ export function HUD() {
   const difficulty = useSpeckWarsStore(s => s.difficulty)
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
+
+  // Ctrl+1–9: quick-select building by position in the footer bar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return
+      const digit = parseInt(e.code.replace('Digit', ''))
+      if (isNaN(digit) || digit < 1 || digit > 9) return
+      const buildings = hud?.playerBuildings
+      if (!buildings) return
+      const target = buildings[digit - 1]
+      if (!target) return
+      e.preventDefault()
+      navigator.vibrate?.(8)
+      gameActions?.selectBuilding?.(target.id)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [hud?.playerBuildings, gameActions])
+
   const campaignLevel = useSpeckWarsStore(s => s.campaignLevel)
   const buildMenuOpen = useSpeckWarsStore(s => s.buildMenuOpen)
 
