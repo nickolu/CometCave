@@ -102,7 +102,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       response,
     })
-  } catch {
+  } catch (error) {
+    console.error('[character] Unhandled error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

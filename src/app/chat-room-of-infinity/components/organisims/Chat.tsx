@@ -19,7 +19,6 @@ import Message from '@/app/chat-room-of-infinity/components/molecules/ChatMessag
 import { useCharacterResponses } from '@/app/chat-room-of-infinity/hooks/useCharacterResponses'
 import { useChatInput } from '@/app/chat-room-of-infinity/hooks/useChatInput'
 import { useChatMenu } from '@/app/chat-room-of-infinity/hooks/useChatMenu'
-import { useChatSafety } from '@/app/chat-room-of-infinity/hooks/useChatSafety'
 import { useChatScroll } from '@/app/chat-room-of-infinity/hooks/useChatScroll'
 import { useStore } from '@/app/chat-room-of-infinity/store'
 import { ChatMessage } from '@/app/chat-room-of-infinity/types'
@@ -43,11 +42,8 @@ export default function Chat() {
   const { showScrollButton, messagesEndRef, messageContainerRef, scrollToBottom, handleScroll } =
     useChatScroll()
 
-  // Safety logic
-  const { error, setError } = useChatSafety()
-
   // Chat input logic
-  const { input, isUserTyping, isSubmitting, handleInputChange, handleKeyPress, handleSend } =
+  const { input, isUserTyping, isSubmitting, error, setError, handleInputChange, handleKeyPress, handleSend } =
     useChatInput({
       onMessageSent: () => {},
       scrollToBottom,
