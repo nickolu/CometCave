@@ -37,9 +37,14 @@ export function InfiniteRulesModal({ defaultMode, onContinue, onCancel }: Props)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm p-4">
-      <div className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="infinite-rules-title"
+        className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+      >
         <div>
-          <h2 className="text-on-surface text-xl font-bold mb-1">Infinite Trivia</h2>
+          <h2 id="infinite-rules-title" className="text-on-surface text-xl font-bold mb-1">Infinite Trivia</h2>
           {!showRulesText ? (
             <button
               type="button"

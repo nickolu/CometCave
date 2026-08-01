@@ -68,6 +68,9 @@ export function SpoilerCard({
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm Reveal"
             className="bg-surface-container-high rounded-ds-lg p-6 max-w-sm mx-4 shadow-hero flex flex-col gap-4"
             onClick={e => e.stopPropagation()}
           >
