@@ -4,11 +4,11 @@ export function useWorkflow() {
   const [currentStep, setCurrentStep] = useState(0)
 
   const nextStep = () => {
-    setCurrentStep(currentStep + 1)
+    setCurrentStep(prev => prev + 1)
   }
 
   const previousStep = () => {
-    setCurrentStep(currentStep - 1)
+    setCurrentStep(prev => prev - 1)
   }
 
   return {
